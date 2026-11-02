@@ -170,28 +170,52 @@ pub(crate) async fn install_with_progress(
     if cancelled.load(Ordering::Relaxed) {
         return Err("EA content: cancelled".into());
     }
-    let plan = ea_content::plan_install(access, offer_id, root).await?;
+    let mut plan = ea_content::plan_install(access, offer_id, root).await?;
     // Javelin verifies the client's own installation; keep those titles on the
     // EA App for installs, updates and repairs too.
     if plan.eaac {
         return Err("EA anti-cheat titles need the EA app".into());
     }
+
+    // A signed package URL can expire during a multi-hour download. Re-plan
+    // once on an authorization error; completed files are verified by size and
+    // CRC on the retry, so the transfer resumes where it stopped.
+    let mut refreshed = false;
+    let download = loop {
+        ea_content::ensure_disk_space(&plan)?;
+        match ea_content::download_entries_controlled(
+            &plan.download_url,
+            &plan.root,
+            &plan.manifest.entries,
+            Some(cancelled.clone()),
+            |progress| {
+                on_tick(InstallTick {
+                    phase: "downloading",
+                    progress: Some(progress),
+                })
+            },
+        )
+        .await
+        {
+            Ok(report) => break report,
+            Err(error) if !refreshed && ea_content::auth_error(&error) => {
+                refreshed = true;
+                on_tick(InstallTick {
+                    phase: "planning",
+                    progress: None,
+                });
+                plan = ea_content::plan_install(access, offer_id, root).await?;
+                if plan.eaac {
+                    return Err("EA anti-cheat titles need the EA app".into());
+                }
+            }
+            Err(error) => return Err(error),
+        }
+    };
+
     let local = installed_version(root);
     let mode = touchup_mode(local.as_deref(), &plan.version, has_install(root));
     let touchup = plan_touchup(&plan, locale, mode).await?;
-    let download = ea_content::download_entries_controlled(
-        &plan.download_url,
-        &plan.root,
-        &plan.manifest.entries,
-        Some(cancelled.clone()),
-        |progress| {
-            on_tick(InstallTick {
-                phase: "downloading",
-                progress: Some(progress),
-            })
-        },
-    )
-    .await?;
 
     let mut touchup_error = None;
     if let Some(touchup) = &touchup {
@@ -317,6 +341,87 @@ fn split_args(input: &str) -> Vec<String> {
     args
 }
 
+/// A command read from the game's own uninstall registry record.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct UninstallCommand {
+    pub program: PathBuf,
+    pub args: Vec<String>,
+}
+
+/// Reads `<uninstall><path>` from the local installer manifest, follows the
+/// registry value and returns the `Cleanup.exe` command the EA installer wrote.
+pub(crate) fn uninstall_command(root: &Path) -> Option<UninstallCommand> {
+    let bytes = std::fs::read(root.join(MANIFEST.replace('/', std::path::MAIN_SEPARATOR_STR))).ok()?;
+    let xml = super::ea_direct::decode(&bytes)?;
+    let block = element(&xml, "uninstall")?;
+    let pointer = element(block, "path")?.trim();
+    let (key, value) = parse_registry_pointer(pointer)?;
+    let output = registry_views(&key)
+        .into_iter()
+        .find_map(|key| crate::winreg::query(&key, Some(&value)))?;
+    let command = crate::winreg::parse_reg_sz(&output);
+    let mut parts = split_args(&command);
+    if parts.is_empty() {
+        return None;
+    }
+    let program = parts.remove(0);
+    if program.trim().is_empty() {
+        return None;
+    }
+    Some(UninstallCommand {
+        program: PathBuf::from(program),
+        args: parts,
+    })
+}
+
+/// `[HKEY_LOCAL_MACHINE\...\UninstallString]` → key and value name.
+fn parse_registry_pointer(raw: &str) -> Option<(String, String)> {
+    let inner = raw.trim().strip_prefix('[')?.strip_suffix(']')?;
+    let split = inner.rfind('\\')?;
+    let key = &inner[..split];
+    let value = &inner[split + 1..];
+    if key.is_empty() || value.is_empty() {
+        return None;
+    }
+    Some((key.to_string(), value.to_string()))
+}
+
+/// EA writes the same uninstall key under the 32-bit view on 64-bit Windows;
+/// `installerdata.xml` does not repeat `WOW6432Node`, so try both views.
+fn registry_views(key: &str) -> Vec<String> {
+    let mut keys = vec![key.to_string()];
+    if let Some((root, rest)) = key.split_once(r"\SOFTWARE\") {
+        if !rest.to_ascii_uppercase().starts_with("WOW6432NODE\\") {
+            keys.push(format!(r"{root}\SOFTWARE\WOW6432Node\{rest}"));
+        }
+    }
+    keys
+}
+
+/// Runs the uninstaller and waits for it.
+pub(crate) async fn run_uninstall(command: &UninstallCommand) -> Result<(), String> {
+    let mut process = tokio::process::Command::new(&command.program);
+    process.args(&command.args);
+    #[cfg(windows)]
+    {
+        process.creation_flags(0x0800_0000);
+    }
+    let status = process
+        .status()
+        .await
+        .map_err(|error| format!("EA uninstall: {error}"))?;
+    if !status.success() {
+        return Err(format!("EA uninstaller exited with {status}"));
+    }
+    Ok(())
+}
+
+/// True when the folder belongs to the launcher's own EA library, so it can be
+/// removed when no installer record exists.
+pub(crate) fn managed_root(root: &Path) -> bool {
+    root.starts_with(super::accounts::data_dir().join("ea-games"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -392,6 +497,70 @@ mod tests {
         assert_eq!(touchup_mode(Some("1"), "1", true), TouchupMode::Repair);
         assert_eq!(touchup_mode(Some("1"), "2", true), TouchupMode::Update);
         assert_eq!(touchup_mode(Some("1"), "", true), TouchupMode::Update);
+    }
+
+    #[test]
+    fn a_registry_pointer_splits_into_key_and_value() {
+        let pointer = r"[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{45e281f3}\UninstallString]";
+        let (key, value) = parse_registry_pointer(pointer).expect("pointer");
+        assert_eq!(
+            key,
+            r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{45e281f3}"
+        );
+        assert_eq!(value, "UninstallString");
+        assert!(parse_registry_pointer("C:\\Games\\x.exe").is_none());
+    }
+
+    #[test]
+    fn the_registry_lookup_tries_the_32_bit_view() {
+        let keys = registry_views(
+            r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{45e281f3}",
+        );
+        assert_eq!(keys.len(), 2);
+        assert!(keys[1].contains(r"SOFTWARE\WOW6432Node\"));
+        assert_eq!(
+            registry_views(
+                r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{x}"
+            )
+            .len(),
+            1
+        );
+    }
+
+    #[test]
+    fn the_uninstaller_runner_waits_for_the_process() {
+        #[cfg(windows)]
+        let command = UninstallCommand {
+            program: PathBuf::from("cmd.exe"),
+            args: vec!["/c".into(), "exit".into(), "0".into()],
+        };
+        #[cfg(not(windows))]
+        let command = UninstallCommand {
+            program: PathBuf::from("sh"),
+            args: vec!["-c".into(), "true".into()],
+        };
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        runtime
+            .block_on(run_uninstall(&command))
+            .expect("uninstaller should exit successfully");
+    }
+
+    #[test]
+    #[ignore = "reads the real EA uninstall registry record"]
+    fn manual_uninstall_command_reads_the_registry() {
+        let root = Path::new(r"C:\Program Files\EA Games\Battlefield 2042");
+        let command = uninstall_command(root);
+        println!("uninstall command: {command:?}");
+        assert!(command.is_some());
+        assert!(command
+            .unwrap()
+            .program
+            .to_string_lossy()
+            .to_lowercase()
+            .contains("cleanup.exe"));
     }
 
     #[test]

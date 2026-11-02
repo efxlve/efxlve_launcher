@@ -114,7 +114,7 @@ import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { companionStoreId, loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaContentCancel, eaContentPlan, eaContentVerify, eaDirectSetEnabled, eaLoginOpen, ubiDirectAdopt, ubiDirectCancel, ubiDirectImportSaves, ubiDirectInstall, ubiDirectMove, ubiDirectPlan, ubiDirectProbe, ubiDirectRelease, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaContentCancel, eaContentPlan, eaContentUninstall, eaContentVerify, eaDirectSetEnabled, eaLoginOpen, ubiDirectAdopt, ubiDirectCancel, ubiDirectImportSaves, ubiDirectInstall, ubiDirectMove, ubiDirectPlan, ubiDirectProbe, ubiDirectRelease, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
 import { isSmartCollection, smartCollection } from "../library/smart-collections";
@@ -847,6 +847,15 @@ document.addEventListener("click", (e) => {
         void xboxUninstall(gameId)
           .then(() => loadCompanionLibrary())
           .catch((e: unknown) => toast(String(e), "err"));
+        return;
+      }
+      if (store === "ea") {
+        void eaContentUninstall(gameId)
+          .then(() => {
+            toast(i18nT("ea.uninstalled"), "ok");
+            return loadCompanionLibrary();
+          })
+          .catch((e: unknown) => toast(localizeMessage(String(e)), "err"));
         return;
       }
       void companionGameAction(store, gameId, "uninstall")

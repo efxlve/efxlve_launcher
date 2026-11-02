@@ -1035,6 +1035,34 @@ pub async fn ea_content_verify(
     ea_content::verify_install(&plan, usize::MAX, u64::MAX, u64::MAX).await
 }
 
+/// Removes an EA install through the game's own uninstall registry record.
+///
+/// A launcher-owned folder without a registry record is removed directly; an
+/// EA App folder keeps its own `Cleanup.exe`. Program Files uninstallers may
+/// still need an elevated launcher.
+#[tauri::command]
+pub async fn ea_content_uninstall(id: String) -> Result<(), String> {
+    let (_, owned, root) = ea_content_target(&id, None)?;
+    let managed = ea_install::managed_root(&root);
+    if let Some(command) = ea_install::uninstall_command(&root) {
+        ea_install::run_uninstall(&command).await?;
+    } else if managed {
+        tokio::fs::remove_dir_all(&root)
+            .await
+            .map_err(|error| format!("EA uninstall: {error}"))?;
+    } else {
+        return Err(format!(
+            "@t:ea.noUninstaller\u{1f}{}",
+            root.display()
+        ));
+    }
+    ea_content::forget_install(&owned.id);
+    if managed && tokio::fs::metadata(&root).await.is_ok() {
+        let _ = tokio::fs::remove_dir_all(&root).await;
+    }
+    Ok(())
+}
+
 /// Starts a background install, update or repair. Progress arrives on
 /// `ea-content-progress`; the end is `ea-content-done` or `ea-content-failed`.
 #[tauri::command]

@@ -442,6 +442,10 @@ export interface EaVerifyReport {
 export const eaContentVerify = (id: string, path?: string | null) =>
   invoke<EaVerifyReport>("ea_content_verify", { id, path: path || null });
 
+/** Removes an EA install through its own uninstaller or launcher-owned folder. */
+export const eaContentUninstall = (id: string) =>
+  invoke<void>("ea_content_uninstall", { id });
+
 export const companionResolveCovers = (
   queries: { store: string; id: string; name: string; storeId: string; cover?: string }[],
 ) => invoke<CompanionCoverHit[]>("companion_resolve_covers", { queries });

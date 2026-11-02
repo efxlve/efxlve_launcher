@@ -3516,5 +3516,8 @@
   "ea.folderNotWritable": "A pasta de instalação não é gravável: {path}. Execute o EFXLVE como administrador ou escolha outra pasta.",
   "ea.elevationDenied": "A permissão de administrador não foi concedida. A instalação não foi alterada.",
   "ea.elevationFailed": "Não foi possível iniciar o instalador elevado: {error}",
-  "ea.elevationUnsupported": "Atualizar esta pasta requer direitos de administrador, que esta compilação da plataforma não pode solicitar."
+  "ea.elevationUnsupported": "Atualizar esta pasta requer direitos de administrador, que esta compilação da plataforma não pode solicitar.",
+  "ea.notEnoughSpace": "Espaço em disco insuficiente: {a1} necessários, {a2} livres em {a3}.",
+  "ea.noUninstaller": "Nenhum desinstalador registrado para este jogo. Remova-o pelo EA App ou exclua a pasta: {a1}",
+  "ea.uninstalled": "Desinstalado."
 }

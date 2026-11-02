@@ -3516,5 +3516,8 @@
   "ea.folderNotWritable": "Folder instalacji nie jest zapisywalny: {path}. Uruchom EFXLVE jako administrator lub wybierz inny folder.",
   "ea.elevationDenied": "Nie udzielono zgody administratora. Instalacja pozostała bez zmian.",
   "ea.elevationFailed": "Nie udało się uruchomić instalatora z podwyższonymi uprawnieniami: {error}",
-  "ea.elevationUnsupported": "Aktualizacja tego folderu wymaga uprawnień administratora, o które ta wersja platformy nie może poprosić."
+  "ea.elevationUnsupported": "Aktualizacja tego folderu wymaga uprawnień administratora, o które ta wersja platformy nie może poprosić.",
+  "ea.notEnoughSpace": "Za mało miejsca na dysku: potrzeba {a1}, wolne {a2} w {a3}.",
+  "ea.noUninstaller": "Brak zarejestrowanego deinstalatora dla tej gry. Usuń ją przez EA App lub usuń folder: {a1}",
+  "ea.uninstalled": "Odinstalowano."
 }

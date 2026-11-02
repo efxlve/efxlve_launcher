@@ -92,11 +92,22 @@ pub(crate) fn recorded_install(offer_id: &str) -> Option<InstallRecord> {
 pub(crate) fn record_install(offer_id: &str, record: InstallRecord) {
     let mut all = records();
     all.insert(offer_id.to_string(), record);
+    save_records(&all);
+}
+
+pub(crate) fn forget_install(offer_id: &str) {
+    let mut all = records();
+    if all.remove(offer_id).is_some() {
+        save_records(&all);
+    }
+}
+
+fn save_records(all: &HashMap<String, InstallRecord>) {
     let path = records_path();
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
-    if let Ok(text) = serde_json::to_string(&all) {
+    if let Ok(text) = serde_json::to_string(all) {
         let _ = std::fs::write(path, text);
     }
 }
@@ -281,9 +292,67 @@ pub(crate) async fn download_url(
         .ok_or_else(|| "EA content: downloadUrl missing".to_string())
 }
 
+/// Free bytes on the volume that holds `path`, when the platform reports them.
+pub(crate) fn available_space(path: &Path) -> Option<u64> {
+    let mut probe = path.to_path_buf();
+    while !probe.exists() {
+        probe = probe.parent()?.to_path_buf();
+    }
+    let probe = probe.canonicalize().unwrap_or(probe);
+    let probe = probe.to_string_lossy().to_lowercase();
+    let disks = sysinfo::Disks::new_with_refreshed_list();
+    let mut best: Option<(usize, u64)> = None;
+    for disk in disks.list() {
+        let mount = disk.mount_point().to_string_lossy().to_lowercase();
+        if probe.starts_with(&mount) {
+            let length = mount.len();
+            if best.map(|(current, _)| length > current).unwrap_or(true) {
+                best = Some((length, disk.available_space()));
+            }
+        }
+    }
+    best.map(|(_, free)| free)
+}
+
+/// A readable size for the localized disk-space error.
+pub(crate) fn human_bytes(bytes: u64) -> String {
+    const GB: f64 = 1024.0 * 1024.0 * 1024.0;
+    const MB: f64 = 1024.0 * 1024.0;
+    if bytes as f64 >= GB {
+        format!("{:.1} GB", bytes as f64 / GB)
+    } else {
+        format!("{:.0} MB", bytes as f64 / MB)
+    }
+}
+
+/// Refuses a download that cannot fit, with room for temporary `.part` files.
+pub(crate) fn ensure_disk_space(plan: &InstallPlan) -> Result<(), String> {
+    const MARGIN: u64 = 512 * 1024 * 1024;
+    let needed = plan.total_uncompressed().saturating_add(MARGIN);
+    let Some(free) = available_space(&plan.root) else {
+        return Ok(());
+    };
+    if free < needed {
+        return Err(format!(
+            "@t:ea.notEnoughSpace\u{1f}{}\u{1f}{}\u{1f}{}",
+            human_bytes(needed),
+            human_bytes(free),
+            plan.root.display()
+        ));
+    }
+    Ok(())
+}
+
+/// An expired or forbidden signed URL can be replaced by a fresh plan.
+pub(crate) fn auth_error(error: &str) -> bool {
+    let error = error.to_ascii_lowercase();
+    ["401", "403", "410", "forbidden", "unauthorized", "expired"]
+        .iter()
+        .any(|needle| error.contains(needle))
+}
+
 /// Resolves the live build and its package for one offer.
-pub(crate) async fn plan_install(
-    access: &str,
+pub(crate) async fn plan_install(    access: &str,
     offer_id: &str,
     root: &Path,
 ) -> Result<InstallPlan, String> {
@@ -1273,6 +1342,20 @@ mod tests {
         assert!(transient_error("EA content: HTTP 503"));
         assert!(!transient_error("EA content: CRC mismatch"));
         assert!(!transient_error("EA content: unsupported compression 14"));
+    }
+
+    #[test]
+    fn expired_or_forbidden_urls_are_recognised() {
+        assert!(auth_error("EA content: server did not honour the range (HTTP 403 Forbidden)"));
+        assert!(auth_error("HTTP 401 Unauthorized"));
+        assert!(auth_error("the signed URL has expired"));
+        assert!(!auth_error("EA content: CRC mismatch"));
+    }
+
+    #[test]
+    fn byte_sizes_are_readable() {
+        assert_eq!(human_bytes(2 * 1024 * 1024 * 1024), "2.0 GB");
+        assert_eq!(human_bytes(512 * 1024 * 1024), "512 MB");
     }
 
     #[test]

@@ -2167,6 +2167,7 @@ fn main() {
             companion::ea_content_cancel,
             companion::ea_content_install,
             companion::ea_content_plan,
+            companion::ea_content_uninstall,
             companion::ea_content_verify,
             companion::ea_direct_probe,
             companion::ea_direct_status,

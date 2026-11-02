@@ -3516,5 +3516,8 @@
   "ea.folderNotWritable": "Yükleme klasörü yazılabilir değil: {path}. EFXLVE'yi yönetici olarak çalıştırın veya başka bir klasör seçin.",
   "ea.elevationDenied": "Yönetici izni verilmedi. Yüklemede değişiklik yapılmadı.",
   "ea.elevationFailed": "Yükseltilmiş yükleyici başlatılamadı: {error}",
-  "ea.elevationUnsupported": "Bu klasörü güncellemek yönetici hakları gerektiriyor; bu platform yapısı bunu isteyemiyor."
+  "ea.elevationUnsupported": "Bu klasörü güncellemek yönetici hakları gerektiriyor; bu platform yapısı bunu isteyemiyor.",
+  "ea.notEnoughSpace": "Yeterli disk alanı yok: {a1} gerekiyor, {a3} içinde {a2} boş.",
+  "ea.noUninstaller": "Bu oyun için kayıtlı bir kaldırıcı yok. EA App üzerinden kaldırın veya klasörü silin: {a1}",
+  "ea.uninstalled": "Kaldırıldı."
 }

@@ -3516,5 +3516,8 @@
   "ea.folderNotWritable": "La carpeta de instalación no se puede escribir: {path}. Ejecuta EFXLVE como administrador o elige otra carpeta.",
   "ea.elevationDenied": "No se concedió permiso de administrador. La instalación no cambió.",
   "ea.elevationFailed": "No se pudo iniciar el instalador elevado: {error}",
-  "ea.elevationUnsupported": "Actualizar esta carpeta requiere permisos de administrador, que esta compilación de la plataforma no puede solicitar."
+  "ea.elevationUnsupported": "Actualizar esta carpeta requiere permisos de administrador, que esta compilación de la plataforma no puede solicitar.",
+  "ea.notEnoughSpace": "No hay suficiente espacio: se necesitan {a1}, {a2} libres en {a3}.",
+  "ea.noUninstaller": "No hay un desinstalador registrado para este juego. Elimínalo desde la EA App o borra la carpeta: {a1}",
+  "ea.uninstalled": "Desinstalado."
 }

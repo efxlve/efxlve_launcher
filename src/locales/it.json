@@ -3516,5 +3516,8 @@
   "ea.folderNotWritable": "La cartella di installazione non è scrivibile: {path}. Avvia EFXLVE come amministratore o scegli un'altra cartella.",
   "ea.elevationDenied": "Il permesso di amministratore non è stato concesso. L'installazione non è cambiata.",
   "ea.elevationFailed": "Impossibile avviare il programma di installazione con privilegi elevati: {error}",
-  "ea.elevationUnsupported": "Aggiornare questa cartella richiede privilegi di amministratore, che questa build della piattaforma non può richiedere."
+  "ea.elevationUnsupported": "Aggiornare questa cartella richiede privilegi di amministratore, che questa build della piattaforma non può richiedere.",
+  "ea.notEnoughSpace": "Spazio su disco insufficiente: servono {a1}, {a2} liberi in {a3}.",
+  "ea.noUninstaller": "Nessun disinstallatore registrato per questo gioco. Rimuovilo dall'EA App o elimina la cartella: {a1}",
+  "ea.uninstalled": "Disinstallato."
 }

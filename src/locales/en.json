@@ -3516,5 +3516,8 @@
   "ea.folderNotWritable": "The install folder is not writable: {path}. Run EFXLVE as administrator or choose another folder.",
   "ea.elevationDenied": "Administrator permission was not granted. The install was not changed.",
   "ea.elevationFailed": "The elevated installer could not start: {error}",
-  "ea.elevationUnsupported": "Updating this folder needs administrator rights, which this platform build cannot request."
+  "ea.elevationUnsupported": "Updating this folder needs administrator rights, which this platform build cannot request.",
+  "ea.notEnoughSpace": "Not enough disk space: {a1} needed, {a2} free in {a3}.",
+  "ea.noUninstaller": "No uninstaller is registered for this game. Remove it through the EA App or delete the folder: {a1}",
+  "ea.uninstalled": "Uninstalled."
 }

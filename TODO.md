@@ -34,8 +34,12 @@ Open work only. Delete the item when it lands.
   list the copy.
 - `downloadUrl.syncUrl` differential updates are open; today the full package is
   read and unchanged files are skipped by size+CRC.
-- Direct uninstall and legacy launch protocols (Dead Space 2, BFBC2) still hand
-  off to the EA App.
+- Direct uninstall reads `<uninstall><path>` from the local installer manifest,
+  resolves the registry `UninstallString` (including the 32-bit view) and runs
+  the game's `Cleanup.exe`. A launcher-owned folder without a registry record is
+  removed directly. Program Files uninstallers may still need an elevated
+  launcher.
+- Legacy launch protocols (Dead Space 2, BFBC2) still hand off to the EA App.
 
 ## Linux/macOS: packaging and validation
 

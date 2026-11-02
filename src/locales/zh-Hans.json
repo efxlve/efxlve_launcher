@@ -3516,5 +3516,8 @@
   "ea.folderNotWritable": "安装文件夹不可写：{path}。请以管理员身份运行 EFXLVE 或选择其他文件夹。",
   "ea.elevationDenied": "未授予管理员权限。安装未发生变化。",
   "ea.elevationFailed": "无法启动提权安装程序：{error}",
-  "ea.elevationUnsupported": "更新此文件夹需要管理员权限，此平台版本无法请求。"
+  "ea.elevationUnsupported": "更新此文件夹需要管理员权限，此平台版本无法请求。",
+  "ea.notEnoughSpace": "磁盘空间不足：需要 {a1}，{a3} 仅剩 {a2}。",
+  "ea.noUninstaller": "此游戏未注册卸载程序。请通过 EA App 移除或删除文件夹：{a1}",
+  "ea.uninstalled": "已卸载。"
 }

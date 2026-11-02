@@ -3516,5 +3516,8 @@
   "ea.folderNotWritable": "Le dossier d'installation n'est pas accessible en écriture : {path}. Lancez EFXLVE en administrateur ou choisissez un autre dossier.",
   "ea.elevationDenied": "L'autorisation d'administrateur n'a pas été accordée. L'installation n'a pas été modifiée.",
   "ea.elevationFailed": "L'installateur élevé n'a pas pu démarrer : {error}",
-  "ea.elevationUnsupported": "La mise à jour de ce dossier nécessite des droits d'administrateur, que cette version de la plateforme ne peut pas demander."
+  "ea.elevationUnsupported": "La mise à jour de ce dossier nécessite des droits d'administrateur, que cette version de la plateforme ne peut pas demander.",
+  "ea.notEnoughSpace": "Espace disque insuffisant : {a1} requis, {a2} libres dans {a3}.",
+  "ea.noUninstaller": "Aucun désinstalleur n'est enregistré pour ce jeu. Supprimez-le via l'EA App ou supprimez le dossier : {a1}",
+  "ea.uninstalled": "Désinstallé."
 }

@@ -139,6 +139,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `ea_content_cancel` | `eaContentCancel({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_content_install` | `eaContentInstall({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_content_plan` | `eaContentPlan({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ea_content_uninstall` | `eaContentUninstall({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_content_verify` | `eaContentVerify({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_direct_probe` | `eaDirectProbe({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_direct_set_enabled` | `eaDirectSetEnabled({ ... })` | `src-tauri/src/companion/mod.rs` |
