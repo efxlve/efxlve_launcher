@@ -51,6 +51,17 @@ let loadedOnce = false;
 let clipsLoaded = false;
 let clipsLoading = false;
 
+/** The scan the page is waiting for; its id comes back with every event. */
+let scanId = 0;
+/**
+ * How long the page waits for the backend to say anything before it gives the
+ * strip up. A walk reports twice a second and the preview pass reports every
+ * few thumbnails, so this much silence means the scan is not coming back; the
+ * tab must stay usable and the refresh button has to come back.
+ */
+const SCAN_SILENCE_MS = 45_000;
+let scanWatchdog: number | null = null;
+
 /** Backend scan progress while a load is running; null when it is not. */
 let scanProgress: { phase: string; done: number; total: number } | null = null;
 
@@ -119,11 +130,16 @@ export function loadScreenshotsPage(force = false): void {
   if (loading || (loadedOnce && !force)) return;
   loading = true;
   scanProgress = null;
+  const id = ++scanId;
+  armScanWatchdog(id);
   // Paint the spinner before the scan starts: the first run decodes one
   // thumbnail per capture, and an empty grid reads as "no media" until it ends.
   queueMicrotask(repaintScreenshotsPage);
-  void epicGetAllScreenshots()
+  void epicGetAllScreenshots(id)
     .then((items) => {
+      // A newer scan owns the page now; this answer is stale.
+      if (id !== scanId) return;
+      stopScanWatchdog();
       loading = false;
       scanProgress = null;
       shots = items ?? [];
@@ -131,6 +147,8 @@ export function loadScreenshotsPage(force = false): void {
       S.libraryDataRev++;
     })
     .catch((error) => {
+      if (id !== scanId) return;
+      stopScanWatchdog();
       loading = false;
       scanProgress = null;
       // A failed scan keeps whatever the page already shows; the row would
@@ -142,21 +160,57 @@ export function loadScreenshotsPage(force = false): void {
       loadedOnce = true;
     })
     .finally(() => {
+      if (id !== scanId) return;
       repaintScreenshotsPage();
     });
+}
+
+function stopScanWatchdog(): void {
+  if (scanWatchdog !== null) {
+    window.clearTimeout(scanWatchdog);
+    scanWatchdog = null;
+  }
+}
+
+/**
+ * Ends the scanning state when the backend stays silent.
+ *
+ * The strip is painted from `loading`, so a scan whose invoke never settles
+ * used to leave the tab on "Scanning screenshots…" with the refresh button
+ * disabled. Ending the strip does not cancel the scan: a late answer still
+ * lands while it belongs to the current scan.
+ */
+function armScanWatchdog(id: number): void {
+  stopScanWatchdog();
+  scanWatchdog = window.setTimeout(() => {
+    scanWatchdog = null;
+    if (id !== scanId || !loading) return;
+    loading = false;
+    scanProgress = null;
+    // A scan that stayed silent counts as tried: leaving this false would make
+    // every later repaint start the same scan again, which is the endless
+    // refresh itself. The refresh button is the retry.
+    loadedOnce = true;
+    repaintScreenshotsPage();
+  }, SCAN_SILENCE_MS);
 }
 
 /** Drops the cached listing after the scan roots change. */
 export function reloadScreenshotsPage(): void {
   loadedOnce = false;
   shots = [];
+  // A scan already running is reading the old roots: let the new one start and
+  // its id invalidates the old answer, instead of the refresh being swallowed.
+  loading = false;
   loadScreenshotsPage(true);
 }
 
 /** Backend progress for the running scan; patches the strip without a re-render. */
-export function setMediaScanProgress(phase: string, done: number, total: number): void {
-  if (!loading) return;
+export function setMediaScanProgress(id: number, phase: string, done: number, total: number): void {
+  if (!loading || id !== scanId) return;
   scanProgress = { phase, done, total };
+  // The scan is alive, so the watchdog may wait another window.
+  armScanWatchdog(id);
   const root = document.getElementById("ss-scan-progress");
   if (!root) return;
   const known = phase === "preview" && total > 0;
@@ -164,7 +218,15 @@ export function setMediaScanProgress(phase: string, done: number, total: number)
   const fill = document.getElementById("ss-scan-fill");
   if (fill) fill.style.width = known ? `${Math.min(100, Math.round((done / total) * 100))}%` : "";
   const count = document.getElementById("ss-scan-count");
-  if (count) count.textContent = known ? `${done} / ${total}` : "";
+  if (count) count.textContent = scanCountLabel(phase, done, total);
+}
+
+/** The right-hand number: `done / total` for previews, the walk's file count
+ * before the total is known, and nothing before the first entry is seen. */
+function scanCountLabel(phase: string, done: number, total: number): string {
+  if (phase === "preview" && total > 0) return `${done} / ${total}`;
+  if (phase === "walk" && done > 0) return String(done);
+  return "";
 }
 
 export function loadClips(): void {
@@ -400,7 +462,8 @@ function scanProgressHtml(compact: boolean): string {
   const known = scanProgress?.phase === "preview" && total > 0;
   const pct = known ? Math.min(100, Math.round(((scanProgress?.done ?? 0) / total) * 100)) : 0;
   const track = `<div class="ss-scan-track"><span id="ss-scan-fill" class="ss-scan-fill" style="width:${known ? pct : 0}%"></span></div>`;
-  const count = `<span id="ss-scan-count" class="ss-scan-count">${known ? `${scanProgress?.done} / ${total}` : ""}</span>`;
+  const label = scanCountLabel(scanProgress?.phase ?? "", scanProgress?.done ?? 0, total);
+  const count = `<span id="ss-scan-count" class="ss-scan-count">${label}</span>`;
   return compact
     ? `<div id="ss-scan-progress" class="ss-scan-strip${known ? "" : " is-indeterminate"}" role="status" aria-live="polite">
         <span class="hltb-spinner ss-scan-spinner"></span>

@@ -907,10 +907,15 @@ export async function initApp(hooks: {
     });
 
     // The Media Studio scan decodes a thumbnail per capture; the page shows how
-    // far along it is instead of an empty grid.
-    listenLater<{ phase: string; done: number; total: number }>("media-scan-progress", (event) => {
-      setMediaScanProgress(event.payload.phase, event.payload.done, event.payload.total);
-    });
+    // far along it is instead of an empty grid. The id tells the page which of
+    // its scans the event belongs to.
+    listenLater<{ scanId: number; phase: string; done: number; total: number }>(
+      "media-scan-progress",
+      (event) => {
+        const { scanId, phase, done, total } = event.payload;
+        setMediaScanProgress(scanId, phase, done, total);
+      },
+    );
 
     listenLater<{ id: string; count: number }>("screenshots-updated", (event) => {
       const { id, count } = event.payload;

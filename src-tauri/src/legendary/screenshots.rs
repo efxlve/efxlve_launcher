@@ -1057,11 +1057,9 @@ pub async fn epic_get_game_screenshots(
     title: String,
 ) -> Result<Vec<GameScreenshotItem>, String> {
     tokio::task::spawn_blocking(move || {
-        let mut candidates: Vec<ShotCandidate> = Vec::new();
+        let mut walk = ScanWalk::new(None, 0);
         let clean_t = clean_folder_name(&title);
         let clean_app = clean_folder_name(&app_name);
-
-        let mut scanned_paths = std::collections::HashSet::new();
 
         // 1. Per-game folders: the configured root plus the legacy default so
         // screenshots taken before a folder change stay visible.
@@ -1075,7 +1073,7 @@ pub async fn epic_get_game_screenshots(
         ];
 
         for dir in dirs_to_check {
-            scan_dir_files(&dir, &mut candidates, &mut scanned_paths);
+            scan_dir_files(&dir, &mut walk);
         }
 
         // 2. Ubisoft Connect's own captures: the client groups them under
@@ -1095,7 +1093,7 @@ pub async fn epic_get_game_screenshots(
                     if path.is_dir() {
                         let folder = clean_folder_name(&entry.file_name().to_string_lossy());
                         if folder.eq_ignore_ascii_case(&clean_t) || folder.eq_ignore_ascii_case(&clean_app) {
-                            scan_dir_files(&path, &mut candidates, &mut scanned_paths);
+                            scan_dir_files(&path, &mut walk);
                         }
                     } else {
                         let name = path
@@ -1103,13 +1101,10 @@ pub async fn epic_get_game_screenshots(
                             .and_then(|n| n.to_str())
                             .unwrap_or("")
                             .to_lowercase();
-                        if (name.contains(&clean_t.to_lowercase())
-                            || (!clean_app.is_empty() && name.contains(&clean_app.to_lowercase())))
-                            && scanned_paths.insert(path.clone())
+                        if name.contains(&clean_t.to_lowercase())
+                            || (!clean_app.is_empty() && name.contains(&clean_app.to_lowercase()))
                         {
-                            if let Some(candidate) = shot_candidate(path) {
-                                candidates.push(candidate);
-                            }
+                            walk.take(path);
                         }
                     }
                 }
@@ -1130,13 +1125,10 @@ pub async fn epic_get_game_screenshots(
                         .unwrap_or("")
                         .to_lowercase();
                     // Match when the file name contains the game title or app_name
-                    if (name.contains(&lower_title)
-                        || (!lower_app.is_empty() && name.contains(&lower_app)))
-                        && scanned_paths.insert(path.clone())
+                    if name.contains(&lower_title)
+                        || (!lower_app.is_empty() && name.contains(&lower_app))
                     {
-                        if let Some(candidate) = shot_candidate(path) {
-                            candidates.push(candidate);
-                        }
+                        walk.take(path);
                     }
                 }
             }
@@ -1144,8 +1136,9 @@ pub async fn epic_get_game_screenshots(
 
         // The cap comes before the previews: a folder with thousands of shots
         // must not decode files the gallery never shows.
-        newest_candidates(&mut candidates, SCREENSHOT_LIST_CAP);
-        let mut results: Vec<GameScreenshotItem> = candidates
+        newest_candidates(&mut walk.candidates, SCREENSHOT_LIST_CAP);
+        let mut results: Vec<GameScreenshotItem> = walk
+            .candidates
             .iter()
             .filter_map(|candidate| parse_file_to_item(&candidate.path))
             .collect();
@@ -1211,19 +1204,16 @@ fn newest_candidates(candidates: &mut Vec<ShotCandidate>, cap: usize) {
     candidates.truncate(cap);
 }
 
-fn scan_dir_files(
-    dir: &Path,
-    candidates: &mut Vec<ShotCandidate>,
-    scanned: &mut std::collections::HashSet<PathBuf>,
-) {
+fn scan_dir_files(dir: &Path, walk: &mut ScanWalk) {
     if dir.is_dir() {
         if let Ok(entries) = std::fs::read_dir(dir) {
             for entry in entries.flatten() {
+                if !walk.visit() {
+                    return;
+                }
                 let path = entry.path();
-                if path.is_file() && scanned.insert(path.clone()) {
-                    if let Some(candidate) = shot_candidate(path) {
-                        candidates.push(candidate);
-                    }
+                if path.is_file() {
+                    walk.take(path);
                 }
             }
         }
@@ -1237,12 +1227,7 @@ const MAX_SCREENSHOT_DEPTH: usize = 8;
 
 /// Walks a root the way a file manager would: every subfolder, to a bounded
 /// depth. Symlinks are skipped so a junction cannot loop the scan.
-fn scan_dir_recursive(
-    dir: &Path,
-    depth: usize,
-    candidates: &mut Vec<ShotCandidate>,
-    scanned: &mut std::collections::HashSet<PathBuf>,
-) {
+fn scan_dir_recursive(dir: &Path, depth: usize, walk: &mut ScanWalk) {
     if depth == 0 || !dir.is_dir() {
         return;
     }
@@ -1250,6 +1235,9 @@ fn scan_dir_recursive(
         return;
     };
     for entry in entries.flatten() {
+        if !walk.visit() {
+            return;
+        }
         let Ok(file_type) = entry.file_type() else {
             continue;
         };
@@ -1258,11 +1246,9 @@ fn scan_dir_recursive(
         }
         let path = entry.path();
         if file_type.is_dir() {
-            scan_dir_recursive(&path, depth - 1, candidates, scanned);
-        } else if file_type.is_file() && scanned.insert(path.clone()) {
-            if let Some(candidate) = shot_candidate(path) {
-                candidates.push(candidate);
-            }
+            scan_dir_recursive(&path, depth - 1, walk);
+        } else if file_type.is_file() {
+            walk.take(path);
         }
     }
 }
@@ -1271,28 +1257,24 @@ fn scan_dir_recursive(
 /// the shape of the chosen folder, the legacy folder and every folder the user
 /// adds by hand. `recursive` follows nested folders too, which is what a
 /// backup of a Steam screenshot tree needs.
-fn scan_per_game_root(
-    root: &Path,
-    recursive: bool,
-    candidates: &mut Vec<ShotCandidate>,
-    scanned: &mut std::collections::HashSet<PathBuf>,
-) {
+fn scan_per_game_root(root: &Path, recursive: bool, walk: &mut ScanWalk) {
     if !root.is_dir() {
         return;
     }
     if recursive {
-        scan_dir_recursive(root, MAX_SCREENSHOT_DEPTH, candidates, scanned);
+        scan_dir_recursive(root, MAX_SCREENSHOT_DEPTH, walk);
         return;
     }
     if let Ok(entries) = std::fs::read_dir(root) {
         for entry in entries.flatten() {
+            if !walk.visit() {
+                return;
+            }
             let path = entry.path();
             if path.is_dir() {
-                scan_dir_files(&path, candidates, scanned);
-            } else if path.is_file() && scanned.insert(path.clone()) {
-                if let Some(candidate) = shot_candidate(path) {
-                    candidates.push(candidate);
-                }
+                scan_dir_files(&path, walk);
+            } else if path.is_file() {
+                walk.take(path);
             }
         }
     }
@@ -1300,24 +1282,23 @@ fn scan_per_game_root(
 
 /// Rockstar keeps captures under `<game>\Screenshots` and
 /// `<game>\Profiles\<profile>\Screenshots`.
-fn scan_rockstar_root(
-    root: &Path,
-    candidates: &mut Vec<ShotCandidate>,
-    scanned: &mut std::collections::HashSet<PathBuf>,
-) {
+fn scan_rockstar_root(root: &Path, walk: &mut ScanWalk) {
     if !root.is_dir() {
         return;
     }
     if let Ok(games) = std::fs::read_dir(root) {
         for game in games.flatten() {
+            if !walk.visit() {
+                return;
+            }
             let game_path = game.path();
             if !game_path.is_dir() {
                 continue;
             }
-            scan_dir_files(&game_path.join("Screenshots"), candidates, scanned);
+            scan_dir_files(&game_path.join("Screenshots"), walk);
             if let Ok(profiles) = std::fs::read_dir(game_path.join("Profiles")) {
                 for profile in profiles.flatten() {
-                    scan_dir_files(&profile.path().join("Screenshots"), candidates, scanned);
+                    scan_dir_files(&profile.path().join("Screenshots"), walk);
                 }
             }
         }
@@ -1326,20 +1307,19 @@ fn scan_rockstar_root(
 
 /// Steam stores each app's captures under
 /// `userdata\<account>\760\remote\<app>\screenshots`.
-fn scan_steam_userdata(
-    root: &Path,
-    candidates: &mut Vec<ShotCandidate>,
-    scanned: &mut std::collections::HashSet<PathBuf>,
-) {
+fn scan_steam_userdata(root: &Path, walk: &mut ScanWalk) {
     if !root.is_dir() {
         return;
     }
     if let Ok(accounts) = std::fs::read_dir(root) {
         for account in accounts.flatten() {
+            if !walk.visit() {
+                return;
+            }
             let remote = account.path().join("760").join("remote");
             if let Ok(apps) = std::fs::read_dir(remote) {
                 for app in apps.flatten() {
-                    scan_dir_files(&app.path().join("screenshots"), candidates, scanned);
+                    scan_dir_files(&app.path().join("screenshots"), walk);
                 }
             }
         }
@@ -1350,19 +1330,45 @@ fn scan_steam_userdata(
 /// number in its cap note; older files stay on disk.
 const SCREENSHOT_LIST_CAP: usize = 300;
 
-/// How far along a gallery scan is. `phase` is `"scan"` while the folders are
-/// walked (no total yet) and `"preview"` while the grid thumbnails are built.
+/// Most folder entries one walk may visit.
+///
+/// The chosen folder is any folder: a whole pictures library, a drive root or a
+/// copied Steam tree. Walking one of those took minutes, and because the page
+/// only heard "scan started" it looked like an endless refresh. The ceiling
+/// bounds that wait; the newest captures are still chosen from everything the
+/// walk did see before the ceiling.
+const SCAN_WALK_ENTRY_BUDGET: usize = 200_000;
+
+/// How often a running walk tells the page how many entries it has seen.
+const SCAN_WALK_REPORT: std::time::Duration = std::time::Duration::from_millis(500);
+
+/// How far along a gallery scan is.
+///
+/// `scan_id` is the id the page passed to the command: a scan started by the
+/// settings page (id 0) or an older retry must not drive the Media Studio bar.
+/// `phase` is `"scan"` while the roots are opened, `"walk"` while the folders
+/// are walked (`done` is the entry count, no total) and `"preview"` while the
+/// grid thumbnails are built.
 #[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct MediaScanProgress<'a> {
+    scan_id: u64,
     phase: &'a str,
     done: usize,
     total: usize,
 }
 
-fn emit_scan_progress(app: &AppHandle, phase: &'static str, done: usize, total: usize) {
+fn emit_scan_progress(
+    app: &AppHandle,
+    scan_id: u64,
+    phase: &'static str,
+    done: usize,
+    total: usize,
+) {
     let _ = app.emit(
         "media-scan-progress",
         MediaScanProgress {
+            scan_id,
             phase,
             done,
             total,
@@ -1370,14 +1376,64 @@ fn emit_scan_progress(app: &AppHandle, phase: &'static str, done: usize, total: 
     );
 }
 
+/// One folder walk's shared state: the captures found so far, the paths already
+/// counted, and the budget that keeps a huge tree from holding the tab.
+struct ScanWalk<'a> {
+    candidates: Vec<ShotCandidate>,
+    scanned: std::collections::HashSet<PathBuf>,
+    entries: usize,
+    app: Option<&'a AppHandle>,
+    scan_id: u64,
+    last_report: std::time::Instant,
+}
+
+impl<'a> ScanWalk<'a> {
+    fn new(app: Option<&'a AppHandle>, scan_id: u64) -> Self {
+        Self {
+            candidates: Vec::new(),
+            scanned: std::collections::HashSet::new(),
+            entries: 0,
+            app,
+            scan_id,
+            last_report: std::time::Instant::now(),
+        }
+    }
+
+    /// Counts one visited entry; `false` means the budget is spent and the
+    /// caller must stop walking.
+    fn visit(&mut self) -> bool {
+        self.entries += 1;
+        if self.entries > SCAN_WALK_ENTRY_BUDGET {
+            return false;
+        }
+        if let Some(app) = self.app {
+            if self.last_report.elapsed() >= SCAN_WALK_REPORT {
+                self.last_report = std::time::Instant::now();
+                emit_scan_progress(app, self.scan_id, "walk", self.entries, 0);
+            }
+        }
+        true
+    }
+
+    /// Records one file when it is a capture this walk has not seen yet.
+    fn take(&mut self, path: PathBuf) {
+        if !self.scanned.insert(path.clone()) {
+            return;
+        }
+        if let Some(candidate) = shot_candidate(path) {
+            self.candidates.push(candidate);
+        }
+    }
+}
+
 /// Builds the grid previews for the captures the page will show.
 ///
 /// Decoding a 4K PNG costs more than the rest of the scan put together, so the
 /// files are split over a few workers and the page hears how far along it is
 /// instead of waiting on an empty grid.
-fn fill_media_previews(items: &mut [GameScreenshotItem], app: &AppHandle) {
+fn fill_media_previews(items: &mut [GameScreenshotItem], app: &AppHandle, scan_id: u64) {
     let total = items.len();
-    emit_scan_progress(app, "preview", 0, total);
+    emit_scan_progress(app, scan_id, "preview", 0, total);
     if total == 0 {
         return;
     }
@@ -1400,7 +1456,7 @@ fn fill_media_previews(items: &mut [GameScreenshotItem], app: &AppHandle) {
                     let seen = done.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
                     // One event per image would cost more than the thumbnail.
                     if seen % 8 == 0 || seen == total {
-                        emit_scan_progress(&app, "preview", seen, total);
+                        emit_scan_progress(&app, scan_id, "preview", seen, total);
                     }
                 }
             });
@@ -1409,15 +1465,16 @@ fn fill_media_previews(items: &mut [GameScreenshotItem], app: &AppHandle) {
 }
 
 /// Scans and returns all screenshots from all games and capture folders from disk,
-/// sorted chronologically (newest to oldest).
+/// sorted chronologically (newest to oldest). `scan_id` tags the progress events
+/// so the page only paints the bar of the scan it started.
 #[tauri::command]
 pub async fn epic_get_all_screenshots(
     app: AppHandle,
+    scan_id: u64,
 ) -> Result<Vec<GameScreenshotItem>, String> {
     tokio::task::spawn_blocking(move || {
-        emit_scan_progress(&app, "scan", 0, 0);
-        let mut candidates: Vec<ShotCandidate> = Vec::new();
-        let mut scanned_paths = std::collections::HashSet::new();
+        emit_scan_progress(&app, scan_id, "scan", 0, 0);
+        let mut walk = ScanWalk::new(Some(&app), scan_id);
 
         // The settings page lists exactly the roots this loop scans. Hidden
         // folders are already gone from `screenshot_roots`, and every folder
@@ -1434,39 +1491,30 @@ pub async fn epic_get_all_screenshots(
         for root in screenshot_roots() {
             if same_path(&root, &captures) {
                 // Game Bar writes files directly into Videos\Captures.
-                scan_dir_files(&root, &mut candidates, &mut scanned_paths);
+                scan_dir_files(&root, &mut walk);
             } else if same_path(&root, &ubisoft) || same_path(&root, &uplay) {
-                scan_per_game_root(
-                    &root,
-                    scan_subfolders,
-                    &mut candidates,
-                    &mut scanned_paths,
-                );
+                scan_per_game_root(&root, scan_subfolders, &mut walk);
             } else if same_path(&root, &rockstar) {
-                scan_rockstar_root(&root, &mut candidates, &mut scanned_paths);
+                scan_rockstar_root(&root, &mut walk);
             } else if steam.as_ref().is_some_and(|steam| same_path(&root, steam)) {
-                scan_steam_userdata(&root, &mut candidates, &mut scanned_paths);
+                scan_steam_userdata(&root, &mut walk);
             } else {
                 // The chosen folder, its legacy twin and every user-added
                 // folder keep one subfolder per game.
                 if same_path(&root, &chosen) || same_path(&root, &legacy) {
                     migrate_known_app_folders(&root);
                 }
-                scan_per_game_root(
-                    &root,
-                    scan_subfolders,
-                    &mut candidates,
-                    &mut scanned_paths,
-                );
+                scan_per_game_root(&root, scan_subfolders, &mut walk);
             }
         }
 
-        newest_candidates(&mut candidates, SCREENSHOT_LIST_CAP);
-        let mut results: Vec<GameScreenshotItem> = candidates
+        newest_candidates(&mut walk.candidates, SCREENSHOT_LIST_CAP);
+        let mut results: Vec<GameScreenshotItem> = walk
+            .candidates
             .into_iter()
             .filter_map(|candidate| shot_item(&candidate.path))
             .collect();
-        fill_media_previews(&mut results, &app);
+        fill_media_previews(&mut results, &app, scan_id);
         Ok(results)
     })
     .await
@@ -2858,17 +2906,15 @@ mod tests {
         std::fs::create_dir_all(&nested).unwrap();
         write_test_bmp(&nested.join("shot.bmp"), 4, 4);
 
-        let mut results = Vec::new();
-        let mut scanned = std::collections::HashSet::new();
-        scan_per_game_root(&base, false, &mut results, &mut scanned);
-        assert!(results.is_empty(), "the shallow scan must not reach the backup");
+        let mut walk = ScanWalk::new(None, 0);
+        scan_per_game_root(&base, false, &mut walk);
+        assert!(walk.candidates.is_empty(), "the shallow scan must not reach the backup");
 
-        let mut results = Vec::new();
-        let mut scanned = std::collections::HashSet::new();
-        scan_per_game_root(&base, true, &mut results, &mut scanned);
-        assert_eq!(results.len(), 1);
+        let mut walk = ScanWalk::new(None, 0);
+        scan_per_game_root(&base, true, &mut walk);
+        assert_eq!(walk.candidates.len(), 1);
         assert_eq!(
-            results[0].path.file_name().unwrap_or_default().to_string_lossy(),
+            walk.candidates[0].path.file_name().unwrap_or_default().to_string_lossy(),
             "shot.bmp"
         );
 
@@ -2896,8 +2942,7 @@ mod tests {
     #[ignore]
     fn test_live_all_screenshots_scan() {
         let start = std::time::Instant::now();
-        let mut candidates = Vec::new();
-        let mut scanned_paths = std::collections::HashSet::new();
+        let mut walk = ScanWalk::new(None, 0);
         let root = screenshots_root();
         migrate_known_app_folders(&root);
         if root.is_dir() {
@@ -2905,13 +2950,13 @@ mod tests {
                 for entry in entries.flatten() {
                     let path = entry.path();
                     if path.is_dir() {
-                        scan_dir_files(&path, &mut candidates, &mut scanned_paths);
+                        scan_dir_files(&path, &mut walk);
                     }
                 }
             }
         }
-        println!("Scanned {} screenshots in {:?}", candidates.len(), start.elapsed());
-        for candidate in &candidates {
+        println!("Scanned {} screenshots in {:?}", walk.candidates.len(), start.elapsed());
+        for candidate in &walk.candidates {
             if let Some(item) = shot_item(&candidate.path) {
                 println!("- Game: '{}', File: {}", item.game_title, item.file_name);
             }
