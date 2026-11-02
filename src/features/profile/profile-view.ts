@@ -808,7 +808,10 @@ function heroChipStoreName(kind: StoreKind): string {
   if (kind === "ubisoft") return "Ubisoft";
   if (kind === "ea") return "EA";
   if (kind === "riot") return "Riot";
-  return STORE_LABELS[kind as keyof typeof STORE_LABELS] || "Riot";
+  // Custom games are not a storefront: without its own label they fell through
+  // to the Riot fallback and the chip claimed to be Riot Games.
+  if (kind === "custom") return t("customGames.storeLabel");
+  return STORE_LABELS[kind as keyof typeof STORE_LABELS] || kind;
 }
 
 /** Store chips under the identity: status marks and the scope filter. */
