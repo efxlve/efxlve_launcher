@@ -3513,5 +3513,8 @@
   "manage.eaContentRepair": "Reparar",
   "ea.cancelled": "Instalação cancelada.",
   "ea.installedNoRegister": "Arquivos instalados. O registro no EA App falhou; execute o EFXLVE como administrador para registrá-lo.",
-  "ea.folderNotWritable": "A pasta de instalação não é gravável: {path}. Execute o EFXLVE como administrador ou escolha outra pasta."
+  "ea.folderNotWritable": "A pasta de instalação não é gravável: {path}. Execute o EFXLVE como administrador ou escolha outra pasta.",
+  "ea.elevationDenied": "A permissão de administrador não foi concedida. A instalação não foi alterada.",
+  "ea.elevationFailed": "Não foi possível iniciar o instalador elevado: {error}",
+  "ea.elevationUnsupported": "Atualizar esta pasta requer direitos de administrador, que esta compilação da plataforma não pode solicitar."
 }

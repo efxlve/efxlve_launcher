@@ -3513,5 +3513,8 @@
   "manage.eaContentRepair": "Napraw",
   "ea.cancelled": "Instalacja anulowana.",
   "ea.installedNoRegister": "Pliki zainstalowane. Rejestracja w EA App nie powiodła się; uruchom EFXLVE jako administrator, aby ją dodać.",
-  "ea.folderNotWritable": "Folder instalacji nie jest zapisywalny: {path}. Uruchom EFXLVE jako administrator lub wybierz inny folder."
+  "ea.folderNotWritable": "Folder instalacji nie jest zapisywalny: {path}. Uruchom EFXLVE jako administrator lub wybierz inny folder.",
+  "ea.elevationDenied": "Nie udzielono zgody administratora. Instalacja pozostała bez zmian.",
+  "ea.elevationFailed": "Nie udało się uruchomić instalatora z podwyższonymi uprawnieniami: {error}",
+  "ea.elevationUnsupported": "Aktualizacja tego folderu wymaga uprawnień administratora, o które ta wersja platformy nie może poprosić."
 }

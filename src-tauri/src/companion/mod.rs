@@ -12,6 +12,7 @@ mod covers;
 mod ea;
 mod ea_content;
 mod ea_direct;
+mod ea_elevated;
 mod ea_install;
 mod ea_license;
 mod ea_login;
@@ -71,6 +72,18 @@ pub(crate) struct FoundGame {
     pub hero_url: String,
     /// Store description from the owned catalog (empty when the client has none).
     pub description: String,
+}
+
+/// The elevated worker's command-line contract, checked before Tauri boots.
+pub(crate) fn ea_worker_args(
+    args: impl Iterator<Item = String>,
+) -> Option<(String, String, String)> {
+    ea_elevated::worker_args(args)
+}
+
+/// Runs one elevated EA install. This never starts Tauri or the window.
+pub(crate) fn ea_worker_run(job_id: &str, game_id: &str, locale: &str) -> i32 {
+    ea_elevated::run_worker(job_id, game_id, locale)
 }
 
 /// A headless EA LSX capture for support and field tests.
@@ -1032,13 +1045,28 @@ pub async fn ea_content_install(
     locale: Option<String>,
 ) -> Result<(), String> {
     let (game, owned, root) = ea_content_target(&id, path)?;
+    let locale = locale.unwrap_or_else(|| "en_US".into());
     if !ea_install::folder_writable(&root) {
+        // A folder under Program Files is writable only with the same rights
+        // the EA App's own installer uses. Start one elevated copy for an
+        // existing install; a new game must go to a user folder.
+        if ea_elevated::supported()
+            && ea_install::has_install(&root)
+            && !game.install_path.is_empty()
+            && same_install_root(&game.install_path, &root)
+        {
+            let job_game = game.id.clone();
+            let job_name = game.name.clone();
+            tauri::async_runtime::spawn(async move {
+                ea_elevated::install(app, job_game, job_name, locale).await;
+            });
+            return Ok(());
+        }
         return Err(format!(
             "@t:ea.folderNotWritable\u{1f}{}",
             root.display()
         ));
     }
-    let locale = locale.unwrap_or_else(|| "en_US".into());
     let game_id = game.id.clone();
     let name = game.name.clone();
     let offer_id = owned.id.clone();
@@ -1113,11 +1141,13 @@ pub async fn ea_content_install(
 /// the next install resumes from them.
 #[tauri::command]
 pub fn ea_content_cancel(id: String) {
-    if let Ok((_, owned, _)) = ea_content_target(&id, None) {
+    if let Ok((game, owned, _)) = ea_content_target(&id, None) {
         ea_content::cancel_job(&owned.id);
+        ea_elevated::cancel(&game.id);
         return;
     }
     ea_content::cancel_job(&id);
+    ea_elevated::cancel(&id);
 }
 
 /* ---------- Locally tracked companion playtime ---------- */

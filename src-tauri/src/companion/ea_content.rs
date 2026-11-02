@@ -227,6 +227,8 @@ impl ZipManifest {
 fn client() -> reqwest::Client {
     reqwest::Client::builder()
         .user_agent("EAApp/PC/13.680.0.6193")
+        .connect_timeout(std::time::Duration::from_secs(30))
+        .read_timeout(std::time::Duration::from_secs(120))
         .build()
         .unwrap_or_else(|_| reqwest::Client::new())
 }
@@ -1394,9 +1396,42 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "expects the full package from manual_full_package in the temp folder"]
-    fn manual_full_package_resume() {
+    #[ignore = "runs touchup and the launch plan on the full package"]
+    fn manual_full_package_touchup() {
         let runtime = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(4)
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let root = std::env::temp_dir().join("opencode").join("ea-mirror");
+        let result = runtime.block_on(async {
+            let access = super::super::ea_login::ensure_access().await?;
+            let cancelled = Arc::new(AtomicBool::new(false));
+            let report = super::super::ea_install::install_with_progress(
+                &access,
+                "DR:106999100",
+                &root,
+                "en_US",
+                &cancelled,
+                |tick| println!("tick: {} {:?}", tick.phase, tick.progress),
+            )
+            .await?;
+            println!("report: {report:?}");
+            println!("touchup error: {:?}", report.touchup_error);
+            let probe = super::super::ea_direct::plan(
+                &root.to_string_lossy(),
+                "mirrors_edge_na",
+            );
+            println!("launch plan: {probe:?}");
+            Ok::<(), String>(())
+        });
+        println!("result: {result:?}");
+        assert!(result.is_ok(), "full package touchup failed: {result:?}");
+    }
+
+    #[test]
+    #[ignore = "expects the full package from manual_full_package in the temp folder"]
+    fn manual_full_package_resume() {        let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(4)
             .enable_all()
             .build()

@@ -3513,5 +3513,8 @@
   "manage.eaContentRepair": "Repair",
   "ea.cancelled": "Install cancelled.",
   "ea.installedNoRegister": "Files installed. The EA App registration failed; run EFXLVE as administrator to register it.",
-  "ea.folderNotWritable": "The install folder is not writable: {path}. Run EFXLVE as administrator or choose another folder."
+  "ea.folderNotWritable": "The install folder is not writable: {path}. Run EFXLVE as administrator or choose another folder.",
+  "ea.elevationDenied": "Administrator permission was not granted. The install was not changed.",
+  "ea.elevationFailed": "The elevated installer could not start: {error}",
+  "ea.elevationUnsupported": "Updating this folder needs administrator rights, which this platform build cannot request."
 }

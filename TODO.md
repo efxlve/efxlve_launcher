@@ -17,13 +17,21 @@ Open work only. Delete the item when it lands.
   progress; `ea_install.rs` selects the install, update or repair touchup
   parameters. The install dialog, Downloads row and Manage check/verify/repair
   actions are wired.
-- Direct installs default to the per-user `ea-games` folder. Updating an
-  existing Program Files install needs an elevated launcher because Windows
-  denies writes there; the EA App uses its own elevated service. A one-shot
-  elevated helper is open.
-- `touchup.exe` registers a direct install with the EA App and may need
-  administrator rights. Without them the files stay playable through the
-  launcher's own scan, but the EA App may not list the copy.
+- Direct installs default to the per-user `ea-games` folder. Existing EA App
+  installs under Program Files update through a one-shot elevated copy of the
+  launcher (`--ea-content-worker`); Windows shows a UAC prompt. Over-the-shoulder
+  elevation with a separate administrator account is not supported because that
+  copy would not see the user's EA session.
+- Approving a real UAC prompt for a Program Files update is still a manual pass.
+  The shell launch, process wait and exit-code path are covered without
+  elevation.
+- A full DiP package install with touchup registration and launch still needs a
+  small title or a faster link. The owned catalog has no small DiP game: A Way
+  Out is 21.9 GB and Mirror's Edge ships the legacy `__Installer/DISK1` layout.
+- `touchup.exe` registers a direct install with the EA App. The elevated worker
+  runs it with the same rights as the EA App installer; without elevation the
+  files stay playable through the launcher's own scan, but the EA App may not
+  list the copy.
 - `downloadUrl.syncUrl` differential updates are open; today the full package is
   read and unchanged files are skipped by size+CRC.
 - Direct uninstall and legacy launch protocols (Dead Space 2, BFBC2) still hand

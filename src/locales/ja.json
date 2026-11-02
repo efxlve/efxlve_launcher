@@ -3513,5 +3513,8 @@
   "manage.eaContentRepair": "修復",
   "ea.cancelled": "インストールをキャンセルしました。",
   "ea.installedNoRegister": "ファイルはインストールされました。EA App への登録に失敗しました。登録するには EFXLVE を管理者として実行してください。",
-  "ea.folderNotWritable": "インストール先に書き込めません: {path}。EFXLVE を管理者として実行するか、別のフォルダーを選んでください。"
+  "ea.folderNotWritable": "インストール先に書き込めません: {path}。EFXLVE を管理者として実行するか、別のフォルダーを選んでください。",
+  "ea.elevationDenied": "管理者の許可が下りませんでした。インストールは変更されていません。",
+  "ea.elevationFailed": "管理者権限のインストーラーを開始できませんでした: {error}",
+  "ea.elevationUnsupported": "このフォルダーの更新には管理者権限が必要ですが、このプラットフォーム ビルドでは要求できません。"
 }

@@ -3513,5 +3513,8 @@
   "manage.eaContentRepair": "Reparieren",
   "ea.cancelled": "Installation abgebrochen.",
   "ea.installedNoRegister": "Dateien installiert. Die EA App-Registrierung ist fehlgeschlagen; starte EFXLVE als Administrator, um sie einzutragen.",
-  "ea.folderNotWritable": "Der Installationsordner ist nicht beschreibbar: {path}. Starte EFXLVE als Administrator oder wähle einen anderen Ordner."
+  "ea.folderNotWritable": "Der Installationsordner ist nicht beschreibbar: {path}. Starte EFXLVE als Administrator oder wähle einen anderen Ordner.",
+  "ea.elevationDenied": "Administratorberechtigung wurde nicht erteilt. Die Installation blieb unverändert.",
+  "ea.elevationFailed": "Der erhöhte Installer konnte nicht gestartet werden: {error}",
+  "ea.elevationUnsupported": "Zum Aktualisieren dieses Ordners sind Administratorrechte nötig; dieser Plattform-Build kann sie nicht anfordern."
 }

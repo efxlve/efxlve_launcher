@@ -3513,5 +3513,8 @@
   "manage.eaContentRepair": "修复",
   "ea.cancelled": "安装已取消。",
   "ea.installedNoRegister": "文件已安装，但 EA App 注册失败；请以管理员身份运行 EFXLVE 进行注册。",
-  "ea.folderNotWritable": "安装文件夹不可写：{path}。请以管理员身份运行 EFXLVE 或选择其他文件夹。"
+  "ea.folderNotWritable": "安装文件夹不可写：{path}。请以管理员身份运行 EFXLVE 或选择其他文件夹。",
+  "ea.elevationDenied": "未授予管理员权限。安装未发生变化。",
+  "ea.elevationFailed": "无法启动提权安装程序：{error}",
+  "ea.elevationUnsupported": "更新此文件夹需要管理员权限，此平台版本无法请求。"
 }

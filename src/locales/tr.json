@@ -3513,5 +3513,8 @@
   "manage.eaContentRepair": "Onar",
   "ea.cancelled": "Yükleme iptal edildi.",
   "ea.installedNoRegister": "Dosyalar yüklendi. EA App kaydı başarısız oldu; kaydetmek için EFXLVE'yi yönetici olarak çalıştırın.",
-  "ea.folderNotWritable": "Yükleme klasörü yazılabilir değil: {path}. EFXLVE'yi yönetici olarak çalıştırın veya başka bir klasör seçin."
+  "ea.folderNotWritable": "Yükleme klasörü yazılabilir değil: {path}. EFXLVE'yi yönetici olarak çalıştırın veya başka bir klasör seçin.",
+  "ea.elevationDenied": "Yönetici izni verilmedi. Yüklemede değişiklik yapılmadı.",
+  "ea.elevationFailed": "Yükseltilmiş yükleyici başlatılamadı: {error}",
+  "ea.elevationUnsupported": "Bu klasörü güncellemek yönetici hakları gerektiriyor; bu platform yapısı bunu isteyemiyor."
 }

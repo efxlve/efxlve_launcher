@@ -1703,6 +1703,13 @@ fn init_portable_mode() {}
 fn main() {
     ensure_std_streams();
     init_portable_mode();
+    // One-shot elevated EA worker. It must return before the single-instance
+    // lock and the Tauri window: the parent launcher is already running.
+    if let Some((job_id, game_id, locale)) =
+        companion::ea_worker_args(std::env::args().skip(1))
+    {
+        std::process::exit(companion::ea_worker_run(&job_id, &game_id, &locale));
+    }
     // Headless EA LSX capture used by the field-test script; it must run
     // before the single-instance lock and the Tauri window.
     if std::env::args().any(|arg| arg == "--ea-lsx-test") {

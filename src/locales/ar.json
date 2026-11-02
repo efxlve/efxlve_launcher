@@ -3513,5 +3513,8 @@
   "manage.eaContentRepair": "إصلاح",
   "ea.cancelled": "تم إلغاء التثبيت.",
   "ea.installedNoRegister": "تم تثبيت الملفات. فشل تسجيل EA App؛ شغّل EFXLVE كمسؤول لتسجيله.",
-  "ea.folderNotWritable": "مجلد التثبيت غير قابل للكتابة: {path}. شغّل EFXLVE كمسؤول أو اختر مجلدًا آخر."
+  "ea.folderNotWritable": "مجلد التثبيت غير قابل للكتابة: {path}. شغّل EFXLVE كمسؤول أو اختر مجلدًا آخر.",
+  "ea.elevationDenied": "لم يتم منح إذن المسؤول. لم يتغير التثبيت.",
+  "ea.elevationFailed": "تعذّر بدء المثبّت بصلاحيات المسؤول: {error}",
+  "ea.elevationUnsupported": "يتطلب تحديث هذا المجلد حقوق المسؤول، ولا يمكن لنسخة المنصة هذه طلبها."
 }
