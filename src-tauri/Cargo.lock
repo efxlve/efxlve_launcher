@@ -1265,6 +1265,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 
 [[package]]
+name = "ecb"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a8bfa975b1aec2145850fcaa1c6fe269a16578c44705a532ae3edc92b8881c7"
+dependencies = [
+ "cipher",
+]
+
+[[package]]
 name = "efxlve-launcher"
 version = "0.1.42"
 dependencies = [
@@ -1273,6 +1282,7 @@ dependencies = [
  "cbc",
  "crc32fast",
  "discord-rich-presence",
+ "ecb",
  "ferrisetw",
  "flate2",
  "futures",

@@ -13,6 +13,7 @@ mod ea;
 mod ea_direct;
 mod ea_license;
 mod ea_login;
+mod ea_lsx;
 mod ea_machine;
 mod ea_vault;
 mod launch;

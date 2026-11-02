@@ -646,6 +646,22 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "runs the LSX listener while launching Mirror's Edge Catalyst"]
+    fn manual_lsx_catalyst() {
+        let _server = super::super::ea_lsx::start(3216).expect("LSX listener");
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let result = rt.block_on(launch_path(
+            r"C:\Program Files (x86)\Steam\steamapps\common\Mirrors Edge Catalyst",
+            "1026480",
+        ));
+        println!("launch: {result:?}");
+        std::thread::sleep(std::time::Duration::from_secs(35));
+    }
+
+    #[test]
     #[ignore = "launches BF2042.exe directly, bypassing the anti-cheat launcher"]
     fn manual_launch_bf_exe() {
         let root = PathBuf::from(r"C:\Program Files\EA Games\Battlefield 2042");
