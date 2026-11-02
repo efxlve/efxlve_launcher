@@ -226,15 +226,34 @@ pub(crate) async fn download_entry(
     destination: &Path,
 ) -> Result<u64, String> {
     let client = client();
-    download_entry_with_client(&client, url, entry, destination).await
+    write_entry(&client, url, entry, destination).await
 }
 
-async fn download_entry_with_client(
+async fn write_entry(
     client: &reqwest::Client,
     url: &str,
     entry: &ZipEntry,
     destination: &Path,
 ) -> Result<u64, String> {
+    let data = fetch_entry(client, url, entry).await?;
+    if let Some(parent) = destination.parent() {
+        std::fs::create_dir_all(parent).map_err(|err| format!("EA content: {err}"))?;
+    }
+    std::fs::write(destination, &data).map_err(|err| format!("EA content: {err}"))?;
+    Ok(data.len() as u64)
+}
+
+/// Reads one entry into memory, for `installerdata.xml` and other small files.
+pub(crate) async fn read_entry(url: &str, entry: &ZipEntry) -> Result<Vec<u8>, String> {
+    let client = client();
+    fetch_entry(&client, url, entry).await
+}
+
+async fn fetch_entry(
+    client: &reqwest::Client,
+    url: &str,
+    entry: &ZipEntry,
+) -> Result<Vec<u8>, String> {
     if entry.compressed > 256 * 1024 * 1024 {
         return Err("EA content: refusing an entry larger than 256 MB in the probe".into());
     }
@@ -280,12 +299,7 @@ async fn download_entry_with_client(
     if crc32fast::hash(&data) != entry.crc32 {
         return Err("EA content: CRC mismatch".into());
     }
-
-    if let Some(parent) = destination.parent() {
-        std::fs::create_dir_all(parent).map_err(|err| format!("EA content: {err}"))?;
-    }
-    std::fs::write(destination, &data).map_err(|err| format!("EA content: {err}"))?;
-    Ok(data.len() as u64)
+    Ok(data)
 }
 
 /// Downloads a set of entries with four range workers.
@@ -327,7 +341,7 @@ pub(crate) async fn download_entries(
                     .map_err(|err| format!("EA content: {err}"))?;
                 return Ok::<u64, String>(0);
             }
-            download_entry_with_client(&client, &url, &entry, &destination).await
+            write_entry(&client, &url, &entry, &destination).await
         });
     }
 

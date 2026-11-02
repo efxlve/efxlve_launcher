@@ -12,6 +12,7 @@ mod covers;
 mod ea;
 mod ea_content;
 mod ea_direct;
+mod ea_install;
 mod ea_license;
 mod ea_login;
 mod ea_lsx;
