@@ -26,6 +26,8 @@ pub(crate) struct LaunchPlan {
     pub args: Vec<String>,
     pub content_id: String,
     pub eaac: bool,
+    /// The game ships the activation runtime that expects a license.
+    pub ooa: bool,
 }
 
 /// Why a game cannot use the direct path.
@@ -51,7 +53,7 @@ impl std::fmt::Display for PlanError {
             PlanError::MissingExe(path) => write!(f, "the launcher `{path}` is missing"),
             PlanError::OutsideInstall => write!(f, "the launcher points outside the game folder"),
             PlanError::NoContentId => write!(f, "the game has no content id"),
-            PlanError::OldDrm => write!(f, "the game uses the old activation DRM"),
+            PlanError::OldDrm => write!(f, "the manifest uses the pre-DiP format"),
         }
     }
 }
@@ -66,6 +68,8 @@ pub struct EaDirectProbe {
     pub work_dir: String,
     pub content_id: String,
     pub eaac: bool,
+    /// The game ships the activation runtime that expects a license.
+    pub ooa: bool,
     pub args: Vec<String>,
     /// Environment variable names only; token values never leave Rust.
     pub env: Vec<String>,
@@ -116,11 +120,13 @@ pub(crate) fn plan(install_path: &str, store_id: &str) -> Result<LaunchPlan, Pla
         .ok_or(PlanError::NoContentId)?
         .to_string();
 
-    if old_drm(root) {
+    // Dead Space 2, BFBC2 and the other pre-DiP titles carry a `<game>` root
+    // and an `<executable>` touchup, not the `<DiPManifest>` runtime record.
+    if !is_dip_manifest(&text) {
         return Err(PlanError::OldDrm);
     }
 
-    let launcher = launcher_path(&text).ok_or(PlanError::NoLauncher)?;
+    let (launcher, args) = launcher_entry(&text).ok_or(PlanError::NoLauncher)?;
     let relative = relative_path(&launcher);
 
     let root = root.canonicalize().map_err(|_| PlanError::NotInstalled)?;
@@ -132,16 +138,13 @@ pub(crate) fn plan(install_path: &str, store_id: &str) -> Result<LaunchPlan, Pla
         return Err(PlanError::OutsideInstall);
     }
 
-    let args = element(&text, "parameters")
-        .map(split_args)
-        .unwrap_or_default();
-
     Ok(LaunchPlan {
         exe,
         work_dir: root.clone(),
         args,
         content_id,
         eaac: eaac_launcher(&root).is_some(),
+        ooa: ooa_state(&root),
     })
 }
 
@@ -152,6 +155,7 @@ pub(crate) fn plan(install_path: &str, store_id: &str) -> Result<LaunchPlan, Pla
 /// backend use for entitlement and presence. No value is logged.
 pub(crate) fn environment(
     access: &str,
+    launch_token: &str,
     player: &str,
     locale: &str,
     plan: &LaunchPlan,
@@ -182,7 +186,7 @@ pub(crate) fn environment(
         ("EALaunchEnv".into(), "production".into()),
         ("EALaunchOfflineMode".into(), "false".into()),
         ("EALaunchOwner".into(), "EA".into()),
-        ("EALaunchUserAuthToken".into(), access.into()),
+        ("EALaunchUserAuthToken".into(), launch_token.into()),
         ("EALicenseToken".into(), "Origin.OFR.50.0000721".into()),
         ("EALsxPort".into(), "3216".into()),
         ("EARtPLaunchCode".into(), rtp_handshake().to_string()),
@@ -201,12 +205,21 @@ pub(crate) fn environment(
 /// app does, so the signed component is the one that loads the game. The child
 /// is detached: it outlives this call on Windows.
 pub(crate) async fn launch(game: &FoundGame) -> Result<u32, String> {
-    let plan = plan(&game.install_path, &game.store_id).map_err(|err| err.to_string())?;
+    launch_path(&game.install_path, &game.store_id).await
+}
+
+/// The same launch from an install folder and a content id, for callers that
+/// already resolved the game without a `FoundGame`.
+pub(crate) async fn launch_path(install_path: &str, store_id: &str) -> Result<u32, String> {
+    let plan = plan(install_path, store_id).map_err(|err| err.to_string())?;
     let access = super::ea_login::ensure_access().await?;
+    let launch_token = super::ea_login::launch_token(&access)
+        .await
+        .unwrap_or_else(|_| access.clone());
     let player = super::ea_vault::load()
         .map(|tokens| tokens.name)
         .unwrap_or_default();
-    let env = environment(&access, &player, "en_US", &plan);
+    let env = environment(&access, &launch_token, &player, "en_US", &plan);
     let pid = spawn(&plan, &env)?;
     clear_error();
     Ok(pid)
@@ -222,8 +235,9 @@ pub(crate) fn probe(game: &FoundGame) -> EaDirectProbe {
             work_dir: plan.work_dir.to_string_lossy().to_string(),
             content_id: plan.content_id.clone(),
             eaac: plan.eaac,
+            ooa: plan.ooa,
             args: plan.args.clone(),
-            env: environment("", "", "en_US", &plan)
+            env: environment("", "", "", "en_US", &plan)
                 .into_iter()
                 .map(|(key, _)| key)
                 .collect(),
@@ -235,6 +249,7 @@ pub(crate) fn probe(game: &FoundGame) -> EaDirectProbe {
             work_dir: String::new(),
             content_id: String::new(),
             eaac: false,
+            ooa: false,
             args: Vec::new(),
             env: Vec::new(),
         },
@@ -284,31 +299,55 @@ fn eaac_launcher(root: &Path) -> Option<PathBuf> {
     .find(|path| path.is_file())
 }
 
-/// The pre-DiP activation DRM, identified by the files it drops in `Core`.
-fn old_drm(root: &Path) -> bool {
-    ["Core/activation.exe", "Core/activation.dll", "Core/awc.dll"]
-        .iter()
-        .any(|relative| root.join(relative).is_file())
+/// DiP manifests carry a `<DiPManifest>` root; pre-DiP titles use `<game>`.
+fn is_dip_manifest(xml: &str) -> bool {
+    xml.contains("<DiPManifest")
 }
 
-/// The non-trial `<runtime><launcher><filePath>` entry.
-fn launcher_path(xml: &str) -> Option<String> {
+/// The activation runtime that expects a license, present in modern Frostbite
+/// titles (BF2042 ships `Core/Activation.dll`) and older OOA games.
+fn ooa_state(root: &Path) -> bool {
+    [
+        "Core/activation.exe",
+        "Core/Activation.dll",
+        "Core/Activation64.dll",
+        "Core/awc.dll",
+    ]
+    .iter()
+    .any(|relative| root.join(relative).is_file())
+}
+
+/// The non-trial `<runtime><launcher>` entry and its own parameters.
+fn launcher_entry(xml: &str) -> Option<(String, Vec<String>)> {
     let runtime = element(xml, "runtime")?;
     for launcher in elements(runtime, "launcher") {
         let trial = element(launcher, "trial")
-            .map(|value| value.trim().eq_ignore_ascii_case("true"))
+            .map(|value| {
+                let value = value.trim();
+                value == "1" || value.eq_ignore_ascii_case("true")
+            })
             .unwrap_or(false);
         if trial {
             continue;
         }
-        if let Some(path) = element(launcher, "filePath") {
-            let path = path.trim();
-            if !path.is_empty() {
-                return Some(path.to_string());
-            }
+        let Some(path) = element(launcher, "filePath") else {
+            continue;
+        };
+        let path = path.trim();
+        if path.is_empty() {
+            continue;
         }
+        let args = element(launcher, "parameters")
+            .map(split_args)
+            .unwrap_or_default();
+        return Some((path.to_string(), args));
     }
     None
+}
+
+/// The non-trial launcher path, without its parameters.
+fn launcher_path(xml: &str) -> Option<String> {
+    launcher_entry(xml).map(|(path, _)| path)
 }
 
 /// Reads one manifest that may be UTF-8 (with or without a BOM) or UTF-16.
@@ -383,6 +422,11 @@ fn element<'a>(xml: &'a str, name: &str) -> Option<&'a str> {
 }
 
 fn relative_path(raw: &str) -> PathBuf {
+    let raw = raw.trim();
+    // DiP manifests often prefix the launcher with a registry key:
+    // `[HKEY_LOCAL_MACHINE\...\Install Dir]EAAntiCheat.GameServiceLauncher.exe`.
+    // The install folder is already known, so only the part after `]` matters.
+    let raw = raw.rsplit_once(']').map(|(_, rest)| rest).unwrap_or(raw);
     let clean = raw.trim().trim_start_matches(['/', '\\']);
     #[cfg(windows)]
     let clean = clean.replace('/', "\\");
@@ -505,6 +549,103 @@ mod tests {
     }
 
     #[test]
+    fn a_registry_prefixed_launcher_keeps_only_the_relative_path() {
+        let xml = r#"<DiPManifest><runtime>
+            <launcher><filePath>[HKEY_LOCAL_MACHINE\SOFTWARE\EA Games\Battlefield 2042\Install Dir]EAAntiCheat.GameServiceLauncher.exe</filePath><trial>0</trial></launcher>
+        </runtime></DiPManifest>"#;
+        let path = launcher_path(xml).expect("launcher");
+        assert_eq!(
+            relative_path(&path),
+            PathBuf::from("EAAntiCheat.GameServiceLauncher.exe")
+        );
+    }
+
+    #[test]
+    fn a_numeric_trial_flag_is_skipped() {
+        let xml = r#"<runtime>
+            <launcher><filePath>/trial.exe</filePath><trial>1</trial></launcher>
+            <launcher><filePath>/game.exe</filePath><trial>0</trial></launcher>
+        </runtime>"#;
+        assert_eq!(launcher_path(xml).as_deref(), Some("/game.exe"));
+    }
+
+    #[test]
+    fn launcher_parameters_belong_to_the_selected_entry() {
+        let xml = r#"<runtime>
+            <launcher><filePath>/trial.exe</filePath><parameters>-trial</parameters><trial>1</trial></launcher>
+            <launcher><filePath>/game.exe</filePath><parameters>-windowed</parameters><trial>0</trial></launcher>
+        </runtime>"#;
+        assert_eq!(
+            launcher_entry(xml),
+            Some(("/game.exe".to_string(), vec!["-windowed".to_string()]))
+        );
+    }
+
+    #[test]
+    fn pre_dip_manifests_are_not_dip() {
+        assert!(!is_dip_manifest(
+            r#"<game manifestVersion="2.1"><executable/></game>"#
+        ));
+        assert!(is_dip_manifest(
+            r#"<DiPManifest version="4.0"></DiPManifest>"#
+        ));
+    }
+
+    #[test]
+    fn the_ooa_runtime_is_detected_from_the_core_folder() {
+        let root = std::env::temp_dir().join(format!("efxlve-ea-ooa-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("Core")).expect("core");
+        std::fs::write(root.join("Core").join("Activation.dll"), b"x").expect("activation");
+        assert!(ooa_state(&root));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    #[ignore = "reads a real EA install from EFXLVE_EA_PROBE"]
+    fn manual_probe() {
+        let Ok(path) = std::env::var("EFXLVE_EA_PROBE") else {
+            return;
+        };
+        let id = std::env::var("EFXLVE_EA_CONTENT_ID").unwrap_or_default();
+        println!("{:?}", plan(&path, &id));
+    }
+
+    #[test]
+    #[ignore = "uses the signed-in EA session"]
+    fn manual_opaque_token() {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let result = rt.block_on(async {
+            let access = super::super::ea_login::ensure_access().await?;
+            super::super::ea_login::launch_token(&access).await
+        });
+        match result {
+            Ok(token) => println!("opaque token length {}", token.len()),
+            Err(err) => println!("failed: {err}"),
+        }
+    }
+
+    #[test]
+    #[ignore = "launches a real EA game from EFXLVE_EA_PROBE"]
+    fn manual_launch() {
+        let Ok(path) = std::env::var("EFXLVE_EA_PROBE") else {
+            return;
+        };
+        let id = std::env::var("EFXLVE_EA_CONTENT_ID").unwrap_or_default();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        match rt.block_on(launch_path(&path, &id)) {
+            Ok(pid) => println!("started pid {pid}"),
+            Err(err) => println!("failed: {err}"),
+        }
+    }
+
+    #[test]
     fn the_environment_carries_the_token_and_content_id() {
         let plan = LaunchPlan {
             exe: PathBuf::from(r"C:\Games\ItTakesTwo\ItTakesTwo.exe"),
@@ -512,13 +653,15 @@ mod tests {
             args: Vec::new(),
             content_id: "194814".into(),
             eaac: false,
+            ooa: false,
         };
-        let env = environment("token-value", "Efe", "tr_TR", &plan);
+        let env = environment("token-value", "short-value", "Efe", "tr_TR", &plan);
         let map: std::collections::HashMap<&str, &str> = env
             .iter()
             .map(|(key, value)| (key.as_str(), value.as_str()))
             .collect();
-        assert_eq!(map["EALaunchUserAuthToken"], "token-value");
+        assert_eq!(map["EALaunchUserAuthToken"], "short-value");
+        assert_eq!(map["EAGenericAuthToken"], "token-value");
         assert_eq!(map["EALaunchEAID"], "Efe");
         assert_eq!(map["EAGameLocale"], "tr_TR");
         assert_eq!(map["ContentId"], "194814");

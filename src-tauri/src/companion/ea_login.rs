@@ -133,6 +133,72 @@ pub(crate) async fn ensure_access() -> Result<String, String> {
     Ok(stored.access)
 }
 
+/// Exchanges the stored access token for the short opaque token the EA client
+/// hands a game at launch. The game's activation module accepts this token
+/// instead of asking for the account password again.
+pub(crate) async fn launch_token(access: &str) -> Result<String, String> {
+    let pc_sign = tokio::task::spawn_blocking(pcsign::generate)
+        .await
+        .map_err(|e| e.to_string())??;
+    let verifier = new_verifier();
+    let code_challenge = challenge(&verifier);
+    let nonce = rand::random::<i32>().to_string();
+
+    let mut url = url::Url::parse(AUTH_URL).map_err(|e| e.to_string())?;
+    {
+        let mut query = url.query_pairs_mut();
+        query
+            .append_pair("client_id", CLIENT_ID)
+            .append_pair("sbiod_enabled", "false")
+            .append_pair("response_type", "token")
+            .append_pair("locale", "en_US")
+            .append_pair("pc_sign", &pc_sign)
+            .append_pair("nonce", &nonce)
+            .append_pair(
+                "scope",
+                "basic.commerce.cartv2 service.atom dp.client.default signin \
+                 social_recommendation_user basic.optin.write \
+                 basic.commerce.cartv2.write basic.billing \
+                 external.social_information_ups_admin",
+            )
+            .append_pair("code_challenge_method", "S256")
+            .append_pair("code_challenge", &code_challenge)
+            .append_pair("access_token", access)
+            .append_pair("token_format", "OPAQUE")
+            .append_pair("expires_in", "550");
+    }
+
+    let client = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .map_err(|e| e.to_string())?;
+    let response = client.get(url).send().await.map_err(|e| e.to_string())?;
+    if !response.status().is_redirection() {
+        return Err(format!("EA launch token: HTTP {}", response.status()));
+    }
+    let location = response
+        .headers()
+        .get("location")
+        .and_then(|value| value.to_str().ok())
+        .ok_or_else(|| "EA launch token: no redirect".to_string())?;
+
+    // The redirect uses the custom qrc scheme; the Url crate needs a host.
+    let location = if location.starts_with("qrc") {
+        location.replace("qrc:/html", "http://127.0.0.1")
+    } else {
+        location.to_string()
+    };
+    let parsed = url::Url::parse(&location).map_err(|e| e.to_string())?;
+    let query = parsed.fragment().or_else(|| parsed.query()).unwrap_or("");
+    for pair in query.split('&') {
+        let (key, value) = pair.split_once('=').unwrap_or((pair, ""));
+        if key == "access_token" {
+            return Ok(value.to_string());
+        }
+    }
+    Err("EA launch token: access_token missing".into())
+}
+
 /* ---------- Sign-in window ---------- */
 
 const WATCH_SCRIPT: &str = r#"
