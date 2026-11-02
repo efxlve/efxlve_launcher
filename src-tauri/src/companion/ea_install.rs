@@ -180,6 +180,27 @@ mod tests {
     }
 
     #[test]
+    fn the_touchup_runner_waits_for_the_process() {
+        #[cfg(windows)]
+        let touchup = Touchup {
+            program: PathBuf::from("cmd.exe"),
+            args: vec!["/c".into(), "exit".into(), "0".into()],
+        };
+        #[cfg(not(windows))]
+        let touchup = Touchup {
+            program: PathBuf::from("sh"),
+            args: vec!["-c".into(), "true".into()],
+        };
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        runtime
+            .block_on(run_touchup(&touchup))
+            .expect("touchup should exit successfully");
+    }
+
+    #[test]
     #[ignore = "talks to EA's content service and reads installerdata.xml"]
     fn manual_touchup_plan() {
         let runtime = tokio::runtime::Builder::new_current_thread()

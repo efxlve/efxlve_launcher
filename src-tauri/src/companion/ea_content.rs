@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::task::{Context as TaskContext, Poll};
 
-use tokio::io::{AsyncWrite, AsyncWriteExt};
+use tokio::io::{AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -234,7 +234,9 @@ pub(crate) async fn download_entry(
     destination: &Path,
 ) -> Result<u64, String> {
     let client = client();
-    write_entry(&client, url, entry, destination).await
+    write_entry(&client, url, entry, destination)
+        .await
+        .map(|(bytes, _)| bytes)
 }
 
 async fn write_entry(
@@ -242,8 +244,13 @@ async fn write_entry(
     url: &str,
     entry: &ZipEntry,
     destination: &Path,
-) -> Result<u64, String> {
+) -> Result<(u64, bool), String> {
     if entry.compressed == 0 {
+        if let Ok(meta) = tokio::fs::metadata(destination).await {
+            if meta.len() == 0 {
+                return Ok((0, true));
+            }
+        }
         if let Some(parent) = destination.parent() {
             tokio::fs::create_dir_all(parent)
                 .await
@@ -252,7 +259,19 @@ async fn write_entry(
         tokio::fs::write(destination, [])
             .await
             .map_err(|err| format!("EA content: {err}"))?;
-        return Ok(0);
+        return Ok((0, false));
+    }
+
+    // A previous run may already have this file; size plus CRC is the same
+    // check the downloader uses, so a resumed install skips it without traffic.
+    if let Ok(meta) = tokio::fs::metadata(destination).await {
+        if meta.len() == entry.uncompressed {
+            if let Ok(crc) = file_crc(destination).await {
+                if crc == entry.crc32 {
+                    return Ok((entry.uncompressed, true));
+                }
+            }
+        }
     }
 
     // The local header carries the name/extra lengths the central directory
@@ -339,7 +358,26 @@ async fn write_entry(
     tokio::fs::rename(&part, destination)
         .await
         .map_err(|err| format!("EA content: {err}"))?;
-    Ok(bytes)
+    Ok((bytes, false))
+}
+
+async fn file_crc(path: &Path) -> Result<u32, String> {
+    let mut file = tokio::fs::File::open(path)
+        .await
+        .map_err(|err| format!("EA content: {err}"))?;
+    let mut hasher = crc32fast::Hasher::new();
+    let mut buffer = vec![0u8; 1024 * 1024];
+    loop {
+        let read = file
+            .read(&mut buffer)
+            .await
+            .map_err(|err| format!("EA content: {err}"))?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+    }
+    Ok(hasher.finalize())
 }
 
 async fn stream_into<W: AsyncWrite + Unpin>(
@@ -500,17 +538,6 @@ pub(crate) async fn download_entries(
         set.spawn(async move {
             let _permit = permit;
             let destination = probe_path(&root, &entry.name)?;
-            if entry.compressed == 0 {
-                if let Some(parent) = destination.parent() {
-                    tokio::fs::create_dir_all(parent)
-                        .await
-                        .map_err(|err| format!("EA content: {err}"))?;
-                }
-                tokio::fs::write(&destination, [])
-                    .await
-                    .map_err(|err| format!("EA content: {err}"))?;
-                return Ok::<u64, String>(0);
-            }
             write_entry(&client, &url, &entry, &destination).await
         });
     }
@@ -521,9 +548,13 @@ pub(crate) async fn download_entries(
     };
     while let Some(result) = set.join_next().await {
         match result {
-            Ok(Ok(bytes)) => {
-                report.files += 1;
-                report.bytes += bytes;
+            Ok(Ok((bytes, reused))) => {
+                if reused {
+                    report.skipped += 1;
+                } else {
+                    report.files += 1;
+                    report.bytes += bytes;
+                }
             }
             Ok(Err(err)) => return Err(err),
             Err(err) => return Err(format!("EA content: task: {err}")),
@@ -906,14 +937,21 @@ mod tests {
                 .cloned()
                 .collect();
             println!("batch: {} small entries", small.len());
-            let report = download_entries(&plan.download_url, &plan.root, &small).await?;
-            println!("report: {report:?}");
+            let first = download_entries(&plan.download_url, &plan.root, &small).await?;
+            println!("first: {first:?}");
+            let second = download_entries(&plan.download_url, &plan.root, &small).await?;
+            println!("second: {second:?}");
             let expected: u64 = small.iter().map(|entry| entry.uncompressed).sum();
             println!("expected uncompressed: {expected}");
-            if report.bytes != expected {
+            if first.bytes != expected {
                 return Err(format!(
                     "batch bytes {} != expected {expected}",
-                    report.bytes
+                    first.bytes
+                ));
+            }
+            if second.files != 0 || second.bytes != 0 || second.skipped != small.len() {
+                return Err(format!(
+                    "resume did not skip the cached files: {second:?}"
                 ));
             }
             Ok::<(), String>(())
