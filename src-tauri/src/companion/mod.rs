@@ -10,6 +10,7 @@ pub(crate) use signin::{accept_library as accept_bnet_library, watch_script as b
 mod battlenet;
 mod covers;
 mod ea;
+mod ea_content;
 mod ea_direct;
 mod ea_license;
 mod ea_login;
