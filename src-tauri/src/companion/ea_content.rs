@@ -599,6 +599,61 @@ pub(crate) async fn download_entries_with_progress(
     Ok(report)
 }
 
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct VerifyReport {
+    pub checked: usize,
+    pub ok: usize,
+    pub missing: usize,
+    pub mismatched: usize,
+    pub bytes_checked: u64,
+}
+
+/// Checks local files against the live package without downloading anything.
+///
+/// `max_files`, `max_file_bytes` and `max_total_bytes` bound the work so a
+/// repair check can sample a large install without reading it all.
+pub(crate) async fn verify_install(
+    plan: &InstallPlan,
+    max_files: usize,
+    max_file_bytes: u64,
+    max_total_bytes: u64,
+) -> Result<VerifyReport, String> {
+    let mut report = VerifyReport::default();
+    for entry in plan
+        .manifest
+        .entries
+        .iter()
+        .filter(|entry| {
+            !entry.name.is_empty()
+                && !entry.name.ends_with('/')
+                && entry.uncompressed > 0
+                && entry.uncompressed <= max_file_bytes
+        })
+        .take(max_files)
+    {
+        if report.bytes_checked >= max_total_bytes {
+            break;
+        }
+        let path = probe_path(&plan.root, &entry.name)?;
+        let Ok(meta) = tokio::fs::metadata(&path).await else {
+            report.missing += 1;
+            continue;
+        };
+        report.checked += 1;
+        if meta.len() != entry.uncompressed {
+            report.mismatched += 1;
+            continue;
+        }
+        if file_crc(&path).await? == entry.crc32 {
+            report.ok += 1;
+            report.bytes_checked += entry.uncompressed;
+        } else {
+            report.mismatched += 1;
+        }
+    }
+    Ok(report)
+}
+
 async fn graphql(
     access: &str,
     query: &str,
@@ -1004,6 +1059,76 @@ mod tests {
                 return Err(format!(
                     "resume did not skip the cached files: {second:?}"
                 ));
+            }
+            Ok::<(), String>(())
+        });
+        println!("result: {result:?}");
+    }
+
+    #[test]
+    #[ignore = "compares an installed EA game against the live package"]
+    fn manual_content_verify() {
+        let root = std::env::var("EFXLVE_EA_PROBE")
+            .unwrap_or_else(|_| "C:\\Program Files\\EA Games\\Battlefield 2042".to_string());
+        let offer = std::env::var("EFXLVE_EA_OFFER")
+            .unwrap_or_else(|_| "Origin.OFR.50.0004540".to_string());
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let result = runtime.block_on(async {
+            let access = super::super::ea_login::ensure_access().await?;
+            let plan = plan_install(&access, &offer, Path::new(&root)).await?;
+            println!(
+                "plan: offer={} version={} entries={} root={}",
+                plan.offer_id,
+                plan.version,
+                plan.manifest.entries.len(),
+                plan.root.display()
+            );
+            // Sample at most 2,000 files of 8 MB each and 512 MB in total.
+            let report = verify_install(&plan, 2_000, 8 * 1024 * 1024, 512 * 1024 * 1024).await?;
+            for entry in plan
+                .manifest
+                .entries
+                .iter()
+                .filter(|entry| !entry.name.is_empty() && !entry.name.ends_with('/'))
+                .take(8)
+            {
+                let path = probe_path(&plan.root, &entry.name)?;
+                println!(
+                    "sample: {} exists={} expected={}",
+                    entry.name,
+                    path.is_file(),
+                    entry.uncompressed
+                );
+            }
+            let mut shown = 0usize;
+            for entry in plan
+                .manifest
+                .entries
+                .iter()
+                .filter(|entry| !entry.name.is_empty() && !entry.name.ends_with('/'))
+            {
+                if shown == 10 {
+                    break;
+                }
+                let path = probe_path(&plan.root, &entry.name)?;
+                if !path.is_file() {
+                    println!("missing sample: {}", entry.name);
+                    shown += 1;
+                }
+            }
+            println!(
+                "verify: checked={} ok={} missing={} mismatched={} bytes={}",
+                report.checked,
+                report.ok,
+                report.missing,
+                report.mismatched,
+                report.bytes_checked
+            );
+            if report.checked == 0 && report.missing == 0 {
+                return Err("verify sampled no files".into());
             }
             Ok::<(), String>(())
         });
