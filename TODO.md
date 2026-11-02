@@ -12,10 +12,10 @@ Open work only. Delete the item when it lands.
   stopped background service with `EC:10701`; do not attempt to bypass it.
 - Installs and updates still hand off to the EA App. The content service now
   resolves builds, the download URL and the ZIP central directory, verifies one
-  entry, downloads a 12-entry batch, resumes it from size+CRC verified files
-  and reads `installerdata.xml` to build the touchup command (`ea_content.rs`,
-  `ea_install.rs`); the full package loop with progress, differential updates
-  and the install UI are open.
+  entry, downloads a 12-entry batch, resumes it from size+CRC verified files,
+  reports progress and reads `installerdata.xml` to build the touchup command
+  (`ea_content.rs`, `ea_install.rs`); the install UI, differential updates and
+  a full-package field test are open.
 - Pre-DiP titles (Dead Space 2, BFBC2) stay on the EA App.
 
 ## Linux/macOS: packaging and validation

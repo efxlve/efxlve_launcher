@@ -103,6 +103,16 @@ pub(crate) struct DownloadReport {
     pub skipped: usize,
 }
 
+/// One progress tick after a file lands or is skipped.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(crate) struct DownloadProgress {
+    pub files: usize,
+    pub bytes: u64,
+    pub skipped: usize,
+    pub total_files: usize,
+    pub total_bytes: u64,
+}
+
 impl ZipManifest {
     pub(crate) fn total_compressed(&self) -> u64 {
         self.entries.iter().map(|entry| entry.compressed).sum()
@@ -516,10 +526,29 @@ pub(crate) async fn download_entries(
     root: &Path,
     entries: &[ZipEntry],
 ) -> Result<DownloadReport, String> {
+    download_entries_with_progress(url, root, entries, |_| {}).await
+}
+
+/// The same loop, reporting after every file so an install can show progress.
+pub(crate) async fn download_entries_with_progress(
+    url: &str,
+    root: &Path,
+    entries: &[ZipEntry],
+    mut on_progress: impl FnMut(DownloadProgress) + Send,
+) -> Result<DownloadReport, String> {
     let client = client();
     let semaphore = std::sync::Arc::new(tokio::sync::Semaphore::new(4));
     let mut set = tokio::task::JoinSet::new();
     let mut skipped = 0usize;
+    let total_files = entries
+        .iter()
+        .filter(|entry| !entry.name.is_empty() && !entry.name.ends_with('/'))
+        .count();
+    let total_bytes: u64 = entries
+        .iter()
+        .filter(|entry| !entry.name.is_empty() && !entry.name.ends_with('/'))
+        .map(|entry| entry.uncompressed)
+        .sum();
 
     for entry in entries {
         if entry.name.is_empty() || entry.name.ends_with('/') {
@@ -559,6 +588,13 @@ pub(crate) async fn download_entries(
             Ok(Err(err)) => return Err(err),
             Err(err) => return Err(format!("EA content: task: {err}")),
         }
+        on_progress(DownloadProgress {
+            files: report.files,
+            bytes: report.bytes,
+            skipped: report.skipped,
+            total_files,
+            total_bytes,
+        });
     }
     Ok(report)
 }
@@ -937,8 +973,20 @@ mod tests {
                 .cloned()
                 .collect();
             println!("batch: {} small entries", small.len());
-            let first = download_entries(&plan.download_url, &plan.root, &small).await?;
+            let mut updates = Vec::new();
+            let first = download_entries_with_progress(
+                &plan.download_url,
+                &plan.root,
+                &small,
+                |progress| updates.push(progress),
+            )
+            .await?;
             println!("first: {first:?}");
+            println!(
+                "progress ticks: {} last: {:?}",
+                updates.len(),
+                updates.last()
+            );
             let second = download_entries(&plan.download_url, &plan.root, &small).await?;
             println!("second: {second:?}");
             let expected: u64 = small.iter().map(|entry| entry.uncompressed).sum();
@@ -948,6 +996,9 @@ mod tests {
                     "batch bytes {} != expected {expected}",
                     first.bytes
                 ));
+            }
+            if updates.last().map(|progress| progress.files) != Some(small.len()) {
+                return Err(format!("progress did not reach the last file: {updates:?}"));
             }
             if second.files != 0 || second.bytes != 0 || second.skipped != small.len() {
                 return Err(format!(
