@@ -3519,5 +3519,7 @@
   "ea.elevationUnsupported": "Aggiornare questa cartella richiede privilegi di amministratore, che questa build della piattaforma non può richiedere.",
   "ea.notEnoughSpace": "Spazio su disco insufficiente: servono {a1}, {a2} liberi in {a3}.",
   "ea.noUninstaller": "Nessun disinstallatore registrato per questo gioco. Rimuovilo dall'EA App o elimina la cartella: {a1}",
-  "ea.uninstalled": "Disinstallato."
+  "ea.uninstalled": "Disinstallato.",
+  "settings.eaInstallDirTitle": "Cartella di installazione EA",
+  "settings.eaInstallDirHint": "I giochi EA si installano qui per impostazione predefinita, una sottocartella per gioco. Se vuota:"
 }

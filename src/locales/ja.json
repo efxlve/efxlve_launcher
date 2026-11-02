@@ -3519,5 +3519,7 @@
   "ea.elevationUnsupported": "このフォルダーの更新には管理者権限が必要ですが、このプラットフォーム ビルドでは要求できません。",
   "ea.notEnoughSpace": "ディスク容量が不足しています: {a1} 必要、{a3} の空き {a2}。",
   "ea.noUninstaller": "このゲームにはアンインストーラーが登録されていません。EA App から削除するか、フォルダーを削除してください: {a1}",
-  "ea.uninstalled": "アンインストールしました。"
+  "ea.uninstalled": "アンインストールしました。",
+  "settings.eaInstallDirTitle": "EA インストールフォルダー",
+  "settings.eaInstallDirHint": "EA ゲームは既定でここにインストールされ、ゲームごとにサブフォルダーが作られます。空の場合:"
 }

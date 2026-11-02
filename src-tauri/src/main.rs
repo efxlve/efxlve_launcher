@@ -302,11 +302,15 @@ pub struct EpicSettings {
     /// in-game achievements unlock without the Galaxy client. On by default.
     #[serde(default)]
     pub gog_comet_enabled: Option<bool>,
-    /// Start installed EA games directly with the account token instead of
-    /// handing them to the EA app. Off by default: the EA app still installs,
-    /// updates and serves as the fallback when the direct path cannot resolve.
+    /// Start, install and update eligible EA games directly with the account
+    /// token instead of handing them to the EA app. On by default; the EA app
+    /// remains the fallback for anti-cheat and legacy titles. `None` means the
+    /// default was never changed.
     #[serde(default)]
     pub ea_direct_launch: Option<bool>,
+    /// Base folder for EA installs (empty = `<home>/Games/EA`).
+    #[serde(default)]
+    pub ea_install_dir: Option<String>,
     /// Deploy the MIT-licensed Uplay compatibility shim when launching a game
     /// the launcher installed. On by default: without it, R1/R2 titles expect
     /// the Connect client to be running.
@@ -2169,9 +2173,12 @@ fn main() {
             companion::ea_content_plan,
             companion::ea_content_uninstall,
             companion::ea_content_verify,
+            companion::ea_default_install_dir,
             companion::ea_direct_probe,
             companion::ea_direct_status,
             companion::ea_direct_set_enabled,
+            companion::ea_install_dir,
+            companion::ea_set_install_dir,
             companion::companion_game_action,
             companion::companion_get_client_settings,
             companion::companion_set_close_after_play,

@@ -386,6 +386,15 @@ export const eaDirectStatus = () => invoke<EaDirectStatus>("ea_direct_status");
 export const eaDirectSetEnabled = (enabled: boolean) =>
   invoke<void>("ea_direct_set_enabled", { enabled });
 
+/** `<home>/Games/EA`, the default base folder. */
+export const eaDefaultInstallDir = () => invoke<string>("ea_default_install_dir");
+
+/** The saved EA base folder, or null when the default is used. */
+export const eaInstallDir = () => invoke<string | null>("ea_install_dir");
+
+export const eaSetInstallDir = (path: string) =>
+  invoke<void>("ea_set_install_dir", { path });
+
 /** The live EA package and the local folder, resolved without downloading. */
 export interface EaContentPlan {
   id: string;

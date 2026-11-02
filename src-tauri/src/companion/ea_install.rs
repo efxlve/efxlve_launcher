@@ -244,15 +244,54 @@ pub(crate) async fn install_with_progress(
     })
 }
 
-/// The default folder for a fresh install. Program Files belongs to the EA App
-/// and its elevated installer, so a launcher-owned install lives with the other
-/// per-user data the same way Ubisoft direct installs do. The dialog still lets
-/// the user pick any writable folder.
+/// `<home>/Games/EA`, the same per-store layout as Epic, GOG and Amazon.
+pub(crate) fn default_base() -> PathBuf {
+    let home = std::env::var_os("USERPROFILE")
+        .or_else(|| std::env::var_os("HOME"))
+        .map(PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir);
+    home.join("Games").join("EA")
+}
+
+fn base_pointer() -> PathBuf {
+    super::accounts::data_dir().join("ea_install_dir.txt")
+}
+
+/// The base chosen in Settings, kept beside the other EA state so the library
+/// scanner can find installs outside `<home>/Games/EA`.
+pub(crate) fn saved_base() -> Option<PathBuf> {
+    let text = std::fs::read_to_string(base_pointer()).ok()?;
+    let text = text.trim();
+    (!text.is_empty()).then(|| PathBuf::from(text))
+}
+
+pub(crate) fn remember_base(path: Option<&str>) {
+    match path.map(str::trim).filter(|path| !path.is_empty()) {
+        Some(path) => {
+            if let Some(parent) = base_pointer().parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            let _ = std::fs::write(base_pointer(), path);
+        }
+        None => {
+            let _ = std::fs::remove_file(base_pointer());
+        }
+    }
+}
+
+/// The default folder for a fresh install. The dialog still lets the user pick
+/// any writable folder.
 pub(crate) fn default_root(name: &str) -> PathBuf {
-    let folder = safe_folder_name(name);
-    super::accounts::data_dir()
-        .join("ea-games")
-        .join(folder)
+    default_base().join(safe_folder_name(name))
+}
+
+/// The install folder when no path was passed: the saved base when there is
+/// one, otherwise the store default.
+pub(crate) fn preferred_root(name: &str) -> PathBuf {
+    match saved_base() {
+        Some(base) => base.join(safe_folder_name(name)),
+        None => default_root(name),
+    }
 }
 
 /// True when this process can create and write files under `root`.
@@ -416,10 +455,13 @@ pub(crate) async fn run_uninstall(command: &UninstallCommand) -> Result<(), Stri
     Ok(())
 }
 
-/// True when the folder belongs to the launcher's own EA library, so it can be
-/// removed when no installer record exists.
+/// True when the folder belongs to one of the launcher's own EA libraries, so
+/// it can be removed when no installer record exists. The old `.config` folder
+/// is kept for installs made before the per-store layout.
 pub(crate) fn managed_root(root: &Path) -> bool {
-    root.starts_with(super::accounts::data_dir().join("ea-games"))
+    root.starts_with(default_base())
+        || saved_base().map(|base| root.starts_with(base)).unwrap_or(false)
+        || root.starts_with(super::accounts::data_dir().join("ea-games"))
 }
 
 #[cfg(test)]
@@ -589,7 +631,17 @@ mod tests {
                 .and_then(|path| path.file_name())
                 .map(|name| name.to_string_lossy().to_string())
                 .as_deref(),
-            Some("ea-games")
+            Some("EA")
+        );
+    }
+
+    #[test]
+    fn the_default_base_sits_beside_the_other_stores() {
+        let base = default_base();
+        assert_eq!(base.file_name().and_then(|name| name.to_str()), Some("EA"));
+        assert_eq!(
+            base.parent().and_then(|path| path.file_name()).and_then(|name| name.to_str()),
+            Some("Games")
         );
     }
 
@@ -599,6 +651,21 @@ mod tests {
         assert!(folder_writable(&root));
         assert!(!root.join(".efxlve-write-test").exists());
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn managed_roots_cover_the_store_and_legacy_folders() {
+        let home = std::env::var_os("USERPROFILE")
+            .or_else(|| std::env::var_os("HOME"))
+            .map(PathBuf::from)
+            .unwrap_or_else(std::env::temp_dir);
+        assert!(managed_root(&home.join("Games").join("EA").join("Game")));
+        assert!(managed_root(
+            &super::super::accounts::data_dir()
+                .join("ea-games")
+                .join("Game")
+        ));
+        assert!(!managed_root(&std::env::temp_dir().join("not-an-ea-game")));
     }
 
     #[test]

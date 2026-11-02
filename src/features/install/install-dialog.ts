@@ -19,7 +19,7 @@ import { toast } from "../../core/toast";
 import { scheduleRender } from "../../core/render";
 import { currentLanguage, localizeMessage, t } from "../../i18n";
 import { gogInstallGame } from "../../gog";
-import { companionGameAction, eaContentInstall, eaContentPlan } from "../../companion";
+import { companionGameAction, eaContentInstall, eaContentPlan, eaDefaultInstallDir, eaInstallDir } from "../../companion";
 import { setView } from "../store/store-view";
 import {
   epicDefaultInstallDir,
@@ -202,8 +202,15 @@ async function openEaInstallDialog(appName: string): Promise<void> {
       return;
     }
     const split = splitInstallRoot(plan.root);
-    S.installDialogDir = split.dir;
     S.installDialogFolder = split.folder || S.installDialogFolder;
+    if (plan.installed) {
+      S.installDialogDir = split.dir;
+    } else {
+      const saved = (await eaInstallDir().catch(() => null))?.trim() || "";
+      const base = saved || (await eaDefaultInstallDir().catch(() => "")) || split.dir;
+      if (S.installDialogAppName !== appName) return;
+      S.installDialogDir = base;
+    }
     S.installDialogDownloadSize = plan.downloadBytes;
     S.installDialogDiskSize = plan.installBytes;
     S.installDialogLoading = false;

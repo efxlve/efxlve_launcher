@@ -3519,5 +3519,7 @@
   "ea.elevationUnsupported": "Aktualizacja tego folderu wymaga uprawnień administratora, o które ta wersja platformy nie może poprosić.",
   "ea.notEnoughSpace": "Za mało miejsca na dysku: potrzeba {a1}, wolne {a2} w {a3}.",
   "ea.noUninstaller": "Brak zarejestrowanego deinstalatora dla tej gry. Usuń ją przez EA App lub usuń folder: {a1}",
-  "ea.uninstalled": "Odinstalowano."
+  "ea.uninstalled": "Odinstalowano.",
+  "settings.eaInstallDirTitle": "Folder instalacji EA",
+  "settings.eaInstallDirHint": "Gry EA instalują się tutaj domyślnie, jeden podfolder na grę. Jeśli puste:"
 }

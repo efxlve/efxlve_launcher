@@ -3519,5 +3519,7 @@
   "ea.elevationUnsupported": "Atualizar esta pasta requer direitos de administrador, que esta compilação da plataforma não pode solicitar.",
   "ea.notEnoughSpace": "Espaço em disco insuficiente: {a1} necessários, {a2} livres em {a3}.",
   "ea.noUninstaller": "Nenhum desinstalador registrado para este jogo. Remova-o pelo EA App ou exclua a pasta: {a1}",
-  "ea.uninstalled": "Desinstalado."
+  "ea.uninstalled": "Desinstalado.",
+  "settings.eaInstallDirTitle": "Pasta de instalação da EA",
+  "settings.eaInstallDirHint": "Os jogos da EA são instalados aqui por padrão, uma subpasta por jogo. Se vazio:"
 }

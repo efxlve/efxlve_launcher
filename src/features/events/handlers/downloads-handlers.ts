@@ -55,7 +55,7 @@ import {
   type EpicSettings,
 } from "../../../epic";
 import { uninstallAmazonGame } from "../../auth/amazon-auth-actions";
-import { companionGameAction, xboxUninstall, type CompanionStore } from "../../../companion";
+import { companionGameAction, eaSetInstallDir, xboxUninstall, type CompanionStore } from "../../../companion";
 import { loadCompanionLibrary } from "../../library/companion-library";
 import { steamGameAction } from "../../../steam";
 
@@ -309,6 +309,37 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
         try {
           await amazonSetInstallDir(chosen);
           S.amazonInstallDir = chosen;
+          toast(i18nT("dl.installDirSaved"), "ok");
+          render();
+        } catch (e) {
+          toast(String(e), "err");
+        }
+      })();
+      return true;
+
+    case "ea-save-install-dir": {
+      const input = document.getElementById("ea-install-dir") as HTMLInputElement | null;
+      const value = input?.value?.trim() ?? "";
+      eaSetInstallDir(value)
+        .then(() => {
+          S.eaInstallDir = value;
+          toast(i18nT("dl.installDirSaved"), "ok");
+          render();
+        })
+        .catch((e: unknown) => toast(String(e), "err"));
+      return true;
+    }
+
+    case "dl-pick-ea-install-dir":
+      void (async () => {
+        const input = document.getElementById("ea-install-dir") as HTMLInputElement | null;
+        const current = input?.value?.trim() || S.eaInstallDir || S.eaDefaultDir || null;
+        const chosen = await epicSelectFolderDialog(current, i18nT("move.pickerTitle")).catch(() => null);
+        if (!chosen) return;
+        if (input) input.value = chosen;
+        try {
+          await eaSetInstallDir(chosen);
+          S.eaInstallDir = chosen;
           toast(i18nT("dl.installDirSaved"), "ok");
           render();
         } catch (e) {

@@ -118,7 +118,12 @@ fn settings_ini() -> Option<PathBuf> {
 
 fn library_roots() -> Vec<PathBuf> {
     let mut roots = Vec::new();
-    // Installs the launcher made itself live under its per-user data folder.
+    // Installs the launcher made itself live beside Epic, GOG and Amazon.
+    roots.push(super::ea_install::default_base());
+    if let Some(base) = super::ea_install::saved_base() {
+        roots.push(base);
+    }
+    // Installs from the first per-user layout stay visible.
     roots.push(super::accounts::data_dir().join("ea-games"));
     if let Some(ini) = settings_ini().and_then(|path| std::fs::read_to_string(path).ok()) {
         if let Some(dir) = download_dir(&ini) {

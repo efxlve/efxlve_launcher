@@ -3519,5 +3519,7 @@
   "ea.elevationUnsupported": "La mise à jour de ce dossier nécessite des droits d'administrateur, que cette version de la plateforme ne peut pas demander.",
   "ea.notEnoughSpace": "Espace disque insuffisant : {a1} requis, {a2} libres dans {a3}.",
   "ea.noUninstaller": "Aucun désinstalleur n'est enregistré pour ce jeu. Supprimez-le via l'EA App ou supprimez le dossier : {a1}",
-  "ea.uninstalled": "Désinstallé."
+  "ea.uninstalled": "Désinstallé.",
+  "settings.eaInstallDirTitle": "Dossier d'installation EA",
+  "settings.eaInstallDirHint": "Les jeux EA s'installent ici par défaut, un sous-dossier par jeu. Si vide :"
 }

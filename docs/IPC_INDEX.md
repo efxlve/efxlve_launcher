@@ -141,11 +141,14 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `ea_content_plan` | `eaContentPlan({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_content_uninstall` | `eaContentUninstall({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_content_verify` | `eaContentVerify({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ea_default_install_dir` | `eaDefaultInstallDir({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_direct_probe` | `eaDirectProbe({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_direct_set_enabled` | `eaDirectSetEnabled({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_direct_status` | `eaDirectStatus({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ea_install_dir` | `eaInstallDir({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_login_hide` | `eaLoginHide({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ea_login_open` | `eaLoginOpen({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ea_set_install_dir` | `eaSetInstallDir({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `egl_launcher_present` | `eglLauncherPresent({ ... })` | `src-tauri/src/egl_removal.rs` |
 | `egl_removal_plan` | `eglRemovalPlan({ ... })` | `src-tauri/src/egl_removal.rs` |
 | `egl_remove` | `eglRemove({ ... })` | `src-tauri/src/egl_removal.rs` |

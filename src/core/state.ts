@@ -782,9 +782,12 @@ export const S = {
   companionBusy: "",
   /** Per-store "close the client after playing" toggles (Integrations page). */
   companionCloseAfterPlay: {} as Record<string, boolean>,
-  /** Opt-in direct EA launch (Integrations page). */
-  eaDirectEnabled: false,
+  /** Opt-in direct EA launch (Integrations page). On unless explicitly turned off. */
+  eaDirectEnabled: true,
   eaDirectLastError: "",
+  /** EA base install folder from Settings > Downloads (empty = default). */
+  eaInstallDir: "",
+  eaDefaultDir: "",
   /** EA content installs started from this launcher, keyed by library id. */
   eaContentProgress: ({} as Record<string, import("../companion").EaContentProgress>),
   eaContentInstalling: (new Set<string>()) as Set<string>,

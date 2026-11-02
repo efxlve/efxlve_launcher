@@ -3519,5 +3519,7 @@
   "ea.elevationUnsupported": "Bu klasörü güncellemek yönetici hakları gerektiriyor; bu platform yapısı bunu isteyemiyor.",
   "ea.notEnoughSpace": "Yeterli disk alanı yok: {a1} gerekiyor, {a3} içinde {a2} boş.",
   "ea.noUninstaller": "Bu oyun için kayıtlı bir kaldırıcı yok. EA App üzerinden kaldırın veya klasörü silin: {a1}",
-  "ea.uninstalled": "Kaldırıldı."
+  "ea.uninstalled": "Kaldırıldı.",
+  "settings.eaInstallDirTitle": "EA kurulum klasörü",
+  "settings.eaInstallDirHint": "EA oyunları varsayılan olarak buraya kurulur, her oyun için bir alt klasör. Boş bırakılırsa:"
 }

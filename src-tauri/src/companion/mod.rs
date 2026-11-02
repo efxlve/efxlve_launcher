@@ -507,6 +507,12 @@ pub fn companion_open_client(store: String) -> Result<(), String> {
     launch::open_client(&store)
 }
 
+/// Direct EA launch/install is the default; only an explicit `false` turns it
+/// off. `None` is the untouched setting from an older profile.
+fn ea_direct_enabled(value: Option<bool>) -> bool {
+    value.unwrap_or(true)
+}
+
 #[tauri::command]
 pub async fn companion_launch(app: tauri::AppHandle, store: String, id: String) -> Result<(), String> {
     if !accounts::is_store(&store) || id.is_empty() {
@@ -515,7 +521,7 @@ pub async fn companion_launch(app: tauri::AppHandle, store: String, id: String) 
     let Some(game) = discover(&store).into_iter().find(|g| g.id == id) else {
         return launch::open_client(&store);
     };
-    let direct = game.store == "ea" && crate::load_settings(&app).ea_direct_launch.unwrap_or(false);
+    let direct = game.store == "ea" && ea_direct_enabled(crate::load_settings(&app).ea_direct_launch);
     // The screenshot hotkey needs to know which game is on screen. The install
     // folder is enough to match the process; client protocols do not expose the
     // executable name. Ubisoft Connect has its own F12 screenshot tool, so only
@@ -862,7 +868,7 @@ pub struct EaDirectStatus {
 #[tauri::command]
 pub fn ea_direct_status(app: tauri::AppHandle) -> EaDirectStatus {
     EaDirectStatus {
-        enabled: crate::load_settings(&app).ea_direct_launch.unwrap_or(false),
+        enabled: ea_direct_enabled(crate::load_settings(&app).ea_direct_launch),
         last_error: ea_direct::last_error().unwrap_or_default(),
     }
 }
@@ -872,6 +878,32 @@ pub fn ea_direct_set_enabled(app: tauri::AppHandle, enabled: bool) {
     let mut settings = crate::load_settings(&app);
     settings.ea_direct_launch = Some(enabled);
     crate::save_settings(&app, &settings);
+}
+
+/// `<home>/Games/EA`, the default base folder shown in Settings.
+#[tauri::command]
+pub fn ea_default_install_dir() -> String {
+    ea_install::default_base().to_string_lossy().to_string()
+}
+
+/// The saved EA base folder, or `None` when the default is used.
+#[tauri::command]
+pub fn ea_install_dir(app: tauri::AppHandle) -> Option<String> {
+    crate::load_settings(&app)
+        .ea_install_dir
+        .map(|path| path.trim().to_string())
+        .filter(|path| !path.is_empty())
+}
+
+#[tauri::command]
+pub fn ea_set_install_dir(app: tauri::AppHandle, path: Option<String>) -> Result<(), String> {
+    let mut settings = crate::load_settings(&app);
+    settings.ea_install_dir = path
+        .map(|path| path.trim().to_string())
+        .filter(|path| !path.is_empty());
+    ea_install::remember_base(settings.ea_install_dir.as_deref());
+    crate::save_settings(&app, &settings);
+    Ok(())
 }
 
 /* ---------- EA content service: install, update, repair ---------- */
@@ -979,7 +1011,7 @@ fn ea_content_target(    id: &str,
         .or_else(|| {
             (!game.install_path.is_empty()).then(|| std::path::PathBuf::from(&game.install_path))
         })
-        .unwrap_or_else(|| ea_install::default_root(&game.name));
+        .unwrap_or_else(|| ea_install::preferred_root(&game.name));
     Ok((game, owned, root))
 }
 
@@ -1998,6 +2030,13 @@ mod tests {
         assert!(!same_install_root("c:\\games\\a way out\\", root));
         assert!(!same_install_root("C:\\Games\\Other", root));
         assert!(!same_install_root("", root));
+    }
+
+    #[test]
+    fn ea_direct_is_on_unless_explicitly_disabled() {
+        assert!(ea_direct_enabled(None));
+        assert!(ea_direct_enabled(Some(true)));
+        assert!(!ea_direct_enabled(Some(false)));
     }
 
     #[test]

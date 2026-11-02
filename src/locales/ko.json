@@ -3519,5 +3519,7 @@
   "ea.elevationUnsupported": "이 폴더를 업데이트하려면 관리자 권한이 필요하지만 이 플랫폼 빌드에서는 요청할 수 없습니다.",
   "ea.notEnoughSpace": "디스크 공간이 부족합니다: {a1} 필요, {a3}에 {a2} 남음.",
   "ea.noUninstaller": "이 게임에 등록된 제거 프로그램이 없습니다. EA App에서 제거하거나 폴더를 삭제하세요: {a1}",
-  "ea.uninstalled": "제거되었습니다."
+  "ea.uninstalled": "제거되었습니다.",
+  "settings.eaInstallDirTitle": "EA 설치 폴더",
+  "settings.eaInstallDirHint": "EA 게임은 기본적으로 여기에 설치되며 게임마다 하위 폴더가 생깁니다. 비워 두면:"
 }

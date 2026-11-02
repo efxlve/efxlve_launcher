@@ -3519,5 +3519,7 @@
   "ea.elevationUnsupported": "更新此資料夾需要系統管理員權限，此平台版本無法要求。",
   "ea.notEnoughSpace": "磁碟空間不足：需要 {a1}，{a3} 僅剩 {a2}。",
   "ea.noUninstaller": "此遊戲未註冊解除安裝程式。請透過 EA App 移除或刪除資料夾：{a1}",
-  "ea.uninstalled": "已解除安裝。"
+  "ea.uninstalled": "已解除安裝。",
+  "settings.eaInstallDirTitle": "EA 安裝資料夾",
+  "settings.eaInstallDirHint": "EA 遊戲預設安裝於此，每個遊戲一個子資料夾。留空則使用："
 }

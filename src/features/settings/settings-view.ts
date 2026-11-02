@@ -99,7 +99,7 @@ import { keepDiscordOpen } from "../discord/discord-view";
 import { pcCheckResultHtml } from "./pc-check";
 import { storeLogo } from "../store/store-logos";
 import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, getSteamTryRate } from "../store/store-view";
-import { companionGetClientSettings, eaDirectStatus, ubiDirectProbe, ubiDirectPlan, ubiDirectInstall } from "../../companion";
+import { companionGetClientSettings, eaDefaultInstallDir, eaDirectStatus, eaInstallDir, ubiDirectProbe, ubiDirectPlan, ubiDirectInstall } from "../../companion";
 import { controllerKind } from "../gamepad/gamepad";
 import {
   achievementClearCustomSound,
@@ -258,6 +258,16 @@ function renderDownloads(): string {
      <button type="button" class="btn primary small" data-act="amazon-save-install-dir">${t("common.save")}</button>`,
   );
 
+  const eaSavedDir = S.eaInstallDir.trim();
+  const eaShownDir = eaSavedDir || S.eaDefaultDir || "—";
+  const eaDir = row(
+    t("settings.eaInstallDirTitle"),
+    `${t("settings.eaInstallDirHint")} <code>${esc(eaShownDir)}</code>`,
+    `<input id="ea-install-dir" class="input settings-path-input" value="${esc(eaSavedDir)}" placeholder="${esc(S.eaDefaultDir || t("downloads.defaultPlaceholder"))}" autocomplete="off" spellcheck="false" />
+     <button type="button" class="btn ghost small" data-act="dl-pick-ea-install-dir">${t("common.browse")}</button>
+     <button type="button" class="btn primary small" data-act="ea-save-install-dir">${t("common.save")}</button>`,
+  );
+
   const profileDesc = S.networkProfile === "max" ? t("settings.netMaxDesc") : S.networkProfile === "low" ? t("settings.netLowDesc") : t("settings.netBalancedDesc");
   const profile = row(t("settings.netCardsTitle"), profileDesc, `
     <div class="seg" role="radiogroup">
@@ -286,7 +296,7 @@ function renderDownloads(): string {
 
   return (
     infoBox("downloads.scopeInfo") +
-    group(dir + gogDir + amazonDir + row(
+    group(dir + gogDir + amazonDir + eaDir + row(
       t("settings.importInstalled"),
       t("settings.importInstalledDesc"),
       `<button type="button" class="btn ghost small" data-act="import-installed-folder">${t("settings.importInstalledBtn")}</button>`,
@@ -2332,7 +2342,7 @@ export function refreshIgdbProxyProbe(): void {
 export async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault, igdb, ssRoots, ssScanAll, ssSubfolders, cacheBytes, achOptions] = await Promise.all([
+      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault, eaDir, eaDefault, igdb, ssRoots, ssScanAll, ssSubfolders, cacheBytes, achOptions] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicGetSteamGridKey().catch(() => null),
@@ -2344,6 +2354,8 @@ export async function loadSettingsView(): Promise<void> {
         appGetAutostart().catch(() => false),
         amazonGetInstallDir().catch(() => null),
         amazonDefaultInstallDir().catch(() => ""),
+        eaInstallDir().catch(() => null),
+        eaDefaultInstallDir().catch(() => ""),
         igdbStatus().catch(() => null),
         epicGetScreenshotScanRoots().catch(() => [] as string[]),
         epicGetScreenshotScanAll().catch(() => true),
@@ -2362,6 +2374,8 @@ export async function loadSettingsView(): Promise<void> {
       S.gogCometEnabled = st?.gog_comet_enabled ?? true;
       S.amazonInstallDir = amazonDir || "";
       S.amazonDefaultDir = amazonDefault || "";
+      S.eaInstallDir = eaDir || "";
+      S.eaDefaultDir = eaDefault || "";
       S.screenshotScanRoots = Array.isArray(ssRoots) ? ssRoots : [];
       S.screenshotScanAll = ssScanAll !== false;
       S.screenshotScanSubfolders = ssSubfolders !== false;

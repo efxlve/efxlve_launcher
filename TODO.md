@@ -17,7 +17,8 @@ Open work only. Delete the item when it lands.
   progress; `ea_install.rs` selects the install, update or repair touchup
   parameters. The install dialog, Downloads row and Manage check/verify/repair
   actions are wired.
-- Direct installs default to the per-user `ea-games` folder. Existing EA App
+- Direct installs default to `<home>/Games/EA`, matching Epic, GOG and Amazon;
+  the old `.config/efxlve/ea-games` folder stays visible. Existing EA App
   installs under Program Files update through a one-shot elevated copy of the
   launcher (`--ea-content-worker`); Windows shows a UAC prompt. Over-the-shoulder
   elevation with a separate administrator account is not supported because that
