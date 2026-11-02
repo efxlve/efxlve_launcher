@@ -11,9 +11,9 @@ Open work only. Delete the item when it lands.
 - EA anti-cheat titles (Battlefield, FC) stay on the EA App. Javelin rejects a
   stopped background service with `EC:10701`; do not attempt to bypass it.
 - Installs and updates still hand off to the EA App. The content service now
-  resolves builds, the download URL and the ZIP central directory, and verifies
-  a single range-downloaded entry (`ea_content.rs`); the full entry loop,
-  touchup installer and registry writes are open.
+  resolves builds, the download URL and the ZIP central directory, verifies one
+  entry and downloads a 12-entry batch (`ea_content.rs`); the full package loop,
+  touchup installer, registry writes and differential updates are open.
 - Pre-DiP titles (Dead Space 2, BFBC2) stay on the EA App.
 
 ## Linux/macOS: packaging and validation

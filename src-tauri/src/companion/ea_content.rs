@@ -70,6 +70,31 @@ pub(crate) struct ZipManifest {
     pub central_offset: u64,
 }
 
+/// Everything a full install needs: the signed package, the target folder and
+/// the entry list read from the ZIP central directory.
+#[derive(Debug, Clone)]
+pub(crate) struct InstallPlan {
+    pub offer_id: String,
+    pub build_id: String,
+    pub version: String,
+    pub download_url: String,
+    pub root: PathBuf,
+    pub manifest: ZipManifest,
+}
+
+impl InstallPlan {
+    pub(crate) fn total_compressed(&self) -> u64 {
+        self.manifest.total_compressed()
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct DownloadReport {
+    pub files: usize,
+    pub bytes: u64,
+    pub skipped: usize,
+}
+
 impl ZipManifest {
     pub(crate) fn total_compressed(&self) -> u64 {
         self.entries.iter().map(|entry| entry.compressed).sum()
@@ -140,6 +165,30 @@ pub(crate) async fn download_url(
         .ok_or_else(|| "EA content: downloadUrl missing".to_string())
 }
 
+/// Resolves the live build and its package for one offer.
+pub(crate) async fn plan_install(
+    access: &str,
+    offer_id: &str,
+    root: &Path,
+) -> Result<InstallPlan, String> {
+    let builds = available_builds(access, offer_id).await?;
+    let build = builds
+        .iter()
+        .find(|build| build.download_type.eq_ignore_ascii_case("live"))
+        .or_else(|| builds.first())
+        .ok_or_else(|| "EA content: no build for this offer".to_string())?;
+    let url = download_url(access, offer_id, &build.build_id).await?;
+    let manifest = read_manifest(&url).await?;
+    Ok(InstallPlan {
+        offer_id: offer_id.to_string(),
+        build_id: build.build_id.clone(),
+        version: build.game_version.clone(),
+        download_url: url,
+        root: root.to_path_buf(),
+        manifest,
+    })
+}
+
 /// Reads the ZIP central directory with range requests.
 pub(crate) async fn read_manifest(url: &str) -> Result<ZipManifest, String> {
     let client = client();
@@ -176,14 +225,23 @@ pub(crate) async fn download_entry(
     entry: &ZipEntry,
     destination: &Path,
 ) -> Result<u64, String> {
+    let client = client();
+    download_entry_with_client(&client, url, entry, destination).await
+}
+
+async fn download_entry_with_client(
+    client: &reqwest::Client,
+    url: &str,
+    entry: &ZipEntry,
+    destination: &Path,
+) -> Result<u64, String> {
     if entry.compressed > 256 * 1024 * 1024 {
         return Err("EA content: refusing an entry larger than 256 MB in the probe".into());
     }
-    let client = client();
 
     // The local header carries the name/extra lengths the central directory
     // does not repeat; read it first so the data range is exact.
-    let header = range_get(&client, url, entry.local_offset, entry.local_offset + 29).await?;
+    let header = range_get(client, url, entry.local_offset, entry.local_offset + 29).await?;
     if u32_at(&header, 0) != Some(LOCAL_SIG) {
         return Err("EA content: bad local header".into());
     }
@@ -191,7 +249,7 @@ pub(crate) async fn download_entry(
     let extra_len = u16_at(&header, 28).ok_or("EA content: short local header")? as u64;
     let data_start = entry.local_offset + 30 + name_len + extra_len;
     let data_end = data_start + entry.compressed - 1;
-    let packet = range_get(&client, url, data_start, data_end).await?;
+    let packet = range_get(client, url, data_start, data_end).await?;
     if packet.len() as u64 != entry.compressed {
         return Err(format!(
             "EA content: range returned {} bytes, expected {}",
@@ -228,6 +286,66 @@ pub(crate) async fn download_entry(
     }
     std::fs::write(destination, &data).map_err(|err| format!("EA content: {err}"))?;
     Ok(data.len() as u64)
+}
+
+/// Downloads a set of entries with four range workers.
+pub(crate) async fn download_entries(
+    url: &str,
+    root: &Path,
+    entries: &[ZipEntry],
+) -> Result<DownloadReport, String> {
+    let client = client();
+    let semaphore = std::sync::Arc::new(tokio::sync::Semaphore::new(4));
+    let mut set = tokio::task::JoinSet::new();
+    let mut skipped = 0usize;
+
+    for entry in entries {
+        if entry.name.is_empty() || entry.name.ends_with('/') {
+            skipped += 1;
+            continue;
+        }
+        let permit = semaphore
+            .clone()
+            .acquire_owned()
+            .await
+            .map_err(|err| format!("EA content: {err}"))?;
+        let client = client.clone();
+        let url = url.to_string();
+        let root = root.to_path_buf();
+        let entry = entry.clone();
+        set.spawn(async move {
+            let _permit = permit;
+            let destination = probe_path(&root, &entry.name)?;
+            if entry.compressed == 0 {
+                if let Some(parent) = destination.parent() {
+                    tokio::fs::create_dir_all(parent)
+                        .await
+                        .map_err(|err| format!("EA content: {err}"))?;
+                }
+                tokio::fs::write(&destination, [])
+                    .await
+                    .map_err(|err| format!("EA content: {err}"))?;
+                return Ok::<u64, String>(0);
+            }
+            download_entry_with_client(&client, &url, &entry, &destination).await
+        });
+    }
+
+    let mut report = DownloadReport {
+        skipped,
+        ..DownloadReport::default()
+    };
+    while let Some(result) = set.join_next().await {
+        match result {
+            Ok(Ok(bytes)) => {
+                report.files += 1;
+                report.bytes += bytes;
+            }
+            Ok(Err(err)) => return Err(err),
+            Err(err) => return Err(format!("EA content: task: {err}")),
+        }
+    }
+    Ok(report)
 }
 
 async fn graphql(
@@ -573,6 +691,50 @@ mod tests {
         assert!(probe_path(root, "../x").is_err());
         assert!(probe_path(root, "a/../../x").is_err());
         assert!(probe_path(root, "Data/file.bin").is_ok());
+    }
+
+    #[test]
+    #[ignore = "talks to EA's content service and downloads a few small entries"]
+    fn manual_content_batch() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let result = runtime.block_on(async {
+            let access = super::super::ea_login::ensure_access().await?;
+            let root = std::env::temp_dir().join("efxlve-ea-batch");
+            let _ = std::fs::remove_dir_all(&root);
+            let plan = plan_install(&access, "Origin.OFR.50.0002412", &root).await?;
+            println!(
+                "plan: offer={} build={} version={} entries={} total={}",
+                plan.offer_id,
+                plan.build_id,
+                plan.version,
+                plan.manifest.entries.len(),
+                plan.total_compressed()
+            );
+            let small: Vec<ZipEntry> = plan
+                .manifest
+                .entries
+                .iter()
+                .filter(|entry| entry.compressed > 0 && entry.compressed <= 64 * 1024)
+                .take(12)
+                .cloned()
+                .collect();
+            println!("batch: {} small entries", small.len());
+            let report = download_entries(&plan.download_url, &plan.root, &small).await?;
+            println!("report: {report:?}");
+            let expected: u64 = small.iter().map(|entry| entry.uncompressed).sum();
+            println!("expected uncompressed: {expected}");
+            if report.bytes != expected {
+                return Err(format!(
+                    "batch bytes {} != expected {expected}",
+                    report.bytes
+                ));
+            }
+            Ok::<(), String>(())
+        });
+        println!("result: {result:?}");
     }
 
     #[test]
