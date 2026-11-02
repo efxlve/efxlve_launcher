@@ -3500,5 +3500,9 @@
   "manage.ubiImportSaves": "Connect 저장 파일 가져오기",
   "manage.ubiImportSavesWorking": "Connect 저장 파일을 가져오는 중…",
   "manage.ubiImportSavesDone": "저장 파일 {count}개를 가져왔습니다",
-  "manage.ubiImportSavesNone": "가져올 클래식 Connect 저장 파일이 없습니다"
+  "manage.ubiImportSavesNone": "가져올 클래식 Connect 저장 파일이 없습니다",
+  "settings.eaDirectTitle": "Launch EA games without the EA App",
+  "settings.eaDirectDesc": "Stops the EA background service for this launch, starts the game through the direct path, then restores the service. Denuvo titles use the EFXLVE LSX server.",
+  "settings.eaDirectFailed": "Last direct launch failed: {error}",
+  "settings.eaDirectGroup": "EA App"
 }

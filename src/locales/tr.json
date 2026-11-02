@@ -3500,5 +3500,9 @@
   "manage.ubiImportSaves": "Connect kayıtlarını içe aktar",
   "manage.ubiImportSavesWorking": "Connect kayıtları içe aktarılıyor…",
   "manage.ubiImportSavesDone": "{count} kayıt slotu içe aktarıldı",
-  "manage.ubiImportSavesNone": "İçe aktarılacak klasik Connect kaydı yok"
+  "manage.ubiImportSavesNone": "İçe aktarılacak klasik Connect kaydı yok",
+  "settings.eaDirectTitle": "EA oyunlarını EA App olmadan başlat",
+  "settings.eaDirectDesc": "Bu başlatma için EA arka plan servisini durdurur, oyunu doğrudan yola başlatır ve sonra servisi geri açar. Denuvo oyunları EFXLVE LSX sunucusunu kullanır.",
+  "settings.eaDirectFailed": "Son doğrudan başlatma başarısız: {error}",
+  "settings.eaDirectGroup": "EA App"
 }

@@ -1703,6 +1703,12 @@ fn init_portable_mode() {}
 fn main() {
     ensure_std_streams();
     init_portable_mode();
+    // Headless EA LSX capture used by the field-test script; it must run
+    // before the single-instance lock and the Tauri window.
+    if std::env::args().any(|arg| arg == "--ea-lsx-test") {
+        companion::ea_lsx_test();
+        return;
+    }
     // Rockstar's launcher only continues when a process named
     // `EpicGamesLauncher.exe` is in its ancestor chain. This binary runs as
     // that relay copy when `legendary launch --wrapper` starts it, so Rockstar

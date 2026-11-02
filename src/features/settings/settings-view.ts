@@ -99,7 +99,7 @@ import { keepDiscordOpen } from "../discord/discord-view";
 import { pcCheckResultHtml } from "./pc-check";
 import { storeLogo } from "../store/store-logos";
 import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, getSteamTryRate } from "../store/store-view";
-import { companionGetClientSettings, ubiDirectProbe, ubiDirectPlan, ubiDirectInstall } from "../../companion";
+import { companionGetClientSettings, eaDirectStatus, ubiDirectProbe, ubiDirectPlan, ubiDirectInstall } from "../../companion";
 import { controllerKind } from "../gamepad/gamepad";
 import {
   achievementClearCustomSound,
@@ -670,6 +670,17 @@ function renderIntegrations(): string {
     t("settings.afterPlayingTitle"),
   );
 
+  // EA direct launch: our LSX server answers the game and the EA background
+  // service is stopped only for the session, then restored.
+  const eaDirectGroup = group(
+    row(
+      t("settings.eaDirectTitle"),
+      `${t("settings.eaDirectDesc")}${S.eaDirectLastError ? ` <span class="row-meta">${esc(t("settings.eaDirectFailed", { error: S.eaDirectLastError }))}</span>` : ""}`,
+      toggle("toggle-ea-direct", S.eaDirectEnabled),
+    ),
+    t("settings.eaDirectGroup"),
+  );
+
   return (
     infoBox("settings.integrationsInfo") +
     // The Epic Games Launcher scan/removal and the EOS overlay are Windows
@@ -682,6 +693,7 @@ function renderIntegrations(): string {
     group(nileGroup, t("settings.nileTitle")) +
     group(renderUbiDirect(), t("external.ubisoftTitle")) +
     renderSteamGroup() +
+    eaDirectGroup +
     afterPlaying +
     group(sgdb, t("settings.coverArtTitle")) +
     group(igdb, t("settings.igdbGroup")) +
@@ -2431,7 +2443,7 @@ export async function loadIntegrationsView(force = false): Promise<void> {
   S.settingsIntegrationsLoading = true;
   render();
   try {
-    const [eglList, eglPresent, eos, galaxyList, steamState, clientSettings, ubiDirect] = await Promise.all([
+    const [eglList, eglPresent, eos, galaxyList, steamState, clientSettings, ubiDirect, eaDirect] = await Promise.all([
       epicDetectEglGames().catch(() => [] as EglDetectedGame[]),
       eglLauncherPresent().catch(() => false),
       eosOverlayStatus().catch(() => null),
@@ -2439,6 +2451,7 @@ export async function loadIntegrationsView(force = false): Promise<void> {
       steamStatus().catch(() => null),
       companionGetClientSettings().catch(() => null),
       ubiDirectProbe().catch(() => null),
+      eaDirectStatus().catch(() => null),
     ]);
     // A null from the backend (older binary, shape change) must not white-screen
     // the page: the lists are read with .length right after this.
@@ -2449,6 +2462,8 @@ export async function loadIntegrationsView(force = false): Promise<void> {
     S.steamStatus = steamState;
     S.companionCloseAfterPlay = clientSettings?.closeAfterPlay ?? {};
     S.ubiDirect = ubiDirect;
+    S.eaDirectEnabled = eaDirect?.enabled ?? false;
+    S.eaDirectLastError = eaDirect?.lastError ?? "";
     syncEosNotice();
     S.settingsIntegrationsLoaded = true;
   } catch {

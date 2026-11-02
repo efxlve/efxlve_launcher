@@ -236,9 +236,80 @@ pub(crate) async fn launch_path(install_path: &str, store_id: &str) -> Result<u3
         .map(|tokens| tokens.name)
         .unwrap_or_default();
     let env = environment(&access, &launch_token, &player, "en_US", &plan);
-    let pid = spawn(&plan, &env)?;
+    super::ea_lsx::ensure_started(3216, &access)?;
+
+    // The game asks the EA background service first; with it stopped it uses
+    // the LSX port we just opened. The service is put back when the game exits.
+    let service_was_running = service_running();
+    if service_was_running {
+        stop_service();
+    }
+
+    let mut child = match spawn(&plan, &env) {
+        Ok(child) => child,
+        Err(err) => {
+            if service_was_running {
+                start_service();
+            }
+            return Err(err);
+        }
+    };
+    let pid = child.id();
+    if service_was_running {
+        std::thread::spawn(move || {
+            let _ = child.wait();
+            start_service();
+        });
+    }
     clear_error();
     Ok(pid)
+}
+
+/// `EABackgroundService` is the EA client service the game looks for first.
+#[cfg(windows)]
+fn service_running() -> bool {
+    use std::os::windows::process::CommandExt;
+    let mut cmd = std::process::Command::new("sc.exe");
+    cmd.args(["query", "EABackgroundService"]);
+    cmd.creation_flags(0x0800_0000);
+    cmd.output()
+        .map(|output| String::from_utf8_lossy(&output.stdout).contains("RUNNING"))
+        .unwrap_or(false)
+}
+
+#[cfg(not(windows))]
+fn service_running() -> bool {
+    false
+}
+
+#[cfg(windows)]
+fn sc(verb: &str) -> bool {
+    use std::os::windows::process::CommandExt;
+    let mut cmd = std::process::Command::new("sc.exe");
+    cmd.args([verb, "EABackgroundService"]);
+    cmd.creation_flags(0x0800_0000);
+    cmd.status().map(|status| status.success()).unwrap_or(false)
+}
+
+#[cfg(not(windows))]
+fn sc(_verb: &str) -> bool {
+    false
+}
+
+fn stop_service() {
+    let _ = sc("stop");
+    // `sc stop` returns while the service is still stopping; the port must be
+    // free before the game starts, so wait for the STOPPED state.
+    for _ in 0..20 {
+        if !service_running() {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(250));
+    }
+}
+
+fn start_service() {
+    let _ = sc("start");
 }
 
 /// The diagnostic row behind Settings > Integrations.
@@ -273,7 +344,7 @@ pub(crate) fn probe(game: &FoundGame) -> EaDirectProbe {
 }
 
 #[cfg(windows)]
-fn spawn(plan: &LaunchPlan, env: &[(String, String)]) -> Result<u32, String> {
+fn spawn(plan: &LaunchPlan, env: &[(String, String)]) -> Result<std::process::Child, String> {
     let target = if plan.eaac {
         eaac_launcher(&plan.work_dir)
             .ok_or_else(|| "EA anti-cheat launcher is missing".to_string())?
@@ -296,11 +367,11 @@ fn spawn(plan: &LaunchPlan, env: &[(String, String)]) -> Result<u32, String> {
     let child = cmd
         .spawn()
         .map_err(|err| format!("{}: {err}", target.display()))?;
-    Ok(child.id())
+    Ok(child)
 }
 
 #[cfg(not(windows))]
-fn spawn(_plan: &LaunchPlan, _env: &[(String, String)]) -> Result<u32, String> {
+fn spawn(_plan: &LaunchPlan, _env: &[(String, String)]) -> Result<std::process::Child, String> {
     Err("EA direct launch is Windows-only".into())
 }
 
@@ -648,7 +719,6 @@ mod tests {
     #[test]
     #[ignore = "runs the LSX listener while launching Mirror's Edge Catalyst"]
     fn manual_lsx_catalyst() {
-        let _server = super::super::ea_lsx::start(3216).expect("LSX listener");
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -658,7 +728,7 @@ mod tests {
             "1026480",
         ));
         println!("launch: {result:?}");
-        std::thread::sleep(std::time::Duration::from_secs(35));
+        std::thread::sleep(std::time::Duration::from_secs(60));
     }
 
     #[test]
@@ -685,7 +755,7 @@ mod tests {
             .unwrap_or_else(|_| access.clone());
         let env = environment(&access, &token, "Player", "en_US", &plan);
         match spawn(&plan, &env) {
-            Ok(pid) => println!("started pid {pid}"),
+            Ok(child) => println!("started pid {}", child.id()),
             Err(err) => println!("failed: {err}"),
         }
     }
@@ -714,7 +784,7 @@ mod tests {
             .unwrap_or_else(|_| access.clone());
         let env = environment(&access, &token, "Player", "en_US", &plan);
         match spawn(&plan, &env) {
-            Ok(pid) => println!("started pid {pid}"),
+            Ok(child) => println!("started pid {}", child.id()),
             Err(err) => println!("failed: {err}"),
         }
     }

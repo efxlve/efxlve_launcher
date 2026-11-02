@@ -5,7 +5,8 @@
 //! returns an AES-128-CBC encrypted XML body plus an `x-signature` header; the
 //! game expects the 65-byte signature prefix followed by the encrypted XML.
 //! This module asks for that license with the signed-in account token and
-//! writes it next to the ones the EA app already left there.
+//! writes it next to the ones the EA app already left there. The format follows
+//! Maxima (GPL-3.0).
 
 use std::path::PathBuf;
 
@@ -141,6 +142,61 @@ fn decrypt(data: &[u8]) -> Result<Vec<u8>, String> {
         .decrypt_padded_mut::<Pkcs7>(&mut buffer)
         .map_err(|_| "EA license: decrypt failed".to_string())?;
     Ok(plain.to_vec())
+}
+
+/// Requests the Denuvo `GameToken` the LSX `RequestLicense` handler returns.
+///
+/// The game supplies a request ticket and a ticket engine; the license service
+/// answers with the XML license that carries the token. This is separate from
+/// the `.dlf`: the token is what the game's Denuvo layer waits for.
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn game_token(
+    access: &str,
+    content_id: &str,
+    machine_hash: &str,
+    request_ticket: &str,
+    ticket_engine: &str,
+) -> Result<String, String> {
+    let nonce: String = (0..4)
+        .map(|_| format!("{:02x}", rand::random::<u8>()))
+        .collect();
+    let response = reqwest::Client::new()
+        .get(ENDPOINT)
+        .query(&[
+            ("contentId", content_id),
+            ("machineHash", machine_hash),
+            ("nonce", &nonce),
+            ("ea_eadmtoken", access),
+            ("requestToken", request_ticket),
+            ("requestType", ticket_engine),
+        ])
+        .header("X-Requester-Id", "Origin Online Activation")
+        .header("User-Agent", "EACTransaction")
+        .send()
+        .await
+        .map_err(|e| format!("EA license: {e}"))?;
+
+    if response.status() != reqwest::StatusCode::OK {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Err(format!("EA license: HTTP {status}: {body}"));
+    }
+
+    let body = response
+        .bytes()
+        .await
+        .map_err(|e| format!("EA license: {e}"))?
+        .to_vec();
+    let plain = decrypt(&body)?;
+    let xml = String::from_utf8(plain).map_err(|_| "EA license: not UTF-8".to_string())?;
+    tag_text(&xml, "GameToken").ok_or_else(|| "EA license: no GameToken".to_string())
+}
+
+fn tag_text(xml: &str, name: &str) -> Option<String> {
+    let open = format!("<{name}>");
+    let start = xml.find(&open)? + open.len();
+    let end = xml[start..].find(&format!("</{name}>"))? + start;
+    Some(xml[start..end].to_string())
 }
 
 fn encrypt(data: &[u8]) -> Vec<u8> {

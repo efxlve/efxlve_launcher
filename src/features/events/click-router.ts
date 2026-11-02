@@ -113,7 +113,7 @@ import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { companionStoreId, loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaLoginOpen, ubiDirectAdopt, ubiDirectCancel, ubiDirectImportSaves, ubiDirectInstall, ubiDirectMove, ubiDirectPlan, ubiDirectProbe, ubiDirectRelease, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaDirectSetEnabled, eaLoginOpen, ubiDirectAdopt, ubiDirectCancel, ubiDirectImportSaves, ubiDirectInstall, ubiDirectMove, ubiDirectPlan, ubiDirectProbe, ubiDirectRelease, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
 import { isSmartCollection, smartCollection } from "../library/smart-collections";
@@ -1582,6 +1582,13 @@ document.addEventListener("click", (e) => {
       S.companionCloseAfterPlay = { ...S.companionCloseAfterPlay, [store]: enabled };
       void companionSetCloseAfterPlay(store, enabled).catch((e: unknown) => toast(String(e), "err"));
     }
+    render();
+  } else if (act === "toggle-ea-direct") {
+    // EA direct launch: Rust stops the background service for the session,
+    // serves LSX itself and restores the service when the game exits.
+    const enabled = (t as HTMLInputElement).checked;
+    S.eaDirectEnabled = enabled;
+    void eaDirectSetEnabled(enabled).catch((e: unknown) => toast(String(e), "err"));
     render();
   } else if (act === "toggle-screenshot-compression") {
     S.screenshotCompressionEnabled = !S.screenshotCompressionEnabled;

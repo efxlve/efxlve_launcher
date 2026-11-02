@@ -199,6 +199,61 @@ pub(crate) async fn launch_token(access: &str) -> Result<String, String> {
     Err("EA launch token: access_token missing".into())
 }
 
+/// Exchanges the stored access token for an authorization code for one client.
+/// The LSX `GetAuthCode` handler serves this to games that sign in through the
+/// EA overlay.
+pub(crate) async fn auth_code(access: &str, client_id: &str) -> Result<String, String> {
+    let pc_sign = tokio::task::spawn_blocking(pcsign::generate)
+        .await
+        .map_err(|e| e.to_string())??;
+    let verifier = new_verifier();
+    let code_challenge = challenge(&verifier);
+    let nonce = rand::random::<i32>().to_string();
+
+    let mut url = url::Url::parse(AUTH_URL).map_err(|e| e.to_string())?;
+    {
+        let mut query = url.query_pairs_mut();
+        query
+            .append_pair("client_id", client_id)
+            .append_pair("sbiod_enabled", "false")
+            .append_pair("response_type", "code")
+            .append_pair("locale", "en_US")
+            .append_pair("pc_sign", &pc_sign)
+            .append_pair("nonce", &nonce)
+            .append_pair("code_challenge_method", "S256")
+            .append_pair("code_challenge", &code_challenge)
+            .append_pair("access_token", access);
+    }
+
+    let client = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .map_err(|e| e.to_string())?;
+    let response = client.get(url).send().await.map_err(|e| e.to_string())?;
+    if !response.status().is_redirection() {
+        return Err(format!("EA auth code: HTTP {}", response.status()));
+    }
+    let location = response
+        .headers()
+        .get("location")
+        .and_then(|value| value.to_str().ok())
+        .ok_or_else(|| "EA auth code: no redirect".to_string())?;
+    let location = if location.starts_with("qrc") {
+        location.replace("qrc:/html", "http://127.0.0.1")
+    } else {
+        location.to_string()
+    };
+    let parsed = url::Url::parse(&location).map_err(|e| e.to_string())?;
+    let query = parsed.fragment().or_else(|| parsed.query()).unwrap_or("");
+    for pair in query.split('&') {
+        let (key, value) = pair.split_once('=').unwrap_or((pair, ""));
+        if key == "code" {
+            return Ok(value.to_string());
+        }
+    }
+    Err("EA auth code: code missing".into())
+}
+
 /* ---------- Sign-in window ---------- */
 
 const WATCH_SCRIPT: &str = r#"

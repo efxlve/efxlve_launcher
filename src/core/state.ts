@@ -782,6 +782,9 @@ export const S = {
   companionBusy: "",
   /** Per-store "close the client after playing" toggles (Integrations page). */
   companionCloseAfterPlay: {} as Record<string, boolean>,
+  /** Opt-in direct EA launch (Integrations page). */
+  eaDirectEnabled: false,
+  eaDirectLastError: "",
   steamApiKey: (null) as string | null,
   steamDetails: (new Map()) as Map<string, import("../steam").SteamGameDetails>,
   /** Steam account sign-in (ROADMAP §13). `null` until the first status call. */

@@ -185,6 +185,7 @@ These open-source tools ship with the launcher or are downloaded once at first u
 - [gogdl](https://github.com/Heroic-Games-Launcher/heroic-gogdl) — GOG installs, updates and cloud saves.
 - [Nile](https://github.com/imLinguin/nile) — Amazon Games library, installs and updates.
 - [Comet](https://github.com/imLinguin/comet) — open-source GOG Galaxy Communication Service, run while a GOG game plays so achievements unlock without the Galaxy client.
+- [Maxima](https://github.com/ArmchairDevelopers/Maxima) (GPL-3.0) — the EA LSX message shapes and activation license format the direct EA launch follows. No Maxima binary ships with the launcher.
 - [SteamGridDB](https://www.steamgriddb.com/) — high-resolution cover art for the library grid.
 
 ### Storefront extensions & community tooling

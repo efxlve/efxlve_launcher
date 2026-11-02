@@ -3500,5 +3500,9 @@
   "manage.ubiImportSaves": "นำเข้าเซฟของ Connect",
   "manage.ubiImportSavesWorking": "กำลังนำเข้าเซฟของ Connect…",
   "manage.ubiImportSavesDone": "นำเข้าเซฟแล้ว {count} สล็อต",
-  "manage.ubiImportSavesNone": "ไม่มีเซฟ Connect แบบคลาสสิกให้นำเข้า"
+  "manage.ubiImportSavesNone": "ไม่มีเซฟ Connect แบบคลาสสิกให้นำเข้า",
+  "settings.eaDirectTitle": "Launch EA games without the EA App",
+  "settings.eaDirectDesc": "Stops the EA background service for this launch, starts the game through the direct path, then restores the service. Denuvo titles use the EFXLVE LSX server.",
+  "settings.eaDirectFailed": "Last direct launch failed: {error}",
+  "settings.eaDirectGroup": "EA App"
 }

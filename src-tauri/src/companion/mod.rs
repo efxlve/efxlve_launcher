@@ -71,6 +71,23 @@ pub(crate) struct FoundGame {
     pub description: String,
 }
 
+/// A headless EA LSX capture for support and field tests.
+///
+/// It starts the listener, launches Mirror's Edge Catalyst through the direct
+/// path and keeps the process alive so the game can connect. Run it elevated
+/// when the EA background service has to be stopped first.
+pub(crate) fn ea_lsx_test() {
+    let path = r"C:\Program Files (x86)\Steam\steamapps\common\Mirrors Edge Catalyst";
+    let content_id = "1026480";
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("EA LSX test runtime");
+    let result = runtime.block_on(ea_direct::launch_path(path, content_id));
+    println!("EA LSX launch: {result:?}");
+    std::thread::sleep(std::time::Duration::from_secs(60));
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CompanionGame {

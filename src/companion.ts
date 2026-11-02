@@ -375,6 +375,17 @@ export const companionGetClientSettings = () =>
 export const companionSetCloseAfterPlay = (store: CompanionStore, enabled: boolean) =>
   invoke<void>("companion_set_close_after_play", { store, enabled });
 
+/** Opt-in direct EA launch: no EA app, our LSX server answers the game. */
+export interface EaDirectStatus {
+  enabled: boolean;
+  lastError: string;
+}
+
+export const eaDirectStatus = () => invoke<EaDirectStatus>("ea_direct_status");
+
+export const eaDirectSetEnabled = (enabled: boolean) =>
+  invoke<void>("ea_direct_set_enabled", { enabled });
+
 export const companionResolveCovers = (
   queries: { store: string; id: string; name: string; storeId: string; cover?: string }[],
 ) => invoke<CompanionCoverHit[]>("companion_resolve_covers", { queries });

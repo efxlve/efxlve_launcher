@@ -3500,5 +3500,9 @@
   "manage.ubiImportSaves": "Importar partidas de Connect",
   "manage.ubiImportSavesWorking": "Importando partidas de Connect…",
   "manage.ubiImportSavesDone": "{count} partida(s) importada(s)",
-  "manage.ubiImportSavesNone": "No hay partidas clásicas de Connect para importar"
+  "manage.ubiImportSavesNone": "No hay partidas clásicas de Connect para importar",
+  "settings.eaDirectTitle": "Launch EA games without the EA App",
+  "settings.eaDirectDesc": "Stops the EA background service for this launch, starts the game through the direct path, then restores the service. Denuvo titles use the EFXLVE LSX server.",
+  "settings.eaDirectFailed": "Last direct launch failed: {error}",
+  "settings.eaDirectGroup": "EA App"
 }
