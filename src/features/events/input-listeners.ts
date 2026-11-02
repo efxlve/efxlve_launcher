@@ -24,7 +24,6 @@ import { ubiDirectSetClientLaunch } from "../../companion";
 import { esc } from "../../core/utils";
 import { t as i18nT } from "../../i18n";
 import {
-  clipSetHotkey,
   clipSetOptions,
   epicInstallGame,
   epicSaveGameSettings,
@@ -32,6 +31,7 @@ import {
   epicSetSteamGridKey,
   epicUninstallGame,
 } from "../../epic";
+import { pushClipSettings } from "../screenshots/ss-settings";
 import {
   closeCollectionModal,
 } from "../collections/collections-view";
@@ -474,7 +474,10 @@ document.addEventListener("change", (e) => {
       const name = found ? found.name.split(" ")[0] : `Key_${code}`;
       localStorage.setItem(CLIP_HOTKEY_KEY, String(code));
       localStorage.setItem(CLIP_HOTKEY_NAME_KEY, name);
-      if (isTauri) void clipSetHotkey(code);
+      // The switch decides whether the recorder is armed, not the picker: with
+      // recording off the key is only stored, so a chosen hotkey can no longer
+      // start a clip behind a disabled toggle.
+      pushClipSettings();
       toast(i18nT("ss.hotkeyUpdated", { key: name }), "ok");
       render();
     }

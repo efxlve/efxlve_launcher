@@ -36,7 +36,12 @@ static QUALITY: AtomicU32 = AtomicU32::new(80);
 static MAX_SECS: AtomicU32 = AtomicU32::new(DEFAULT_MAX_SECS as u32);
 /// Frame height; 0 keeps the screen's own size.
 static HEIGHT: AtomicU32 = AtomicU32::new(0);
-static CLIP_HOTKEY: AtomicU32 = AtomicU32::new(0x78); // VK_F9
+/// Key that starts and stops a recording; 0 means disarmed.
+///
+/// It starts disarmed on purpose: the frontend sends the stored key (or 0 while
+/// the recorder switch is off) right after boot, and until that arrives nothing
+/// may record from behind a disabled switch.
+static CLIP_HOTKEY: AtomicU32 = AtomicU32::new(0);
 static STARTED_AT: Mutex<Option<Instant>> = Mutex::new(None);
 static TARGET: Mutex<Option<PathBuf>> = Mutex::new(None);
 static FRAMES: AtomicU32 = AtomicU32::new(0);

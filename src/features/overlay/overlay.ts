@@ -24,7 +24,7 @@ import { HAS_NATIVE_CAPTURE, IS_WINDOWS } from "../../core/platform";
 import { ensureNotesMigration, notesFontSize, onNotesChanged } from "../notes/notes-client";
 import { handleOverlayNotesAction, overlayNotesScope, refreshOverlayNotes, renderOverlayNotes, setOverlayNotesScope, setOverlayNotesSettingsRepaint } from "../notes/overlay-notes";
 import { ssDensity, ssFavorites, ssNotifyOn, ssSort, ssSortItems, ssSoundOn, ssToggleFavorite } from "../screenshots/ss-settings";
-import { clipFps, clipHotkeyName } from "../screenshots/ss-settings";
+import { clipEnabled, clipFps, clipHotkeyName } from "../screenshots/ss-settings";
 import { epicGetScreenshotDisabledGames, epicSetScreenshotDisabledGames, epicOpenFolderPath } from "../../epic";
 import {
   clipList,
@@ -1646,6 +1646,7 @@ function clipClock(seconds: number): string {
 
 function clipWidgetHtml(): string {
   const running = clipState?.running ?? false;
+  const enabled = clipEnabled();
   const seconds = clipState?.seconds ?? 0;
   const frames = clipState?.frames ?? 0;
   const error = clipState?.error ?? "";
@@ -1665,11 +1666,15 @@ function clipWidgetHtml(): string {
         <span>${esc(t("overlay.clipFrames", { count: String(frames) }))}</span>
         <span>${esc(t("overlay.clipRate", { rate }))}</span>
       </div>
-      <button class="ov-clip-btn${running ? " is-stop" : ""}" data-ov="clip-toggle">
+      ${
+        enabled || running
+          ? `<button class="ov-clip-btn${running ? " is-stop" : ""}" data-ov="clip-toggle">
         ${running ? icon("square", 14) : icon("video", 14)}
         <span>${esc(t(running ? "overlay.clipStop" : "overlay.clipRecord"))}</span>
       </button>
-      <div class="ov-clip-hint">${esc(t("overlay.clipHotkeyHint", { key: clipHotkeyName() }))}</div>
+      <div class="ov-clip-hint">${esc(t("overlay.clipHotkeyHint", { key: clipHotkeyName() }))}</div>`
+          : ""
+      }
       ${error ? `<div class="ov-clip-error">${esc(localizeMessage(error))}</div>` : ""}
       ${lastClip ? `
         <div class="ov-clip-last" title="${esc(lastClip.path)}">
