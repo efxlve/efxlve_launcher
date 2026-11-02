@@ -23,6 +23,11 @@ $disk = Get-CimInstance Win32_DiskDrive | Select-Object -First 1
 $nic = Get-CimInstance Win32_NetworkAdapter -Filter "PhysicalAdapter=True AND NetEnabled=True" | Where-Object { $_.MACAddress -and $_.ServiceName -notmatch "vmnetadapter|vboxnetadp|ndisip|tap|hyperv|loopback" } | Select-Object -First 1
 $gid = 0
 if ($gpu -and $gpu.PNPDeviceID -match "DEV_([0-9A-Fa-f]+)") { $gid = [Convert]::ToInt32($Matches[1], 16) }
+$vol = ""
+$logical = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'" | Select-Object -First 1
+if ($logical -and $logical.VolumeSerialNumber) { $vol = $logical.VolumeSerialNumber.Trim() }
+$gpnp = ""
+if ($gpu -and $gpu.PNPDeviceID) { $gpnp = $gpu.PNPDeviceID.Trim() }
 $mac = ""
 if ($nic -and $nic.MACAddress) { $clean = $nic.MACAddress -replace "[:\-]", ""; if ($clean) { $mac = "`$$($clean.ToLower())" } }
 $osi = "1970-01-0100:00:00.000000000+0000"
@@ -40,6 +45,8 @@ try {
   msn = if ($board.SerialNumber) { $board.SerialNumber.Trim() } else { "None" }
   osi = $osi
   osn = if ($os.SerialNumber) { $os.SerialNumber.Trim() } else { "None" }
+  vol = $vol
+  gpnp = $gpnp
 } | ConvertTo-Json -Compress
 "#;
 
@@ -98,6 +105,10 @@ pub(crate) struct Hardware {
     pub disk_sn: String,
     pub gid: u32,
     pub mac: String,
+    /// `C:` volume serial, the field the license hash uses.
+    pub volume_sn: String,
+    /// Full PNP id of the first real GPU.
+    pub gpu_pnp_id: String,
 }
 
 impl Hardware {
@@ -156,6 +167,8 @@ pub(crate) fn hardware() -> Result<Hardware, String> {
         disk_sn: or_default(field("hsn"), "None"),
         gid: value.get("gid").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
         mac: field("mac"),
+        volume_sn: field("vol"),
+        gpu_pnp_id: field("gpnp"),
     })
 }
 
@@ -218,6 +231,8 @@ mod tests {
             disk_sn: "0000_0000_0000_0001_00A0_7525_5486_DF4D.".into(),
             gid: 42891,
             mac: "$381868d51eb1".into(),
+            volume_sn: String::new(),
+            gpu_pnp_id: String::new(),
         };
         assert_eq!(hardware.mid(), "4036799374369070529");
     }
@@ -240,6 +255,8 @@ mod tests {
             disk_sn: "DISK".into(),
             gid: 7,
             mac: "$001122334455".into(),
+            volume_sn: String::new(),
+            gpu_pnp_id: String::new(),
         };
         let body = b64(
             json!({

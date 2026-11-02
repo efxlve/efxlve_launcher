@@ -213,6 +213,22 @@ pub(crate) async fn launch(game: &FoundGame) -> Result<u32, String> {
 pub(crate) async fn launch_path(install_path: &str, store_id: &str) -> Result<u32, String> {
     let plan = plan(install_path, store_id).map_err(|err| err.to_string())?;
     let access = super::ea_login::ensure_access().await?;
+
+    // Frostbite titles read a signed license before the game window exists.
+    // A missing license is exactly the "sign in with your EA account" dialog.
+    if plan.ooa {
+        let version = super::ea_machine::activation_version(&plan.work_dir)?;
+        let hash = super::ea_machine::hardware_hash(version)?;
+        let signature_decoded = !plan.work_dir.join("Core/activation.exe").is_file();
+        super::ea_license::ensure_license(
+            &access,
+            &plan.content_id,
+            &hash,
+            signature_decoded,
+        )
+        .await?;
+    }
+
     let launch_token = super::ea_login::launch_token(&access)
         .await
         .unwrap_or_else(|_| access.clone());
@@ -346,6 +362,7 @@ fn launcher_entry(xml: &str) -> Option<(String, Vec<String>)> {
 }
 
 /// The non-trial launcher path, without its parameters.
+#[cfg(test)]
 fn launcher_path(xml: &str) -> Option<String> {
     launcher_entry(xml).map(|(path, _)| path)
 }
@@ -624,6 +641,35 @@ mod tests {
         });
         match result {
             Ok(token) => println!("opaque token length {}", token.len()),
+            Err(err) => println!("failed: {err}"),
+        }
+    }
+
+    #[test]
+    #[ignore = "launches Dead Space 2 with the license the EA app already wrote"]
+    fn manual_launch_deadspace() {
+        let root = PathBuf::from(r"C:\Program Files\EA Games\Dead Space 2");
+        let plan = LaunchPlan {
+            exe: root.join("deadspace2.exe"),
+            work_dir: root,
+            args: Vec::new(),
+            content_id: "1002974".into(),
+            eaac: false,
+            ooa: true,
+        };
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let access = rt
+            .block_on(super::super::ea_login::ensure_access())
+            .expect("access");
+        let token = rt
+            .block_on(super::super::ea_login::launch_token(&access))
+            .unwrap_or_else(|_| access.clone());
+        let env = environment(&access, &token, "Player", "en_US", &plan);
+        match spawn(&plan, &env) {
+            Ok(pid) => println!("started pid {pid}"),
             Err(err) => println!("failed: {err}"),
         }
     }

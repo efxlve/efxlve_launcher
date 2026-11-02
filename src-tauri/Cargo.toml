@@ -34,6 +34,8 @@ tar = "0.4"
 xz2 = "0.1"
 zstd = "0.13"
 sha2 = "0.10"
+aes = "0.8"
+cbc = "0.1"
 md-5 = "0.10"
 crc32fast = "1"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
