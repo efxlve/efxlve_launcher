@@ -3528,5 +3528,6 @@
   "ea.uninstalled": "अनइंस्टॉल हो गया।",
   "settings.eaInstallDirTitle": "EA इंस्टॉल फ़ोल्डर",
   "settings.eaInstallDirHint": "EA गेम डिफ़ॉल्ट रूप से यहाँ इंस्टॉल होते हैं, प्रति गेम एक सबफ़ोल्डर। खाली छोड़ने पर:",
-  "ea.legacyPackage": "यह लेगेसी EA इंस्टॉलर EA App के ज़रिए चलना चाहिए।"
+  "ea.legacyPackage": "यह लेगेसी EA इंस्टॉलर EA App के ज़रिए चलना चाहिए।",
+  "ea.uninstallLeftFiles": "अनइंस्टॉलर समाप्त हो गया, लेकिन {a1} में फ़ाइलें बची हैं। EFXLVE को व्यवस्थापक के रूप में चलाएँ या फ़ोल्डर हटाएँ।"
 }

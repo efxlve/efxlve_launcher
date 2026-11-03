@@ -3528,5 +3528,6 @@
   "ea.uninstalled": "Désinstallé.",
   "settings.eaInstallDirTitle": "Dossier d'installation EA",
   "settings.eaInstallDirHint": "Les jeux EA s'installent ici par défaut, un sous-dossier par jeu. Si vide :",
-  "ea.legacyPackage": "Cet ancien programme d'installation EA doit passer par l'EA App."
+  "ea.legacyPackage": "Cet ancien programme d'installation EA doit passer par l'EA App.",
+  "ea.uninstallLeftFiles": "Le désinstalleur a terminé, mais des fichiers restent dans {a1}. Lancez EFXLVE en administrateur ou supprimez le dossier."
 }

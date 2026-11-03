@@ -3528,5 +3528,6 @@
   "ea.uninstalled": "Desinstalado.",
   "settings.eaInstallDirTitle": "Pasta de instalação da EA",
   "settings.eaInstallDirHint": "Os jogos da EA são instalados aqui por padrão, uma subpasta por jogo. Se vazio:",
-  "ea.legacyPackage": "Este instalador antigo da EA deve ser executado pelo EA App."
+  "ea.legacyPackage": "Este instalador antigo da EA deve ser executado pelo EA App.",
+  "ea.uninstallLeftFiles": "O desinstalador terminou, mas restam arquivos em {a1}. Execute o EFXLVE como administrador ou exclua a pasta."
 }

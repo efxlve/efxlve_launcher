@@ -3528,5 +3528,6 @@
   "ea.uninstalled": "Deinstalliert.",
   "settings.eaInstallDirTitle": "EA-Installationsordner",
   "settings.eaInstallDirHint": "EA-Spiele werden standardmäßig hier installiert, ein Unterordner pro Spiel. Wenn leer:",
-  "ea.legacyPackage": "Dieser alte EA-Installer muss über die EA App ausgeführt werden."
+  "ea.legacyPackage": "Dieser alte EA-Installer muss über die EA App ausgeführt werden.",
+  "ea.uninstallLeftFiles": "Der Deinstaller ist fertig, aber in {a1} sind noch Dateien vorhanden. Starte EFXLVE als Administrator oder lösche den Ordner."
 }

@@ -3528,5 +3528,6 @@
   "ea.uninstalled": "ถอนการติดตั้งแล้ว",
   "settings.eaInstallDirTitle": "โฟลเดอร์ติดตั้ง EA",
   "settings.eaInstallDirHint": "เกม EA จะติดตั้งที่นี่โดยค่าเริ่มต้น มีโฟลเดอร์ย่อยต่อเกม หากเว้นว่าง:",
-  "ea.legacyPackage": "ตัวติดตั้ง EA รุ่นเก่านี้ต้องทำงานผ่าน EA App"
+  "ea.legacyPackage": "ตัวติดตั้ง EA รุ่นเก่านี้ต้องทำงานผ่าน EA App",
+  "ea.uninstallLeftFiles": "ตัวถอนการติดตั้งเสร็จแล้วแต่ยังมีไฟล์เหลือใน {a1} ให้เรียกใช้ EFXLVE ในฐานะผู้ดูแลระบบหรือลบโฟลเดอร์"
 }

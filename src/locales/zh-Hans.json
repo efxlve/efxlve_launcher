@@ -3528,5 +3528,6 @@
   "ea.uninstalled": "已卸载。",
   "settings.eaInstallDirTitle": "EA 安装文件夹",
   "settings.eaInstallDirHint": "EA 游戏默认安装在此处，每个游戏一个子文件夹。留空则使用：",
-  "ea.legacyPackage": "此旧版 EA 安装程序必须通过 EA App 运行。"
+  "ea.legacyPackage": "此旧版 EA 安装程序必须通过 EA App 运行。",
+  "ea.uninstallLeftFiles": "卸载程序已完成，但 {a1} 中仍有文件。请以管理员身份运行 EFXLVE 或删除该文件夹。"
 }

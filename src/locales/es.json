@@ -3528,5 +3528,6 @@
   "ea.uninstalled": "Desinstalado.",
   "settings.eaInstallDirTitle": "Carpeta de instalación de EA",
   "settings.eaInstallDirHint": "Los juegos de EA se instalan aquí por defecto, una subcarpeta por juego. Si se deja vacío:",
-  "ea.legacyPackage": "Este instalador antiguo de EA debe ejecutarse mediante la EA App."
+  "ea.legacyPackage": "Este instalador antiguo de EA debe ejecutarse mediante la EA App.",
+  "ea.uninstallLeftFiles": "El desinstalador terminó, pero quedan archivos en {a1}. Ejecuta EFXLVE como administrador o elimina la carpeta."
 }

@@ -429,8 +429,15 @@ pub(crate) fn uninstall_command(root: &Path) -> Option<UninstallCommand> {
         }
     }
 
-    // Pre-DiP installs keep the cleanup tool beside the manifest instead of a
-    // registry UninstallString (Dead Space 2).
+    // Pre-DiP installs keep the full uninstaller under `Common Files\
+    // EAInstaller\<game>\Cleanup.exe`; the copy beside the game is only the
+    // maintenance cleaner and can leave the registry and most files behind.
+    if let Some(cleanup) = common_cleanup(root) {
+        return Some(UninstallCommand {
+            program: cleanup,
+            args: vec!["uninstall_game".into(), "-autologging".into()],
+        });
+    }
     let cleanup = root.join("__Installer").join("Cleanup.exe");
     if cleanup.is_file() {
         return Some(UninstallCommand {
@@ -439,6 +446,22 @@ pub(crate) fn uninstall_command(root: &Path) -> Option<UninstallCommand> {
         });
     }
     None
+}
+
+/// `Common Files\EAInstaller\<folder>\Cleanup.exe` in either program-files view.
+fn common_cleanup(root: &Path) -> Option<PathBuf> {
+    let folder = root.file_name()?.to_str()?;
+    ["ProgramFiles(x86)", "ProgramFiles"]
+        .iter()
+        .filter_map(std::env::var_os)
+        .map(PathBuf::from)
+        .map(|base| {
+            base.join("Common Files")
+                .join("EAInstaller")
+                .join(folder)
+                .join("Cleanup.exe")
+        })
+        .find(|path| path.is_file())
 }
 
 /// `[HKEY_LOCAL_MACHINE\...\UninstallString]` → key and value name.

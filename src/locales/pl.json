@@ -3528,5 +3528,6 @@
   "ea.uninstalled": "Odinstalowano.",
   "settings.eaInstallDirTitle": "Folder instalacji EA",
   "settings.eaInstallDirHint": "Gry EA instalują się tutaj domyślnie, jeden podfolder na grę. Jeśli puste:",
-  "ea.legacyPackage": "Ten stary instalator EA musi zostać uruchomiony przez EA App."
+  "ea.legacyPackage": "Ten stary instalator EA musi zostać uruchomiony przez EA App.",
+  "ea.uninstallLeftFiles": "Deinstalator zakończył pracę, ale w {a1} pozostały pliki. Uruchom EFXLVE jako administrator lub usuń folder."
 }

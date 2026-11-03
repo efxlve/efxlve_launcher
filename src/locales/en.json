@@ -3528,5 +3528,6 @@
   "ea.uninstalled": "Uninstalled.",
   "settings.eaInstallDirTitle": "EA install folder",
   "settings.eaInstallDirHint": "EA games install here by default, one subfolder per game. If left empty:",
-  "ea.legacyPackage": "This legacy EA installer must run through the EA App."
+  "ea.legacyPackage": "This legacy EA installer must run through the EA App.",
+  "ea.uninstallLeftFiles": "The uninstaller finished, but files remain in {a1}. Run EFXLVE as administrator or remove the folder."
 }

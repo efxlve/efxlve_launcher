@@ -358,6 +358,37 @@ pub(crate) async fn install(
     let _ = std::fs::remove_file(cancel_path(&job_id));
 }
 
+/// Runs one command through UAC and waits for it. Used by uninstall, where the
+/// cleanup tool lives under `Program Files` and the launcher itself is not
+/// elevated.
+pub(crate) fn run_elevated(program: &std::path::Path, args: &[String]) -> Result<i32, String> {
+    #[cfg(windows)]
+    {
+        let params = args
+            .iter()
+            .map(|arg| quote_arg(arg))
+            .collect::<Vec<_>>()
+            .join(" ");
+        let exit = shell_process(program, &params, "runas")?;
+        exit.recv()
+            .map_err(|_| "EA elevated command closed without an exit code".to_string())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (program, args);
+        Err("@t:ea.elevationUnsupported".into())
+    }
+}
+
+#[cfg(windows)]
+fn quote_arg(arg: &str) -> String {
+    if arg.is_empty() || arg.chars().any(|ch| ch.is_whitespace() || ch == '"') {
+        format!("\"{}\"", arg.replace('"', "\\\""))
+    } else {
+        arg.to_string()
+    }
+}
+
 #[cfg(windows)]
 fn launch_worker(
     job_id: &str,

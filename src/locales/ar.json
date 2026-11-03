@@ -3528,5 +3528,6 @@
   "ea.uninstalled": "تمت الإزالة.",
   "settings.eaInstallDirTitle": "مجلد تثبيت EA",
   "settings.eaInstallDirHint": "تُثبَّت ألعاب EA هنا افتراضيًا، مجلد فرعي لكل لعبة. إذا تُرك فارغًا:",
-  "ea.legacyPackage": "يجب تشغيل مثبّت EA القديم هذا عبر تطبيق EA."
+  "ea.legacyPackage": "يجب تشغيل مثبّت EA القديم هذا عبر تطبيق EA.",
+  "ea.uninstallLeftFiles": "انتهى برنامج الإزالة لكن الملفات ما زالت في {a1}. شغّل EFXLVE كمسؤول أو احذف المجلد."
 }

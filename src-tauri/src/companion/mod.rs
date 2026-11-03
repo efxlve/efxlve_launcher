@@ -1095,7 +1095,28 @@ pub async fn ea_content_uninstall(id: String) -> Result<(), String> {
     let (_, owned, root) = ea_content_target(&id, None)?;
     let managed = ea_install::managed_root(&root);
     if let Some(command) = ea_install::uninstall_command(&root) {
-        if let Err(error) = ea_install::run_uninstall(&command).await {
+        let elevated = command
+            .program
+            .parent()
+            .map(|parent| !ea_install::folder_writable(parent))
+            .unwrap_or(false);
+        let result = if elevated {
+            let program = command.program.clone();
+            let args = command.args.clone();
+            match tokio::task::spawn_blocking(move || {
+                ea_elevated::run_elevated(&program, &args)
+            })
+            .await
+            {
+                Ok(Ok(0)) => Ok(()),
+                Ok(Ok(code)) => Err(format!("EA uninstaller exited with {code}")),
+                Ok(Err(error)) => Err(error),
+                Err(error) => Err(format!("EA uninstall: {error}")),
+            }
+        } else {
+            ea_install::run_uninstall(&command).await
+        };
+        if let Err(error) = result {
             // A launcher-owned folder can still be removed when the EA cleanup
             // tool refuses (for example because HKLM needs elevation).
             if !managed {
@@ -1115,6 +1136,9 @@ pub async fn ea_content_uninstall(id: String) -> Result<(), String> {
     ea_content::forget_install(&owned.id);
     if managed && tokio::fs::metadata(&root).await.is_ok() {
         let _ = tokio::fs::remove_dir_all(&root).await;
+    }
+    if !managed && tokio::fs::metadata(&root).await.is_ok() {
+        return Err(format!("@t:ea.uninstallLeftFiles\u{1f}{}", root.display()));
     }
     Ok(())
 }
