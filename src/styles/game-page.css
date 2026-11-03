@@ -686,13 +686,13 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-side-card { transition: border-color 140ms ease; }
 .gp-side-card:hover { border-color: var(--line-strong); }
 .hub-overview-main .hub-card { margin-bottom: 20px; }
-/* One-line EA App answer on the overview; the detail row is not a cover badge. */
-.ea-launch-mode { margin-bottom: 20px; }
-.ea-launch-mode-head { display: flex; align-items: center; gap: 8px; }
-.ea-launch-mode-head .row-title { flex: 1; min-width: 0; }
-.ea-launch-mode-head > svg { flex-shrink: 0; color: var(--text-2); }
-.ea-launch-mode .chip { flex-shrink: 0; }
-.ea-launch-mode-desc { margin-top: 6px; font-size: 12px; line-height: 1.5; color: var(--text-3); }
+/* EA App requirement folded into the anti-cheat notice. */
+.gp-ac-ea-line-host { margin: 10px 0 0 39px; padding-top: 10px; border-top: 1px solid var(--line); }
+.gp-ac-ea-line { display: flex; align-items: flex-start; gap: 9px; }
+.gp-ac-ea-icon { flex-shrink: 0; color: var(--warn); margin-top: 1px; }
+.gp-ac-ea-copy { min-width: 0; }
+.gp-ac-ea-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
+.gp-ac-ea-desc { margin: 4px 0 0; font-size: 12px; line-height: 1.5; color: var(--text-3); }
 .hub-card-header, .hltb-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
 .hub-card-title, .hltb-title { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 600; }
 .hub-card-title svg, .hltb-title svg { color: var(--text-3); }
