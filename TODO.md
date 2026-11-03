@@ -58,8 +58,11 @@ Open work only. Delete the item when it lands.
 - The older 1.0.62.0 build is offered by `availableBuilds` (20.76 GB) with its
   own sync ZIP, but its `eaPatchInfo`/`eaPatchImpl` are the same unfilled
   templates and its `ICU.tps.eaPatchDiff` is byte-identical to the live one.
-  Installing that 20.76 GB build would only repeat the full-file sync path; the
-  binary delta is not a usable old-to-new patch.
+  Installing that 20.76 GB build was deliberately skipped: it would only repeat
+  the full-file sync path, not exercise a usable binary delta.
+- Remaining EA blockers are user/environment facts: UAC approval for an elevated
+  touchup, Dead Space 2's display-hardware error, the Friend Pass-only A Way Out
+  entitlement, and EAAC's mandatory EA App.
 - Direct uninstall reads `<uninstall><path>` from the local installer manifest,
   resolves the registry `UninstallString` (including the 32-bit view) and runs
   the game's `Cleanup.exe`. A launcher-owned folder without a registry record is
