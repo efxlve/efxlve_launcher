@@ -1085,6 +1085,17 @@ pub async fn ea_content_verify(
     ea_content::verify_install(&plan, usize::MAX, u64::MAX, u64::MAX).await
 }
 
+/// The EA cleanup tools carry `requireAdministrator` even when their folder is
+/// writable, and every Program Files path needs the elevated copy.
+fn uninstall_needs_elevation(program: &std::path::Path) -> bool {
+    let text = program.to_string_lossy().to_ascii_lowercase();
+    text.contains("program files")
+        || program
+            .parent()
+            .map(|parent| !ea_install::folder_writable(parent))
+            .unwrap_or(false)
+}
+
 /// Removes an EA install through the game's own uninstall registry record.
 ///
 /// A launcher-owned folder without a registry record is removed directly; an
@@ -1095,11 +1106,7 @@ pub async fn ea_content_uninstall(id: String) -> Result<(), String> {
     let (_, owned, root) = ea_content_target(&id, None)?;
     let managed = ea_install::managed_root(&root);
     if let Some(command) = ea_install::uninstall_command(&root) {
-        let elevated = command
-            .program
-            .parent()
-            .map(|parent| !ea_install::folder_writable(parent))
-            .unwrap_or(false);
+        let elevated = uninstall_needs_elevation(&command.program);
         let result = if elevated {
             let program = command.program.clone();
             let args = command.args.clone();
@@ -2085,6 +2092,13 @@ mod tests {
         assert!(ea_direct_enabled(None));
         assert!(ea_direct_enabled(Some(true)));
         assert!(!ea_direct_enabled(Some(false)));
+    }
+
+    #[test]
+    fn ea_uninstallers_in_program_files_need_elevation() {
+        assert!(uninstall_needs_elevation(std::path::Path::new(
+            r"C:\Program Files (x86)\Common Files\EAInstaller\Dead Space 2\Cleanup.exe"
+        )));
     }
 
     #[test]
