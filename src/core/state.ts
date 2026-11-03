@@ -784,6 +784,8 @@ export const S = {
   /** Primary-store keys whose installed files come from a matching EA App copy. */
   epicBackendLaunch: new Map<string, string>(),
   epicCopyOverrides: new Map<string, EpicCopyOverride>(),
+  /** Primary-store keys that also have an installed EA App copy, for the notice. */
+  epicEaSource: new Map<string, string>(),
   companionStatus: [] as import("../companion").CompanionStoreStatus[],
   companionBusy: "",
   /** Per-store "close the client after playing" toggles (Integrations page). */

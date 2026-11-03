@@ -1228,6 +1228,13 @@ function ensureIgdbTransport(onReady: () => void): void {
 }
 
 export function openEpicModal(appName: string, isInitialOpen = true, _animateTabContent = true): void {
+  // A linked-client page for a title owned on a primary store is the same
+  // purchase; open its primary copy so the version selector never presents the
+  // delegated client as a second purchase.
+  if (isCompanionKey(appName)) {
+    const primary = gameVersionsOf(appName).find((version) => !isCompanionKey(version.appName));
+    if (primary && primary.appName !== appName) appName = primary.appName;
+  }
   const s = summaryOf(appName);
   if (!s) return;
   // The game page lives in the main webview; the storefront is a native child
@@ -1825,7 +1832,8 @@ function eaLaunchModeDescription(probe: EaDirectProbe): string {
 }
 
 function eaLaunchModeKey(s: EpicSummary): string | undefined {
-  return s.appName.startsWith("ea::") ? s.appName : S.epicBackendLaunch.get(s.appName);
+  if (s.appName.startsWith("ea::")) return s.appName;
+  return S.epicEaSource.get(s.appName) ?? S.epicBackendLaunch.get(s.appName);
 }
 
 function eaLaunchModeRequired(probe: EaDirectProbe): boolean {

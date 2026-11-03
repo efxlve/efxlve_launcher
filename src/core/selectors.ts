@@ -265,14 +265,15 @@ export function rebuildAllGamesMap(): void {
 }
 
 /**
- * EA App is a delegated backend, not a second purchase. When a primary-store
- * copy is uninstalled and the same title has an installed EA copy, borrow the
- * EA install and route Play through `ea::...` instead of showing a duplicate
- * EA library row.
+ * EA App is a delegated backend, not a second purchase. Match every primary
+ * copy to its installed EA copy: when the primary is uninstalled, borrow the EA
+ * install and route Play through `ea::...`; either way keep the EA source so the
+ * launch notice can name the client.
  */
 function reconcileEaBackedCopies(): void {
   S.epicBackendLaunch.clear();
   S.epicCopyOverrides.clear();
+  S.epicEaSource.clear();
 
   const installedEa = new Map<string, LibraryItem>();
   for (const game of S.companionSummaries) {
@@ -306,9 +307,10 @@ function reconcileEaBackedCopies(): void {
   ];
 
   for (const row of primary) {
-    if (row.installed) continue;
     const ea = installedEa.get(canonicalGameTitle(row.title));
     if (!ea) continue;
+    S.epicEaSource.set(row.key, ea.key);
+    if (row.installed) continue;
     S.epicBackendLaunch.set(row.key, ea.key);
     S.epicCopyOverrides.set(row.key, {
       installed: true,
@@ -669,9 +671,12 @@ export function gameVersionsOf(appNameOrTitle: string): GameVersion[] {
   }
 
   // Games the linked clients own (EA, Ubisoft, Xbox, Battle.net) are copies of
-  // the same title too; the selector can switch to them.
+  // the same title too; the selector can switch to them. A linked-client copy
+  // is only a separate version when no primary store owns the title. Otherwise
+  // it is the backend for that purchase (for example EA App installing an Epic
+  // game) and must not look like a second purchase.
   const companionMatch = pickStoreMatch(S.companionSummaries, (g) => g.title, (g) => g.installed, title);
-  if (companionMatch) {
+  if (companionMatch && (versions.length === 0 || isCompanionKey(appNameOrTitle))) {
     versions.push({
       source: companionMatch.source,
       appName: companionMatch.key,
