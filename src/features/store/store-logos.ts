@@ -38,12 +38,17 @@ const EXTRA_LOGOS: Record<string, string> = { ea, ubisoft, xbox, battlenet, riot
 // identifies both rows.
 EXTRA_LOGOS.amazon = luna;
 
+/** Asset URL of a store/launcher mark, or null when the id has none. */
+export function storeLogoUrl(id: string): string | null {
+  return STORE_LOGOS[id as StoreId] || EXTRA_LOGOS[id] || null;
+}
+
 /** Logo markup for a store card. */
 export function storeLogo(id: string, size = 24, className = "acc-store-logo"): string {
   // Custom games have no storefront mark; a gamepad keeps their rows from
   // rendering a blank icon slot.
   if (id === "custom") return icon("gamepad-2", size, className);
-  const src = STORE_LOGOS[id as StoreId] || EXTRA_LOGOS[id];
+  const src = storeLogoUrl(id);
   if (!src) return "";
   return `<img class="${className}" src="${src}" width="${size}" height="${size}" alt="" draggable="false" />`;
 }

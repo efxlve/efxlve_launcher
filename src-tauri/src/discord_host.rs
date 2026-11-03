@@ -788,6 +788,11 @@ fn handle_ready_report(app: &AppHandle, kids: i64, text: i64) {
             let _ = view.set_bounds(rect_of(x, y, w, h));
         }
         let _ = view.show();
+        // The child now owns the content area: the open notification dropdown
+        // has to stay above it.
+        if let Some(window) = show_app.get_window("main") {
+            crate::notif_overlay::raise_if_open_soon(&window);
+        }
         if first {
             web_log(&show_app, "page painted; child shown");
         }
@@ -878,6 +883,15 @@ async fn create_view(app: &AppHandle, width: f64, height: f64) -> Result<(), Str
                         .and_then(|(_, value)| value.parse::<i64>().ok())
                         .unwrap_or(0);
                     handle_ready_report(&nav_app, kids, text);
+                    return false;
+                }
+                if target.path() == "/notif-close" {
+                    // A click on the page while the notification dropdown is
+                    // open asks the shell to close it; the child stays put.
+                    let _ = nav_app.emit(
+                        "notif-overlay-act",
+                        serde_json::json!({ "act": "overlay-close" }),
+                    );
                     return false;
                 }
                 // Dev probe report: logged, then cancelled so the child stays
@@ -1211,6 +1225,10 @@ pub async fn discord_view_show(
             view.set_bounds(rect_of(x, y, width, height))
                 .map_err(|error| error.to_string())?;
             view.show().map_err(|error| error.to_string())?;
+            // Moving the child can lift it above an open notification dropdown.
+            if let Some(window) = app.get_window("main") {
+                crate::notif_overlay::raise_if_open_soon(&window);
+            }
         } else {
             park_loading(&view, width, height);
             // A page that never painted (a navigation can wedge the client) is

@@ -36,11 +36,18 @@ export function embeddedStoreHeld(): boolean {
 }
 
 /**
- * True while an embedded page child (a storefront or the Spotify page) fills the
- * content area. Main-webview surfaces need the child overlay (or a park) then.
+ * True while an embedded page child (a storefront, the Spotify page or the
+ * Discord page) fills the content area. Main-webview surfaces need the child
+ * overlay (or a park) then.
  */
 export function embeddedContentShown(): boolean {
-  return isTauri && ((S.view === "store" && S.storeShown) || embeddedStoreHeld() || S.view === "music");
+  return (
+    isTauri &&
+    ((S.view === "store" && S.storeShown) ||
+      embeddedStoreHeld() ||
+      S.view === "music" ||
+      S.view === "discord")
+  );
 }
 
 /** TV Mode registers the frame the child webview should cover. Null releases it. */

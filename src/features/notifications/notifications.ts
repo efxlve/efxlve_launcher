@@ -13,13 +13,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { EOS_OVERLAY_DECLINE_KEY, NOTIF_KEY, isTauri } from "../../core/constants";
 import { icon } from "../../core/icons";
-import { pendingGameUpdates } from "../../core/selectors";
+import { pendingGameUpdates, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import type { AppNotification, NotifKind, NotifTab } from "../../core/types";
 import type { EpicSummary } from "../../epic";
 import { esc, relativeTime } from "../../core/utils";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
+import { storeLogoUrl } from "../store/store-logos";
 import { embeddedContentShown, syncStoreViewSize } from "../store/store-view";
 import { overlayThemeStyle } from "../../core/overlay-theme";
 
@@ -53,6 +54,13 @@ const TAB_LABEL: Record<NotifTab, string> = {
   updates: "notif.tabUpdates",
   achievements: "notif.tabAchievements",
   system: "notif.tabSystem",
+};
+
+/** Glyph that names each tab before its label. */
+const TAB_ICON: Record<NotifTab, Parameters<typeof icon>[0]> = {
+  updates: "refresh",
+  achievements: "trophy",
+  system: "monitor",
 };
 
 const TAB_ORDER: readonly NotifTab[] = ["updates", "achievements", "system"];
@@ -360,21 +368,52 @@ function notifPanelData(): NotifPanelData {
   };
 }
 
-/** One pending update: the game title plus its version line. */
+/**
+ * The 28px tile in front of a row. A game-facing row shows the game's own art
+ * (the same cover the library paints) and falls back to the kind glyph when the
+ * store has no picture; the glyph stays visible under a cover that fails to
+ * load, because it is painted by the tile itself and the art sits above it.
+ */
+function artTile(appName: string | undefined, glyph: Parameters<typeof icon>[0], kindClass: string): string {
+  const cover = appName ? summaryOf(appName)?.cover : null;
+  return `<span class="notif-item-icon notif-item-art ${kindClass}">${icon(glyph, 14)}${cover ? `<span class="notif-art" style="background-image:url('${esc(cover)}')"></span>` : ""}</span>`;
+}
+
+/**
+ * The dropdown is also written into the store overlay, which has no base URL:
+ * an asset path must be absolute there or the mark never loads.
+ */
+function assetUrl(url: string): string {
+  if (!url || /^(?:[a-z]+:|\/\/)/i.test(url)) return url;
+  try {
+    return new URL(url, window.location.href).href;
+  } catch {
+    return url;
+  }
+}
+
+/** Small store mark that closes a game-facing row. */
+function storeMark(appName: string | undefined): string {
+  const url = storeLogoUrl(storeKeyFromAppName(appName) ?? "");
+  if (!url) return "";
+  return `<span class="notif-item-store"><img src="${esc(assetUrl(url))}" width="14" height="14" alt="" draggable="false" /></span>`;
+}
+
+/** One pending update: the game title, its version line and the store mark. */
 function pendingUpdateMarkup(s: EpicSummary): string {
   const info = S.availableUpdates.get(s.appName);
   const gog = S.gogUpdates.get(s.appName);
   const latest = info?.latestVersion || gog?.latestVersion || "";
   const installed = info?.installedVersion || gog?.installedBuildId || "";
   const version = latest ? `${installed ? `${installed} → ` : ""}${latest}` : "";
-  const text = [t("drawer.updateAvailable"), version].filter(Boolean).join(" · ");
   return `
     <button class="notif-item" data-act="notif-open" data-id="${esc(s.appName)}">
-      <span class="notif-item-icon kind-update">${icon("refresh", 14)}</span>
+      ${artTile(s.appName, "refresh", "kind-update")}
       <span class="notif-item-body">
         <span class="notif-item-title">${esc(s.title)}</span>
-        <span class="notif-item-text">${esc(text)}</span>
+        <span class="notif-item-text">${esc(version || t("drawer.updateAvailable"))}</span>
       </span>
+      ${storeMark(s.appName)}
     </button>`;
 }
 
@@ -407,21 +446,28 @@ function notificationMarkup(n: AppNotification): string {
       : `data-act="notif-dismiss" data-id="${esc(n.id)}"`;
   // The subject (a game title) sits in the dim line before the timestamp.
   const meta = esc([n.context, relativeTime(n.ts)].filter(Boolean).join(" · "));
+  // An unlock belongs to a game; its cover reads better than a repeated glyph.
+  const tile =
+    n.kind === "achievement"
+      ? artTile(n.appName, "trophy", "kind-achievement")
+      : `<span class="notif-item-icon kind-${n.kind}">${icon(KIND_ICON[n.kind], 14)}</span>`;
+  const mark = n.kind === "achievement" && n.appName ? storeMark(n.appName) : "";
   return `
     <button class="notif-item${n.read ? "" : " unread"}" ${action} data-nid="${esc(n.id)}">
-      <span class="notif-item-icon kind-${n.kind}">${icon(KIND_ICON[n.kind], 14)}</span>
+      ${tile}
       <span class="notif-item-body">
         <span class="notif-item-title">${esc(n.title)}</span>
         ${n.body ? `<span class="notif-item-text">${esc(n.body)}</span>` : ""}
         ${n.actionLabel ? `<span class="notif-item-act">${esc(n.actionLabel)}${icon("external", 12)}</span>` : ""}
         <span class="notif-item-time">${meta}</span>
       </span>
+      ${mark}
     </button>`;
 }
 
 function tabButton(tab: NotifTab, count: number): string {
   const active = S.notifTab === tab;
-  return `<button class="tab${active ? " active" : ""}" role="tab" aria-selected="${active}" data-act="notif-tab" data-id="${tab}">${esc(t(TAB_LABEL[tab]))}${count > 0 ? `<span class="count">${count}</span>` : ""}</button>`;
+  return `<button class="tab${active ? " active" : ""}" role="tab" aria-selected="${active}" data-act="notif-tab" data-id="${tab}">${icon(TAB_ICON[tab], 13)}<span>${esc(t(TAB_LABEL[tab]))}</span>${count > 0 ? `<span class="count">${count}</span>` : ""}</button>`;
 }
 
 /** Nothing to show in this tab; each tab explains what it would have listed. */

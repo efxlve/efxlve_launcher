@@ -27,6 +27,23 @@ pub fn raise_if_open(window: &tauri::Window) {
     raise_child_covering(window, rect.0, rect.1, rect.2, rect.3);
 }
 
+/// Re-raises the dropdown after another child changed its own bounds. `show`
+/// and `set_bounds` can lift that child above the dropdown, and WebView2 may
+/// apply the new z-order a beat later, so the raise is repeated once.
+pub fn raise_if_open_soon(window: &tauri::Window) {
+    if !OVERLAY_OPEN.load(std::sync::atomic::Ordering::Relaxed) {
+        return;
+    }
+    raise_if_open(window);
+    let host = window.clone();
+    tauri::async_runtime::spawn(async move {
+        for delay in [140u64, 420] {
+            tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
+            raise_if_open(&host);
+        }
+    });
+}
+
 /// WebView2 child controllers have no Tauri hwnd. The dropdown is the direct
 /// child whose client rect matches the panel, and that window is moved to the
 /// top of the sibling z-order so the store cannot cover it.
@@ -211,16 +228,21 @@ fn overlay_document(panel_html: &str) -> String {
       .notif-action { border: none; background: transparent; color: var(--text-2, #9a9a9a); font-size: 12px;
         padding: 4px 6px; border-radius: 4px; cursor: pointer; }
       .notif-action:hover { background: var(--surface-2, #141414); color: var(--text, #ffffff); }
-      .notif-tabs { display: flex; align-items: center; gap: 16px; padding: 0 14px;
+      .notif-tabs { display: flex; align-items: center; gap: 14px; padding: 0 14px;
         border-bottom: 1px solid var(--line, rgba(255,255,255,0.06)); }
-      .notif-tabs .tab { position: relative; height: 34px; padding: 0; border: none; background: none;
+      .notif-tabs .tab { position: relative; height: 35px; padding: 0; border: none; background: none;
         color: var(--text-2, #9a9a9a); font-size: 12.5px; font-weight: 500; cursor: pointer;
-        display: inline-flex; align-items: center; gap: 6px; }
+        display: inline-flex; align-items: center; gap: 5px; }
+      .notif-tabs .tab svg { width: 13px; height: 13px; opacity: 0.75; }
+      .notif-tabs .tab.active svg { opacity: 1; }
       .notif-tabs .tab:hover, .notif-tabs .tab.active { color: var(--text, #ffffff); }
       .notif-tabs .tab.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px;
         height: 2px; background: var(--accent, #ffffff); }
-      .notif-tabs .tab .count { color: var(--text-3, #5c5c5c); font-size: 11px; font-weight: 600;
-        font-variant-numeric: tabular-nums; }
+      .notif-tabs .tab .count { display: inline-flex; align-items: center; justify-content: center;
+        min-width: 17px; height: 17px; padding: 0 5px; border-radius: 9px;
+        background: var(--surface-3, #1e1e1e); color: var(--text-2, #9a9a9a);
+        font-size: 10.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+      .notif-tabs .tab.active .count { color: var(--text, #ffffff); }
       .notif-list { overflow-y: auto; flex: 1; min-height: 0; display: flex; flex-direction: column; }
       .notif-item { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 10px 14px;
         text-align: left; border: none; border-bottom: 1px solid var(--line, rgba(255,255,255,0.06));
@@ -229,13 +251,17 @@ fn overlay_document(panel_html: &str) -> String {
       .notif-item.unread { background: var(--accent-tint, rgba(255,255,255,0.08)); }
       .notif-item-icon { width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;
         display: grid; place-items: center; background: var(--surface-2, #141414); color: var(--text-2, #9a9a9a); }
+      .notif-item-art { position: relative; overflow: hidden; }
+      .notif-art { position: absolute; inset: 0; background-position: center; background-size: cover; }
+      .notif-item-store { align-self: center; margin-left: auto; flex-shrink: 0; opacity: 0.75; }
+      .notif-item-store img { display: block; }
       .notif-item-icon.kind-download { color: var(--ok, #2fb36d); }
       .notif-item-icon.kind-update { color: var(--warn, #e0a32e); }
       .notif-item-icon.kind-app { color: var(--warn, #e0a32e); }
       .notif-item-icon.kind-error { color: var(--err, #e5484d); }
       .notif-item-icon.kind-social { color: var(--accent, #ffffff); }
       .notif-item-icon.kind-achievement { color: var(--warn, #e0a32e); }
-      .notif-item-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+      .notif-item-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
       .notif-item-title { font-size: 13px; font-weight: 500; }
       .notif-item-text { font-size: 12px; color: var(--text-2, #9a9a9a); overflow: hidden;
         display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
@@ -295,10 +321,12 @@ fn embedded_children(window: &tauri::Window) -> Vec<tauri::Webview> {
         .into_iter()
         .filter(|w| {
             let label = w.label();
-            // The storefronts and the Spotify page all cover the content area.
+            // The storefronts, the Spotify page and the Discord page all cover
+            // the content area.
             label.starts_with("store-view-")
                 || label.starts_with("epic-store-view")
                 || label == "spotify-player"
+                || label == "discord-view"
         })
         .collect()
 }
