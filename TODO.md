@@ -23,8 +23,9 @@ Open work only. Delete the item when it lands.
 - A direct launch failure for a launcher-owned install now reports the error
   instead of silently opening the EA App, which could download a second copy.
   EAAC and EA App-installed legacy titles still use the EA App fallback.
-- DiP titles that still carry `Core/activation.exe` are experimental: they use
-  EA's official license service, and fall back to the EA App on failure.
+- DiP titles that still carry `Core/activation.exe` are OOA titles: their
+  activation UI hands the launch to the EA App. The game page and the install
+  dialog both show the EA App requirement; they are not direct-launch targets.
 - Pre-DiP launch uses the `executePathOverride` from EA's `legacyOffers`.
   Dead Space 2 resolves and starts, but on this machine the game stops at
   "Could not initialize display hardware" (a graphics issue, not a license
@@ -40,9 +41,9 @@ Open work only. Delete the item when it lands.
 - Approving a real UAC prompt for a Program Files update is still a manual pass.
   The shell launch, process wait and exit-code path are covered without
   elevation.
-- A full DiP package install with touchup registration and launch still needs a
-  small title or a faster link. The owned catalog has no small DiP game: A Way
-  Out is 21.9 GB and Mirror's Edge ships the legacy `__Installer/DISK1` layout.
+- A Way Out install and touchup registration are proven. Its OOA activation
+  still hands the launch to the EA App, and the test account owns the Friend
+  Pass, so the full executable is not licensed.
 - `touchup.exe` registers a direct install with the EA App. The elevated worker
   runs it with the same rights as the EA App installer; without elevation the
   files stay playable through the launcher's own scan, but the EA App may not
@@ -54,7 +55,6 @@ Open work only. Delete the item when it lands.
   the game's `Cleanup.exe`. A launcher-owned folder without a registry record is
   removed directly. Program Files uninstallers may still need an elevated
   launcher.
-- Legacy launch protocols (Dead Space 2, BFBC2) still hand off to the EA App.
 
 ## Linux/macOS: packaging and validation
 
