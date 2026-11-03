@@ -406,25 +406,39 @@ pub(crate) struct UninstallCommand {
 pub(crate) fn uninstall_command(root: &Path) -> Option<UninstallCommand> {
     let bytes = std::fs::read(root.join(MANIFEST.replace('/', std::path::MAIN_SEPARATOR_STR))).ok()?;
     let xml = super::ea_direct::decode(&bytes)?;
-    let block = element(&xml, "uninstall")?;
-    let pointer = element(block, "path")?.trim();
-    let (key, value) = parse_registry_pointer(pointer)?;
-    let output = registry_views(&key)
-        .into_iter()
-        .find_map(|key| crate::winreg::query(&key, Some(&value)))?;
-    let command = crate::winreg::parse_reg_sz(&output);
-    let mut parts = split_args(&command);
-    if parts.is_empty() {
-        return None;
+    if let Some(block) = element(&xml, "uninstall") {
+        if let Some(pointer) = element(block, "path") {
+            if let Some((key, value)) = parse_registry_pointer(pointer.trim()) {
+                if let Some(output) = registry_views(&key)
+                    .into_iter()
+                    .find_map(|key| crate::winreg::query(&key, Some(&value)))
+                {
+                    let command = crate::winreg::parse_reg_sz(&output);
+                    let mut parts = split_args(&command);
+                    if !parts.is_empty() {
+                        let program = parts.remove(0);
+                        if !program.trim().is_empty() {
+                            return Some(UninstallCommand {
+                                program: PathBuf::from(program),
+                                args: parts,
+                            });
+                        }
+                    }
+                }
+            }
+        }
     }
-    let program = parts.remove(0);
-    if program.trim().is_empty() {
-        return None;
+
+    // Pre-DiP installs keep the cleanup tool beside the manifest instead of a
+    // registry UninstallString (Dead Space 2).
+    let cleanup = root.join("__Installer").join("Cleanup.exe");
+    if cleanup.is_file() {
+        return Some(UninstallCommand {
+            program: cleanup,
+            args: vec!["uninstall_game".into(), "-autologging".into()],
+        });
     }
-    Some(UninstallCommand {
-        program: PathBuf::from(program),
-        args: parts,
-    })
+    None
 }
 
 /// `[HKEY_LOCAL_MACHINE\...\UninstallString]` → key and value name.
@@ -633,6 +647,28 @@ mod tests {
             .to_string_lossy()
             .to_lowercase()
             .contains("cleanup.exe"));
+    }
+
+    #[test]
+    fn a_pre_dip_install_uses_its_cleanup_tool() {
+        let root = std::env::temp_dir().join(format!("efxlve-ea-cleanup-{}", std::process::id()));
+        let installer = root.join("__Installer");
+        std::fs::create_dir_all(&installer).expect("installer dir");
+        std::fs::write(installer.join("installerdata.xml"), "<game></game>").expect("manifest");
+        std::fs::write(installer.join("Cleanup.exe"), b"fake").expect("cleanup");
+        let command = uninstall_command(&root).expect("cleanup command");
+        assert!(command.program.ends_with("Cleanup.exe"));
+        assert_eq!(command.args, vec!["uninstall_game", "-autologging"]);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    #[ignore = "reads the real Dead Space 2 cleanup tool without running it"]
+    fn manual_uninstall_command_deadspace() {
+        let root = Path::new(r"C:\Program Files\EA Games\Dead Space 2");
+        let command = uninstall_command(root);
+        println!("dead space 2 uninstall: {command:?}");
+        assert!(command.is_some());
     }
 
     #[test]

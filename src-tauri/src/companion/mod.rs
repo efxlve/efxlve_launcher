@@ -1095,7 +1095,13 @@ pub async fn ea_content_uninstall(id: String) -> Result<(), String> {
     let (_, owned, root) = ea_content_target(&id, None)?;
     let managed = ea_install::managed_root(&root);
     if let Some(command) = ea_install::uninstall_command(&root) {
-        ea_install::run_uninstall(&command).await?;
+        if let Err(error) = ea_install::run_uninstall(&command).await {
+            // A launcher-owned folder can still be removed when the EA cleanup
+            // tool refuses (for example because HKLM needs elevation).
+            if !managed {
+                return Err(error);
+            }
+        }
     } else if managed {
         tokio::fs::remove_dir_all(&root)
             .await
