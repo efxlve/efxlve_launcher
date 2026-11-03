@@ -1512,59 +1512,19 @@ function renderAboutSection(s: EpicSummary): string {
   const sourceHidden = aboutLoading || !effectiveDesc;
 
   // Anti-cheat titles keep the overlay off unless the reader opts in here.
-  // The same box states an EA App requirement: a launcher-installed OOA title
-  // still hands its launch to the EA App, and EAAC titles verify the client.
   const antiCheat = gameAntiCheat(s, rawOf(s.appName));
   const antiCheatAllowed = overlayAntiCheatOverride(s.appName, s.title);
   const antiCheatNotifications = achGameNotificationsEnabled(s.appName, s.title);
-  const eaKey = isTauri && s.installed ? eaLaunchModeKey(s) : undefined;
-  const eaDisabled = Boolean(eaKey && !S.eaDirectEnabled);
-  const eaCached = eaKey ? eaLaunchModeCache.get(s.appName) : undefined;
-  const eaPending = Boolean(eaKey && !eaDisabled && eaCached === undefined);
-  const eaRequired = Boolean(
-    eaKey && (eaDisabled || (eaCached && eaLaunchModeRequired(eaCached))),
-  );
-  const showAntiCheat = Boolean(antiCheat);
-  const showEa = Boolean(eaKey && (eaPending || eaRequired));
-  const showNotice = showAntiCheat || showEa;
-  const eaMeta = eaCached ? eaLaunchModeMeta(eaCached.mode) : null;
-  const noticeTitle = showAntiCheat
-    ? t("drawer.acNoticeTitle")
-    : eaMeta?.title || t("ea.launchMode.eaAppTitle");
-  const noticeChip = showAntiCheat
-    ? ""
-    : `<span class="chip ${eaMeta?.chipClass ?? "warn"}">${esc(eaMeta?.chip || t("ea.launchMode.chipEaApp"))}</span>`;
-  const noticeBody = showAntiCheat
-    ? t("drawer.acNoticeBody", { name: esc(antiCheat ?? "") })
-    : eaDisabled
-      ? t("ea.launchMode.disabledDesc")
-      : eaCached
-        ? eaLaunchModeDescription(eaCached)
-        : t("ea.launchMode.loading");
-  const noticeBadge = showAntiCheat
-    ? icon("shield", 15)
-    : icon(eaMeta?.icon ?? "shield", 15);
-  const eaInline = showAntiCheat && showEa
-    ? `<div class="gp-ac-ea-line-host" id="gp-ac-ea-mode" data-app="${esc(s.appName)}">${
-        eaDisabled
-          ? eaLaunchModeInline(null, true)
-          : eaCached && eaRequired
-            ? eaLaunchModeInline(eaCached)
-            : `<p class="gp-ac-ea-desc">${esc(t("ea.launchMode.loading"))}</p>`
-      }</div>`
-    : "";
-  const antiCheatNotice = showNotice
+  const antiCheatCard = antiCheat
     ? `
-    <section class="gp-ac-notice${showAntiCheat && antiCheatAllowed ? " is-on" : ""}" id="gp-ac-notice" data-app="${esc(s.appName)}" data-ea-only="${showAntiCheat ? "0" : "1"}">
+    <section class="gp-ac-notice${antiCheatAllowed ? " is-on" : ""}" id="gp-ac-notice">
       <div class="gp-ac-notice-head">
-        <span class="gp-ac-notice-badge">${noticeBadge}</span>
+        <span class="gp-ac-notice-badge">${icon("shield", 15)}</span>
         <div class="gp-ac-notice-copy">
-          <h4 class="gp-ac-notice-title" id="gp-ac-notice-title">${noticeTitle}${noticeChip ? ` ${noticeChip}` : ""}</h4>
-          <p class="gp-ac-notice-body" id="gp-ac-notice-body">${noticeBody}</p>
+          <h4 class="gp-ac-notice-title">${t("drawer.acNoticeTitle")}</h4>
+          <p class="gp-ac-notice-body">${t("drawer.acNoticeBody", { name: esc(antiCheat) })}</p>
         </div>
       </div>
-      ${eaInline}
-      ${showAntiCheat ? `
       <p class="gp-ac-notice-safety">${t("drawer.acNoticeSafety")}</p>
       <div class="gp-ac-notice-toggles">
         <label class="gp-ac-notice-toggle${antiCheatAllowed ? " is-on" : ""}">
@@ -1587,10 +1547,30 @@ function renderAboutSection(s: EpicSummary): string {
             <span class="gp-ac-notice-state" data-ach-state>${antiCheatNotifications ? t("drawer.acNoticeNotifOn") : t("drawer.acNoticeNotifOff")}</span>
           </span>
         </label>
-      </div>` : ""}
+      </div>
     </section>`
     : "";
+
+  // The EA App requirement is a launch fact, not an overlay setting: keep it in
+  // its own card so the anti-cheat controls stay readable.
+  const eaKey = isTauri && s.installed ? eaLaunchModeKey(s) : undefined;
+  const eaDisabled = Boolean(eaKey && !S.eaDirectEnabled);
+  const eaCached = eaKey ? eaLaunchModeCache.get(s.appName) : undefined;
+  const eaPending = Boolean(eaKey && !eaDisabled && eaCached === undefined);
+  const eaRequired = Boolean(
+    eaKey && (eaDisabled || (eaCached && eaLaunchModeRequired(eaCached))),
+  );
+  const showEa = Boolean(eaKey && (eaPending || eaRequired));
+  const eaCard = showEa
+    ? `<section class="gp-ea-notice" id="gp-ea-notice" data-app="${esc(s.appName)}">${eaNoticeContent(
+        eaDisabled ? null : eaCached ?? null,
+        eaDisabled,
+      )}</section>`
+    : "";
   if (eaPending && eaKey) void loadEaLaunchMode(s.appName, eaKey);
+  const noticeStack = antiCheatCard || eaCard
+    ? `<div class="gp-notice-stack">${antiCheatCard}${eaCard}</div>`
+    : "";
 
   const genres = gameGenresFor(s.appName);
   const genresHtml = genres.length > 0
@@ -1614,7 +1594,7 @@ function renderAboutSection(s: EpicSummary): string {
 
   return `
     <div id="hub-about-section">
-      ${antiCheatNotice}
+      ${noticeStack}
       <section class="card gp-about-card">
         <h3 class="gp-section-title">${icon("info", 14)} <span>${t("drawer.aboutGame")}</span></h3>
         <div class="hub-desc-text" id="hub-desc-text">${
@@ -1840,21 +1820,24 @@ function eaLaunchModeRequired(probe: EaDirectProbe): boolean {
   return probe.mode !== "direct" && probe.mode !== "unavailable";
 }
 
-function eaLaunchModeInline(probe: EaDirectProbe | null, disabled = false): string {
-  const mode = disabled ? "eaac" : probe?.mode ?? "unavailable";
-  const meta = eaLaunchModeMeta(mode);
+function eaNoticeContent(probe: EaDirectProbe | null, disabled = false): string {
+  const meta = eaLaunchModeMeta(disabled ? "eaac" : probe?.mode ?? "unavailable");
+  const title = disabled ? t("ea.launchMode.eaAppTitle") : meta.title;
+  const chip = disabled ? t("ea.launchMode.chipEaApp") : meta.chip;
+  const chipClass = disabled ? "warn" : meta.chipClass;
   const body = disabled
     ? t("ea.launchMode.disabledDesc")
     : probe
       ? eaLaunchModeDescription(probe)
-      : "";
-  return `<div class="gp-ac-ea-line">
-    <span class="gp-ac-ea-icon">${icon(meta.icon, 14)}</span>
-    <div class="gp-ac-ea-copy">
-      <div class="gp-ac-ea-title">${esc(meta.title)} <span class="chip ${meta.chipClass}">${esc(meta.chip)}</span></div>
-      <p class="gp-ac-ea-desc">${esc(body)}</p>
-    </div>
-  </div>`;
+      : t("ea.launchMode.loading");
+  return `<span class="gp-ea-notice-badge">${icon(meta.icon, 16)}</span>
+    <div class="gp-ea-notice-copy">
+      <div class="gp-ea-notice-head">
+        <h4 class="gp-ea-notice-title">${esc(title)}</h4>
+        <span class="chip ${chipClass}">${esc(chip)}</span>
+      </div>
+      <p class="gp-ea-notice-body">${esc(body)}</p>
+    </div>`;
 }
 
 async function loadEaLaunchMode(appName: string, eaKey: string): Promise<void> {
@@ -1863,35 +1846,22 @@ async function loadEaLaunchMode(appName: string, eaKey: string): Promise<void> {
   try {
     const probe = await eaDirectProbe("ea", eaKey.slice(4));
     eaLaunchModeCache.set(appName, probe);
-    const box = document.getElementById("gp-ac-notice");
-    if (box?.dataset.app !== appName) return;
-    const required = eaLaunchModeRequired(probe);
-    if (box.dataset.eaOnly === "1") {
-      if (!required) {
-        box.remove();
-        return;
-      }
-      const meta = eaLaunchModeMeta(probe.mode);
-      const title = document.getElementById("gp-ac-notice-title");
-      const body = document.getElementById("gp-ac-notice-body");
-      const badge = box.querySelector<HTMLElement>(".gp-ac-notice-badge");
-      if (title) {
-        title.innerHTML = `${esc(meta.title)} <span class="chip ${meta.chipClass}">${esc(meta.chip)}</span>`;
-      }
-      if (body) body.textContent = eaLaunchModeDescription(probe);
-      if (badge) badge.innerHTML = icon(meta.icon, 15);
+    const card = document.getElementById("gp-ea-notice");
+    if (card?.dataset.app !== appName) return;
+    if (!eaLaunchModeRequired(probe)) {
+      const stack = card.parentElement;
+      card.remove();
+      if (stack && stack.children.length === 0) stack.remove();
       return;
     }
-    const eaHost = document.getElementById("gp-ac-ea-mode");
-    if (!eaHost) return;
-    if (required) eaHost.innerHTML = eaLaunchModeInline(probe);
-    else eaHost.remove();
+    card.outerHTML = `<section class="gp-ea-notice" id="gp-ea-notice" data-app="${esc(appName)}">${eaNoticeContent(probe)}</section>`;
   } catch {
     eaLaunchModeCache.set(appName, null);
-    const box = document.getElementById("gp-ac-notice");
-    if (box?.dataset.app !== appName) return;
-    if (box.dataset.eaOnly === "1") box.remove();
-    else document.getElementById("gp-ac-ea-mode")?.remove();
+    const card = document.getElementById("gp-ea-notice");
+    if (card?.dataset.app !== appName) return;
+    const stack = card.parentElement;
+    card.remove();
+    if (stack && stack.children.length === 0) stack.remove();
   } finally {
     eaLaunchModeLoading.delete(appName);
   }

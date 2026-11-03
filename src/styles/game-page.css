@@ -686,13 +686,26 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-side-card { transition: border-color 140ms ease; }
 .gp-side-card:hover { border-color: var(--line-strong); }
 .hub-overview-main .hub-card { margin-bottom: 20px; }
-/* EA App requirement folded into the anti-cheat notice. */
-.gp-ac-ea-line-host { margin: 10px 0 0 39px; padding-top: 10px; border-top: 1px solid var(--line); }
-.gp-ac-ea-line { display: flex; align-items: flex-start; gap: 9px; }
-.gp-ac-ea-icon { flex-shrink: 0; color: var(--warn); margin-top: 1px; }
-.gp-ac-ea-copy { min-width: 0; }
-.gp-ac-ea-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
-.gp-ac-ea-desc { margin: 4px 0 0; font-size: 12px; line-height: 1.5; color: var(--text-3); }
+/* Two separate launch notices: anti-cheat controls and the EA App requirement. */
+.gp-notice-stack { display: flex; flex-direction: column; gap: 14px; margin-bottom: 14px; }
+.gp-notice-stack .gp-ac-notice { margin-bottom: 0; }
+.gp-ea-notice {
+  position: relative; display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-md);
+  background: var(--surface-1);
+}
+.gp-ea-notice::before {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--accent);
+}
+.gp-ea-notice-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; flex-shrink: 0; border-radius: 8px;
+  background: var(--accent-tint); color: var(--accent);
+}
+.gp-ea-notice-copy { min-width: 0; }
+.gp-ea-notice-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.gp-ea-notice-title { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--text); }
+.gp-ea-notice-body { margin: 4px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--text-2); }
 .hub-card-header, .hltb-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
 .hub-card-title, .hltb-title { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 600; }
 .hub-card-title svg, .hltb-title svg { color: var(--text-3); }
