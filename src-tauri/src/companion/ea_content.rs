@@ -494,7 +494,7 @@ async fn write_entry(
 
 /// A network failure worth another range request. CRC and size mismatches are
 /// not retried by this check; the next install verifies them again.
-fn transient_error(error: &str) -> bool {
+pub(crate) fn transient_error(error: &str) -> bool {
     [
         "error sending request",
         "error decoding response body",

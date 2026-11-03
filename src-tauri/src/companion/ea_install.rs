@@ -192,6 +192,7 @@ pub(crate) async fn install_with_progress(
     // once on an authorization error; completed files are verified by size and
     // CRC on the retry, so the transfer resumes where it stopped.
     let mut refreshed = false;
+    let mut network_retries = 0u32;
     let download = loop {
         ea_content::ensure_disk_space(&plan)?;
         match ea_content::download_entries_controlled(
@@ -222,6 +223,16 @@ pub(crate) async fn install_with_progress(
                 if plan.legacy && !plan.legacy_installable {
                     return Err("Legacy EA installers need the EA app".into());
                 }
+            }
+            Err(error) if network_retries < 5 && ea_content::transient_error(&error) => {
+                network_retries += 1;
+                if cancelled.load(Ordering::Relaxed) {
+                    return Err("EA content: cancelled".into());
+                }
+                tokio::time::sleep(std::time::Duration::from_secs(
+                    10 * u64::from(network_retries),
+                ))
+                .await;
             }
             Err(error) => return Err(error),
         }
