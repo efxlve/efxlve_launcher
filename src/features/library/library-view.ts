@@ -217,23 +217,37 @@ export function epicVisibleSummaries(): EpicSummary[] {
 }
 
 /**
+ * Titles the player owns on a primary store. An EA App copy with the same
+ * canonical title is the installed backend for that purchase, not a second
+ * library entry, even when the EA App filter is the only one enabled.
+ */
+function primaryPurchaseTitles(): Set<string> {
+  const titles = new Set<string>();
+  const add = (title: string): void => {
+    const canon = canonicalGameTitle(title);
+    if (canon) titles.add(canon);
+  };
+  for (const s of S.epicSummaries) add(s.title);
+  for (const g of S.gogSummaries) add(g.title);
+  for (const g of S.amazonSummaries) add(g.title);
+  for (const g of S.steamSummaries) add(g.title);
+  return titles;
+}
+
+/**
  * One row per title, limited to the storefronts that are checked.
  * A saved store choice supplies the playtime and trophies on that card.
  */
 function libraryBaseItems(): EpicSummary[] {
   const groups = new Map<string, EpicSummary[]>();
   const copies: EpicSummary[] = [];
-  const primaryTitles = new Set<string>();
+  const primaryTitles = primaryPurchaseTitles();
   const withOverride = (s: EpicSummary): EpicSummary => {
     const override = S.epicCopyOverrides.get(s.appName);
     return override ? { ...s, ...override } : s;
   };
-  const push = (s: EpicSummary, primary = false): void => {
+  const push = (s: EpicSummary): void => {
     if (S.hiddenGames.has(s.appName)) return;
-    if (primary) {
-      const canon = canonicalGameTitle(s.title);
-      if (canon) primaryTitles.add(canon);
-    }
     // Separate mode lists every store copy as its own card; combined mode keeps
     // one card per canonical title.
     if (S.separateCopies) {
@@ -246,22 +260,22 @@ function libraryBaseItems(): EpicSummary[] {
     else groups.set(canon, [s]);
   };
   if (S.enabledStores.has("epic")) {
-    for (const s of S.epicSummaries) push(withOverride(s), true);
+    for (const s of S.epicSummaries) push(withOverride(s));
     for (const s of sharedSummaries()) {
       if (!s.appName.startsWith("gog::")) push(s);
     }
   }
   if (S.enabledStores.has("gog")) {
-    for (const g of S.gogSummaries) push(withOverride(libraryItemToSummary(g)), true);
+    for (const g of S.gogSummaries) push(withOverride(libraryItemToSummary(g)));
     for (const s of sharedSummaries()) {
       if (s.appName.startsWith("gog::")) push(s);
     }
   }
   if (S.enabledStores.has("amazon")) {
-    for (const g of S.amazonSummaries) push(withOverride(libraryItemToSummary(g)), true);
+    for (const g of S.amazonSummaries) push(withOverride(libraryItemToSummary(g)));
   }
   if (S.enabledStores.has("steam")) {
-    for (const g of S.steamSummaries) push(withOverride(libraryItemToSummary(g)), true);
+    for (const g of S.steamSummaries) push(withOverride(libraryItemToSummary(g)));
   }
   if (S.enabledStores.has("custom")) {
     for (const g of S.customSummaries) push(libraryItemToSummary(g));
@@ -1094,6 +1108,11 @@ export function refreshLibraryForStoreFilter(): boolean {
   invalidateLibraryVisibleCache();
   resetCardChunk();
   const visible = epicVisibleSummaries();
+  const heading = document.getElementById("lib-heading-count");
+  if (heading) {
+    heading.textContent = t("lib.gameCount", { count: visible.length });
+    heading.hidden = visible.length === 0;
+  }
   if (visible.length === 0) return false;
 
   lastResultKey = libraryResultKey();
@@ -1216,8 +1235,17 @@ export function renderEpic(): string {
   const currentSort = sortOpts.find((o) => o.id === S.epicSort) || sortOpts[0];
 
   const visibleCount = (keys: string[]): number => keys.filter((key) => !S.hiddenGames.has(key)).length;
-  const companionCount = (source: GameSource): number =>
-    visibleCount(S.companionSummaries.filter((g) => g.source === source).map((g) => g.key));
+  const primaryTitles = primaryPurchaseTitles();
+  const companionCount = (source: GameSource): number => {
+    // Separate-copies mode is the explicit "show every store copy" view; the
+    // combined view treats EA App as the backend for a primary purchase.
+    const hideDelegated = source === "ea" && !S.separateCopies;
+    return visibleCount(
+      S.companionSummaries
+        .filter((g) => g.source === source && !(hideDelegated && primaryTitles.has(canonicalGameTitle(g.title))))
+        .map((g) => g.key),
+    );
+  };
   // Only connected or detected stores get a row in the menu.
   const sourceDropdown = storeFilterMenuHtml(
     {
