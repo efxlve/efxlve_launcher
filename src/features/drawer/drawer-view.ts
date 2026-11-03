@@ -1242,10 +1242,11 @@ function ensureIgdbTransport(onReady: () => void): void {
 }
 
 export function openEpicModal(appName: string, isInitialOpen = true, _animateTabContent = true): void {
-  // A linked-client page for a title owned on a primary store is the same
-  // purchase; open its primary copy so the version selector never presents the
-  // delegated client as a second purchase.
-  if (isCompanionKey(appName)) {
+  // EA App is the delegated backend for a title owned on a primary store: open
+  // the primary copy so the library never presents the EA install as a second
+  // purchase. Ubisoft, Xbox, Battle.net and Riot copies stay their own pages;
+  // the version selector is how the player reaches them.
+  if (appName.startsWith("ea::")) {
     const primary = gameVersionsOf(appName).find((version) => !isCompanionKey(version.appName));
     if (primary && primary.appName !== appName) appName = primary.appName;
   }

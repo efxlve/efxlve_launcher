@@ -671,12 +671,17 @@ export function gameVersionsOf(appNameOrTitle: string): GameVersion[] {
   }
 
   // Games the linked clients own (EA, Ubisoft, Xbox, Battle.net) are copies of
-  // the same title too; the selector can switch to them. A linked-client copy
-  // is only a separate version when no primary store owns the title. Otherwise
-  // it is the backend for that purchase (for example EA App installing an Epic
-  // game) and must not look like a second purchase.
+  // the same title too; the selector can switch to them. EA App is the one
+  // delegated backend: when a primary store owns the title, its EA copy is the
+  // installed backend for that purchase, not a second purchase. Ubisoft, Xbox,
+  // Battle.net and Riot copies stay selectable because the player can own and
+  // install the same title there independently.
   const companionMatch = pickStoreMatch(S.companionSummaries, (g) => g.title, (g) => g.installed, title);
-  if (companionMatch && (versions.length === 0 || isCompanionKey(appNameOrTitle))) {
+  const delegatedEa =
+    companionMatch?.source === "ea" &&
+    versions.length > 0 &&
+    !isCompanionKey(appNameOrTitle);
+  if (companionMatch && !delegatedEa) {
     versions.push({
       source: companionMatch.source,
       appName: companionMatch.key,
