@@ -34,8 +34,11 @@ export type SettingsSection = "account" | "downloads" | "stores" | "cloud" | "in
 /** Controller family, used to pick the right button glyphs and hints. */
 export type ControllerKind = "playstation" | "xbox" | "switch" | "steamdeck" | "generic";
 
-/** Kind of an in-app notification (drives the icon and accent color). */
-export type NotifKind = "download" | "update" | "error" | "info" | "social";
+/** Kind of an in-app notification (drives the icon, accent color and tab). */
+export type NotifKind = "download" | "update" | "app" | "error" | "info" | "social" | "achievement";
+
+/** Tab of the notification dropdown; each kind belongs to exactly one. */
+export type NotifTab = "updates" | "achievements" | "system";
 
 /** A single entry in the notification center history. */
 export interface AppNotification {
@@ -43,6 +46,8 @@ export interface AppNotification {
   kind: NotifKind;
   title: string;
   body: string;
+  /** Which game the entry is about, shown before the timestamp. */
+  context?: string;
   appName?: string;
   /** Optional `data-act` routed when the entry is clicked (e.g. install an app update). */
   action?: string;

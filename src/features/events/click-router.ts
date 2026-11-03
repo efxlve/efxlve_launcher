@@ -133,6 +133,7 @@ import {
   markAllRead,
   openNotifPanel,
   renderNotificationPanel,
+  selectNotifTab,
 } from "../notifications/notifications";
 import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, handleSettingsAction, resetSettingsSearch } from "../settings/settings-view";
 import { loadCompatView } from "../settings/compat-view";
@@ -461,6 +462,8 @@ document.addEventListener("click", (e) => {
     if (S.notifications.some((n) => n.action === "install-eos")) declineEosOverlay();
     clearNotifications();
     renderNotificationPanel();
+  } else if (act === "notif-tab" && id) {
+    selectNotifTab(id);
   } else if (act === "notif-read-all") {
     markAllRead();
     renderNotificationPanel();

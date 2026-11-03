@@ -125,7 +125,7 @@ export async function checkForAppUpdate(manual = false): Promise<void> {
     scheduleRender();
     const availableTitle = t("appUpdate.available", { version: update.version });
     pushNotification({
-      kind: "update",
+      kind: "app",
       title: availableTitle,
       body: t("appUpdate.availableBody"),
     });
@@ -176,7 +176,7 @@ export async function downloadAppUpdate(): Promise<void> {
     const readyTitle = t("appUpdate.ready", { version: S.appUpdateVersion });
     const readyBody = blocked ? t("appUpdate.readyBlockedBody") : t("appUpdate.readyBody");
     pushNotification({
-      kind: "update",
+      kind: "app",
       title: readyTitle,
       body: readyBody,
       action: "app-update-install",

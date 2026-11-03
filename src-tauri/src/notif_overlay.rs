@@ -211,7 +211,17 @@ fn overlay_document(panel_html: &str) -> String {
       .notif-action { border: none; background: transparent; color: var(--text-2, #9a9a9a); font-size: 12px;
         padding: 4px 6px; border-radius: 4px; cursor: pointer; }
       .notif-action:hover { background: var(--surface-2, #141414); color: var(--text, #ffffff); }
-      .notif-list { overflow-y: auto; display: flex; flex-direction: column; }
+      .notif-tabs { display: flex; align-items: center; gap: 16px; padding: 0 14px;
+        border-bottom: 1px solid var(--line, rgba(255,255,255,0.06)); }
+      .notif-tabs .tab { position: relative; height: 34px; padding: 0; border: none; background: none;
+        color: var(--text-2, #9a9a9a); font-size: 12.5px; font-weight: 500; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 6px; }
+      .notif-tabs .tab:hover, .notif-tabs .tab.active { color: var(--text, #ffffff); }
+      .notif-tabs .tab.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px;
+        height: 2px; background: var(--accent, #ffffff); }
+      .notif-tabs .tab .count { color: var(--text-3, #5c5c5c); font-size: 11px; font-weight: 600;
+        font-variant-numeric: tabular-nums; }
+      .notif-list { overflow-y: auto; flex: 1; min-height: 0; display: flex; flex-direction: column; }
       .notif-item { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 10px 14px;
         text-align: left; border: none; border-bottom: 1px solid var(--line, rgba(255,255,255,0.06));
         background: transparent; color: var(--text, #ffffff); cursor: pointer; }
@@ -221,8 +231,10 @@ fn overlay_document(panel_html: &str) -> String {
         display: grid; place-items: center; background: var(--surface-2, #141414); color: var(--text-2, #9a9a9a); }
       .notif-item-icon.kind-download { color: var(--ok, #2fb36d); }
       .notif-item-icon.kind-update { color: var(--warn, #e0a32e); }
+      .notif-item-icon.kind-app { color: var(--warn, #e0a32e); }
       .notif-item-icon.kind-error { color: var(--err, #e5484d); }
       .notif-item-icon.kind-social { color: var(--accent, #ffffff); }
+      .notif-item-icon.kind-achievement { color: var(--warn, #e0a32e); }
       .notif-item-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
       .notif-item-title { font-size: 13px; font-weight: 500; }
       .notif-item-text { font-size: 12px; color: var(--text-2, #9a9a9a); overflow: hidden;

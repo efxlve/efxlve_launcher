@@ -3,16 +3,20 @@
  *
  * Keeps a capped, persisted history of notable events (download finished,
  * update available, errors, social...). The bell lives in the sidebar footer;
- * the panel is a fixed dropdown anchored to it. Items are real buttons so the
- * 10-foot gamepad focus model keeps working.
+ * the panel is a fixed dropdown anchored to it. The list is split into three
+ * tabs — Updates, Achievements, System — and the Updates/System tabs add the
+ * live status on top of the history. Items are real buttons so the 10-foot
+ * gamepad focus model keeps working.
  */
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { EOS_OVERLAY_DECLINE_KEY, NOTIF_KEY, isTauri } from "../../core/constants";
 import { icon } from "../../core/icons";
+import { pendingGameUpdates } from "../../core/selectors";
 import { S } from "../../core/state";
-import type { AppNotification, NotifKind } from "../../core/types";
+import type { AppNotification, NotifKind, NotifTab } from "../../core/types";
+import type { EpicSummary } from "../../epic";
 import { esc, relativeTime } from "../../core/utils";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
@@ -24,14 +28,45 @@ const MAX = 50;
 const DEDUPE_MS = 10 * 60 * 1000;
 /** Restored history older than this is dropped: it is news, not a mailbox. */
 const RESTORE_TTL_MS = 24 * 60 * 60 * 1000;
+/**
+ * Unlocks pushed after this moment happened in the running session. The
+ * Achievements tab reads it, so a restored row from last night never claims to
+ * be "unlocked this session".
+ */
+const SESSION_START = Date.now();
 
 const KIND_ICON: Record<NotifKind, Parameters<typeof icon>[0]> = {
   download: "download",
   update: "refresh",
+  app: "sparkles",
   error: "alert-triangle",
   info: "info",
   social: "users",
+  achievement: "trophy",
 };
+
+/** Every persisted kind; an unknown value from an older build is dropped. */
+const KNOWN_KINDS = new Set<string>(Object.keys(KIND_ICON));
+
+/** Tab labels, in the order the header strip shows them. */
+const TAB_LABEL: Record<NotifTab, string> = {
+  updates: "notif.tabUpdates",
+  achievements: "notif.tabAchievements",
+  system: "notif.tabSystem",
+};
+
+const TAB_ORDER: readonly NotifTab[] = ["updates", "achievements", "system"];
+
+/** The tab that owns a notification kind. */
+export function notifTabOf(kind: NotifKind): NotifTab {
+  if (kind === "update" || kind === "download") return "updates";
+  if (kind === "achievement") return "achievements";
+  return "system";
+}
+
+export function isNotifTab(value: string): value is NotifTab {
+  return value === "updates" || value === "achievements" || value === "system";
+}
 
 /** Restores the persisted notification history (invalid entries are dropped). */
 export function loadNotifications(): void {
@@ -46,7 +81,13 @@ export function loadNotifications(): void {
       // a restart announced old news (reported: "12 h ago" right after boot). Stale
       // entries past the TTL are dropped so the bell never shows yesterday's count.
       S.notifications = parsed
-        .filter((n) => n && typeof n.id === "string" && now - n.ts < RESTORE_TTL_MS)
+        .filter(
+          (n) =>
+            n &&
+            typeof n.id === "string" &&
+            KNOWN_KINDS.has(n.kind) &&
+            now - n.ts < RESTORE_TTL_MS,
+        )
         .map((n) => ({ ...n, read: true }))
         .slice(0, MAX);
       if (!S.notifications.length) localStorage.removeItem(NOTIF_KEY);
@@ -68,6 +109,8 @@ export interface NotifInput {
   kind: NotifKind;
   title: string;
   body?: string;
+  /** Game title or other subject shown before the timestamp. */
+  context?: string;
   appName?: string;
   /** Optional `data-act` routed when the entry is clicked. */
   action?: string;
@@ -164,7 +207,7 @@ export function pushNotification(input: NotifInput): void {
   const prefs = getGeneralNotifPrefs();
   if (!prefs.enabled) return;
   if (input.kind === "download" && !prefs.downloads) return;
-  if (input.kind === "update" && !prefs.updates) return;
+  if ((input.kind === "update" || input.kind === "app") && !prefs.updates) return;
   if (input.kind === "social" && !prefs.social) return;
   if (input.kind === "error" && !prefs.errors) return;
   const storeKey = storeKeyFromAppName(input.appName);
@@ -183,6 +226,7 @@ export function pushNotification(input: NotifInput): void {
     existing.ts = now;
     existing.read = false;
     existing.body = input.body ?? existing.body;
+    existing.context = input.context ?? existing.context;
     existing.action = input.action ?? existing.action;
     existing.actionLabel = input.actionLabel ?? existing.actionLabel;
   } else {
@@ -191,6 +235,7 @@ export function pushNotification(input: NotifInput): void {
       kind: input.kind,
       title: input.title,
       body: input.body ?? "",
+      context: input.context,
       appName: input.appName,
       action: input.action,
       actionLabel: input.actionLabel,
@@ -261,38 +306,160 @@ function storeCoversUi(): boolean {
   return embeddedContentShown();
 }
 
-function panelMarkup(unread: number): string {
-  const items = S.notifications
-    .map((n) => {
-      const action = n.action
-        ? `data-act="${esc(n.action)}"`
-        : n.appName
-          ? `data-act="notif-open" data-id="${esc(n.appName)}"`
-          : `data-act="notif-dismiss" data-id="${esc(n.id)}"`;
-      return `
-        <button class="notif-item${n.read ? "" : " unread"}" ${action} data-nid="${esc(n.id)}">
-          <span class="notif-item-icon kind-${n.kind}">${icon(KIND_ICON[n.kind], 14)}</span>
-          <span class="notif-item-body">
-            <span class="notif-item-title">${esc(n.title)}</span>
-            ${n.body ? `<span class="notif-item-text">${esc(n.body)}</span>` : ""}
-            ${n.actionLabel ? `<span class="notif-item-act">${esc(n.actionLabel)}${icon("external", 12)}</span>` : ""}
-            <span class="notif-item-time">${esc(relativeTime(n.ts))}</span>
-          </span>
-        </button>`;
-    })
-    .join("");
-  const body =
-    S.notifications.length === 0
-      ? `<div class="notif-empty">${icon("bell", 26)}<p>${t("notif.empty")}</p></div>`
-      : `<div class="notif-list">${items}</div>`;
+/** History rows per tab, plus the live status the status tabs add on top. */
+interface NotifPanelData {
+  /** Installed games with a newer build waiting. */
+  pending: EpicSummary[];
+  /** Update/download history that is not already named by a pending row. */
+  updates: AppNotification[];
+  /** Unlocks from the running session, newest first. */
+  session: AppNotification[];
+  /** Everything the System tab lists after the launcher status. */
+  system: AppNotification[];
+  counts: Record<NotifTab, number>;
+}
+
+/** True while the launcher has an update the user can start or install. */
+function launcherUpdatePending(): boolean {
+  return S.appUpdateStatus === "ready" || S.appUpdateStatus === "available";
+}
+
+function notifPanelData(): NotifPanelData {
+  // One alphabetical list: stores return their own order, and the bell is a
+  // single dropdown, not a per-store shelf.
+  const pending = pendingGameUpdates().sort((a, b) => a.title.localeCompare(b.title));
+  const pendingKeys = new Set(pending.map((s) => s.appName));
+  const updates = S.notifications.filter(
+    (n) =>
+      notifTabOf(n.kind) === "updates" &&
+      // A live row already names the game; its older one-liner would repeat it.
+      !(n.kind === "update" && n.appName && pendingKeys.has(n.appName)),
+  );
+  // The Achievements tab is the session log: a restored row from yesterday is
+  // history, not something unlocked while the launcher was running.
+  const session = S.notifications
+    .filter((n) => n.kind === "achievement" && n.ts >= SESSION_START)
+    .slice(0, 5);
+  const launcher = launcherUpdatePending() ? 1 : 0;
+  // The live status row says the same thing as the pushed notification.
+  const system = S.notifications.filter(
+    (n) => notifTabOf(n.kind) === "system" && !(launcher > 0 && n.kind === "app"),
+  );
+  return {
+    pending,
+    updates,
+    session,
+    system,
+    // The chip reports work, not history: games waiting for an update, unlocks
+    // from this session, and a launcher update the user can start or install.
+    counts: {
+      updates: pending.length,
+      achievements: session.length,
+      system: launcher,
+    },
+  };
+}
+
+/** One pending update: the game title plus its version line. */
+function pendingUpdateMarkup(s: EpicSummary): string {
+  const info = S.availableUpdates.get(s.appName);
+  const gog = S.gogUpdates.get(s.appName);
+  const latest = info?.latestVersion || gog?.latestVersion || "";
+  const installed = info?.installedVersion || gog?.installedBuildId || "";
+  const version = latest ? `${installed ? `${installed} → ` : ""}${latest}` : "";
+  const text = [t("drawer.updateAvailable"), version].filter(Boolean).join(" · ");
+  return `
+    <button class="notif-item" data-act="notif-open" data-id="${esc(s.appName)}">
+      <span class="notif-item-icon kind-update">${icon("refresh", 14)}</span>
+      <span class="notif-item-body">
+        <span class="notif-item-title">${esc(s.title)}</span>
+        <span class="notif-item-text">${esc(text)}</span>
+      </span>
+    </button>`;
+}
+
+/** Live launcher update status; the action installs it or starts the download. */
+function launcherUpdateMarkup(): string {
+  const ready = S.appUpdateStatus === "ready";
+  if (!ready && S.appUpdateStatus !== "available") return "";
+  const title = ready
+    ? t("appUpdate.ready", { version: S.appUpdateVersion })
+    : t("appUpdate.available", { version: S.appUpdateVersion });
+  const body = ready ? t("appUpdate.readyBody") : t("appUpdate.availableBody");
+  const act = ready ? "app-update-install" : "app-update-download";
+  const label = ready ? t("appUpdate.installNow") : t("appUpdate.downloadNow");
+  return `
+    <button class="notif-item" data-act="${act}">
+      <span class="notif-item-icon kind-app">${icon("sparkles", 14)}</span>
+      <span class="notif-item-body">
+        <span class="notif-item-title">${esc(title)}</span>
+        <span class="notif-item-text">${esc(body)}</span>
+        <span class="notif-item-act">${esc(label)}</span>
+      </span>
+    </button>`;
+}
+
+function notificationMarkup(n: AppNotification): string {
+  const action = n.action
+    ? `data-act="${esc(n.action)}"`
+    : n.appName
+      ? `data-act="notif-open" data-id="${esc(n.appName)}"`
+      : `data-act="notif-dismiss" data-id="${esc(n.id)}"`;
+  // The subject (a game title) sits in the dim line before the timestamp.
+  const meta = esc([n.context, relativeTime(n.ts)].filter(Boolean).join(" · "));
+  return `
+    <button class="notif-item${n.read ? "" : " unread"}" ${action} data-nid="${esc(n.id)}">
+      <span class="notif-item-icon kind-${n.kind}">${icon(KIND_ICON[n.kind], 14)}</span>
+      <span class="notif-item-body">
+        <span class="notif-item-title">${esc(n.title)}</span>
+        ${n.body ? `<span class="notif-item-text">${esc(n.body)}</span>` : ""}
+        ${n.actionLabel ? `<span class="notif-item-act">${esc(n.actionLabel)}${icon("external", 12)}</span>` : ""}
+        <span class="notif-item-time">${meta}</span>
+      </span>
+    </button>`;
+}
+
+function tabButton(tab: NotifTab, count: number): string {
+  const active = S.notifTab === tab;
+  return `<button class="tab${active ? " active" : ""}" role="tab" aria-selected="${active}" data-act="notif-tab" data-id="${tab}">${esc(t(TAB_LABEL[tab]))}${count > 0 ? `<span class="count">${count}</span>` : ""}</button>`;
+}
+
+/** Nothing to show in this tab; each tab explains what it would have listed. */
+function emptyState(tab: NotifTab): string {
+  const [glyph, key] =
+    tab === "updates"
+      ? (["download", "notif.emptyUpdates"] as const)
+      : tab === "achievements"
+        ? (["trophy", "notif.emptyAchievements"] as const)
+        : (["info", "notif.emptySystem"] as const);
+  return `<div class="notif-empty">${icon(glyph, 26)}<p>${esc(t(key))}</p></div>`;
+}
+
+function panelMarkup(data: NotifPanelData, unread: number): string {
+  const tab = S.notifTab;
+  const history = tab === "updates" ? data.updates : tab === "achievements" ? [] : data.system;
+  // Live status first, then the event log behind it.
+  const live =
+    tab === "updates"
+      ? data.pending.map(pendingUpdateMarkup).join("")
+      : tab === "achievements"
+        ? data.session.map(notificationMarkup).join("")
+        : launcherUpdateMarkup();
+  const rows = live + history.map(notificationMarkup).join("");
+  const body = rows
+    ? `<div class="notif-list" role="tabpanel">${rows}</div>`
+    : `<div class="notif-list" role="tabpanel">${emptyState(tab)}</div>`;
   return `
     <div class="notif-panel" role="dialog" aria-label="${esc(t("notif.title"))}">
       <div class="notif-head">
-        <span class="notif-title">${icon("bell", 14)} ${t("notif.title")}</span>
+        <span class="notif-title">${icon("bell", 14)} ${esc(t("notif.title"))}</span>
         <div class="notif-head-actions">
-          ${unread > 0 ? `<button class="notif-action" data-act="notif-read-all">${t("notif.readAll")}</button>` : ""}
-          ${S.notifications.length > 0 ? `<button class="notif-action" data-act="notif-clear">${t("notif.clear")}</button>` : ""}
+          ${unread > 0 ? `<button class="notif-action" data-act="notif-read-all">${esc(t("notif.readAll"))}</button>` : ""}
+          ${S.notifications.length > 0 ? `<button class="notif-action" data-act="notif-clear">${esc(t("notif.clear"))}</button>` : ""}
         </div>
+      </div>
+      <div class="notif-tabs" role="tablist" aria-label="${esc(t("notif.title"))}">
+        ${TAB_ORDER.map((key) => tabButton(key, data.counts[key])).join("")}
       </div>
       ${body}
     </div>`;
@@ -374,15 +541,17 @@ export function renderNotificationPanel(): void {
   }
 
   const unread = unreadCount();
+  const data = notifPanelData();
   // `render()` runs on every download progress event; rebuilding the open panel
   // each time was pure DOM churn. Skip when the visible content is unchanged.
   const first = S.notifications[0];
-  const sig = `${S.notifications.length}|${unread}|${first?.ts ?? 0}|${first?.read ?? false}|${S.appLanguage}`;
+  const pendingNames = data.pending.map((s) => s.appName).join(",");
+  const sig = `${S.notifications.length}|${unread}|${first?.ts ?? 0}|${first?.read ?? false}|${S.appLanguage}|${S.notifTab}|${pendingNames}|${data.counts.updates}|${data.counts.achievements}|${data.counts.system}|${S.appUpdateStatus}|${S.appUpdateVersion}`;
   const covers = storeCoversUi();
   if (sig === notifPanelSig && (root.firstChild || (covers && notifOverlayOn))) return;
   notifPanelSig = sig;
 
-  const markup = panelMarkup(unread);
+  const markup = panelMarkup(data, unread);
   if (covers) {
     root.innerHTML = "";
     notifOverlayOn = true;
@@ -429,11 +598,22 @@ export function positionNotifPanel(): void {
 /** Opens the notification panel (and marks everything as read). */
 export function openNotifPanel(): void {
   S.notifOpen = true;
+  // Open on whatever is new: the newest unread entry decides the tab, so the
+  // first click after an achievement lands on that achievement.
+  const newestUnread = S.notifications.find((n) => !n.read);
+  if (newestUnread) S.notifTab = notifTabOf(newestUnread.kind);
   // Mark first: the panel is painted from these flags, so painting before the
   // clear showed every item as unread with a "Read all" button that did nothing.
   markAllRead();
   renderNotificationPanel();
   syncStoreViewSize();
+}
+
+/** Switches the dropdown tab; unknown ids are ignored. */
+export function selectNotifTab(tab: string): void {
+  if (!isNotifTab(tab) || S.notifTab === tab) return;
+  S.notifTab = tab;
+  renderNotificationPanel();
 }
 
 export function closeNotifPanel(): void {

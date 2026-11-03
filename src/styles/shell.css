@@ -1034,7 +1034,11 @@ html.win-compact .page-search span { display: none; }
   padding: 4px 6px; border-radius: 4px; cursor: pointer;
 }
 .notif-action:hover { background: var(--surface-2); color: var(--text); }
-.notif-list { overflow-y: auto; display: flex; flex-direction: column; }
+/* Category strip: Updates / Achievements / System, one underline like .tab. */
+.notif-tabs { display: flex; align-items: center; gap: 16px; padding: 0 14px; border-bottom: 1px solid var(--line); }
+.notif-tabs .tab { height: 34px; font-size: 12.5px; }
+.notif-tabs .tab .count { font-size: 11px; font-weight: 600; }
+.notif-list { overflow-y: auto; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .notif-item {
   display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 10px 14px; text-align: left;
   border: none; border-bottom: 1px solid var(--line); background: transparent; color: var(--text);
@@ -1048,8 +1052,10 @@ html.win-compact .page-search span { display: none; }
 }
 .notif-item-icon.kind-download { color: var(--ok); }
 .notif-item-icon.kind-update { color: var(--warn); }
+.notif-item-icon.kind-app { color: var(--warn); }
 .notif-item-icon.kind-error { color: var(--err); }
 .notif-item-icon.kind-social { color: var(--accent); }
+.notif-item-icon.kind-achievement { color: var(--warn); }
 .notif-item-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .notif-item-title { font-size: 13px; font-weight: 500; }
 .notif-item-text {

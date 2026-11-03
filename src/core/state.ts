@@ -91,7 +91,7 @@ import { initialReduceEffects } from "./effects";
 import { loadGameStatus, loadUiScale } from "./game-status";
 import { readCustomCss } from "./custom-css";
 import { normalizeSurface } from "./themes";
-import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, SavedAccount, SettingsSection, View } from "./types";
+import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, NotifTab, SavedAccount, SettingsSection, View } from "./types";
 import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
 
 
@@ -596,6 +596,8 @@ export const S = {
   copyPathStates: new Map<string, import("../epic").InstallPathState>(),
   notifications: ([]) as AppNotification[],
   notifOpen: false,
+  /** Dropdown tab; the bell keeps it for the session, not across restarts. */
+  notifTab: ("updates") as NotifTab,
   studioFilter: "",
   settingsSection: ("account") as SettingsSection,
   profileCardCount: PROFILE_CARD_CHUNK as number,

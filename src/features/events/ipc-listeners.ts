@@ -1132,11 +1132,14 @@ export async function initApp(hooks: {
       .map((key) => S.loadedAchievements.get(key)?.achievements.find((ach) => ach.name === name))
       .find((ach) => Boolean(ach));
     const label = displayName || cachedItem?.display_name || name;
+    const gameTitle = summaryOf(appKeys[0])?.title || "";
     if (notification) {
       pushNotification({
-        kind: "info",
+        kind: "achievement",
         title: t("ach.unlockedNotification", { name: label }),
         body: description || cachedItem?.description || "",
+        context: gameTitle,
+        appName: appKeys[0],
         // The in-game card already announced it; the bell keeps the history.
         toast: !card,
       });

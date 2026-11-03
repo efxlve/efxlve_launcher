@@ -10,7 +10,7 @@ import { CircleUserRound, createIcons } from "lucide";
 import { invoke } from "@tauri-apps/api/core";
 import { dlBadge, syncSidebarGameActive } from "./dom";
 import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from "./render";
-import { compareLibraryRecent, rawOf, totalLibraryGamesCount } from "./selectors";
+import { compareLibraryRecent, pendingGameUpdates, rawOf, totalLibraryGamesCount } from "./selectors";
 import { hasConnection } from "./offline";
 import { cachedSteamCover } from "./steam-art-cache";
 import { currentProfileName, globalAvatar, S } from "./state";
@@ -38,28 +38,7 @@ export function updateSidebarActive(): void {
 
 /** Installed games that have a newer build waiting and have not been ignored. */
 function pendingUpdateCount(): number {
-  const downloading = (id: string): boolean => {
-    const entry = S.downloads.get(id);
-    return Boolean(entry && !entry.done);
-  };
-  let n = 0;
-  for (const s of S.epicSummaries) {
-    if (S.hiddenGames.has(s.appName) || S.ignoredUpdates.has(s.appName)) continue;
-    // The active download already adds one to the badge; counting its pending
-    // update again showed 2 for a single updating game.
-    if (downloading(s.appName)) continue;
-    if (s.installed && (s.updateAvailable || S.availableUpdates.has(s.appName))) n++;
-  }
-  for (const g of S.gogSummaries) {
-    if (S.hiddenGames.has(g.key) || S.ignoredUpdates.has(g.key)) continue;
-    if (downloading(g.key)) continue;
-    if (g.installed && g.updateAvailable) n++;
-  }
-  for (const g of S.steamSummaries) {
-    if (S.hiddenGames.has(g.key) || S.ignoredUpdates.has(g.key)) continue;
-    if (g.installed && g.updateAvailable && !g.downloading) n++;
-  }
-  return n;
+  return pendingGameUpdates().length;
 }
 
 /** Game count sits in the page header, and only on the library itself. */

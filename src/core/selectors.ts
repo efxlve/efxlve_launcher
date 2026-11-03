@@ -326,6 +326,41 @@ export function gogToEpicSummary(g: LibraryItem): EpicSummary {
   return libraryItemToSummary(g);
 }
 
+/**
+ * Installed games with a newer build waiting. One source for the sidebar badge
+ * and the bell's Updates tab, so the two counts can never disagree: hidden and
+ * muted games are skipped, and a running transfer is not offered twice.
+ */
+export function pendingGameUpdates(): EpicSummary[] {
+  const downloading = (id: string): boolean => {
+    const entry = S.downloads.get(id);
+    return Boolean(entry && !entry.done);
+  };
+  const out: EpicSummary[] = [];
+  for (const s of S.epicSummaries) {
+    if (S.hiddenGames.has(s.appName) || S.ignoredUpdates.has(s.appName)) continue;
+    if (downloading(s.appName)) continue;
+    // A catalog check can report a newer version before the summary flag flips.
+    if (s.installed && (s.updateAvailable || S.availableUpdates.has(s.appName))) out.push(s);
+  }
+  for (const g of S.gogSummaries) {
+    if (S.hiddenGames.has(g.key) || S.ignoredUpdates.has(g.key)) continue;
+    if (downloading(g.key)) continue;
+    if (g.installed && g.updateAvailable) out.push(libraryItemToSummary(g));
+  }
+  for (const g of S.amazonSummaries) {
+    if (S.hiddenGames.has(g.key) || S.ignoredUpdates.has(g.key)) continue;
+    if (downloading(g.key)) continue;
+    if (g.installed && g.updateAvailable) out.push(libraryItemToSummary(g));
+  }
+  for (const g of S.steamSummaries) {
+    if (S.hiddenGames.has(g.key) || S.ignoredUpdates.has(g.key)) continue;
+    // Steam owns the transfer: a downloading game has a job, not a pending update.
+    if (g.installed && g.updateAvailable && !g.downloading) out.push(libraryItemToSummary(g));
+  }
+  return out;
+}
+
 /** Returns all games across all stores as EpicSummary items. */
 export function allStoreSummaries(): EpicSummary[] {
   const items = S.epicSummaries;
