@@ -3529,5 +3529,17 @@
   "settings.eaInstallDirTitle": "EA 安装文件夹",
   "settings.eaInstallDirHint": "EA 游戏默认安装在此处，每个游戏一个子文件夹。留空则使用：",
   "ea.legacyPackage": "此旧版 EA 安装程序必须通过 EA App 运行。",
+  "ea.launchMode.loading": "Reading the launch mode…",
+  "ea.launchMode.directTitle": "Direct launch",
+  "ea.launchMode.directDesc": "EFXLVE installs, updates and launches this game. The EA App is not required.",
+  "ea.launchMode.eaAppTitle": "EA App required",
+  "ea.launchMode.chipDirect": "No EA App",
+  "ea.launchMode.chipEaApp": "EA App",
+  "ea.launchMode.eaacDesc": "EA anti-cheat verifies the EA App service, so this title installs and launches through the EA App.",
+  "ea.launchMode.ooaDesc": "EA activation (OOA) hands the launch to the EA App, so this title needs the EA App.",
+  "ea.launchMode.legacyTitle": "EA App for install",
+  "ea.launchMode.chipLegacy": "Install only",
+  "ea.launchMode.legacyDesc": "This pre-DiP title installs and updates through the EA App. Once installed, EFXLVE launches it directly.",
+  "ea.launchMode.disabledDesc": "Direct launch is turned off in Settings, so this game opens through the EA App.",
   "ea.uninstallLeftFiles": "卸载程序已完成，但 {a1} 中仍有文件。请以管理员身份运行 EFXLVE 或删除该文件夹。"
 }

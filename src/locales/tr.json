@@ -3529,5 +3529,17 @@
   "settings.eaInstallDirTitle": "EA kurulum klasörü",
   "settings.eaInstallDirHint": "EA oyunları varsayılan olarak buraya kurulur, her oyun için bir alt klasör. Boş bırakılırsa:",
   "ea.legacyPackage": "Bu eski EA yükleyicisi EA App üzerinden çalışmalı.",
+  "ea.launchMode.loading": "Başlatma modu okunuyor…",
+  "ea.launchMode.directTitle": "Doğrudan başlatma",
+  "ea.launchMode.directDesc": "EFXLVE bu oyunu kurar, günceller ve başlatır. EA App gerekmez.",
+  "ea.launchMode.eaAppTitle": "EA App gerekli",
+  "ea.launchMode.chipDirect": "EA App yok",
+  "ea.launchMode.chipEaApp": "EA App",
+  "ea.launchMode.eaacDesc": "EA anti-cheat, EA App hizmetini doğrular; bu oyun EA App üzerinden kurulur ve başlatılır.",
+  "ea.launchMode.ooaDesc": "EA aktivasyonu (OOA) başlatmayı EA App'e devreder; bu oyun EA App gerektirir.",
+  "ea.launchMode.legacyTitle": "Kurulum için EA App",
+  "ea.launchMode.chipLegacy": "Sadece kurulum",
+  "ea.launchMode.legacyDesc": "Bu DiP öncesi oyun EA App üzerinden kurulur ve güncellenir. Kurulduktan sonra EFXLVE doğrudan başlatır.",
+  "ea.launchMode.disabledDesc": "Doğrudan başlatma Ayarlar'da kapalı; bu oyun EA App üzerinden açılır.",
   "ea.uninstallLeftFiles": "Kaldırıcı bitti ama {a1} içinde dosyalar kaldı. EFXLVE'yi yönetici olarak çalıştırın veya klasörü silin."
 }

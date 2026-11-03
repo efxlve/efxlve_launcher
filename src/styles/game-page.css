@@ -686,6 +686,13 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-side-card { transition: border-color 140ms ease; }
 .gp-side-card:hover { border-color: var(--line-strong); }
 .hub-overview-main .hub-card { margin-bottom: 20px; }
+/* One-line EA App answer on the overview; the detail row is not a cover badge. */
+.ea-launch-mode { margin-bottom: 20px; }
+.ea-launch-mode-head { display: flex; align-items: center; gap: 8px; }
+.ea-launch-mode-head .row-title { flex: 1; min-width: 0; }
+.ea-launch-mode-head > svg { flex-shrink: 0; color: var(--text-2); }
+.ea-launch-mode .chip { flex-shrink: 0; }
+.ea-launch-mode-desc { margin-top: 6px; font-size: 12px; line-height: 1.5; color: var(--text-3); }
 .hub-card-header, .hltb-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
 .hub-card-title, .hltb-title { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 600; }
 .hub-card-title svg, .hltb-title svg { color: var(--text-3); }

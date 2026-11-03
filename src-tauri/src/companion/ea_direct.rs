@@ -72,6 +72,9 @@ pub struct EaDirectProbe {
     pub eaac: bool,
     /// The game ships the activation runtime that expects a license.
     pub ooa: bool,
+    /// `direct`, `eaac`, `ooa`, `legacy` or `unavailable`; the game page
+    /// turns this into the one-line EA App notice.
+    pub mode: String,
     pub args: Vec<String>,
     /// Environment variable names only; token values never leave Rust.
     pub env: Vec<String>,
@@ -442,34 +445,58 @@ fn start_service() {
     let _ = sc("start");
 }
 
+/// The one-line answer the game page shows for an EA title.
+fn launch_mode(ok: bool, eaac: bool, ooa: bool, reason: &str) -> &'static str {
+    if eaac {
+        "eaac"
+    } else if ooa {
+        "ooa"
+    } else if ok {
+        "direct"
+    } else if reason.contains("pre-DiP") {
+        "legacy"
+    } else {
+        "unavailable"
+    }
+}
+
 /// The diagnostic row behind Settings > Integrations.
 pub(crate) fn probe(game: &FoundGame) -> EaDirectProbe {
     match plan(&game.install_path, &game.store_id) {
-        Ok(plan) => EaDirectProbe {
-            ok: true,
-            reason: String::new(),
-            exe: plan.exe.to_string_lossy().to_string(),
-            work_dir: plan.work_dir.to_string_lossy().to_string(),
-            content_id: plan.content_id.clone(),
-            eaac: plan.eaac,
-            ooa: plan.ooa,
-            args: plan.args.clone(),
-            env: environment("", "", "", "en_US", &plan)
-                .into_iter()
-                .map(|(key, _)| key)
-                .collect(),
-        },
-        Err(err) => EaDirectProbe {
-            ok: false,
-            reason: err.to_string(),
-            exe: String::new(),
-            work_dir: String::new(),
-            content_id: String::new(),
-            eaac: false,
-            ooa: false,
-            args: Vec::new(),
-            env: Vec::new(),
-        },
+        Ok(plan) => {
+            let mode = launch_mode(true, plan.eaac, plan.ooa, "");
+            EaDirectProbe {
+                ok: true,
+                reason: String::new(),
+                exe: plan.exe.to_string_lossy().to_string(),
+                work_dir: plan.work_dir.to_string_lossy().to_string(),
+                content_id: plan.content_id.clone(),
+                eaac: plan.eaac,
+                ooa: plan.ooa,
+                mode: mode.into(),
+                args: plan.args.clone(),
+                env: environment("", "", "", "en_US", &plan)
+                    .into_iter()
+                    .map(|(key, _)| key)
+                    .collect(),
+            }
+        }
+        Err(err) => {
+            let reason = err.to_string();
+            let mode = launch_mode(false, false, false, &reason);
+            EaDirectProbe {
+                ok: false,
+                reason,
+                exe: String::new(),
+                work_dir: String::new(),
+                content_id: String::new(),
+                eaac: false,
+                ooa: false,
+                mode: mode.into(),
+                args: Vec::new(),
+                env: Vec::new(),
+            }
+        }
     }
 }
 
@@ -823,6 +850,21 @@ mod tests {
         println!("eaac guard: {result:?}");
         assert!(matches!(result, Err(ref error) if error.contains("anti-cheat")));
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn the_launch_mode_names_the_ea_app_reason() {
+        assert_eq!(launch_mode(true, false, false, ""), "direct");
+        assert_eq!(launch_mode(true, true, false, ""), "eaac");
+        assert_eq!(launch_mode(true, false, true, ""), "ooa");
+        assert_eq!(
+            launch_mode(false, false, false, "the manifest uses the pre-DiP format"),
+            "legacy"
+        );
+        assert_eq!(
+            launch_mode(false, false, false, "the game folder is missing"),
+            "unavailable"
+        );
     }
 
     #[test]

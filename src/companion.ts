@@ -381,7 +381,25 @@ export interface EaDirectStatus {
   lastError: string;
 }
 
+/** What the game page needs to say about the EA App for one title. */
+export interface EaDirectProbe {
+  ok: boolean;
+  reason: string;
+  exe: string;
+  workDir: string;
+  contentId: string;
+  eaac: boolean;
+  ooa: boolean;
+  mode: "direct" | "eaac" | "ooa" | "legacy" | "unavailable";
+  args: string[];
+  env: string[];
+}
+
 export const eaDirectStatus = () => invoke<EaDirectStatus>("ea_direct_status");
+
+/** Reads the installed game's launch facts without writing anything. */
+export const eaDirectProbe = (store: CompanionStore, id: string) =>
+  invoke<EaDirectProbe>("ea_direct_probe", { store, id });
 
 export const eaDirectSetEnabled = (enabled: boolean) =>
   invoke<void>("ea_direct_set_enabled", { enabled });

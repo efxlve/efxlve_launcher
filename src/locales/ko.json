@@ -3529,5 +3529,17 @@
   "settings.eaInstallDirTitle": "EA 설치 폴더",
   "settings.eaInstallDirHint": "EA 게임은 기본적으로 여기에 설치되며 게임마다 하위 폴더가 생깁니다. 비워 두면:",
   "ea.legacyPackage": "이 레거시 EA 설치 프로그램은 EA App을 통해 실행해야 합니다.",
+  "ea.launchMode.loading": "Reading the launch mode…",
+  "ea.launchMode.directTitle": "Direct launch",
+  "ea.launchMode.directDesc": "EFXLVE installs, updates and launches this game. The EA App is not required.",
+  "ea.launchMode.eaAppTitle": "EA App required",
+  "ea.launchMode.chipDirect": "No EA App",
+  "ea.launchMode.chipEaApp": "EA App",
+  "ea.launchMode.eaacDesc": "EA anti-cheat verifies the EA App service, so this title installs and launches through the EA App.",
+  "ea.launchMode.ooaDesc": "EA activation (OOA) hands the launch to the EA App, so this title needs the EA App.",
+  "ea.launchMode.legacyTitle": "EA App for install",
+  "ea.launchMode.chipLegacy": "Install only",
+  "ea.launchMode.legacyDesc": "This pre-DiP title installs and updates through the EA App. Once installed, EFXLVE launches it directly.",
+  "ea.launchMode.disabledDesc": "Direct launch is turned off in Settings, so this game opens through the EA App.",
   "ea.uninstallLeftFiles": "제거 프로그램이 끝났지만 {a1}에 파일이 남아 있습니다. EFXLVE를 관리자 권한으로 실행하거나 폴더를 삭제하세요."
 }

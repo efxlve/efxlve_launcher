@@ -66,7 +66,7 @@ import {
 } from "../../steam";
 
 export const steamAchSourceCache = new Map<string, AchievementSourceConfig>();
-import { companionAchievements } from "../../companion";
+import { companionAchievements, eaDirectProbe, type EaDirectProbe } from "../../companion";
 import { buildSteamRequirements, steamLanguage } from "./steam-details";
 
 import { invalidateLibraryVisibleCache } from "../library/library-view";
@@ -1735,11 +1735,118 @@ export function repaintPersonalBlock(appName: string): void {
   if (momentsEl) momentsEl.outerHTML = renderMomentsStrip(appName);
 }
 
+const eaLaunchModeCache = new Map<string, EaDirectProbe | null>();
+const eaLaunchModeLoading = new Set<string>();
+
+interface EaLaunchModeMeta {
+  title: string;
+  chip: string;
+  chipClass: "ok" | "warn";
+  icon: IconName;
+}
+
+function eaLaunchModeMeta(mode: EaDirectProbe["mode"]): EaLaunchModeMeta {
+  if (mode === "direct") {
+    return {
+      title: t("ea.launchMode.directTitle"),
+      chip: t("ea.launchMode.chipDirect"),
+      chipClass: "ok",
+      icon: "check",
+    };
+  }
+  if (mode === "legacy") {
+    return {
+      title: t("ea.launchMode.legacyTitle"),
+      chip: t("ea.launchMode.chipLegacy"),
+      chipClass: "warn",
+      icon: "download",
+    };
+  }
+  return {
+    title: t("ea.launchMode.eaAppTitle"),
+    chip: t("ea.launchMode.chipEaApp"),
+    chipClass: "warn",
+    icon: "shield",
+  };
+}
+
+function eaLaunchModeDescription(probe: EaDirectProbe): string {
+  switch (probe.mode) {
+    case "direct":
+      return t("ea.launchMode.directDesc");
+    case "eaac":
+      return t("ea.launchMode.eaacDesc");
+    case "ooa":
+      return t("ea.launchMode.ooaDesc");
+    case "legacy":
+      return t("ea.launchMode.legacyDesc");
+    default:
+      return "";
+  }
+}
+
+function eaLaunchModeCard(probe: EaDirectProbe): string {
+  const meta = eaLaunchModeMeta(probe.mode);
+  return `<section class="card ea-launch-mode">
+    <div class="ea-launch-mode-head">
+      ${icon(meta.icon, 16)}
+      <span class="row-title">${esc(meta.title)}</span>
+      <span class="chip ${meta.chipClass}">${esc(meta.chip)}</span>
+    </div>
+    <div class="ea-launch-mode-desc">${esc(eaLaunchModeDescription(probe))}</div>
+  </section>`;
+}
+
+function eaLaunchModeDisabledCard(): string {
+  const meta = eaLaunchModeMeta("eaac");
+  return `<section class="card ea-launch-mode">
+    <div class="ea-launch-mode-head">
+      ${icon(meta.icon, 16)}
+      <span class="row-title">${esc(meta.title)}</span>
+      <span class="chip ${meta.chipClass}">${esc(meta.chip)}</span>
+    </div>
+    <div class="ea-launch-mode-desc">${esc(t("ea.launchMode.disabledDesc"))}</div>
+  </section>`;
+}
+
+async function loadEaLaunchMode(appName: string): Promise<void> {
+  if (eaLaunchModeLoading.has(appName)) return;
+  eaLaunchModeLoading.add(appName);
+  try {
+    const probe = await eaDirectProbe("ea", appName.slice(4));
+    eaLaunchModeCache.set(appName, probe);
+    const host = document.getElementById("ea-launch-mode");
+    if (host?.dataset.app !== appName) return;
+    if (probe.mode === "unavailable") host.remove();
+    else host.outerHTML = eaLaunchModeCard(probe);
+  } catch {
+    eaLaunchModeCache.set(appName, null);
+    document.getElementById("ea-launch-mode")?.remove();
+  } finally {
+    eaLaunchModeLoading.delete(appName);
+  }
+}
+
+function renderEaLaunchMode(s: EpicSummary): string {
+  if (!isTauri || !s.appName.startsWith("ea::")) return "";
+  if (!s.installed) return "";
+  if (!S.eaDirectEnabled) return eaLaunchModeDisabledCard();
+  const cached = eaLaunchModeCache.get(s.appName);
+  if (cached !== undefined) {
+    return cached === null || cached.mode === "unavailable" ? "" : eaLaunchModeCard(cached);
+  }
+  void loadEaLaunchMode(s.appName);
+  return `<section class="card ea-launch-mode is-loading" id="ea-launch-mode" data-app="${esc(s.appName)}">
+    <div class="ea-launch-mode-desc">${esc(t("ea.launchMode.loading"))}</div>
+  </section>`;
+}
+
 export function renderDrawerOverview(
   s: EpicSummary,
   partner: ThirdPartyLauncherInfo | null = null,
   antiCheat: string | null = null,
 ): string {
+  const eaMode = renderEaLaunchMode(s);
   const playtime = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
   const personalFirst = s.installed || playtime > 0;
   const personal = `<div id="gp-personal-block">${personalBlockHtml(s, personalFirst)}</div>`;
@@ -1771,6 +1878,7 @@ export function renderDrawerOverview(
   return `
     <div class="hub-overview-layout">
       <div class="hub-overview-main">
+        ${eaMode}
         ${about}
         ${news}
         <div id="hub-igdb-similar">${renderIgdbSimilar(s)}</div>

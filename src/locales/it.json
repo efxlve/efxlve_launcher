@@ -3529,5 +3529,17 @@
   "settings.eaInstallDirTitle": "Cartella di installazione EA",
   "settings.eaInstallDirHint": "I giochi EA si installano qui per impostazione predefinita, una sottocartella per gioco. Se vuota:",
   "ea.legacyPackage": "Questo vecchio programma di installazione EA deve essere eseguito tramite l'EA App.",
+  "ea.launchMode.loading": "Reading the launch mode…",
+  "ea.launchMode.directTitle": "Direct launch",
+  "ea.launchMode.directDesc": "EFXLVE installs, updates and launches this game. The EA App is not required.",
+  "ea.launchMode.eaAppTitle": "EA App required",
+  "ea.launchMode.chipDirect": "No EA App",
+  "ea.launchMode.chipEaApp": "EA App",
+  "ea.launchMode.eaacDesc": "EA anti-cheat verifies the EA App service, so this title installs and launches through the EA App.",
+  "ea.launchMode.ooaDesc": "EA activation (OOA) hands the launch to the EA App, so this title needs the EA App.",
+  "ea.launchMode.legacyTitle": "EA App for install",
+  "ea.launchMode.chipLegacy": "Install only",
+  "ea.launchMode.legacyDesc": "This pre-DiP title installs and updates through the EA App. Once installed, EFXLVE launches it directly.",
+  "ea.launchMode.disabledDesc": "Direct launch is turned off in Settings, so this game opens through the EA App.",
   "ea.uninstallLeftFiles": "Il disinstallatore è terminato, ma restano file in {a1}. Avvia EFXLVE come amministratore o elimina la cartella."
 }
