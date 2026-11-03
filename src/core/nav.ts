@@ -10,7 +10,7 @@ import { CircleUserRound, createIcons } from "lucide";
 import { invoke } from "@tauri-apps/api/core";
 import { dlBadge, syncSidebarGameActive } from "./dom";
 import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from "./render";
-import { compareLibraryRecent, pendingGameUpdates, rawOf, totalLibraryGamesCount } from "./selectors";
+import { canonicalGameTitle, compareLibraryRecent, pendingGameUpdates, rawOf, totalLibraryGamesCount } from "./selectors";
 import { hasConnection } from "./offline";
 import { cachedSteamCover } from "./steam-art-cache";
 import { currentProfileName, globalAvatar, S } from "./state";
@@ -187,19 +187,33 @@ interface SidebarGame {
 /** Installed games from every store, hidden ones dropped, covers resolved. */
 function sidebarGames(): SidebarGame[] {
   const out: SidebarGame[] = [];
-  const add = (appName: string, title: string, cover: string | null | undefined): void => {
+  const primaryTitles = new Set<string>();
+  const add = (
+    appName: string,
+    title: string,
+    cover: string | null | undefined,
+    primary = false,
+  ): void => {
     if (S.hiddenGames.has(appName)) return;
+    if (primary) {
+      const canon = canonicalGameTitle(title);
+      if (canon) primaryTitles.add(canon);
+    }
     out.push({ appName, title, cover: S.customCovers[appName] || cover || "" });
   };
   for (const s of S.epicSummaries) {
-    if (!s.installed) continue;
+    if (!s.installed && !S.epicCopyOverrides.get(s.appName)?.installed) continue;
     const raw = rawOf(s.appName);
-    add(s.appName, s.title, (raw ? epicPortrait(raw) : null) || s.cover);
+    add(s.appName, s.title, (raw ? epicPortrait(raw) : null) || s.cover, true);
   }
-  for (const g of S.gogSummaries) if (g.installed) add(g.key, g.title, g.coverUrl);
-  for (const g of S.amazonSummaries) if (g.installed) add(g.key, g.title, g.coverUrl);
-  for (const g of S.steamSummaries) if (g.installed) add(g.key, g.title, cachedSteamCover(g.id) || g.coverUrl);
-  for (const g of S.companionSummaries) if (g.installed) add(g.key, g.title, g.coverUrl);
+  for (const g of S.gogSummaries) if (g.installed) add(g.key, g.title, g.coverUrl, true);
+  for (const g of S.amazonSummaries) if (g.installed) add(g.key, g.title, g.coverUrl, true);
+  for (const g of S.steamSummaries) if (g.installed) add(g.key, g.title, cachedSteamCover(g.id) || g.coverUrl, true);
+  for (const g of S.companionSummaries) {
+    if (!g.installed) continue;
+    if (g.source === "ea" && primaryTitles.has(canonicalGameTitle(g.title))) continue;
+    add(g.key, g.title, g.coverUrl);
+  }
   return out;
 }
 
