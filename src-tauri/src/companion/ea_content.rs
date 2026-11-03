@@ -2010,4 +2010,100 @@ mod tests {
             }
         }
     }
+
+    #[tokio::test]
+    #[ignore = "queries EA's content service for the A Way Out build list"]
+    async fn manual_a_way_out_builds() {
+        let access = super::super::ea_login::ensure_access().await.expect("access");
+        let builds = available_builds(&access, "Origin.OFR.50.0002412")
+            .await
+            .expect("builds");
+        for build in &builds {
+            match download_links(&access, "Origin.OFR.50.0002412", &build.build_id).await {
+                Ok(links) => {
+                    let size = remote_size(&client(), &links.url).await.unwrap_or(0);
+                    println!(
+                        "build: version={} id={} type={} live={} size={} ({:.2} GB) sync={:?}",
+                        build.game_version,
+                        build.build_id,
+                        build.download_type,
+                        build.live_date,
+                        size,
+                        size as f64 / 1024.0 / 1024.0 / 1024.0,
+                        links.sync_url
+                    );
+                }
+                Err(error) => println!(
+                    "build: version={} id={} links failed: {error}",
+                    build.game_version, build.build_id
+                ),
+            }
+        }
+        assert!(!builds.is_empty());
+    }
+
+    #[tokio::test]
+    #[ignore = "reads the older A Way Out sync package metadata"]
+    async fn manual_old_sync_probe() {
+        let access = super::super::ea_login::ensure_access().await.expect("access");
+        let builds = available_builds(&access, "Origin.OFR.50.0002412")
+            .await
+            .expect("builds");
+        let old = builds
+            .iter()
+            .find(|build| build.game_version == "1.0.62.0")
+            .expect("1.0.62.0 build");
+        let links = download_links(&access, "Origin.OFR.50.0002412", &old.build_id)
+            .await
+            .expect("old links");
+        let sync = links.sync_url.expect("old sync url");
+        let manifest = read_manifest(&sync).await.expect("old sync manifest");
+        let files = sync_file_entries(&manifest);
+        println!(
+            "old sync entries: {} full files: {}",
+            manifest.entries.len(),
+            files.len()
+        );
+        let temp = std::env::temp_dir().join("efxlve-ea-old-sync");
+        std::fs::create_dir_all(&temp).expect("temp");
+        for (label, suffix) in [("metadata", "eapatchinfo"), ("impl", "eapatchimpl")] {
+            let Some(entry) = manifest
+                .entries
+                .iter()
+                .find(|entry| entry.name.to_ascii_lowercase().ends_with(suffix))
+            else {
+                continue;
+            };
+            let dest = temp.join(format!("{label}.dat"));
+            download_entry(&sync, entry, &dest)
+                .await
+                .expect("download old metadata");
+            let data = std::fs::read(&dest).expect("read old metadata");
+            let head = &data[..data.len().min(180)];
+            println!(
+                "{label} name={} len={} ascii={}",
+                entry.name,
+                data.len(),
+                String::from_utf8_lossy(head).replace('\0', ".")
+            );
+        }
+        if let Some(entry) = manifest
+            .entries
+            .iter()
+            .find(|entry| entry.name.ends_with(".eaPatchDiff"))
+        {
+            let dest = temp.join("one.eaPatchDiff");
+            download_entry(&sync, entry, &dest)
+                .await
+                .expect("download old diff");
+            let data = std::fs::read(&dest).expect("read old diff");
+            let head = &data[..data.len().min(64)];
+            println!(
+                "diff name={} len={} head={:02x?}",
+                entry.name,
+                data.len(),
+                head
+            );
+        }
+    }
 }
