@@ -30,9 +30,11 @@ export function achSummaryOf(appName: string) {
       if (steamSum) return steamSum;
     }
   }
+  const backend = S.epicBackendLaunch.get(appName);
   return (
     S.epicAchSummaries[appName] ||
     S.companionAchSummaries[appName] ||
+    (backend ? S.companionAchSummaries[backend] || S.epicAchSummaries[backend] : undefined) ||
     (appName.startsWith("gog::") ? S.epicAchSummaries[appName.slice(5)] : S.epicAchSummaries[`gog::${appName}`])
   );
 }

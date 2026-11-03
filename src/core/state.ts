@@ -91,7 +91,7 @@ import { initialReduceEffects } from "./effects";
 import { loadGameStatus, loadUiScale } from "./game-status";
 import { readCustomCss } from "./custom-css";
 import { normalizeSurface } from "./themes";
-import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DrawerTab, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, NotifTab, SavedAccount, SettingsSection, View } from "./types";
+import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DrawerTab, EpicCopyOverride, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, NotifTab, SavedAccount, SettingsSection, View } from "./types";
 import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
 
 
@@ -781,6 +781,9 @@ export const S = {
   steamGames: [] as import("../steam").SteamGame[],
   /** Installed and linked-account games from EA, Ubisoft, Xbox and Battle.net. */
   companionSummaries: [] as import("./types").LibraryItem[],
+  /** Primary-store keys whose installed files come from a matching EA App copy. */
+  epicBackendLaunch: new Map<string, string>(),
+  epicCopyOverrides: new Map<string, EpicCopyOverride>(),
   companionStatus: [] as import("../companion").CompanionStoreStatus[],
   companionBusy: "",
   /** Per-store "close the client after playing" toggles (Integrations page). */

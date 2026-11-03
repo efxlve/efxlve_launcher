@@ -131,6 +131,14 @@ export async function epicPlay(appName: string): Promise<void> {
     }
     return;
   }
+  // A primary-store purchase whose installed files live in a matching EA App
+  // copy launches through that copy; the card stays Epic/GOG/Steam.
+  const backend = S.epicBackendLaunch.get(appName);
+  if (backend && backend !== appName) {
+    pushRecent(appName);
+    await epicPlay(backend);
+    return;
+  }
   // A copy whose drive or folder disappeared cannot launch. Name the problem
   // instead of letting the store CLI return a raw filesystem error.
   if (isTauri && !appName.startsWith("steam::") && !isCompanionKey(appName)) {

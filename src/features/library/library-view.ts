@@ -223,8 +223,17 @@ export function epicVisibleSummaries(): EpicSummary[] {
 function libraryBaseItems(): EpicSummary[] {
   const groups = new Map<string, EpicSummary[]>();
   const copies: EpicSummary[] = [];
-  const push = (s: EpicSummary): void => {
+  const primaryTitles = new Set<string>();
+  const withOverride = (s: EpicSummary): EpicSummary => {
+    const override = S.epicCopyOverrides.get(s.appName);
+    return override ? { ...s, ...override } : s;
+  };
+  const push = (s: EpicSummary, primary = false): void => {
     if (S.hiddenGames.has(s.appName)) return;
+    if (primary) {
+      const canon = canonicalGameTitle(s.title);
+      if (canon) primaryTitles.add(canon);
+    }
     // Separate mode lists every store copy as its own card; combined mode keeps
     // one card per canonical title.
     if (S.separateCopies) {
@@ -237,28 +246,33 @@ function libraryBaseItems(): EpicSummary[] {
     else groups.set(canon, [s]);
   };
   if (S.enabledStores.has("epic")) {
-    for (const s of S.epicSummaries) push(s);
+    for (const s of S.epicSummaries) push(withOverride(s), true);
     for (const s of sharedSummaries()) {
       if (!s.appName.startsWith("gog::")) push(s);
     }
   }
   if (S.enabledStores.has("gog")) {
-    for (const g of S.gogSummaries) push(libraryItemToSummary(g));
+    for (const g of S.gogSummaries) push(withOverride(libraryItemToSummary(g)), true);
     for (const s of sharedSummaries()) {
       if (s.appName.startsWith("gog::")) push(s);
     }
   }
   if (S.enabledStores.has("amazon")) {
-    for (const g of S.amazonSummaries) push(libraryItemToSummary(g));
+    for (const g of S.amazonSummaries) push(withOverride(libraryItemToSummary(g)), true);
   }
   if (S.enabledStores.has("steam")) {
-    for (const g of S.steamSummaries) push(libraryItemToSummary(g));
+    for (const g of S.steamSummaries) push(withOverride(libraryItemToSummary(g)), true);
   }
   if (S.enabledStores.has("custom")) {
     for (const g of S.customSummaries) push(libraryItemToSummary(g));
   }
   for (const g of S.companionSummaries) {
-    if (S.enabledStores.has(g.source)) push(libraryItemToSummary(g));
+    if (!S.enabledStores.has(g.source)) continue;
+    // EA App is the installed backend for a purchase on Epic/GOG/Amazon/Steam;
+    // showing the same title twice makes the linked entitlement look like a
+    // second purchase.
+    if (g.source === "ea" && primaryTitles.has(canonicalGameTitle(g.title))) continue;
+    push(libraryItemToSummary(g));
   }
   if (S.separateCopies) return copies;
   const out: EpicSummary[] = [];

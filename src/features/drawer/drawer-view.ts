@@ -1809,11 +1809,11 @@ function eaLaunchModeDisabledCard(): string {
   </section>`;
 }
 
-async function loadEaLaunchMode(appName: string): Promise<void> {
+async function loadEaLaunchMode(appName: string, eaKey: string): Promise<void> {
   if (eaLaunchModeLoading.has(appName)) return;
   eaLaunchModeLoading.add(appName);
   try {
-    const probe = await eaDirectProbe("ea", appName.slice(4));
+    const probe = await eaDirectProbe("ea", eaKey.slice(4));
     eaLaunchModeCache.set(appName, probe);
     const host = document.getElementById("ea-launch-mode");
     if (host?.dataset.app !== appName) return;
@@ -1828,14 +1828,16 @@ async function loadEaLaunchMode(appName: string): Promise<void> {
 }
 
 function renderEaLaunchMode(s: EpicSummary): string {
-  if (!isTauri || !s.appName.startsWith("ea::")) return "";
+  if (!isTauri) return "";
+  const eaKey = s.appName.startsWith("ea::") ? s.appName : S.epicBackendLaunch.get(s.appName);
+  if (!eaKey) return "";
   if (!s.installed) return "";
   if (!S.eaDirectEnabled) return eaLaunchModeDisabledCard();
   const cached = eaLaunchModeCache.get(s.appName);
   if (cached !== undefined) {
     return cached === null || cached.mode === "unavailable" ? "" : eaLaunchModeCard(cached);
   }
-  void loadEaLaunchMode(s.appName);
+  void loadEaLaunchMode(s.appName, eaKey);
   return `<section class="card ea-launch-mode is-loading" id="ea-launch-mode" data-app="${esc(s.appName)}">
     <div class="ea-launch-mode-desc">${esc(t("ea.launchMode.loading"))}</div>
   </section>`;

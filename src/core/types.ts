@@ -135,6 +135,13 @@ export interface LibraryItem {
   releaseYear?: number | null;
 }
 
+/** Installed facts a primary-store card borrows from a matching EA App copy. */
+export interface EpicCopyOverride {
+  installed: boolean;
+  installPath: string | null;
+  installedVersion: string | null;
+}
+
 /* ---------- Advanced library filters ---------- */
 
 export type LibPlaytimeBucket = "never" | "under1" | "1to10" | "10to50" | "over50";

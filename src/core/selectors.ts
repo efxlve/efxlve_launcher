@@ -130,28 +130,33 @@ export function storeKeysForTitle(title: string): readonly string[] {
  * the list; separate mode stays with the card's own copy.
  */
 export function libraryPlaytime(s: { appName: string; title: string }): { seconds: number; lastPlayed: number } {
-  const own = S.playtimeMap.get(s.appName);
-  if (S.separateCopies) {
-    return { seconds: own?.total_seconds ?? 0, lastPlayed: own?.last_played_timestamp ?? 0 };
+  const keys = new Set<string>([s.appName]);
+  const backend = S.epicBackendLaunch.get(s.appName);
+  if (backend) keys.add(backend);
+  if (!S.separateCopies) {
+    for (const key of storeKeysForTitle(s.title)) keys.add(key);
   }
-  let seconds = own?.total_seconds ?? 0;
-  let lastPlayed = own?.last_played_timestamp ?? 0;
-  for (const key of storeKeysForTitle(s.title)) {
-    if (key === s.appName) continue;
+  let seconds = 0;
+  let lastPlayed = 0;
+  for (const key of keys) {
     const pt = S.playtimeMap.get(key);
     if (!pt) continue;
     seconds += pt.total_seconds ?? 0;
-    const ts = pt.last_played_timestamp ?? 0;
-    if (ts > lastPlayed) lastPlayed = ts;
+    lastPlayed = Math.max(lastPlayed, pt.last_played_timestamp ?? 0);
   }
   return { seconds, lastPlayed };
 }
 
 /** Best recent-list position across the copies of a title; -1 when none. */
 export function libraryRecentIndex(s: { appName: string; title: string }): number {
-  let best = S.epicRecent.indexOf(s.appName);
-  if (S.separateCopies) return best;
-  for (const key of storeKeysForTitle(s.title)) {
+  const keys = new Set<string>([s.appName]);
+  const backend = S.epicBackendLaunch.get(s.appName);
+  if (backend) keys.add(backend);
+  if (!S.separateCopies) {
+    for (const key of storeKeysForTitle(s.title)) keys.add(key);
+  }
+  let best = -1;
+  for (const key of keys) {
     const idx = S.epicRecent.indexOf(key);
     if (idx >= 0 && (best < 0 || idx < best)) best = idx;
   }
@@ -256,6 +261,61 @@ export function rebuildAllGamesMap(): void {
   }
   canonStoresMap = storesMap;
   canonKeysMap = keySets;
+  reconcileEaBackedCopies();
+}
+
+/**
+ * EA App is a delegated backend, not a second purchase. When a primary-store
+ * copy is uninstalled and the same title has an installed EA copy, borrow the
+ * EA install and route Play through `ea::...` instead of showing a duplicate
+ * EA library row.
+ */
+function reconcileEaBackedCopies(): void {
+  S.epicBackendLaunch.clear();
+  S.epicCopyOverrides.clear();
+
+  const installedEa = new Map<string, LibraryItem>();
+  for (const game of S.companionSummaries) {
+    if (game.source !== "ea" || !game.installed || !game.installPath) continue;
+    const canon = canonicalGameTitle(game.title);
+    if (canon && !installedEa.has(canon)) installedEa.set(canon, game);
+  }
+  if (installedEa.size === 0) return;
+
+  const primary: { key: string; title: string; installed: boolean }[] = [
+    ...S.epicSummaries.map((game) => ({
+      key: game.appName,
+      title: game.title,
+      installed: game.installed,
+    })),
+    ...S.gogSummaries.map((game) => ({
+      key: game.key,
+      title: game.title,
+      installed: game.installed,
+    })),
+    ...S.amazonSummaries.map((game) => ({
+      key: game.key,
+      title: game.title,
+      installed: game.installed,
+    })),
+    ...S.steamSummaries.map((game) => ({
+      key: game.key,
+      title: game.title,
+      installed: game.installed,
+    })),
+  ];
+
+  for (const row of primary) {
+    if (row.installed) continue;
+    const ea = installedEa.get(canonicalGameTitle(row.title));
+    if (!ea) continue;
+    S.epicBackendLaunch.set(row.key, ea.key);
+    S.epicCopyOverrides.set(row.key, {
+      installed: true,
+      installPath: ea.installPath,
+      installedVersion: ea.installedVersion || null,
+    });
+  }
 }
 
 /** Replace the parsed summary list and rebuild its lookup map. */
@@ -375,28 +435,35 @@ export function allStoreSummaries(): EpicSummary[] {
   return [...items, ...gog, ...amazon, ...steam, ...companion, ...custom];
 }
 
+/** Apply the EA-backed installed facts to a primary-store copy. */
+function withCopyOverride(appName: string, summary: EpicSummary | undefined): EpicSummary | undefined {
+  if (!summary) return undefined;
+  const override = S.epicCopyOverrides.get(appName);
+  return override ? { ...summary, ...override } : summary;
+}
+
 /** O(1) summary lookup by app name (Epic or GOG or Steam). */
 export function summaryOf(appName: string): EpicSummary | undefined {
   if (appName.startsWith("gog::")) {
     const cleanId = appName.slice(5);
     const g = S.gogSummariesMap.get(cleanId) || S.gogSummariesMap.get(appName);
-    if (g) return gogToEpicSummary(g);
+    if (g) return withCopyOverride(appName, gogToEpicSummary(g));
   }
   if (appName.startsWith("steam::")) {
     const item = S.steamSummariesMap.get(appName);
-    if (item) return libraryItemToSummary(item);
+    if (item) return withCopyOverride(appName, libraryItemToSummary(item));
   }
   if (appName.startsWith("custom::")) {
     const item = S.customSummariesMap.get(appName);
     if (item) return libraryItemToSummary(item);
   }
   const own = S.epicSummariesMap.get(appName);
-  if (own) return own;
+  if (own) return withCopyOverride(appName, own);
   // Companion launcher games (EA, Ubisoft, Xbox, Battle.net) and Amazon Games
   // live in the unified map under `<store>::<id>`.
   const unified = S.allGamesMap.get(appName);
   if (unified && (isCompanionKey(unified.key) || unified.source === "amazon")) {
-    return libraryItemToSummary(unified);
+    return withCopyOverride(appName, libraryItemToSummary(unified));
   }
   // Games that only another saved account owns resolve to a shared entry so the
   // detail page can show the owner and offer the account switch.
