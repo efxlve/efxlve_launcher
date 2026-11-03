@@ -3541,5 +3541,6 @@
   "ea.launchMode.chipLegacy": "Install only",
   "ea.launchMode.legacyDesc": "This pre-DiP title installs and updates through the EA App. Once installed, EFXLVE launches it directly.",
   "ea.launchMode.disabledDesc": "Direct launch is turned off in Settings, so this game opens through the EA App.",
+  "ea.launchNeedsClient": "This title uses EA activation (OOA). The launcher can install and update the files, but launching opens the EA App.",
   "ea.uninstallLeftFiles": "卸载程序已完成，但 {a1} 中仍有文件。请以管理员身份运行 EFXLVE 或删除该文件夹。"
 }

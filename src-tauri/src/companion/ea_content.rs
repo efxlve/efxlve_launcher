@@ -183,6 +183,9 @@ pub(crate) struct InstallPlan {
     pub manifest: ZipManifest,
     pub installer_xml: Option<String>,
     pub eaac: bool,
+    /// The package carries the OOA activation runtime; the game hands the
+    /// launch to the EA App even when the launcher installs the files.
+    pub ooa: bool,
     /// A pre-DiP/disc installer (`<game>` root or `__Installer/DISK1`), not the
     /// content-service DiP layout. It must go through the EA App.
     pub legacy: bool,
@@ -396,6 +399,10 @@ pub(crate) async fn plan_install(    access: &str,
         .as_deref()
         .map(|xml| !is_dip_manifest(xml) && legacy_executable(xml))
         .unwrap_or(false);
+    let ooa = manifest
+        .entries
+        .iter()
+        .any(|entry| entry_needs_ooa(&entry.name));
     Ok(InstallPlan {
         offer_id: offer_id.to_string(),
         build_id: build.build_id.clone(),
@@ -405,6 +412,7 @@ pub(crate) async fn plan_install(    access: &str,
         manifest,
         installer_xml,
         eaac,
+        ooa,
         legacy,
         legacy_installable,
     })
@@ -424,6 +432,19 @@ pub(crate) fn is_dip_manifest(xml: &str) -> bool {
 pub(crate) fn manifest_needs_eaac(xml: &str) -> bool {
     let lower = xml.to_ascii_lowercase();
     lower.contains("eaanticheat") || lower.contains("ea anti-cheat")
+}
+
+/// The package ships the OOA activation runtime next to the game executable.
+pub(crate) fn entry_needs_ooa(name: &str) -> bool {
+    let name = format!("/{}", name.replace('\\', "/").to_ascii_lowercase());
+    [
+        "/core/activation.exe",
+        "/core/activation.dll",
+        "/core/activation64.dll",
+        "/core/activationui.exe",
+    ]
+    .iter()
+    .any(|suffix| name.ends_with(suffix))
 }
 
 /// Reads the ZIP central directory with range requests.
@@ -1362,6 +1383,19 @@ mod tests {
         assert!(!manifest_needs_eaac(
             "<filePath>__Installer/touchup.exe</filePath>"
         ));
+    }
+
+    #[test]
+    fn ooa_activation_files_are_recognised_from_the_package() {
+        assert!(entry_needs_ooa(
+            "Haze1/Binaries/Win64/Core/Activation64.dll"
+        ));
+        assert!(entry_needs_ooa(
+            r"Haze1\Binaries\Win64\Core\Activation.dll"
+        ));
+        assert!(entry_needs_ooa("Core/ActivationUI.exe"));
+        assert!(!entry_needs_ooa("Haze1/Binaries/Win64/AWayOut.exe"));
+        assert!(!entry_needs_ooa("Core/Activation.txt"));
     }
 
     #[test]

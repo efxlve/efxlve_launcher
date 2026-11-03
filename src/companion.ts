@@ -424,6 +424,7 @@ export interface EaContentPlan {
   installed: boolean;
   updateAvailable: boolean;
   eaac: boolean;
+  ooa: boolean;
   legacy: boolean;
   legacyInstallable: boolean;
   root: string;

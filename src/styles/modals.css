@@ -312,6 +312,12 @@
 .install-game-stats { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .install-game-stats strong { color: var(--text); font-weight: 500; }
 .install-game-stats span { display: flex; align-items: center; gap: 8px; min-height: 16px; }
+.install-ea-note {
+  display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--warn-tint);
+  color: var(--text-2); font-size: 12px; line-height: 1.45;
+}
+.install-ea-note svg { flex-shrink: 0; color: var(--warn); margin-top: 1px; }
 .install-size-pending {
   display: inline-block; width: 72px; height: 8px; border-radius: 2px; background: var(--surface-3);
   position: relative; overflow: hidden;

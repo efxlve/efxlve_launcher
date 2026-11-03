@@ -3541,5 +3541,6 @@
   "ea.launchMode.chipLegacy": "Sadece kurulum",
   "ea.launchMode.legacyDesc": "Bu DiP öncesi oyun EA App üzerinden kurulur ve güncellenir. Kurulduktan sonra EFXLVE doğrudan başlatır.",
   "ea.launchMode.disabledDesc": "Doğrudan başlatma Ayarlar'da kapalı; bu oyun EA App üzerinden açılır.",
+  "ea.launchNeedsClient": "Bu oyun EA aktivasyonu (OOA) kullanıyor. Launcher dosyaları kurabilir ve güncelleyebilir, ancak başlatma EA App'i açar.",
   "ea.uninstallLeftFiles": "Kaldırıcı bitti ama {a1} içinde dosyalar kaldı. EFXLVE'yi yönetici olarak çalıştırın veya klasörü silin."
 }

@@ -936,6 +936,9 @@ pub struct EaContentPlan {
     pub update_available: bool,
     /// EA anti-cheat titles stay on the EA App for install, update and repair.
     pub eaac: bool,
+    /// The package ships the OOA activation runtime. Files can be installed
+    /// here, but the game itself hands its launch to the EA App.
+    pub ooa: bool,
     /// A pre-DiP/disc package; its installer must run through the EA App.
     pub legacy: bool,
     /// The pre-DiP package has the `<executable>` installer block, so the
@@ -1063,6 +1066,7 @@ pub async fn ea_content_plan(
         installed_version,
         installed,
         eaac: plan.eaac,
+        ooa: plan.ooa,
         legacy: plan.legacy,
         legacy_installable: plan.legacy_installable,
         root: root.to_string_lossy().to_string(),
@@ -2124,16 +2128,22 @@ mod tests {
     #[tokio::test]
     #[ignore = "talks to EA's content service with the signed-in account"]
     async fn live_ea_content_plan_resolves_an_owned_title_and_its_folder() {
-        let plan = ea_content_plan("Origin.OFR.50.0002412".into(), None)
+        let games = discover("ea");
+        let game = games
+            .iter()
+            .find(|game| game.name.contains("A Way Out"))
+            .expect("A Way Out must be in the EA library");
+        let plan = ea_content_plan(game.id.clone(), None)
             .await
             .expect("A Way Out plan");
         println!(
-            "id={} offer={} version={} installed={} update={} root={} download={} install={} files={}",
+            "id={} offer={} version={} installed={} update={} ooa={} root={} download={} install={} files={}",
             plan.id,
             plan.offer_id,
             plan.version,
             plan.installed,
             plan.update_available,
+            plan.ooa,
             plan.root,
             plan.download_bytes,
             plan.install_bytes,
@@ -2142,6 +2152,7 @@ mod tests {
         assert_eq!(plan.offer_id, "Origin.OFR.50.0002412");
         assert!(!plan.version.is_empty());
         assert!(!plan.eaac);
+        assert!(plan.ooa);
         assert!(plan.download_bytes > 0);
         assert!(plan.install_bytes >= plan.download_bytes);
     }
