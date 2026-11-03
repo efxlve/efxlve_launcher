@@ -55,6 +55,11 @@ Open work only. Delete the item when it lands.
   unfilled EA templates (`Your Patch 1 Id...`, `http://YourPatchServer/...`).
   The binary delta format is undocumented, so the launcher uses the full-file
   entries and the full package as fallback.
+- The older 1.0.62.0 build is offered by `availableBuilds` (20.76 GB) with its
+  own sync ZIP, but its `eaPatchInfo`/`eaPatchImpl` are the same unfilled
+  templates and its `ICU.tps.eaPatchDiff` is byte-identical to the live one.
+  Installing that 20.76 GB build would only repeat the full-file sync path; the
+  binary delta is not a usable old-to-new patch.
 - Direct uninstall reads `<uninstall><path>` from the local installer manifest,
   resolves the registry `UninstallString` (including the 32-bit view) and runs
   the game's `Cleanup.exe`. A launcher-owned folder without a registry record is
