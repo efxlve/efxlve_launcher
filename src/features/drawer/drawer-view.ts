@@ -634,12 +634,26 @@ export function isCompanionApp(appName: string): boolean {
 
 /** Epic app names whose achievement list is read from Ubisoft Connect. */
 const ubiAchSource = new Set<string>();
+/** Epic app names whose achievement list is read from EA App. */
+const eaAchSource = new Set<string>();
 
 /** The Ubisoft copy of an Epic title, matched by canonical name. */
 function ubisoftCompanionFor(s: EpicSummary): import("../../core/types").LibraryItem | undefined {
   const canon = canonicalGameTitle(s.title);
   if (!canon) return undefined;
   return S.companionSummaries.find((g) => g.source === "ubisoft" && canonicalGameTitle(g.title) === canon);
+}
+
+/** The EA copy of a primary-store title, matched by the linked key or name. */
+function eaCompanionFor(s: EpicSummary): import("../../core/types").LibraryItem | undefined {
+  const linked = S.epicEaSource.get(s.appName);
+  if (linked) {
+    const exact = S.companionSummaries.find((g) => g.key === linked);
+    if (exact) return exact;
+  }
+  const canon = canonicalGameTitle(s.title);
+  if (!canon) return undefined;
+  return S.companionSummaries.find((g) => g.source === "ea" && canonicalGameTitle(g.title) === canon);
 }
 
 /**
@@ -2219,6 +2233,7 @@ function achievementStoreLabel(appName: string): string {
 function achievementSourceLabel(s: EpicSummary, data: EpicAchievementsData): string {
   if (data.data_source === "ra") return t("ach.raTitle");
   if (ubiAchSource.has(s.appName)) return "Ubisoft Connect";
+  if (eaAchSource.has(s.appName)) return "EA App";
   if (data.data_source === "definitions") return t("ach.sourceSteamDefinitions");
   if (data.data_source === "local") return t("ach.sourceLocalFile");
   if (s.appName.startsWith("custom::")) return t("ach.sourceEmulator");
@@ -2618,6 +2633,19 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     if (s.appName.startsWith("ea::")) {
       return withPanel(emptyState("trophy", t("ach.eaTitle"), t("ach.eaDesc"), raAction));
     }
+    // Epic ships no achievement set for some EA titles. The EA App set for the
+    // same account is the fallback; this is the state when that set is empty too.
+    if (sourceOfKey(s.appName) === "epic" && partner?.type === "ea") {
+      const openClient = `<button class="btn ghost small" data-act="companion-open" data-id="ea">${icon("external", 13)} ${t("accounts.openClient")}</button>`;
+      const install = `<button class="btn play small" data-act="epic-play" data-id="${esc(s.appName)}">${icon("download", 13)} ${t("drawer.launchInstallWith", { name: "EA App" })}</button>`;
+      const refresh = `<button class="btn ghost small" data-act="ach-refresh" data-id="${esc(s.appName)}">${icon("refresh", 13)} ${t("ach.refreshData")}</button>`;
+      return withPanel(emptyState(
+        "gamepad-2",
+        t("ach.eaEpicTitle"),
+        t(s.installed ? "ach.eaEpicEmptyInstalled" : "ach.eaEpicEmptyNotInstalled"),
+        `${s.installed ? openClient : install}${refresh}${raAction}`,
+      ));
+    }
     if (partner) {
       return withPanel(emptyState("gamepad-2", t("ach.partnerTitle", { name: esc(partner.name) }), t("ach.partnerDesc", { name: `<strong>${esc(partner.name)}</strong>` }), raAction));
     }
@@ -2826,9 +2854,11 @@ export function renderDrawerAchievements(s: EpicSummary): string {
 
   const sourceNote = ubiAchSource.has(s.appName)
     ? `<div class="ach-source-note">${icon("info", 13)}<span>${t("ach.ubiEpicDesc")}</span></div>`
-    : data.data_source === "definitions"
-      ? `<div class="ach-source-note">${icon("list", 13)}<span>${esc(t("ach.definitionsSourceNote"))}</span></div>`
-      : "";
+    : eaAchSource.has(s.appName)
+      ? `<div class="ach-source-note">${icon("info", 13)}<span>${t("ach.eaEpicDesc")}</span></div>`
+      : data.data_source === "definitions"
+        ? `<div class="ach-source-note">${icon("list", 13)}<span>${esc(t("ach.definitionsSourceNote"))}</span></div>`
+        : "";
 
   // Platinum celebration: glow, ring, sparkles, particle burst and a one-shot
   // shine sweep (the sweep only runs on the first paint of the page).
@@ -2935,7 +2965,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
           <button class="icon-btn" data-act="ach-refresh" data-id="${esc(s.appName)}" title="${esc(t("ach.refreshData"))}">${icon("refresh", 14)}</button>
           <button class="icon-btn" data-act="ach-manage" data-id="${esc(s.appName)}" data-tab="${manageTab ?? defaultManageTab}" title="${esc(t("ach.manageTitle"))}">${icon("sliders", 14)}</button>
           ${data.data_source === "definitions" ? `<button class="icon-btn ${S.achStoreAppIdEditor === s.appName ? "active" : ""}" data-act="ach-appid-open" data-id="${esc(s.appName)}" title="${esc(t("ach.appIdLabel"))}">${icon("hash", 14)}</button>` : ""}
-          ${isCompanionApp(s.appName) || ubiAchSource.has(s.appName) ? "" : `<button class="icon-btn" data-act="open-store-achievements" data-id="${esc(s.appName)}" title="${esc(t("ach.viewInStore"))}">${icon("external", 14)}</button>`}
+          ${isCompanionApp(s.appName) || ubiAchSource.has(s.appName) || eaAchSource.has(s.appName) ? "" : `<button class="icon-btn" data-act="open-store-achievements" data-id="${esc(s.appName)}" title="${esc(t("ach.viewInStore"))}">${icon("external", 14)}</button>`}
         </div>
       </div>
       <div class="ach-overview-progress"><span style="width:${pct}%"></span></div>
@@ -3380,12 +3410,14 @@ export async function fetchAndRenderAchievements(
                   forceRefresh,
                 )
               : await epicGetAchievements(appName, forceRefresh));
-    // Epic copies of Ubisoft games often ship no achievement set (Watch Dogs),
-    // while Ubisoft Connect tracks them for the same account. Read the client's
-    // local cache as the fallback and flag the page so it can say so.
+    // Epic copies of Ubisoft or EA games often ship no achievement set (Watch
+    // Dogs, Battlefield 2042), while the publisher client tracks them for the
+    // same account. Read that service as the fallback and flag the page so it
+    // can say where the list came from.
     if (source === "epic" && data.achievements.length === 0) {
       const s = summaryOf(appName);
       const ubi = s ? ubisoftCompanionFor(s) : undefined;
+      const ea = s ? eaCompanionFor(s) : undefined;
       const partner = s ? gamePartner(s, rawOf(appName)) : null;
       if (partner?.type === "ubisoft") {
         const ubiData = await companionAchievements(
@@ -3401,11 +3433,29 @@ export async function fetchAndRenderAchievements(
         } else {
           ubiAchSource.delete(appName);
         }
+        eaAchSource.delete(appName);
+      } else if (partner?.type === "ea") {
+        const eaData = await companionAchievements(
+          "ea",
+          ea?.key.slice(4) ?? appName,
+          ea?.title ?? s?.title ?? appName,
+          currentLanguage(),
+          forceRefresh,
+        );
+        if (eaData.achievements.length > 0) {
+          data = eaData;
+          eaAchSource.add(appName);
+        } else {
+          eaAchSource.delete(appName);
+        }
+        ubiAchSource.delete(appName);
       } else {
         ubiAchSource.delete(appName);
+        eaAchSource.delete(appName);
       }
     } else {
       ubiAchSource.delete(appName);
+      eaAchSource.delete(appName);
     }
     // A store title with no set of its own can still read achievements from a
     // local Steam API emulator, or show the Steam definition list for manual
