@@ -119,8 +119,13 @@ pub(crate) fn plan(install_path: &str, store_id: &str) -> Result<LaunchPlan, Pla
         .split(',')
         .map(str::trim)
         .find(|id| !id.is_empty())
-        .ok_or(PlanError::NoContentId)?
-        .to_string();
+        .map(str::to_string)
+        .or_else(|| {
+            super::ea::content_ids(&text)
+                .into_iter()
+                .find(|id| !id.trim().is_empty())
+        })
+        .ok_or(PlanError::NoContentId)?;
 
     // Dead Space 2, BFBC2 and the other pre-DiP titles carry a `<game>` root
     // and an `<executable>` touchup, not the `<DiPManifest>` runtime record.
@@ -140,13 +145,18 @@ pub(crate) fn plan(install_path: &str, store_id: &str) -> Result<LaunchPlan, Pla
         return Err(PlanError::OutsideInstall);
     }
 
+    let ooa = ooa_state(&root)
+        || exe
+            .parent()
+            .map(ooa_state)
+            .unwrap_or(false);
     Ok(LaunchPlan {
         exe,
         work_dir: root.clone(),
         args,
         content_id,
         eaac: eaac_launcher(&root).is_some(),
-        ooa: ooa_state(&root),
+        ooa,
     })
 }
 
@@ -329,9 +339,17 @@ async fn launch_plan(plan: LaunchPlan) -> Result<u32, String> {
     // Frostbite titles read a signed license before the game window exists.
     // A missing license is exactly the "sign in with your EA account" dialog.
     if plan.ooa {
-        let version = super::ea_machine::activation_version(&plan.work_dir)?;
+        let activation_dir = if ooa_state(&plan.work_dir) {
+            plan.work_dir.clone()
+        } else {
+            plan.exe
+                .parent()
+                .map(|parent| parent.to_path_buf())
+                .ok_or_else(|| "EA activation folder is missing".to_string())?
+        };
+        let version = super::ea_machine::activation_version(&activation_dir)?;
         let hash = super::ea_machine::hardware_hash(version)?;
-        let signature_decoded = !plan.work_dir.join("Core/activation.exe").is_file();
+        let signature_decoded = !activation_dir.join("Core/activation.exe").is_file();
         super::ea_license::ensure_license(
             &access,
             &plan.content_id,
@@ -911,6 +929,24 @@ mod tests {
         let result = launch(game).await;
         println!("legacy launch: {result:?}");
         assert!(result.is_ok(), "legacy launch failed: {result:?}");
+    }
+
+    #[tokio::test]
+    #[ignore = "launches A Way Out through the direct path"]
+    async fn manual_launch_a_way_out() {
+        let games = super::super::discover("ea");
+        let game = games
+            .iter()
+            .find(|game| game.name.to_lowercase().contains("a way out"))
+            .expect("A Way Out in the EA library");
+        println!(
+            "game: id={} path={} store_id={}",
+            game.id, game.install_path, game.store_id
+        );
+        let result = launch(game).await;
+        println!("a way out launch: {result:?}");
+        assert!(result.is_ok(), "A Way Out launch failed: {result:?}");
+        std::thread::sleep(std::time::Duration::from_secs(180));
     }
 
     #[tokio::test]
