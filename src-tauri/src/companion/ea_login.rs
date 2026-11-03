@@ -57,6 +57,12 @@ pub(crate) struct OwnedGame {
     /// `achievementSetOverride` from the offer, the key of the achievements endpoint.
     #[serde(default)]
     pub achievement_set: String,
+    /// Pre-DiP execute path from `legacyOffers` (registry-prefixed or relative).
+    #[serde(default)]
+    pub execute_path_override: String,
+    /// Arguments the legacy offer carries for the execute path.
+    #[serde(default)]
+    pub execute_parameters: String,
 }
 
 fn owned_cache_path() -> PathBuf {
@@ -595,6 +601,8 @@ struct OfferInfo {
     achievement_set: String,
     slug: String,
     game_type: String,
+    execute_path_override: String,
+    execute_parameters: String,
 }
 
 /// Add-ons are sold as their own entitlements; only games belong in the library.
@@ -641,7 +649,7 @@ pub(crate) async fn fetch_owned(access: &str) -> Result<Vec<OwnedGame>, String> 
     for chunk in ids.chunks(OFFER_ID_BATCH) {
         let list = serde_json::to_string(chunk).unwrap_or_else(|_| "[]".into());
         let query = format!(
-            "query{{legacyOffers(offerIds:{list},locale:\"DEFAULT\"){{offerId:id contentId displayName displayType achievementSetOverride}} gameProducts(offerIds:{list},locale:\"DEFAULT\"){{items{{id name originOfferId gameSlug baseItem{{title gameType}}}}}}}}"
+            "query{{legacyOffers(offerIds:{list},locale:\"DEFAULT\"){{offerId:id contentId displayName displayType achievementSetOverride executePathOverride executeParameters}} gameProducts(offerIds:{list},locale:\"DEFAULT\"){{items{{id name originOfferId gameSlug baseItem{{title gameType}}}}}}}}"
         );
         let Ok(value) = graphql(access, &query).await else {
             continue;
@@ -660,6 +668,18 @@ pub(crate) async fn fetch_owned(access: &str) -> Result<Vec<OwnedGame>, String> 
                 entry.display_type = offer.get("displayType").and_then(|v| v.as_str()).unwrap_or("").to_string();
                 entry.achievement_set = offer
                     .get("achievementSetOverride")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .trim()
+                    .to_string();
+                entry.execute_path_override = offer
+                    .get("executePathOverride")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .trim()
+                    .to_string();
+                entry.execute_parameters = offer
+                    .get("executeParameters")
                     .and_then(|v| v.as_str())
                     .unwrap_or("")
                     .trim()
@@ -716,6 +736,8 @@ pub(crate) async fn fetch_owned(access: &str) -> Result<Vec<OwnedGame>, String> 
             content_id,
             slug,
             achievement_set: offer.achievement_set.clone(),
+            execute_path_override: offer.execute_path_override.clone(),
+            execute_parameters: offer.execute_parameters.clone(),
         });
     }
     games.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
@@ -725,6 +747,24 @@ pub(crate) async fn fetch_owned(access: &str) -> Result<Vec<OwnedGame>, String> 
 /// The cached owned entry behind a game slug (playtime works in slugs).
 pub(crate) fn owned_for_slug(slug: &str) -> Option<OwnedGame> {
     cached_owned().into_iter().find(|game| game.slug == slug)
+}
+
+/// The legacy `executePathOverride` and its arguments for a pre-DiP row.
+pub(crate) fn legacy_launch_for(game: &FoundGame) -> Option<(String, String)> {
+    let wanted = ea::normalize_title(&game.name);
+    let owned = cached_owned().into_iter().find(|row| {
+        row.id == game.id
+            || (!row.content_id.is_empty()
+                && game
+                    .store_id
+                    .split(',')
+                    .any(|id| id.trim() == row.content_id))
+            || (!wanted.is_empty() && ea::normalize_title(&row.name) == wanted)
+    })?;
+    if owned.execute_path_override.trim().is_empty() {
+        return None;
+    }
+    Some((owned.execute_path_override, owned.execute_parameters))
 }
 
 /* ---------- Playtime ---------- */
@@ -1058,6 +1098,8 @@ mod tests {
             content_id: "1002975".into(),
             slug: "ea-sports-fc-25".into(),
             achievement_set: "123_456_789".into(),
+            execute_path_override: String::new(),
+            execute_parameters: String::new(),
         };
         let title = ea::normalize_title(&owned.name);
         let existing = games.iter_mut().find(|game| {

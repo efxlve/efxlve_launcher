@@ -207,13 +207,117 @@ pub(crate) fn environment(
 /// app does, so the signed component is the one that loads the game. The child
 /// is detached: it outlives this call on Windows.
 pub(crate) async fn launch(game: &FoundGame) -> Result<u32, String> {
-    launch_path(&game.install_path, &game.store_id).await
+    match plan(&game.install_path, &game.store_id) {
+        Ok(plan) => launch_plan(plan).await,
+        Err(PlanError::OldDrm) => {
+            // Pre-DiP titles carry their executable in EA's legacy catalog
+            // (`executePathOverride`), not in the local DiP manifest.
+            let Some((execute, parameters)) = super::ea_login::legacy_launch_for(game) else {
+                return Err(PlanError::OldDrm.to_string());
+            };
+            let plan = legacy_plan(&game.install_path, &game.store_id, &execute, &parameters)?;
+            launch_plan(plan).await
+        }
+        Err(error) => Err(error.to_string()),
+    }
 }
 
 /// The same launch from an install folder and a content id, for callers that
 /// already resolved the game without a `FoundGame`.
 pub(crate) async fn launch_path(install_path: &str, store_id: &str) -> Result<u32, String> {
     let plan = plan(install_path, store_id).map_err(|err| err.to_string())?;
+    launch_plan(plan).await
+}
+
+/// Builds a launch plan from the legacy catalog's execute path and arguments.
+fn legacy_plan(
+    install_path: &str,
+    store_id: &str,
+    execute: &str,
+    parameters: &str,
+) -> Result<LaunchPlan, String> {
+    let root = Path::new(install_path);
+    let content_id = store_id
+        .split(',')
+        .map(str::trim)
+        .find(|id| !id.is_empty())
+        .ok_or_else(|| PlanError::NoContentId.to_string())?
+        .to_string();
+    let exe = resolve_legacy_path(root, execute)?;
+    let work_dir = exe
+        .parent()
+        .ok_or_else(|| "EA legacy executable has no parent".to_string())?
+        .to_path_buf();
+    let parameters = parameters
+        .replace("{installLocation}", &root.to_string_lossy())
+        .replace("{locale}", "en_US");
+    Ok(LaunchPlan {
+        exe,
+        work_dir,
+        args: split_args(&parameters),
+        content_id,
+        eaac: eaac_launcher(root).is_some(),
+        ooa: ooa_state(root),
+    })
+}
+
+/// Reads a legacy registry value, trying the 32-bit view on 64-bit Windows.
+fn legacy_registry_value(key: &str, value: &str) -> Option<String> {
+    let alternate = key.replacen(r"\SOFTWARE\", r"\SOFTWARE\WOW6432Node\", 1);
+    let mut keys = vec![key];
+    if alternate != key && !key.contains("WOW6432Node") {
+        keys.push(&alternate);
+    }
+    for key in keys {
+        if let Some(output) = crate::winreg::query(key, Some(value)) {
+            let text = crate::winreg::parse_reg_sz(&output);
+            let text = text.trim_matches('"').trim();
+            if !text.is_empty() {
+                return Some(text.to_string());
+            }
+        }
+    }
+    None
+}
+
+/// Resolves a plain, relative or `[registry key]suffix` legacy execute path.
+fn resolve_legacy_path(root: &Path, raw: &str) -> Result<PathBuf, String> {
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return Err("EA legacy launcher path is empty".into());
+    }
+    let path = if let Some(rest) = raw.strip_prefix('[') {
+        let end = rest
+            .find(']')
+            .ok_or_else(|| "EA legacy registry path is malformed".to_string())?;
+        let inside = &rest[..end];
+        let split = inside
+            .rfind('\\')
+            .ok_or_else(|| "EA legacy registry path is malformed".to_string())?;
+        let key = &inside[..split];
+        let value = &inside[split + 1..];
+        let suffix = rest[end + 1..].trim_start_matches(['\\', '/']);
+        let base = legacy_registry_value(key, value)
+            .ok_or_else(|| format!("EA legacy registry value not found: {key}\\{value}"))?;
+        PathBuf::from(base).join(suffix.replace('/', std::path::MAIN_SEPARATOR_STR))
+    } else {
+        let path = PathBuf::from(raw);
+        if path.is_absolute() {
+            path
+        } else {
+            root.join(path)
+        }
+    };
+    let path = path
+        .canonicalize()
+        .map_err(|error| format!("EA legacy executable: {error}"))?;
+    if !path.is_file() {
+        return Err(format!("EA legacy executable is missing: {}", path.display()));
+    }
+    Ok(path)
+}
+
+async fn launch_plan(plan: LaunchPlan) -> Result<u32, String> {
     // EAAC/Javelin verifies the EA client service; stopping it for a direct
     // launch is an invalid configuration and the game refuses to start. Those
     // titles keep the normal EA app handoff.
@@ -704,6 +808,28 @@ mod tests {
     }
 
     #[test]
+    fn a_plain_legacy_execute_path_is_joined_to_the_install() {
+        let root = std::env::temp_dir().join(format!("efxlve-ea-legacy-{}", std::process::id()));
+        std::fs::create_dir_all(&root).expect("root");
+        std::fs::write(root.join("game.exe"), b"fake").expect("exe");
+        let plan = legacy_plan(&root.to_string_lossy(), "1", "game.exe", "-windowed")
+            .expect("legacy plan");
+        assert!(plan.exe.ends_with("game.exe"));
+        assert_eq!(plan.args, vec!["-windowed"]);
+        assert_eq!(plan.content_id, "1");
+        assert!(!plan.eaac);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_missing_legacy_executable_is_rejected() {
+        let root = std::env::temp_dir().join(format!("efxlve-ea-missing-{}", std::process::id()));
+        std::fs::create_dir_all(&root).expect("root");
+        assert!(legacy_plan(&root.to_string_lossy(), "1", "missing.exe", "").is_err());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn pre_dip_manifests_are_not_dip() {
         assert!(!is_dip_manifest(
             r#"<game manifestVersion="2.1"><executable/></game>"#
@@ -772,6 +898,45 @@ mod tests {
         let root = Path::new(r"C:\Program Files\EA Games\Dead Space 2");
         let plan = plan(&root.to_string_lossy(), "1002974");
         println!("dead space 2 plan: {plan:?}");
+    }
+
+    #[tokio::test]
+    #[ignore = "launches Dead Space 2 through the legacy catalog path"]
+    async fn manual_legacy_launch_deadspace() {
+        let games = super::super::discover("ea");
+        let game = games
+            .iter()
+            .find(|game| game.name.to_lowercase().contains("dead spac"))
+            .expect("Dead Space 2 in the EA library");
+        let result = launch(game).await;
+        println!("legacy launch: {result:?}");
+        assert!(result.is_ok(), "legacy launch failed: {result:?}");
+    }
+
+    #[tokio::test]
+    #[ignore = "refreshes the EA catalog and reads the Dead Space 2 legacy path"]
+    async fn manual_probe_deadspace_legacy_path() {
+        let _ = super::super::ea_login::sync_owned().await;
+        let games = super::super::discover("ea");
+        let game = games
+            .iter()
+            .find(|game| game.name.to_lowercase().contains("dead spac"))
+            .unwrap_or_else(|| {
+                for game in &games {
+                    println!("ea game: {} | {}", game.id, game.name);
+                }
+                panic!("Dead Space 2 in the EA library")
+            });
+        println!(
+            "game: id={} path={} store_id={}",
+            game.id, game.install_path, game.store_id
+        );
+        let (execute, parameters) = super::super::ea_login::legacy_launch_for(&game)
+            .expect("legacy execute path");
+        println!("execute={execute} parameters={parameters}");
+        let plan = legacy_plan(&game.install_path, &game.store_id, &execute, &parameters)
+            .expect("legacy launch plan");
+        println!("legacy plan: {plan:?}");
     }
 
     #[test]

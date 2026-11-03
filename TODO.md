@@ -24,7 +24,11 @@ Open work only. Delete the item when it lands.
   EAAC and EA App-installed legacy titles still use the EA App fallback.
 - DiP titles that still carry `Core/activation.exe` are experimental: they use
   EA's official license service, and fall back to the EA App on failure.
-  Dead Space 2 and Mirror's Edge are pre-DiP/OldDrm and stay on the EA App.
+- Pre-DiP launch uses the `executePathOverride` from EA's `legacyOffers`.
+  Dead Space 2 resolves and starts, but on this machine the game stops at
+  "Could not initialize display hardware" (a graphics issue, not a license
+  rejection). Pre-DiP install/update still belongs to the EA App; Mirror's Edge
+  remains OldDrm.
 - Direct installs default to `<home>/Games/EA`, matching Epic, GOG and Amazon;
   the old `.config/efxlve/ea-games` folder stays visible. Existing EA App
   installs under Program Files update through a one-shot elevated copy of the
