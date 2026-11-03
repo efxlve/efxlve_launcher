@@ -48,8 +48,10 @@ Open work only. Delete the item when it lands.
   runs it with the same rights as the EA App installer; without elevation the
   files stay playable through the launcher's own scan, but the EA App may not
   list the copy.
-- `downloadUrl.syncUrl` differential updates are open; today the full package is
-  read and unchanged files are skipped by size+CRC.
+- `downloadUrl.syncUrl` updates use the sync ZIP's full-file list and skip the
+  second full-package scan when it covers the manifest. The ZIP's `.eaPatchDiff`
+  deltas are unused: its `eaPatchInfo`/`eaPatchImpl` metadata is an unfilled EA
+  template (`Your Patch 1 Id...`), so the binary patch format is not implemented.
 - Direct uninstall reads `<uninstall><path>` from the local installer manifest,
   resolves the registry `UninstallString` (including the 32-bit view) and runs
   the game's `Cleanup.exe`. A launcher-owned folder without a registry record is

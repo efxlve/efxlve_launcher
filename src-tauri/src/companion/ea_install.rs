@@ -159,6 +159,35 @@ pub(crate) struct InstallTick<'a> {
     pub progress: Option<ea_content::DownloadProgress>,
 }
 
+/// Fold the sync pass into the full pass's report. The full pass counts the
+/// files the sync pass just wrote as skipped, so remove those from its skipped
+/// counters and add the bytes actually transferred.
+fn merge_sync_download(full: &mut ea_content::DownloadReport, sync: ea_content::DownloadReport) {
+    full.files += sync.files;
+    full.bytes += sync.bytes;
+    full.skipped = full.skipped.saturating_sub(sync.files);
+    full.skipped_bytes = full.skipped_bytes.saturating_sub(sync.bytes);
+}
+
+/// True when the sync ZIP carries every file the full manifest lists with the
+/// same CRC and size. In that case its pass is already a complete verification,
+/// so the second 22 GB scan in the full pass is unnecessary.
+fn sync_covers_manifest(
+    sync: &[ea_content::ZipEntry],
+    full: &[ea_content::ZipEntry],
+) -> bool {
+    if sync.len() != full.len() {
+        return false;
+    }
+    full.iter().all(|wanted| {
+        sync.iter().any(|entry| {
+            entry.name == wanted.name
+                && entry.crc32 == wanted.crc32
+                && entry.uncompressed == wanted.uncompressed
+        })
+    })
+}
+
 /// Downloads the full package and runs its touchup.
 ///
 /// Existing files are checked by size and CRC, so a resumed install only fetches
@@ -188,12 +217,66 @@ pub(crate) async fn install_with_progress(
         return Err("Legacy EA installers need the EA app".into());
     }
 
+    // Newer builds publish a sync ZIP that names only the changed files. Apply
+    // that file-level delta first, then let the full pass verify every file and
+    // fill anything the sync set omits. A sync failure is not fatal: the full
+    // package is still the source of truth. A fresh install skips the sync pass
+    // because it has no local files to diff against.
+    let mut sync_download: Option<ea_content::DownloadReport> = None;
+    let mut sync_covers_full = false;
+    if has_install(root) {
+        if let Some(sync_url) = plan.sync_url.clone() {
+            if !cancelled.load(Ordering::Relaxed) {
+                ea_content::ensure_disk_space(&plan)?;
+                match ea_content::read_manifest(&sync_url).await {
+                    Ok(sync_manifest) => {
+                        let files = ea_content::sync_file_entries(&sync_manifest);
+                        if !files.is_empty() {
+                            let result = ea_content::download_entries_controlled(
+                                &sync_url,
+                                &plan.root,
+                                &files,
+                                Some(cancelled.clone()),
+                                |progress| {
+                                    on_tick(InstallTick {
+                                        phase: "downloading",
+                                        progress: Some(progress),
+                                    })
+                                },
+                            )
+                            .await;
+                            match result {
+                                Ok(report) => {
+                                    sync_covers_full =
+                                        sync_covers_manifest(&files, &plan.manifest.entries);
+                                    sync_download = Some(report);
+                                }
+                                Err(error) => {
+                                    if cancelled.load(Ordering::Relaxed) {
+                                        return Err("EA content: cancelled".into());
+                                    }
+                                    eprintln!("EA sync package skipped: {error}");
+                                }
+                            }
+                        }
+                    }
+                    Err(error) => eprintln!("EA sync manifest skipped: {error}"),
+                }
+            }
+        }
+    }
+
     // A signed package URL can expire during a multi-hour download. Re-plan
     // once on an authorization error; completed files are verified by size and
     // CRC on the retry, so the transfer resumes where it stopped.
     let mut refreshed = false;
     let mut network_retries = 0u32;
-    let download = loop {
+    let mut download = if sync_covers_full {
+        sync_download
+            .take()
+            .expect("sync report covers the full manifest")
+    } else {
+        loop {
         ea_content::ensure_disk_space(&plan)?;
         match ea_content::download_entries_controlled(
             &plan.download_url,
@@ -236,7 +319,11 @@ pub(crate) async fn install_with_progress(
             }
             Err(error) => return Err(error),
         }
+        }
     };
+    if let Some(sync) = sync_download {
+        merge_sync_download(&mut download, sync);
+    }
 
     let local = installed_version(root);
     let mode = touchup_mode(local.as_deref(), &plan.version, has_install(root));
@@ -896,5 +983,49 @@ mod tests {
             Ok::<(), String>(())
         });
         println!("result: {result:?}");
+    }
+
+    #[test]
+    fn sync_download_bytes_are_added_to_the_full_report() {
+        let mut full = ea_content::DownloadReport {
+            files: 0,
+            bytes: 0,
+            skipped: 312,
+            skipped_bytes: 22_000,
+        };
+        let sync = ea_content::DownloadReport {
+            files: 2,
+            bytes: 1_000,
+            skipped: 310,
+            skipped_bytes: 21_000,
+        };
+        merge_sync_download(&mut full, sync);
+        assert_eq!(full.files, 2);
+        assert_eq!(full.bytes, 1_000);
+        assert_eq!(full.skipped, 310);
+        assert_eq!(full.skipped_bytes, 21_000);
+    }
+
+    #[test]
+    fn a_complete_sync_set_skips_the_full_scan() {
+        let entry = |name: &str, crc32: u32, size: u64| ea_content::ZipEntry {
+            name: name.into(),
+            compression: 0,
+            crc32,
+            compressed: size,
+            uncompressed: size,
+            local_offset: 0,
+        };
+        let full = vec![entry("a.dll", 1, 10), entry("b.dll", 2, 20)];
+        let sync = full.clone();
+        assert!(sync_covers_manifest(&sync, &full));
+
+        let mut missing = sync.clone();
+        missing.pop();
+        assert!(!sync_covers_manifest(&missing, &full));
+
+        let mut changed = sync;
+        changed[0].crc32 = 99;
+        assert!(!sync_covers_manifest(&changed, &full));
     }
 }

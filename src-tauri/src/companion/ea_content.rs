@@ -179,6 +179,9 @@ pub(crate) struct InstallPlan {
     pub build_id: String,
     pub version: String,
     pub download_url: String,
+    /// The content service's sync endpoint for this build, when it offers one.
+    /// It is the differential path; the full ZIP is the fallback.
+    pub sync_url: Option<String>,
     pub root: PathBuf,
     pub manifest: ZipManifest,
     pub installer_xml: Option<String>,
@@ -281,11 +284,20 @@ pub(crate) async fn available_builds(access: &str, offer_id: &str) -> Result<Vec
 }
 
 /// The signed URL of the ZIP package for one build.
-pub(crate) async fn download_url(
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct DownloadLinks {
+    pub url: String,
+    /// The content service's sync endpoint, when the build publishes one.
+    pub sync_url: Option<String>,
+}
+
+/// Both URLs the download query carries. The sync URL is optional; `url` is
+/// always the full package and remains the fallback.
+pub(crate) async fn download_links(
     access: &str,
     offer_id: &str,
     build_id: &str,
-) -> Result<String, String> {
+) -> Result<DownloadLinks, String> {
     let value = graphql(
         access,
         DOWNLOAD_URL,
@@ -293,12 +305,30 @@ pub(crate) async fn download_url(
         json!({ "offerId": offer_id, "buildId": build_id }),
     )
     .await?;
-    value
+    parse_download_links(&value)
+}
+
+fn parse_download_links(value: &Value) -> Result<DownloadLinks, String> {
+    let url = value
         .pointer("/data/downloadUrl/url")
         .and_then(Value::as_str)
         .filter(|url| url.starts_with("https://"))
         .map(str::to_string)
-        .ok_or_else(|| "EA content: downloadUrl missing".to_string())
+        .ok_or_else(|| "EA content: downloadUrl missing".to_string())?;
+    let sync_url = value
+        .pointer("/data/downloadUrl/syncUrl")
+        .and_then(Value::as_str)
+        .filter(|url| url.starts_with("https://"))
+        .map(str::to_string);
+    Ok(DownloadLinks { url, sync_url })
+}
+
+pub(crate) async fn download_url(
+    access: &str,
+    offer_id: &str,
+    build_id: &str,
+) -> Result<String, String> {
+    Ok(download_links(access, offer_id, build_id).await?.url)
 }
 
 /// Free bytes on the volume that holds `path`, when the platform reports them.
@@ -371,7 +401,9 @@ pub(crate) async fn plan_install(    access: &str,
         .find(|build| build.download_type.eq_ignore_ascii_case("live"))
         .or_else(|| builds.first())
         .ok_or_else(|| "EA content: no build for this offer".to_string())?;
-    let url = download_url(access, offer_id, &build.build_id).await?;
+    let links = download_links(access, offer_id, &build.build_id).await?;
+    let url = links.url;
+    let sync_url = links.sync_url;
     let manifest = read_manifest(&url).await?;
     let installer_xml = match manifest
         .entries
@@ -408,6 +440,7 @@ pub(crate) async fn plan_install(    access: &str,
         build_id: build.build_id.clone(),
         version: build.game_version.clone(),
         download_url: url,
+        sync_url,
         root: root.to_path_buf(),
         manifest,
         installer_xml,
@@ -416,6 +449,30 @@ pub(crate) async fn plan_install(    access: &str,
         legacy,
         legacy_installable,
     })
+}
+
+/// The sync package's full replacement files.
+///
+/// The sync ZIP also carries `.eaPatchDiff` deltas and the patch metadata. The
+/// metadata in the live package is a template placeholder, so the launcher uses
+/// the full files the sync ZIP pairs with each delta; the full-package pass
+/// fills in anything the sync set does not name.
+pub(crate) fn sync_file_entries(manifest: &ZipManifest) -> Vec<ZipEntry> {
+    manifest
+        .entries
+        .iter()
+        .filter(|entry| {
+            let name = entry.name.replace('\\', "/");
+            let lower = name.to_ascii_lowercase();
+            if entry.uncompressed == 0 || name.ends_with('/') {
+                return false;
+            }
+            !lower.ends_with(".eapatchdiff")
+                && !lower.ends_with("eapatchinfo")
+                && !lower.ends_with("eapatchimpl")
+        })
+        .cloned()
+        .collect()
 }
 
 /// True for the pre-DiP `<executable>` installer block.
@@ -1399,6 +1456,57 @@ mod tests {
     }
 
     #[test]
+    fn download_links_keep_the_optional_sync_url() {
+        let value = serde_json::json!({
+            "data": {
+                "downloadUrl": {
+                    "url": "https://cdn.example/full.zip",
+                    "syncUrl": "https://cdn.example/SyncPackage.zip"
+                }
+            }
+        });
+        let links = parse_download_links(&value).expect("links");
+        assert_eq!(links.url, "https://cdn.example/full.zip");
+        assert_eq!(
+            links.sync_url.as_deref(),
+            Some("https://cdn.example/SyncPackage.zip")
+        );
+
+        let no_sync = serde_json::json!({
+            "data": { "downloadUrl": { "url": "https://cdn.example/full.zip" } }
+        });
+        assert_eq!(
+            parse_download_links(&no_sync).expect("links").sync_url,
+            None
+        );
+    }
+
+    #[test]
+    fn the_sync_package_keeps_full_files_and_drops_patch_metadata() {
+        let entry = |name: &str, uncompressed: u64| ZipEntry {
+            name: name.into(),
+            compression: 0,
+            crc32: 0,
+            compressed: uncompressed,
+            uncompressed,
+            local_offset: 0,
+        };
+        let manifest = ZipManifest {
+            entries: vec![
+                entry("Engine/", 0),
+                entry("Engine/Game.exe", 128),
+                entry("Engine/Game.exe.eaPatchDiff", 12),
+                entry("patch-1.eaPatchInfo", 20),
+                entry("patch-1.eaPatchImpl", 30),
+            ],
+            ..ZipManifest::default()
+        };
+        let files = sync_file_entries(&manifest);
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].name, "Engine/Game.exe");
+    }
+
+    #[test]
     fn only_the_dip_manifest_is_a_modern_package() {
         assert!(is_dip_manifest("<DiPManifest version=\"4.0\"></DiPManifest>"));
         assert!(!is_dip_manifest("<game><contentID>1</contentID></game>"));
@@ -1833,5 +1941,73 @@ mod tests {
             Ok::<(), String>(())
         });
         println!("result: {result:?}");
+    }
+
+    #[tokio::test]
+    #[ignore = "talks to EA's content service with the signed-in account"]
+    async fn manual_sync_url_probe() {
+        let access = super::super::ea_login::ensure_access().await.expect("access");
+        let offer = "Origin.OFR.50.0002412";
+        let builds = available_builds(&access, offer).await.expect("builds");
+        let live = builds
+            .iter()
+            .find(|build| build.download_type.eq_ignore_ascii_case("Live"))
+            .or_else(|| builds.first())
+            .expect("live build");
+        let links = download_links(&access, offer, &live.build_id)
+            .await
+            .expect("links");
+        println!("full={}", links.url);
+        println!("sync={:?}", links.sync_url);
+        if let Some(sync) = &links.sync_url {
+            let sync_manifest = read_manifest(sync).await.expect("sync manifest");
+            println!("sync entries: {}", sync_manifest.entries.len());
+            let files = sync_file_entries(&sync_manifest);
+            println!("sync full files: {}", files.len());
+            assert!(!files.is_empty());
+            assert!(files.iter().all(|entry| !entry.name.ends_with(".eaPatchDiff")));
+            assert!(files.iter().all(|entry| !entry.name.ends_with("eaPatchInfo")));
+            assert!(files.iter().all(|entry| !entry.name.ends_with("eaPatchImpl")));
+            let temp = std::env::temp_dir().join("efxlve-ea-sync-probe");
+            std::fs::create_dir_all(&temp).expect("temp");
+            for (label, suffix) in [
+                ("metadata", "eaPatchInfo"),
+                ("impl", "eaPatchImpl"),
+                ("diff", "ICU.tps.eaPatchDiff"),
+                ("new", "ICU.tps"),
+            ] {
+                let Some(entry) = sync_manifest
+                    .entries
+                    .iter()
+                    .find(|entry| entry.name.ends_with(suffix))
+                else {
+                    continue;
+                };
+                let dest = temp.join(format!("{label}-{}", suffix.replace('/', "_")));
+                download_entry(sync, entry, &dest)
+                    .await
+                    .expect("download sync entry");
+                let data = std::fs::read(&dest).expect("read sync entry");
+                let head = &data[..data.len().min(96)];
+                println!(
+                    "{label} name={} len={} head={:02x?}",
+                    entry.name,
+                    data.len(),
+                    head
+                );
+                println!(
+                    "{label} ascii={}",
+                    String::from_utf8_lossy(head).replace('\0', ".")
+                );
+            }
+            let local = std::env::var_os("USERPROFILE")
+                .map(std::path::PathBuf::from)
+                .unwrap_or_default()
+                .join("Games/EA/A Way Out/Engine/Binaries/ThirdParty/ICU/ICU.tps");
+            if let Ok(data) = std::fs::read(&local) {
+                let head = &data[..data.len().min(96)];
+                println!("local ICU.tps len={} head={:02x?}", data.len(), head);
+            }
+        }
     }
 }
