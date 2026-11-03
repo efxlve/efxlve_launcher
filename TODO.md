@@ -17,8 +17,9 @@ Open work only. Delete the item when it lands.
   streams entries with CRC checks, resumes from verified files and reports
   progress; `ea_install.rs` selects the install, update or repair touchup
   parameters. The install dialog, Downloads row and Manage check/verify/repair
-  actions are wired. Pre-DiP/disc packages (`<game>` or
-  `__Installer/DISK1`) are rejected and handed to the EA App.
+  actions are wired. Pre-DiP packages with the `<executable>` touchup block
+  (Dead Space 2) use the same installer; disc-only packages (`__Installer/DISK1`
+  or no manifest) go to the EA App.
 - A direct launch failure for a launcher-owned install now reports the error
   instead of silently opening the EA App, which could download a second copy.
   EAAC and EA App-installed legacy titles still use the EA App fallback.
@@ -27,8 +28,9 @@ Open work only. Delete the item when it lands.
 - Pre-DiP launch uses the `executePathOverride` from EA's `legacyOffers`.
   Dead Space 2 resolves and starts, but on this machine the game stops at
   "Could not initialize display hardware" (a graphics issue, not a license
-  rejection). Pre-DiP install/update still belongs to the EA App; Mirror's Edge
-  remains OldDrm.
+  rejection). Its 16.9 GB content package also carries the `<executable>`
+  touchup, but a live pre-DiP install is still pending; Mirror's Edge is a
+  disc-only package.
 - Direct installs default to `<home>/Games/EA`, matching Epic, GOG and Amazon;
   the old `.config/efxlve/ea-games` folder stays visible. Existing EA App
   installs under Program Files update through a one-shot elevated copy of the

@@ -938,6 +938,9 @@ pub struct EaContentPlan {
     pub eaac: bool,
     /// A pre-DiP/disc package; its installer must run through the EA App.
     pub legacy: bool,
+    /// The pre-DiP package has the `<executable>` installer block, so the
+    /// launcher can install it without the EA App.
+    pub legacy_installable: bool,
     pub root: String,
     /// Compressed package bytes to fetch on a fresh install.
     pub download_bytes: u64,
@@ -1061,6 +1064,7 @@ pub async fn ea_content_plan(
         installed,
         eaac: plan.eaac,
         legacy: plan.legacy,
+        legacy_installable: plan.legacy_installable,
         root: root.to_string_lossy().to_string(),
         download_bytes: plan.total_compressed(),
         install_bytes: plan.total_uncompressed(),

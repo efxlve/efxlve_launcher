@@ -201,7 +201,7 @@ async function openEaInstallDialog(appName: string): Promise<void> {
       void companionGameAction("ea", gameId, "install").catch(() => {});
       return;
     }
-    if (plan.legacy) {
+    if (plan.legacy && !plan.legacyInstallable) {
       closeInstallDialog();
       toast(t("ea.legacyPackage"), "");
       void companionGameAction("ea", gameId, "install").catch(() => {});

@@ -407,6 +407,7 @@ export interface EaContentPlan {
   updateAvailable: boolean;
   eaac: boolean;
   legacy: boolean;
+  legacyInstallable: boolean;
   root: string;
   downloadBytes: number;
   installBytes: number;

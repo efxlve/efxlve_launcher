@@ -70,14 +70,18 @@ pub(crate) async fn plan_touchup(
 }
 
 /// Parses the `<touchup>` block of a DiP installer manifest. Older manifests
-/// only carry `<parameters>`; update and repair fall back to it.
+/// only carry `<parameters>`; update and repair fall back to it. Pre-DiP
+/// manifests use `<executable>` with the same `filePath`/`parameters` shape.
 pub(crate) fn touchup_from_manifest(
     xml: &str,
     root: &Path,
     locale: &str,
     mode: TouchupMode,
 ) -> Option<Touchup> {
-    let block = element(xml, "touchup")?;
+    let (block, legacy) = match element(xml, "touchup") {
+        Some(block) => (block, false),
+        None => (element(xml, "executable")?, true),
+    };
     let raw = element(block, "filePath")?.trim();
     let relative = raw
         .trim_start_matches(['/', '\\'])
@@ -86,13 +90,17 @@ pub(crate) fn touchup_from_manifest(
     if !program.starts_with(root) {
         return None;
     }
-    let parameters = match mode {
-        TouchupMode::Install => element(block, "parameters"),
-        TouchupMode::Update => {
-            element(block, "updateParameters").or_else(|| element(block, "parameters"))
-        }
-        TouchupMode::Repair => {
-            element(block, "repairParameters").or_else(|| element(block, "parameters"))
+    let parameters = if legacy {
+        element(block, "parameters")
+    } else {
+        match mode {
+            TouchupMode::Install => element(block, "parameters"),
+            TouchupMode::Update => {
+                element(block, "updateParameters").or_else(|| element(block, "parameters"))
+            }
+            TouchupMode::Repair => {
+                element(block, "repairParameters").or_else(|| element(block, "parameters"))
+            }
         }
     }?;
     let parameters = parameters
@@ -176,7 +184,7 @@ pub(crate) async fn install_with_progress(
     if plan.eaac {
         return Err("EA anti-cheat titles need the EA app".into());
     }
-    if plan.legacy {
+    if plan.legacy && !plan.legacy_installable {
         return Err("Legacy EA installers need the EA app".into());
     }
 
@@ -211,7 +219,7 @@ pub(crate) async fn install_with_progress(
                 if plan.eaac {
                     return Err("EA anti-cheat titles need the EA app".into());
                 }
-                if plan.legacy {
+                if plan.legacy && !plan.legacy_installable {
                     return Err("Legacy EA installers need the EA app".into());
                 }
             }
@@ -515,6 +523,22 @@ mod tests {
     }
 
     #[test]
+    fn a_pre_dip_executable_uses_the_same_installer_fields() {
+        let xml = r#"<game manifestVersion="2.1">
+            <executable>
+                <filePath>/__Installer/setup.exe</filePath>
+                <parameters>install -locale {locale} -installPath "{installLocation}"</parameters>
+            </executable>
+        </game>"#;
+        let root = Path::new("games/dead space 2");
+        let touchup = touchup_from_manifest(xml, root, "en_US", TouchupMode::Install)
+            .expect("pre-DiP touchup");
+        assert_eq!(touchup.program, root.join("__Installer").join("setup.exe"));
+        assert_eq!(touchup.args[0], "install");
+        assert_eq!(touchup.args[2], "en_US");
+    }
+
+    #[test]
     fn an_old_manifest_falls_back_to_the_install_parameters() {
         let old = r#"<DiPManifest><touchup>
             <filePath>/__Installer/touchup.exe</filePath>
@@ -733,6 +757,45 @@ mod tests {
             Ok::<(), String>(())
         });
         println!("result: {result:?}");
+    }
+
+    #[test]
+    #[ignore = "downloads and installs A Way Out (21.9 GB) into the user EA folder"]
+    fn manual_a_way_out_install() {
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(4)
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let root = std::env::var_os("USERPROFILE")
+            .map(PathBuf::from)
+            .unwrap_or_else(std::env::temp_dir)
+            .join("Games")
+            .join("EA")
+            .join("A Way Out");
+        let result = runtime.block_on(async {
+            let access = super::super::ea_login::ensure_access().await?;
+            let cancelled = Arc::new(AtomicBool::new(false));
+            let mut last = std::time::Instant::now();
+            let report = install_with_progress(
+                &access,
+                "Origin.OFR.50.0002412",
+                &root,
+                "en_US",
+                &cancelled,
+                |tick| {
+                    if last.elapsed().as_secs() >= 15 {
+                        println!("tick: {} {:?}", tick.phase, tick.progress);
+                        last = std::time::Instant::now();
+                    }
+                },
+            )
+            .await?;
+            println!("report: {report:?}");
+            Ok::<(), String>(())
+        });
+        println!("result: {result:?}");
+        assert!(result.is_ok(), "A Way Out install failed: {result:?}");
     }
 
     #[test]

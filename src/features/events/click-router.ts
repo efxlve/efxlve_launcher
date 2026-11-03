@@ -884,7 +884,7 @@ document.addEventListener("click", (e) => {
           if (status) status.textContent = i18nT("ea.needClient");
           return;
         }
-        if (plan.legacy) {
+        if (plan.legacy && !plan.legacyInstallable) {
           if (status) status.textContent = i18nT("ea.legacyPackage");
           return;
         }

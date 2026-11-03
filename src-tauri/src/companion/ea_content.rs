@@ -186,6 +186,9 @@ pub(crate) struct InstallPlan {
     /// A pre-DiP/disc installer (`<game>` root or `__Installer/DISK1`), not the
     /// content-service DiP layout. It must go through the EA App.
     pub legacy: bool,
+    /// The legacy package carries the `<executable>` installer block, so the
+    /// content service can run its touchup without the EA App.
+    pub legacy_installable: bool,
 }
 
 impl InstallPlan {
@@ -389,6 +392,10 @@ pub(crate) async fn plan_install(    access: &str,
         .as_deref()
         .map(|xml| !is_dip_manifest(xml))
         .unwrap_or(true);
+    let legacy_installable = installer_xml
+        .as_deref()
+        .map(|xml| !is_dip_manifest(xml) && legacy_executable(xml))
+        .unwrap_or(false);
     Ok(InstallPlan {
         offer_id: offer_id.to_string(),
         build_id: build.build_id.clone(),
@@ -399,7 +406,13 @@ pub(crate) async fn plan_install(    access: &str,
         installer_xml,
         eaac,
         legacy,
+        legacy_installable,
     })
+}
+
+/// True for the pre-DiP `<executable>` installer block.
+pub(crate) fn legacy_executable(xml: &str) -> bool {
+    xml.to_ascii_lowercase().contains("<executable")
 }
 
 /// True for the DiP installer manifest (the content-service layout).
@@ -1359,6 +1372,14 @@ mod tests {
     }
 
     #[test]
+    fn a_pre_dip_executable_is_installable() {
+        assert!(legacy_executable(
+            "<game manifestVersion=\"2.1\"><executable><filePath>/setup.exe</filePath></executable></game>"
+        ));
+        assert!(!legacy_executable("<game></game>"));
+    }
+
+    #[test]
     fn network_failures_are_retryable_but_crc_mismatches_are_not() {
         assert!(transient_error("EA content: error sending request for url (…)"));
         assert!(transient_error("EA content: HTTP 503"));
@@ -1570,6 +1591,62 @@ mod tests {
         });
         println!("result: {result:?}");
         assert!(result.is_ok(), "resume failed: {result:?}");
+    }
+
+    #[test]
+    #[ignore = "talks to EA's content service for the legacy Mirror's Edge package"]
+    fn manual_legacy_package() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let result = runtime.block_on(async {
+            let access = super::super::ea_login::ensure_access().await?;
+            let plan = plan_install(
+                &access,
+                "DR:106999100",
+                &std::env::temp_dir().join("efxlve-ea-legacy-probe"),
+            )
+            .await?;
+            println!(
+                "legacy={} installable={} entries={}",
+                plan.legacy,
+                plan.legacy_installable,
+                plan.manifest.entries.len()
+            );
+            Ok::<(), String>(())
+        });
+        println!("result: {result:?}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    #[ignore = "talks to EA's content service for the pre-DiP Dead Space 2 package"]
+    fn manual_dead_space_installable_package() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let result = runtime.block_on(async {
+            let access = super::super::ea_login::ensure_access().await?;
+            let plan = plan_install(
+                &access,
+                "OFB-EAST:55619",
+                &std::env::temp_dir().join("efxlve-ea-dead-space-probe"),
+            )
+            .await?;
+            println!(
+                "legacy={} installable={} eaac={} entries={} compressed={}",
+                plan.legacy,
+                plan.legacy_installable,
+                plan.eaac,
+                plan.manifest.entries.len(),
+                plan.total_compressed()
+            );
+            Ok::<(), String>(())
+        });
+        println!("result: {result:?}");
+        assert!(result.is_ok());
     }
 
     #[test]
