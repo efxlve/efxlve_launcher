@@ -16,7 +16,8 @@ import { emptyState, icon, type IconName } from "../../core/icons";
 import { discordPageVisible, hotkeyLabel, isValidHotkey, DEFAULT_OVERLAY_HOTKEY, miniPlayerVisible, notesSidebarVisible, overlayBlockedGames, overlayEnabled, overlayHotkey, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
-import { rawOf, summaryOf } from "../../core/selectors";
+import { collectionGameCount, collectionGames } from "../../core/game-collections";
+import { canonicalGameTitle, rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { HAS_NATIVE_CAPTURE, IS_WINDOWS } from "../../core/platform";
 import { classicIcon, aeroIcon } from "../../core/app-icon";
@@ -364,7 +365,10 @@ function renderCollections(): string {
   // Unique games, not memberships: a title in two collections still counts once.
   const uniqueGames = new Set<string>();
   for (const collection of S.epicCollections) {
-    for (const appName of collection.app_names) uniqueGames.add(appName.toLowerCase());
+    for (const key of collectionGames(collection)) {
+      const title = summaryOf(key)?.title;
+      uniqueGames.add(title ? canonicalGameTitle(title) || key.toLowerCase() : key.toLowerCase());
+    }
   }
   const summary = S.epicCollections.length > 0
     ? `<span class="col-settings-summary">${esc(t("col.settingsSummary", { count: S.epicCollections.length, games: uniqueGames.size }))}</span>`
@@ -386,7 +390,7 @@ function renderCollections(): string {
         const mergePanel = merging
           ? `<div class="col-merge-panel">
                <span class="settings-row-desc">${t("col.mergeInto")}</span>
-               ${targets.map((other) => `<button type="button" class="btn ghost small" data-act="col-merge-into" data-id="${esc(other.id)}" data-source="${esc(c.id)}">${esc(other.name)} <span class="tabular-nums">${other.app_names.length}</span></button>`).join("")}
+               ${targets.map((other) => `<button type="button" class="btn ghost small" data-act="col-merge-into" data-id="${esc(other.id)}" data-source="${esc(c.id)}">${esc(other.name)} <span class="tabular-nums">${collectionGameCount(other)}</span></button>`).join("")}
                <button type="button" class="btn ghost danger small" data-act="col-merge-cancel">${t("common.cancelShort")}</button>
              </div>`
           : "";
@@ -398,8 +402,9 @@ function renderCollections(): string {
              </div>`
           : "";
         const thumbs: string[] = [];
-        for (let i = 0; i < c.app_names.length && thumbs.length < 3; i++) {
-          const cover = summaryOf(c.app_names[i])?.cover;
+        const gameKeys = collectionGames(c);
+        for (let i = 0; i < gameKeys.length && thumbs.length < 3; i++) {
+          const cover = summaryOf(gameKeys[i])?.cover;
           if (cover) thumbs.push(cover);
         }
         const visualHtml = thumbs.length > 0
@@ -407,12 +412,12 @@ function renderCollections(): string {
           : `<span class="col-settings-marker">${collectionMarker(c.emoji, 16)}</span>`;
 
         return `
-          <div class="card col-settings-card" data-search="${esc(`${c.name} ${t("col.gameCount", { count: c.app_names.length })}`)}">
+          <div class="card col-settings-card" data-search="${esc(`${c.name} ${t("col.gameCount", { count: collectionGameCount(c) })}`)}">
             <div class="col-settings-card-head">
               ${visualHtml}
               <div class="col-settings-copy">
                 <div class="col-settings-name" title="${esc(c.name)}">${collectionMarker(c.emoji, 13)} ${esc(c.name)}</div>
-                <div class="col-settings-count">${t("col.gameCount", { count: c.app_names.length })}</div>
+                <div class="col-settings-count">${t("col.gameCount", { count: collectionGameCount(c) })}</div>
               </div>
             </div>
             <div class="col-settings-actions">
@@ -857,7 +862,7 @@ function startupTabSelect(): string {
     html += `<optgroup label="${t("col.allCollections")}">`;
     for (const c of cols) {
       const val = `col:${c.id}`;
-      const count = Array.isArray(c.app_names) ? ` (${c.app_names.length})` : "";
+      const count = Array.isArray(c.app_names) ? ` (${collectionGameCount(c)})` : "";
       html += `<option value="${val}" ${current === val ? "selected" : ""}>${esc(c.name)}${count}</option>`;
     }
     html += `<option value="uncategorized" ${current === "uncategorized" ? "selected" : ""}>${t("settings.startupTabUncategorized")}</option>`;

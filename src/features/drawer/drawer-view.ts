@@ -32,6 +32,7 @@ import { cachedSteamCover, cachedSteamHero, isFlatSteamArt, rememberSteamCover, 
 import { steamLibraryArt, steamNews, steamSetAchievementNotifications, steamWatchRunning, type SteamLibraryArt, type SteamNewsItem } from "../../steam";
 import { presenceSync, scheduleRender, updateGamepadHud } from "../../core/render";
 import { gameStatusOf, gameStatusOptions, statusMenuHtml, type GameStatus } from "../library/game-status";
+import { collectionHasGame } from "../../core/game-collections";
 import { canonicalGameTitle, clearWideArtCache, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, libraryPlaytime, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { storeVersionLabel } from "./external-versions";
 import { sideCard } from "./side-widgets";
@@ -1490,8 +1491,7 @@ export function updateCriticUI(appName: string, data: CriticData): void {
 
 /** The collections this game belongs to, as chips in the meta row under the title. */
 export function renderCollectionTags(appName: string): string {
-  const lowerApp = appName.toLowerCase();
-  const gameCols = S.epicCollections.filter((c) => c.app_names.some((name) => name.toLowerCase() === lowerApp));
+  const gameCols = S.epicCollections.filter((c) => collectionHasGame(c, appName));
   return gameCols.map((c) => `
     <button type="button" class="chip gp-col-chip" data-act="select-collection" data-col-id="${esc(c.id)}" title="${esc(t("drawer.collectionShow", { name: c.name }))}">
       ${isCollectionIcon(c.emoji) ? collectionMarker(c.emoji, 12) : ""}${esc(c.name)}

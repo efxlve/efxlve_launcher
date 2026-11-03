@@ -116,6 +116,7 @@ import { loadSharedLibrary } from "../library/shared-library";
 import { companionStoreId, loadCompanionLibrary } from "../library/companion-library";
 import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaContentCancel, eaContentPlan, eaContentUninstall, eaContentVerify, eaDirectSetEnabled, eaLoginOpen, ubiDirectAdopt, ubiDirectCancel, ubiDirectImportSaves, ubiDirectInstall, ubiDirectMove, ubiDirectPlan, ubiDirectProbe, ubiDirectRelease, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
+import { collectionGames } from "../../core/game-collections";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
 import { isSmartCollection, smartCollection } from "../library/smart-collections";
 import { switchAccount } from "../auth/account-switcher";
@@ -727,7 +728,7 @@ document.addEventListener("click", (e) => {
     } else if (colId && colId !== "all" && colId !== "fav") {
       const col = S.epicCollections.find((c) => c.id === colId);
       if (col) {
-        list = col.app_names
+        list = collectionGames(col)
           .map((name) => summaryOf(name))
           .filter((s): s is NonNullable<ReturnType<typeof summaryOf>> => Boolean(s));
       }

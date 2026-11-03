@@ -12,6 +12,7 @@ import { isAppPlatinum } from "../../core/game-view";
 import { achSummaryOf } from "../../core/game-view";
 import { measuredSize } from "../../core/folder-size";
 import { emptyPanel, filledTrophy, icon, platinumCup, type IconName } from "../../core/icons";
+import { collectionHasGame } from "../../core/game-collections";
 import { isCompanionSource, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtDecimal1, fmtHours, fmtPlaytime } from "../../core/utils";
@@ -486,9 +487,7 @@ export function detectGameMode(s: EpicSummary, reqData?: GameRequirementsRespons
     return modeFromFlags(has(STEAM_CAT_SINGLE), has(STEAM_CAT_MULTI), has(STEAM_CAT_COOP));
   }
 
-  const gameCols = S.epicCollections.filter((c) =>
-    c.app_names.some((name) => name.toLowerCase() === s.appName.toLowerCase()),
-  );
+  const gameCols = S.epicCollections.filter((c) => collectionHasGame(c, s.appName, s.title));
   // Hyphens are dropped so "Multi-player" / "Single-player" / "Co-op" match too.
   const text = [
     ...(reqData?.tags || []),

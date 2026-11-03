@@ -8,6 +8,7 @@ import { t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import { closeModal } from "../../../core/dom";
 import { render } from "../../../core/render";
+import { collectionGameCount } from "../../../core/game-collections";
 import { allStoreSummaries } from "../../../core/selectors";
 import { resetCardChunk } from "../../library/library-view";
 import { loadSettingsView } from "../../settings/settings-view";
@@ -318,7 +319,7 @@ async function mergeCollectionsInto(sourceId?: string, targetId?: string): Promi
   try {
     await epicSaveCollection(target.name, merged, target.id);
     await epicDeleteCollection(source.id);
-    toast(i18nT("col.merged", { count: source.app_names.length, name: target.name }), "ok");
+    toast(i18nT("col.merged", { count: collectionGameCount(source), name: target.name }), "ok");
     await loadEpicCollections();
     if (S.view === "settings") void loadSettingsView();
   } catch (e) {

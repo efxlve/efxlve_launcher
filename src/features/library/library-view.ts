@@ -11,6 +11,7 @@ import { viewEl } from "../../core/dom";
 import { measuredSize } from "../../core/folder-size";
 import { achSummaryOf, epicActionButtons, epicArt, epicArtUrl, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardElement } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
+import { collectionGames, collectionMatch, matchCollectionGame, type CollectionMatch } from "../../core/game-collections";
 import { allStoreSummaries, canonicalGameTitle, compareLibraryRecent, libraryItemToSummary, libraryPlaytime, rawOf, sourceOfKey, storeKeysForTitle, summaryOf, totalLibraryGamesCount } from "../../core/selectors";
 import { collectionMarker } from "../../core/collection-icons";
 import { isSmartCollection, smartCollection } from "./smart-collections";
@@ -123,20 +124,18 @@ export function libraryFilteredList(): EpicSummary[] {
     S.activeCollectionId && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav" && S.activeCollectionId !== "uncategorized"
       ? S.epicCollections.find((c) => c.id === S.activeCollectionId)
       : null;
-  const colSet = activeCol
-    ? new Set(activeCol.app_names.map((n) => n.toLowerCase()))
-    : null;
+  const colMatch: CollectionMatch | null = activeCol ? collectionMatch(activeCol) : null;
   // Resolve the smart predicate once; a per-card .find() would walk the list
   // 1,000 times on a large library.
   const smartTest = smartCollection(S.activeCollectionId)?.test;
 
-  let uncatSet: Set<string> | null = null;
+  let uncatMatch: CollectionMatch | null = null;
   if (S.activeCollectionId === "uncategorized") {
-    uncatSet = new Set();
+    uncatMatch = { keys: new Set<string>(), titles: new Set<string>() };
     for (const c of S.epicCollections) {
-      for (const name of c.app_names) {
-        uncatSet.add(name.toLowerCase());
-      }
+      const match = collectionMatch(c);
+      for (const key of match.keys) uncatMatch.keys.add(key);
+      for (const title of match.titles) uncatMatch.titles.add(title);
     }
   }
 
@@ -152,10 +151,10 @@ export function libraryFilteredList(): EpicSummary[] {
     if (smartTest && !smartTest(s)) return false;
     if (S.activeCollectionId === "fav") {
       if (!S.epicFav.has(s.appName)) return false;
-    } else if (S.activeCollectionId === "uncategorized" && uncatSet) {
-      if (uncatSet.has(s.appName.toLowerCase())) return false;
-    } else if (colSet) {
-      if (!colSet.has(s.appName.toLowerCase())) return false;
+    } else if (uncatMatch) {
+      if (matchCollectionGame(uncatMatch, s)) return false;
+    } else if (colMatch) {
+      if (!matchCollectionGame(colMatch, s)) return false;
     }
 
     if (S.epicFilter === "installed" && !s.installed) return false;
@@ -633,7 +632,7 @@ function libraryResultKey(): string {
 let lastCollectionsSig = "";
 
 function collectionsSignature(): string {
-  return S.epicCollections.map((c) => `${c.id}\x1f${c.name}\x1f${c.app_names.length}`).join("\x1e");
+  return S.epicCollections.map((c) => `${c.id}\x1f${c.name}\x1f${c.app_names.join(",")}`).join("\x1e");
 }
 
 function libSmartIcon(id: string): string {
@@ -663,7 +662,7 @@ function renderCollectionBanner(inCollection: boolean): string {
   let totalSecs = 0;
 
   if (activeCol) {
-    const apps = activeCol.app_names || [];
+    const apps = collectionGames(activeCol);
     totalGames = apps.length;
     for (let i = 0; i < apps.length; i++) {
       const s = summaryOf(apps[i]);

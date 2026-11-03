@@ -12,7 +12,8 @@ import { collectionRoot } from "../../core/dom";
 import { cachedImage, warmImages, IMAGE_COVER_WIDTH } from "../../core/picture-cache";
 import { icon, type IconName } from "../../core/icons";
 import { scheduleRender } from "../../core/render";
-import { allStoreSummaries, canonicalGameTitle, gameStoresLabel, sourceOfKey, summaryOf } from "../../core/selectors";
+import { collectionGameCount, collectionGames, collectionHasGame, gameStoreKeys } from "../../core/game-collections";
+import { allStoreSummaries, canonicalGameTitle, gameStoresLabel, sourceOfKey, summaryOf, totalLibraryGamesCount } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
@@ -28,25 +29,67 @@ const COL_PAGE_SIZE = 120;
 let colVisible = COL_PAGE_SIZE;
 let colSearchTimer: number | null = null;
 
+/** Stable identity for one game across its store copies. */
+function gameIdentity(appName: string): string {
+  const title = summaryOf(appName)?.title;
+  return title ? canonicalGameTitle(title) || `key:${appName.toLowerCase()}` : `key:${appName.toLowerCase()}`;
+}
+
+/** True when any store copy of this game is selected in the editor. */
+function collectionSelectionHasGame(appName: string): boolean {
+  return gameStoreKeys(appName).some((key) => S.colModalSelectedApps.has(key));
+}
+
+/** True when any store copy of this game is pinned as a cover. */
+function collectionSelectionIsCover(appName: string): boolean {
+  const keys = new Set(gameStoreKeys(appName));
+  return S.colModalCoverApps.some((key) => keys.has(key));
+}
+
+/** Unique games selected in the editor, not store memberships. */
+function selectedGameCount(): number {
+  const seen = new Set<string>();
+  for (const key of S.colModalSelectedApps) seen.add(gameIdentity(key));
+  return seen.size;
+}
+
+/** Fills the three cover slots with one copy per game. */
+function fillCoverSlots(): void {
+  if (S.colModalCoverApps.length >= 3) return;
+  const covered = new Set(S.colModalCoverApps.map(gameIdentity));
+  for (const key of S.colModalSelectedApps) {
+    if (S.colModalCoverApps.length >= 3) break;
+    const id = gameIdentity(key);
+    if (covered.has(id)) continue;
+    S.colModalCoverApps.push(key);
+    covered.add(id);
+  }
+}
+
 function filteredColSummaries() {
   const q = S.colModalSearchQuery.toLowerCase();
-  const seenApps = new Set<string>();
-  const seenTitleStore = new Set<string>();
-  const out: EpicSummary[] = [];
-
+  // Collections are per game: one row per title, not one row per store copy.
+  // The installed copy is the better representative when several exist.
+  const byGame = new Map<string, EpicSummary>();
+  const order: string[] = [];
   for (const s of allStoreSummaries()) {
     if (S.hiddenGames.has(s.appName)) continue;
-    if (seenApps.has(s.appName)) continue;
-    seenApps.add(s.appName);
+    const id = gameIdentity(s.appName);
+    const current = byGame.get(id);
+    if (!current) {
+      byGame.set(id, s);
+      order.push(id);
+    } else if (!current.installed && s.installed) {
+      byGame.set(id, s);
+    }
+  }
 
-    const store = sourceOfKey(s.appName);
-    const canonTitle = canonicalGameTitle(s.title).toLowerCase();
-    const titleStoreKey = `${canonTitle}::${store}`;
-    if (seenTitleStore.has(titleStoreKey)) continue;
-    seenTitleStore.add(titleStoreKey);
-
+  const out: EpicSummary[] = [];
+  for (const id of order) {
+    const s = byGame.get(id);
+    if (!s) continue;
     if (q && !s.title.toLowerCase().includes(q)) continue;
-    if (S.colModalTabFilter === "selected" && !S.colModalSelectedApps.has(s.appName)) continue;
+    if (S.colModalTabFilter === "selected" && !collectionSelectionHasGame(s.appName)) continue;
     if (S.colModalTabFilter === "installed" && !s.installed) continue;
     out.push(s);
   }
@@ -71,8 +114,20 @@ export function openCollectionModal(colId?: string | null): void {
   colVisible = COL_PAGE_SIZE;
   if (colId) {
     const col = S.epicCollections.find((c) => c.id === colId);
-    S.colModalSelectedApps = new Set(col?.app_names || []);
-    S.colModalCoverApps = (col?.app_names || []).slice(0, 3);
+    // Expand the saved membership to every store copy of each game so the
+    // editor and the picker agree whichever version the player is viewing.
+    const selected = new Set<string>();
+    const covers: string[] = [];
+    const coverIds = new Set<string>();
+    for (const name of col?.app_names || []) {
+      for (const key of gameStoreKeys(name)) selected.add(key);
+      const id = gameIdentity(name);
+      if (coverIds.has(id) || covers.length >= 3) continue;
+      coverIds.add(id);
+      covers.push(name);
+    }
+    S.colModalSelectedApps = selected;
+    S.colModalCoverApps = covers;
     S.colModalMarker = isCollectionIcon(col?.emoji) ? (col!.emoji as string) : "";
   } else {
     S.colModalSelectedApps = new Set();
@@ -117,27 +172,22 @@ export function updateMarkerUi(): void {
 }
 
 export function toggleCollectionGame(appName: string, itemEl?: HTMLElement | null): void {
-  const isSelected = S.colModalSelectedApps.has(appName);
+  const keys = gameStoreKeys(appName);
+  const isSelected = keys.some((key) => S.colModalSelectedApps.has(key));
   if (isSelected) {
-    S.colModalSelectedApps.delete(appName);
-    S.colModalCoverApps = S.colModalCoverApps.filter((a) => a !== appName);
-    if (S.colModalCoverApps.length < 3) {
-      for (const other of S.colModalSelectedApps) {
-        if (!S.colModalCoverApps.includes(other)) {
-          S.colModalCoverApps.push(other);
-          if (S.colModalCoverApps.length >= 3) break;
-        }
-      }
-    }
+    for (const key of keys) S.colModalSelectedApps.delete(key);
+    const keySet = new Set(keys);
+    S.colModalCoverApps = S.colModalCoverApps.filter((a) => !keySet.has(a));
+    fillCoverSlots();
   } else {
-    S.colModalSelectedApps.add(appName);
-    if (S.colModalCoverApps.length < 3 && !S.colModalCoverApps.includes(appName)) {
+    for (const key of keys) S.colModalSelectedApps.add(key);
+    if (S.colModalCoverApps.length < 3 && !collectionSelectionIsCover(appName)) {
       S.colModalCoverApps.push(appName);
     }
   }
 
-  const nowChecked = S.colModalSelectedApps.has(appName);
-  const isCover = S.colModalCoverApps.includes(appName);
+  const nowChecked = !isSelected;
+  const isCover = collectionSelectionIsCover(appName);
   if (itemEl) {
     itemEl.classList.toggle("selected", nowChecked);
     const customCb = itemEl.querySelector(".col-custom-cb");
@@ -161,10 +211,10 @@ export function toggleCollectionGame(appName: string, itemEl?: HTMLElement | nul
   }
 
   const cntEl = document.getElementById("col-tab-selected-cnt") || document.getElementById("col-selected-count");
-  if (cntEl) cntEl.textContent = String(S.colModalSelectedApps.size);
+  if (cntEl) cntEl.textContent = String(selectedGameCount());
 
   const headerBadge = document.getElementById("col-header-selected-badge");
-  if (headerBadge) headerBadge.textContent = t("col.selectedCount", { count: S.colModalSelectedApps.size });
+  if (headerBadge) headerBadge.textContent = t("col.selectedCount", { count: selectedGameCount() });
 
   updateCedHeroDeckInPlace();
 
@@ -174,23 +224,22 @@ export function toggleCollectionGame(appName: string, itemEl?: HTMLElement | nul
 }
 
 export function toggleCoverGame(appName: string): void {
-  if (!S.colModalSelectedApps.has(appName)) {
-    S.colModalSelectedApps.add(appName);
+  const keys = gameStoreKeys(appName);
+  if (!keys.some((key) => S.colModalSelectedApps.has(key))) {
+    for (const key of keys) S.colModalSelectedApps.add(key);
   }
-  const idx = S.colModalCoverApps.indexOf(appName);
+  const idx = S.colModalCoverApps.findIndex((key) => keys.includes(key));
   if (idx !== -1) {
     S.colModalCoverApps.splice(idx, 1);
+  } else if (S.colModalCoverApps.length >= 3) {
+    S.colModalCoverApps[2] = appName;
   } else {
-    if (S.colModalCoverApps.length >= 3) {
-      S.colModalCoverApps[2] = appName;
-    } else {
-      S.colModalCoverApps.push(appName);
-    }
+    S.colModalCoverApps.push(appName);
   }
 
   document.querySelectorAll<HTMLElement>(".col-cover-pin-btn").forEach((btn) => {
     const app = btn.dataset.app;
-    const isCover = Boolean(app && S.colModalCoverApps.includes(app));
+    const isCover = Boolean(app && gameStoreKeys(app).some((key) => S.colModalCoverApps.includes(key)));
     btn.classList.toggle("is-cover", isCover);
     btn.title = isCover ? t("col.coverRemove") : t("col.coverAdd");
   });
@@ -200,25 +249,22 @@ export function toggleCoverGame(appName: string): void {
 
 export function renderCedHeroDeckHtml(): string {
   const coverEntries: { appName: string; cover: string }[] = [];
-  for (const appName of S.colModalCoverApps) {
-    if (S.colModalSelectedApps.has(appName)) {
-      const c = summaryOf(appName)?.cover;
-      if (c) coverEntries.push({ appName, cover: c });
-    }
-  }
+  const seen = new Set<string>();
+  const addCover = (appName: string): void => {
+    if (coverEntries.length >= 3 || !collectionSelectionHasGame(appName)) return;
+    const id = gameIdentity(appName);
+    if (seen.has(id)) return;
+    const cover = summaryOf(appName)?.cover;
+    if (!cover) return;
+    seen.add(id);
+    coverEntries.push({ appName, cover });
+  };
+  for (const appName of S.colModalCoverApps) addCover(appName);
   if (coverEntries.length < 3) {
-    for (const appName of S.colModalSelectedApps) {
-      if (!coverEntries.some((e) => e.appName === appName)) {
-        const c = summaryOf(appName)?.cover;
-        if (c) {
-          coverEntries.push({ appName, cover: c });
-          if (coverEntries.length >= 3) break;
-        }
-      }
-    }
+    for (const appName of S.colModalSelectedApps) addCover(appName);
   }
 
-  const count = S.colModalSelectedApps.size;
+  const count = selectedGameCount();
   const nameInput = document.getElementById("col-name-input") as HTMLInputElement | null;
   const colName = nameInput ? nameInput.value.trim() : (S.activeEditingColId ? (S.epicCollections.find((c) => c.id === S.activeEditingColId)?.name || "") : "");
 
@@ -278,8 +324,8 @@ export function updateCedHeroDeckInPlace(): void {
 }
 
 function colGameRow(s: { appName: string; title: string; cover?: string | null; installed: boolean }): string {
-  const checked = S.colModalSelectedApps.has(s.appName);
-  const isCover = S.colModalCoverApps.includes(s.appName);
+  const checked = collectionSelectionHasGame(s.appName);
+  const isCover = collectionSelectionIsCover(s.appName);
   const store = gameStoresLabel(s.appName);
   const source = sourceOfKey(s.appName);
   const thumb = s.cover
@@ -318,7 +364,7 @@ export function renderCollectionModal(): void {
   const filtered = filteredColSummaries();
   colVisible = COL_PAGE_SIZE;
 
-  const selectedCount = S.colModalSelectedApps.size;
+  const selectedCount = selectedGameCount();
 
   collectionRoot.innerHTML = `
     <div class="col-modal-backdrop" data-act="col-modal-backdrop">
@@ -430,10 +476,10 @@ export function updateColGamesListInPlace(preserveScroll = false): void {
   if (preserveScroll) container.scrollTop = previousScroll;
 
   const selCountEl = document.getElementById("col-tab-selected-cnt");
-  if (selCountEl) selCountEl.textContent = String(S.colModalSelectedApps.size);
+  if (selCountEl) selCountEl.textContent = String(selectedGameCount());
 
   const headerBadge = document.getElementById("col-header-selected-badge");
-  if (headerBadge) headerBadge.textContent = t("col.selectedCount", { count: S.colModalSelectedApps.size });
+  if (headerBadge) headerBadge.textContent = t("col.selectedCount", { count: selectedGameCount() });
 
   updateCedHeroDeckInPlace();
 }
@@ -501,14 +547,13 @@ export async function deleteCollectionFromModal(colId: string): Promise<boolean>
 export function openGameCollectionsModal(appName: string): void {
   if (!collectionRoot) return;
   S.gameColModalAppName = appName;
-  S.gameColModalSelectedCols = new Set(
-    S.epicCollections
-      .filter((c) => c.app_names.some((a) => a.toLowerCase() === appName.toLowerCase()))
-      .map((c) => c.id),
-  );
-
   const sum = summaryOf(appName);
   const title = sum?.title || appName;
+  S.gameColModalSelectedCols = new Set(
+    S.epicCollections
+      .filter((c) => collectionHasGame(c, appName, sum?.title))
+      .map((c) => c.id),
+  );
 
   collectionRoot.innerHTML = `
     <div class="col-modal-backdrop" data-act="col-modal-backdrop">
@@ -540,7 +585,7 @@ export function openGameCollectionsModal(appName: string): void {
                     <div class="col-game-title">
                       ${isCollectionIcon(c.emoji) ? `<span class="col-item-marker">${collectionMarker(c.emoji, 14)}</span> ` : ""}${esc(c.name)}
                     </div>
-                    <div class="col-game-sub">${t("col.gameCount", { count: c.app_names.length })}</div>
+                    <div class="col-game-sub">${t("col.gameCount", { count: collectionGameCount(c) })}</div>
                   </div>
                 </div>
               `;
@@ -567,14 +612,17 @@ export function openGameCollectionsModal(appName: string): void {
 export async function saveGameCollectionsFromModal(): Promise<void> {
   if (!S.gameColModalAppName) return;
   const appName = S.gameColModalAppName;
+  const keys = gameStoreKeys(appName);
   const colIds = Array.from(S.gameColModalSelectedCols);
   try {
-    await epicSetGameCollections(appName, colIds);
+    // Collections are per game: update every store copy so switching the
+    // version on the game page cannot leave a stale membership behind.
+    for (const key of keys) await epicSetGameCollections(key, colIds);
     toast(t("col.updated"), "ok");
     closeCollectionModal();
     await loadEpicCollections();
-    if (S.currentModalAppName === appName) {
-      updateDrawerCollectionsBoxInPlace(appName);
+    if (S.currentModalAppName && keys.includes(S.currentModalAppName)) {
+      updateDrawerCollectionsBoxInPlace(S.currentModalAppName);
     }
   } catch (e) {
     toast(t("col.updateFailed", { msg: String(e) }), "err");
@@ -685,7 +733,7 @@ export function openCollectionGallery(): void {
   }).join("");
 
   const manualCards = S.epicCollections.map((col) => {
-    const appNames = col.app_names ?? [];
+    const appNames = collectionGames(col);
     const totalGames = appNames.length;
     let installed = 0;
     const foundCovers: string[] = [];
@@ -782,7 +830,7 @@ export function openCollectionGallery(): void {
                 <h2>${esc(t("col.allCollections"))}</h2>
                 <span class="col-gallery-pill">${total}</span>
               </div>
-              <p class="col-gallery-sub">${t("col.gameCount", { count: summaries.length })}</p>
+              <p class="col-gallery-sub">${t("col.gameCount", { count: totalLibraryGamesCount() })}</p>
             </div>
           </div>
           <div class="col-gallery-actions">
