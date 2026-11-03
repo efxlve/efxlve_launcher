@@ -1561,10 +1561,14 @@ function renderAboutSection(s: EpicSummary): string {
     eaKey && (eaDisabled || (eaCached && eaLaunchModeRequired(eaCached))),
   );
   const showEa = Boolean(eaKey && (eaPending || eaRequired));
+  const eaSource = sourceOfKey(s.appName);
+  const eaStore = storeLabelForSource(eaSource);
   const eaCard = showEa
     ? `<section class="gp-ea-notice" id="gp-ea-notice" data-app="${esc(s.appName)}">${eaNoticeContent(
         eaDisabled ? null : eaCached ?? null,
         eaDisabled,
+        eaStore,
+        eaSource === "ea",
       )}</section>`
     : "";
   if (eaPending && eaKey) void loadEaLaunchMode(s.appName, eaKey);
@@ -1766,34 +1770,16 @@ const eaLaunchModeLoading = new Set<string>();
 
 interface EaLaunchModeMeta {
   title: string;
-  chip: string;
-  chipClass: "ok" | "warn";
-  icon: IconName;
 }
 
 function eaLaunchModeMeta(mode: EaDirectProbe["mode"]): EaLaunchModeMeta {
   if (mode === "direct") {
-    return {
-      title: t("ea.launchMode.directTitle"),
-      chip: t("ea.launchMode.chipDirect"),
-      chipClass: "ok",
-      icon: "check",
-    };
+    return { title: t("ea.launchMode.directTitle") };
   }
   if (mode === "legacy") {
-    return {
-      title: t("ea.launchMode.legacyTitle"),
-      chip: t("ea.launchMode.chipLegacy"),
-      chipClass: "warn",
-      icon: "download",
-    };
+    return { title: t("ea.launchMode.legacyTitle") };
   }
-  return {
-    title: t("ea.launchMode.eaAppTitle"),
-    chip: t("ea.launchMode.chipEaApp"),
-    chipClass: "warn",
-    icon: "shield",
-  };
+  return { title: t("ea.launchMode.eaAppTitle") };
 }
 
 function eaLaunchModeDescription(probe: EaDirectProbe): string {
@@ -1816,27 +1802,71 @@ function eaLaunchModeKey(s: EpicSummary): string | undefined {
   return S.epicEaSource.get(s.appName) ?? S.epicBackendLaunch.get(s.appName);
 }
 
+/** Human label for the store that sold the primary copy. */
+function storeLabelForSource(source: string): string {
+  switch (source) {
+    case "epic":
+      return "Epic Games";
+    case "steam":
+      return "Steam";
+    case "gog":
+      return "GOG";
+    case "amazon":
+      return "Amazon Games";
+    case "ea":
+      return "EA App";
+    case "ubisoft":
+      return "Ubisoft Connect";
+    case "xbox":
+      return "Xbox";
+    case "battlenet":
+      return "Battle.net";
+    case "riot":
+      return "Riot Client";
+    default:
+      return "Epic Games";
+  }
+}
+
 function eaLaunchModeRequired(probe: EaDirectProbe): boolean {
   return probe.mode !== "direct" && probe.mode !== "unavailable";
 }
 
-function eaNoticeContent(probe: EaDirectProbe | null, disabled = false): string {
+function eaNoticeContent(
+  probe: EaDirectProbe | null,
+  disabled: boolean,
+  storeName: string,
+  isEaSource: boolean,
+): string {
   const meta = eaLaunchModeMeta(disabled ? "eaac" : probe?.mode ?? "unavailable");
   const title = disabled ? t("ea.launchMode.eaAppTitle") : meta.title;
-  const chip = disabled ? t("ea.launchMode.chipEaApp") : meta.chip;
-  const chipClass = disabled ? "warn" : meta.chipClass;
-  const body = disabled
+  const reason = disabled
     ? t("ea.launchMode.disabledDesc")
     : probe
       ? eaLaunchModeDescription(probe)
       : t("ea.launchMode.loading");
-  return `<span class="gp-ea-notice-badge">${icon(meta.icon, 16)}</span>
+  const storeLine = isEaSource
+    ? t("ea.launchMode.storeLineEa")
+    : t("ea.launchMode.storeLine", { store: storeName });
+  const action = disabled
+    ? t("ea.launchMode.actionPlay")
+    : probe?.mode === "legacy"
+      ? t("ea.launchMode.actionInstall")
+      : probe
+        ? t("ea.launchMode.actionPlay")
+        : "";
+  const sourceLabel = isEaSource
+    ? ""
+    : `<span class="gp-ea-notice-source">${esc(t("ea.launchMode.sourceLabel", { store: storeName }))}</span>`;
+  return `<span class="gp-ea-notice-badge">${storeLogo("ea", 20, "gp-ea-notice-logo")}</span>
     <div class="gp-ea-notice-copy">
       <div class="gp-ea-notice-head">
         <h4 class="gp-ea-notice-title">${esc(title)}</h4>
-        <span class="chip ${chipClass}">${esc(chip)}</span>
+        ${sourceLabel}
       </div>
-      <p class="gp-ea-notice-body">${esc(body)}</p>
+      <p class="gp-ea-notice-body">${esc(reason)}</p>
+      <p class="gp-ea-notice-store">${esc(storeLine)}</p>
+      ${action ? `<p class="gp-ea-notice-action">${icon("info", 13)}<span>${esc(action)}</span></p>` : ""}
     </div>`;
 }
 
@@ -1854,7 +1884,13 @@ async function loadEaLaunchMode(appName: string, eaKey: string): Promise<void> {
       if (stack && stack.children.length === 0) stack.remove();
       return;
     }
-    card.outerHTML = `<section class="gp-ea-notice" id="gp-ea-notice" data-app="${esc(appName)}">${eaNoticeContent(probe)}</section>`;
+    const source = sourceOfKey(appName);
+    card.outerHTML = `<section class="gp-ea-notice" id="gp-ea-notice" data-app="${esc(appName)}">${eaNoticeContent(
+      probe,
+      false,
+      storeLabelForSource(source),
+      source === "ea",
+    )}</section>`;
   } catch {
     eaLaunchModeCache.set(appName, null);
     const card = document.getElementById("gp-ea-notice");
