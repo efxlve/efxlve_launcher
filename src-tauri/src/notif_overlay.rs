@@ -200,11 +200,48 @@ fn write_document_js(document: &str) -> String {
     format!("document.open();document.write({payload});document.close();")
 }
 
+/// Binds the dropdown's clicks after every document write.
+///
+/// The host is a local app page (`notif-overlay.html`), so `document.open()`
+/// keeps the app origin and the IPC bridge stays usable. A command is the
+/// reliable channel: the old fake navigation (`https://efxlve.local/act`) is a
+/// cross-origin hop that WebView2 can drop, which left every row dead over the
+/// store, Spotify and Discord pages. That navigation remains as a fallback.
+const OVERLAY_BIND_SCRIPT: &str = r#"
+(() => {
+  const send = (act, id) => {
+    const ipc = window.__TAURI_INTERNALS__;
+    if (ipc && ipc.invoke) {
+      ipc.invoke("notif_overlay_act", { act, id: id || "" }).catch(() => {
+        location.href = "https://efxlve.local/act?act=" + encodeURIComponent(act) +
+          "&id=" + encodeURIComponent(id || "") + "&t=" + Date.now();
+      });
+      return;
+    }
+    location.href = "https://efxlve.local/act?act=" + encodeURIComponent(act) +
+      "&id=" + encodeURIComponent(id || "") + "&t=" + Date.now();
+  };
+  document.addEventListener("click", (event) => {
+    const node = event.target && event.target.closest ? event.target.closest("[data-act]") : null;
+    if (!node) return;
+    event.preventDefault();
+    send(node.getAttribute("data-act") || "", node.getAttribute("data-id") || "");
+  });
+  // The dropdown owns the keyboard once it is clicked; Escape must still close
+  // it (and the changelog card, which shares this host).
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    send("overlay-close", "");
+  });
+})()
+"#;
+
 fn publish_document(webview: &tauri::Webview, document: &str) {
     if let Ok(mut slot) = PENDING_HTML.lock() {
         *slot = document.to_string();
     }
-    let _ = webview.eval(&write_document_js(document));
+    let _ = webview.eval(&format!("{}{}", write_document_js(document), OVERLAY_BIND_SCRIPT));
 }
 
 /// The changelog card shares its stylesheet with the app: `modals.css` imports
@@ -279,20 +316,8 @@ fn overlay_document(panel_html: &str) -> String {
       .changelog-backdrop { position: absolute; inset: 0; display: flex; padding: 0; background: transparent; }
       .changelog-dialog { width: 100%; height: 100%; max-width: none; max-height: none; }
     "#;
-    const SCRIPT: &str = r#"
-      document.addEventListener("click", function (event) {
-        var node = event.target && event.target.closest ? event.target.closest("[data-act]") : null;
-        if (!node) return;
-        event.preventDefault();
-        var act = encodeURIComponent(node.getAttribute("data-act") || "");
-        var id = encodeURIComponent(node.getAttribute("data-id") || "");
-        // A unique tail per click: a repeated navigation to the same URL is
-        // dropped by the webview and the button would need several tries.
-        location.href = "https://efxlve.local/act?act=" + act + "&id=" + id + "&t=" + Date.now();
-      });
-    "#;
     format!(
-        "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>{CSS}\n{CHANGELOG_CSS}\n{FRAME}</style></head><body>{panel_html}<script>{SCRIPT}</script></body></html>"
+        "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>{CSS}\n{CHANGELOG_CSS}\n{FRAME}</style></head><body>{panel_html}</body></html>"
     )
 }
 
@@ -402,35 +427,39 @@ pub async fn show_notif_overlay(
         return Ok(());
     }
 
-    let blank = url::Url::parse("about:blank").map_err(|e| e.to_string())?;
     let app_nav = app.clone();
-    let builder = tauri::webview::WebviewBuilder::new(LABEL, tauri::WebviewUrl::External(blank))
-        .background_color(tauri::webview::Color(0, 0, 0, 255))
-        .on_page_load(move |webview, payload| {
-            if payload.event() != tauri::webview::PageLoadEvent::Finished {
-                return;
+    let builder = tauri::webview::WebviewBuilder::new(
+        LABEL,
+        tauri::WebviewUrl::App("notif-overlay.html".into()),
+    )
+    .background_color(tauri::webview::Color(0, 0, 0, 255))
+    .on_page_load(move |webview, payload| {
+        if payload.event() != tauri::webview::PageLoadEvent::Finished {
+            return;
+        }
+        if let Ok(html) = PENDING_HTML.lock() {
+            if !html.is_empty() {
+                let _ = webview.eval(&format!("{}{}", write_document_js(&html), OVERLAY_BIND_SCRIPT));
             }
-            if let Ok(html) = PENDING_HTML.lock() {
-                if !html.is_empty() {
-                    let _ = webview.eval(&write_document_js(&html));
-                }
-            }
-            if let Some(host) = webview.app_handle().get_window("main") {
-                raise_if_open(&host);
-            }
-        })
-        .on_navigation(move |target| {
-            if target.scheme() == "about" {
-                return true;
-            }
-            if let Some((act, id)) = notif_act_from_url(target) {
-                let _ = app_nav.emit(
-                    "notif-overlay-act",
-                    serde_json::json!({ "act": act, "id": id }),
-                );
-            }
-            false
-        });
+        }
+        if let Some(host) = webview.app_handle().get_window("main") {
+            raise_if_open(&host);
+        }
+    })
+    .on_navigation(move |target| {
+        // The host page is the app's own local document: it must load, and
+        // keeping it local is what lets the dropdown use the IPC bridge.
+        if target.scheme() == "about" || target.path() == "/notif-overlay.html" {
+            return true;
+        }
+        if let Some((act, id)) = notif_act_from_url(target) {
+            let _ = app_nav.emit(
+                "notif-overlay-act",
+                serde_json::json!({ "act": act, "id": id }),
+            );
+        }
+        false
+    });
 
     let pos = tauri::Position::Logical(tauri::LogicalPosition::new(x, y));
     let size = tauri::Size::Logical(tauri::LogicalSize::new(width.max(160.0), height.max(72.0)));
@@ -442,9 +471,10 @@ pub async fn show_notif_overlay(
                 return Ok(());
             }
             OVERLAY_OPEN.store(true, std::sync::atomic::Ordering::Relaxed);
-            // `about:blank` can finish loading before an eval is possible, and
-            // the page-load write is the only other path: a freshly created host
-            // must get its document here or the first open shows a blank panel.
+            // The local host page can finish loading before an eval is
+            // possible, and the page-load write is the only other path: a
+            // freshly created host must get its document here or the first
+            // open shows a blank panel.
             let _ = webview.hide();
             publish_document(&webview, &document);
             if let Some(host) = app.get_window("main") {
@@ -493,6 +523,19 @@ pub fn move_notif_overlay(
     Ok(())
 }
 
+/// A click inside the dropdown. The overlay document has the app's IPC bridge,
+/// so it reports the action here instead of pretending to navigate: a fake
+/// navigation is dropped by some WebView2 builds, which left every row dead.
+/// Emitting the event keeps the same handler the browser (HTML) panel uses.
+#[tauri::command]
+pub fn notif_overlay_act(app: AppHandle, act: String, id: Option<String>) -> Result<(), String> {
+    app.emit(
+        "notif-overlay-act",
+        serde_json::json!({ "act": act, "id": id.unwrap_or_default() }),
+    )
+    .map_err(|error| error.to_string())
+}
+
 /// Hides the dropdown without shrinking it to 1×1.
 #[tauri::command]
 pub fn hide_notif_overlay(app: AppHandle) -> Result<(), String> {
@@ -518,7 +561,7 @@ pub fn hide_notif_overlay(app: AppHandle) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{notif_act_from_url, overlay_document};
+    use super::{notif_act_from_url, overlay_document, OVERLAY_BIND_SCRIPT};
 
     #[test]
     fn a_dropdown_click_carries_the_action() {
@@ -535,6 +578,10 @@ mod tests {
     fn the_document_wraps_the_panel() {
         let doc = overlay_document("<p>hello</p>");
         assert!(doc.contains("<p>hello</p>"));
-        assert!(doc.contains("https://efxlve.local/act"));
+        // The click handler is installed after the write, on the local host
+        // page, so it can reach the shell through the IPC bridge.
+        assert!(!doc.contains("<script>"));
+        assert!(OVERLAY_BIND_SCRIPT.contains("notif_overlay_act"));
+        assert!(OVERLAY_BIND_SCRIPT.contains("efxlve.local/"));
     }
 }

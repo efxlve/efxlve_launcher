@@ -2112,6 +2112,7 @@ fn main() {
             notif_overlay::show_notif_overlay,
             notif_overlay::move_notif_overlay,
             notif_overlay::hide_notif_overlay,
+            notif_overlay::notif_overlay_act,
             open_folder,
             eos::eos_overlay_status,
             eos::eos_install_redistributable,
