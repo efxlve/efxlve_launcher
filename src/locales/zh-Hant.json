@@ -3521,5 +3521,6 @@
   "ea.noUninstaller": "此遊戲未註冊解除安裝程式。請透過 EA App 移除或刪除資料夾：{a1}",
   "ea.uninstalled": "已解除安裝。",
   "settings.eaInstallDirTitle": "EA 安裝資料夾",
-  "settings.eaInstallDirHint": "EA 遊戲預設安裝於此，每個遊戲一個子資料夾。留空則使用："
+  "settings.eaInstallDirHint": "EA 遊戲預設安裝於此，每個遊戲一個子資料夾。留空則使用：",
+  "ea.legacyPackage": "此舊版 EA 安裝程式必須透過 EA App 執行。"
 }

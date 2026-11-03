@@ -3521,5 +3521,6 @@
   "ea.noUninstaller": "No hay un desinstalador registrado para este juego. Elimínalo desde la EA App o borra la carpeta: {a1}",
   "ea.uninstalled": "Desinstalado.",
   "settings.eaInstallDirTitle": "Carpeta de instalación de EA",
-  "settings.eaInstallDirHint": "Los juegos de EA se instalan aquí por defecto, una subcarpeta por juego. Si se deja vacío:"
+  "settings.eaInstallDirHint": "Los juegos de EA se instalan aquí por defecto, una subcarpeta por juego. Si se deja vacío:",
+  "ea.legacyPackage": "Este instalador antiguo de EA debe ejecutarse mediante la EA App."
 }

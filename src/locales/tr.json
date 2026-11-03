@@ -3521,5 +3521,6 @@
   "ea.noUninstaller": "Bu oyun için kayıtlı bir kaldırıcı yok. EA App üzerinden kaldırın veya klasörü silin: {a1}",
   "ea.uninstalled": "Kaldırıldı.",
   "settings.eaInstallDirTitle": "EA kurulum klasörü",
-  "settings.eaInstallDirHint": "EA oyunları varsayılan olarak buraya kurulur, her oyun için bir alt klasör. Boş bırakılırsa:"
+  "settings.eaInstallDirHint": "EA oyunları varsayılan olarak buraya kurulur, her oyun için bir alt klasör. Boş bırakılırsa:",
+  "ea.legacyPackage": "Bu eski EA yükleyicisi EA App üzerinden çalışmalı."
 }

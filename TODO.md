@@ -10,13 +10,21 @@ Open work only. Delete the item when it lands.
   under `ProgramData`. Use it as the reference title for the remaining handlers.
 - EA anti-cheat titles (Battlefield, FC) stay on the EA App. Javelin rejects a
   stopped background service with `EC:10701`; do not attempt to bypass it.
-  Direct install, update and repair also refuse those titles.
+  Direct install, update and repair also refuse those titles. The only supported
+  improvement is an EA App runtime the launcher starts and closes itself.
 - Non-EAAC installs, updates and repairs run through the content service:
   `ea_content.rs` resolves the live build, reads the ZIP central directory,
   streams entries with CRC checks, resumes from verified files and reports
   progress; `ea_install.rs` selects the install, update or repair touchup
   parameters. The install dialog, Downloads row and Manage check/verify/repair
-  actions are wired.
+  actions are wired. Pre-DiP/disc packages (`<game>` or
+  `__Installer/DISK1`) are rejected and handed to the EA App.
+- A direct launch failure for a launcher-owned install now reports the error
+  instead of silently opening the EA App, which could download a second copy.
+  EAAC and EA App-installed legacy titles still use the EA App fallback.
+- DiP titles that still carry `Core/activation.exe` are experimental: they use
+  EA's official license service, and fall back to the EA App on failure.
+  Dead Space 2 and Mirror's Edge are pre-DiP/OldDrm and stay on the EA App.
 - Direct installs default to `<home>/Games/EA`, matching Epic, GOG and Amazon;
   the old `.config/efxlve/ea-games` folder stays visible. Existing EA App
   installs under Program Files update through a one-shot elevated copy of the

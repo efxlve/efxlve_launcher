@@ -3521,5 +3521,6 @@
   "ea.noUninstaller": "لا يوجد برنامج إزالة مسجل لهذه اللعبة. أزلها عبر تطبيق EA أو احذف المجلد: {a1}",
   "ea.uninstalled": "تمت الإزالة.",
   "settings.eaInstallDirTitle": "مجلد تثبيت EA",
-  "settings.eaInstallDirHint": "تُثبَّت ألعاب EA هنا افتراضيًا، مجلد فرعي لكل لعبة. إذا تُرك فارغًا:"
+  "settings.eaInstallDirHint": "تُثبَّت ألعاب EA هنا افتراضيًا، مجلد فرعي لكل لعبة. إذا تُرك فارغًا:",
+  "ea.legacyPackage": "يجب تشغيل مثبّت EA القديم هذا عبر تطبيق EA."
 }

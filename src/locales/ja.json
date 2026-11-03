@@ -3521,5 +3521,6 @@
   "ea.noUninstaller": "このゲームにはアンインストーラーが登録されていません。EA App から削除するか、フォルダーを削除してください: {a1}",
   "ea.uninstalled": "アンインストールしました。",
   "settings.eaInstallDirTitle": "EA インストールフォルダー",
-  "settings.eaInstallDirHint": "EA ゲームは既定でここにインストールされ、ゲームごとにサブフォルダーが作られます。空の場合:"
+  "settings.eaInstallDirHint": "EA ゲームは既定でここにインストールされ、ゲームごとにサブフォルダーが作られます。空の場合:",
+  "ea.legacyPackage": "この旧式の EA インストーラーは EA App 経由で実行する必要があります。"
 }

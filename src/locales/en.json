@@ -3521,5 +3521,6 @@
   "ea.noUninstaller": "No uninstaller is registered for this game. Remove it through the EA App or delete the folder: {a1}",
   "ea.uninstalled": "Uninstalled.",
   "settings.eaInstallDirTitle": "EA install folder",
-  "settings.eaInstallDirHint": "EA games install here by default, one subfolder per game. If left empty:"
+  "settings.eaInstallDirHint": "EA games install here by default, one subfolder per game. If left empty:",
+  "ea.legacyPackage": "This legacy EA installer must run through the EA App."
 }

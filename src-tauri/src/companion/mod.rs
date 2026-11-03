@@ -554,7 +554,18 @@ pub async fn companion_launch(app: tauri::AppHandle, store: String, id: String) 
     if direct {
         match ea_direct::launch(&game).await {
             Ok(_) => return Ok(()),
-            Err(err) => ea_direct::remember_error(&err),
+            Err(err) => {
+                ea_direct::remember_error(&err);
+                // A launcher-owned install is not registered with the EA App.
+                // Silently handing it to origin2:// would make the EA App
+                // download a second copy; show the direct failure instead.
+                let eaac = err.to_lowercase().contains("anti-cheat");
+                if !eaac
+                    && ea_install::managed_root(std::path::Path::new(&game.install_path))
+                {
+                    return Err(err);
+                }
+            }
         }
     }
     // A game the launcher installed from Ubisoft's CDN has its own executable
@@ -925,6 +936,8 @@ pub struct EaContentPlan {
     pub update_available: bool,
     /// EA anti-cheat titles stay on the EA App for install, update and repair.
     pub eaac: bool,
+    /// A pre-DiP/disc package; its installer must run through the EA App.
+    pub legacy: bool,
     pub root: String,
     /// Compressed package bytes to fetch on a fresh install.
     pub download_bytes: u64,
@@ -1047,6 +1060,7 @@ pub async fn ea_content_plan(
         installed_version,
         installed,
         eaac: plan.eaac,
+        legacy: plan.legacy,
         root: root.to_string_lossy().to_string(),
         download_bytes: plan.total_compressed(),
         install_bytes: plan.total_uncompressed(),
@@ -2085,9 +2099,29 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "talks to EA's content service for the legacy Mirror's Edge package"]
+    async fn live_legacy_package_is_flagged_for_the_ea_app() {
+        let access = ea_login::ensure_access().await.expect("access");
+        let plan = ea_content::plan_install(
+            &access,
+            "DR:106999100",
+            &std::env::temp_dir().join("efxlve-ea-legacy-probe"),
+        )
+        .await
+        .expect("legacy plan");
+        println!(
+            "legacy={} eaac={} entries={}",
+            plan.legacy,
+            plan.eaac,
+            plan.manifest.entries.len()
+        );
+        assert!(plan.legacy);
+        assert!(!plan.eaac);
+    }
+
+    #[tokio::test]
     #[ignore = "reads the real EA library and talks to the content service"]
-    async fn live_ea_content_plan_matches_the_installed_version() {
-        let games = discover("ea");
+    async fn live_ea_content_plan_matches_the_installed_version() {        let games = discover("ea");
         let game = games
             .iter()
             .find(|game| game.name.contains("2042"))

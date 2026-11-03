@@ -884,6 +884,10 @@ document.addEventListener("click", (e) => {
           if (status) status.textContent = i18nT("ea.needClient");
           return;
         }
+        if (plan.legacy) {
+          if (status) status.textContent = i18nT("ea.legacyPackage");
+          return;
+        }
         if (plan.updateAvailable) {
           if (status) status.textContent = i18nT("manage.ubiUpdateAvailable");
           const actions = row?.querySelector(".row-actions");

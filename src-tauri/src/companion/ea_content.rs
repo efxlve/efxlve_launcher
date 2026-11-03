@@ -183,6 +183,9 @@ pub(crate) struct InstallPlan {
     pub manifest: ZipManifest,
     pub installer_xml: Option<String>,
     pub eaac: bool,
+    /// A pre-DiP/disc installer (`<game>` root or `__Installer/DISK1`), not the
+    /// content-service DiP layout. It must go through the EA App.
+    pub legacy: bool,
 }
 
 impl InstallPlan {
@@ -380,6 +383,12 @@ pub(crate) async fn plan_install(    access: &str,
         .as_deref()
         .map(manifest_needs_eaac)
         .unwrap_or(false);
+    // A package without a DiP manifest is a legacy/disc installer. The content
+    // service can list it, but its touchup/registry layout is not ours to use.
+    let legacy = installer_xml
+        .as_deref()
+        .map(|xml| !is_dip_manifest(xml))
+        .unwrap_or(true);
     Ok(InstallPlan {
         offer_id: offer_id.to_string(),
         build_id: build.build_id.clone(),
@@ -389,7 +398,13 @@ pub(crate) async fn plan_install(    access: &str,
         manifest,
         installer_xml,
         eaac,
+        legacy,
     })
+}
+
+/// True for the DiP installer manifest (the content-service layout).
+pub(crate) fn is_dip_manifest(xml: &str) -> bool {
+    xml.to_ascii_lowercase().contains("<dipmanifest")
 }
 
 /// EA anti-cheat titles carry Javelin's launcher in their installer manifest.
@@ -1337,6 +1352,13 @@ mod tests {
     }
 
     #[test]
+    fn only_the_dip_manifest_is_a_modern_package() {
+        assert!(is_dip_manifest("<DiPManifest version=\"4.0\"></DiPManifest>"));
+        assert!(!is_dip_manifest("<game><contentID>1</contentID></game>"));
+        assert!(!is_dip_manifest(""));
+    }
+
+    #[test]
     fn network_failures_are_retryable_but_crc_mismatches_are_not() {
         assert!(transient_error("EA content: error sending request for url (…)"));
         assert!(transient_error("EA content: HTTP 503"));
@@ -1479,7 +1501,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "runs touchup and the launch plan on the full package"]
+    #[ignore = "checks the legacy-package guard against the full package"]
     fn manual_full_package_touchup() {
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(4)
@@ -1490,7 +1512,7 @@ mod tests {
         let result = runtime.block_on(async {
             let access = super::super::ea_login::ensure_access().await?;
             let cancelled = Arc::new(AtomicBool::new(false));
-            let report = super::super::ea_install::install_with_progress(
+            let install = super::super::ea_install::install_with_progress(
                 &access,
                 "DR:106999100",
                 &root,
@@ -1498,9 +1520,11 @@ mod tests {
                 &cancelled,
                 |tick| println!("tick: {} {:?}", tick.phase, tick.progress),
             )
-            .await?;
-            println!("report: {report:?}");
-            println!("touchup error: {:?}", report.touchup_error);
+            .await;
+            println!("install: {install:?}");
+            if !matches!(&install, Err(error) if error.contains("Legacy EA installers")) {
+                return Err(format!("expected the legacy guard, got {install:?}"));
+            }
             let probe = super::super::ea_direct::plan(
                 &root.to_string_lossy(),
                 "mirrors_edge_na",
@@ -1509,12 +1533,13 @@ mod tests {
             Ok::<(), String>(())
         });
         println!("result: {result:?}");
-        assert!(result.is_ok(), "full package touchup failed: {result:?}");
+        assert!(result.is_ok(), "legacy guard test failed: {result:?}");
     }
 
     #[test]
     #[ignore = "expects the full package from manual_full_package in the temp folder"]
-    fn manual_full_package_resume() {        let runtime = tokio::runtime::Builder::new_multi_thread()
+    fn manual_full_package_resume() {
+        let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(4)
             .enable_all()
             .build()

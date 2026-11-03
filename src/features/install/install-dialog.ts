@@ -201,6 +201,12 @@ async function openEaInstallDialog(appName: string): Promise<void> {
       void companionGameAction("ea", gameId, "install").catch(() => {});
       return;
     }
+    if (plan.legacy) {
+      closeInstallDialog();
+      toast(t("ea.legacyPackage"), "");
+      void companionGameAction("ea", gameId, "install").catch(() => {});
+      return;
+    }
     const split = splitInstallRoot(plan.root);
     S.installDialogFolder = split.folder || S.installDialogFolder;
     if (plan.installed) {

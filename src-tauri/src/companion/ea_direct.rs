@@ -8,8 +8,10 @@
 //! registry keys, takes over a protocol or installs a service; the caller keeps
 //! the `origin2://` handoff as the fallback when a fact is missing.
 //!
-//! Games that still use the old activation DRM (`Core/activation.exe`) need a
-//! signed `.dlf`, which is not implemented here, so they stay on the EA app.
+//! Pre-DiP manifests (`<game>` roots) are rejected. DiP titles that still ship
+//! `Core/activation.exe` get the same signed `.dlf` through EA's official
+//! license service; this legacy activation path is experimental and falls back
+//! to the EA App when the license call fails.
 
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -676,6 +678,32 @@ mod tests {
     }
 
     #[test]
+    fn the_anti_cheat_guard_refuses_before_any_launch() {
+        let root = std::env::temp_dir().join(format!("efxlve-eaac-guard-{}", std::process::id()));
+        let installer = root.join("__Installer");
+        std::fs::create_dir_all(&installer).expect("installer dir");
+        std::fs::write(
+            installer.join("installerdata.xml"),
+            r#"<DiPManifest>
+                <contentIDs><contentID>1</contentID></contentIDs>
+                <runtime><launcher><filePath>Game.exe</filePath></launcher></runtime>
+            </DiPManifest>"#,
+        )
+        .expect("manifest");
+        std::fs::write(root.join("Game.exe"), b"fake").expect("game exe");
+        std::fs::write(root.join("EAAntiCheat.GameServiceLauncher.exe"), b"fake")
+            .expect("eaac launcher");
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let result = runtime.block_on(launch_path(&root.to_string_lossy(), "1"));
+        println!("eaac guard: {result:?}");
+        assert!(matches!(result, Err(ref error) if error.contains("anti-cheat")));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn pre_dip_manifests_are_not_dip() {
         assert!(!is_dip_manifest(
             r#"<game manifestVersion="2.1"><executable/></game>"#
@@ -739,61 +767,11 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "launches BF2042.exe directly, bypassing the anti-cheat launcher"]
-    fn manual_launch_bf_exe() {
-        let root = PathBuf::from(r"C:\Program Files\EA Games\Battlefield 2042");
-        let plan = LaunchPlan {
-            exe: root.join("BF2042.exe"),
-            work_dir: root,
-            args: Vec::new(),
-            content_id: "193874".into(),
-            eaac: false,
-            ooa: true,
-        };
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .expect("runtime");
-        let access = rt
-            .block_on(super::super::ea_login::ensure_access())
-            .expect("access");
-        let token = rt
-            .block_on(super::super::ea_login::launch_token(&access))
-            .unwrap_or_else(|_| access.clone());
-        let env = environment(&access, &token, "Player", "en_US", &plan);
-        match spawn(&plan, &env) {
-            Ok(child) => println!("started pid {}", child.id()),
-            Err(err) => println!("failed: {err}"),
-        }
-    }
-
-    #[test]
-    #[ignore = "launches Dead Space 2 with the license the EA app already wrote"]
-    fn manual_launch_deadspace() {
-        let root = PathBuf::from(r"C:\Program Files\EA Games\Dead Space 2");
-        let plan = LaunchPlan {
-            exe: root.join("deadspace2.exe"),
-            work_dir: root,
-            args: Vec::new(),
-            content_id: "1002974".into(),
-            eaac: false,
-            ooa: true,
-        };
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .expect("runtime");
-        let access = rt
-            .block_on(super::super::ea_login::ensure_access())
-            .expect("access");
-        let token = rt
-            .block_on(super::super::ea_login::launch_token(&access))
-            .unwrap_or_else(|_| access.clone());
-        let env = environment(&access, &token, "Player", "en_US", &plan);
-        match spawn(&plan, &env) {
-            Ok(child) => println!("started pid {}", child.id()),
-            Err(err) => println!("failed: {err}"),
-        }
+    #[ignore = "reads the Dead Space 2 launch facts without starting the game"]
+    fn manual_probe_deadspace() {
+        let root = Path::new(r"C:\Program Files\EA Games\Dead Space 2");
+        let plan = plan(&root.to_string_lossy(), "1002974");
+        println!("dead space 2 plan: {plan:?}");
     }
 
     #[test]

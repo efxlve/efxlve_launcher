@@ -3521,5 +3521,6 @@
   "ea.noUninstaller": "Brak zarejestrowanego deinstalatora dla tej gry. Usuń ją przez EA App lub usuń folder: {a1}",
   "ea.uninstalled": "Odinstalowano.",
   "settings.eaInstallDirTitle": "Folder instalacji EA",
-  "settings.eaInstallDirHint": "Gry EA instalują się tutaj domyślnie, jeden podfolder na grę. Jeśli puste:"
+  "settings.eaInstallDirHint": "Gry EA instalują się tutaj domyślnie, jeden podfolder na grę. Jeśli puste:",
+  "ea.legacyPackage": "Ten stary instalator EA musi zostać uruchomiony przez EA App."
 }

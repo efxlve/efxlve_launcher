@@ -3521,5 +3521,6 @@
   "ea.noUninstaller": "Aucun désinstalleur n'est enregistré pour ce jeu. Supprimez-le via l'EA App ou supprimez le dossier : {a1}",
   "ea.uninstalled": "Désinstallé.",
   "settings.eaInstallDirTitle": "Dossier d'installation EA",
-  "settings.eaInstallDirHint": "Les jeux EA s'installent ici par défaut, un sous-dossier par jeu. Si vide :"
+  "settings.eaInstallDirHint": "Les jeux EA s'installent ici par défaut, un sous-dossier par jeu. Si vide :",
+  "ea.legacyPackage": "Cet ancien programme d'installation EA doit passer par l'EA App."
 }

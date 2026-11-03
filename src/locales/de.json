@@ -3521,5 +3521,6 @@
   "ea.noUninstaller": "Für dieses Spiel ist kein Deinstallationsprogramm registriert. Entferne es über die EA App oder lösche den Ordner: {a1}",
   "ea.uninstalled": "Deinstalliert.",
   "settings.eaInstallDirTitle": "EA-Installationsordner",
-  "settings.eaInstallDirHint": "EA-Spiele werden standardmäßig hier installiert, ein Unterordner pro Spiel. Wenn leer:"
+  "settings.eaInstallDirHint": "EA-Spiele werden standardmäßig hier installiert, ein Unterordner pro Spiel. Wenn leer:",
+  "ea.legacyPackage": "Dieser alte EA-Installer muss über die EA App ausgeführt werden."
 }

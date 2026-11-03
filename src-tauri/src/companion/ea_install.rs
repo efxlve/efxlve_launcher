@@ -176,6 +176,9 @@ pub(crate) async fn install_with_progress(
     if plan.eaac {
         return Err("EA anti-cheat titles need the EA app".into());
     }
+    if plan.legacy {
+        return Err("Legacy EA installers need the EA app".into());
+    }
 
     // A signed package URL can expire during a multi-hour download. Re-plan
     // once on an authorization error; completed files are verified by size and
@@ -207,6 +210,9 @@ pub(crate) async fn install_with_progress(
                 plan = ea_content::plan_install(access, offer_id, root).await?;
                 if plan.eaac {
                     return Err("EA anti-cheat titles need the EA app".into());
+                }
+                if plan.legacy {
+                    return Err("Legacy EA installers need the EA app".into());
                 }
             }
             Err(error) => return Err(error),

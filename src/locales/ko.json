@@ -3521,5 +3521,6 @@
   "ea.noUninstaller": "이 게임에 등록된 제거 프로그램이 없습니다. EA App에서 제거하거나 폴더를 삭제하세요: {a1}",
   "ea.uninstalled": "제거되었습니다.",
   "settings.eaInstallDirTitle": "EA 설치 폴더",
-  "settings.eaInstallDirHint": "EA 게임은 기본적으로 여기에 설치되며 게임마다 하위 폴더가 생깁니다. 비워 두면:"
+  "settings.eaInstallDirHint": "EA 게임은 기본적으로 여기에 설치되며 게임마다 하위 폴더가 생깁니다. 비워 두면:",
+  "ea.legacyPackage": "이 레거시 EA 설치 프로그램은 EA App을 통해 실행해야 합니다."
 }
