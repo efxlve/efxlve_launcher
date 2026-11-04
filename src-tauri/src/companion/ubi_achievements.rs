@@ -344,7 +344,12 @@ fn spool_root() -> Option<PathBuf> {
     root.is_dir().then_some(root)
 }
 
-fn achievements_root() -> Option<PathBuf> {
+fn achievements_roots() -> Vec<PathBuf> {
+    let mut roots = Vec::new();
+    let app_cache = super::accounts::data_dir().join("ubi-achievements");
+    if app_cache.is_dir() {
+        roots.push(app_cache);
+    }
     if let Some(program_data) = std::env::var_os("ProgramData") {
         let path = PathBuf::from(program_data)
             .join("Ubisoft")
@@ -352,15 +357,19 @@ fn achievements_root() -> Option<PathBuf> {
             .join("cache")
             .join("achievements");
         if path.is_dir() {
-            return Some(path);
+            roots.push(path);
         }
     }
-    let local = std::env::var_os("LOCALAPPDATA")
-        .map(PathBuf::from)?
-        .join("Ubisoft Game Launcher")
-        .join("cache")
-        .join("achievements");
-    local.is_dir().then_some(local)
+    if let Some(local) = std::env::var_os("LOCALAPPDATA") {
+        let path = PathBuf::from(local)
+            .join("Ubisoft Game Launcher")
+            .join("cache")
+            .join("achievements");
+        if path.is_dir() {
+            roots.push(path);
+        }
+    }
+    roots
 }
 
 /// The client stores the archive as `<product id>_<spec>.zip`; an uninstalled
@@ -393,28 +402,37 @@ fn file_matches_spec(file_name: &str, spec: &str) -> bool {
 
 /// Newest schema archive: the product-id prefix first, then any file whose name
 /// carries the configuration's achievement spec.
-fn schema_path_for(root: &Path, app_id: &str, spec: &str) -> Option<PathBuf> {
-    let prefix = format!("{app_id}_");
+fn schema_path_for(roots: &[PathBuf], ids: &[String], spec: &str) -> Option<PathBuf> {
+    let prefixes: Vec<String> = ids
+        .iter()
+        .filter(|id| !id.is_empty())
+        .map(|id| format!("{id}_"))
+        .collect();
     let wanted = normalize_spec(spec);
     let mut best: Option<(std::time::SystemTime, PathBuf)> = None;
     let mut fallback: Option<(std::time::SystemTime, PathBuf)> = None;
-    for entry in std::fs::read_dir(root).ok()?.flatten() {
-        if !entry.path().is_file() {
+    for root in roots {
+        let Ok(entries) = std::fs::read_dir(root) else {
             continue;
-        }
-        let name = entry.file_name().to_string_lossy().to_string();
-        let is_prefix = name.starts_with(&prefix);
-        let is_spec = !is_prefix && file_matches_spec(&name, &wanted);
-        if !is_prefix && !is_spec {
-            continue;
-        }
-        let modified = entry
-            .metadata()
-            .and_then(|m| m.modified())
-            .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
-        let slot = if is_prefix { &mut best } else { &mut fallback };
-        if slot.as_ref().map_or(true, |(cur, _)| modified > *cur) {
-            *slot = Some((modified, entry.path()));
+        };
+        for entry in entries.flatten() {
+            if !entry.path().is_file() {
+                continue;
+            }
+            let name = entry.file_name().to_string_lossy().to_string();
+            let is_prefix = prefixes.iter().any(|prefix| name.starts_with(prefix));
+            let is_spec = !is_prefix && file_matches_spec(&name, &wanted);
+            if !is_prefix && !is_spec {
+                continue;
+            }
+            let modified = entry
+                .metadata()
+                .and_then(|m| m.modified())
+                .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+            let slot = if is_prefix { &mut best } else { &mut fallback };
+            if slot.as_ref().map_or(true, |(cur, _)| modified > *cur) {
+                *slot = Some((modified, entry.path()));
+            }
         }
     }
     best.or(fallback).map(|(_, path)| path)
@@ -440,7 +458,7 @@ fn spool_path(root: &Path, app_id: &str) -> Option<PathBuf> {
     None
 }
 
-/// Matches a configuration row by space id, then product id, then title.
+/// Matches a configuration row by space id, then product/launch id, then title.
 fn config_match<'a>(
     rows: &'a [super::ubisoft::UbiRow],
     app_id: &str,
@@ -448,7 +466,12 @@ fn config_match<'a>(
 ) -> Option<&'a super::ubisoft::UbiRow> {
     rows.iter()
         .find(|r| !app_id.is_empty() && !r.space_id.is_empty() && r.space_id.eq_ignore_ascii_case(app_id))
-        .or_else(|| rows.iter().find(|r| !app_id.is_empty() && r.launch_id.to_string() == app_id))
+        .or_else(|| {
+            rows.iter().find(|r| {
+                !app_id.is_empty()
+                    && (r.launch_id.to_string() == app_id || r.install_id.to_string() == app_id)
+            })
+        })
         .or_else(|| {
             let key = super::scan::slug(title);
             if key.is_empty() {
@@ -478,11 +501,26 @@ pub(crate) fn achievements_for(app_id: &str, title: &str, language: &str) -> Gam
         .or_else(|| {
             (!app_id.is_empty() && app_id.chars().all(|c| c.is_ascii_digit())).then(|| app_id.to_string())
         });
+    let mut candidate_ids = Vec::new();
+    if !app_id.is_empty() {
+        candidate_ids.push(app_id.to_string());
+    }
+    if let Some(row) = entry {
+        for id in [row.install_id, row.launch_id] {
+            if id > 0 {
+                let text = id.to_string();
+                if !candidate_ids.contains(&text) {
+                    candidate_ids.push(text);
+                }
+            }
+        }
+    }
 
-    let Some(root) = achievements_root() else {
+    let roots = achievements_roots();
+    if roots.is_empty() {
         return GameAchievementsResponse::default();
-    };
-    let Some(schema) = schema_path_for(&root, app_id, &spec) else {
+    }
+    let Some(schema) = schema_path_for(&roots, &candidate_ids, &spec) else {
         return GameAchievementsResponse::default();
     };
     let Some(rows) = load_schema(&schema) else {

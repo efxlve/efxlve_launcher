@@ -273,6 +273,7 @@ fn candidates(
 
     if let Some(title) = title.map(str::trim).filter(|title| !title.is_empty()) {
         let key = normalize_name(title);
+        let stripped_key = normalize_name(strip_edition(title));
         let mut exact = Vec::new();
         let mut partial = Vec::new();
         for root in documents_roots {
@@ -292,11 +293,18 @@ fn candidates(
                     path: entry.path(),
                     kind: "documents",
                 };
-                if folder_key == key {
+                if folder_key == key
+                    || (!stripped_key.is_empty() && folder_key == stripped_key)
+                {
                     exact.push(folder);
                 } else if key.len() >= 8
                     && folder_key.len() >= 8
-                    && (key.ends_with(&folder_key) || folder_key.ends_with(&key))
+                    && (key.ends_with(&folder_key)
+                        || folder_key.ends_with(&key)
+                        || (!stripped_key.is_empty()
+                            && stripped_key.len() >= 8
+                            && (stripped_key.ends_with(&folder_key)
+                                || folder_key.ends_with(&stripped_key))))
                 {
                     // "Tom Clancy's Rainbow Six Siege" and
                     // "Rainbow Six - Siege" differ by the prefix; never let a
@@ -313,6 +321,35 @@ fn candidates(
     }
 
     out
+}
+
+fn strip_edition(title: &str) -> &str {
+    const SUFFIXES: &[&str] = &[
+        " - history edition",
+        " history edition",
+        " - gold edition",
+        " gold edition",
+        " - deluxe edition",
+        " deluxe edition",
+        " - complete edition",
+        " complete edition",
+        " - ultimate edition",
+        " ultimate edition",
+        " - standard edition",
+        " standard edition",
+        " - collector's edition",
+        " collector's edition",
+        " - game of the year edition",
+        " game of the year edition",
+    ];
+    let lower = title.trim().to_lowercase();
+    for suffix in SUFFIXES {
+        if lower.ends_with(suffix) && title.trim().len() > suffix.len() {
+            let cut = title.trim().len() - suffix.len();
+            return title.trim()[..cut].trim();
+        }
+    }
+    title.trim()
 }
 
 /// Case/punctuation-insensitive name used for save-folder matching. Ubisoft
@@ -380,15 +417,31 @@ fn connect_roots() -> Vec<PathBuf> {
 }
 
 fn documents_roots() -> Vec<PathBuf> {
-    let Some(profile) = std::env::var_os("USERPROFILE").map(PathBuf::from) else {
-        return Vec::new();
-    };
-    let documents = profile.join("Documents");
-    vec![
-        documents.join("My Games"),
-        documents.join("Ubisoft"),
-        documents,
-    ]
+    let mut roots = Vec::new();
+    if let Some(profile) = std::env::var_os("USERPROFILE").map(PathBuf::from) {
+        let documents = profile.join("Documents");
+        roots.push(documents.join("My Games"));
+        roots.push(documents.join("Ubisoft"));
+        roots.push(documents);
+        let saved_games = profile.join("Saved Games");
+        roots.push(saved_games.join("My Games"));
+        roots.push(saved_games.join("Ubisoft"));
+        roots.push(saved_games);
+    }
+    if let Some(appdata) = std::env::var_os("APPDATA").map(PathBuf::from) {
+        roots.push(appdata.join("Ubisoft"));
+        roots.push(appdata.join("My Games"));
+    }
+    if let Some(local) = std::env::var_os("LOCALAPPDATA").map(PathBuf::from) {
+        roots.push(local.join("Ubisoft"));
+        roots.push(local.join("My Games"));
+    }
+    if let Some(public) = std::env::var_os("PUBLIC").map(PathBuf::from) {
+        let pub_docs = public.join("Documents");
+        roots.push(pub_docs.join("My Games"));
+        roots.push(pub_docs.join("Ubisoft"));
+    }
+    roots
 }
 
 #[cfg(test)]
@@ -535,6 +588,26 @@ mod tests {
             &[documents],
         ))
         .expect("the Rainbow Six folder");
+        assert_eq!(found.path, saves);
+    }
+
+    #[test]
+    fn documents_folders_match_an_edition_suffixed_store_title() {
+        let root = temp_dir("documents-edition");
+        let documents = root.join("Documents");
+        let saves = documents.join("Anno 1404");
+        std::fs::create_dir_all(&saves).unwrap();
+        std::fs::write(saves.join("profile.dat"), b"x").unwrap();
+
+        let found = pick(candidates(
+            42,
+            42,
+            Some("Anno 1404 - History Edition"),
+            &[],
+            &[],
+            &[documents],
+        ))
+        .expect("the Anno 1404 folder");
         assert_eq!(found.path, saves);
     }
 

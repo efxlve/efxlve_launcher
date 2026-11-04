@@ -171,11 +171,18 @@ async fn shim_account(game: &ubi_installs::InstalledGame) -> shim::ShimAccount {
     } else {
         handle.to_lowercase()
     };
-    let response = crate::companion::ubi_achievements::achievements_for(
+    let mut response = crate::companion::ubi_achievements::achievements_for(
         &game.product_id.to_string(),
         &game.name,
         "en",
     );
+    if response.achievements.is_empty() && game.uplay_id != 0 && game.uplay_id != game.product_id {
+        response = crate::companion::ubi_achievements::achievements_for(
+            &game.uplay_id.to_string(),
+            &game.name,
+            "en",
+        );
+    }
     let achievements = response
         .achievements
         .into_iter()

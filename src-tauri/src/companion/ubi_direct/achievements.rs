@@ -34,6 +34,7 @@ pub(crate) fn merge(
     if data.achievements.is_empty() {
         data.achievements = local
             .iter()
+            .filter(|achievement| !is_placeholder(achievement) || achievement.achieved)
             .map(|achievement| AchievementItem {
                 name: achievement.id.to_string(),
                 display_name: achievement.name.clone(),
@@ -65,11 +66,17 @@ pub(crate) fn merge(
     data
 }
 
+fn is_placeholder(achievement: &LocalAchievement) -> bool {
+    achievement.description.is_empty()
+        && achievement.name == format!("Achievement #{}", achievement.id)
+}
+
 fn find_record(id: &str, title: &str) -> Option<ubi_installs::InstalledGame> {
     let product_id = id.parse::<u32>().ok();
     let title_key = slug(title);
     ubi_installs::load().into_iter().find(|record| {
         product_id == Some(record.product_id)
+            || (record.uplay_id != 0 && product_id == Some(record.uplay_id))
             || (!title_key.is_empty() && slug(&record.name) == title_key)
     })
 }
@@ -147,14 +154,31 @@ mod tests {
 
     #[test]
     fn an_empty_catalogue_uses_the_local_names() {
-        let local = vec![LocalAchievement {
-            id: 7,
-            name: "Local".into(),
-            description: "From the shim".into(),
-            achieved: true,
-        }];
-        let states: HashMap<u32, bool> =
-            local.iter().map(|row| (row.id, row.achieved)).collect();
-        assert!(states.get(&7).copied().unwrap_or(false));
+        let local = vec![
+            LocalAchievement {
+                id: 1,
+                name: "Achievement #1".into(),
+                description: "".into(),
+                achieved: false,
+            },
+            LocalAchievement {
+                id: 2,
+                name: "Achievement #2".into(),
+                description: "".into(),
+                achieved: true,
+            },
+            LocalAchievement {
+                id: 7,
+                name: "Local".into(),
+                description: "From the shim".into(),
+                achieved: false,
+            },
+        ];
+        let visible: Vec<u32> = local
+            .iter()
+            .filter(|achievement| !is_placeholder(achievement) || achievement.achieved)
+            .map(|row| row.id)
+            .collect();
+        assert_eq!(visible, vec![2, 7]);
     }
 }

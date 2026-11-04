@@ -317,24 +317,64 @@ pub(crate) fn write_account_config(
     write_config(directory, account, family)
 }
 
+fn earned_in_existing_config(directory: &Path) -> std::collections::HashSet<u32> {
+    let Ok(text) = std::fs::read_to_string(directory.join("upc.json")) else {
+        return std::collections::HashSet::new();
+    };
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(&text) else {
+        return std::collections::HashSet::new();
+    };
+    value
+        .get("Achis")
+        .and_then(|rows| rows.as_array())
+        .into_iter()
+        .flatten()
+        .filter_map(|row| {
+            let achieved = row.get("Achieved").and_then(|v| v.as_bool()).unwrap_or(false);
+            if !achieved {
+                return None;
+            }
+            row.get("Id").and_then(|v| v.as_u64()).map(|id| id as u32)
+        })
+        .collect()
+}
+
 fn write_config(directory: &Path, account: &ShimAccount, family: Family) -> Result<(), String> {
     let saves = directory.join("Saves");
     std::fs::create_dir_all(&saves)
         .map_err(|error| format!("creating {}: {error}", saves.display()))?;
+    let existing_earned = earned_in_existing_config(directory);
     let config = match family {
         Family::R1 => {
-            let achis: Vec<serde_json::Value> = account
-                .achievements
-                .iter()
-                .map(|achievement| {
-                    serde_json::json!({
-                        "Id": achievement.id,
-                        "Name": achievement.name,
-                        "Description": achievement.description,
-                        "Achieved": achievement.achieved,
+            let achis: Vec<serde_json::Value> = if account.achievements.is_empty() {
+                // `ServerEmus/Uplay.upc_r1` only flips `Achieved` on IDs that
+                // already exist in `Achis`. When no achievement schema is cached
+                // locally, seed slots 1..=64 so earned IDs are still recorded.
+                (1..=64u32)
+                    .map(|id| {
+                        serde_json::json!({
+                            "Id": id,
+                            "Name": format!("Achievement #{id}"),
+                            "Description": "",
+                            "Achieved": existing_earned.contains(&id),
+                        })
                     })
-                })
-                .collect();
+                    .collect()
+            } else {
+                account
+                    .achievements
+                    .iter()
+                    .map(|achievement| {
+                        serde_json::json!({
+                            "Id": achievement.id,
+                            "Name": achievement.name,
+                            "Description": achievement.description,
+                            "Achieved": achievement.achieved
+                                || existing_earned.contains(&achievement.id),
+                        })
+                    })
+                    .collect()
+            };
             serde_json::json!({
                 "UseDebug": false,
                 "Account": {
@@ -546,6 +586,31 @@ mod tests {
         write_config(&root, &account, Family::R1).unwrap();
         let r1_text = std::fs::read_to_string(root.join("upc.json")).unwrap();
         assert!(r1_text.contains("\"UseInstalledChunkIds\": true"));
+        assert!(r1_text.contains("\"Achievement #1\""));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn r1_config_preserves_previously_earned_achievements() {
+        let root =
+            std::env::temp_dir().join(format!("efxlve-ubi-r1preserve-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(
+            root.join("upc.json"),
+            r#"{"Achis":[{"Id":3,"Name":"Achievement #3","Description":"","Achieved":true}]}"#,
+        )
+        .unwrap();
+        let account = ShimAccount {
+            product_id: 80,
+            account_id: "account-1".into(),
+            name: "Player".into(),
+            email: "player@efxlve.local".into(),
+            ticket: "ticket-1".into(),
+            chunk_ids: vec![1],
+            achievements: Vec::new(),
+        };
+        write_config(&root, &account, Family::R1).unwrap();
+        assert!(earned_in_existing_config(&root).contains(&3));
         let _ = std::fs::remove_dir_all(&root);
     }
 
