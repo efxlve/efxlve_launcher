@@ -41,9 +41,6 @@ Open work only. Delete the item when it lands.
 - Approving a real UAC prompt for a Program Files update is still a manual pass.
   The shell launch, process wait and exit-code path are covered without
   elevation.
-- A Way Out install and touchup registration are proven. Its OOA activation
-  still hands the launch to the EA App, and the test account owns the Friend
-  Pass, so the full executable is not licensed.
 - `touchup.exe` registers a direct install with the EA App. The elevated worker
   runs it with the same rights as the EA App installer; without elevation the
   files stay playable through the launcher's own scan, but the EA App may not
@@ -61,8 +58,7 @@ Open work only. Delete the item when it lands.
   Installing that 20.76 GB build was deliberately skipped: it would only repeat
   the full-file sync path, not exercise a usable binary delta.
 - Remaining EA blockers are user/environment facts: UAC approval for an elevated
-  touchup, Dead Space 2's display-hardware error, the Friend Pass-only A Way Out
-  entitlement, and EAAC's mandatory EA App.
+  touchup, Dead Space 2's display-hardware error, and EAAC's mandatory EA App.
 - Direct uninstall reads `<uninstall><path>` from the local installer manifest,
   resolves the registry `UninstallString` (including the 32-bit view) and runs
   the game's `Cleanup.exe`. A launcher-owned folder without a registry record is
