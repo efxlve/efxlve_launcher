@@ -697,6 +697,8 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-ea-notice::before {
   content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--text-3);
 }
+.gp-ubi-notice::before { background: var(--ok); }
+.gp-ubi-notice.is-client::before { background: var(--warn); }
 .gp-ea-notice-badge {
   display: inline-flex; align-items: center; justify-content: center;
   width: 34px; height: 34px; flex-shrink: 0; border-radius: 9px;

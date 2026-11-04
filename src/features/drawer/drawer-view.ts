@@ -67,7 +67,7 @@ import {
 } from "../../steam";
 
 export const steamAchSourceCache = new Map<string, AchievementSourceConfig>();
-import { companionAchievements, eaDirectProbe, type EaDirectProbe } from "../../companion";
+import { companionAchievements, eaDirectProbe, ubiDirectLaunchMode, type EaDirectProbe } from "../../companion";
 import { buildSteamRequirements, steamLanguage } from "./steam-details";
 
 import { invalidateLibraryVisibleCache } from "../library/library-view";
@@ -1587,8 +1587,9 @@ function renderAboutSection(s: EpicSummary): string {
       )}</section>`
     : "";
   if (eaPending && eaKey) void loadEaLaunchMode(s.appName, eaKey);
-  const noticeStack = antiCheatCard || eaCard
-    ? `<div class="gp-notice-stack">${antiCheatCard}${eaCard}</div>`
+  const ubiCard = ubiLaunchModeCard(s);
+  const noticeStack = antiCheatCard || ubiCard || eaCard
+    ? `<div class="gp-notice-stack">${antiCheatCard}${ubiCard}${eaCard}</div>`
     : "";
 
   const genres = gameGenresFor(s.appName);
@@ -1782,6 +1783,66 @@ export function repaintPersonalBlock(appName: string): void {
 
 const eaLaunchModeCache = new Map<string, EaDirectProbe | null>();
 const eaLaunchModeLoading = new Set<string>();
+const ubiLaunchModeCache = new Map<string, boolean | null>();
+const ubiLaunchModeLoading = new Set<string>();
+const ubiLaunchModeFailed = new Set<string>();
+
+/** The Ubisoft card explains who owns this installed copy's launch. */
+function ubiLaunchModeContent(client: boolean | null): string {
+  const managed = client === null;
+  const title = managed || client ? t("manage.ubiLaunchClient") : t("manage.ubiLaunchDirect");
+  const body = managed
+    ? t("accounts.companionManagedDesc", { name: "Ubisoft Connect" })
+    : client
+      ? t("accounts.ubiClientDetail1")
+      : t("manage.ubiLaunchModeDesc");
+  return `<span class="gp-ea-notice-badge">${storeLogo("ubisoft", 20, "gp-ea-notice-logo")}</span>
+    <div class="gp-ea-notice-copy">
+      <div class="gp-ea-notice-head">
+        <h4 class="gp-ea-notice-title">${esc(title)}</h4>
+      </div>
+      <p class="gp-ea-notice-body">${esc(body)}</p>
+    </div>`;
+}
+
+function ubiLaunchModeCard(s: EpicSummary): string {
+  if (!isTauri || !s.installed || !s.installPath || sourceOfKey(s.appName) !== "ubisoft") {
+    return "";
+  }
+  if (ubiLaunchModeFailed.has(s.appName)) return "";
+  const cached = ubiLaunchModeCache.get(s.appName);
+  if (cached === undefined) {
+    void loadUbiLaunchMode(s.appName, s.installPath);
+    return `<section class="gp-ea-notice gp-ubi-notice is-client" id="gp-ubi-notice" data-app="${esc(s.appName)}" hidden></section>`;
+  }
+  const cls = cached === false ? " is-direct" : " is-client";
+  return `<section class="gp-ea-notice gp-ubi-notice${cls}" id="gp-ubi-notice" data-app="${esc(s.appName)}">${ubiLaunchModeContent(cached)}</section>`;
+}
+
+async function loadUbiLaunchMode(appName: string, installPath: string): Promise<void> {
+  if (ubiLaunchModeLoading.has(appName)) return;
+  ubiLaunchModeLoading.add(appName);
+  try {
+    const client = await ubiDirectLaunchMode(installPath);
+    ubiLaunchModeFailed.delete(appName);
+    ubiLaunchModeCache.set(appName, client);
+    const card = document.getElementById("gp-ubi-notice");
+    if (card?.dataset.app !== appName) return;
+    card.hidden = false;
+    card.className = `gp-ea-notice gp-ubi-notice${client === false ? " is-direct" : " is-client"}`;
+    card.innerHTML = ubiLaunchModeContent(client);
+  } catch {
+    ubiLaunchModeFailed.add(appName);
+    ubiLaunchModeCache.delete(appName);
+    const card = document.getElementById("gp-ubi-notice");
+    if (card?.dataset.app !== appName) return;
+    const stack = card.parentElement;
+    card.remove();
+    if (stack && stack.children.length === 0) stack.remove();
+  } finally {
+    ubiLaunchModeLoading.delete(appName);
+  }
+}
 
 interface EaLaunchModeMeta {
   title: string;

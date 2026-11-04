@@ -500,6 +500,24 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "reads the installed Rainbow Six Siege loader without launching it"]
+    fn live_rainbow_six_uses_the_r2_loader() {
+        let root = std::path::Path::new(
+            r"C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\games\Tom Clancy's Rainbow Six Siege",
+        );
+        let exe = root.join("RainbowSix.exe");
+        if !exe.is_file() {
+            return;
+        }
+        let loader = detect(&exe)
+            .expect("read the Rainbow Six loader")
+            .expect("a loader");
+        assert_eq!(loader.family, Family::R2);
+        assert_eq!(loader.name, "upc_r2_loader64.dll");
+        println!("Rainbow Six loader: {} (R2)", loader.name);
+    }
+
+    #[test]
     fn an_orbit_title_is_rejected_with_a_clear_message() {
         let root = std::env::temp_dir().join(format!("efxlve-ubi-orbit-{}", std::process::id()));
         std::fs::create_dir_all(&root).unwrap();

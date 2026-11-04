@@ -586,7 +586,7 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
       ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtime)}</span>`, "", "", playtimeBreakdownHtml(s.appName, s.title)), t("manage.totalPlaytime"))}
       ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
         `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
-      ${s.installed ? dangerGroup(row(t("manage.uninstallTitle"), t("accounts.companionUninstallDesc", { name: brand }),
+      ${s.installed ? dangerGroup(row(t("manage.uninstallTitle"), source === "ubisoft" ? t("manage.dangerDesc") : t("accounts.companionUninstallDesc", { name: brand }),
         `<button class="btn danger small" data-act="companion-uninstall" data-id="${s.appName}" data-store="${source}">${icon("trash", 13)} ${t("common.uninstall")}</button>`)) : ""}
     </div>`;
 }

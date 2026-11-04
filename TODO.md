@@ -173,14 +173,15 @@ installs (3.6 GB) but crashes at startup with both tested R1 shims
 (0xc0000005); PCGamingWiki lists it as requiring Ubisoft Connect DRM, so it
 stays on the client. Open work:
 
-- R2 (`upc_r2_loader`) is implemented and unit-tested but not validated on a
-  real R2 title. A live manifest inventory found `uplay_r1_loader*` in every
-  installed single-player candidate (Far Cry 3/4, Watch Dogs 1/2, AC Unity,
-  AC China/India/Russia, Splinter Cell, The Crew 2, Rayman). Ghost Recon Future
-  Soldier is the one single-player title that also imports
-  `ubiorbitapi_r2_loader.dll`; For Honor and Rainbow Six Siege are the online
-  R2 titles. No installed R2 target exists, and the online ones are not used
-  for shim validation.
+- R2 (`upc_r2_loader`) is implemented and unit-tested. A live loader check on
+  the installed Rainbow Six Siege found `upc_r2_loader64.dll`, so R2 detection
+  is validated on a real target. Siege is an online/BattlEye title, so direct
+  launch stays refused and the client is required. A live manifest inventory
+  found `uplay_r1_loader*` in the installed single-player candidates (Far Cry
+  3/4, Watch Dogs 1/2, AC Unity, AC China/India/Russia, Splinter Cell, The Crew
+  2, Rayman). Ghost Recon Future Soldier also imports
+  `ubiorbitapi_r2_loader.dll`; For Honor and Rainbow Six Siege are the online R2
+  titles. The online ones are not used for shim launch validation.
 - An existing Connect install can be adopted from Manage without moving or
   re-downloading it, moved to a library folder (the record and both registry
   families are updated), and released back with its official loaders restored.
