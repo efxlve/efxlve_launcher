@@ -504,6 +504,7 @@ export const S = {
   installDialogHasOptions: false,
   installDialogLoading: false,
   installDialogEaOoa: false,
+  installDialogEaLegacy: false,
   selectiveInstallDir: (null) as string | null,
   pendingShortcutApps: (new Set()) as Set<string>,
   libraryPath: "—",

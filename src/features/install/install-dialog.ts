@@ -191,6 +191,7 @@ async function openEaInstallDialog(appName: string): Promise<void> {
   S.installDialogHasOptions = false;
   S.installDialogLoading = true;
   S.installDialogEaOoa = false;
+  S.installDialogEaLegacy = false;
   S.installDialogDir = "";
   renderInstallDialog();
   try {
@@ -208,7 +209,8 @@ async function openEaInstallDialog(appName: string): Promise<void> {
       void companionGameAction("ea", gameId, "install").catch(() => {});
       return;
     }
-    S.installDialogEaOoa = plan.ooa;
+    S.installDialogEaOoa = plan.ooa && !plan.legacy;
+    S.installDialogEaLegacy = plan.legacy && plan.legacyInstallable;
     const split = splitInstallRoot(plan.root);
     S.installDialogFolder = split.folder || S.installDialogFolder;
     if (plan.installed) {
@@ -265,6 +267,7 @@ export function renderInstallDialog(): void {
           </div>
 
           ${isEa && S.installDialogEaOoa ? `<div class="install-ea-note">${icon("shield", 14)}<span>${esc(t("ea.launchNeedsClient"))}</span></div>` : ""}
+          ${isEa && S.installDialogEaLegacy ? `<div class="install-ea-note is-direct">${icon("check", 14)}<span>${esc(t("ea.launchMode.directDesc"))}</span></div>` : ""}
 
           <div class="install-field-label">${t("install.pathLabel")}</div>
           <div class="install-path-row">

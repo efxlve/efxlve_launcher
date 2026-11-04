@@ -72,8 +72,8 @@ pub struct EaDirectProbe {
     pub eaac: bool,
     /// The game ships the activation runtime that expects a license.
     pub ooa: bool,
-    /// `direct`, `eaac`, `ooa`, `legacy` or `unavailable`; the game page
-    /// turns this into the one-line EA App notice.
+    /// `direct`, `eaac`, `ooa`, `legacy`, `legacy-direct` or `unavailable`;
+    /// the game page turns this into the one-line EA App notice.
     pub mode: String,
     pub args: Vec<String>,
     /// Environment variable names only; token values never leave Rust.
@@ -483,7 +483,17 @@ pub(crate) fn probe(game: &FoundGame) -> EaDirectProbe {
         }
         Err(err) => {
             let reason = err.to_string();
-            let mode = launch_mode(false, false, false, &reason);
+            // A pre-DiP package with the `<executable>` touchup is installed by
+            // the content service and launched through the legacy catalog; the
+            // EA App is not part of that path. Keep the plain `legacy` mode for
+            // disc-only packages, which still have to go through the client.
+            let mode = if err == PlanError::OldDrm
+                && legacy_installable(Path::new(&game.install_path))
+            {
+                "legacy-direct"
+            } else {
+                launch_mode(false, false, false, &reason)
+            };
             EaDirectProbe {
                 ok: false,
                 reason,
@@ -546,6 +556,19 @@ fn eaac_launcher(root: &Path) -> Option<PathBuf> {
 /// DiP manifests carry a `<DiPManifest>` root; pre-DiP titles use `<game>`.
 fn is_dip_manifest(xml: &str) -> bool {
     xml.contains("<DiPManifest")
+}
+
+/// True when a pre-DiP package carries the `<executable>` touchup the content
+/// service can run. Those titles install and launch without the EA App.
+fn legacy_installable(root: &Path) -> bool {
+    let manifest = root.join("__Installer").join("installerdata.xml");
+    let Ok(bytes) = std::fs::read(&manifest) else {
+        return false;
+    };
+    let Some(text) = decode(&bytes) else {
+        return false;
+    };
+    super::ea_content::legacy_executable(&text)
 }
 
 /// The activation runtime that expects a license, present in modern Frostbite
@@ -865,6 +888,40 @@ mod tests {
             launch_mode(false, false, false, "the game folder is missing"),
             "unavailable"
         );
+    }
+
+    #[test]
+    fn a_pre_dip_executable_probes_as_legacy_direct() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve-ea-legacy-direct-{}",
+            std::process::id()
+        ));
+        let installer = root.join("__Installer");
+        std::fs::create_dir_all(&installer).expect("installer dir");
+        std::fs::write(
+            installer.join("installerdata.xml"),
+            r#"<game manifestVersion="2.1"><executable><filePath>/setup.exe</filePath></executable></game>"#,
+        )
+        .expect("manifest");
+        let game = FoundGame {
+            store: "ea".into(),
+            id: "test".into(),
+            name: "Test".into(),
+            install_path: root.to_string_lossy().to_string(),
+            installed: true,
+            store_id: "1".into(),
+            launch_exe: String::new(),
+            launch_uri: String::new(),
+            install_uri: String::new(),
+            uninstall_uri: String::new(),
+            cover_url: String::new(),
+            hero_url: String::new(),
+            description: String::new(),
+        };
+        let probe = probe(&game);
+        assert_eq!(probe.mode, "legacy-direct");
+        assert!(probe.reason.contains("pre-DiP"));
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]

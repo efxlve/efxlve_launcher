@@ -390,7 +390,7 @@ export interface EaDirectProbe {
   contentId: string;
   eaac: boolean;
   ooa: boolean;
-  mode: "direct" | "eaac" | "ooa" | "legacy" | "unavailable";
+  mode: "direct" | "eaac" | "ooa" | "legacy" | "legacy-direct" | "unavailable";
   args: string[];
   env: string[];
 }

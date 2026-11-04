@@ -1788,7 +1788,7 @@ interface EaLaunchModeMeta {
 }
 
 function eaLaunchModeMeta(mode: EaDirectProbe["mode"]): EaLaunchModeMeta {
-  if (mode === "direct") {
+  if (mode === "direct" || mode === "legacy-direct") {
     return { title: t("ea.launchMode.directTitle") };
   }
   if (mode === "legacy") {
@@ -1800,6 +1800,7 @@ function eaLaunchModeMeta(mode: EaDirectProbe["mode"]): EaLaunchModeMeta {
 function eaLaunchModeDescription(probe: EaDirectProbe): string {
   switch (probe.mode) {
     case "direct":
+    case "legacy-direct":
       return t("ea.launchMode.directDesc");
     case "eaac":
       return t("ea.launchMode.eaacDesc");
@@ -1844,7 +1845,7 @@ function storeLabelForSource(source: string): string {
 }
 
 function eaLaunchModeRequired(probe: EaDirectProbe): boolean {
-  return probe.mode !== "direct" && probe.mode !== "unavailable";
+  return probe.mode !== "direct" && probe.mode !== "legacy-direct" && probe.mode !== "unavailable";
 }
 
 function eaNoticeContent(
