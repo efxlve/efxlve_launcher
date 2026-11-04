@@ -551,6 +551,7 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
               <button class="btn ghost small" data-act="ubi-open-saves" data-id="${esc(s.appName)}" data-path="${esc(s.installPath || "")}" data-title="${esc(s.title)}">${icon("folder", 13)} ${t("manage.openFolder")}</button>
               <span data-ubi-import-saves>
                 <button class="btn ghost small" data-act="ubi-direct-import-saves" data-id="${esc(s.appName)}" data-path="${esc(s.installPath || "")}" data-title="${esc(s.title)}">${icon("download", 13)} ${t("manage.ubiImportSaves")}</button>
+                <button class="btn ghost small" data-act="ubi-direct-cloud-saves" data-id="${esc(s.appName)}" data-path="${esc(s.installPath || "")}" data-title="${esc(s.title)}" title="${esc(t("feat.ubiCloudTip"))}">${icon("cloud", 13)} ${t("feat.ubiCloud")}</button>
               </span>
             </div>
           </div>

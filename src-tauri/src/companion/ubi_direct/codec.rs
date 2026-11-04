@@ -484,6 +484,76 @@ pub(crate) fn parse_download_urls(payload: &[u8]) -> Vec<String> {
     urls
 }
 
+/// One signed object the `cloudsave_service` prepared for a slot.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct CloudsaveUrl {
+    pub header: String,
+    pub url: String,
+}
+
+/// Get an existing cloud save object; the service also has Put (1) and
+/// Delete (3), but the launcher never writes or removes cloud progress.
+pub(crate) const CLOUDSAVE_GET: u32 = 2;
+
+pub(crate) fn cloudsave_url_request(
+    request_id: u32,
+    ownership_token: &str,
+    uplay_id: u32,
+    method: u32,
+    items: &[String],
+) -> Vec<u8> {
+    let mut body = Vec::new();
+    push_string(&mut body, 1, ownership_token);
+    push_varint_field(&mut body, 2, u64::from(uplay_id));
+    push_varint_field(&mut body, 3, u64::from(method));
+    for item in items {
+        let mut entry = Vec::new();
+        push_string(&mut entry, 1, item);
+        push_bytes(&mut body, 4, &entry);
+    }
+    let mut req = Vec::new();
+    push_varint_field(&mut req, 1, u64::from(request_id));
+    push_bytes(&mut req, 2, &body);
+    let mut upstream = Vec::new();
+    push_bytes(&mut upstream, 1, &req);
+    upstream
+}
+
+/// `Rsp.cloudsave_url_rsp` carries the status and one signed request per item.
+pub(crate) fn parse_cloudsave_urls(payload: &[u8]) -> (u32, Vec<CloudsaveUrl>) {
+    let body = service_body(payload, 2);
+    let mut status = 0u32;
+    let mut urls = Vec::new();
+    for_each_field(
+        &body,
+        |field, entry| {
+            if field != 2 {
+                return;
+            }
+            let mut header = String::new();
+            let mut url = String::new();
+            for_each_field(
+                entry,
+                |inner, value| match inner {
+                    1 => header = String::from_utf8_lossy(value).to_string(),
+                    2 => url = String::from_utf8_lossy(value).to_string(),
+                    _ => {}
+                },
+                |_, _| {},
+            );
+            if !url.is_empty() {
+                urls.push(CloudsaveUrl { header, url });
+            }
+        },
+        |field, value| {
+            if field == 1 {
+                status = value as u32;
+            }
+        },
+    );
+    (status, urls)
+}
+
 /// Decode a packed or unpacked repeated uint32 field.
 
 #[cfg(test)]
@@ -655,5 +725,102 @@ mod tests {
             parse_uplay_ticket(&downstream).as_deref(),
             Some("uplay-ticket")
         );
+    }
+
+    #[test]
+    fn cloudsave_request_names_each_item_and_the_get_method() {
+        let items = vec![
+            "upcCloudSaveUplayId_635/1.savegame".to_string(),
+            "upcCloudSaveUplayId_635/3.savegame".to_string(),
+        ];
+        let bytes = cloudsave_url_request(9, "ownership-token", 635, CLOUDSAVE_GET, &items);
+        let mut request_id = 0u32;
+        let mut token = String::new();
+        let mut uplay_id = 0u32;
+        let mut method = 0u32;
+        let mut names = Vec::new();
+        for_each_field(
+            &bytes,
+            |outer, upstream| {
+                if outer != 1 {
+                    return;
+                }
+                for_each_field(
+                    upstream,
+                    |inner, req| {
+                        if inner != 2 {
+                            return;
+                        }
+                        for_each_field(
+                            req,
+                            |body_field, body| match body_field {
+                                1 => token = String::from_utf8_lossy(body).to_string(),
+                                4 => for_each_field(
+                                    body,
+                                    |item_field, item| {
+                                        if item_field == 1 {
+                                            names.push(String::from_utf8_lossy(item).to_string());
+                                        }
+                                    },
+                                    |_, _| {},
+                                ),
+                                _ => {}
+                            },
+                            |body_field, value| match body_field {
+                                2 => uplay_id = value as u32,
+                                3 => method = value as u32,
+                                _ => {}
+                            },
+                        );
+                    },
+                    |inner, value| {
+                        if inner == 1 {
+                            request_id = value as u32;
+                        }
+                    },
+                );
+            },
+            |_, _| {},
+        );
+        assert_eq!(request_id, 9);
+        assert_eq!(token, "ownership-token");
+        assert_eq!(uplay_id, 635);
+        assert_eq!(method, CLOUDSAVE_GET);
+        assert_eq!(names, items);
+    }
+
+    #[test]
+    fn cloudsave_response_keeps_status_header_and_url() {
+        let mut signed = Vec::new();
+        push_string(&mut signed, 1, "x-amz-meta: 1");
+        push_string(&mut signed, 2, "https://example.invalid/1.savegame");
+        let mut cloudsave = Vec::new();
+        push_varint_field(&mut cloudsave, 1, 1);
+        push_bytes(&mut cloudsave, 2, &signed);
+        // Downstream -> Rsp -> cloudsave_url_rsp.
+        let mut rsp = Vec::new();
+        push_varint_field(&mut rsp, 1, 4);
+        push_bytes(&mut rsp, 2, &cloudsave);
+        let mut downstream = Vec::new();
+        push_bytes(&mut downstream, 1, &rsp);
+        let (status, urls) = parse_cloudsave_urls(&downstream);
+        assert_eq!(status, 1);
+        assert_eq!(urls.len(), 1);
+        assert_eq!(urls[0].header, "x-amz-meta: 1");
+        assert_eq!(urls[0].url, "https://example.invalid/1.savegame");
+    }
+
+    #[test]
+    fn denied_cloudsave_response_has_no_urls() {
+        let mut cloudsave = Vec::new();
+        push_varint_field(&mut cloudsave, 1, 3);
+        let mut rsp = Vec::new();
+        push_varint_field(&mut rsp, 1, 4);
+        push_bytes(&mut rsp, 2, &cloudsave);
+        let mut downstream = Vec::new();
+        push_bytes(&mut downstream, 1, &rsp);
+        let (status, urls) = parse_cloudsave_urls(&downstream);
+        assert_eq!(status, 3);
+        assert!(urls.is_empty());
     }
 }

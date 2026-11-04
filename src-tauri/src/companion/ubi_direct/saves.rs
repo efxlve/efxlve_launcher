@@ -67,6 +67,47 @@ pub(crate) fn path_for_product(product_id: u32) -> Option<PathBuf> {
     path_for(product_id, None, None)
 }
 
+/// Where a cloud restore writes. A launcher-managed install mirrors the shim
+/// layout (`<exe dir>\Saves\<uplay id>`); a client install uses its existing
+/// save folder. Nothing is ever written into a Program Files location that the
+/// client has not already created.
+pub(crate) fn cloud_destination(
+    product_id: u32,
+    uplay_id: u32,
+    install_dir: &Path,
+    exe_dir: Option<&Path>,
+    title: Option<&str>,
+) -> PathBuf {
+    // Cloud objects use the client's `<account>/<uplay id>` layout, including
+    // their 36-byte slot header. Put them where the client would put them; a
+    // direct install then imports the classic subset through its own path.
+    let account = super::super::ubisoft_login::stored_session()
+        .map(|session| session.user_id)
+        .unwrap_or_default();
+    if !account.is_empty() {
+        for root in connect_roots() {
+            let account_dir = root.join(&account);
+            if account_dir.is_dir() {
+                return account_dir.join(uplay_id.to_string());
+            }
+        }
+    }
+    let record = super::super::ubi_installs::find(product_id);
+    if record.as_ref().map(|row| !row.client_launch).unwrap_or(false) {
+        let base = exe_dir
+            .filter(|dir| !dir.as_os_str().is_empty())
+            .unwrap_or(install_dir);
+        return base.join("Saves").join(uplay_id.to_string());
+    }
+    if let Some(folder) = path_for(product_id, Some(install_dir), title) {
+        return folder;
+    }
+    let folder_id = if product_id != 0 { product_id } else { uplay_id };
+    super::super::accounts::data_dir()
+        .join("ubi-cloud-saves")
+        .join(folder_id.to_string())
+}
+
 /// Copy the Connect save slots into the folder the compatibility shim reads.
 ///
 /// Classic Connect slots use the same 552-byte format as the shim; only the

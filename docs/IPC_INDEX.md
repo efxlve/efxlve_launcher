@@ -477,6 +477,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `ubi_client_downloads` | `ubiClientDownloads({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_adopt` | `ubiDirectAdopt({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_cancel` | `ubiDirectCancel({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ubi_direct_cloud_saves` | `ubiDirectCloudSaves({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_forget` | `ubiDirectForget({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_import_saves` | `ubiDirectImportSaves({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_install` | `ubiDirectInstall({ ... })` | `src-tauri/src/companion/mod.rs` |

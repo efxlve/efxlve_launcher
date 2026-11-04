@@ -208,6 +208,10 @@ export const ubiDirectRelease = (productId: number) =>
 export const ubiDirectImportSaves = (installPath: string) =>
   invoke<number>("ubi_direct_import_saves", { installPath });
 
+/** Download Ubisoft's own cloud save slots into the game's save folder. */
+export const ubiDirectCloudSaves = (installPath: string) =>
+  invoke<number>("ubi_direct_cloud_saves", { installPath });
+
 /** One install after a move. */
 export interface UbiMovedInstall {
   productId: number;

@@ -452,7 +452,7 @@ fn parse_install_register(config: &str) -> String {
 }
 
 /// First `key: value` line anywhere in the YAML document.
-fn yaml_value(yaml: &str, key: &str) -> String {
+pub(crate) fn yaml_value(yaml: &str, key: &str) -> String {
     let prefix = format!("{key}:");
     for line in yaml.lines() {
         let trimmed = line.trim();

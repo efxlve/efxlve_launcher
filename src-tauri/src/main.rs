@@ -2160,6 +2160,7 @@ fn main() {
             companion::ubi_direct_adopt,
             companion::ubi_direct_release,
             companion::ubi_direct_import_saves,
+            companion::ubi_direct_cloud_saves,
             companion::ubi_direct_move,
             companion::ubi_client_downloads,
             companion::ubi_direct_set_client_launch,

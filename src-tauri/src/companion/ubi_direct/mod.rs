@@ -9,6 +9,7 @@
 mod achievements;
 mod adopt;
 mod auth;
+mod cloud_saves;
 mod codec;
 pub(crate) mod install;
 mod launch;
@@ -22,9 +23,10 @@ pub(crate) mod wire;
 
 pub(crate) use achievements::merge as merge_achievements;
 pub(crate) use adopt::{adopt as adopt_game, release as release_game, AdoptedInstall};
+pub(crate) use cloud_saves::download as download_cloud_saves;
 pub(crate) use relocate::{move_game, MovedInstall};
 pub(crate) use saves::{
-    migrate_connect_saves as import_connect_saves, path_for as save_path,
+    cloud_destination, migrate_connect_saves as import_connect_saves, path_for as save_path,
     path_for_product as save_path_for_product,
 };
 
@@ -79,10 +81,42 @@ async fn connect() -> Result<(wire::Demux, ubisoft_login::Session), String> {
     }
 }
 
+/// Keep the achievement/space metadata from the ownership configuration. The
+/// Connect client's local cache is encrypted on current builds, so this is the
+/// only unauthenticated-free source the achievement page can use later.
+fn record_achievement_metadata(owned: &[codec::OwnedGame]) {
+    let rows: Vec<super::ubi_achievements::AchievementMeta> = owned
+        .iter()
+        .filter(|game| game.owned)
+        .filter_map(|game| {
+            let name = ubisoft::game_name(&game.configuration)?;
+            Some(super::ubi_achievements::AchievementMeta {
+                product_id: game.product_id,
+                uplay_id: game.uplay_id,
+                space_id: ubisoft::yaml_value(&game.configuration, "space_id"),
+                name,
+                achievements: ubisoft::yaml_value(&game.configuration, "achievements"),
+            })
+        })
+        .collect();
+    super::ubi_achievements::record_specs(&rows);
+}
+
+/// Refresh the achievement metadata from the ownership service without reading
+/// manifests. Used when a game page has no schema and the account is signed in.
+pub(crate) async fn refresh_achievement_metadata() -> Result<(), String> {
+    let (mut demux, _) = connect().await?;
+    let owned = demux.owned_games().await?;
+    record_achievement_metadata(&owned);
+    Ok(())
+}
+
 /// Ask Demux for the owned base games and their current manifest ids.
 pub(crate) async fn probe() -> Result<UbiDirectProbe, String> {
     let (mut demux, session) = connect().await?;
-    let owned = demux.owned_games().await?;    let mut games: Vec<codec::OwnedGame> = owned
+    let owned = demux.owned_games().await?;
+    record_achievement_metadata(&owned);
+    let mut games: Vec<codec::OwnedGame> = owned
         .into_iter()
         .filter(|game| game.owned && game.product_type == 0)
         .collect();
@@ -343,6 +377,7 @@ mod tests {
                 || lower.contains("command")
                 || lower.contains("size")
                 || lower.contains("space_id")
+                || lower.contains("achievement")
                 || lower.contains("chunk")
                 || lower.contains("install")
             {

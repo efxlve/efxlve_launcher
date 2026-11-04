@@ -269,6 +269,43 @@ impl Demux {
         Ok(codec::parse_uplay_ticket(&payload))
     }
 
+    /// Ask `cloudsave_service` for signed S3 URLs for one or more save items.
+    /// The request carries the ownership token, not the account ticket.
+    pub(crate) async fn cloudsave_urls(
+        &mut self,
+        ownership_token: &str,
+        uplay_id: u32,
+        items: &[String],
+    ) -> Result<Vec<codec::CloudsaveUrl>, String> {
+        let connection_id = self.open_connection("cloudsave_service").await?;
+        let payload = self
+            .service_call(
+                connection_id,
+                &codec::cloudsave_url_request(
+                    1,
+                    ownership_token,
+                    uplay_id,
+                    codec::CLOUDSAVE_GET,
+                    items,
+                ),
+            )
+            .await?;
+        let (status, urls) = codec::parse_cloudsave_urls(&payload);
+        match status {
+            1 => {}
+            3 => return Err("Ubisoft denied access to this cloud save".to_string()),
+            2 => return Err("Ubisoft could not open this cloud save".to_string()),
+            _ if urls.is_empty() => {
+                return Err("Ubisoft returned no cloud save URLs".to_string());
+            }
+            _ => {}
+        }
+        if urls.is_empty() {
+            return Err("Ubisoft returned no cloud save URLs".to_string());
+        }
+        Ok(urls)
+    }
+
     /// Open the download service for an ownership token and sign relative CDN
     /// paths into full URLs.
     pub(crate) async fn download_service(

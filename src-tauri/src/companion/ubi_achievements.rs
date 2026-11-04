@@ -13,6 +13,7 @@ use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
 use base64::Engine;
+use serde::{Deserialize, Serialize};
 
 use crate::legendary::models::{AchievementItem, GameAchievementsResponse};
 
@@ -372,6 +373,246 @@ fn achievements_roots() -> Vec<PathBuf> {
     roots
 }
 
+const ACHIEVEMENT_ASSET_BASE: &str =
+    "https://static3.cdn.ubi.com/orbit/uplay_launcher_3_0/assets";
+
+/// The parts of a product configuration the achievement cache needs. The
+/// client's local `configurations.vdat` is encrypted on current builds, so the
+/// launcher records the same fields from the ownership service instead.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) struct AchievementMeta {
+    #[serde(default)]
+    pub product_id: u32,
+    #[serde(default)]
+    pub uplay_id: u32,
+    #[serde(default)]
+    pub space_id: String,
+    pub name: String,
+    #[serde(default)]
+    pub achievements: String,
+}
+
+fn specs_path() -> PathBuf {
+    super::accounts::data_dir().join("ubi-achievement-specs.json")
+}
+
+pub(crate) fn load_specs() -> Vec<AchievementMeta> {
+    let Ok(text) = std::fs::read_to_string(specs_path()) else {
+        return Vec::new();
+    };
+    let mut rows: Vec<AchievementMeta> = serde_json::from_str(&text).unwrap_or_default();
+    rows.retain(|row| !row.name.trim().is_empty());
+    rows
+}
+
+fn same_product(left: &AchievementMeta, right: &AchievementMeta) -> bool {
+    (left.product_id != 0 && left.product_id == right.product_id)
+        || (left.uplay_id != 0 && left.uplay_id == right.uplay_id)
+}
+
+fn same_space(left: &AchievementMeta, right: &AchievementMeta) -> bool {
+    !left.space_id.is_empty() && left.space_id.eq_ignore_ascii_case(&right.space_id)
+}
+
+fn same_name(left: &AchievementMeta, right: &AchievementMeta) -> bool {
+    let key = super::scan::slug(&right.name);
+    !key.is_empty() && super::scan::slug(&left.name) == key
+}
+
+/// Keep the ownership-service metadata between sessions. A row is merged by
+/// product/uplay id, then space id, then title, so a later import refreshes the
+/// spec without duplicating the game.
+pub(crate) fn record_specs(rows: &[AchievementMeta]) {
+    if rows.is_empty() {
+        return;
+    }
+    let mut all = load_specs();
+    for row in rows.iter().filter(|row| !row.name.trim().is_empty()) {
+        let existing = all
+            .iter_mut()
+            .find(|cur| same_product(cur, row) || same_space(cur, row) || same_name(cur, row));
+        match existing {
+            Some(cur) => {
+                if row.product_id != 0 {
+                    cur.product_id = row.product_id;
+                }
+                if row.uplay_id != 0 {
+                    cur.uplay_id = row.uplay_id;
+                }
+                if !row.space_id.is_empty() {
+                    cur.space_id = row.space_id.clone();
+                }
+                if !row.name.is_empty() {
+                    cur.name = row.name.clone();
+                }
+                if !row.achievements.is_empty() {
+                    cur.achievements = row.achievements.clone();
+                }
+            }
+            None => all.push(row.clone()),
+        }
+    }
+    all.sort_by(|left, right| left.name.to_lowercase().cmp(&right.name.to_lowercase()));
+    let path = specs_path();
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    if let Ok(text) = serde_json::to_string_pretty(&all) {
+        let _ = std::fs::write(path, text);
+    }
+}
+
+fn meta_for(app_id: &str, title: &str) -> Option<AchievementMeta> {
+    let app_id = app_id.trim();
+    let title_key = super::scan::slug(title);
+    load_specs().into_iter().find(|row| {
+        (!app_id.is_empty()
+            && (row.space_id.eq_ignore_ascii_case(app_id)
+                || row.product_id.to_string() == app_id
+                || row.uplay_id.to_string() == app_id))
+            || (!title_key.is_empty() && super::scan::slug(&row.name) == title_key)
+    })
+}
+
+/// The archive URL the Connect client logs for an `achievements:` spec. Only
+/// the Ubisoft asset host is accepted, so a malformed configuration can never
+/// turn into an arbitrary network request.
+fn achievement_asset_url(spec: &str) -> Option<String> {
+    let trimmed = spec.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    if trimmed.starts_with("https://") || trimmed.starts_with("http://") {
+        let base = trimmed.split('?').next().unwrap_or(trimmed);
+        return base
+            .starts_with(ACHIEVEMENT_ASSET_BASE)
+            .then(|| base.to_string());
+    }
+    let spec = normalize_spec(trimmed);
+    if spec.is_empty()
+        || !spec
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.')
+    {
+        return None;
+    }
+    Some(format!("{ACHIEVEMENT_ASSET_BASE}/{spec}"))
+}
+
+fn schema_cache_path(meta: &AchievementMeta) -> Option<PathBuf> {
+    let spec = normalize_spec(&meta.achievements);
+    if spec.is_empty() {
+        return None;
+    }
+    let id = if meta.product_id != 0 {
+        meta.product_id
+    } else if meta.uplay_id != 0 {
+        meta.uplay_id
+    } else {
+        return None;
+    };
+    Some(
+        super::accounts::data_dir()
+            .join("ubi-achievements")
+            .join(format!("{id}_{spec}")),
+    )
+}
+
+/// Fetch one achievement archive from Ubisoft's asset CDN and store it in the
+/// same `<product>_<spec>` naming the official client uses. The parse is the
+/// proof the download is a schema and not an HTML error page.
+pub(crate) async fn download_schema(meta: &AchievementMeta) -> Result<PathBuf, String> {
+    let url = achievement_asset_url(&meta.achievements).ok_or_else(|| {
+        format!("no achievement asset URL for {}", meta.name)
+    })?;
+    let path = schema_cache_path(meta)
+        .ok_or_else(|| format!("no achievement cache name for {}", meta.name))?;
+    if let Ok(bytes) = std::fs::read(&path) {
+        if !parse_schema(&bytes).is_empty() {
+            return Ok(path);
+        }
+    }
+    let client = reqwest::Client::builder()
+        .user_agent("Mozilla/5.0 (Windows NT 10.0; WOW64) ConnectPC")
+        .timeout(std::time::Duration::from_secs(30))
+        .build()
+        .map_err(|error| format!("building the achievement client: {error}"))?;
+    let response = client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|error| format!("downloading the achievement schema: {error}"))?;
+    let status = response.status();
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|error| format!("reading the achievement schema: {error}"))?;
+    if !status.is_success() {
+        return Err(format!("Ubisoft returned {status} for the achievement schema"));
+    }
+    if !bytes.starts_with(b"PK\x03\x04") || parse_schema(&bytes).is_empty() {
+        return Err("Ubisoft returned an invalid achievement schema".to_string());
+    }
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|error| format!("creating {}: {error}", parent.display()))?;
+    }
+    let part = path.with_extension("part");
+    std::fs::write(&part, &bytes)
+        .map_err(|error| format!("writing {}: {error}", part.display()))?;
+    std::fs::rename(&part, &path)
+        .map_err(|error| format!("renaming {}: {error}", path.display()))?;
+    Ok(path)
+}
+
+/// One failed metadata refresh per five minutes is enough; an expired session
+/// must not make every game page wait on Demux again.
+static METADATA_ATTEMPT: Mutex<Option<std::time::Instant>> = Mutex::new(None);
+
+fn metadata_refresh_allowed() -> bool {
+    let Ok(mut slot) = METADATA_ATTEMPT.lock() else {
+        return false;
+    };
+    let allowed = slot
+        .as_ref()
+        .map(|at| at.elapsed() >= std::time::Duration::from_secs(300))
+        .unwrap_or(true);
+    if allowed {
+        *slot = Some(std::time::Instant::now());
+    }
+    allowed
+}
+
+/// Make the named schema available before the synchronous library answer runs.
+/// A local client cache or a previously downloaded archive wins; only a missing
+/// schema asks Demux for the `achievements:` spec.
+pub(crate) async fn ensure_schema(app_id: &str, title: &str, language: &str) -> bool {
+    if achievements_for(app_id, title, language).total_achievements > 0 {
+        return true;
+    }
+    let mut meta = meta_for(app_id, title);
+    if meta.is_none() && super::ubi_vault::load().is_some() && metadata_refresh_allowed() {
+        let _ = tokio::time::timeout(
+            std::time::Duration::from_secs(12),
+            super::ubi_direct::refresh_achievement_metadata(),
+        )
+        .await;
+        meta = meta_for(app_id, title);
+    }
+    let Some(meta) = meta else {
+        return false;
+    };
+    if schema_cache_path(&meta)
+        .and_then(|path| load_schema(&path))
+        .map(|rows| !rows.is_empty())
+        .unwrap_or(false)
+    {
+        return achievements_for(app_id, title, language).total_achievements > 0;
+    }
+    download_schema(&meta).await.is_ok()
+        && achievements_for(app_id, title, language).total_achievements > 0
+}
+
 /// The client stores the archive as `<product id>_<spec>.zip`; an uninstalled
 /// game only has its space id, so the configuration's `achievements:` spec is
 /// the bridge between the two names.
@@ -481,10 +722,11 @@ fn config_match<'a>(
         })
 }
 
-/// The achievements the local Ubisoft Connect client has for one game.
-/// `id` is the library card id (client launch id, or the catalog space id for
-/// an owned game the client has not installed). The configuration cache bridges
-/// a space id to the archive spec and the product id.
+/// The achievements available for one Ubisoft game, from the local Connect
+/// cache or from an archive the launcher downloaded itself. `id` is the library
+/// card id (client launch id, or the catalog space id for an owned game the
+/// client has not installed). The configuration cache and the ownership
+/// metadata cache bridge a space id to the archive spec and the product id.
 pub(crate) fn achievements_for(app_id: &str, title: &str, language: &str) -> GameAchievementsResponse {
     // An Epic copy has no Ubisoft product id; the title alone can still find
     // the client's cache through the configuration index.
@@ -493,11 +735,32 @@ pub(crate) fn achievements_for(app_id: &str, title: &str, language: &str) -> Gam
     }
     let rows = super::ubisoft::config_rows();
     let entry = config_match(&rows, app_id, title);
-    let spec = entry.map(|e| e.achievements.clone()).unwrap_or_default();
+    let meta = meta_for(app_id, title);
+    let owned = super::ubisoft::load_owned();
+    let title_key = super::scan::slug(title);
+    let owned_entry = owned.iter().find(|row| {
+        (!app_id.is_empty()
+            && (row.id.eq_ignore_ascii_case(app_id) || row.product_id.to_string() == app_id))
+            || (!title_key.is_empty() && super::scan::slug(&row.name) == title_key)
+    });
+    let spec = entry
+        .map(|e| e.achievements.clone())
+        .or_else(|| meta.as_ref().map(|m| m.achievements.clone()))
+        .unwrap_or_default();
     let spool_id = entry
         .map(|e| e.launch_id)
         .filter(|id| *id > 0)
         .map(|id| id.to_string())
+        .or_else(|| {
+            meta.as_ref()
+                .and_then(|m| [m.product_id, m.uplay_id].into_iter().find(|id| *id > 0))
+                .map(|id| id.to_string())
+        })
+        .or_else(|| {
+            owned_entry
+                .filter(|row| row.product_id > 0)
+                .map(|row| row.product_id.to_string())
+        })
         .or_else(|| {
             (!app_id.is_empty() && app_id.chars().all(|c| c.is_ascii_digit())).then(|| app_id.to_string())
         });
@@ -513,6 +776,27 @@ pub(crate) fn achievements_for(app_id: &str, title: &str, language: &str) -> Gam
                     candidate_ids.push(text);
                 }
             }
+        }
+    }
+    if let Some(meta) = &meta {
+        for id in [meta.product_id, meta.uplay_id] {
+            if id > 0 {
+                let text = id.to_string();
+                if !candidate_ids.contains(&text) {
+                    candidate_ids.push(text);
+                }
+            }
+        }
+    }
+    if let Some(row) = owned_entry {
+        if row.product_id > 0 {
+            let text = row.product_id.to_string();
+            if !candidate_ids.contains(&text) {
+                candidate_ids.push(text);
+            }
+        }
+        if !row.id.is_empty() && !candidate_ids.contains(&row.id) {
+            candidate_ids.push(row.id.clone());
         }
     }
 
@@ -693,6 +977,62 @@ mod tests {
         let data = achievements_for("", "", "en");
         assert_eq!(data.total_achievements, 0);
         assert!(data.achievements.is_empty());
+    }
+
+    #[test]
+    fn achievement_assets_use_the_connect_cdn() {
+        assert_eq!(
+            achievement_asset_url("114e5afa77fec3c93829176268c39f52").as_deref(),
+            Some(
+                "https://static3.cdn.ubi.com/orbit/uplay_launcher_3_0/assets/114e5afa77fec3c93829176268c39f52"
+            )
+        );
+        assert_eq!(
+            achievement_asset_url("ACOrigins.zip").as_deref(),
+            Some(
+                "https://static3.cdn.ubi.com/orbit/uplay_launcher_3_0/assets/acorigins"
+            )
+        );
+        assert_eq!(
+            achievement_asset_url(
+                "https://static3.cdn.ubi.com/orbit/uplay_launcher_3_0/assets/abc?x=1"
+            )
+            .as_deref(),
+            Some("https://static3.cdn.ubi.com/orbit/uplay_launcher_3_0/assets/abc")
+        );
+        assert!(achievement_asset_url("").is_none());
+        assert!(achievement_asset_url("https://example.invalid/abc").is_none());
+        // A path is reduced to its safe basename, never followed as a path.
+        assert!(achievement_asset_url("../abc").is_some());
+        assert!(achievement_asset_url("../a b").is_none());
+    }
+
+    #[test]
+    #[ignore = "reads the downloaded schema and the local Watch Dogs spool"]
+    fn live_downloaded_schema_serves_achievements() {
+        let data = achievements_for("1843", "Watch Dogs", "en");
+        println!(
+            "{} achievements, {} unlocked",
+            data.total_achievements, data.user_unlocked
+        );
+        assert!(data.total_achievements > 0);
+    }
+
+    #[tokio::test]
+    #[ignore = "downloads a public achievement archive from Ubisoft's CDN"]
+    async fn live_downloads_a_known_achievement_schema() {
+        let meta = AchievementMeta {
+            product_id: 1843,
+            uplay_id: 1843,
+            name: "Watch Dogs".into(),
+            achievements: "114e5afa77fec3c93829176268c39f52".into(),
+            ..Default::default()
+        };
+        let path = download_schema(&meta).await.expect("schema download");
+        let bytes = std::fs::read(&path).expect("schema bytes");
+        let rows = parse_schema(&bytes);
+        println!("{} rows in {}", rows.len(), path.display());
+        assert!(!rows.is_empty());
     }
 
     #[test]

@@ -838,6 +838,62 @@ pub fn ubi_direct_import_saves(install_path: String) -> Result<usize, String> {
     )
 }
 
+/// Download the slots Ubisoft keeps in its own cloud into the game's save
+/// folder. Read-only: the cloud copy is never replaced and a local slot wins.
+#[tauri::command]
+pub async fn ubi_direct_cloud_saves(install_path: String) -> Result<usize, String> {
+    let install = std::path::PathBuf::from(&install_path);
+    let direct = ubi_installs::load()
+        .into_iter()
+        .find(|record| record.install_dir.eq_ignore_ascii_case(&install_path));
+    let (product_id, uplay_id, title, exe_dir) = match direct.as_ref() {
+        Some(record) => {
+            let exe_dir = if record.exe.trim().is_empty() {
+                None
+            } else {
+                let exe = install.join(record.exe.replace('\\', std::path::MAIN_SEPARATOR_STR));
+                exe.parent().map(std::path::Path::to_path_buf)
+            };
+            (
+                record.product_id,
+                record.uplay_id,
+                record.name.clone(),
+                exe_dir,
+            )
+        }
+        None => {
+            // A client-managed copy has no direct-install record. Its library
+            // row still carries the numeric product id and the Uplay launch id.
+            let game = discover("ubisoft")
+                .into_iter()
+                .find(|game| game.install_path.eq_ignore_ascii_case(&install_path))
+                .ok_or_else(|| "Unknown Ubisoft install".to_string())?;
+            let product_id = game.store_id.parse::<u32>().unwrap_or(0);
+            let uplay_id = game
+                .id
+                .parse::<u32>()
+                .ok()
+                .filter(|id| *id > 0)
+                .unwrap_or(product_id);
+            (product_id, uplay_id, game.name, None)
+        }
+    };
+    let destination = ubi_direct::cloud_destination(
+        product_id,
+        uplay_id,
+        &install,
+        exe_dir.as_deref(),
+        Some(&title),
+    );
+    let count = ubi_direct::download_cloud_saves(product_id, uplay_id, &destination).await?;
+    // A direct install reads the shim layout. Newer 36-byte cloud slots stay in
+    // the Connect folder; classic slots are copied beside the shim now.
+    if direct.is_some() {
+        let _ = ubi_direct::import_connect_saves(product_id, uplay_id, &install, exe_dir.as_deref());
+    }
+    Ok(count)
+}
+
 /// Move a direct install into another folder and update its record/registry.
 #[tauri::command]
 pub fn ubi_direct_move(
@@ -1696,12 +1752,13 @@ pub async fn companion_achievements(
         };
         xbox_login::achievements(&title_id).await
     } else if store == "ubisoft" {
-        let data = ubi_achievements::achievements_for(
-            &id,
-            title.as_deref().unwrap_or(""),
-            language.as_deref().unwrap_or("en"),
-        );
-        ubi_direct::merge_achievements(data, &id, title.as_deref().unwrap_or(""))
+        let title_text = title.as_deref().unwrap_or("");
+        let language_text = language.as_deref().unwrap_or("en");
+        // A signed-in account can fill a missing schema from Ubisoft's asset
+        // CDN; the local Connect cache is only one of the sources now.
+        ubi_achievements::ensure_schema(&id, title_text, language_text).await;
+        let data = ubi_achievements::achievements_for(&id, title_text, language_text);
+        ubi_direct::merge_achievements(data, &id, title_text)
     } else {
         return GameAchievementsResponse::default();
     };

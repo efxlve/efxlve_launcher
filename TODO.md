@@ -203,9 +203,12 @@ stays on the client. Open work:
   raises a toast when a newer manifest exists.
 - The R1 shim records unlocks in `upc.json` and preserves earned IDs across
   launches. When no achievement schema is cached locally in Ubisoft Connect or
-  `<app_data>/ubi-achievements`, `upc.json` seeds fallback slots (`1..=64`) and
-  only surfaces unlocked fallback entries in the UI until a named schema archive
-  is available.
+  `<app_data>/ubi-achievements`, a signed-in ownership response supplies the
+  product configuration's `achievements:` spec and `ubi_achievements` downloads
+  the archive from `https://static3.cdn.ubi.com/orbit/uplay_launcher_3_0/assets/<spec>`
+  into `<app_data>/ubi-achievements`. Without a session, `upc.json` still seeds
+  fallback slots (`1..=64`) and only surfaces unlocked fallback entries until a
+  named schema archive is available.
 - Ubisoft saves are local folders. `companion/ubi_direct/saves.rs` resolves the
   shim, Connect and user profile layouts (`Documents`, `Saved Games`,
   `%APPDATA%\Ubisoft`, `%LOCALAPPDATA%\Ubisoft`, `%PUBLIC%\Documents`, including
@@ -215,12 +218,13 @@ stays on the client. Open work:
   classic Connect slots (`548` header) into `Saves/<uplay|product id>`, never
   overwriting a direct save; newer Connect slots (`36` header) use a different
   payload and stay with the client. Manage also offers **Import Connect saves**
-  for a direct install, so the copy can run before the first launch. Cloud slot
-  metadata is readable from
-  `/v1/profiles/<id>/entities?name=upcCloudSaveUplayId_<id>` (slot sizes and
-  MD5s), but the payload is a signed S3 URL the client obtains, so direct import
-  reads the slots the client has already synced locally. The Ludusavi manifest
-  is still open for titles outside those layouts.
+  for a direct install, so the copy can run before the first launch, and
+  **Ubisoft Connect Cloud** downloads the slots through `cloudsave_service`
+  (`upcCloudSaveUplayId_<uplay id>`, with profile entity metadata naming the
+  slots) into the client's `<account>/<uplay id>` folder without overwriting a
+  local slot; classic slots are then copied into a direct install. The live
+  cloud-download test needs a signed-in account. The Ludusavi manifest is still
+  open for titles outside those layouts.
 - Online/anti-cheat titles (R6/BattlEye) and Connect-only DRM titles stay on the
   client. Do not attempt to bypass BattlEye or Denuvo. Direct adopt and launch
   both check the title and install folder before the shim is deployed and
