@@ -74,22 +74,29 @@ pub(crate) fn verify(manifest: &Manifest, install_dir: &Path) -> VerifyReport {
     report
 }
 
-/// Remove the files the check rejected so the installer fetches them again.
-/// Directories are left to the installer, which recreates them.
-pub(crate) fn remove_bad(install_dir: &Path, bad_files: &[String]) -> usize {
-    let mut removed = 0;
+/// Stage rejected files as `<name>.efxlve-old` so the installer can copy their
+/// intact slices locally and download only the corrupted or updated slices.
+pub(crate) fn stage_bad(install_dir: &Path, bad_files: &[String]) -> usize {
+    let mut staged = 0;
     for name in bad_files {
         let Ok(path) = manifest::safe_install_path(install_dir, name) else {
             continue;
         };
-        if path.is_file() && std::fs::remove_file(&path).is_ok() {
-            removed += 1;
+        if !path.is_file() {
+            continue;
+        }
+        let old = path.with_extension("efxlve-old");
+        let _ = std::fs::remove_file(&old);
+        if std::fs::rename(&path, &old).is_ok() {
+            staged += 1;
+        } else if std::fs::remove_file(&path).is_ok() {
+            staged += 1;
         }
     }
-    removed
+    staged
 }
 
-fn shim_replaced(path: &Path) -> bool {
+pub(crate) fn shim_replaced(path: &Path) -> bool {
     let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
         return false;
     };

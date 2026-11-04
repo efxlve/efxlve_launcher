@@ -468,6 +468,20 @@ where
     let mut last_emit = 0u64;
     let mut skipped_files = 0usize;
 
+    let prev_manifest = manifest::read_local_install(install_dir)
+        .ok()
+        .map(|(local, _)| local);
+    let prev_files: std::collections::HashMap<String, &ManifestFile> = prev_manifest
+        .as_ref()
+        .map(|local| {
+            local
+                .files
+                .iter()
+                .map(|file| (file.name.replace('/', "\\").to_ascii_lowercase(), file))
+                .collect()
+        })
+        .unwrap_or_default();
+
     tokio::fs::create_dir_all(install_dir)
         .await
         .map_err(|e| format!("creating {}: {e}", install_dir.display()))?;
@@ -499,13 +513,35 @@ where
             }
             continue;
         }
+        if super::verify::shim_replaced(&out_path) {
+            skipped_files += 1;
+            done_bytes += file.size;
+            continue;
+        }
+
+        let file_key = file.name.replace('/', "\\").to_ascii_lowercase();
+        let prev_file = prev_files.get(&file_key).copied();
+        let old_path = out_path.with_extension("efxlve-old");
         if let Ok(meta) = tokio::fs::metadata(&out_path).await {
-            if meta.len() == file.size {
+            let slices_unchanged = prev_manifest.is_none()
+                || prev_file
+                    .map(|prev| prev.size == file.size && prev.slices == file.slices)
+                    .unwrap_or(false);
+            if meta.len() == file.size && slices_unchanged && !old_path.exists() {
                 skipped_files += 1;
                 done_bytes += file.size;
                 continue;
             }
+            if !old_path.exists() {
+                let _ = tokio::fs::rename(&out_path, &old_path).await;
+            }
         }
+
+        let reusable = if old_path.is_file() {
+            index_reusable_slices(&old_path, file, prev_file)
+        } else {
+            std::collections::HashMap::new()
+        };
 
         let tmp_path = out_path.with_extension("efxlve-part");
         // Resume from the last whole slice in the part file. A kill during a
@@ -543,8 +579,8 @@ where
 
         // A file can be gigabytes and thousands of slices. Sign and fetch a
         // window at a time so signed URLs stay fresh and memory stays bounded.
-        // A CDN edge can drop one body mid-window; re-sign the remaining slices
-        // and continue instead of failing a multi-gigabyte install.
+        // Intact slices present in `old_path` are copied locally so an update
+        // or repair only signs and downloads the changed slices.
         const WINDOW: usize = 200;
         for start in (start_index..file.slices.len()).step_by(WINDOW) {
             let end = (start + WINDOW).min(file.slices.len());
@@ -557,70 +593,84 @@ where
                     return Err("@t:dl.cancelled".to_string());
                 }
                 let remaining = &window[offset..];
-                let paths: Vec<String> = remaining
+                let slice_base = start + offset;
+                let missing: Vec<(usize, ManifestSlice)> = remaining
                     .iter()
-                    .map(|slice| slice_path(layout, &hash_for_slice(slice)))
+                    .enumerate()
+                    .filter(|(_, slice)| {
+                        slice.content_sha1.is_empty()
+                            || !reusable.contains_key(&slice.content_sha1)
+                    })
+                    .map(|(idx, slice)| (slice_base + idx, slice.clone()))
                     .collect();
-                let urls = sign_with_reconnect(
-                    demux,
-                    &mut download,
-                    product_id,
-                    &paths,
-                )
-                .await?;
-                if urls.len() != remaining.len() {
-                    return Err(format!(
-                        "{}: signed {} of {} slices",
-                        file.name,
-                        urls.len(),
-                        remaining.len()
-                    ));
-                }
+
+                let urls = if missing.is_empty() {
+                    Vec::new()
+                } else {
+                    let paths: Vec<String> = missing
+                        .iter()
+                        .map(|(_, slice)| slice_path(layout, &hash_for_slice(slice)))
+                        .collect();
+                    let signed = sign_with_reconnect(
+                        demux,
+                        &mut download,
+                        product_id,
+                        &paths,
+                    )
+                    .await?;
+                    if signed.len() != missing.len() {
+                        return Err(format!(
+                            "{}: signed {} of {} slices",
+                            file.name,
+                            signed.len(),
+                            missing.len()
+                        ));
+                    }
+                    signed
+                };
 
                 let file_name = file.name.clone();
                 let client = client.clone();
                 let method = manifest.compression_method;
-                let checks: Vec<ManifestSlice> = remaining.to_vec();
-                let slice_base = start + offset;
-                let jobs = urls
-                    .into_iter()
-                    .zip(checks)
-                    .enumerate()
-                    .map(|(index, (url, check))| {
-                        let client = client.clone();
-                        let file_name = file_name.clone();
-                        async move {
-                            fetch_slice(
-                                &client,
-                                &url,
-                                &check,
-                                method,
-                                &file_name,
-                                slice_base + index,
-                            )
-                            .await
-                        }
-                    });
+                let jobs = urls.into_iter().zip(missing).map(|(url, (abs_index, check))| {
+                    let client = client.clone();
+                    let file_name = file_name.clone();
+                    async move {
+                        fetch_slice(&client, &url, &check, method, &file_name, abs_index).await
+                    }
+                });
                 let mut stream = futures::stream::iter(jobs).buffered(16);
                 let mut retry = false;
-                while let Some(result) = stream.next().await {
+                for slice in remaining {
                     if cancelled(product_id) {
                         return Err("@t:dl.cancelled".to_string());
                     }
-                    let bytes = match result {
-                        Ok(bytes) => bytes,
-                        Err(error) => {
-                            failures += 1;
-                            retries += 1;
-                            if failures >= 4 || retries >= 12 {
-                                return Err(error);
+                    let bytes = if let Some(local_bytes) =
+                        read_reusable_slice(&old_path, &reusable, slice)
+                    {
+                        local_bytes
+                    } else {
+                        match stream.next().await {
+                            Some(Ok(bytes)) => {
+                                failures = 0;
+                                bytes
                             }
-                            println!(
-                                "[ubi-direct] {} slice retry {retries}: {error}",
-                                file.name
-                            );
-                            retry = true;
-                            break;
+                            Some(Err(error)) => {
+                                failures += 1;
+                                retries += 1;
+                                if failures >= 4 || retries >= 12 {
+                                    return Err(error);
+                                }
+                                println!(
+                                    "[ubi-direct] {} slice retry {retries}: {error}",
+                                    file.name
+                                );
+                                retry = true;
+                                break;
+                            }
+                            None => {
+                                return Err(format!("{}: missing downloaded slice", file.name));
+                            }
                         }
                     };
                     use tokio::io::AsyncWriteExt;
@@ -629,9 +679,6 @@ where
                         .map_err(|e| format!("writing {}: {e}", tmp_path.display()))?;
                     done_bytes += bytes.len() as u64;
                     offset += 1;
-                    // A success means the edge is healthy again; only a run of
-                    // failures at the same point should abort.
-                    failures = 0;
                     if done_bytes - last_emit >= emit_step {
                         last_emit = done_bytes;
                         on_progress(InstallProgress {
@@ -662,6 +709,7 @@ where
         tokio::fs::rename(&tmp_path, &out_path)
             .await
             .map_err(|e| format!("renaming {}: {e}", out_path.display()))?;
+        let _ = tokio::fs::remove_file(&old_path).await;
     }
 
     on_progress(InstallProgress {
@@ -707,6 +755,77 @@ where
         bytes: total_bytes,
         skipped_files,
     })
+}
+
+/// Scan an existing local file (`<name>.efxlve-old`) against the slice boundaries
+/// of the previous and current manifests, returning the byte offset of every
+/// slice whose SHA-1 matches a wanted `content_sha1`.
+fn index_reusable_slices(
+    old_path: &Path,
+    new_file: &ManifestFile,
+    prev_file: Option<&ManifestFile>,
+) -> std::collections::HashMap<Vec<u8>, u64> {
+    use std::io::{Read, Seek, SeekFrom};
+    let wanted: std::collections::HashSet<&[u8]> = new_file
+        .slices
+        .iter()
+        .filter(|slice| !slice.content_sha1.is_empty())
+        .map(|slice| slice.content_sha1.as_slice())
+        .collect();
+    if wanted.is_empty() {
+        return std::collections::HashMap::new();
+    }
+    let Ok(mut handle) = std::fs::File::open(old_path) else {
+        return std::collections::HashMap::new();
+    };
+    let mut reusable = std::collections::HashMap::new();
+    let mut layouts: Vec<&[ManifestSlice]> = Vec::new();
+    if let Some(prev) = prev_file {
+        if !prev.slices.is_empty() {
+            layouts.push(&prev.slices);
+        }
+    }
+    layouts.push(&new_file.slices);
+    for slices in layouts {
+        if handle.seek(SeekFrom::Start(0)).is_err() {
+            break;
+        }
+        let mut offset = 0u64;
+        for slice in slices {
+            let mut buf = vec![0u8; slice.size as usize];
+            if handle.read_exact(&mut buf).is_err() {
+                break;
+            }
+            let mut hasher = Sha1::new();
+            hasher.update(&buf);
+            let digest = hasher.finalize().to_vec();
+            if wanted.contains(digest.as_slice()) {
+                reusable.entry(digest).or_insert(offset);
+            }
+            offset += u64::from(slice.size);
+        }
+        if reusable.len() >= wanted.len() {
+            break;
+        }
+    }
+    reusable
+}
+
+fn read_reusable_slice(
+    old_path: &Path,
+    reusable: &std::collections::HashMap<Vec<u8>, u64>,
+    slice: &ManifestSlice,
+) -> Option<Vec<u8>> {
+    if slice.content_sha1.is_empty() {
+        return None;
+    }
+    let &offset = reusable.get(&slice.content_sha1)?;
+    use std::io::{Read, Seek, SeekFrom};
+    let mut handle = std::fs::File::open(old_path).ok()?;
+    handle.seek(SeekFrom::Start(offset)).ok()?;
+    let mut buf = vec![0u8; slice.size as usize];
+    handle.read_exact(&mut buf).ok()?;
+    Some(buf)
 }
 
 /// Prefer the executable named by `start_game` in the product configuration
@@ -921,6 +1040,51 @@ mod tests {
             resolve_executable(&manifest, "missing.exe"),
             r"bin\Editor.exe"
         );
+    }
+
+    #[test]
+    fn reuses_intact_slices_and_identifies_only_changed_ones() {
+        let root = std::env::temp_dir().join(format!("efxlve-ubi-patch-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+
+        let s0 = b"slice-zero-intact";
+        let s1_old = b"slice-one-corrupt";
+        let s1_new = b"slice-one-updated";
+        let s2 = b"slice-two-intact!";
+
+        let old_path = root.join("archive.pck.efxlve-old");
+        let mut disk_bytes = Vec::new();
+        disk_bytes.extend_from_slice(s0);
+        disk_bytes.extend_from_slice(s1_old);
+        disk_bytes.extend_from_slice(s2);
+        std::fs::write(&old_path, &disk_bytes).unwrap();
+
+        let make_slice = |data: &[u8]| ManifestSlice {
+            size: data.len() as u32,
+            download_size: Some(data.len() as u32),
+            download_sha1: sha1_bytes(data),
+            content_sha1: sha1_bytes(data),
+        };
+        let target_file = ManifestFile {
+            name: "archive.pck".into(),
+            size: (s0.len() + s1_new.len() + s2.len()) as u64,
+            is_dir: false,
+            slices: vec![make_slice(s0), make_slice(s1_new), make_slice(s2)],
+        };
+
+        let reusable = index_reusable_slices(&old_path, &target_file, None);
+        assert_eq!(reusable.len(), 2);
+        assert_eq!(
+            read_reusable_slice(&old_path, &reusable, &target_file.slices[0]).as_deref(),
+            Some(&s0[..])
+        );
+        assert!(read_reusable_slice(&old_path, &reusable, &target_file.slices[1]).is_none());
+        assert_eq!(
+            read_reusable_slice(&old_path, &reusable, &target_file.slices[2]).as_deref(),
+            Some(&s2[..])
+        );
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[tokio::test]

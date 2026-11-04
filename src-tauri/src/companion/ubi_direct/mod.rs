@@ -236,7 +236,7 @@ pub(crate) async fn verify_game(
     };
     let mut report = verify::verify(&manifest, &directory);
     if repair && !report.bad_files.is_empty() {
-        verify::remove_bad(&directory, &report.bad_files);
+        verify::stage_bad(&directory, &report.bad_files);
         let (mut demux, _) = connect().await?;
         install::install(&mut demux, product_id, &directory, |progress| {
             let _ = app.emit("ubi-direct-progress", progress);
@@ -493,7 +493,7 @@ mod tests {
             report.files, report.checked, report.corrupt, report.missing
         );
         assert!(report.corrupt >= 1, "the corrupted icon must be detected");
-        verify::remove_bad(&directory, &report.bad_files);
+        verify::stage_bad(&directory, &report.bad_files);
 
         let (mut demux, _) = connect().await.expect("Demux connect");
         install::install(&mut demux, 80, &directory, |_| {})
