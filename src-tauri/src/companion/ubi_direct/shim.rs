@@ -172,11 +172,62 @@ pub(crate) fn detect(exe: &Path) -> Result<Option<Loader>, String> {
             }));
         }
     }
+    if let Some(directory) = exe.parent() {
+        if let Some(loader) = detect_in_dir(directory, x64)? {
+            return Ok(Some(loader));
+        }
+    }
+    Ok(None)
+}
+
+/// Inspect a folder for an existing Uplay/UPC loader DLL when the main
+/// executable loads it indirectly through a companion engine DLL.
+pub(crate) fn detect_in_dir(directory: &Path, default_x64: bool) -> Result<Option<Loader>, String> {
+    for orbit in ["ubiorbitapi_r2_loader.dll", "ubiorbitapi_r2_loader64.dll"] {
+        if directory.join(orbit).is_file() {
+            return Err(
+                "this game uses the Orbit R2 loader, which is not supported yet".to_string(),
+            );
+        }
+    }
+    const CANDIDATES: &[(&str, Family, bool)] = &[
+        ("uplay_r1_loader64.dll", Family::R1, true),
+        ("upc_r1_loader64.dll", Family::R1, true),
+        ("uplay_r2_loader64.dll", Family::R2, true),
+        ("upc_r2_loader64.dll", Family::R2, true),
+        ("uplay_r1_loader.dll", Family::R1, false),
+        ("upc_r1_loader.dll", Family::R1, false),
+        ("uplay_r2_loader.dll", Family::R2, false),
+        ("upc_r2_loader.dll", Family::R2, false),
+    ];
+    for prefer_arch in [true, false] {
+        for &(name, family, is_64) in CANDIDATES {
+            if prefer_arch && is_64 != default_x64 {
+                continue;
+            }
+            if !prefer_arch && is_64 == default_x64 {
+                continue;
+            }
+            let path = directory.join(name);
+            if path.is_file() {
+                let x64 = std::fs::read(&path)
+                    .ok()
+                    .and_then(|bytes| pe_is_64(&bytes))
+                    .unwrap_or(is_64);
+                return Ok(Some(Loader {
+                    name: name.to_string(),
+                    family,
+                    x64,
+                }));
+            }
+        }
+    }
     Ok(None)
 }
 
 /// Deploy the matching loader next to the executable and write the account
 /// config it reads. Returns the DLL name when a shim was installed.
+#[cfg(test)]
 pub(crate) async fn deploy(
     exe: &Path,
     account: &ShimAccount,
@@ -184,10 +235,20 @@ pub(crate) async fn deploy(
     let Some(loader) = detect(exe)? else {
         return Ok(None);
     };
-    let source = ensure(loader.family, loader.x64).await?;
     let directory = exe
         .parent()
         .ok_or_else(|| format!("{} has no parent folder", exe.display()))?;
+    deploy_loader_to_dir(directory, &loader, account).await?;
+    Ok(Some(loader.name))
+}
+
+/// Deploy the detected loader and `upc.json` into a specific directory.
+pub(crate) async fn deploy_loader_to_dir(
+    directory: &Path,
+    loader: &Loader,
+    account: &ShimAccount,
+) -> Result<(), String> {
+    let source = ensure(loader.family, loader.x64).await?;
     let target = directory.join(&loader.name);
     let source_bytes = tokio::fs::read(&source)
         .await
@@ -205,7 +266,7 @@ pub(crate) async fn deploy(
         .await
         .map_err(|error| format!("writing {}: {error}", target.display()))?;
     write_config(directory, account, loader.family)?;
-    Ok(Some(loader.name))
+    Ok(())
 }
 
 /// True when a loader backup is still in this folder, i.e. a restore either has
@@ -429,6 +490,24 @@ mod tests {
         assert_eq!(loader.name, "uplay_r1_loader.dll");
         assert_eq!(loader.family, Family::R1);
         assert!(!loader.x64);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn detects_a_loader_dll_present_in_the_executable_folder() {
+        let root = std::env::temp_dir().join(format!("efxlve-ubi-dirshim-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let exe = root.join("wrapper.exe");
+        std::fs::write(&exe, fake_exe("Dunia.dll", 0x8664)).unwrap();
+        std::fs::write(
+            root.join("uplay_r1_loader64.dll"),
+            fake_exe("UPLAY_Init", 0x8664),
+        )
+        .unwrap();
+        let loader = detect(&exe).unwrap().unwrap();
+        assert_eq!(loader.name, "uplay_r1_loader64.dll");
+        assert_eq!(loader.family, Family::R1);
+        assert!(loader.x64);
         let _ = std::fs::remove_dir_all(&root);
     }
 

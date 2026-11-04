@@ -35,10 +35,21 @@ pub(crate) async fn launch(product_id: u32, shim_enabled: bool) -> Result<(), St
     seed_registry(product_id, &install_dir);
     seed_game_registry(&game, &install_dir);
 
+    let detected_loader = match shim::detect(&exe)? {
+        Some(loader) => Some(loader),
+        None if exe.parent() != Some(install_dir.as_path()) => {
+            shim::detect_in_dir(&install_dir, true)?
+        }
+        None => None,
+    };
+
     if shim_enabled {
         let account = shim_account(&game).await;
-        if let Some(name) = shim::deploy(&exe, &account).await? {
-            println!("[ubi-direct] deployed {name} for {}", game.name);
+        if let Some(loader) = &detected_loader {
+            if let Some(exe_dir) = exe.parent() {
+                shim::deploy_loader_to_dir(exe_dir, loader, &account).await?;
+            }
+            println!("[ubi-direct] deployed {} for {}", loader.name, game.name);
             // The shim keeps saves beside its config. Carry the Connect slots
             // over before the first direct start, without overwriting a direct
             // save that is already newer.
@@ -55,25 +66,19 @@ pub(crate) async fn launch(product_id: u32, shim_enabled: bool) -> Result<(), St
                 ),
                 Err(error) => println!("[ubi-direct] save import skipped: {error}"),
             }
-        }
-        if exe.parent() != Some(install_dir.as_path()) {
-            if let Ok(Some(loader)) = shim::detect(&exe) {
-                shim::write_account_config(&install_dir, &account, loader.family)?;
+            if exe.parent() != Some(install_dir.as_path()) {
+                if install_dir.join(&loader.name).is_file() {
+                    shim::deploy_loader_to_dir(&install_dir, loader, &account).await?;
+                } else {
+                    shim::write_account_config(&install_dir, &account, loader.family)?;
+                }
             }
         }
-    } else {
-        match shim::detect(&exe) {
-            Ok(Some(loader)) => {
-                return Err(format!(
-                    "{} imports {}; enable the Uplay compatibility shim in Settings -> Integrations to launch it without Ubisoft Connect",
-                    game.name, loader.name
-                ));
-            }
-            // Orbit R2 is a different, unsupported loader. Starting the game
-            // anyway would crash it, so surface the same clear message.
-            Err(error) => return Err(error),
-            Ok(None) => {}
-        }
+    } else if let Some(loader) = detected_loader {
+        return Err(format!(
+            "{} imports {}; enable the Uplay compatibility shim in Settings -> Integrations to launch it without Ubisoft Connect",
+            game.name, loader.name
+        ));
     }
 
     let mut command = Command::new(&exe);
@@ -254,9 +259,9 @@ fn resolve_exe(install_dir: &Path, recorded: &str) -> Result<PathBuf, String> {
         .ok_or_else(|| format!("no game executable found under {}", install_dir.display()))
 }
 
-/// Ubisoft titles resolve their install folder from these keys. They are
-/// per-machine, so the write needs elevation; a launcher that is not elevated
-/// still gets the per-user key and the game's own working directory.
+/// Ubisoft titles resolve their install folder from these keys. Per-machine
+/// keys need elevation, so per-user and UAC VirtualStore mirrors are written
+/// alongside them for non-elevated launches.
 pub(crate) fn seed_registry(product_id: u32, install_dir: &Path) {
     #[cfg(windows)]
     {
@@ -265,25 +270,30 @@ pub(crate) fn seed_registry(product_id: u32, install_dir: &Path) {
         let value = install_dir.display().to_string();
         let keys = [
             format!(r"HKCU\Software\Ubisoft\Launcher\Installs\{product_id}"),
+            format!(r"HKCU\Software\Wow6432Node\Ubisoft\Launcher\Installs\{product_id}"),
+            format!(
+                r"HKCU\Software\Classes\VirtualStore\MACHINE\SOFTWARE\Wow6432Node\Ubisoft\Launcher\Installs\{product_id}"
+            ),
             format!(r"HKLM\SOFTWARE\Ubisoft\Launcher\Installs\{product_id}"),
             format!(r"HKLM\SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs\{product_id}"),
-            r"HKLM\SOFTWARE\Ubisoft\Launcher".to_string(),
         ];
         for key in keys {
-            let mut command = Command::new("reg");
-            command.args([
-                "add",
-                &key,
-                "/v",
-                "InstallDir",
-                "/t",
-                "REG_SZ",
-                "/d",
-                &value,
-                "/f",
-            ]);
-            command.creation_flags(CREATE_NO_WINDOW);
-            let _ = command.status();
+            for (name, data) in [("InstallDir", value.as_str()), ("Language", "en-US")] {
+                let mut command = Command::new("reg");
+                command.args([
+                    "add",
+                    &key,
+                    "/v",
+                    name,
+                    "/t",
+                    "REG_SZ",
+                    "/d",
+                    data,
+                    "/f",
+                ]);
+                command.creation_flags(CREATE_NO_WINDOW);
+                let _ = command.status();
+            }
         }
     }
     #[cfg(not(windows))]
@@ -304,11 +314,7 @@ pub(crate) fn seed_game_registry(game: &ubi_installs::InstalledGame, install_dir
         use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x08000000;
         let data = install_dir.display().to_string();
-        let mut keys = vec![key.clone()];
-        if let Some(wow64) = wow64_key(&key) {
-            keys.push(wow64);
-        }
-        for key in keys {
+        for key in registry_key_variants(&key) {
             let mut command = Command::new("reg");
             command.args([
                 "add",
@@ -358,9 +364,41 @@ fn wow64_key(key: &str) -> Option<String> {
     }
 }
 
+fn registry_key_variants(key: &str) -> Vec<String> {
+    let mut keys = vec![key.to_string()];
+    if let Some(wow64) = wow64_key(key) {
+        keys.push(wow64);
+    }
+    let upper = key.to_uppercase();
+    let hklm_prefix = "HKLM\\SOFTWARE\\";
+    if upper.starts_with(hklm_prefix) {
+        let tail = &key[hklm_prefix.len()..];
+        let tail_no_wow = if tail.to_uppercase().starts_with("WOW6432NODE\\") {
+            &tail["WOW6432NODE\\".len()..]
+        } else {
+            tail
+        };
+        for extra in [
+            format!("HKCU\\Software\\{tail_no_wow}"),
+            format!("HKCU\\Software\\Wow6432Node\\{tail_no_wow}"),
+            format!(
+                "HKCU\\Software\\Classes\\VirtualStore\\MACHINE\\SOFTWARE\\Wow6432Node\\{tail_no_wow}"
+            ),
+        ] {
+            if !keys.iter().any(|existing| existing.eq_ignore_ascii_case(&extra)) {
+                keys.push(extra);
+            }
+        }
+    }
+    keys
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{client_launch_uri, resolve_exe, split_register, wow64_key, working_dir};
+    use super::{
+        client_launch_uri, registry_key_variants, resolve_exe, split_register, wow64_key,
+        working_dir,
+    };
     use crate::companion::ubi_installs::InstalledGame;
 
     #[test]
@@ -395,6 +433,12 @@ mod tests {
             Some(r"HKLM\SOFTWARE\Wow6432Node\Ubisoft\Game".to_string())
         );
         assert_eq!(wow64_key(r"HKCU\Software\Ubisoft"), None);
+        let variants = registry_key_variants(r"HKLM\SOFTWARE\Ubisoft\Game");
+        assert!(variants.contains(&r"HKCU\Software\Ubisoft\Game".to_string()));
+        assert!(variants.contains(
+            &r"HKCU\Software\Classes\VirtualStore\MACHINE\SOFTWARE\Wow6432Node\Ubisoft\Game"
+                .to_string()
+        ));
     }
 
     #[test]
