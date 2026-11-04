@@ -2180,6 +2180,24 @@ mod tests {
         assert_eq!(cached.total_achievements, 5);
     }
 
+    #[tokio::test]
+    #[ignore = "downloads the real Rainbow Six cloud slots; needs a linked session"]
+    async fn live_cloud_saves_command_reads_rainbow_six() {
+        let game = discover("ubisoft")
+            .into_iter()
+            .find(|game| {
+                game.installed
+                    && !game.install_path.is_empty()
+                    && game.name.to_lowercase().contains("rainbow six")
+            })
+            .expect("Rainbow Six install");
+        println!("path={}", game.install_path);
+        let count = ubi_direct_cloud_saves(game.install_path)
+            .await
+            .expect("cloud save command");
+        println!("{count} new cloud slot(s)");
+    }
+
     #[test]
     #[ignore = "reads the real Watch Dogs Connect saves"]
     fn live_import_saves_command_copies_watch_dogs_slots() {

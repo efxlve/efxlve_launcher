@@ -219,12 +219,14 @@ stays on the client. Open work:
   overwriting a direct save; newer Connect slots (`36` header) use a different
   payload and stay with the client. Manage also offers **Import Connect saves**
   for a direct install, so the copy can run before the first launch, and
-  **Ubisoft Connect Cloud** downloads the slots through `cloudsave_service`
-  (`upcCloudSaveUplayId_<uplay id>`, with profile entity metadata naming the
-  slots) into the client's `<account>/<uplay id>` folder without overwriting a
-  local slot; classic slots are then copied into a direct install. The live
-  cloud-download test needs a signed-in account. The Ludusavi manifest is still
-  open for titles outside those layouts.
+  **Ubisoft Connect Cloud** reads the slot filenames from
+  `/v1/profiles/<id>/entities?name=upcCloudSaveUplayId_<uplay id>` and asks
+  `cloudsave_service` for each filename (`1`, `3`, ...), writing the signed S3
+  object into the client's `<account>/<uplay id>` folder without overwriting a
+  local slot; classic slots are then copied into a direct install. A live
+  Rainbow Six Siege download returned `1.save` (86,051 bytes), `3.save`
+  (29,492) and `4.save` (73,868), all with the 36-byte header the client uses.
+  The Ludusavi manifest is still open for titles outside those layouts.
 - Online/anti-cheat titles (R6/BattlEye) and Connect-only DRM titles stay on the
   client. This is closed by design: BattlEye, Denuvo and their licenses are not
   bypassed. Direct adopt and launch both check the title and install folder

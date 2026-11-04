@@ -1001,7 +1001,7 @@ document.addEventListener("click", (e) => {
         toast(
           count > 0
             ? i18nT("manage.ubiImportSavesDone", { count })
-            : i18nT("manage.ubiImportSavesNone"),
+            : i18nT("manage.ubiUpToDate"),
           count > 0 ? "ok" : "",
         );
       })

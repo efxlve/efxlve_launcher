@@ -1007,6 +1007,18 @@ mod tests {
         assert!(achievement_asset_url("../a b").is_none());
     }
 
+    #[tokio::test]
+    #[ignore = "needs a linked session; downloads Far Cry 4 from the metadata cache"]
+    async fn live_metadata_schema_downloads_from_metadata() {
+        assert!(ensure_schema("61412", "Far Cry 4", "en").await);
+        let data = achievements_for("61412", "Far Cry 4", "en");
+        println!(
+            "{} achievements, {} unlocked",
+            data.total_achievements, data.user_unlocked
+        );
+        assert!(data.total_achievements > 0);
+    }
+
     #[test]
     #[ignore = "reads the downloaded schema and the local Watch Dogs spool"]
     fn live_downloaded_schema_serves_achievements() {

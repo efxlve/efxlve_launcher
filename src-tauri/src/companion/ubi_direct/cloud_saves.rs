@@ -32,48 +32,29 @@ pub(crate) async fn download(
     let token = ownership_token(&mut demux, product_id, uplay_id).await?;
     let base = format!("upcCloudSaveUplayId_{uplay_id}");
 
-    // The service may answer the base item with one request per slot; when it
-    // does not, the profile entity lists the slot names that make up the item.
-    let mut items = vec![base.clone()];
+    // The base name is an entity, not a downloadable object. Its `obj.slots`
+    // list names the real objects (`1`, `3`, ...); `cloudsave_service` appends
+    // `.savegame` to the item name itself.
     let mut first_error = String::new();
-    let mut urls = match sign(&mut demux, &token, uplay_id, &base).await {
-        Ok(urls) => urls,
+    let mut items = match entity_items(&session, &base).await {
+        Ok(found) => found,
         Err(error) => {
             first_error = error;
             Vec::new()
         }
     };
-    if urls.is_empty() {
-        match entity_items(&session, &base).await {
-            Ok(found) => {
-                items = found;
-            }
+    if items.is_empty() {
+        for slot in 1..=8 {
+            items.push(slot.to_string());
+        }
+    }
+    let mut urls = Vec::new();
+    for item in &items {
+        match sign(&mut demux, &token, uplay_id, item).await {
+            Ok(mut found) => urls.append(&mut found),
             Err(error) => {
                 if first_error.is_empty() {
                     first_error = error;
-                }
-            }
-        }
-        // Some client builds hide the slot names behind the base entity. The
-        // client itself numbers its save objects `1.savegame`, `3.savegame`, ...
-        if items.len() <= 1 {
-            for slot in 1..=8 {
-                let item = format!("{base}/{slot}.savegame");
-                if !items.contains(&item) {
-                    items.push(item);
-                }
-            }
-        }
-        for item in &items {
-            if item == &base {
-                continue;
-            }
-            match sign(&mut demux, &token, uplay_id, item).await {
-                Ok(mut found) => urls.append(&mut found),
-                Err(error) => {
-                    if first_error.is_empty() {
-                        first_error = error;
-                    }
                 }
             }
         }
@@ -230,21 +211,23 @@ fn collect_save_names(value: &Value, out: &mut Vec<String>) {
                     "name" | "itemname" | "item_name" | "filename" | "file_name" | "path" | "key"
                 ) {
                     if let Some(text) = value.as_str() {
-                        if looks_like_save(text) {
+                        if !text.trim().is_empty() && (key == "filename" || looks_like_save(text)) {
                             out.push(text.to_string());
                         }
                     }
                 }
                 if matches!(
                     key.as_str(),
-                    "slot" | "slot_id" | "slotid" | "itemid" | "item_id"
+                    "slot" | "slot_id" | "slotid" | "itemid" | "item_id" | "id"
                 ) {
                     if let Some(text) = value.as_str() {
                         if !text.is_empty() && text.chars().all(|c| c.is_ascii_digit()) {
                             out.push(text.to_string());
                         }
                     } else if let Some(number) = value.as_u64() {
-                        out.push(number.to_string());
+                        if (1..=64).contains(&number) {
+                            out.push(number.to_string());
+                        }
                     }
                 }
                 collect_save_names(value, out);
@@ -259,37 +242,51 @@ fn looks_like_save(value: &str) -> bool {
     lower.contains("upccloudsave") || lower.ends_with(".savegame") || lower.ends_with(".save")
 }
 
-/// Turn an entity field into the item name `cloudsave_service` expects.
+/// Turn an entity slot field into the item name `cloudsave_service` expects.
+/// That service appends `.savegame` itself, so the item is the slot filename
+/// (`1`, `3`, ...), not the base entity and not the local file name.
 fn normalize_item(raw: &str, base: &str) -> Option<String> {
     let value = raw.trim().trim_start_matches('/');
-    if value.is_empty() {
+    if value.is_empty() || value.eq_ignore_ascii_case(base) {
         return None;
     }
-    let lower = value.to_ascii_lowercase();
-    if lower.starts_with("upccloudsave") {
-        return Some(value.to_string());
+    let name = value.rsplit('/').next()?.trim();
+    if name.is_empty() || name.eq_ignore_ascii_case(base) {
+        return None;
     }
-    if let Some((_, name)) = value.rsplit_once('/') {
-        if name.ends_with(".savegame") || name.ends_with(".save") {
-            return Some(format!("{base}/{name}"));
-        }
+    let lower = name.to_ascii_lowercase();
+    if [".png", ".jpg", ".jpeg", ".ico", ".bmp", ".txt", ".json"]
+        .iter()
+        .any(|extension| lower.ends_with(extension))
+    {
+        return None;
     }
-    if lower.ends_with(".savegame") || lower.ends_with(".save") {
-        return Some(format!("{base}/{value}"));
+    let stem = name
+        .trim_end_matches(".savegame")
+        .trim_end_matches(".save")
+        .trim();
+    if stem.is_empty()
+        || stem.eq_ignore_ascii_case(base)
+        || !stem
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.')
+    {
+        return None;
     }
-    if value.chars().all(|c| c.is_ascii_digit()) {
-        return Some(format!("{base}/{value}.savegame"));
-    }
-    None
+    Some(stem.to_string())
 }
 
 fn slot_label(value: &str) -> Option<&str> {
-    let path = value.split('?').next().unwrap_or(value);
+    let path = url_path(value);
     let name = path.rsplit('/').next()?.trim();
     if name.is_empty() {
         return None;
     }
     Some(name)
+}
+
+fn url_path(value: &str) -> &str {
+    value.split('?').next().unwrap_or(value)
 }
 
 fn file_name(label: &str) -> String {
@@ -435,20 +432,15 @@ mod tests {
         let base = "upcCloudSaveUplayId_635";
         assert_eq!(
             normalize_item("upcCloudSaveUplayId_635/1.savegame", base).as_deref(),
-            Some("upcCloudSaveUplayId_635/1.savegame")
+            Some("1")
         );
         assert_eq!(
             normalize_item("c13ea7a8/635/3.savegame", base).as_deref(),
-            Some("upcCloudSaveUplayId_635/3.savegame")
+            Some("3")
         );
-        assert_eq!(
-            normalize_item("3.savegame", base).as_deref(),
-            Some("upcCloudSaveUplayId_635/3.savegame")
-        );
-        assert_eq!(
-            normalize_item("3", base).as_deref(),
-            Some("upcCloudSaveUplayId_635/3.savegame")
-        );
+        assert_eq!(normalize_item("3.savegame", base).as_deref(), Some("3"));
+        assert_eq!(normalize_item("3", base).as_deref(), Some("3"));
+        assert!(normalize_item(base, base).is_none());
         assert!(normalize_item("avatar.png", base).is_none());
     }
 
@@ -457,23 +449,22 @@ mod tests {
         let json = serde_json::json!({
             "entities": [{
                 "name": "upcCloudSaveUplayId_635",
-                "fields": {
+                "obj": {
                     "slots": [
-                        {"name": "1.savegame", "writeLength": 86051},
-                        {"name": "3.savegame", "writeLength": 29492},
-                        {"name": "avatar.png", "writeLength": 100}
+                        {"id": 1, "filename": "1", "hash": "abc", "size": 86051},
+                        {"id": 3, "filename": "3", "hash": "def", "size": 29492},
+                        {"id": 4, "filename": "4", "hash": "ghi", "size": 73868}
                     ],
-                    "map": {"4": {"md5": "abc"}, "5": {"md5": "def"}}
+                    "map": {"5": {"md5": "jkl"}}
                 }
             }]
         });
         let mut names = Vec::new();
         collect_save_names(&json, &mut names);
-        assert!(names.contains(&"1.savegame".to_string()));
-        assert!(names.contains(&"3.savegame".to_string()));
+        assert!(names.contains(&"1".to_string()));
+        assert!(names.contains(&"3".to_string()));
         assert!(names.contains(&"4".to_string()));
         assert!(names.contains(&"5".to_string()));
-        assert!(!names.contains(&"avatar.png".to_string()));
     }
 
     #[test]
@@ -502,6 +493,45 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "probes cloud item names; needs EFXLVE_UBI_TEST_PRODUCT and a linked session"]
+    async fn live_probes_cloud_item_names() {
+        let product: u32 = std::env::var("EFXLVE_UBI_TEST_PRODUCT")
+            .ok()
+            .and_then(|value| value.parse().ok())
+            .expect("EFXLVE_UBI_TEST_PRODUCT");
+        let uplay: u32 = std::env::var("EFXLVE_UBI_TEST_UPLAY")
+            .ok()
+            .and_then(|value| value.parse().ok())
+            .unwrap_or(product);
+        let (mut demux, _) = super::super::connect().await.expect("connect");
+        let token = ownership_token(&mut demux, product, uplay)
+            .await
+            .expect("ownership token");
+        let base = format!("upcCloudSaveUplayId_{uplay}");
+        let candidates = [
+            format!("{base}/1.savegame"),
+            format!("{base}/1"),
+            format!("{base}_1"),
+            format!("{base}_1.savegame"),
+            format!("{base}.1"),
+            format!("{base}.1.savegame"),
+            "1.savegame".to_string(),
+            "1".to_string(),
+        ];
+        for item in candidates {
+            match sign(&mut demux, &token, uplay, &item).await {
+                Ok(urls) => {
+                    println!(
+                        "{item} -> {:?}",
+                        urls.iter().map(|row| url_path(&row.url)).collect::<Vec<_>>()
+                    );
+                }
+                Err(error) => println!("{item} -> error {error}"),
+            }
+        }
+    }
+
+    #[tokio::test]
     #[ignore = "downloads a user's Ubisoft cloud saves; needs EFXLVE_UBI_TEST_PRODUCT and a linked session"]
     async fn live_downloads_cloud_saves() {
         let product: u32 = std::env::var("EFXLVE_UBI_TEST_PRODUCT")
@@ -522,6 +552,25 @@ mod tests {
             .expect("cloud download");
         println!("{count} cloud slot(s) in {}", dir.display());
         assert!(count > 0);
+        let mut files: Vec<_> = std::fs::read_dir(&dir)
+            .expect("slot folder")
+            .flatten()
+            .map(|entry| entry.path())
+            .filter(|path| path.extension().and_then(|ext| ext.to_str()) == Some("save"))
+            .collect();
+        files.sort();
+        assert_eq!(files.len(), count);
+        for path in &files {
+            let bytes = std::fs::read(path).expect("slot bytes");
+            let header = u32::from_le_bytes(bytes[0..4].try_into().unwrap());
+            println!(
+                "{}: {} bytes, header {}",
+                path.file_name().unwrap().to_string_lossy(),
+                bytes.len(),
+                header
+            );
+            assert!(matches!(header, 36 | 40 | 548 | 552));
+        }
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
