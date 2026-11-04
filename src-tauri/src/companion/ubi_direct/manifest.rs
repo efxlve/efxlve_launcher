@@ -6,11 +6,12 @@
 //! not encrypted, so the same manifest drives both the download plan and the
 //! integrity checks.
 
+use std::collections::HashMap;
 use std::io::Read;
 
 use serde::{Deserialize, Serialize};
 
-use crate::companion::proto::for_each_field;
+use crate::companion::proto::{for_each_field, push_bytes};
 
 const MANIFEST_HEADER: usize = 356;
 const LOCAL_CACHE: &str = "efxlve_install.json";
@@ -32,12 +33,27 @@ pub(crate) struct ManifestFile {
     pub slices: Vec<ManifestSlice>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub(crate) struct Manifest {
     pub compression_method: i32,
     pub chunks_version: Option<u32>,
+    #[serde(default)]
+    pub chunk_ids: Vec<u32>,
     pub files: Vec<ManifestFile>,
+    #[serde(skip)]
+    pub raw_bytes: Vec<u8>,
 }
+
+impl PartialEq for Manifest {
+    fn eq(&self, other: &Self) -> bool {
+        self.compression_method == other.compression_method
+            && self.chunks_version == other.chunks_version
+            && self.chunk_ids == other.chunk_ids
+            && self.files == other.files
+    }
+}
+
+impl Eq for Manifest {}
 
 impl Manifest {
     pub(crate) fn total_bytes(&self) -> u64 {
@@ -49,16 +65,41 @@ impl Manifest {
     }
 }
 
+struct ParsedChunk {
+    id: Option<u32>,
+    language: String,
+    files: Vec<ManifestFile>,
+}
+
 /// Decode the manifest body after the fixed CDN header has been stripped and the
 /// zlib stream inflated.
 pub(crate) fn parse_manifest(inflated: &[u8]) -> Manifest {
     let mut manifest = Manifest::default();
+    let mut index_by_path: HashMap<String, (usize, u8)> = HashMap::new();
     for_each_field(
         inflated,
         |field, bytes| {
             if field == 4 {
-                let files = parse_chunk(bytes);
-                manifest.files.extend(files);
+                let chunk = parse_chunk(bytes);
+                if let Some(id) = chunk.id {
+                    if !manifest.chunk_ids.contains(&id) {
+                        manifest.chunk_ids.push(id);
+                    }
+                }
+                let priority = language_priority(&chunk.language);
+                for file in chunk.files {
+                    let key = file.name.replace('/', "\\").to_ascii_lowercase();
+                    if let Some(&(existing_idx, existing_prio)) = index_by_path.get(&key) {
+                        if priority > existing_prio {
+                            manifest.files[existing_idx] = file;
+                            index_by_path.insert(key, (existing_idx, priority));
+                        }
+                    } else {
+                        let idx = manifest.files.len();
+                        index_by_path.insert(key, (idx, priority));
+                        manifest.files.push(file);
+                    }
+                }
             }
         },
         |field, value| match field {
@@ -70,20 +111,43 @@ pub(crate) fn parse_manifest(inflated: &[u8]) -> Manifest {
     manifest
 }
 
-fn parse_chunk(payload: &[u8]) -> Vec<ManifestFile> {
+fn language_priority(language: &str) -> u8 {
+    let trimmed = language.trim().to_ascii_lowercase();
+    if trimmed.is_empty() {
+        3
+    } else if trimmed == "en-us" || trimmed == "en" || trimmed.starts_with("en-") {
+        2
+    } else {
+        1
+    }
+}
+
+fn parse_chunk(payload: &[u8]) -> ParsedChunk {
+    let mut id = None;
+    let mut language = String::new();
     let mut files = Vec::new();
     for_each_field(
         payload,
-        |field, bytes| {
-            if field == 3 {
+        |field, bytes| match field {
+            2 => language = String::from_utf8_lossy(bytes).trim().to_string(),
+            3 => {
                 if let Some(file) = parse_file(bytes) {
                     files.push(file);
                 }
             }
+            _ => {}
         },
-        |_, _| {},
+        |field, value| {
+            if field == 1 {
+                id = Some(value as u32);
+            }
+        },
     );
-    files
+    ParsedChunk {
+        id,
+        language,
+        files,
+    }
 }
 
 fn parse_file(payload: &[u8]) -> Option<ManifestFile> {
@@ -139,7 +203,9 @@ struct LocalCache {
 }
 
 /// Keep the manifest a launcher install already fetched. It lets a signed-out
-/// user re-adopt the folder and verify its files without the ownership service.
+/// user re-adopt the folder and verify its files without the ownership service,
+/// and also writes `uplay_install.manifest` / `uplay_install.state` when the
+/// raw CDN bytes are available so the install matches the Connect layout.
 pub(crate) fn write_local_cache(
     install_dir: &std::path::Path,
     manifest: &Manifest,
@@ -153,7 +219,21 @@ pub(crate) fn write_local_cache(
         .map_err(|error| format!("serializing the local manifest: {error}"))?;
     let path = install_dir.join(LOCAL_CACHE);
     std::fs::write(&path, text)
-        .map_err(|error| format!("writing {}: {error}", path.display()))
+        .map_err(|error| format!("writing {}: {error}", path.display()))?;
+    if !manifest.raw_bytes.is_empty() {
+        let _ = std::fs::write(
+            install_dir.join("uplay_install.manifest"),
+            &manifest.raw_bytes,
+        );
+    }
+    if !manifest_id.trim().is_empty()
+        && (!manifest.raw_bytes.is_empty() || !install_dir.join("uplay_install.state").exists())
+    {
+        let mut state = Vec::new();
+        push_bytes(&mut state, 1, manifest_id.trim().as_bytes());
+        let _ = std::fs::write(install_dir.join("uplay_install.state"), state);
+    }
+    Ok(())
 }
 
 fn read_local_cache(install_dir: &std::path::Path) -> Option<(Manifest, String)> {
@@ -234,7 +314,9 @@ pub(crate) async fn fetch_manifest(url: &str) -> Result<Manifest, String> {
     flate2::read::ZlibDecoder::new(&bytes[MANIFEST_HEADER..])
         .read_to_end(&mut inflated)
         .map_err(|e| format!("inflating the Ubisoft manifest: {e}"))?;
-    Ok(parse_manifest(&inflated))
+    let mut parsed = parse_manifest(&inflated);
+    parsed.raw_bytes = bytes.to_vec();
+    Ok(parsed)
 }
 
 /// The CDN shards slices into buckets keyed by a character derived from the
@@ -409,10 +491,43 @@ mod tests {
         push_bytes(&mut bytes, 4, &chunk);
         let manifest = parse_manifest(&bytes);
         write_local_cache(&root, &manifest, "CACHE123").unwrap();
+        assert!(root.join("uplay_install.state").is_file());
         let (read, id) = read_local_install(&root).expect("cached manifest");
         assert_eq!(read, manifest);
         assert_eq!(id, "CACHE123");
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn records_chunk_ids_and_prefers_english_over_foreign_language_duplicates() {
+        let de_file = file("localization.lang", 4, &[0xDE], &[slice(4, 4, &[0xDE])]);
+        let en_file = file("localization.lang", 4, &[0xE1], &[slice(4, 4, &[0xE1])]);
+        let ru_file = file("localization.lang", 4, &[0xBB], &[slice(4, 4, &[0xBB])]);
+
+        let mut de_chunk = Vec::new();
+        push_varint_field(&mut de_chunk, 1, 10);
+        push_string_field(&mut de_chunk, 2, "de-DE");
+        push_bytes(&mut de_chunk, 3, &de_file);
+
+        let mut en_chunk = Vec::new();
+        push_varint_field(&mut en_chunk, 1, 11);
+        push_string_field(&mut en_chunk, 2, "en-US");
+        push_bytes(&mut en_chunk, 3, &en_file);
+
+        let mut ru_chunk = Vec::new();
+        push_varint_field(&mut ru_chunk, 1, 12);
+        push_string_field(&mut ru_chunk, 2, "ru-RU");
+        push_bytes(&mut ru_chunk, 3, &ru_file);
+
+        let mut manifest_bytes = Vec::new();
+        push_bytes(&mut manifest_bytes, 4, &de_chunk);
+        push_bytes(&mut manifest_bytes, 4, &en_chunk);
+        push_bytes(&mut manifest_bytes, 4, &ru_chunk);
+
+        let parsed = parse_manifest(&manifest_bytes);
+        assert_eq!(parsed.chunk_ids, vec![10, 11, 12]);
+        assert_eq!(parsed.files.len(), 1);
+        assert_eq!(parsed.files[0].slices[0].content_sha1, vec![0xE1]);
     }
 
     #[test]

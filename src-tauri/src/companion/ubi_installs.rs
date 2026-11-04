@@ -46,6 +46,9 @@ pub(crate) struct InstalledGame {
     /// written before update checks; the next verify fills it.
     #[serde(default)]
     pub manifest: String,
+    /// Manifest chunk ids reported to the Uplay compatibility shim.
+    #[serde(default)]
+    pub chunk_ids: Vec<u32>,
 }
 
 fn path() -> PathBuf {

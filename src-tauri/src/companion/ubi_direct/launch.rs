@@ -184,12 +184,20 @@ async fn shim_account(game: &ubi_installs::InstalledGame) -> shim::ShimAccount {
             })
         })
         .collect();
+    let chunk_ids = if !game.chunk_ids.is_empty() {
+        game.chunk_ids.clone()
+    } else {
+        super::manifest::read_local_install(Path::new(&game.install_dir))
+            .map(|(manifest, _)| manifest.chunk_ids)
+            .unwrap_or_default()
+    };
     shim::ShimAccount {
         product_id: game.product_id,
         account_id,
         name,
         email: format!("{handle}@efxlve.local"),
         ticket,
+        chunk_ids,
         achievements,
     }
 }

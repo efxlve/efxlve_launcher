@@ -47,6 +47,7 @@ pub(crate) struct ShimAccount {
     pub name: String,
     pub email: String,
     pub ticket: String,
+    pub chunk_ids: Vec<u32>,
     pub achievements: Vec<ShimAchievement>,
 }
 
@@ -293,9 +294,9 @@ fn write_config(directory: &Path, account: &ShimAccount, family: Family) -> Resu
                 },
                 "CDKeys": [],
                 "ChunkInfo": {
-                    "ChunkIds": [],
-                    "InstalledChunkIds": [],
-                    "UseInstalledChunkIds": false,
+                    "ChunkIds": account.chunk_ids,
+                    "InstalledChunkIds": account.chunk_ids,
+                    "UseInstalledChunkIds": !account.chunk_ids.is_empty(),
                 },
                 "Achis": achis,
                 "Rewards": [],
@@ -331,7 +332,7 @@ fn write_config(directory: &Path, account: &ShimAccount, family: Family) -> Resu
                 { "ProductId": account.product_id, "Type": 0 }
             ],
             "AutoProductIds": [account.product_id],
-            "ChunkIds": [],
+            "ChunkIds": account.chunk_ids,
             "AvatarsPath": "",
         }),
     };
@@ -454,6 +455,7 @@ mod tests {
             name: "Player".into(),
             email: "player@efxlve.local".into(),
             ticket: "ticket-1".into(),
+            chunk_ids: vec![1, 2],
             achievements: Vec::new(),
         };
         write_config(&root, &account, Family::R2).unwrap();
@@ -462,6 +464,9 @@ mod tests {
         assert!(text.contains("\"UseProductIdInName\""));
         assert!(text.contains("\"Products\""));
         assert!(!text.contains("\"UseDebug\""));
+        write_config(&root, &account, Family::R1).unwrap();
+        let r1_text = std::fs::read_to_string(root.join("upc.json")).unwrap();
+        assert!(r1_text.contains("\"UseInstalledChunkIds\": true"));
         let _ = std::fs::remove_dir_all(&root);
     }
 
@@ -486,6 +491,7 @@ mod tests {
             name: "Player".into(),
             email: "player@efxlve.local".into(),
             ticket: "ticket-1".into(),
+            chunk_ids: vec![1],
             achievements: Vec::new(),
         };
         let name = deploy(&exe, &account).await.expect("deploy").expect("shim");

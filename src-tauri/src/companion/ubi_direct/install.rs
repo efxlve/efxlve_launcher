@@ -697,6 +697,7 @@ where
         ticket,
         client_launch,
         manifest: manifest_id,
+        chunk_ids: manifest.chunk_ids.clone(),
     });
     Ok(InstallSummary {
         product_id,

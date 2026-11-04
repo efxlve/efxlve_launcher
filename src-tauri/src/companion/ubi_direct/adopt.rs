@@ -79,6 +79,7 @@ async fn adopt_online(
             exe_path.display()
         ));
     }
+    let chunk_ids = prepared.manifest.chunk_ids.clone();
     let _ = manifest::write_local_cache(install_dir, &prepared.manifest, &prepared.manifest_id);
     let record = record(
         product_id,
@@ -91,6 +92,7 @@ async fn adopt_online(
         prepared.uplay_id,
         prepared.ticket,
         prepared.manifest_id,
+        chunk_ids,
     );
     finish(record)
 }
@@ -169,6 +171,7 @@ fn adopt_local(
         uplay_id,
         String::new(),
         manifest_id,
+        local.chunk_ids,
     );
     finish(record)
 }
@@ -185,6 +188,7 @@ fn record(
     uplay_id: u32,
     ticket: String,
     manifest_id: String,
+    chunk_ids: Vec<u32>,
 ) -> ubi_installs::InstalledGame {
     ubi_installs::InstalledGame {
         product_id,
@@ -202,6 +206,7 @@ fn record(
         ticket,
         client_launch: false,
         manifest: manifest_id,
+        chunk_ids,
     }
 }
 
