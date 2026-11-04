@@ -797,6 +797,14 @@ export const S = {
   /** EA base install folder from Settings > Downloads (empty = default). */
   eaInstallDir: "",
   eaDefaultDir: "",
+  /** Direct Ubisoft installs (Integrations page). On unless explicitly turned off. */
+  ubiDirectEnabled: true,
+  /** Ubisoft base install folder from Settings > Downloads (empty = default). */
+  ubiInstallDir: "",
+  ubiDefaultDir: "",
+  /** Product resolved by the Ubisoft install dialog for the final install call. */
+  ubiInstallProductId: 0,
+  ubiInstallName: "",
   /** EA content installs started from this launcher, keyed by library id. */
   eaContentProgress: ({} as Record<string, import("../companion").EaContentProgress>),
   eaContentInstalling: (new Set<string>()) as Set<string>,

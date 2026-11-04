@@ -52,8 +52,8 @@ import {
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { applyWinbarAppIcon } from "../../core/app-icon";
 import { closeModal, viewEl } from "../../core/dom";
-import { answerChoice, answerConfirm, askChoice, askConfirm } from "../../core/confirm-dialog";
-import { esc, fmtBytes } from "../../core/utils";
+import { answerChoice, answerConfirm, askConfirm } from "../../core/confirm-dialog";
+import { esc } from "../../core/utils";
 import { icon } from "../../core/icons";
 import { applySidebarPageVisibility, discordPageVisible, miniPlayerVisible, notesSidebarVisible, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { epicPlay, epicStop, refreshEpicInstalled } from "../../core/epic-actions";
@@ -113,8 +113,8 @@ import {
 import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
-import { companionStoreId, loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaContentCancel, eaContentPlan, eaContentUninstall, eaContentVerify, eaDirectSetEnabled, eaLoginOpen, ubiDirectAdopt, ubiDirectCancel, ubiDirectCloudSaves, ubiDirectImportSaves, ubiDirectInstall, ubiDirectMove, ubiDirectPlan, ubiDirectProbe, ubiDirectRelease, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
+import { loadCompanionLibrary } from "../library/companion-library";
+import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaContentCancel, eaContentPlan, eaContentUninstall, eaContentVerify, eaDirectSetEnabled, eaLoginOpen, ubiDirectAdopt, ubiDirectCancel, ubiDirectCloudSaves, ubiDirectImportSaves, ubiDirectMove, ubiDirectProbe, ubiDirectRelease, ubiDirectSetEnabled, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { collectionGames } from "../../core/game-collections";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
@@ -178,41 +178,6 @@ function toggleStoreExtension(id: "steamdb" | "augmented_steam"): void {
       render();
     })
     .catch((e: unknown) => toast(String(e), "err"));
-}
-
-/** Match a library title against the Demux catalog without punctuation noise. */
-const ubiTitleKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "");
-
-/** Confirm a direct install and start it; shared by the game page and settings. */
-async function beginUbiDirectInstall(productId: number, name: string): Promise<void> {
-  const plan = await ubiDirectPlan(productId);
-  const picked = await epicSelectFolderDialog(plan.installDir, i18nT("common.install")).catch(
-    () => null,
-  );
-  const installDir = picked || plan.installDir;
-  const ok = await askConfirm({
-    title: i18nT("common.install"),
-    name: plan.name || name,
-    body: `${fmtBytes(plan.bytes)} · ${plan.files} files · ${installDir}`,
-    confirm: i18nT("common.install"),
-    cancel: i18nT("common.cancel"),
-  });
-  if (!ok) return;
-  S.ubiDirectInstalling.add(productId);
-  S.ubiDirectProgress[productId] = {
-    productId,
-    doneBytes: 0,
-    totalBytes: plan.bytes,
-    file: "",
-  };
-  render();
-  try {
-    await ubiDirectInstall(productId, installDir);
-  } catch (error) {
-    S.ubiDirectInstalling.delete(productId);
-    render();
-    throw error;
-  }
 }
 
 document.addEventListener("click", (e) => {
@@ -828,7 +793,7 @@ document.addEventListener("click", (e) => {
     // the dialog resolves the live package first and falls back to the EA App.
     const call = store === "xbox"
       ? xboxInstall(gameId)
-      : store === "ea" && S.eaDirectEnabled
+      : (store === "ea" && S.eaDirectEnabled) || (store === "ubisoft" && S.ubiDirectEnabled)
         ? openInstallDialog(id)
         : companionGameAction(store, gameId, "install");
     void call.catch((e: unknown) => toast(String(e), "err"));
@@ -1204,80 +1169,6 @@ document.addEventListener("click", (e) => {
         S.ubiDirectLoading = false;
         if (S.view === "settings") render();
       });
-  } else if (act === "ubi-direct-install") {
-    const select = document.getElementById("ubi-direct-game") as HTMLSelectElement | null;
-    const productId = Number(select?.value || 0);
-    if (!productId) return;
-    const game = S.ubiDirect?.games.find((row) => row.productId === productId);
-    void beginUbiDirectInstall(productId, game?.name || "").catch((e: unknown) =>
-      toast(String(e), "err"),
-    );
-  } else if (act === "ubi-install-choice" && id) {
-    const gameId = id.startsWith("ubisoft::") ? id.slice(9) : id;
-    const title = summaryOf(id)?.title || "";
-    void (async () => {
-      try {
-        const choice = await askChoice({
-          title: i18nT("common.install"),
-          body: i18nT("accounts.ubiInstallChoice"),
-          options: [
-            {
-              value: "direct",
-              label: i18nT("accounts.ubiDirectInstall"),
-              hint: i18nT("accounts.ubiDirectInstallHint"),
-              details: [
-                i18nT("accounts.ubiDirectDetail1"),
-                i18nT("accounts.ubiDirectDetail2"),
-                i18nT("accounts.ubiDirectDetail3"),
-                i18nT("accounts.ubiDirectDetail4"),
-                i18nT("accounts.ubiDirectDetail5"),
-              ],
-              primary: true,
-            },
-            {
-              value: "client",
-              label: i18nT("accounts.ubiClientInstall"),
-              hint: i18nT("accounts.ubiClientInstallHint"),
-              details: [
-                i18nT("accounts.ubiClientDetail1"),
-                i18nT("accounts.ubiClientDetail2"),
-                i18nT("accounts.ubiClientDetail3"),
-              ],
-            },
-          ],
-          note: i18nT("accounts.ubiInstallNote"),
-          cancel: i18nT("common.cancel"),
-        });
-        if (!choice) return;
-        if (choice === "client") {
-          await companionGameAction("ubisoft", gameId, "install");
-          return;
-        }
-        // Local rows carry the product id as their store id; catalog-only rows
-        // get it from the entitlement cache. Either way the probe match below
-        // is only a fallback for older caches.
-        const storedId = Number(companionStoreId(id));
-        if (storedId > 0) {
-          await beginUbiDirectInstall(storedId, title);
-          return;
-        }
-        if (!S.ubiDirect) S.ubiDirect = await ubiDirectProbe();
-        const key = ubiTitleKey(title);
-        const candidates = S.ubiDirect.games.filter((game) => game.installable);
-        const match =
-          candidates.find((game) => ubiTitleKey(game.name) === key) ||
-          candidates.find((game) => ubiTitleKey(game.name).includes(key)) ||
-          candidates.find((game) => key.includes(ubiTitleKey(game.name)));
-        if (!match) {
-          toast(i18nT("accounts.ubiNoGames"), "err");
-          return;
-        }
-        await beginUbiDirectInstall(match.productId, match.name);
-      } catch (e) {
-        if (String(e).includes("ubiSessionExpired")) setView("accounts");
-        toast(localizeMessage(String(e)), "err");
-      }
-    })();
   } else if (act === "epic-play" && id) {    void epicPlay(id);
   } else if (act === "epic-stop" && id) {
     void epicStop(id);
@@ -1697,6 +1588,13 @@ document.addEventListener("click", (e) => {
     const enabled = (t as HTMLInputElement).checked;
     S.eaDirectEnabled = enabled;
     void eaDirectSetEnabled(enabled).catch((e: unknown) => toast(String(e), "err"));
+    render();
+  } else if (act === "toggle-ubi-direct") {
+    // Direct Ubisoft installs are the default; turning this off sends the next
+    // install through Ubisoft Connect instead.
+    const enabled = (t as HTMLInputElement).checked;
+    S.ubiDirectEnabled = enabled;
+    void ubiDirectSetEnabled(enabled).catch((e: unknown) => toast(String(e), "err"));
     render();
   } else if (act === "toggle-screenshot-compression") {
     S.screenshotCompressionEnabled = !S.screenshotCompressionEnabled;

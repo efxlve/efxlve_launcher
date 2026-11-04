@@ -26,6 +26,10 @@ pub(crate) struct InstallProgress {
     pub product_id: u32,
     pub done_bytes: u64,
     pub total_bytes: u64,
+    pub bytes_per_second: u64,
+    pub eta_seconds: u64,
+    pub files_done: usize,
+    pub total_files: usize,
     pub file: String,
 }
 
@@ -50,6 +54,10 @@ pub(crate) struct InstallPlan {
     pub files: usize,
     pub slices: usize,
     pub bytes: u64,
+    /// Bytes the CDN actually transfers (compressed slice sizes).
+    pub download_bytes: u64,
+    /// The title needs Ubisoft Connect for anti-cheat / online play.
+    pub client_only: bool,
     pub compression: String,
     pub slice_layout: String,
 }
@@ -361,7 +369,14 @@ pub(crate) async fn prepare(
     let spec = ubisoft::launch_spec(&game.configuration);
     let install_reg = spec.install_reg;
     let uplay_id = game.uplay_id;
-    let name = ubisoft::game_name(&game.configuration).unwrap_or_else(|| product_id.to_string());
+    let name = ubisoft::game_name(&game.configuration)
+        .or_else(|| {
+            ubisoft::load_owned()
+                .into_iter()
+                .find(|row| row.product_id == product_id)
+                .map(|row| row.name)
+        })
+        .unwrap_or_else(|| product_id.to_string());
     let manifest_id = if game.latest_manifest.is_empty() {
         demux
             .latest_manifests(&[product_id])
@@ -417,15 +432,24 @@ pub(crate) async fn probe_plan(
     install_dir: &Path,
 ) -> Result<InstallPlan, String> {
     let prepared = prepare(demux, product_id).await?;
+    let name = prepared.name;
     let manifest = prepared.manifest;
+    let download_bytes = manifest
+        .files
+        .iter()
+        .flat_map(|file| &file.slices)
+        .map(|slice| u64::from(slice.download_size.unwrap_or(slice.size)))
+        .sum();
     Ok(InstallPlan {
         product_id,
-        name: prepared.name,
+        name: name.clone(),
         manifest: String::new(),
         install_dir: install_dir.display().to_string(),
         files: manifest.files.len(),
         slices: manifest.total_slices(),
         bytes: manifest.total_bytes(),
+        download_bytes,
+        client_only: crate::overlay::anti_cheat::game_has_anti_cheat(&name, None),
         compression: match manifest.compression_method {
             1 => "deflate".into(),
             3 => "zstd".into(),
@@ -467,6 +491,8 @@ where
     let mut done_bytes = 0u64;
     let mut last_emit = 0u64;
     let mut skipped_files = 0usize;
+    let total_files = manifest.files.len();
+    let started = std::time::Instant::now();
 
     let prev_manifest = manifest::read_local_install(install_dir)
         .ok()
@@ -491,7 +517,7 @@ where
         .build()
         .map_err(|e| format!("building the CDN client: {e}"))?;
 
-    for file in &manifest.files {
+    for (file_index, file) in manifest.files.iter().enumerate() {
         if cancelled(product_id) {
             return Err("@t:dl.cancelled".to_string());
         }
@@ -681,10 +707,21 @@ where
                     offset += 1;
                     if done_bytes - last_emit >= emit_step {
                         last_emit = done_bytes;
+                        let elapsed = started.elapsed().as_secs_f64().max(0.001);
+                        let bytes_per_second = (done_bytes as f64 / elapsed) as u64;
+                        let eta_seconds = if bytes_per_second > 0 {
+                            total_bytes.saturating_sub(done_bytes) / bytes_per_second
+                        } else {
+                            0
+                        };
                         on_progress(InstallProgress {
                             product_id,
                             done_bytes,
                             total_bytes,
+                            bytes_per_second,
+                            eta_seconds,
+                            files_done: file_index + 1,
+                            total_files,
                             file: file.name.clone(),
                         });
                     }
@@ -716,6 +753,10 @@ where
         product_id,
         done_bytes: total_bytes,
         total_bytes,
+        bytes_per_second: 0,
+        eta_seconds: 0,
+        files_done: total_files,
+        total_files,
         file: String::new(),
     });
     // Keep the manifest next to the files so a later signed-out run can verify
@@ -921,11 +962,19 @@ pub(crate) fn pick_executable(manifest: &Manifest) -> String {
     best.map(|file| file.name.clone()).unwrap_or_default()
 }
 
+/// Base folder for Ubisoft direct installs, matching `<home>/Games/EA`.
+pub(crate) fn default_base() -> PathBuf {
+    std::env::var_os("USERPROFILE")
+        .or_else(|| std::env::var_os("HOME"))
+        .map(PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir)
+        .join("Games")
+        .join("Ubisoft")
+}
+
 /// Where a direct install lands when the caller has no preference.
 pub(crate) fn default_install_dir(product_id: u32) -> PathBuf {
-    crate::companion::accounts::data_dir()
-        .join("ubi-games")
-        .join(product_id.to_string())
+    default_base().join(product_id.to_string())
 }
 
 #[cfg(test)]

@@ -127,7 +127,7 @@ const isRiot = source === "riot";
             : `${installed
                 ? item("epic-play", t("common.play"), "play")
                 : isCompanion
-                  ? companionItem(source === "ubisoft" ? "ubi-install-choice" : "companion-install", t("common.install"), "download")
+                  ? companionItem(source === "ubisoft" ? "epic-install" : "companion-install", t("common.install"), "download")
                   : item("epic-install", t("common.install"), "download")}
     ${!isCustom ? item("manage-game", t("common.manage"), "settings") : ""}`}
     ${!shared && !isSteam && installed && (s.updateAvailable || S.availableUpdates.has(appName))

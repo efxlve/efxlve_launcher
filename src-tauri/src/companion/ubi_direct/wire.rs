@@ -67,9 +67,32 @@ impl Demux {
             tls,
             next_request_id: 1,
         };
-        demux.write(&codec::client_version_push(api_version())).await?;
+        // The server names the current protocol build; announcing a stale one
+        // can make a service ignore requests while ownership still answers.
+        let version = match tokio::time::timeout(
+            Duration::from_secs(5),
+            demux.patch_version(),
+        )
+        .await
+        {
+            Ok(Ok(version)) if version > 0 => version,
+            _ => api_version(),
+        };
+        if std::env::var_os("EFXLVE_UBI_DEBUG_DEMUX").is_some() {
+            eprintln!("[demux] announcing client version {version}");
+        }
+        demux.write(&codec::client_version_push(version)).await?;
         demux.authenticate(ticket).await?;
         Ok(demux)
+    }
+
+    async fn patch_version(&mut self) -> Result<u32, String> {
+        let id = self.next_id();
+        self.write(&codec::patch_info_request(id)).await?;
+        let response = self.response(id).await?;
+        response
+            .patch_version
+            .ok_or_else(|| "Demux returned no patch version".to_string())
     }
 
     fn next_id(&mut self) -> u32 {
@@ -167,16 +190,20 @@ impl Demux {
         Ok(open.connection_id)
     }
 
+    async fn write_service(&mut self, connection_id: u32, payload: &[u8]) -> Result<(), String> {
+        let mut framed = Vec::with_capacity(payload.len() + 4);
+        framed.extend_from_slice(&(payload.len() as u32).to_be_bytes());
+        framed.extend_from_slice(payload);
+        self.write(&codec::data_push(connection_id, &framed)).await
+    }
+
     /// Send one service payload and return the matching payload back.
     pub(crate) async fn service_call(
         &mut self,
         connection_id: u32,
         payload: &[u8],
     ) -> Result<Vec<u8>, String> {
-        let mut framed = Vec::with_capacity(payload.len() + 4);
-        framed.extend_from_slice(&(payload.len() as u32).to_be_bytes());
-        framed.extend_from_slice(payload);
-        self.write(&codec::data_push(connection_id, &framed)).await?;
+        self.write_service(connection_id, payload).await?;
 
         for _ in 0..64 {
             let downstream = self.read().await?;
@@ -186,6 +213,12 @@ impl Demux {
                         "Demux says this client build is outdated; set EFXLVE_UBI_DEMUX_VERSION"
                             .to_string(),
                     );
+                }
+                if push.closed_connection == Some(connection_id) {
+                    return Err(format!(
+                        "Ubisoft closed service connection {connection_id} (code {})",
+                        push.close_code
+                    ));
                 }
                 if let Some(data) = push.data {
                     if data.connection_id == connection_id {

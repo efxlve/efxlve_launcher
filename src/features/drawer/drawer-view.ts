@@ -813,7 +813,7 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
             ? `<button class="btn primary lg" data-act="ubi-direct-open">${icon("download", 16)} ${t("common.downloading", { p: Math.min(100, Math.round((directProgress.doneBytes / Math.max(1, directProgress.totalBytes)) * 100)) })}</button>`
             : s.installed
               ? `<button class="btn play lg" data-act="epic-play" data-id="${s.appName}">${icon("play", 16)} ${t("common.play")}</button>`
-              : `<button class="btn install lg" data-act="${store === "ubisoft" ? "ubi-install-choice" : "companion-install"}" data-id="${s.appName}" data-store="${store}">${icon("download", 16)} ${t("common.install")}</button>`;
+              : `<button class="btn install lg" data-act="${store === "ubisoft" ? "epic-install" : "companion-install"}" data-id="${s.appName}" data-store="${store}">${icon("download", 16)} ${t("common.install")}</button>`;
     return `${primary}
       <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
       <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
@@ -2286,10 +2286,17 @@ function storeInstallDir(appName: string): string | null {
 
 /** Store name for the achievement copy; brand names are not translated. */
 function achievementStoreLabel(appName: string): string {
-  const source = sourceOfKey(appName);
-  if (source === "gog") return "GOG";
-  if (source === "amazon") return "Amazon Games";
-  return "Epic Games";
+  switch (sourceOfKey(appName)) {
+    case "ea": return "EA App";
+    case "ubisoft": return "Ubisoft Connect";
+    case "xbox": return "Xbox";
+    case "battlenet": return "Battle.net";
+    case "riot": return "Riot Client";
+    case "gog": return "GOG";
+    case "amazon": return "Amazon Games";
+    case "steam": return "Steam";
+    default: return "Epic Games";
+  }
 }
 
 /** Short label for the source the list actually came from. */
@@ -2300,10 +2307,7 @@ function achievementSourceLabel(s: EpicSummary, data: EpicAchievementsData): str
   if (data.data_source === "definitions") return t("ach.sourceSteamDefinitions");
   if (data.data_source === "local") return t("ach.sourceLocalFile");
   if (s.appName.startsWith("custom::")) return t("ach.sourceEmulator");
-  if (s.appName.startsWith("steam::")) return "Steam";
-  if (s.appName.startsWith("gog::")) return "GOG";
-  if (s.appName.startsWith("amazon::")) return "Amazon Games";
-  return "Epic Games";
+  return achievementStoreLabel(s.appName);
 }
 
 /**

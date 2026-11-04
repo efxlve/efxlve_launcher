@@ -55,7 +55,7 @@ import {
   type EpicSettings,
 } from "../../../epic";
 import { uninstallAmazonGame } from "../../auth/amazon-auth-actions";
-import { companionGameAction, eaSetInstallDir, xboxUninstall, type CompanionStore } from "../../../companion";
+import { companionGameAction, eaSetInstallDir, ubiSetInstallDir, xboxUninstall, type CompanionStore } from "../../../companion";
 import { loadCompanionLibrary } from "../../library/companion-library";
 import { steamGameAction } from "../../../steam";
 
@@ -68,7 +68,15 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
       return true;
 
     case "epic-install":
-      if (id) void openInstallDialog(id);
+      if (id) {
+        if (id.startsWith("ubisoft::") && !S.ubiDirectEnabled) {
+          void companionGameAction("ubisoft", id.slice(9), "install").catch((e: unknown) =>
+            toast(String(e), "err"),
+          );
+        } else {
+          void openInstallDialog(id);
+        }
+      }
       return true;
 
     case "install-browse":
@@ -340,6 +348,37 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
         try {
           await eaSetInstallDir(chosen);
           S.eaInstallDir = chosen;
+          toast(i18nT("dl.installDirSaved"), "ok");
+          render();
+        } catch (e) {
+          toast(String(e), "err");
+        }
+      })();
+      return true;
+
+    case "ubi-save-install-dir": {
+      const input = document.getElementById("ubi-install-dir") as HTMLInputElement | null;
+      const value = input?.value?.trim() ?? "";
+      ubiSetInstallDir(value)
+        .then(() => {
+          S.ubiInstallDir = value;
+          toast(i18nT("dl.installDirSaved"), "ok");
+          render();
+        })
+        .catch((e: unknown) => toast(String(e), "err"));
+      return true;
+    }
+
+    case "dl-pick-ubi-install-dir":
+      void (async () => {
+        const input = document.getElementById("ubi-install-dir") as HTMLInputElement | null;
+        const current = input?.value?.trim() || S.ubiInstallDir || S.ubiDefaultDir || null;
+        const chosen = await epicSelectFolderDialog(current, i18nT("move.pickerTitle")).catch(() => null);
+        if (!chosen) return;
+        if (input) input.value = chosen;
+        try {
+          await ubiSetInstallDir(chosen);
+          S.ubiInstallDir = chosen;
           toast(i18nT("dl.installDirSaved"), "ok");
           render();
         } catch (e) {

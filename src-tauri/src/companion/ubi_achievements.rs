@@ -465,13 +465,30 @@ pub(crate) fn record_specs(rows: &[AchievementMeta]) {
 fn meta_for(app_id: &str, title: &str) -> Option<AchievementMeta> {
     let app_id = app_id.trim();
     let title_key = super::scan::slug(title);
-    load_specs().into_iter().find(|row| {
-        (!app_id.is_empty()
+    let rows = load_specs();
+    if let Some(exact) = rows.iter().find(|row| {
+        !app_id.is_empty()
             && (row.space_id.eq_ignore_ascii_case(app_id)
                 || row.product_id.to_string() == app_id
-                || row.uplay_id.to_string() == app_id))
-            || (!title_key.is_empty() && super::scan::slug(&row.name) == title_key)
-    })
+                || row.uplay_id.to_string() == app_id)
+    }) {
+        return Some(exact.clone());
+    }
+    let mut matches: Vec<AchievementMeta> = rows
+        .into_iter()
+        .filter(|row| !title_key.is_empty() && super::scan::slug(&row.name) == title_key)
+        .collect();
+    // Different editions share a title; the row with a real achievement spec
+    // is the one the archive downloader can use.
+    matches.sort_by(|left, right| {
+        left.achievements
+            .trim()
+            .is_empty()
+            .cmp(&right.achievements.trim().is_empty())
+            .then((left.product_id == 0).cmp(&(right.product_id == 0)))
+            .then(left.name.cmp(&right.name))
+    });
+    matches.into_iter().next()
 }
 
 /// The archive URL the Connect client logs for an `achievements:` spec. Only
@@ -591,7 +608,29 @@ pub(crate) async fn ensure_schema(app_id: &str, title: &str, language: &str) -> 
         return true;
     }
     let mut meta = meta_for(app_id, title);
-    if meta.is_none() && super::ubi_vault::load().is_some() && metadata_refresh_allowed() {
+    let title_key = super::scan::slug(title);
+    let owned_product = super::ubisoft::load_owned()
+        .into_iter()
+        .find(|row| {
+            (!app_id.trim().is_empty()
+                && (row.id.eq_ignore_ascii_case(app_id.trim())
+                    || row.product_id.to_string() == app_id.trim()))
+                || (!title_key.is_empty() && super::scan::slug(&row.name) == title_key)
+        })
+        .map(|row| row.product_id)
+        .filter(|id| *id > 0);
+    let stale_meta = meta
+        .as_ref()
+        .map(|row| {
+            owned_product
+                .map(|id| row.product_id != id && row.uplay_id != id)
+                .unwrap_or(false)
+        })
+        .unwrap_or(false);
+    if (meta.is_none() || stale_meta)
+        && super::ubi_vault::load().is_some()
+        && metadata_refresh_allowed()
+    {
         let _ = tokio::time::timeout(
             std::time::Duration::from_secs(12),
             super::ubi_direct::refresh_achievement_metadata(),
@@ -747,39 +786,37 @@ pub(crate) fn achievements_for(app_id: &str, title: &str, language: &str) -> Gam
         .map(|e| e.achievements.clone())
         .or_else(|| meta.as_ref().map(|m| m.achievements.clone()))
         .unwrap_or_default();
-    let spool_id = entry
-        .map(|e| e.launch_id)
-        .filter(|id| *id > 0)
-        .map(|id| id.to_string())
-        .or_else(|| {
-            meta.as_ref()
-                .and_then(|m| [m.product_id, m.uplay_id].into_iter().find(|id| *id > 0))
-                .map(|id| id.to_string())
-        })
-        .or_else(|| {
-            owned_entry
-                .filter(|row| row.product_id > 0)
-                .map(|row| row.product_id.to_string())
-        })
-        .or_else(|| {
-            (!app_id.is_empty() && app_id.chars().all(|c| c.is_ascii_digit())).then(|| app_id.to_string())
-        });
+    let mut spool_ids: Vec<String> = Vec::new();
+    let mut push_spool_id = |id: u64| {
+        if id > 0 {
+            let text = id.to_string();
+            if !spool_ids.contains(&text) {
+                spool_ids.push(text);
+            }
+        }
+    };
+    if let Some(row) = entry {
+        push_spool_id(row.launch_id);
+    }
+    // The account's owned base product is the spool the client writes; edition
+    // rows in the configuration can point at a different id with no spool file
+    // (for example Rainbow Six Siege 66044 vs 635).
+    if let Some(row) = owned_entry {
+        push_spool_id(u64::from(row.product_id));
+    }
+    if let Some(meta) = &meta {
+        push_spool_id(u64::from(meta.product_id));
+        push_spool_id(u64::from(meta.uplay_id));
+    }
+    if let Ok(id) = app_id.parse::<u64>() {
+        push_spool_id(id);
+    }
     let mut candidate_ids = Vec::new();
     if !app_id.is_empty() {
         candidate_ids.push(app_id.to_string());
     }
     if let Some(row) = entry {
         for id in [row.install_id, row.launch_id] {
-            if id > 0 {
-                let text = id.to_string();
-                if !candidate_ids.contains(&text) {
-                    candidate_ids.push(text);
-                }
-            }
-        }
-    }
-    if let Some(meta) = &meta {
-        for id in [meta.product_id, meta.uplay_id] {
             if id > 0 {
                 let text = id.to_string();
                 if !candidate_ids.contains(&text) {
@@ -799,6 +836,16 @@ pub(crate) fn achievements_for(app_id: &str, title: &str, language: &str) -> Gam
             candidate_ids.push(row.id.clone());
         }
     }
+    if let Some(meta) = &meta {
+        for id in [meta.product_id, meta.uplay_id] {
+            if id > 0 {
+                let text = id.to_string();
+                if !candidate_ids.contains(&text) {
+                    candidate_ids.push(text);
+                }
+            }
+        }
+    }
 
     let roots = achievements_roots();
     if roots.is_empty() {
@@ -813,8 +860,8 @@ pub(crate) fn achievements_for(app_id: &str, title: &str, language: &str) -> Gam
     if rows.is_empty() {
         return GameAchievementsResponse::default();
     }
-    let earned = spool_id
-        .and_then(|id| spool_root().and_then(|spool_root| spool_path(&spool_root, &id)))
+    let earned = spool_root()
+        .and_then(|root| spool_ids.iter().find_map(|id| spool_path(&root, id)))
         .and_then(|path| std::fs::read(path).ok())
         .map(|bytes| parse_spool(&bytes))
         .unwrap_or_default();
@@ -1008,6 +1055,19 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "needs a linked session; downloads Watch Dogs 2 without an install"]
+    async fn live_uninstalled_watch_dogs_2_has_achievements() {
+        let id = "8c8d9b22-498c-45e6-80da-7cd22787c9b3";
+        assert!(ensure_schema(id, "WATCH_DOGS® 2", "en").await);
+        let data = achievements_for(id, "WATCH_DOGS® 2", "en");
+        println!(
+            "{} achievements, {} unlocked",
+            data.total_achievements, data.user_unlocked
+        );
+        assert!(data.total_achievements > 0);
+    }
+
+    #[tokio::test]
     #[ignore = "needs a linked session; downloads Far Cry 4 from the metadata cache"]
     async fn live_metadata_schema_downloads_from_metadata() {
         assert!(ensure_schema("61412", "Far Cry 4", "en").await);
@@ -1017,6 +1077,39 @@ mod tests {
             data.total_achievements, data.user_unlocked
         );
         assert!(data.total_achievements > 0);
+    }
+
+    #[test]
+    #[ignore = "reads the local Rainbow Six schema and spool"]
+    fn live_rainbow_six_achievements() {
+        let spool_root = spool_root().expect("spool root");
+        let path = spool_path(&spool_root, "635").expect("635 spool");
+        let bytes = std::fs::read(&path).expect("spool bytes");
+        let earned = parse_spool(&bytes);
+        println!("spool={} records={}", path.display(), earned.len());
+        let roots = achievements_roots();
+        let schema = schema_path_for(&roots, &["635".to_string()], "");
+        if let Some(schema) = schema {
+            let rows = load_schema(&schema).expect("schema");
+            println!(
+                "schema={} rows={} first={:?}",
+                schema.display(),
+                rows.len(),
+                rows.iter().take(5).map(|row| &row.id).collect::<Vec<_>>()
+            );
+            println!(
+                "earned first={:?}",
+                earned.keys().take(5).collect::<Vec<_>>()
+            );
+        }
+        for id in ["635", "66044"] {
+            let data = achievements_for(id, "Tom Clancy's Rainbow Six Siege", "en");
+            println!(
+                "{id}: {} achievements, {} unlocked",
+                data.total_achievements, data.user_unlocked
+            );
+            assert!(data.total_achievements > 0);
+        }
     }
 
     #[test]

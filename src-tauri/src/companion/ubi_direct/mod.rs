@@ -85,11 +85,17 @@ async fn connect() -> Result<(wire::Demux, ubisoft_login::Session), String> {
 /// Connect client's local cache is encrypted on current builds, so this is the
 /// only unauthenticated-free source the achievement page can use later.
 fn record_achievement_metadata(owned: &[codec::OwnedGame]) {
+    let cached = ubisoft::load_owned();
     let rows: Vec<super::ubi_achievements::AchievementMeta> = owned
         .iter()
         .filter(|game| game.owned)
         .filter_map(|game| {
-            let name = ubisoft::game_name(&game.configuration)?;
+            let name = ubisoft::game_name(&game.configuration).or_else(|| {
+                cached
+                    .iter()
+                    .find(|row| row.product_id == game.product_id)
+                    .map(|row| row.name.clone())
+            })?;
             Some(super::ubi_achievements::AchievementMeta {
                 product_id: game.product_id,
                 uplay_id: game.uplay_id,
@@ -415,10 +421,18 @@ mod tests {
             .await
             .expect("manifest plan failed");
         println!(
-            "{}: {} files, {} slices, {} bytes, {} compression, {} layout",
-            plan.name, plan.files, plan.slices, plan.bytes, plan.compression, plan.slice_layout
+            "{}: {} files, {} slices, {} bytes ({} download), {} compression, {} layout, client_only={}",
+            plan.name,
+            plan.files,
+            plan.slices,
+            plan.bytes,
+            plan.download_bytes,
+            plan.compression,
+            plan.slice_layout,
+            plan.client_only
         );
         assert!(plan.files > 0);
+        assert!(plan.download_bytes > 0);
     }
 
     #[tokio::test]

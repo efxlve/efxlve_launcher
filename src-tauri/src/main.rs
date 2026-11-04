@@ -316,6 +316,13 @@ pub struct EpicSettings {
     /// the Connect client to be running.
     #[serde(default)]
     pub ubi_direct_shim: Option<bool>,
+    /// Install and launch eligible Ubisoft games without Ubisoft Connect. On by
+    /// default; online, anti-cheat and Connect-only titles remain client-only.
+    #[serde(default)]
+    pub ubi_direct_enabled: Option<bool>,
+    /// Base folder for Ubisoft direct installs (empty = `<home>/Games/Ubisoft`).
+    #[serde(default)]
+    pub ubi_install_dir: Option<String>,
     /// Base folder for Amazon Games installs (empty = Nile's default).
     #[serde(default)]
     pub amazon_install_dir: Option<String>,
@@ -2146,6 +2153,11 @@ fn main() {
             companion::companion_open_client,
             companion::companion_launch,
             companion::ubi_direct_probe,
+            companion::ubi_direct_status,
+            companion::ubi_direct_set_enabled,
+            companion::ubi_default_install_dir,
+            companion::ubi_install_dir,
+            companion::ubi_set_install_dir,
             companion::ubi_direct_plan,
             companion::ubi_direct_install,
             companion::ubi_direct_launch,

@@ -182,6 +182,11 @@ stays on the client. Open work:
   2, Rayman). Ghost Recon Future Soldier also imports
   `ubiorbitapi_r2_loader.dll`; For Honor and Rainbow Six Siege are the online R2
   titles. The online ones are not used for shim launch validation.
+- The install button follows one **Settings > Integrations** switch instead of a
+  per-game direct/client chooser. The direct dialog shows the compressed
+  download and disk sizes, the default base is `<home>/Games/Ubisoft`, and
+  Settings > Downloads can change that base. Anti-cheat titles are handed to
+  Ubisoft Connect before a useless download.
 - An existing Connect install can be adopted from Manage without moving or
   re-downloading it, moved to a library folder (the record and both registry
   families are updated), and released back with its official loaders restored.
@@ -206,7 +211,12 @@ stays on the client. Open work:
   `<app_data>/ubi-achievements`, a signed-in ownership response supplies the
   product configuration's `achievements:` spec and `ubi_achievements` downloads
   the archive from `https://static3.cdn.ubi.com/orbit/uplay_launcher_3_0/assets/<spec>`
-  into `<app_data>/ubi-achievements`. Without a session, `upc.json` still seeds
+  into `<app_data>/ubi-achievements`. This also runs before a game is installed:
+  Watch Dogs 2 resolves its owned base product and shows 56 locked achievements
+  from the downloaded archive. Earned timestamps still come from the local
+  spool; `ach_frontend` closes the live connection for this client/account, so
+  progress earned on another PC stays locked until the client syncs a spool.
+  Without a session, `upc.json` still seeds
   fallback slots (`1..=64`) and only surfaces unlocked fallback entries until a
   named schema archive is available.
 - Ubisoft saves are local folders. `companion/ubi_direct/saves.rs` resolves the

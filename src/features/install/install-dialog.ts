@@ -19,7 +19,7 @@ import { toast } from "../../core/toast";
 import { scheduleRender } from "../../core/render";
 import { currentLanguage, localizeMessage, t } from "../../i18n";
 import { gogInstallGame } from "../../gog";
-import { companionGameAction, eaContentInstall, eaContentPlan, eaDefaultInstallDir, eaInstallDir } from "../../companion";
+import { companionGameAction, eaContentInstall, eaContentPlan, eaDefaultInstallDir, eaInstallDir, ubiDefaultInstallDir, ubiDirectInstall, ubiDirectLaunchMode, ubiDirectPlan, ubiDirectProbe, ubiInstallDir } from "../../companion";
 import { setView } from "../store/store-view";
 import {
   epicDefaultInstallDir,
@@ -34,6 +34,7 @@ import {
   requiresThirdPartyLauncher,
 } from "../../epic";
 import { openSelectiveModal } from "../dlc/selective-install";
+import { companionStoreId } from "../library/companion-library";
 
 /** Joins the base folder and the game folder using the platform separator. */
 function joinPath(base: string, folder: string): string {
@@ -66,6 +67,11 @@ export async function openInstallDialog(appName: string): Promise<void> {
 
   if (appName.startsWith("ea::")) {
     await openEaInstallDialog(appName);
+    return;
+  }
+
+  if (appName.startsWith("ubisoft::")) {
+    await openUbiInstallDialog(appName);
     return;
   }
 
@@ -232,12 +238,118 @@ async function openEaInstallDialog(appName: string): Promise<void> {
   }
 }
 
+const ubiTitleKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+/** Resolve a library row to the numeric Ubisoft product id. */
+async function resolveUbiProductId(appName: string, title: string): Promise<number> {
+  const stored = Number(companionStoreId(appName));
+  if (stored > 0) return stored;
+  if (!S.ubiDirect) S.ubiDirect = await ubiDirectProbe().catch(() => null);
+  const key = ubiTitleKey(title);
+  const candidates = (S.ubiDirect?.games ?? []).filter((game) => game.installable);
+  const match =
+    candidates.find((game) => ubiTitleKey(game.name) === key) ||
+    candidates.find((game) => ubiTitleKey(game.name).includes(key)) ||
+    candidates.find((game) => key.includes(ubiTitleKey(game.name)));
+  return match?.productId ?? 0;
+}
+
+/**
+ * The direct Ubisoft install dialog. The manifest resolves the live build and
+ * the compressed download size before the user commits; anti-cheat titles hand
+ * off to Ubisoft Connect instead of downloading a copy that cannot launch.
+ */
+async function openUbiInstallDialog(appName: string): Promise<void> {
+  const s = summaryOf(appName);
+  if (!s) return;
+  const title = s.title;
+  const productId = await resolveUbiProductId(appName, title);
+  if (!productId) {
+    toast(t("accounts.ubiNoGames"), "err");
+    return;
+  }
+  // Updates reuse the existing folder. A launcher-managed install goes back
+  // through the CDN; a client-managed copy stays with Ubisoft Connect.
+  if (s.installed && s.installPath) {
+    const mode = await ubiDirectLaunchMode(s.installPath).catch(() => null);
+    if (mode !== false) {
+      void companionGameAction("ubisoft", appName.slice(9), "install").catch((e: unknown) =>
+        toast(String(e), "err"),
+      );
+      return;
+    }
+    if (S.ubiDirectInstalling.has(productId)) {
+      setView("downloads");
+      return;
+    }
+    S.ubiInstallProductId = productId;
+    S.ubiInstallName = title;
+    S.ubiDirectInstalling.add(productId);
+    S.ubiDirectProgress[productId] = {
+      productId,
+      doneBytes: 0,
+      totalBytes: 0,
+      bytesPerSecond: 0,
+      etaSeconds: 0,
+      filesDone: 0,
+      totalFiles: 0,
+      file: "",
+    };
+    setView("downloads");
+    void ubiDirectInstall(productId, s.installPath).catch((e: unknown) => {
+      S.ubiDirectInstalling.delete(productId);
+      delete S.ubiDirectProgress[productId];
+      toast(localizeMessage(String(e)), "err");
+      scheduleRender();
+    });
+    return;
+  }
+  S.ubiInstallProductId = productId;
+  S.ubiInstallName = title;
+  S.installDialogAppName = appName;
+  S.installDialogFolder = title.replace(/[<>:"/\\|?*]+/g, "").trim() || String(productId);
+  S.installDialogDownloadSize = 0;
+  S.installDialogDiskSize = 0;
+  S.installDialogAutoUpdate = false;
+  S.installDialogShortcut = false;
+  S.installDialogHasOptions = false;
+  S.installDialogLoading = true;
+  S.installDialogDir = "";
+  renderInstallDialog();
+  try {
+    const plan = await ubiDirectPlan(productId);
+    if (S.installDialogAppName !== appName) return;
+    if (plan.clientOnly) {
+      closeInstallDialog();
+      toast(t("accounts.ubiClientDetail1"), "");
+      void companionGameAction("ubisoft", appName.slice(9), "install").catch(() => {});
+      return;
+    }
+    S.ubiInstallName = plan.name || title;
+    S.installDialogFolder =
+      (plan.name || title).replace(/[<>:"/\\|?*]+/g, "").trim() || S.installDialogFolder;
+    S.installDialogDownloadSize = plan.downloadBytes || plan.bytes;
+    S.installDialogDiskSize = plan.bytes;
+    const saved = (await ubiInstallDir().catch(() => null))?.trim() || "";
+    const fallback = (await ubiDefaultInstallDir().catch(() => "")) || splitInstallRoot(plan.installDir).dir;
+    if (S.installDialogAppName !== appName) return;
+    S.installDialogDir = saved || fallback;
+    S.installDialogLoading = false;
+    renderInstallDialog();
+  } catch (e) {
+    closeInstallDialog();
+    toast(localizeMessage(String(e)), "err");
+    void companionGameAction("ubisoft", appName.slice(9), "install").catch(() => {});
+  }
+}
+
 /** Renders the dialog markup into #install-root. */
 export function renderInstallDialog(): void {
   const appName = S.installDialogAppName;
   if (!installRoot || !appName) return;
   const isGog = appName.startsWith("gog::");
   const isEa = appName.startsWith("ea::");
+  const isUbi = appName.startsWith("ubisoft::");
   const s = summaryOf(appName);
   if (!s) return;
 
@@ -268,6 +380,7 @@ export function renderInstallDialog(): void {
 
           ${isEa && S.installDialogEaOoa ? `<div class="install-ea-note">${icon("shield", 14)}<span>${esc(t("ea.launchNeedsClient"))}</span></div>` : ""}
           ${isEa && S.installDialogEaLegacy ? `<div class="install-ea-note is-direct">${icon("check", 14)}<span>${esc(t("ea.launchMode.directDesc"))}</span></div>` : ""}
+          ${isUbi ? `<div class="install-ea-note is-direct">${icon("check", 14)}<span>${esc(t("accounts.ubiDirectDetail5"))}</span></div>` : ""}
 
           <div class="install-field-label">${t("install.pathLabel")}</div>
           <div class="install-path-row">
@@ -279,11 +392,11 @@ export function renderInstallDialog(): void {
           </div>
           <div class="install-final-path">${t("install.finalPath")}: <span id="install-final-path">${esc(finalPath)}</span></div>
 
-          ${isEa ? "" : `<label class="install-check-row">
+          ${isEa || isUbi ? "" : `<label class="install-check-row">
             <input type="checkbox" class="selective-checkbox" data-act="install-toggle-autoupdate" ${S.installDialogAutoUpdate ? "checked" : ""} />
             <span>${t("install.autoUpdate")}</span>
           </label>`}
-          ${IS_WINDOWS && !isEa
+          ${IS_WINDOWS && !isEa && !isUbi
             ? `<label class="install-check-row">
             <input type="checkbox" class="selective-checkbox" data-act="install-toggle-shortcut" ${S.installDialogShortcut ? "checked" : ""} />
             <span>${t("manage.createShortcut")}</span>
@@ -333,6 +446,40 @@ export async function confirmInstall(): Promise<void> {
   const input = document.getElementById("install-dir-input") as HTMLInputElement | null;
   const dir = (input?.value ?? S.installDialogDir).trim() || null;
   const hasOptions = S.installDialogHasOptions;
+
+  if (appName.startsWith("ubisoft::")) {
+    const productId = S.ubiInstallProductId;
+    const name = S.ubiInstallName;
+    const totalBytes = S.installDialogDiskSize;
+    const finalDir = dir ? joinPath(dir, S.installDialogFolder) : null;
+    closeInstallDialog();
+    if (!productId) return;
+    if (S.ubiDirectInstalling.has(productId)) {
+      setView("downloads");
+      return;
+    }
+    S.ubiDirectInstalling.add(productId);
+    S.ubiDirectProgress[productId] = {
+      productId,
+      doneBytes: 0,
+      totalBytes,
+      bytesPerSecond: 0,
+      etaSeconds: 0,
+      filesDone: 0,
+      totalFiles: 0,
+      file: "",
+    };
+    setView("downloads");
+    try {
+      await ubiDirectInstall(productId, finalDir || undefined);
+    } catch (e) {
+      S.ubiDirectInstalling.delete(productId);
+      delete S.ubiDirectProgress[productId];
+      toast(localizeMessage(`${name}: ${String(e)}`), "err");
+      scheduleRender();
+    }
+    return;
+  }
 
   if (appName.startsWith("ea::")) {
     const gameId = appName.slice(4);

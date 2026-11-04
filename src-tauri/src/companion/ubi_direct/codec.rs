@@ -53,6 +53,18 @@ pub(crate) fn open_connection_request(request_id: u32, service: &str) -> Vec<u8>
     request(request_id, 3, &open)
 }
 
+pub(crate) fn patch_info_request(request_id: u32) -> Vec<u8> {
+    let mut patch = Vec::new();
+    push_string(&mut patch, 1, "DEFAULT");
+    push_bool(&mut patch, 2, false);
+    let mut req = Vec::new();
+    push_varint_field(&mut req, 1, u64::from(request_id));
+    push_bytes(&mut req, 5, &patch);
+    let mut upstream = Vec::new();
+    push_bytes(&mut upstream, 1, &req);
+    upstream
+}
+
 pub(crate) fn client_version_push(version: u32) -> Vec<u8> {
     let mut body = Vec::new();
     push_varint_field(&mut body, 1, u64::from(version));
@@ -84,6 +96,7 @@ pub(crate) struct Rsp {
     pub request_id: u32,
     pub auth: Option<AuthRsp>,
     pub open: Option<OpenRsp>,
+    pub patch_version: Option<u32>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -96,6 +109,8 @@ pub(crate) struct DataMessage {
 pub(crate) struct Push {
     pub data: Option<DataMessage>,
     pub client_outdated: bool,
+    pub closed_connection: Option<u32>,
+    pub close_code: u32,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -140,6 +155,17 @@ fn parse_rsp(payload: &[u8]) -> Rsp {
         |field, bytes| match field {
             2 => out.auth = Some(parse_auth_rsp(bytes)),
             3 => out.open = Some(parse_open_rsp(bytes)),
+            5 => {
+                for_each_field(
+                    bytes,
+                    |_, _| {},
+                    |inner, value| {
+                        if inner == 5 {
+                            out.patch_version = Some(value as u32);
+                        }
+                    },
+                );
+            }
             _ => {}
         },
         |field, value| {
@@ -175,6 +201,21 @@ fn parse_push_message(payload: &[u8]) -> Push {
         payload,
         |field, bytes| match field {
             1 => out.data = Some(parse_data(bytes)),
+            2 => {
+                let mut closed = 0u32;
+                let mut code = 0u32;
+                for_each_field(
+                    bytes,
+                    |_, _| {},
+                    |inner, value| match inner {
+                        1 => closed = value as u32,
+                        2 => code = value as u32,
+                        _ => {}
+                    },
+                );
+                out.closed_connection = Some(closed);
+                out.close_code = code;
+            }
             5 => out.client_outdated = true,
             _ => {}
         },

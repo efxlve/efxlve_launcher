@@ -521,7 +521,8 @@ pub async fn companion_launch(app: tauri::AppHandle, store: String, id: String) 
     let Some(game) = discover(&store).into_iter().find(|g| g.id == id) else {
         return launch::open_client(&store);
     };
-    let direct = game.store == "ea" && ea_direct_enabled(crate::load_settings(&app).ea_direct_launch);
+    let settings = crate::load_settings(&app);
+    let direct = game.store == "ea" && ea_direct_enabled(settings.ea_direct_launch);
     // The screenshot hotkey needs to know which game is on screen. The install
     // folder is enough to match the process; client protocols do not expose the
     // executable name. Ubisoft Connect has its own F12 screenshot tool, so only
@@ -607,6 +608,56 @@ pub async fn companion_launch(app: tauri::AppHandle, store: String, id: String) 
 /// Native Ubisoft probe: owned base games and their manifest ids straight from
 /// Demux, with no Ubisoft Connect process involved. This is the first step of
 /// the direct install path; it changes nothing on disk.
+/// Direct Ubisoft install/launch is the default; only an explicit `false`
+/// turns it off. `None` is an untouched setting from an older profile.
+fn ubi_direct_enabled(value: Option<bool>) -> bool {
+    value.unwrap_or(true)
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UbiDirectStatus {
+    pub enabled: bool,
+}
+
+#[tauri::command]
+pub fn ubi_direct_status(app: tauri::AppHandle) -> UbiDirectStatus {
+    UbiDirectStatus {
+        enabled: ubi_direct_enabled(crate::load_settings(&app).ubi_direct_enabled),
+    }
+}
+
+#[tauri::command]
+pub fn ubi_direct_set_enabled(app: tauri::AppHandle, enabled: bool) {
+    let mut settings = crate::load_settings(&app);
+    settings.ubi_direct_enabled = Some(enabled);
+    crate::save_settings(&app, &settings);
+}
+
+/// `<home>/Games/Ubisoft`, the default base folder shown in Settings.
+#[tauri::command]
+pub fn ubi_default_install_dir() -> String {
+    ubi_direct::install::default_base()
+        .to_string_lossy()
+        .to_string()
+}
+
+#[tauri::command]
+pub fn ubi_install_dir(app: tauri::AppHandle) -> Option<String> {
+    crate::load_settings(&app)
+        .ubi_install_dir
+        .map(|path| path.trim().to_string())
+        .filter(|path| !path.is_empty())
+}
+
+#[tauri::command]
+pub fn ubi_set_install_dir(app: tauri::AppHandle, path: String) {
+    let mut settings = crate::load_settings(&app);
+    let trimmed = path.trim().to_string();
+    settings.ubi_install_dir = (!trimmed.is_empty()).then_some(trimmed);
+    crate::save_settings(&app, &settings);
+}
+
 #[tauri::command]
 pub async fn ubi_direct_probe() -> Result<ubi_direct::UbiDirectProbe, String> {
     ubi_direct::probe().await
@@ -2250,6 +2301,13 @@ mod tests {
         assert!(ea_direct_enabled(None));
         assert!(ea_direct_enabled(Some(true)));
         assert!(!ea_direct_enabled(Some(false)));
+    }
+
+    #[test]
+    fn direct_ubisoft_installs_are_on_by_default() {
+        assert!(ubi_direct_enabled(None));
+        assert!(ubi_direct_enabled(Some(true)));
+        assert!(!ubi_direct_enabled(Some(false)));
     }
 
     #[test]

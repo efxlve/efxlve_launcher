@@ -100,7 +100,7 @@ import { keepDiscordOpen } from "../discord/discord-view";
 import { pcCheckResultHtml } from "./pc-check";
 import { storeLogo } from "../store/store-logos";
 import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, getSteamTryRate } from "../store/store-view";
-import { companionGetClientSettings, eaDefaultInstallDir, eaDirectStatus, eaInstallDir, ubiDirectProbe, ubiDirectPlan, ubiDirectInstall } from "../../companion";
+import { companionGetClientSettings, eaDefaultInstallDir, eaDirectStatus, eaInstallDir, ubiDefaultInstallDir, ubiDirectProbe, ubiDirectStatus, ubiInstallDir } from "../../companion";
 import { controllerKind } from "../gamepad/gamepad";
 import {
   achievementClearCustomSound,
@@ -269,6 +269,16 @@ function renderDownloads(): string {
      <button type="button" class="btn primary small" data-act="ea-save-install-dir">${t("common.save")}</button>`,
   );
 
+  const ubiSavedDir = S.ubiInstallDir.trim();
+  const ubiShownDir = ubiSavedDir || S.ubiDefaultDir || "-";
+  const ubiDir = row(
+    t("manage.installLocation"),
+    `${t("settings.ubiInstallDirHint")} <code>${esc(ubiShownDir)}</code>`,
+    `<input id="ubi-install-dir" class="input settings-path-input" value="${esc(ubiSavedDir)}" placeholder="${esc(S.ubiDefaultDir || t("downloads.defaultPlaceholder"))}" autocomplete="off" spellcheck="false" />
+     <button type="button" class="btn ghost small" data-act="dl-pick-ubi-install-dir">${t("common.browse")}</button>
+     <button type="button" class="btn primary small" data-act="ubi-save-install-dir">${t("common.save")}</button>`,
+  );
+
   const profileDesc = S.networkProfile === "max" ? t("settings.netMaxDesc") : S.networkProfile === "low" ? t("settings.netLowDesc") : t("settings.netBalancedDesc");
   const profile = row(t("settings.netCardsTitle"), profileDesc, `
     <div class="seg" role="radiogroup">
@@ -297,7 +307,7 @@ function renderDownloads(): string {
 
   return (
     infoBox("downloads.scopeInfo") +
-    group(dir + gogDir + amazonDir + eaDir + row(
+    group(dir + gogDir + amazonDir + eaDir + ubiDir + row(
       t("settings.importInstalled"),
       t("settings.importInstalledDesc"),
       `<button type="button" class="btn ghost small" data-act="import-installed-folder">${t("settings.importInstalledBtn")}</button>`,
@@ -517,45 +527,16 @@ function renderLaunchers(): string {
 
 function renderUbiDirect(): string {
   const probe = S.ubiDirect;
-  if (!probe) {
-    return row(
-      t("accounts.ubiLogin"),
-      t("accounts.note.ubisoft"),
-      `<button class="btn ghost small" data-view="accounts">${icon("user", 13)} ${t("settings.nileAccount")}</button>
-       <button class="btn ghost small" data-act="ubi-direct-rescan">${icon("refresh", 13)}</button>`,
-    );
-  }
-  const games = probe.games.filter((game) => game.installable);
-  const selected = games.find((game) => S.ubiDirectInstalling.has(game.productId)) ?? games[0];
-  const options = games
-    .map(
-      (game) =>
-        `<option value="${game.productId}"${selected?.productId === game.productId ? " selected" : ""}>${esc(game.name)}</option>`,
-    )
-    .join("");
-  const rows = games
-    .map((game) => {
-      const progress = S.ubiDirectProgress[game.productId];
-      if (!progress) return "";
-      const percent =
-        progress.totalBytes > 0
-          ? Math.min(100, Math.round((progress.doneBytes / progress.totalBytes) * 100))
-          : 0;
-      return `<div class="ubi-direct-progress">
-        <div class="ubi-direct-bar"><span data-ubi-direct-bar="${game.productId}" style="width:${percent}%"></span></div>
-        <div class="ubi-direct-meta"><span>${esc(game.name)} · ${esc(progress.file || "")}</span><span>${fmtBytes(progress.doneBytes)} / ${fmtBytes(progress.totalBytes)} <button class="btn danger small" data-act="ubi-direct-cancel" data-id="${game.productId}">${t("common.cancel")}</button></span></div>
-      </div>`;
-    })
-    .join("");
-  const installing = S.ubiDirectInstalling.size > 0;
-  return (
-    row(
-      `${esc(probe.account || "Ubisoft")} · ${probe.installable}/${probe.total}`,
-      t("accounts.note.ubisoft"),
-      `<select id="ubi-direct-game" class="settings-select" ${games.length ? "" : "disabled"}>${options || `<option>${t("common.noResults")}</option>`}</select>
-       <button class="btn primary small" data-act="ubi-direct-install" ${games.length && !installing ? "" : "disabled"}>${icon("download", 13)} ${t("common.install")}</button>
-       <button class="btn ghost small" data-act="ubi-direct-rescan">${icon("refresh", 13)}</button>`,
-    ) + rows
+  const account = probe
+    ? ` <span class="row-meta">${esc(probe.account || "Ubisoft")} · ${probe.installable}/${probe.total}</span>`
+    : "";
+  const accountAction = probe
+    ? `<button class="btn ghost small" data-act="ubi-direct-rescan">${icon("refresh", 13)}</button>`
+    : `<button class="btn ghost small" data-view="accounts">${icon("user", 13)} ${t("settings.nileAccount")}</button>`;
+  return row(
+    t("settings.ubiDirectTitle"),
+    `${t("settings.ubiDirectDesc")}${account}`,
+    `${accountAction}${toggle("toggle-ubi-direct", S.ubiDirectEnabled)}`,
   );
 }
 
@@ -2347,7 +2328,7 @@ export function refreshIgdbProxyProbe(): void {
 export async function loadSettingsView(): Promise<void> {
   if (isTauri) {
     try {
-      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault, eaDir, eaDefault, igdb, ssRoots, ssScanAll, ssSubfolders, cacheBytes, achOptions] = await Promise.all([
+      const [st, dir, sgdbKey, , ssDir, steamKey, gogDir, gogDefault, autostart, amazonDir, amazonDefault, eaDir, eaDefault, ubiDir, ubiDefault, igdb, ssRoots, ssScanAll, ssSubfolders, cacheBytes, achOptions] = await Promise.all([
         epicGetSettings(),
         epicDefaultInstallDir(),
         epicGetSteamGridKey().catch(() => null),
@@ -2361,6 +2342,8 @@ export async function loadSettingsView(): Promise<void> {
         amazonDefaultInstallDir().catch(() => ""),
         eaInstallDir().catch(() => null),
         eaDefaultInstallDir().catch(() => ""),
+        ubiInstallDir().catch(() => null),
+        ubiDefaultInstallDir().catch(() => ""),
         igdbStatus().catch(() => null),
         epicGetScreenshotScanRoots().catch(() => [] as string[]),
         epicGetScreenshotScanAll().catch(() => true),
@@ -2381,6 +2364,8 @@ export async function loadSettingsView(): Promise<void> {
       S.amazonDefaultDir = amazonDefault || "";
       S.eaInstallDir = eaDir || "";
       S.eaDefaultDir = eaDefault || "";
+      S.ubiInstallDir = ubiDir || "";
+      S.ubiDefaultDir = ubiDefault || "";
       S.screenshotScanRoots = Array.isArray(ssRoots) ? ssRoots : [];
       S.screenshotScanAll = ssScanAll !== false;
       S.screenshotScanSubfolders = ssSubfolders !== false;
@@ -2462,7 +2447,7 @@ export async function loadIntegrationsView(force = false): Promise<void> {
   S.settingsIntegrationsLoading = true;
   render();
   try {
-    const [eglList, eglPresent, eos, galaxyList, steamState, clientSettings, ubiDirect, eaDirect] = await Promise.all([
+    const [eglList, eglPresent, eos, galaxyList, steamState, clientSettings, ubiDirect, ubiDirectState, eaDirect] = await Promise.all([
       epicDetectEglGames().catch(() => [] as EglDetectedGame[]),
       eglLauncherPresent().catch(() => false),
       eosOverlayStatus().catch(() => null),
@@ -2470,6 +2455,7 @@ export async function loadIntegrationsView(force = false): Promise<void> {
       steamStatus().catch(() => null),
       companionGetClientSettings().catch(() => null),
       ubiDirectProbe().catch(() => null),
+      ubiDirectStatus().catch(() => null),
       eaDirectStatus().catch(() => null),
     ]);
     // A null from the backend (older binary, shape change) must not white-screen
@@ -2481,6 +2467,7 @@ export async function loadIntegrationsView(force = false): Promise<void> {
     S.steamStatus = steamState;
     S.companionCloseAfterPlay = clientSettings?.closeAfterPlay ?? {};
     S.ubiDirect = ubiDirect;
+    S.ubiDirectEnabled = ubiDirectState?.enabled ?? true;
     S.eaDirectEnabled = eaDirect?.enabled ?? false;
     S.eaDirectLastError = eaDirect?.lastError ?? "";
     syncEosNotice();

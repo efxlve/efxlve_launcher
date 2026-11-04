@@ -103,6 +103,8 @@ export interface UbiDirectPlan {
   files: number;
   slices: number;
   bytes: number;
+  downloadBytes: number;
+  clientOnly: boolean;
   compression: string;
   sliceLayout: string;
 }
@@ -111,6 +113,10 @@ export interface UbiDirectProgress {
   productId: number;
   doneBytes: number;
   totalBytes: number;
+  bytesPerSecond: number;
+  etaSeconds: number;
+  filesDone: number;
+  totalFiles: number;
   file: string;
 }
 
@@ -122,6 +128,25 @@ export interface UbiDirectSummary {
   bytes: number;
   skippedFiles: number;
 }
+
+export interface UbiDirectStatus {
+  enabled: boolean;
+}
+
+/** Whether new Ubisoft installs use the launcher's direct CDN path. */
+export const ubiDirectStatus = () => invoke<UbiDirectStatus>("ubi_direct_status");
+
+export const ubiDirectSetEnabled = (enabled: boolean) =>
+  invoke<void>("ubi_direct_set_enabled", { enabled });
+
+/** Saved Ubisoft base folder, or null when the default is used. */
+export const ubiInstallDir = () => invoke<string | null>("ubi_install_dir");
+
+/** `<home>/Games/Ubisoft`, the default Ubisoft base folder. */
+export const ubiDefaultInstallDir = () => invoke<string>("ubi_default_install_dir");
+
+export const ubiSetInstallDir = (path: string) =>
+  invoke<void>("ubi_set_install_dir", { path });
 
 /** Owned games and their manifest ids, with no Ubisoft Connect process. */
 export const ubiDirectProbe = () => invoke<UbiDirectProbe>("ubi_direct_probe");

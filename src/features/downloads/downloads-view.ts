@@ -27,6 +27,17 @@ import { ubiClientDownloads } from "../../companion";
 import { scheduleRender } from "../../core/render";
 
 const ubiClientKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+/** Compact remaining time for a launcher-owned transfer. */
+function fmtEta(seconds: number): string {
+  const total = Math.max(0, Math.round(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const rest = total % 60;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${rest}s`;
+  return `${rest}s`;
+}
 let ubiClientPoll: number | null = null;
 
 /** Patch the library's Ubisoft rows from the live client download folders. */
@@ -608,10 +619,20 @@ export function renderDownloads(): string {
     .map((job) => {
       const name = S.ubiDirect?.games.find((game) => game.productId === job.productId)?.name || `#${job.productId}`;
       const pct = job.totalBytes > 0 ? Math.min(100, Math.round((job.doneBytes / job.totalBytes) * 100)) : 0;
+      const speed = job.bytesPerSecond > 0 ? fmtSpeed(job.bytesPerSecond, S.speedInBits) : "";
+      const eta = job.etaSeconds > 0 ? t("move.eta", { eta: fmtEta(job.etaSeconds) }) : "";
+      const files = job.totalFiles > 0 ? `${job.filesDone}/${job.totalFiles}` : "";
+      const meta = [
+        `${fmtBytes(job.doneBytes)} / ${fmtBytes(job.totalBytes)}`,
+        speed,
+        eta,
+        files,
+        job.file,
+      ].filter(Boolean).join(" · ");
       return `<div class="row">
         <div class="row-main">
           <div class="row-title">${esc(name)}</div>
-          <div class="row-meta tabular-nums" data-ubi-direct-meta="${job.productId}">${fmtBytes(job.doneBytes)} / ${fmtBytes(job.totalBytes)}${job.file ? ` · ${esc(job.file)}` : ""}</div>
+          <div class="row-meta tabular-nums" data-ubi-direct-meta="${job.productId}">${esc(meta)}</div>
           <div class="progress"><span data-ubi-direct-page-bar="${job.productId}" style="width:${pct}%"></span></div>
         </div>
         <div class="row-actions">

@@ -475,6 +475,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `toast_done` | `toastDone({ ... })` | `src-tauri/src/overlay/toast.rs` |
 | `toast_ready` | `toastReady({ ... })` | `src-tauri/src/overlay/toast.rs` |
 | `ubi_client_downloads` | `ubiClientDownloads({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ubi_default_install_dir` | `ubiDefaultInstallDir({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_adopt` | `ubiDirectAdopt({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_cancel` | `ubiDirectCancel({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_cloud_saves` | `ubiDirectCloudSaves({ ... })` | `src-tauri/src/companion/mod.rs` |
@@ -488,11 +489,15 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `ubi_direct_probe` | `ubiDirectProbe({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_release` | `ubiDirectRelease({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_set_client_launch` | `ubiDirectSetClientLaunch({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ubi_direct_set_enabled` | `ubiDirectSetEnabled({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ubi_direct_status` | `ubiDirectStatus({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_uninstall` | `ubiDirectUninstall({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_update_check` | `ubiDirectUpdateCheck({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_direct_verify` | `ubiDirectVerify({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ubi_install_dir` | `ubiInstallDir({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_open_saves` | `ubiOpenSaves({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_save_path` | `ubiSavePath({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ubi_set_install_dir` | `ubiSetInstallDir({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `uninstall_store_extension` | `uninstallStoreExtension({ ... })` | `src-tauri/src/store_host.rs` |
 | `xbox_gamepass_catalog` | `xboxGamepassCatalog({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `xbox_gamepass_detail` | `xboxGamepassDetail({ ... })` | `src-tauri/src/companion/mod.rs` |
