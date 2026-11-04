@@ -55,6 +55,7 @@ import { S } from "../../../core/state";
 import { gogDetectGalaxyGames, gogSyncGalaxyInstalled } from "../../../gog";
 import { render } from "../../../core/render";
 import { loadSteamLibrary } from "../../library/steam-library";
+import { loadCompanionLibrary } from "../../library/companion-library";
 
 export function handleAuthAction(act: string | undefined, _t: HTMLElement, id?: string): boolean {
   if (!act) return false;
@@ -107,6 +108,9 @@ export function handleAuthAction(act: string | undefined, _t: HTMLElement, id?: 
       if (S.gogAccount) void syncGogLibrary(true);
       // Steam reads its own manifests and the owned list, so it refreshes too.
       void loadSteamLibrary();
+      // Linked clients keep their own installed set; re-read it so an external
+      // uninstall or install shows up without restarting the launcher.
+      void loadCompanionLibrary();
       // The visible covers may still be metadata-only; fill them after the
       // refresh has replaced the summary map.
       prefetchVisibleAchievements();
