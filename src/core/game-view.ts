@@ -350,7 +350,7 @@ export function epicDlProgress(appName: string): number | null {
   const dl = S.downloads.get(appName);
   if (dl && !dl.done) return dl.progress;
   if (S.dlQueueStatus.active === appName || S.dlQueueStatus.queue.includes(appName)) return 0;
-  if (appName.startsWith("steam::")) {
+  if (appName.startsWith("steam::") || appName.startsWith("ubisoft::") || appName.startsWith("ea::")) {
     const item = S.steamSummariesMap.get(appName) || S.allGamesMap.get(appName);
     if (!item?.downloading) return null;
     const total = item.bytesToDownload ?? 0;

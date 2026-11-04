@@ -537,9 +537,7 @@ pub async fn companion_launch(app: tauri::AppHandle, store: String, id: String) 
             install_path.clone(),
             Vec::new(),
         );
-        watch_companion_exit(app.clone(), Some(app_name), game.store.clone(), install_path);
-    } else if close_after_play_enabled("ubisoft") {
-        watch_companion_exit(app.clone(), None, game.store.clone(), install_path);
+        watch_companion_exit(app.clone(), Some(app_name), game.store.clone(), install_path.clone());
     }
     // Riot hands every action to RiotClientServices.exe with a product flag.
     if store == "riot" {
@@ -579,10 +577,14 @@ pub async fn companion_launch(app: tauri::AppHandle, store: String, id: String) 
             let shim = crate::load_settings(&app).ubi_direct_shim.unwrap_or(true);
             let launched = ubi_direct::launch_game(installed.product_id, shim).await;
             if launched.is_ok() {
+                track_direct_ubi_session(&app, &installed, Some(&game.id));
                 schedule_update_check(&app, installed.product_id);
             }
             return launched;
         }
+    }
+    if store == "ubisoft" && close_after_play_enabled("ubisoft") {
+        watch_companion_exit(app.clone(), None, game.store.clone(), install_path);
     }
     if store == "ubisoft" && game.launch_uri.is_empty() && game.launch_exe.is_empty() {
         // A client-installed row carries the product id but no launch protocol.
@@ -658,12 +660,54 @@ pub(crate) fn schedule_update_check(app: &tauri::AppHandle, product_id: u32) {
     });
 }
 
+/// Direct Ubisoft launches bypass Ubisoft Connect, so the launcher owns the
+/// active-game screenshot hotkey and local session playtime watcher.
+fn track_direct_ubi_session(
+    app: &tauri::AppHandle,
+    installed: &ubi_installs::InstalledGame,
+    card_id: Option<&str>,
+) {
+    let install_dir = std::path::PathBuf::from(&installed.install_dir);
+    if installed.client_launch {
+        if close_after_play_enabled("ubisoft") {
+            watch_companion_exit(app.clone(), None, "ubisoft".to_string(), Some(install_dir));
+        }
+        return;
+    }
+    let id = card_id
+        .filter(|id| !id.is_empty())
+        .map(str::to_string)
+        .or_else(|| {
+            discover("ubisoft")
+                .into_iter()
+                .find(|g| g.install_path.eq_ignore_ascii_case(&installed.install_dir))
+                .map(|g| g.id)
+        })
+        .unwrap_or_else(|| installed.product_id.to_string());
+    let app_name = format!("ubisoft::{id}");
+    crate::legendary::screenshots::set_active_running_game(
+        &app_name,
+        &installed.name,
+        Some(install_dir.clone()),
+        Vec::new(),
+    );
+    watch_companion_exit(
+        app.clone(),
+        Some(app_name),
+        "ubisoft".to_string(),
+        Some(install_dir),
+    );
+}
+
 /// Start a game the launcher installed, without Ubisoft Connect.
 #[tauri::command]
 pub async fn ubi_direct_launch(app: tauri::AppHandle, product_id: u32) -> Result<(), String> {
     let shim = crate::load_settings(&app).ubi_direct_shim.unwrap_or(true);
     let launched = ubi_direct::launch_game(product_id, shim).await;
     if launched.is_ok() {
+        if let Some(installed) = ubi_installs::find(product_id) {
+            track_direct_ubi_session(&app, &installed, None);
+        }
         schedule_update_check(&app, product_id);
     }
     launched
@@ -1455,7 +1499,7 @@ fn watch_companion_exit(
 #[tauri::command]
 pub async fn companion_playtimes(store: String) -> Vec<ubisoft_login::PlaytimeRow> {
     if store == "ubisoft" {
-        return ubisoft_login::playtimes().await;
+        return ubisoft_playtimes().await;
     }
     if store == "ea" {
         return ea_playtimes().await;
@@ -1474,6 +1518,42 @@ pub async fn companion_playtimes(store: String) -> Vec<ubisoft_login::PlaytimeRo
                 })
         })
         .collect()
+}
+
+/// Ubisoft's service totals, plus sessions started directly without Ubisoft
+/// Connect (which never report to `/statscard`).
+async fn ubisoft_playtimes() -> Vec<ubisoft_login::PlaytimeRow> {
+    let api_rows = ubisoft_login::playtimes().await;
+    let local: std::collections::HashMap<String, u64> = load_local_playtimes()
+        .into_iter()
+        .filter_map(|(key, seconds)| {
+            key.strip_prefix("ubisoft::")
+                .map(|id| (id.to_string(), seconds))
+        })
+        .collect();
+    merge_ubisoft_playtimes(api_rows, local)
+}
+
+fn merge_ubisoft_playtimes(
+    api_rows: Vec<ubisoft_login::PlaytimeRow>,
+    mut local: std::collections::HashMap<String, u64>,
+) -> Vec<ubisoft_login::PlaytimeRow> {
+    let mut rows: Vec<ubisoft_login::PlaytimeRow> = api_rows
+        .into_iter()
+        .map(|mut row| {
+            if let Some(extra) = local.remove(&row.id) {
+                row.total_seconds = row.total_seconds.saturating_add(extra);
+            }
+            row
+        })
+        .collect();
+    for (id, total_seconds) in local {
+        if total_seconds > 0 {
+            rows.push(ubisoft_login::PlaytimeRow { id, total_seconds });
+        }
+    }
+    rows.sort_by(|a, b| a.id.cmp(&b.id));
+    rows
 }
 
 /// EA's own totals, with the locally tracked sessions as the fallback. The
@@ -1693,6 +1773,7 @@ pub async fn companion_achievements_summary(
                 continue;
             }
             let response = ubi_achievements::achievements_for(&game.id, &game.name, &language);
+            let response = ubi_direct::merge_achievements(response, &game.id, &game.name);
             if response.total_achievements == 0 {
                 continue;
             }
@@ -1819,6 +1900,7 @@ pub async fn companion_game_action(app: tauri::AppHandle, store: String, id: Str
             let shim = crate::load_settings(&app).ubi_direct_shim.unwrap_or(true);
             let launched = ubi_direct::launch_game(installed.product_id, shim).await;
             if launched.is_ok() {
+                track_direct_ubi_session(&app, &installed, Some(&game.id));
                 schedule_update_check(&app, installed.product_id);
             }
             return launched;
@@ -2100,6 +2182,23 @@ mod tests {
         assert!(uninstall_needs_elevation(std::path::Path::new(
             r"C:\Program Files (x86)\Common Files\EAInstaller\Dead Space 2\Cleanup.exe"
         )));
+    }
+
+    #[test]
+    fn ubisoft_playtimes_sum_service_rows_and_local_direct_sessions() {
+        let api = vec![ubisoft_login::PlaytimeRow {
+            id: "80".into(),
+            total_seconds: 1200,
+        }];
+        let mut local = std::collections::HashMap::new();
+        local.insert("80".to_string(), 300u64);
+        local.insert("1651".to_string(), 600u64);
+        let merged = merge_ubisoft_playtimes(api, local);
+        assert_eq!(merged.len(), 2);
+        assert_eq!(merged[0].id, "1651");
+        assert_eq!(merged[0].total_seconds, 600);
+        assert_eq!(merged[1].id, "80");
+        assert_eq!(merged[1].total_seconds, 1500);
     }
 
     #[test]

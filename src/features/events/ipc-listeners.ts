@@ -58,7 +58,7 @@ import { clearLaunchStatus, refreshEpicInstalled, epicPlay, updateLaunchStatus }
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadSteamLibrary, refreshSteamInstalled, startSteamLibraryWatch } from "../library/steam-library";
 import { syncInstalledWatch } from "../library/installed-watch";
-import { loadCompanionLibrary, syncCompanionAccounts } from "../library/companion-library";
+import { companionStoreId, loadCompanionLibrary, syncCompanionAccounts } from "../library/companion-library";
 import { loadCustomGamesLibrary } from "../custom-games/custom-games-library";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom, refreshGameActionUi } from "../../core/game-view";
@@ -432,28 +432,67 @@ export async function initApp(hooks: {
       hooks.scheduleRender();
     });
 
+    const findUbiCompanionRow = (productId: number) => {
+      const pid = String(productId);
+      const probeTitle = S.ubiDirect?.games.find((game) => game.productId === productId)?.name.toLowerCase();
+      return S.companionSummaries.find(
+        (game) =>
+          game.source === "ubisoft" &&
+          (game.id === pid ||
+            companionStoreId(game.key) === pid ||
+            (Boolean(probeTitle) && game.title.toLowerCase() === probeTitle)),
+      );
+    };
+
     listenLater<UbiDirectProgress>("ubi-direct-progress", (event) => {
       const progress = event.payload;
+      S.ubiDirectInstalling.add(progress.productId);
       S.ubiDirectProgress[progress.productId] = progress;
+      const row = findUbiCompanionRow(progress.productId);
+      if (row) {
+        row.downloading = true;
+        row.bytesDownloaded = progress.doneBytes;
+        row.bytesToDownload = progress.totalBytes;
+        const mapped = S.allGamesMap.get(row.key);
+        if (mapped && mapped !== row) {
+          mapped.downloading = true;
+          mapped.bytesDownloaded = progress.doneBytes;
+          mapped.bytesToDownload = progress.totalBytes;
+        }
+        patchLibraryCardDom(row.key);
+      }
+      const pct = progress.totalBytes > 0
+        ? Math.min(100, Math.round((progress.doneBytes / progress.totalBytes) * 100))
+        : 0;
       const bar = document.querySelector<HTMLElement>(
         `[data-ubi-direct-bar="${progress.productId}"]`,
       );
-      if (bar && progress.totalBytes > 0) {
-        bar.style.width = `${Math.min(100, Math.round((progress.doneBytes / progress.totalBytes) * 100))}%`;
+      if (bar) {
+        bar.style.width = `${pct}%`;
       }
       const pageBar = document.querySelector<HTMLElement>(
         `[data-ubi-direct-page-bar="${progress.productId}"]`,
       );
-      if (pageBar && progress.totalBytes > 0) {
-        pageBar.style.width = `${Math.min(100, Math.round((progress.doneBytes / progress.totalBytes) * 100))}%`;
+      if (pageBar) {
+        pageBar.style.width = `${pct}%`;
       }
-      hooks.scheduleRender();
+      const metaEl = document.querySelector<HTMLElement>(
+        `[data-ubi-direct-meta="${progress.productId}"]`,
+      );
+      if (metaEl) {
+        metaEl.textContent = `${fmtBytes(progress.doneBytes)} / ${fmtBytes(progress.totalBytes)}${progress.file ? ` · ${progress.file}` : ""}`;
+      }
+      if (!bar && !pageBar) {
+        hooks.scheduleRender();
+      }
     });
 
     listenLater<UbiDirectSummary>("ubi-direct-done", (event) => {
       const summary = event.payload;
       S.ubiDirectInstalling.delete(summary.productId);
       delete S.ubiDirectProgress[summary.productId];
+      const row = findUbiCompanionRow(summary.productId);
+      if (row) row.downloading = false;
       toast(`${summary.name} · ${t("common.installed")}`, "ok");
       void loadCompanionLibrary();
       hooks.scheduleRender();
@@ -463,6 +502,8 @@ export async function initApp(hooks: {
       const failure = event.payload;
       S.ubiDirectInstalling.delete(failure.productId);
       delete S.ubiDirectProgress[failure.productId];
+      const row = findUbiCompanionRow(failure.productId);
+      if (row) row.downloading = false;
       toast(localizeMessage(failure.error), "err");
       hooks.scheduleRender();
     });

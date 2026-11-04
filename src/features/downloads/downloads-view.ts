@@ -611,7 +611,7 @@ export function renderDownloads(): string {
       return `<div class="row">
         <div class="row-main">
           <div class="row-title">${esc(name)}</div>
-          <div class="row-meta tabular-nums">${fmtBytes(job.doneBytes)} / ${fmtBytes(job.totalBytes)}${job.file ? ` · ${esc(job.file)}` : ""}</div>
+          <div class="row-meta tabular-nums" data-ubi-direct-meta="${job.productId}">${fmtBytes(job.doneBytes)} / ${fmtBytes(job.totalBytes)}${job.file ? ` · ${esc(job.file)}` : ""}</div>
           <div class="progress"><span data-ubi-direct-page-bar="${job.productId}" style="width:${pct}%"></span></div>
         </div>
         <div class="row-actions">
