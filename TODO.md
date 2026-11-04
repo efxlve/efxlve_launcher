@@ -226,7 +226,10 @@ stays on the client. Open work:
   cloud-download test needs a signed-in account. The Ludusavi manifest is still
   open for titles outside those layouts.
 - Online/anti-cheat titles (R6/BattlEye) and Connect-only DRM titles stay on the
-  client. Do not attempt to bypass BattlEye or Denuvo. Direct adopt and launch
-  both check the title and install folder before the shim is deployed and
-  refuse the title with a clear message.
-- Orbit R2 (`ubiorbitapi_r2_loader`) titles still need the Connect client.
+  client. This is closed by design: BattlEye, Denuvo and their licenses are not
+  bypassed. Direct adopt and launch both check the title and install folder
+  before the shim is deployed and refuse the title with a clear message.
+- Orbit R2 (`ubiorbitapi_r2_loader`) titles need the Connect client. This is
+  also closed by design: no compatible open-source R2 loader exists, so the
+  launcher will not substitute one. The remaining Ubisoft verification is a
+  live cloud-save download, which needs a signed-in account.
