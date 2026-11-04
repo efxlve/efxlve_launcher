@@ -339,6 +339,9 @@ pub(crate) struct Prepared {
     pub name: String,
     pub download: wire::DownloadService,
     pub layout: SliceLayout,
+    pub exe: String,
+    pub working_dir: String,
+    pub launch_args: String,
     pub install_reg: String,
     pub uplay_id: u32,
     pub ticket: String,
@@ -355,7 +358,8 @@ pub(crate) async fn prepare(
         .into_iter()
         .find(|game| game.product_id == product_id && game.owned)
         .ok_or_else(|| format!("product {product_id} is not in the owned library"))?;
-    let install_reg = install_register(&game.configuration);
+    let spec = ubisoft::launch_spec(&game.configuration);
+    let install_reg = spec.install_reg;
     let uplay_id = game.uplay_id;
     let name = ubisoft::game_name(&game.configuration).unwrap_or_else(|| product_id.to_string());
     let manifest_id = if game.latest_manifest.is_empty() {
@@ -380,6 +384,7 @@ pub(crate) async fn prepare(
         .first()
         .ok_or_else(|| "Ubisoft signed no manifest URL".to_string())?;
     let manifest = manifest::fetch_manifest(url).await?;
+    let exe = resolve_executable(&manifest, &spec.exe);
     let layout = detect_layout(demux, &mut download, product_id, &manifest.files).await;
     let ticket = if uplay_id != 0 {
         demux
@@ -396,6 +401,9 @@ pub(crate) async fn prepare(
         name,
         download,
         layout,
+        exe,
+        working_dir: spec.working_dir,
+        launch_args: spec.arguments,
         install_reg,
         uplay_id,
         ticket,
@@ -445,6 +453,9 @@ where
         name,
         mut download,
         layout,
+        exe,
+        working_dir,
+        launch_args,
         install_reg,
         uplay_id,
         ticket,
@@ -662,7 +673,11 @@ where
     // Keep the manifest next to the files so a later signed-out run can verify
     // or re-adopt the install without the ownership service.
     let _ = manifest::write_local_cache(install_dir, &manifest, &manifest_id);
-    let exe = pick_executable(&manifest);
+    let exe = if exe.is_empty() {
+        pick_executable(&manifest)
+    } else {
+        exe
+    };
     let client_launch = ubi_installs::find(product_id)
         .map(|game| game.client_launch)
         .unwrap_or(false);
@@ -676,6 +691,8 @@ where
             .map(|d| d.as_secs())
             .unwrap_or(0),
         install_reg,
+        working_dir,
+        launch_args,
         uplay_id,
         ticket,
         client_launch,
@@ -691,35 +708,50 @@ where
     })
 }
 
-/// Pull the game's own install-path registry value out of the product config.
-/// Old titles read it to confirm they are installed and to find their data.
-fn install_register(config: &str) -> String {
-    let mut in_working_directory = false;
-    let mut base_indent = 0usize;
-    for line in config.lines() {
-        let trimmed = line.trim();
-        let indent = line.len() - line.trim_start().len();
-        if trimmed == "working_directory:" {
-            in_working_directory = true;
-            base_indent = indent;
-            continue;
+/// Prefer the executable named by `start_game` in the product configuration
+/// when it matches a manifest file, and fall back to the largest manifest
+/// binary when the configuration names none or points elsewhere.
+pub(crate) fn resolve_executable(manifest: &Manifest, configured_exe: &str) -> String {
+    let wanted = configured_exe
+        .trim()
+        .replace('/', "\\")
+        .trim_start_matches(".\\")
+        .trim_matches('\\')
+        .to_string();
+    if !wanted.is_empty() {
+        if manifest.files.is_empty() {
+            return wanted;
         }
-        if !in_working_directory {
-            continue;
+        if let Some(hit) = manifest.files.iter().find(|file| {
+            !file.is_dir
+                && file
+                    .name
+                    .replace('/', "\\")
+                    .trim_matches('\\')
+                    .eq_ignore_ascii_case(&wanted)
+        }) {
+            return hit.name.clone();
         }
-        if !trimmed.is_empty() && indent <= base_indent {
-            break;
-        }
-        if let Some(value) = trimmed.strip_prefix("register:") {
-            return value
-                .trim()
-                .trim_matches('"')
-                .trim_matches('\'')
-                .trim()
-                .to_string();
+        if !wanted.contains('\\') {
+            let suffix = format!("\\{}", wanted.to_ascii_lowercase());
+            if let Some(hit) = manifest.files.iter().find(|file| {
+                !file.is_dir
+                    && file
+                        .name
+                        .replace('/', "\\")
+                        .to_ascii_lowercase()
+                        .ends_with(&suffix)
+            }) {
+                return hit.name.clone();
+            }
         }
     }
-    String::new()
+    let picked = pick_executable(manifest);
+    if picked.is_empty() {
+        wanted
+    } else {
+        picked
+    }
 }
 
 /// Pick the game executable out of the manifest. The main binary is the largest
@@ -864,13 +896,30 @@ mod tests {
     }
 
     #[test]
-    fn reads_the_games_own_install_registry_value() {
-        let yaml = "root:\n  working_directory:\n    register: HKEY_LOCAL_MACHINE\\SOFTWARE\\Ubisoft\\Game\\Install path\n  name: Game\n";
+    fn resolves_configured_executable_before_size_heuristic() {
+        let manifest = Manifest {
+            files: vec![
+                ManifestFile {
+                    name: r"bin\Editor.exe".into(),
+                    size: 90_000_000,
+                    ..Default::default()
+                },
+                ManifestFile {
+                    name: r"bin\Game.exe".into(),
+                    size: 20_000_000,
+                    ..Default::default()
+                },
+            ],
+            ..Default::default()
+        };
         assert_eq!(
-            install_register(yaml),
-            r"HKEY_LOCAL_MACHINE\SOFTWARE\Ubisoft\Game\Install path"
+            resolve_executable(&manifest, "bin/game.exe"),
+            r"bin\Game.exe"
         );
-        assert!(install_register("root:\n  name: Game\n").is_empty());
+        assert_eq!(
+            resolve_executable(&manifest, "missing.exe"),
+            r"bin\Editor.exe"
+        );
     }
 
     #[tokio::test]

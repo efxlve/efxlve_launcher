@@ -95,11 +95,7 @@ mod tests {
             install_dir: game.display().to_string(),
             exe: "game.exe".into(),
             installed_at: 1,
-            install_reg: String::new(),
-            uplay_id: 0,
-            ticket: String::new(),
-            client_launch: false,
-            manifest: String::new(),
+            ..Default::default()
         });
         uninstall(999, true).expect("uninstall");
         assert!(!game.exists());

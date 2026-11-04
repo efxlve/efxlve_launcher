@@ -608,12 +608,8 @@ mod tests {
             name: "Game".into(),
             install_dir: install.display().to_string(),
             exe: "Binaries\\Win64\\Game.exe".into(),
-            installed_at: 0,
-            install_reg: String::new(),
             uplay_id: 80,
-            ticket: String::new(),
-            client_launch: false,
-            manifest: String::new(),
+            ..Default::default()
         };
         let dirs = shim_dirs(Some(&install), Some(&record));
         assert_eq!(dirs.first().unwrap(), &exe_dir);

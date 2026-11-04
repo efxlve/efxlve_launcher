@@ -14,6 +14,18 @@ use super::proto::for_each_field;
 use super::scan::slug;
 use super::FoundGame;
 
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct LaunchSpec {
+    /// Executable path relative to the install root (`\` separated).
+    pub exe: String,
+    /// Working directory relative to the install root (`\` separated); empty when root.
+    pub working_dir: String,
+    /// Command-line arguments from the configuration, excluding Steam-only flags.
+    pub arguments: String,
+    /// Registry value path from `working_directory: register:`.
+    pub install_reg: String,
+}
+
 pub(crate) struct UbiRow {
     pub(crate) install_id: u64,
     pub(crate) launch_id: u64,
@@ -22,6 +34,8 @@ pub(crate) struct UbiRow {
     pub(crate) space_id: String,
     /// Achievement archive spec (`achievements:` in the YAML); empty when absent.
     pub(crate) achievements: String,
+    /// Executable, working directory, arguments, and registry key from `start_game`.
+    pub(crate) spec: LaunchSpec,
 }
 
 pub(crate) fn games_from_configurations(bytes: &[u8], installed: &[FoundGame]) -> Vec<FoundGame> {
@@ -126,7 +140,315 @@ fn row_from_record(record: &[u8]) -> Option<UbiRow> {
         name,
         space_id: yaml_value(&yaml, "space_id"),
         achievements: yaml_value(&yaml, "achievements"),
+        spec: launch_spec(&yaml),
     })
+}
+
+#[derive(Default)]
+struct ExecCandidate {
+    exe: String,
+    working_dir: String,
+    arguments: String,
+    label: String,
+}
+
+/// Parse the primary executable, working directory, launch arguments, and
+/// install registry key from a Ubisoft product YAML configuration.
+pub(crate) fn launch_spec(yaml: &str) -> LaunchSpec {
+    let install_reg = parse_install_register(yaml);
+    let mut candidates: Vec<ExecCandidate> = Vec::new();
+    let mut start_indent: Option<usize> = None;
+    let mut mode_indent: Option<usize> = None;
+    let mut skip_mode = false;
+    let mut execs_indent: Option<usize> = None;
+    let mut item_indent: Option<usize> = None;
+    let mut sub_block: Option<(&str, usize)> = None;
+
+    for line in yaml.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with('#') {
+            continue;
+        }
+        let indent = indent_of(line);
+        if let Some(root_indent) = start_indent {
+            if indent <= root_indent {
+                start_indent = None;
+                mode_indent = None;
+                execs_indent = None;
+                item_indent = None;
+                sub_block = None;
+            }
+        }
+        if start_indent.is_none() {
+            if trimmed == "start_game:" {
+                start_indent = Some(indent);
+            }
+            continue;
+        }
+
+        if let Some(m_indent) = mode_indent {
+            if indent <= m_indent {
+                mode_indent = None;
+                execs_indent = None;
+                item_indent = None;
+                sub_block = None;
+            }
+        }
+        if mode_indent.is_none() {
+            if let Some(mode) = trimmed.strip_suffix(':') {
+                let low = mode.trim().to_ascii_lowercase();
+                mode_indent = Some(indent);
+                skip_mode = low == "steam" || low == "epic";
+            }
+            continue;
+        }
+        if skip_mode {
+            continue;
+        }
+
+        if let Some(e_indent) = execs_indent {
+            if indent <= e_indent {
+                execs_indent = None;
+                item_indent = None;
+                sub_block = None;
+            }
+        }
+        if execs_indent.is_none() {
+            if trimmed == "executables:" {
+                execs_indent = Some(indent);
+            }
+            continue;
+        }
+
+        let mut active_indent = indent;
+        let mut active_line = trimmed;
+        if trimmed == "-" || trimmed.starts_with("- ") {
+            if item_indent.map(|prev| indent <= prev).unwrap_or(true) {
+                item_indent = Some(indent);
+                sub_block = None;
+                candidates.push(ExecCandidate::default());
+                active_line = trimmed.trim_start_matches('-').trim();
+                active_indent = indent + 2;
+                if active_line.is_empty() {
+                    continue;
+                }
+            }
+        } else if let Some(i_indent) = item_indent {
+            if indent <= i_indent {
+                item_indent = None;
+                sub_block = None;
+                continue;
+            }
+        } else {
+            continue;
+        }
+
+        let Some(current) = candidates.last_mut() else {
+            continue;
+        };
+
+        if let Some((_, b_indent)) = sub_block {
+            if active_indent <= b_indent {
+                sub_block = None;
+            }
+        }
+
+        if let Some((block_name, _)) = sub_block {
+            if block_name == "path" {
+                if let Some(rel) = active_line.strip_prefix("relative:") {
+                    let norm = normalize_rel_path(rel);
+                    if !norm.is_empty() {
+                        current.exe = norm;
+                    }
+                }
+            } else if block_name == "working_directory" {
+                if let Some(rel) = active_line
+                    .strip_prefix("relative:")
+                    .or_else(|| active_line.strip_prefix("append:"))
+                {
+                    let norm = normalize_rel_path(rel);
+                    if !norm.is_empty() && current.working_dir.is_empty() {
+                        current.working_dir = norm;
+                    }
+                }
+            }
+            continue;
+        }
+
+        if active_line == "path:" {
+            sub_block = Some(("path", active_indent));
+        } else if let Some(inline_path) = active_line.strip_prefix("path:") {
+            let norm = normalize_rel_path(inline_path);
+            if !norm.is_empty() {
+                current.exe = norm;
+            }
+        } else if active_line == "working_directory:" {
+            sub_block = Some(("working_directory", active_indent));
+        } else if let Some(args) = active_line.strip_prefix("arguments:") {
+            let cleaned = clean_launch_arguments(args);
+            if !cleaned.is_empty() {
+                current.arguments = cleaned;
+            }
+        } else if let Some(desc) = active_line
+            .strip_prefix("description:")
+            .or_else(|| active_line.strip_prefix("shortcut_name:"))
+            .or_else(|| active_line.strip_prefix("internal_description:"))
+        {
+            let cleaned = clean_value(desc);
+            if !cleaned.is_empty() {
+                if !current.label.is_empty() {
+                    current.label.push(' ');
+                }
+                current.label.push_str(&cleaned);
+            }
+        }
+    }
+
+    let valid: Vec<&ExecCandidate> = candidates
+        .iter()
+        .filter(|c| !c.exe.is_empty() && c.exe.to_ascii_lowercase().ends_with(".exe"))
+        .collect();
+    let chosen = valid
+        .iter()
+        .copied()
+        .find(|c| !is_secondary_exec(c))
+        .or_else(|| valid.first().copied());
+
+    match chosen {
+        Some(c) => LaunchSpec {
+            exe: c.exe.clone(),
+            working_dir: c.working_dir.clone(),
+            arguments: c.arguments.clone(),
+            install_reg,
+        },
+        None => LaunchSpec {
+            install_reg,
+            ..Default::default()
+        },
+    }
+}
+
+fn is_secondary_exec(candidate: &ExecCandidate) -> bool {
+    let exe_low = candidate.exe.to_ascii_lowercase();
+    let label_low = candidate.label.to_ascii_lowercase();
+    const SECONDARY: &[&str] = &[
+        "benchmark",
+        "editor",
+        "config",
+        "setting",
+        "server",
+        "dedicated",
+        "crash",
+        "unins",
+        "setup",
+        "dxsetup",
+        "vcredist",
+    ];
+    SECONDARY
+        .iter()
+        .any(|needle| exe_low.contains(needle) || label_low.contains(needle))
+}
+
+fn normalize_rel_path(raw: &str) -> String {
+    let cleaned = clean_value(raw).replace('/', "\\");
+    let trimmed = cleaned
+        .trim_start_matches(".\\")
+        .trim_matches('\\')
+        .trim();
+    if trimmed.is_empty() || trimmed.contains(':') {
+        return String::new();
+    }
+    let mut parts = Vec::new();
+    for part in trimmed.split('\\').filter(|part| !part.is_empty() && *part != ".") {
+        if part == ".." {
+            return String::new();
+        }
+        parts.push(part);
+    }
+    parts.join("\\")
+}
+
+/// Split a command-line string into tokens while preserving quoted arguments
+/// and stripping Steam-only flags (`-uplay_steam_mode`).
+pub(crate) fn split_launch_arguments(raw: &str) -> Vec<String> {
+    let cleaned = clean_value(raw);
+    let mut out = Vec::new();
+    let mut current = String::new();
+    let mut in_quotes = false;
+    for ch in cleaned.chars() {
+        if ch == '"' {
+            in_quotes = !in_quotes;
+            continue;
+        }
+        if ch.is_whitespace() && !in_quotes {
+            if !current.is_empty() {
+                push_filtered_arg(&mut out, std::mem::take(&mut current));
+            }
+        } else {
+            current.push(ch);
+        }
+    }
+    if !current.is_empty() {
+        push_filtered_arg(&mut out, current);
+    }
+    out
+}
+
+fn push_filtered_arg(out: &mut Vec<String>, token: String) {
+    let low = token.trim().to_ascii_lowercase();
+    if low == "-uplay_steam_mode" || low == "/uplay_steam_mode" {
+        return;
+    }
+    out.push(token);
+}
+
+fn clean_launch_arguments(raw: &str) -> String {
+    split_launch_arguments(raw)
+        .into_iter()
+        .map(|arg| {
+            if arg.contains(char::is_whitespace) {
+                format!("\"{arg}\"")
+            } else {
+                arg
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn parse_install_register(config: &str) -> String {
+    let mut in_working_directory = false;
+    let mut base_indent = 0usize;
+    let mut fallback = String::new();
+    for line in config.lines() {
+        let trimmed = line.trim();
+        let indent = indent_of(line);
+        if trimmed == "working_directory:" {
+            in_working_directory = true;
+            base_indent = indent;
+            continue;
+        }
+        if !in_working_directory {
+            continue;
+        }
+        if !trimmed.is_empty() && indent <= base_indent {
+            in_working_directory = false;
+            continue;
+        }
+        if let Some(value) = trimmed.strip_prefix("register:") {
+            let cleaned = clean_value(value);
+            if cleaned.is_empty() {
+                continue;
+            }
+            if !cleaned.to_ascii_lowercase().contains("\\launcher\\installs\\") {
+                return cleaned;
+            }
+            if fallback.is_empty() {
+                fallback = cleaned;
+            }
+        }
+    }
+    fallback
 }
 
 /// First `key: value` line anywhere in the YAML document.
@@ -614,5 +936,26 @@ mod tests {
         assert_eq!(imported.uninstall_uri, "uplay://uninstall/5520");
         assert_eq!(imported.store_id, "5520");
         assert_eq!(merged.iter().filter(|g| g.id == "34").count(), 1);
+    }
+
+    #[test]
+    fn launch_spec_reads_the_primary_executable_working_dir_and_arguments() {
+        let yaml = "root:\n  name: GAMENAME\n  working_directory:\n    register: HKEY_LOCAL_MACHINE\\SOFTWARE\\Ubisoft\\Game\\Install path\n  start_game:\n    online:\n      executables:\n        - shortcut_name: Settings\n          path:\n            relative: bin/SettingsApplication.exe\n        - shortcut_name: Game\n          path:\n            relative: Binaries/Win64/Game.exe\n          working_directory:\n            register: HKEY_LOCAL_MACHINE\\SOFTWARE\\Ubisoft\\Launcher\\Installs\\123\\InstallDir\n            append: Binaries/Win64/\n          arguments: -seekfreeloadingpcconsole -uplay_steam_mode -lang \"en US\"\n";
+        let spec = launch_spec(yaml);
+        assert_eq!(spec.exe, r"Binaries\Win64\Game.exe");
+        assert_eq!(spec.working_dir, r"Binaries\Win64");
+        assert_eq!(spec.arguments, "-seekfreeloadingpcconsole -lang \"en US\"");
+        assert_eq!(
+            spec.install_reg,
+            r"HKEY_LOCAL_MACHINE\SOFTWARE\Ubisoft\Game\Install path"
+        );
+        assert_eq!(
+            split_launch_arguments(&spec.arguments),
+            vec![
+                "-seekfreeloadingpcconsole".to_string(),
+                "-lang".to_string(),
+                "en US".to_string()
+            ]
+        );
     }
 }

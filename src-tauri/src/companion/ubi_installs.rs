@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use super::accounts;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct InstalledGame {
     pub product_id: u32,
@@ -23,6 +23,13 @@ pub(crate) struct InstalledGame {
     /// `HKEY_LOCAL_MACHINE\SOFTWARE\Ubisoft\Beyond Good & Evil\Install path`.
     #[serde(default)]
     pub install_reg: String,
+    /// Working directory relative to `install_dir` from `start_game`; empty
+    /// when the game runs from the install root or the executable's folder.
+    #[serde(default)]
+    pub working_dir: String,
+    /// Command-line arguments from `start_game` in the product config.
+    #[serde(default)]
+    pub launch_args: String,
     /// The Ubisoft `uplay_id` the compatibility shim reports to the game.
     #[serde(default)]
     pub uplay_id: u32,
@@ -116,11 +123,8 @@ mod tests {
             install_dir: r"C:\Games\Game".into(),
             exe: r"bin\game.exe".into(),
             installed_at: 1,
-            install_reg: String::new(),
-            uplay_id: 0,
-            ticket: String::new(),
-            client_launch: false,
             manifest: "ABC123".into(),
+            ..Default::default()
         };
         save(&first);
         save(&InstalledGame {

@@ -77,18 +77,30 @@ pub(crate) async fn launch(product_id: u32, shim_enabled: bool) -> Result<(), St
     }
 
     let mut command = Command::new(&exe);
-    command.current_dir(working_dir(&install_dir, &exe));
+    command.current_dir(working_dir(&install_dir, &exe, &game.working_dir));
+    let args = crate::companion::ubisoft::split_launch_arguments(&game.launch_args);
+    if !args.is_empty() {
+        command.args(&args);
+    }
     command
         .spawn()
         .map(|_| ())
         .map_err(|e| format!("starting {}: {e}", exe.display()))
 }
 
-/// Ubisoft's Unreal titles keep the exe under `Binaries\Win32`/`Win64` and
-/// resolve their data from there; older Unreal titles use `System\`. Everything
-/// else runs from the install root, which is what the product config names as
-/// its working directory.
-fn working_dir(install_dir: &Path, exe: &Path) -> PathBuf {
+/// Prefer the working directory from `start_game` in the product configuration.
+/// Otherwise Ubisoft's Unreal titles keep the exe under `Binaries\Win32`/`Win64`
+/// or `System\` and resolve their data from there, while everything else runs
+/// from the install root.
+fn working_dir(install_dir: &Path, exe: &Path, configured: &str) -> PathBuf {
+    let configured = configured.trim();
+    if !configured.is_empty() {
+        if let Ok(custom) = super::manifest::safe_install_path(install_dir, configured) {
+            if custom.is_dir() || !install_dir.exists() {
+                return custom;
+            }
+        }
+    }
     if let Some(parent) = exe.parent() {
         let name = parent
             .file_name()
@@ -382,12 +394,16 @@ mod tests {
         let root = std::path::Path::new("Game");
         let win32 = root.join("Binaries").join("Win32").join("ACCGame.exe");
         assert_eq!(
-            working_dir(root, &win32),
+            working_dir(root, &win32, ""),
             root.join("Binaries").join("Win32")
         );
         assert_eq!(
-            working_dir(root, &root.join("Rayman Origins.exe")),
+            working_dir(root, &root.join("Rayman Origins.exe"), ""),
             root.to_path_buf()
+        );
+        assert_eq!(
+            working_dir(root, &root.join("Rayman Origins.exe"), "bin\\x64"),
+            root.join("bin").join("x64")
         );
     }
 
@@ -398,12 +414,9 @@ mod tests {
             name: "Game".into(),
             install_dir: "C:\\Game".into(),
             exe: "game.exe".into(),
-            installed_at: 0,
-            install_reg: String::new(),
             uplay_id: 1651,
-            ticket: String::new(),
             client_launch: true,
-            manifest: String::new(),
+            ..Default::default()
         };
         assert_eq!(client_launch_uri(&game), "uplay://launch/1651/0");
         game.uplay_id = 0;

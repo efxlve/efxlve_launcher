@@ -2061,11 +2061,8 @@ mod tests {
             install_dir: install.display().to_string(),
             exe: "Watch_Dogs.exe".into(),
             installed_at: 1,
-            install_reg: String::new(),
             uplay_id: 274,
-            ticket: String::new(),
-            client_launch: false,
-            manifest: String::new(),
+            ..Default::default()
         });
 
         let copied = ubi_direct_import_saves(install.display().to_string()).expect("import");

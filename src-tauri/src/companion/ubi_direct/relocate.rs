@@ -148,11 +148,8 @@ mod tests {
             install_dir: game.display().to_string(),
             exe: "Anno1404.exe".into(),
             installed_at: 1,
-            install_reg: String::new(),
             uplay_id: 16232,
-            ticket: String::new(),
-            client_launch: false,
-            manifest: String::new(),
+            ..Default::default()
         });
 
         let moved = move_game_inner(16232, &target, false).expect("move");

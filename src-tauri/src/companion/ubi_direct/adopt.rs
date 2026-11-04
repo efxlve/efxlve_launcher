@@ -62,7 +62,11 @@ async fn adopt_online(
             prepared.name
         ));
     }
-    let exe = install::pick_executable(&prepared.manifest);
+    let exe = if !prepared.exe.is_empty() {
+        prepared.exe.clone()
+    } else {
+        install::pick_executable(&prepared.manifest)
+    };
     if exe.is_empty() {
         return Err("the Ubisoft manifest names no game executable".to_string());
     }
@@ -81,6 +85,8 @@ async fn adopt_online(
         prepared.name,
         install_dir,
         exe,
+        prepared.working_dir,
+        prepared.launch_args,
         prepared.install_reg,
         prepared.uplay_id,
         prepared.ticket,
@@ -113,7 +119,19 @@ fn adopt_local(
     }
     let (local, manifest_id) = manifest::read_local_install(install_dir)?;
     let _ = manifest::write_local_cache(install_dir, &local, &manifest_id);
-    let exe = install::pick_executable(&local);
+    let name_slug = crate::companion::scan::slug(&name);
+    let cached = crate::companion::ubisoft::config_rows()
+        .into_iter()
+        .find(|row| {
+            row.install_id == u64::from(product_id)
+                || row.launch_id == u64::from(product_id)
+                || (!name_slug.is_empty() && crate::companion::scan::slug(&row.name) == name_slug)
+        });
+    let configured_exe = cached
+        .as_ref()
+        .map(|row| row.spec.exe.as_str())
+        .unwrap_or("");
+    let exe = install::resolve_executable(&local, configured_exe);
     if exe.is_empty() {
         return Err("the local Ubisoft manifest names no game executable".to_string());
     }
@@ -125,16 +143,30 @@ fn adopt_local(
             exe_path.display()
         ));
     }
-    // The local state has no ownership row, so the product id is the best
-    // available Uplay id. Titles that use a distinct id still launch; the
-    // session can correct the record on the next online adopt.
+    // Use the local configuration cache when present; otherwise the product id
+    // is the best available Uplay id until the next online adopt.
+    let (working_dir, launch_args, install_reg, uplay_id) = match cached {
+        Some(row) => (
+            row.spec.working_dir,
+            row.spec.arguments,
+            row.spec.install_reg,
+            if row.launch_id != 0 {
+                row.launch_id as u32
+            } else {
+                product_id
+            },
+        ),
+        None => (String::new(), String::new(), String::new(), product_id),
+    };
     let record = record(
         product_id,
         name,
         install_dir,
         exe,
-        String::new(),
-        product_id,
+        working_dir,
+        launch_args,
+        install_reg,
+        uplay_id,
         String::new(),
         manifest_id,
     );
@@ -147,6 +179,8 @@ fn record(
     name: String,
     install_dir: &Path,
     exe: String,
+    working_dir: String,
+    launch_args: String,
     install_reg: String,
     uplay_id: u32,
     ticket: String,
@@ -162,6 +196,8 @@ fn record(
             .map(|duration| duration.as_secs())
             .unwrap_or(0),
         install_reg,
+        working_dir,
+        launch_args,
         uplay_id,
         ticket,
         client_launch: false,
