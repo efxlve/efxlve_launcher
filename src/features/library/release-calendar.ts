@@ -617,11 +617,14 @@ function renderTba(month: MonthSel): string {
     <div class="calendar-tba-list">${tba
       .map((release) => {
         const cover = coverOf(release, "cover_big");
-        return `<button type="button" class="calendar-tba-card" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
-          ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-tba-art placeholder">${icon("gamepad-2", 12)}</span>`}
-          <span class="calendar-tba-name">${esc(release.name)}</span>
-          <span class="calendar-tba-when">${esc(releaseDateLabel(release))}</span>
-        </button>`;
+        return `<div class="calendar-tba-shell">
+          <button type="button" class="calendar-tba-card" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
+            ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-tba-art placeholder">${icon("gamepad-2", 12)}</span>`}
+            <span class="calendar-tba-name">${esc(release.name)}</span>
+            <span class="calendar-tba-when">${esc(releaseDateLabel(release))}</span>
+          </button>
+          ${renderFollowButton(release, "is-tba-follow")}
+        </div>`;
       })
       .join("")}</div>
   </div>`;
