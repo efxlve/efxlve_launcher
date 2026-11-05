@@ -1377,6 +1377,9 @@ pub struct IgdbUpcomingRelease {
     pub hypes: i64,
     /// IGDB's own label: "Dec 10, 2026", "Dec 2026", "Q2 2027" or "2027".
     pub human: String,
+    /// Wide key art for the featured banner; empty when IGDB has none.
+    #[serde(default)]
+    pub artwork_id: String,
     /// day | month | quarter | year | unknown
     pub precision: String,
     pub year: Option<i64>,
@@ -1399,7 +1402,7 @@ const UPCOMING_PAGE: usize = 500;
 
 fn upcoming_query(from: i64, to: i64, offset: usize) -> String {
     format!(
-        "fields name, hypes, cover.image_id, url, slug, websites.url, \
+        "fields name, hypes, cover.image_id, artworks.image_id, url, slug, websites.url, \
          release_dates.date, release_dates.human, release_dates.platform; \
          where release_dates.platform = 6 & release_dates.date >= {from} \
          & release_dates.date <= {to} & game_type = 0 & hypes >= {UPCOMING_MIN_HYPES}; \
@@ -1660,6 +1663,12 @@ fn map_upcoming(value: &serde_json::Value, from: i64) -> Option<IgdbUpcomingRele
         cover_id: value
             .get("cover")
             .map(|cover| string_field(cover, "image_id"))
+            .unwrap_or_default(),
+        artwork_id: value
+            .get("artworks")
+            .and_then(serde_json::Value::as_array)
+            .and_then(|artworks| artworks.first())
+            .map(|artwork| string_field(artwork, "image_id"))
             .unwrap_or_default(),
         url: string_field(value, "url"),
         slug: string_field(value, "slug"),
@@ -2141,6 +2150,7 @@ mod tests {
             "url": "https://www.igdb.com/games/squadron-42",
             "slug": "squadron-42",
             "cover": { "image_id": "cod3pg" },
+            "artworks": [{ "image_id": "art1" }],
             "release_dates": [
                 { "platform": 49, "date": 1_800_000_000_i64, "human": "2027" },
                 { "platform": 6, "date": 1_814_313_600_i64, "human": "Q2 2027" }
@@ -2157,6 +2167,7 @@ mod tests {
         assert_eq!(release.date, None);
         assert_eq!(release.timestamp, None);
         assert_eq!(release.cover_id, "cod3pg");
+        assert_eq!(release.artwork_id, "art1");
         assert_eq!(release.human, "Q2 2027");
         assert_eq!(
             release
@@ -2206,6 +2217,7 @@ mod tests {
         assert!(query.contains("offset 500"));
         assert!(query.contains("release_dates.human"));
         assert!(query.contains("websites.url"));
+        assert!(query.contains("artworks.image_id"));
     }
 
     #[test]

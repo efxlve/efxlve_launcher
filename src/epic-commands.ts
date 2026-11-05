@@ -547,6 +547,8 @@ export interface UpcomingRelease {
   id: number;
   name: string;
   coverId: string;
+  /** Wide key art for the featured banner; empty when IGDB has none. */
+  artworkId: string;
   url: string;
   slug: string;
   hypes: number;

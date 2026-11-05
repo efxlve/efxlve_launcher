@@ -25,7 +25,7 @@ import { S, setTabSort } from "../../core/state";
 import { toast } from "../../core/toast";
 import { ubiDirectSetClientLaunch } from "../../companion";
 import { steamSetLaunchPref } from "../../steam";
-import { cancelReleaseCalendar, cancelReleaseStores, setReleaseCalendarYear } from "../library/release-calendar";
+import { cancelReleaseCalendar, cancelReleaseStores } from "../library/release-calendar";
 import { esc } from "../../core/utils";
 import { t as i18nT } from "../../i18n";
 import {
@@ -829,10 +829,6 @@ document.addEventListener("change", (e) => {
   if (act === "set-download-finish-action") {
     setDownloadFinishAction(normalizeDownloadFinishAction((t as HTMLSelectElement).value));
     render();
-    return;
-  }
-  if (act === "release-calendar-year") {
-    setReleaseCalendarYear(Number((t as HTMLSelectElement).value));
     return;
   }
   if (act === "steam-launch-account" || act === "steam-launch-offline") {

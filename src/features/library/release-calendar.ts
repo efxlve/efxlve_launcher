@@ -14,15 +14,21 @@ import { igdbImage } from "../../igdb";
 import { t } from "../../i18n";
 import { epicUpcomingReleases, type UpcomingRelease } from "../../epic";
 
-const MONTHS = Array.from({ length: 12 }, (_, index) => index);
+interface MonthSel {
+  year: number;
+  /** 1–12, unlike `Date#getMonth`. */
+  month: number;
+}
+
+interface MonthInfo extends MonthSel {
+  count: number;
+}
 
 let layer: HTMLElement | null = null;
 let releases: UpcomingRelease[] = [];
-let selectedYear = 0;
+let selected: MonthSel | null = null;
 let loading = false;
 let failed = false;
-/** Set once the user picks a year, so a refresh cannot steal it. */
-let yearTouched = false;
 /** Bumped by a restart or close so a late answer cannot repaint a dead dialog. */
 let loadSeq = 0;
 /** The game whose store picker is open, if any. */
@@ -59,114 +65,267 @@ function hasMonthOnly(release: UpcomingRelease): boolean {
   return release.precision === "month" && releaseYear(release) > 0 && releaseMonth(release) > 0;
 }
 
-function availableYears(): number[] {
-  const years = new Set<number>();
-  for (const release of releases) {
-    const year = releaseYear(release);
-    if (year > 0) years.add(year);
-  }
-  return [...years].sort((left, right) => left - right);
+function sameMonth(left: MonthSel | null, right: MonthSel | null): boolean {
+  return Boolean(left && right && left.year === right.year && left.month === right.month);
 }
 
-function preferredYear(): number {
-  const years = availableYears();
-  if (years.length === 0) return 0;
-  const now = new Date().getFullYear();
-  const dated = new Map<number, number>();
+function availableMonths(): MonthInfo[] {
+  const map = new Map<string, MonthInfo>();
   for (const release of releases) {
     if (!hasExactDay(release) && !hasMonthOnly(release)) continue;
     const year = releaseYear(release);
-    if (year > 0) dated.set(year, (dated.get(year) ?? 0) + 1);
+    const month = releaseMonth(release);
+    if (year <= 0 || month <= 0) continue;
+    const key = `${year}-${month}`;
+    const entry = map.get(key) ?? { year, month, count: 0 };
+    entry.count += 1;
+    map.set(key, entry);
   }
-  // A year with only "2027"-style entries would open an empty grid; prefer the
-  // current year when it has real dates, then the fullest upcoming year.
-  if ((dated.get(now) ?? 0) > 0) return now;
-  const upcoming = years.filter((year) => year >= now);
-  const pool = upcoming.length > 0 ? upcoming : years;
-  return [...pool].sort(
-    (left, right) => (dated.get(right) ?? 0) - (dated.get(left) ?? 0) || left - right,
-  )[0];
+  return [...map.values()].sort(
+    (left, right) => left.year - right.year || left.month - right.month,
+  );
 }
 
-function monthLabel(year: number, month: number): string {
-  return new Date(year, month, 1).toLocaleDateString(S.appLanguage || undefined, {
-    month: "long",
-  });
+function pickDefaultMonth(months: MonthInfo[]): MonthSel | null {
+  if (months.length === 0) return null;
+  const now = new Date();
+  const current = months.find(
+    (entry) => entry.year === now.getFullYear() && entry.month === now.getMonth() + 1,
+  );
+  return current ?? months[0];
 }
 
-function entryRow(release: UpcomingRelease, day: number, soft = false): string {
-  const cover = igdbImage(release.coverId, "cover_big");
-  const meta = day > 0
-    ? `${monthLabel(releaseYear(release), releaseMonth(release) - 1)} ${day}`
-    : release.precision === "month" && releaseMonth(release) > 0
-      ? `${monthLabel(releaseYear(release), releaseMonth(release) - 1)} ${releaseYear(release)}`
-      : release.human;
-  const art = cover
-    ? `<img class="calendar-entry-cover" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />`
-    : `<span class="calendar-entry-cover placeholder">${icon("gamepad-2", 12)}</span>`;
-  const action = `data-act="release-stores" data-id="${release.id}"`;
-  return `<button type="button" class="calendar-entry${soft ? " is-soft" : ""}" ${action} title="${esc(`${release.name} · ${release.human}`)}">
-    ${art}
-    <span class="calendar-entry-main">
-      <span class="calendar-entry-title">${esc(release.name)}</span>
-      <span class="calendar-entry-meta">${esc(meta)}</span>
-    </span>
-  </button>`;
+function ensureSelectedMonth(): MonthSel | null {
+  const months = availableMonths();
+  if (!selected || !months.some((entry) => sameMonth(entry, selected))) {
+    selected = pickDefaultMonth(months);
+  }
+  return selected;
 }
 
-function monthEntries(year: number, month: number): UpcomingRelease[] {
+function monthGames(month: MonthSel): UpcomingRelease[] {
   return releases
     .filter(
       (release) =>
-        releaseYear(release) === year &&
-        releaseMonth(release) - 1 === month &&
+        releaseYear(release) === month.year &&
+        releaseMonth(release) === month.month &&
         (hasExactDay(release) || hasMonthOnly(release)),
     )
     .sort((left, right) => {
-      // Exact days first, then the month-only rows; each group by name.
       const dayLeft = hasExactDay(left) ? releaseDay(left) : 99;
       const dayRight = hasExactDay(right) ? releaseDay(right) : 99;
       return dayLeft - dayRight || left.name.localeCompare(right.name);
     });
 }
 
-function renderMonths(year: number): string {
+function monthLabel(year: number, monthIndex: number): string {
+  return new Date(year, monthIndex, 1).toLocaleDateString(S.appLanguage || undefined, {
+    month: "long",
+  });
+}
+
+function weekdayLabels(): string[] {
+  // 2024-01-01 was a Monday; the grid is Monday-first.
+  return Array.from({ length: 7 }, (_, index) =>
+    new Date(2024, 0, 1 + index).toLocaleDateString(S.appLanguage || undefined, {
+      weekday: "short",
+    }),
+  );
+}
+
+/** Full label for the hero and store dialog, with the same precision as the grid. */
+function dateLabel(release: UpcomingRelease): string {
+  if (hasExactDay(release)) {
+    return new Date(
+      releaseYear(release),
+      releaseMonth(release) - 1,
+      releaseDay(release),
+    ).toLocaleDateString(S.appLanguage || undefined, {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }
+  if (hasMonthOnly(release)) {
+    return `${monthLabel(releaseYear(release), releaseMonth(release) - 1)} ${releaseYear(release)}`;
+  }
+  return release.human;
+}
+
+function countdownLabel(release: UpcomingRelease): string {
+  if (!hasExactDay(release)) return "";
   const now = new Date();
-  // The current year starts at today's month: a November calendar has no use
-  // for ten empty cards for months that already passed.
-  const firstMonth = year === now.getFullYear() ? now.getMonth() : 0;
-  const months = MONTHS.filter((month) => month >= firstMonth);
-  const columns = months.length === 1 ? " cols-1" : months.length === 2 ? " cols-2" : "";
-  return `<div class="calendar-months${columns}">${months.map((month) => {
-    const rows = monthEntries(year, month);
-    return `<div class="calendar-month${rows.length === 0 ? " is-empty" : ""}">
-      <div class="calendar-month-head">
-        <span>${esc(monthLabel(year, month))}</span>
-        ${rows.length > 0 ? `<span class="calendar-month-count tabular-nums">${rows.length}</span>` : ""}
-      </div>
-      ${rows.length > 0
-        ? rows
-            .map((release) =>
-              entryRow(
-                release,
-                hasExactDay(release) ? releaseDay(release) : 0,
-                !hasExactDay(release),
-              ),
-            )
-            .join("")
-        : `<div class="calendar-month-empty">—</div>`}
-    </div>`;
-  }).join("")}</div>`;
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = Date.UTC(releaseYear(release), releaseMonth(release) - 1, releaseDay(release));
+  const days = Math.round((target - today) / 86_400_000);
+  if (days < 0) return "";
+  if (days === 0) return t("calendar.today");
+  if (days === 1) return t("calendar.tomorrow");
+  return t("calendar.inDays", { n: days });
+}
+
+function storeLabel(id: string, label: string): string {
+  return id === "official" ? t("calendar.officialSite") : label;
+}
+
+/** Search links for stores IGDB has no direct product URL for. */
+function storeSearchLinks(name: string): Array<{ id: string; label: string; url: string }> {
+  const query = encodeURIComponent(name);
+  return [
+    { id: "steam", label: "Steam", url: `https://store.steampowered.com/search/?term=${query}` },
+    { id: "epic", label: "Epic Games", url: `https://store.epicgames.com/en-US/search?q=${query}` },
+    { id: "gog", label: "GOG", url: `https://www.gog.com/en/games?query=${query}` },
+    { id: "itch", label: "itch.io", url: `https://itch.io/search?q=${query}` },
+  ];
+}
+
+function coverOf(release: UpcomingRelease, size: "thumb" | "cover_big_2x" = "thumb"): string {
+  return igdbImage(release.coverId, size);
+}
+
+function dayGame(release: UpcomingRelease): string {
+  const cover = coverOf(release);
+  return `<button type="button" class="calendar-day-game" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
+    ${cover ? `<img class="calendar-day-game-art" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-day-game-dot"></span>`}
+    <span class="calendar-day-game-title">${esc(release.name)}</span>
+  </button>`;
+}
+
+function renderDay(
+  year: number,
+  month: number,
+  day: number,
+  games: UpcomingRelease[],
+): string {
+  const date = new Date(year, month - 1, day);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const isToday = date.getTime() === today.getTime();
+  const isPast = date.getTime() < today.getTime();
+  const weekday = (new Date(year, month - 1, day).getDay() + 6) % 7;
+  const weekend = weekday >= 5;
+  return `<div class="calendar-day${isToday ? " is-today" : ""}${isPast ? " is-past" : ""}${weekend ? " is-weekend" : ""}">
+    <span class="calendar-day-num${isToday ? " is-today" : ""}">${day}</span>
+    ${games.length > 0 ? `<div class="calendar-day-games">${games.map(dayGame).join("")}</div>` : ""}
+  </div>`;
+}
+
+function renderGrid(month: MonthSel): string {
+  const first = new Date(month.year, month.month - 1, 1);
+  const lead = (first.getDay() + 6) % 7;
+  const totalDays = new Date(month.year, month.month, 0).getDate();
+  const games = monthGames(month).filter(hasExactDay);
+  const cells: string[] = [];
+  for (let index = 0; index < lead; index++) {
+    cells.push(`<div class="calendar-day is-blank"></div>`);
+  }
+  for (let day = 1; day <= totalDays; day++) {
+    cells.push(
+      renderDay(
+        month.year,
+        month.month,
+        day,
+        games.filter((release) => releaseDay(release) === day),
+      ),
+    );
+  }
+  while (cells.length % 7 !== 0) {
+    cells.push(`<div class="calendar-day is-blank"></div>`);
+  }
+  return `<div class="calendar-weekdays" aria-hidden="true">${weekdayLabels()
+    .map((label) => `<span>${esc(label)}</span>`)
+    .join("")}</div>
+    <div class="calendar-grid">${cells.join("")}</div>`;
+}
+
+function renderHero(release: UpcomingRelease | null): string {
+  if (!release) return "";
+  const art = release.artworkId
+    ? igdbImage(release.artworkId, "1080p")
+    : release.coverId
+      ? igdbImage(release.coverId, "cover_big_2x")
+      : "";
+  const stores = (release.stores ?? [])
+    .slice(0, 3)
+    .map((store) => storeLabel(store.id, store.label))
+    .join(" · ");
+  const countdown = countdownLabel(release);
+  return `<button type="button" class="calendar-hero${release.artworkId ? "" : " is-cover"}" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
+    <span class="calendar-hero-art"${art ? ` style="background-image:url('${esc(art)}')"` : ""}></span>
+    <span class="calendar-hero-shade"></span>
+    <span class="calendar-hero-body">
+      <span class="calendar-hero-kicker">${t("calendar.nextUp")}</span>
+      <span class="calendar-hero-title">${esc(release.name)}</span>
+      <span class="calendar-hero-meta">
+        <span class="calendar-hero-date">${esc(dateLabel(release))}</span>
+        ${countdown ? `<span class="calendar-hero-count">${esc(countdown)}</span>` : ""}
+      </span>
+      <span class="calendar-hero-stores">${esc(stores || t("calendar.searchStores"))}</span>
+    </span>
+    <span class="calendar-hero-arrow">${icon("arrow-right", 18)}</span>
+  </button>`;
+}
+
+function renderMonthBar(months: MonthInfo[], active: MonthSel): string {
+  return `<div class="calendar-monthbar" role="tablist" aria-label="${esc(t("calendar.title"))}">${months
+    .map((month) => {
+      const isActive = sameMonth(month, active);
+      return `<button type="button" class="calendar-month-tab${isActive ? " is-active" : ""}" role="tab" aria-selected="${isActive}" data-act="release-calendar-month" data-year="${month.year}" data-month="${month.month}">
+        <span class="calendar-month-tab-main">${esc(monthLabel(month.year, month.month - 1))}</span>
+        <span class="calendar-month-tab-year">${month.year}</span>
+        <span class="calendar-month-tab-count">${month.count}</span>
+      </button>`;
+    })
+    .join("")}</div>`;
+}
+
+function renderMonthTitle(months: MonthInfo[], active: MonthSel): string {
+  const index = months.findIndex((month) => sameMonth(month, active));
+  const previous = index > 0;
+  const next = index >= 0 && index < months.length - 1;
+  return `<div class="calendar-month-title">
+    <button type="button" class="icon-btn" data-act="release-calendar-prev" title="${esc(t("calendar.previousMonth"))}" aria-label="${esc(t("calendar.previousMonth"))}"${previous ? "" : " disabled"}>${icon("chevron-left", 16)}</button>
+    <h3>${esc(monthLabel(active.year, active.month - 1))} <span>${active.year}</span></h3>
+    <button type="button" class="icon-btn" data-act="release-calendar-next" title="${esc(t("calendar.nextMonth"))}" aria-label="${esc(t("calendar.nextMonth"))}"${next ? "" : " disabled"}>${icon("chevron-right", 16)}</button>
+  </div>`;
+}
+
+function renderTba(month: MonthSel): string {
+  const tba = monthGames(month).filter(hasMonthOnly);
+  if (tba.length === 0) return "";
+  return `<div class="calendar-tba">
+    <div class="calendar-tba-head">${esc(t("calendar.dayUnknown"))}<span class="count tabular-nums">${tba.length}</span></div>
+    <div class="calendar-tba-list">${tba
+      .map((release) => {
+        const cover = coverOf(release);
+        return `<button type="button" class="calendar-tba-card" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
+          ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-tba-art placeholder">${icon("gamepad-2", 12)}</span>`}
+          <span class="calendar-tba-name">${esc(release.name)}</span>
+          <span class="calendar-tba-when">${esc(release.human)}</span>
+        </button>`;
+      })
+      .join("")}</div>
+  </div>`;
 }
 
 function pendingReleases(year: number): UpcomingRelease[] {
   return releases
     .filter((release) => !hasExactDay(release) && !hasMonthOnly(release))
     .filter((release) => releaseYear(release) === 0 || releaseYear(release) === year)
-    .sort((left, right) => {
-      const byName = left.name.localeCompare(right.name);
-      return releaseYear(left) - releaseYear(right) || byName;
-    });
+    .sort((left, right) => releaseYear(left) - releaseYear(right) || left.name.localeCompare(right.name));
+}
+
+function renderPending(year: number): string {
+  const pending = pendingReleases(year);
+  if (pending.length === 0) return "";
+  return `<details class="calendar-unconfirmed">
+    <summary class="calendar-unconfirmed-head">${t("calendar.unconfirmed")} <span class="count tabular-nums">${pending.length}</span></summary>
+    <div class="calendar-unconfirmed-list">${pending
+      .map(
+        (release) => `<button type="button" class="calendar-chip" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${release.human}`)}"><span class="calendar-chip-name">${esc(release.name)}</span><span class="calendar-chip-when">${esc(release.human)}</span></button>`,
+      )
+      .join("")}</div>
+  </details>`;
 }
 
 function loadingHtml(): string {
@@ -188,34 +347,28 @@ function emptyHtml(): string {
 function renderBody(): string {
   if (loading && releases.length === 0) return loadingHtml();
   if (releases.length === 0) return emptyHtml();
-  const pending = pendingReleases(selectedYear);
+  const month = ensureSelectedMonth();
+  if (!month) return emptyHtml();
+  const months = availableMonths();
+  const pool = monthGames(month);
+  const exact = pool.filter(hasExactDay);
+  // Feature the month's most followed release that has key art, so the banner
+  // is both relevant and visually complete. Fall back to the most followed.
+  const ranked = [...exact].sort((left, right) => (right.hypes ?? 0) - (left.hypes ?? 0));
+  const hero = ranked.find((release) => release.artworkId) ?? ranked[0] ?? pool.find(hasMonthOnly) ?? null;
   return `
-    ${renderMonths(selectedYear)}
-    ${
-      pending.length > 0
-        ? `<details class="calendar-unconfirmed">
-            <summary class="calendar-unconfirmed-head">${t("calendar.unconfirmed")} <span class="count tabular-nums">${pending.length}</span></summary>
-            <div class="calendar-unconfirmed-list">${pending
-              .map(
-                (release) => `<button type="button" class="calendar-chip" ${release.url ? `data-act="open-external-url" data-url="${esc(release.url)}"` : `data-act="prevent-modal-close"`} title="${esc(`${release.name} · ${release.human}`)}"><span class="calendar-chip-name">${esc(release.name)}</span><span class="calendar-chip-when">${esc(release.human)}</span></button>`,
-              )
-              .join("")}</div>
-          </details>`
-        : ""
-    }
+    ${renderHero(hero)}
+    ${renderMonthBar(months, month)}
+    ${renderMonthTitle(months, month)}
+    ${renderGrid(month)}
+    ${renderTba(month)}
+    ${renderPending(month.year)}
     <p class="calendar-source">${esc(t("calendar.sourceNote"))}</p>`;
 }
 
 function renderCalendar(): void {
   if (!layer) return;
-  const years = availableYears();
-  if (!yearTouched || !years.includes(selectedYear)) {
-    const preferred = preferredYear();
-    if (preferred > 0) selectedYear = preferred;
-  }
-  const yearOptions = years
-    .map((year) => `<option value="${year}"${year === selectedYear ? " selected" : ""}>${year}</option>`)
-    .join("");
+  const month = ensureSelectedMonth();
   const scrollTop = layer.querySelector<HTMLElement>(".calendar-body")?.scrollTop ?? 0;
   layer.innerHTML = `
     <div class="modal-backdrop" data-act="release-calendar-close">
@@ -230,50 +383,96 @@ function renderCalendar(): void {
             )}</p>
           </div>
           <div class="calendar-head-actions">
-            ${years.length > 0 ? `<select class="settings-select calendar-year" data-act="release-calendar-year" aria-label="${esc(t("calendar.title"))}">${yearOptions}</select>` : ""}
             <button type="button" class="icon-btn${loading ? " spinning" : ""}" data-act="release-calendar-refresh" title="${esc(t("calendar.refresh"))}" aria-label="${esc(t("calendar.refresh"))}" ${loading ? "disabled" : ""}>${icon("refresh", 15)}</button>
             <button type="button" class="manage-head-close" data-act="release-calendar-close" title="${esc(t("common.close"))}">${icon("x", 16)}</button>
           </div>
         </div>
-        <div class="calendar-body">${renderBody()}</div>
+        <div class="calendar-body">${month ? renderBody() : emptyHtml()}</div>
       </div>
     </div>`;
   const nextBody = layer.querySelector<HTMLElement>(".calendar-body");
   if (nextBody && scrollTop > 0) nextBody.scrollTop = scrollTop;
+  const activeTab = layer.querySelector<HTMLElement>(".calendar-month-tab.is-active");
+  activeTab?.scrollIntoView({ block: "nearest", inline: "center" });
 }
 
-/** Full label for the store dialog, with the same precision as the grid. */
-function dateLabel(release: UpcomingRelease): string {
-  if (hasExactDay(release)) {
-    return new Date(
-      releaseYear(release),
-      releaseMonth(release) - 1,
-      releaseDay(release),
-    ).toLocaleDateString(S.appLanguage || undefined, {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+async function load(refresh: boolean): Promise<void> {
+  const seq = ++loadSeq;
+  loading = true;
+  failed = false;
+  renderCalendar();
+  try {
+    const next = await epicUpcomingReleases(refresh);
+    if (seq !== loadSeq || !layer) return;
+    releases = next;
+    if (!selected || !availableMonths().some((month) => sameMonth(month, selected))) {
+      selected = pickDefaultMonth(availableMonths());
+    }
+  } catch {
+    if (seq !== loadSeq || !layer) return;
+    releases = [];
+    failed = true;
   }
-  if (hasMonthOnly(release)) {
-    return `${monthLabel(releaseYear(release), releaseMonth(release) - 1)} ${releaseYear(release)}`;
-  }
-  return release.human;
+  loading = false;
+  renderCalendar();
 }
 
-function storeLabel(id: string, label: string): string {
-  return id === "official" ? t("calendar.officialSite") : label;
+/** Opens the upcoming-release calendar. */
+export function openReleaseCalendar(): void {
+  closeReleaseStores();
+  releases = [];
+  selected = null;
+  failed = false;
+  if (layer) layer.remove();
+  layer = document.createElement("div");
+  layer.className = "calendar-layer";
+  confirmRoot.appendChild(layer);
+  renderCalendar();
+  void load(false);
 }
 
-/** Search links for stores IGDB has no direct product URL for. */
-function storeSearchLinks(name: string): Array<{ id: string; label: string; url: string }> {
-  const query = encodeURIComponent(name);
-  return [
-    { id: "steam", label: "Steam", url: `https://store.steampowered.com/search/?term=${query}` },
-    { id: "epic", label: "Epic Games", url: `https://store.epicgames.com/en-US/search?q=${query}` },
-    { id: "gog", label: "GOG", url: `https://www.gog.com/en/games?query=${query}` },
-    { id: "itch", label: "itch.io", url: `https://itch.io/search?q=${query}` },
-  ];
+export function closeReleaseCalendar(): void {
+  closeReleaseStores();
+  loadSeq++;
+  layer?.remove();
+  layer = null;
+  releases = [];
+  selected = null;
+  loading = false;
+  failed = false;
+}
+
+/** Cancels the open calendar; true when there was one (Escape handling). */
+export function cancelReleaseCalendar(): boolean {
+  if (!layer) return false;
+  closeReleaseCalendar();
+  return true;
+}
+
+/** Month tab; handled by the click router. */
+export function setReleaseCalendarMonth(year: number, month: number): void {
+  if (!Number.isFinite(year) || !Number.isFinite(month)) return;
+  if (!availableMonths().some((entry) => entry.year === year && entry.month === month)) return;
+  selected = { year, month };
+  renderCalendar();
+}
+
+/** Arrow buttons; skip empty months by walking the tab list. */
+export function stepReleaseCalendarMonth(delta: -1 | 1): void {
+  const months = availableMonths();
+  if (months.length === 0) return;
+  const current = ensureSelectedMonth();
+  const index = months.findIndex((entry) => sameMonth(entry, current));
+  const next = months[index + delta];
+  if (!next) return;
+  selected = { year: next.year, month: next.month };
+  renderCalendar();
+}
+
+/** Refresh button; bypasses the six-hour backend cache. */
+export function refreshReleaseCalendar(): void {
+  if (!layer || loading) return;
+  void load(true);
 }
 
 function renderStoreDialog(): void {
@@ -348,68 +547,4 @@ export function cancelReleaseStores(): boolean {
   if (!storeLayer) return false;
   closeReleaseStores();
   return true;
-}
-
-async function load(refresh: boolean): Promise<void> {
-  const seq = ++loadSeq;
-  loading = true;
-  failed = false;
-  renderCalendar();
-  try {
-    const next = await epicUpcomingReleases(refresh);
-    if (seq !== loadSeq || !layer) return;
-    releases = next;
-  } catch {
-    if (seq !== loadSeq || !layer) return;
-    releases = [];
-    failed = true;
-  }
-  loading = false;
-  renderCalendar();
-}
-
-/** Opens the upcoming-release calendar. */
-export function openReleaseCalendar(): void {
-  closeReleaseStores();
-  releases = [];
-  selectedYear = 0;
-  yearTouched = false;
-  failed = false;
-  if (layer) layer.remove();
-  layer = document.createElement("div");
-  layer.className = "calendar-layer";
-  confirmRoot.appendChild(layer);
-  renderCalendar();
-  void load(false);
-}
-
-export function closeReleaseCalendar(): void {
-  closeReleaseStores();
-  loadSeq++;
-  layer?.remove();
-  layer = null;
-  releases = [];
-  loading = false;
-  failed = false;
-}
-
-/** Cancels the open calendar; true when there was one (Escape handling). */
-export function cancelReleaseCalendar(): boolean {
-  if (!layer) return false;
-  closeReleaseCalendar();
-  return true;
-}
-
-/** Year selector change; handled by the input listener. */
-export function setReleaseCalendarYear(year: number): void {
-  if (!Number.isFinite(year)) return;
-  yearTouched = true;
-  selectedYear = year;
-  renderCalendar();
-}
-
-/** Refresh button; bypasses the six-hour backend cache. */
-export function refreshReleaseCalendar(): void {
-  if (!layer || loading) return;
-  void load(true);
 }

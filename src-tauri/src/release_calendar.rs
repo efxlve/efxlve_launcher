@@ -117,6 +117,7 @@ mod tests {
             slug: "example".into(),
             hypes: 12,
             human: "Jan 28, 2027".into(),
+            artwork_id: String::new(),
             precision: "day".into(),
             year: Some(2027),
             month: Some(1),

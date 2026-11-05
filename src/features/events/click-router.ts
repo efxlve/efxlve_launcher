@@ -114,7 +114,7 @@ import {
   updateLibraryFilterInPlace,
 } from "../library/library-view";
 import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
-import { closeReleaseCalendar, closeReleaseStores, openReleaseCalendar, openReleaseStores, refreshReleaseCalendar } from "../library/release-calendar";
+import { closeReleaseCalendar, closeReleaseStores, openReleaseCalendar, openReleaseStores, refreshReleaseCalendar, setReleaseCalendarMonth, stepReleaseCalendarMonth } from "../library/release-calendar";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
@@ -582,6 +582,12 @@ document.addEventListener("click", (e) => {
     openReleaseCalendar();
   } else if (act === "release-calendar-close") {
     closeReleaseCalendar();
+  } else if (act === "release-calendar-month" && t.dataset.year && t.dataset.month) {
+    setReleaseCalendarMonth(Number(t.dataset.year), Number(t.dataset.month));
+  } else if (act === "release-calendar-prev") {
+    stepReleaseCalendarMonth(-1);
+  } else if (act === "release-calendar-next") {
+    stepReleaseCalendarMonth(1);
   } else if (act === "release-stores" && id) {
     openReleaseStores(Number(id));
   } else if (act === "release-stores-close") {
