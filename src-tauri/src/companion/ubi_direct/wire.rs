@@ -34,14 +34,35 @@ fn api_version() -> u32 {
         .unwrap_or(DEFAULT_API_VERSION)
 }
 
-/// A service close with code 0/1 is a transient socket reset. Codes 2 (multiple
-/// login) and 4 (no auth) mean the session itself is no longer usable.
+/// A TLS EOF, socket reset, or service close with code 0/1 is transient.
+/// Codes 2 (multiple login) and 4 (no auth) mean the session is unusable.
 pub(crate) fn is_transient_service_close(error: &str) -> bool {
+    let lower = error.to_ascii_lowercase();
+    if lower.contains("ubisoft closed the connection")
+        || lower.contains("peer closed connection")
+        || lower.contains("unexpectedeof")
+        || lower.contains("unexpected end of file")
+        || lower.contains("connection reset")
+        || lower.contains("broken pipe")
+        || lower.contains("early eof")
+        || lower.contains("timed out waiting for a demux response")
+    {
+        return true;
+    }
     let code = error
         .rsplit_once("(code ")
         .and_then(|(_, rest)| rest.strip_suffix(')'))
         .and_then(|value| value.trim().parse::<u32>().ok());
     matches!(code, Some(0) | Some(1))
+}
+
+fn frame_read_error(action: &str, error: &std::io::Error) -> String {
+    let text = error.to_string();
+    if text.contains("close_notify") || text.to_ascii_lowercase().contains("unexpected eof") {
+        "Ubisoft closed the connection".to_string()
+    } else {
+        format!("{action}: {error}")
+    }
 }
 
 pub(crate) struct Demux {
@@ -137,7 +158,7 @@ impl Demux {
             self.tls
                 .read_exact(&mut len)
                 .await
-                .map_err(|e| format!("reading Demux frame length: {e}"))?;
+                .map_err(|e| frame_read_error("reading Demux frame length", &e))?;
             let len = u32::from_be_bytes(len) as usize;
             if len > 64 * 1024 * 1024 {
                 return Err(format!("Demux frame is {len} bytes; refusing it"));
@@ -146,7 +167,7 @@ impl Demux {
             self.tls
                 .read_exact(&mut body)
                 .await
-                .map_err(|e| format!("reading Demux frame body: {e}"))?;
+                .map_err(|e| frame_read_error("reading Demux frame body", &e))?;
             Ok(codec::parse_downstream(&body))
         };
         let downstream = match tokio::time::timeout(Duration::from_secs(20), fut).await {
@@ -512,6 +533,18 @@ mod tests {
     use super::*;
 
     #[test]
+    fn a_tls_eof_becomes_a_plain_ubisoft_close() {
+        let error = std::io::Error::new(
+            std::io::ErrorKind::UnexpectedEof,
+            "peer closed connection without sending TLS close_notify",
+        );
+        assert_eq!(
+            frame_read_error("reading Demux frame length", &error),
+            "Ubisoft closed the connection"
+        );
+    }
+
+    #[test]
     fn only_a_transient_service_close_is_retried() {
         assert!(is_transient_service_close(
             "Ubisoft closed service connection 1 (code 0)"
@@ -521,6 +554,12 @@ mod tests {
         ));
         assert!(!is_transient_service_close(
             "Ubisoft closed service connection 2 (code 2)"
+        ));
+        assert!(is_transient_service_close(
+            "reading Demux frame length: peer closed connection without sending TLS close_notify"
+        ));
+        assert!(is_transient_service_close(
+            "reading Demux frame length: unexpected end of file"
         ));
         assert!(!is_transient_service_close("@t:accounts.ubiSessionExpired"));
         assert!(!is_transient_service_close("no Demux response"));

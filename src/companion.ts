@@ -136,6 +136,22 @@ export interface UbiDirectStatus {
 /** Whether new Ubisoft installs use the launcher's direct CDN path. */
 export const ubiDirectStatus = () => invoke<UbiDirectStatus>("ubi_direct_status");
 
+/** A transient Ubisoft socket reset, not an error worth showing the user. */
+export function isTransientUbisoftError(message: string): boolean {
+  const text = message.toLowerCase();
+  return (
+    text.includes("closed service connection") ||
+    text.includes("ubisoft closed the connection") ||
+    text.includes("peer closed connection") ||
+    text.includes("unexpectedeof") ||
+    text.includes("unexpected end of file") ||
+    text.includes("connection reset") ||
+    text.includes("broken pipe") ||
+    text.includes("early eof") ||
+    text.includes("timed out waiting for a demux response")
+  );
+}
+
 export const ubiDirectSetEnabled = (enabled: boolean) =>
   invoke<void>("ubi_direct_set_enabled", { enabled });
 

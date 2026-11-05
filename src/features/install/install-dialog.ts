@@ -19,7 +19,7 @@ import { toast } from "../../core/toast";
 import { scheduleRender } from "../../core/render";
 import { currentLanguage, localizeMessage, t } from "../../i18n";
 import { gogInstallGame } from "../../gog";
-import { companionGameAction, eaContentInstall, eaContentPlan, eaDefaultInstallDir, eaInstallDir, ubiDefaultInstallDir, ubiDirectInstall, ubiDirectLaunchMode, ubiDirectPlan, ubiDirectProbe, ubiInstallDir } from "../../companion";
+import { companionGameAction, eaContentInstall, eaContentPlan, eaDefaultInstallDir, eaInstallDir, isTransientUbisoftError, ubiDefaultInstallDir, ubiDirectInstall, ubiDirectLaunchMode, ubiDirectPlan, ubiDirectProbe, ubiInstallDir } from "../../companion";
 import { setView } from "../store/store-view";
 import {
   epicDefaultInstallDir,
@@ -358,7 +358,7 @@ async function openUbiInstallDialog(appName: string): Promise<void> {
     const message = String(e);
     // The plan already retried a transient service reset. Fall back to the
     // client without putting a raw socket error in front of the user.
-    if (!message.includes("closed service connection")) {
+    if (!isTransientUbisoftError(message)) {
       toast(localizeMessage(message), "err");
     }
     void companionGameAction("ubisoft", appName.slice(9), "install").catch(() => {});
