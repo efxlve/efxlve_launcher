@@ -1,6 +1,7 @@
 //! High-level Cloud Backup Manager for orchestrating local archives and remote cloud providers.
 
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -14,7 +15,8 @@ use crate::cloud_backup::rclone;
 use crate::cloud_backup::secret_store;
 use crate::cloud_backup::webdav;
 use crate::legendary::backup::{
-    app_backup_dir, backup_key, create_backup, list_backups, restore_backup,
+    app_backup_dir, backup_key, create_backup, list_backups, resolve_save_path, restore_backup,
+    tree_content_hash,
 };
 use crate::legendary::skip::default_config_dir;
 
@@ -210,6 +212,60 @@ pub async fn test_connection(settings: &CloudBackupSettings) -> Result<String, S
     }
 }
 
+/// The last archive this game uploaded, and the save-tree hash it carried.
+/// Kept beside the local backups (which `list_backups` ignores because it only
+/// reads directories). A matching hash lets the next automatic upload skip the
+/// archive and the network entirely.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct UploadMarker {
+    backup_id: String,
+    content_hash: String,
+}
+
+fn upload_marker_path(app_name: &str) -> PathBuf {
+    app_backup_dir(app_name).join(".last-upload.json")
+}
+
+fn read_upload_marker(app_name: &str) -> Option<UploadMarker> {
+    std::fs::read_to_string(upload_marker_path(app_name))
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+}
+
+fn write_upload_marker(app_name: &str, backup_id: &str, content_hash: &str) {
+    let path = upload_marker_path(app_name);
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let marker = UploadMarker {
+        backup_id: backup_id.to_string(),
+        content_hash: content_hash.to_string(),
+    };
+    if let Ok(data) = serde_json::to_string(&marker) {
+        let _ = std::fs::write(path, data);
+    }
+}
+
+/// Returns the existing cloud entry when the saves have not changed since the
+/// last successful upload. A failed listing falls through to a real upload, so
+/// deduplication never hides a cloud copy that disappeared.
+async fn unchanged_cloud_entry(app_name: &str) -> Option<CloudBackupEntry> {
+    let marker = read_upload_marker(app_name)?;
+    let save_path = resolve_save_path(app_name, None).ok()?;
+    let source = Path::new(&save_path);
+    if !source.is_dir() {
+        return None;
+    }
+    let current = tree_content_hash(source)?;
+    if current != marker.content_hash {
+        return None;
+    }
+    let remote = list_cloud_backups(app_name).await.ok()?;
+    remote
+        .into_iter()
+        .find(|entry| entry.backup_id == marker.backup_id)
+}
+
 /// Packs and uploads a save backup to the active cloud provider.
 pub async fn upload_backup(
     app_name: &str,
@@ -221,6 +277,21 @@ pub async fn upload_backup(
     }
 
     let client = get_client();
+
+    // An automatic upload (no explicit local id) first asks whether the save
+    // tree is byte-identical to the last uploaded one. If it is, and the cloud
+    // still lists that archive, there is nothing to package or transfer.
+    if backup_id_opt.is_none() {
+        if let Some(existing) = unchanged_cloud_entry(app_name).await {
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|duration| duration.as_secs())
+                .unwrap_or(0);
+            settings.last_sync_time = Some(now);
+            let _ = save_settings(&settings);
+            return Ok(existing);
+        }
+    }
 
     // 1. Determine local backup to pack
     let (target_backup_dir, backup_id, local_info) = match backup_id_opt {
@@ -398,6 +469,11 @@ pub async fn upload_backup(
         }
         CloudBackupProvider::None => unreachable!(),
     };
+
+    // Remember what was uploaded so an unchanged save tree skips the next one.
+    if let Some(hash) = local_info.content_hash.as_deref() {
+        write_upload_marker(app_name, &entry.backup_id, hash);
+    }
 
     // Cleanup temp file
     let _ = std::fs::remove_file(&temp_archive);

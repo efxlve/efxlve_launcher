@@ -1888,6 +1888,7 @@
   "cloud.webdavSaved": "تم حفظ إعدادات WebDAV",
   "cloud.uploading": "جارٍ رفع النسخة الاحتياطية إلى السحابة…",
   "cloud.uploadSuccess": "تم رفع النسخة الاحتياطية إلى السحابة",
+  "cloud.uploadUnchanged": "لم تتغير ملفات الحفظ؛ النسخة السحابية الحالية محدّثة.",
   "cloud.downloading": "جارٍ تنزيل النسخة الاحتياطية من السحابة…",
   "cloud.downloadSuccess": "تم تنزيل النسخة الاحتياطية واستعادتها",
   "cloud.deleteSuccess": "تم حذف النسخة الاحتياطية السحابية",

@@ -262,7 +262,8 @@ export async function uploadGameCloudAction(appName: string, backupId?: string):
   toast(t("cloud.uploading"), "");
   try {
     const entry = await cloudBackupUploadGame(appName, backupId);
-    toast(t("cloud.uploadSuccess"), "ok");
+    const unchanged = !backupId && entry.timestamp < Math.floor(Date.now() / 1000) - 30;
+    toast(t(unchanged ? "cloud.uploadUnchanged" : "cloud.uploadSuccess"), unchanged ? "" : "ok");
     const existing = S.cloudBackupsMap.get(appName) || [];
     S.cloudBackupsMap.set(appName, [entry, ...existing.filter((e) => e.backupId !== entry.backupId)]);
     updateManageCloudRowInPlace(appName);

@@ -1888,6 +1888,7 @@
   "cloud.webdavSaved": "Configuração do WebDAV salva",
   "cloud.uploading": "Enviando backup de salvamento para a nuvem…",
   "cloud.uploadSuccess": "Backup de salvamento enviado para a nuvem",
+  "cloud.uploadUnchanged": "Os saves não mudaram; o backup na nuvem existente está atualizado.",
   "cloud.downloading": "Baixando backup de salvamento da nuvem…",
   "cloud.downloadSuccess": "Backup de salvamento baixado e restaurado",
   "cloud.deleteSuccess": "Backup na nuvem excluído",

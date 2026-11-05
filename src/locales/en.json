@@ -2002,6 +2002,7 @@
   "cloud.webdavSaved": "WebDAV configuration saved",
   "cloud.uploading": "Uploading save backup to cloud…",
   "cloud.uploadSuccess": "Save backup uploaded to cloud",
+  "cloud.uploadUnchanged": "Saves are unchanged; the existing cloud backup is up to date.",
   "cloud.downloading": "Downloading save backup from cloud…",
   "cloud.downloadSuccess": "Save backup downloaded and restored",
   "cloud.deleteSuccess": "Cloud backup deleted",

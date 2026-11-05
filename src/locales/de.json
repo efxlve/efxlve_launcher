@@ -1888,6 +1888,7 @@
   "cloud.webdavSaved": "WebDAV-Konfiguration gespeichert",
   "cloud.uploading": "Speicher-Backup wird in die Cloud hochgeladen…",
   "cloud.uploadSuccess": "Speicher-Backup in die Cloud hochgeladen",
+  "cloud.uploadUnchanged": "Die Spielstände sind unverändert; das vorhandene Cloud-Backup ist aktuell.",
   "cloud.downloading": "Speicher-Backup wird aus der Cloud heruntergeladen…",
   "cloud.downloadSuccess": "Speicher-Backup heruntergeladen und wiederhergestellt",
   "cloud.deleteSuccess": "Cloud-Backup gelöscht",

@@ -23,6 +23,7 @@ mod guides;
 mod launchers;
 mod legendary;
 mod lookup_cache;
+mod ludusavi;
 mod nile;
 mod notes;
 mod net_diag;

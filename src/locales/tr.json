@@ -2002,6 +2002,7 @@
   "cloud.webdavSaved": "WebDAV ayarları kaydedildi",
   "cloud.uploading": "Kayıt yedeği buluta yükleniyor…",
   "cloud.uploadSuccess": "Kayıt yedeği buluta yüklendi",
+  "cloud.uploadUnchanged": "Kayıtlar değişmedi; mevcut bulut yedeği güncel.",
   "cloud.downloading": "Kayıt yedeği buluttan indiriliyor…",
   "cloud.downloadSuccess": "Kayıt yedeği indirildi ve geri yüklendi",
   "cloud.deleteSuccess": "Bulut yedeği silindi",

@@ -1888,6 +1888,7 @@
   "cloud.webdavSaved": "Zapisano konfigurację WebDAV",
   "cloud.uploading": "Przesyłanie kopii zapasowej do chmury…",
   "cloud.uploadSuccess": "Przesłano kopię zapasową do chmury",
+  "cloud.uploadUnchanged": "Zapisy się nie zmieniły; istniejąca kopia w chmurze jest aktualna.",
   "cloud.downloading": "Pobieranie kopii zapasowej z chmury…",
   "cloud.downloadSuccess": "Pobrano i przywrócono kopię zapasową",
   "cloud.deleteSuccess": "Usunięto kopię zapasową z chmury",

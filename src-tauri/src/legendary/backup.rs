@@ -527,6 +527,13 @@ pub fn detect_save_path(
         }
     }
 
+    // The bundled Ludusavi index names the save tree directly for 11k titles,
+    // including games none of the generic folder scans know. It runs before the
+    // scans because its paths are concrete, not guesses.
+    if let Some(found) = crate::ludusavi::save_path(app_name, title, install_path) {
+        return Some(found);
+    }
+
     // Unix: XDG directories, Unity's tree and the launcher's Wine/Proton
     // prefixes. The Windows branches below are harmless there (`USERPROFILE`
     // and the AppData variables are absent), so this is an extra first pass.
@@ -814,38 +821,47 @@ fn ubisoft_save_path(app_name: &str) -> Option<String> {
         .map(|path| path.to_string_lossy().to_string())
 }
 
-pub fn create_backup(
+pub fn resolve_save_path(
     app_name: &str,
     save_path_override: Option<&str>,
-) -> Result<SaveBackupInfo, String> {
-    migrate_legacy_dir(app_name);
+) -> Result<String, String> {
     let installed = super::cache::read_installed(&super::skip::default_config_dir());
     let installed_game = installed.into_iter().find(|g| g.app_name == app_name);
 
     let cfgs = super::commands::load_all_game_custom_configs();
     let cfg = cfgs.get(app_name);
 
-    let save_path_str = if let Some(sp) = save_path_override.filter(|s| !s.trim().is_empty()) {
-        sp.trim().to_string()
-    } else if let Some(csp) = cfg
+    if let Some(sp) = save_path_override.filter(|s| !s.trim().is_empty()) {
+        return Ok(sp.trim().to_string());
+    }
+    if let Some(csp) = cfg
         .and_then(|c| c.custom_save_path.as_deref())
         .filter(|s| !s.trim().is_empty())
     {
-        csp.trim().to_string()
-    } else if let Some(sp) = installed_game
+        return Ok(csp.trim().to_string());
+    }
+    if let Some(sp) = installed_game
         .as_ref()
         .and_then(|g| g.save_path.as_deref())
         .filter(|s| !s.trim().is_empty())
     {
-        sp.trim().to_string()
-    } else if let Some(sp) = ubisoft_save_path(app_name) {
-        sp
-    } else {
-        let title = installed_game.as_ref().map(|g| g.title.as_str());
-        let install_path = installed_game.as_ref().map(|g| g.install_path.as_str());
-        detect_save_path(app_name, title, install_path)
-            .ok_or_else(|| "@t:backup.noSaveDir".to_string())?
-    };
+        return Ok(sp.trim().to_string());
+    }
+    if let Some(sp) = ubisoft_save_path(app_name) {
+        return Ok(sp);
+    }
+    let title = installed_game.as_ref().map(|g| g.title.as_str());
+    let install_path = installed_game.as_ref().map(|g| g.install_path.as_str());
+    detect_save_path(app_name, title, install_path)
+        .ok_or_else(|| "@t:backup.noSaveDir".to_string())
+}
+
+pub fn create_backup(
+    app_name: &str,
+    save_path_override: Option<&str>,
+) -> Result<SaveBackupInfo, String> {
+    migrate_legacy_dir(app_name);
+    let save_path_str = resolve_save_path(app_name, save_path_override)?;
 
     let source = PathBuf::from(&save_path_str);
     if !source.exists() {

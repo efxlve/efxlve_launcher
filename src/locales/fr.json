@@ -1888,6 +1888,7 @@
   "cloud.webdavSaved": "Configuration WebDAV enregistrée",
   "cloud.uploading": "Téléversement de la sauvegarde dans le cloud…",
   "cloud.uploadSuccess": "Sauvegarde téléversée dans le cloud",
+  "cloud.uploadUnchanged": "Les sauvegardes n'ont pas changé ; la sauvegarde cloud existante est à jour.",
   "cloud.downloading": "Téléchargement de la sauvegarde depuis le cloud…",
   "cloud.downloadSuccess": "Sauvegarde téléchargée et restaurée",
   "cloud.deleteSuccess": "Sauvegarde dans le cloud supprimée",

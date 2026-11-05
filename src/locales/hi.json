@@ -2002,6 +2002,7 @@
   "cloud.webdavSaved": "WebDAV कॉन्फ़िगरेशन सहेजा गया",
   "cloud.uploading": "सेव बैकअप क्लाउड पर अपलोड हो रहा है…",
   "cloud.uploadSuccess": "सेव बैकअप क्लाउड पर अपलोड हो गया",
+  "cloud.uploadUnchanged": "सेव बदले नहीं हैं; मौजूदा क्लाउड बैकअप अप टू डेट है।",
   "cloud.downloading": "क्लाउड से सेव बैकअप डाउनलोड हो रहा है…",
   "cloud.downloadSuccess": "सेव बैकअप डाउनलोड और पुनर्स्थापित हुआ",
   "cloud.deleteSuccess": "क्लाउड बैकअप हटा दिया गया",

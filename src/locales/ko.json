@@ -1888,6 +1888,7 @@
   "cloud.webdavSaved": "WebDAV 설정이 저장되었습니다",
   "cloud.uploading": "세이브 백업을 클라우드에 업로드하는 중…",
   "cloud.uploadSuccess": "세이브 백업이 클라우드에 업로드되었습니다",
+  "cloud.uploadUnchanged": "저장 파일이 변경되지 않았습니다. 기존 클라우드 백업이 최신입니다.",
   "cloud.downloading": "클라우드에서 세이브 백업을 다운로드하는 중…",
   "cloud.downloadSuccess": "세이브 백업을 다운로드하여 복원했습니다",
   "cloud.deleteSuccess": "클라우드 백업이 삭제되었습니다",

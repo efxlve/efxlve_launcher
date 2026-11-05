@@ -1888,6 +1888,7 @@
   "cloud.webdavSaved": "Configuración de WebDAV guardada",
   "cloud.uploading": "Subiendo copia de seguridad a la nube…",
   "cloud.uploadSuccess": "Copia de seguridad subida a la nube",
+  "cloud.uploadUnchanged": "Las partidas no han cambiado; la copia en la nube existente está al día.",
   "cloud.downloading": "Descargando copia de seguridad de la nube…",
   "cloud.downloadSuccess": "Copia de seguridad descargada y restaurada",
   "cloud.deleteSuccess": "Copia de seguridad en la nube eliminada",

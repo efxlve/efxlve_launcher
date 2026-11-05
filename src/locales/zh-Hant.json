@@ -1888,6 +1888,7 @@
   "cloud.webdavSaved": "WebDAV 設定已儲存",
   "cloud.uploading": "正在上傳存檔備份至雲端…",
   "cloud.uploadSuccess": "存檔備份已上傳至雲端",
+  "cloud.uploadUnchanged": "存檔沒有變化；現有雲端備份已是最新。",
   "cloud.downloading": "正在從雲端下載存檔備份…",
   "cloud.downloadSuccess": "已下載並還原存檔備份",
   "cloud.deleteSuccess": "已刪除雲端備份",
