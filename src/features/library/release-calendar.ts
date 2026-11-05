@@ -238,10 +238,10 @@ function searchReleases(): UpcomingRelease[] {
     );
 }
 
-function renderFollowButton(release: UpcomingRelease, extraClass = ""): string {
+function renderFollowButton(release: UpcomingRelease): string {
   const isFollowed = followed.has(release.id);
   const label = isFollowed ? t("calendar.unfollow") : t("calendar.follow");
-  return `<button type="button" class="calendar-follow-btn${isFollowed ? " is-followed" : ""}${extraClass ? ` ${extraClass}` : ""}" data-act="release-follow" data-id="${release.id}" aria-pressed="${isFollowed}" title="${esc(label)}" aria-label="${esc(label)}">${icon("star", 14)}</button>`;
+  return `<button type="button" class="calendar-follow-btn${isFollowed ? " is-followed" : ""}" data-act="release-follow" data-id="${release.id}" aria-pressed="${isFollowed}" title="${esc(label)}" aria-label="${esc(label)}">${icon("star", 14)}</button>`;
 }
 
 function sameMonth(left: MonthSel | null, right: MonthSel | null): boolean {
@@ -581,7 +581,7 @@ function renderHero(
         <span class="calendar-hero-arrow">${icon("arrow-right", 16)}</span>
       </span>
     </button>
-    ${renderFollowButton(release, "is-hero-follow")}
+    ${renderFollowButton(release)}
   </div>`;
 }
 
@@ -625,7 +625,7 @@ function renderTba(month: MonthSel): string {
             <span class="calendar-tba-name">${esc(release.name)}</span>
             <span class="calendar-tba-when">${esc(releaseDateLabel(release))}</span>
           </button>
-          ${renderFollowButton(release, "is-tba-follow")}
+          ${renderFollowButton(release)}
         </div>`;
       })
       .join("")}</div>
@@ -671,7 +671,7 @@ function renderWatchCard(release: UpcomingRelease): string {
         ${storeList ? `<span class="calendar-game-stores">${storeList}</span>` : ""}
       </span>
     </button>
-    ${renderFollowButton(release, "is-watch-follow")}
+    ${renderFollowButton(release)}
   </div>`;
 }
 
