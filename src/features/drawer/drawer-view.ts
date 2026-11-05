@@ -2685,14 +2685,15 @@ export function renderDrawerAchievements(s: EpicSummary): string {
         `${s.installed ? openClient : install}${raAction}`,
       ));
     }
-    // Ubisoft has no public achievement API: the list comes from the client's
-    // local cache, and a game the client never opened has no cache yet.
+    // Ubisoft's list comes from Connect: the local archive when present, or the
+    // account's achievement service. A catalog-only title may have neither yet.
     if (s.appName.startsWith("ubisoft::")) {
+      const refresh = `<button class="btn ghost small" data-act="ach-refresh" data-id="${esc(s.appName)}">${icon("refresh", 13)} ${t("ach.refreshData")}</button>`;
       return withPanel(emptyState(
         "gamepad-2",
         t("ach.ubiTitle"),
         t("ach.ubiDesc"),
-        `<button class="btn ghost small" data-act="companion-open" data-id="ubisoft">${icon("external", 13)} ${t("accounts.openClient")}</button>${raAction}`,
+        `<button class="btn ghost small" data-act="companion-open" data-id="ubisoft">${icon("external", 13)} ${t("accounts.openClient")}</button>${refresh}${raAction}`,
       ));
     }
     // EA games ship achievements through the EA account service; a title with

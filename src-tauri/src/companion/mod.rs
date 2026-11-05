@@ -1808,7 +1808,42 @@ pub async fn companion_achievements(
         // A signed-in account can fill a missing schema from Ubisoft's asset
         // CDN; the local Connect cache is only one of the sources now.
         ubi_achievements::ensure_schema(&id, title_text, language_text).await;
-        let data = ubi_achievements::achievements_for(&id, title_text, language_text);
+        let mut data = ubi_achievements::achievements_for(&id, title_text, language_text);
+        // No local spool (the game was never installed here) does not mean no
+        // progress: ask the account's achievement service before giving up.
+        if data.user_unlocked == 0 {
+            let product_id = ubi_achievements::product_id_for(&id, title_text);
+            // The service answers by the product configuration's sync id, not
+            // the numeric product id. A cached schema can skip the metadata
+            // refresh, so make sure the sync id is known first.
+            if product_id.is_some() && ubi_achievements::sync_id_for(&id, title_text).is_none() {
+                ubi_achievements::ensure_account_metadata().await;
+            }
+            if let Some(sync_id) = ubi_achievements::sync_id_for(&id, title_text) {
+                let fetched = tokio::time::timeout(
+                    std::time::Duration::from_secs(10),
+                    ubi_direct::remote_achievements(&sync_id),
+                )
+                .await;
+                if let Ok(Ok(earned)) = fetched {
+                    ubi_achievements::apply_earned(&mut data, &earned);
+                }
+            }
+            // Some titles have no sync id; the working clients use the numeric
+            // product id for those.
+            if data.user_unlocked == 0 {
+                if let Some(product_id) = product_id {
+                    let fetched = tokio::time::timeout(
+                        std::time::Duration::from_secs(8),
+                        ubi_direct::remote_achievements(&product_id),
+                    )
+                    .await;
+                    if let Ok(Ok(earned)) = fetched {
+                        ubi_achievements::apply_earned(&mut data, &earned);
+                    }
+                }
+            }
+        }
         ubi_direct::merge_achievements(data, &id, title_text)
     } else {
         return GameAchievementsResponse::default();

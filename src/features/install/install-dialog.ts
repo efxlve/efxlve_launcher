@@ -265,7 +265,24 @@ async function openUbiInstallDialog(appName: string): Promise<void> {
   const title = s.title;
   const productId = await resolveUbiProductId(appName, title);
   if (!productId) {
-    toast(t("accounts.ubiNoGames"), "err");
+    // Catalog-only row: no CDN product came back for this account, so the
+    // client's own install handler is the only path. Never leave the click on
+    // a dead "no games" toast.
+    closeInstallDialog();
+    void companionGameAction("ubisoft", appName.slice(9), "install").catch((e: unknown) =>
+      toast(localizeMessage(String(e)), "err"),
+    );
+    return;
+  }
+  // A catalog-only row has an id the store reports but no CDN row in the
+  // ownership probe. Ubisoft Connect is the only install path for it. An
+  // installed copy keeps its own record and is not sent away by a stale probe.
+  const directGame = S.ubiDirect?.games?.find((game) => game.productId === productId);
+  if (!s.installed && S.ubiDirect && !directGame?.installable) {
+    closeInstallDialog();
+    void companionGameAction("ubisoft", appName.slice(9), "install").catch((e: unknown) =>
+      toast(localizeMessage(String(e)), "err"),
+    );
     return;
   }
   // Updates reuse the existing folder. A launcher-managed install goes back

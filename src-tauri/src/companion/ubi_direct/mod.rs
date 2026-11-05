@@ -102,6 +102,7 @@ fn record_achievement_metadata(owned: &[codec::OwnedGame]) {
                 space_id: ubisoft::yaml_value(&game.configuration, "space_id"),
                 name,
                 achievements: ubisoft::yaml_value(&game.configuration, "achievements"),
+                sync_id: ubisoft::yaml_value(&game.configuration, "achievements_sync_id"),
             })
         })
         .collect();
@@ -115,6 +116,44 @@ pub(crate) async fn refresh_achievement_metadata() -> Result<(), String> {
     let owned = demux.owned_games().await?;
     record_achievement_metadata(&owned);
     Ok(())
+}
+
+/// One product's configuration from the ownership service. A catalog-only row
+/// (for example a giveaway claimed in the store) is absent from the initialize
+/// response, so it needs this direct request before its achievements resolve.
+pub(crate) async fn refresh_achievement_metadata_for(product_id: u32) -> Result<(), String> {
+    if product_id == 0 {
+        return Err("no product id".to_string());
+    }
+    let (mut demux, _) = connect().await?;
+    let configuration = demux.product_configuration(product_id).await?;
+    let name = ubisoft::game_name(&configuration)
+        .ok_or_else(|| format!("product {product_id} has no name"))?;
+    let rows = [super::ubi_achievements::AchievementMeta {
+        product_id,
+        uplay_id: 0,
+        space_id: ubisoft::yaml_value(&configuration, "space_id"),
+        name,
+        achievements: ubisoft::yaml_value(&configuration, "achievements"),
+        sync_id: ubisoft::yaml_value(&configuration, "achievements_sync_id"),
+    }];
+    super::ubi_achievements::record_specs(&rows);
+    Ok(())
+}
+
+/// Read the account's earned achievements for one game from `ach_frontend`.
+/// This is independent of a local install or spool.
+pub(crate) async fn remote_achievements(product_id: &str) -> Result<Vec<(u32, u64)>, String> {
+    let (mut demux, session) = connect().await?;
+    if session.user_id.trim().is_empty() {
+        return Err("the Ubisoft profile has no id".to_string());
+    }
+    // The achievement service expects the account's ownership session to have
+    // initialized on this socket first.
+    let _ = demux.owned_games().await?;
+    demux
+        .achievements(&session.user_id, product_id, "PC")
+        .await
 }
 
 /// Ask Demux for the owned base games and their current manifest ids.
@@ -313,6 +352,22 @@ mod tests {
         assert!(json.contains("\"productId\":1"));
         assert!(json.contains("\"uplayId\":2"));
         assert!(json.contains("\"installable\":true"));
+    }
+
+    #[tokio::test]
+    #[ignore = "needs a linked Ubisoft session"]
+    async fn live_ach_frontend_reads_rainbow_six() {
+        let mut any = false;
+        for id in ["635", "RSIX7"] {
+            match remote_achievements(id).await {
+                Ok(earned) => {
+                    println!("{id}: {} earned achievements", earned.len());
+                    any |= !earned.is_empty();
+                }
+                Err(error) => println!("{id}: {error}"),
+            }
+        }
+        assert!(any, "the achievement service returned no records");
     }
 
     #[tokio::test]

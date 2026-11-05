@@ -390,6 +390,9 @@ pub(crate) struct AchievementMeta {
     pub name: String,
     #[serde(default)]
     pub achievements: String,
+    /// `achievements_sync_id` from the product configuration (`RSIX7`, `WD2`).
+    #[serde(default)]
+    pub sync_id: String,
 }
 
 fn specs_path() -> PathBuf {
@@ -448,6 +451,9 @@ pub(crate) fn record_specs(rows: &[AchievementMeta]) {
                 if !row.achievements.is_empty() {
                     cur.achievements = row.achievements.clone();
                 }
+                if !row.sync_id.is_empty() {
+                    cur.sync_id = row.sync_id.clone();
+                }
             }
             None => all.push(row.clone()),
         }
@@ -489,6 +495,73 @@ fn meta_for(app_id: &str, title: &str) -> Option<AchievementMeta> {
             .then(left.name.cmp(&right.name))
     });
     matches.into_iter().next()
+}
+
+/// Record the account's product metadata, including the achievement sync ids,
+/// at most once per five minutes. A cached schema can make `ensure_schema`
+/// return before this runs, so the achievement page asks here.
+pub(crate) async fn ensure_account_metadata() {
+    if super::ubi_vault::load().is_some() && metadata_refresh_allowed() {
+        let _ = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            super::ubi_direct::refresh_achievement_metadata(),
+        )
+        .await;
+    }
+}
+
+/// The `achievements_sync_id` (`RSIX7`, `WD2`) from the product configuration.
+/// The achievement service returns the earned list only for this id.
+pub(crate) fn sync_id_for(app_id: &str, title: &str) -> Option<String> {
+    meta_for(app_id, title)
+        .map(|row| row.sync_id.trim().to_string())
+        .filter(|id| !id.is_empty())
+}
+
+/// The account's owned base product id for this game, used as the fallback
+/// when the product configuration has no achievement sync id.
+pub(crate) fn product_id_for(app_id: &str, title: &str) -> Option<String> {
+    let app_id = app_id.trim();
+    let title_key = super::scan::slug(title);
+    let owned = super::ubisoft::load_owned().into_iter().find(|row| {
+        (!app_id.is_empty()
+            && (row.id.eq_ignore_ascii_case(app_id) || row.product_id.to_string() == app_id))
+            || (!title_key.is_empty() && super::scan::slug(&row.name) == title_key)
+    });
+    owned
+        .map(|row| row.product_id)
+        .filter(|id| *id > 0)
+        .or_else(|| {
+            meta_for(app_id, title)
+                .map(|row| row.product_id)
+                .filter(|id| *id > 0)
+        })
+        .map(|id| id.to_string())
+}
+
+/// Apply the account's `ach_frontend` timestamps to a schema-derived list.
+pub(crate) fn apply_earned(data: &mut GameAchievementsResponse, earned: &[(u32, u64)]) {
+    let earned: HashMap<u32, u64> = earned
+        .iter()
+        .filter(|(id, _)| *id != 0)
+        .map(|(id, seconds)| (*id, *seconds))
+        .collect();
+    if earned.is_empty() {
+        return;
+    }
+    for item in &mut data.achievements {
+        let Ok(id) = item.name.parse::<u32>() else {
+            continue;
+        };
+        let Some(seconds) = earned.get(&id) else {
+            continue;
+        };
+        item.unlocked = true;
+        item.progress = 100.0;
+        item.unlock_date = Some(crate::steam::unix_date(*seconds as i64))
+            .filter(|date| !date.is_empty());
+    }
+    data.user_unlocked = data.achievements.iter().filter(|item| item.unlocked).count() as u32;
 }
 
 /// The archive URL the Connect client logs for an `achievements:` spec. Only
@@ -609,16 +682,22 @@ pub(crate) async fn ensure_schema(app_id: &str, title: &str, language: &str) -> 
     }
     let mut meta = meta_for(app_id, title);
     let title_key = super::scan::slug(title);
-    let owned_product = super::ubisoft::load_owned()
-        .into_iter()
-        .find(|row| {
-            (!app_id.trim().is_empty()
-                && (row.id.eq_ignore_ascii_case(app_id.trim())
-                    || row.product_id.to_string() == app_id.trim()))
-                || (!title_key.is_empty() && super::scan::slug(&row.name) == title_key)
-        })
+    let owned_row = super::ubisoft::load_owned().into_iter().find(|row| {
+        (!app_id.trim().is_empty()
+            && (row.id.eq_ignore_ascii_case(app_id.trim())
+                || row.product_id.to_string() == app_id.trim()))
+            || (!title_key.is_empty() && super::scan::slug(&row.name) == title_key)
+    });
+    let owned_product = owned_row
+        .as_ref()
         .map(|row| row.product_id)
         .filter(|id| *id > 0);
+    // A row the catalog returned without a PC product id cannot answer an
+    // ownership query; asking Demux again just delays the empty state.
+    let catalog_only = owned_row
+        .as_ref()
+        .map(|row| row.product_id == 0)
+        .unwrap_or(false);
     let stale_meta = meta
         .as_ref()
         .map(|row| {
@@ -627,7 +706,14 @@ pub(crate) async fn ensure_schema(app_id: &str, title: &str, language: &str) -> 
                 .unwrap_or(false)
         })
         .unwrap_or(false);
-    if (meta.is_none() || stale_meta)
+    // Older spec rows predate `sync_id`; refresh them so the account's earned
+    // timestamps can be read from `ach_frontend`.
+    let needs_sync = meta
+        .as_ref()
+        .map(|row| row.sync_id.trim().is_empty())
+        .unwrap_or(false);
+    if (meta.is_none() || stale_meta || needs_sync)
+        && !catalog_only
         && super::ubi_vault::load().is_some()
         && metadata_refresh_allowed()
     {
@@ -637,6 +723,25 @@ pub(crate) async fn ensure_schema(app_id: &str, title: &str, language: &str) -> 
         )
         .await;
         meta = meta_for(app_id, title);
+        // The ownership initialize response only carries rows the client has
+        // synced. A catalog-only title still answers a direct configuration
+        // request, which is where its achievement hash lives.
+        if meta
+            .as_ref()
+            .map(|row| row.achievements.trim().is_empty())
+            .unwrap_or(true)
+        {
+            if let Some(product_id) = owned_product {
+                let fetched = tokio::time::timeout(
+                    std::time::Duration::from_secs(12),
+                    super::ubi_direct::refresh_achievement_metadata_for(product_id),
+                )
+                .await;
+                if matches!(fetched, Ok(Ok(()))) {
+                    meta = meta_for(app_id, title);
+                }
+            }
+        }
     }
     let Some(meta) = meta else {
         return false;
@@ -1027,6 +1132,30 @@ mod tests {
     }
 
     #[test]
+    fn remote_timestamps_mark_the_matching_schema_rows() {
+        let mut data = GameAchievementsResponse {
+            achievements: vec![
+                AchievementItem {
+                    name: "9".into(),
+                    ..Default::default()
+                },
+                AchievementItem {
+                    name: "10".into(),
+                    ..Default::default()
+                },
+            ],
+            total_achievements: 2,
+            ..Default::default()
+        };
+        apply_earned(&mut data, &[(9, 1_700_000_000)]);
+        assert!(data.achievements[0].unlocked);
+        assert!(!data.achievements[1].unlocked);
+        assert_eq!(data.achievements[0].progress, 100.0);
+        assert!(data.achievements[0].unlock_date.is_some());
+        assert_eq!(data.user_unlocked, 1);
+    }
+
+    #[test]
     fn achievement_assets_use_the_connect_cdn() {
         assert_eq!(
             achievement_asset_url("114e5afa77fec3c93829176268c39f52").as_deref(),
@@ -1052,6 +1181,18 @@ mod tests {
         // A path is reduced to its safe basename, never followed as a path.
         assert!(achievement_asset_url("../abc").is_some());
         assert!(achievement_asset_url("../a b").is_none());
+    }
+
+    #[tokio::test]
+    #[ignore = "needs a linked session; reads Watch Dogs 2 from the account"]
+    async fn live_remote_watch_dogs_2_achievements() {
+        let id = "8c8d9b22-498c-45e6-80da-7cd22787c9b3";
+        let title = "WATCH_DOGS® 2";
+        let sync = sync_id_for(id, title).expect("the WD2 sync id");
+        let earned = crate::companion::ubi_direct::remote_achievements(&sync)
+            .await
+            .expect("ach_frontend read");
+        println!("sync={sync} earned={}", earned.len());
     }
 
     #[tokio::test]

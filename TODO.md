@@ -166,9 +166,10 @@ query, the CDN download with resume/reconnect, per-slice verify/repair, the MIT
 Uplay R1/R2 shim and the direct launch. Rayman Origins (R1 x86) and
 Anno 1404 History Edition (R1 x64, adopted from a client install) both launch
 without the Connect process; Rayman's verify pass reports 201/201 files clean.
-The install dialog now offers **direct** or **Ubisoft Connect** per game, and a
-catalog-only row resolves its numeric product id so the client opens that game's
-install page instead of its default window. Assassin's Creed Chronicles China
+The install dialog follows the **Settings > Integrations** switch. A catalog-only
+row keeps its space id in the client's install and launch links, so the client
+opens that game's page even when the account API returned no numeric product id.
+Assassin's Creed Chronicles China
 installs (3.6 GB) but crashes at startup with both tested R1 shims
 (0xc0000005); PCGamingWiki lists it as requiring Ubisoft Connect DRM, so it
 stays on the client. Open work:
@@ -213,10 +214,14 @@ stays on the client. Open work:
   the archive from `https://static3.cdn.ubi.com/orbit/uplay_launcher_3_0/assets/<spec>`
   into `<app_data>/ubi-achievements`. This also runs before a game is installed:
   Watch Dogs 2 resolves its owned base product and shows 56 locked achievements
-  from the downloaded archive. Earned timestamps still come from the local
-  spool; `ach_frontend` closes the live connection for this client/account, so
-  progress earned on another PC stays locked until the client syncs a spool.
-  Without a session, `upc.json` still seeds
+  from the downloaded archive. A title the account only has as a catalog space
+  and not as a Demux product (a store giveaway the client has not activated)
+  returns no configuration to read; the drawer keeps an explicit "open it once
+  in Ubisoft Connect" state instead of claiming the game has no achievements.
+  Earned timestamps come from the local spool first; when it has no record,
+  `ach_frontend` answers the account's own progress over Demux, so a game
+  played on another PC still shows its unlocked achievements. Without a
+  session, `upc.json` still seeds
   fallback slots (`1..=64`) and only surfaces unlocked fallback entries until a
   named schema archive is available.
 - Ubisoft saves are local folders. `companion/ubi_direct/saves.rs` resolves the

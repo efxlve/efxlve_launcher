@@ -341,6 +341,137 @@ pub(crate) fn parse_initialize_rsp(payload: &[u8]) -> (bool, Vec<OwnedGame>) {
     (success, games)
 }
 
+/// `ach_frontend.ReadAchievementsReq`: the account and the product whose
+/// achievements to read. This service takes the raw `Req`, without the
+/// ownership service's `Upstream` wrapper.
+pub(crate) fn achievements_request(
+    request_id: u32,
+    user_id: &str,
+    product_id: &str,
+    platform_id: &str,
+) -> Vec<u8> {
+    let mut product = Vec::new();
+    push_string(&mut product, 1, product_id);
+    push_string(&mut product, 2, platform_id);
+    let mut read = Vec::new();
+    push_string(&mut read, 1, user_id);
+    push_bytes(&mut read, 2, &product);
+    let mut req = Vec::new();
+    push_varint_field(&mut req, 1, u64::from(request_id));
+    push_bytes(&mut req, 3, &read);
+    req
+}
+
+fn parse_achievement_records(payload: &[u8], out: &mut Vec<(u32, u64)>) {
+    // Achievements -> repeated Achievement { id=1, timestamp=2 }.
+    for_each_field(
+        payload,
+        |field, bytes| {
+            if field != 1 {
+                return;
+            }
+            let mut id = 0u32;
+            let mut timestamp = 0u64;
+            for_each_field(
+                bytes,
+                |_, _| {},
+                |inner, value| match inner {
+                    1 => id = value as u32,
+                    2 => timestamp = value,
+                    _ => {}
+                },
+            );
+            if id != 0 {
+                let seconds = if timestamp > 10_000_000_000 {
+                    timestamp / 1000
+                } else {
+                    timestamp
+                };
+                out.push((id, seconds));
+            }
+        },
+        |_, _| {},
+    );
+}
+
+fn parse_achievement_blob(payload: &[u8], out: &mut Vec<(u32, u64)>) {
+    // AchievementBlob -> repeated ProductAchievements; the latter holds
+    // Achievements in field 2.
+    for_each_field(
+        payload,
+        |field, product| {
+            if field != 1 {
+                return;
+            }
+            for_each_field(
+                product,
+                |inner, achievements| {
+                    if inner == 2 {
+                        parse_achievement_records(achievements, out);
+                    }
+                },
+                |_, _| {},
+            );
+        },
+        |_, _| {},
+    );
+}
+
+/// `ach_frontend` answers with a raw `Rsp`; the Demux wrapper is tolerated too.
+pub(crate) fn parse_achievements_rsp(payload: &[u8]) -> Vec<(u32, u64)> {
+    let mut out = Vec::new();
+    let mut found = false;
+    for_each_field(
+        payload,
+        |field, read_rsp| {
+            if field != 3 {
+                return;
+            }
+            found = true;
+            for_each_field(
+                read_rsp,
+                |inner, blob| {
+                    if inner == 2 {
+                        parse_achievement_blob(blob, &mut out);
+                    }
+                },
+                |_, _| {},
+            );
+        },
+        |_, _| {},
+    );
+    if !found {
+        for_each_field(
+            payload,
+            |outer, rsp| {
+                if outer != 1 {
+                    return;
+                }
+                for_each_field(
+                    rsp,
+                    |field, read_rsp| {
+                        if field != 3 {
+                            return;
+                        }
+                        for_each_field(
+                            read_rsp,
+                            |inner, blob| {
+                                if inner == 2 {
+                                    parse_achievement_blob(blob, &mut out);
+                                }
+                            },
+                            |_, _| {},
+                        );
+                    },
+                    |_, _| {},
+                );
+            },
+            |_, _| {},
+        );
+    }
+    out
+}
+
 pub(crate) fn ownership_manifests_request(request_id: u32, product_ids: &[u32]) -> Vec<u8> {
     let mut asked = Vec::new();
     push_packed_u32(&mut asked, 1, product_ids);
@@ -383,6 +514,40 @@ pub(crate) fn parse_manifests_rsp(payload: &[u8]) -> Vec<(u32, String)> {
         |_, _| {},
     );
     out
+}
+
+/// `GetProductConfigReq`: one product's configuration, whether or not the
+/// ownership row is in this account's list. A catalog-only entry needs this to
+/// reach its achievement hash.
+pub(crate) fn product_config_request(request_id: u32, product_id: u32) -> Vec<u8> {
+    let mut body = Vec::new();
+    push_varint_field(&mut body, 1, u64::from(product_id));
+    let mut req = Vec::new();
+    push_varint_field(&mut req, 1, u64::from(request_id));
+    push_bytes(&mut req, 9, &body);
+    let mut upstream = Vec::new();
+    push_bytes(&mut upstream, 1, &req);
+    upstream
+}
+
+pub(crate) fn parse_product_config(payload: &[u8]) -> Option<String> {
+    let body = service_body(payload, 9);
+    let mut success = false;
+    let mut configuration = String::new();
+    for_each_field(
+        &body,
+        |field, bytes| {
+            if field == 3 {
+                configuration = String::from_utf8_lossy(bytes).to_string();
+            }
+        },
+        |field, value| {
+            if field == 1 {
+                success = value == 1;
+            }
+        },
+    );
+    (success && !configuration.trim().is_empty()).then_some(configuration)
 }
 
 pub(crate) fn ownership_token_request(request_id: u32, product_id: u32) -> Vec<u8> {
@@ -720,6 +885,97 @@ mod tests {
         assert!(games[0].owned);
         assert_eq!(games[0].latest_manifest, "manifest-123");
         assert!(games[0].configuration.contains("GAMENAME"));
+    }
+
+    #[test]
+    fn achievements_request_names_the_account_and_product() {
+        let bytes = achievements_request(7, "user-id", "635", "PC");
+        let mut user = String::new();
+        let mut product = String::new();
+        let mut platform = String::new();
+        for_each_field(
+            &bytes,
+            |field, value| match field {
+                3 => {
+                    for_each_field(
+                        value,
+                        |inner, value| match inner {
+                            1 => user = String::from_utf8_lossy(value).to_string(),
+                            2 => {
+                                for_each_field(
+                                    value,
+                                    |product_field, value| match product_field {
+                                        1 => {
+                                            product = String::from_utf8_lossy(value).to_string()
+                                        }
+                                        2 => {
+                                            platform =
+                                                String::from_utf8_lossy(value).to_string()
+                                        }
+                                        _ => {}
+                                    },
+                                    |_, _| {},
+                                );
+                            }
+                            _ => {}
+                        },
+                        |_, _| {},
+                    );
+                }
+                _ => {}
+            },
+            |_, _| {},
+        );
+        assert_eq!(user, "user-id");
+        assert_eq!(product, "635");
+        assert_eq!(platform, "PC");
+    }
+
+    #[test]
+    fn product_configuration_reads_the_yaml_and_names_the_product() {
+        let request = product_config_request(4, 5405);
+        let mut requested_product = 0u32;
+        for_each_field(
+            &request,
+            |field, upstream| {
+                if field != 1 {
+                    return;
+                }
+                for_each_field(
+                    upstream,
+                    |inner, body| {
+                        if inner != 9 {
+                            return;
+                        }
+                        for_each_field(
+                            body,
+                            |_, _| {},
+                            |body_field, value| {
+                                if body_field == 1 {
+                                    requested_product = value as u32;
+                                }
+                            },
+                        );
+                    },
+                    |_, _| {},
+                );
+            },
+            |_, _| {},
+        );
+        assert_eq!(requested_product, 5405);
+
+        // GetProductConfigRsp is Rsp field 9; result 1, configuration 3.
+        let mut config = Vec::new();
+        push_varint_field(&mut config, 1, 1);
+        push_string(&mut config, 3, "root:\n  name: FENYX\n  achievements: abc\n");
+        let mut rsp = Vec::new();
+        push_varint_field(&mut rsp, 1, 4);
+        push_bytes(&mut rsp, 9, &config);
+        let mut downstream = Vec::new();
+        push_bytes(&mut downstream, 1, &rsp);
+        let configuration = parse_product_config(&downstream).expect("configuration");
+        assert!(configuration.contains("FENYX"));
+        assert!(configuration.contains("achievements: abc"));
     }
 
     #[test]

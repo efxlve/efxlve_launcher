@@ -767,13 +767,22 @@ pub(crate) fn merged_games(installed: &[FoundGame]) -> Vec<FoundGame> {
 }
 
 /// Adds imported games whose name is not in the local list yet and copies the
-/// catalog art and description onto the local row that matches by name. An
-/// imported row has no launch id, so `companion_launch` hands it to the client.
+/// catalog art and description onto the local row that matches by name.
+///
+/// A catalog-only row has no numeric product id. The client's own protocol
+/// handlers also accept the space id there (the same fallback Lutris uses), so
+/// the install and launch links still open the game's page instead of the
+/// client's default one.
 pub(crate) fn merge_owned(mut games: Vec<FoundGame>, owned: &[OwnedGame]) -> Vec<FoundGame> {
     for game in owned {
+        let target = if game.product_id > 0 {
+            game.product_id.to_string()
+        } else {
+            game.id.clone()
+        };
         if let Some(local) = games.iter_mut().find(|g| slug(&g.name) == slug(&game.name)) {
-            if local.install_uri.is_empty() && game.product_id > 0 {
-                local.install_uri = format!("uplay://install/{}", game.product_id);
+            if local.install_uri.is_empty() && !target.is_empty() {
+                local.install_uri = format!("uplay://install/{target}");
             }
             if local.store_id.is_empty() && game.product_id > 0 {
                 local.store_id = game.product_id.to_string();
@@ -801,16 +810,24 @@ pub(crate) fn merge_owned(mut games: Vec<FoundGame>, owned: &[OwnedGame]) -> Vec
                 String::new()
             },
             launch_exe: String::new(),
-            launch_uri: String::new(),
-            install_uri: if game.product_id > 0 {
-                format!("uplay://install/{}", game.product_id)
+            // A numeric product id is not always the Uplay launch id (Far Cry
+            // 3 is product 599 but launches as 46), so keep it empty and let
+            // `companion_launch` resolve the probe. A catalog-only row has only
+            // the space id, which the client resolves itself.
+            launch_uri: if game.product_id == 0 && !target.is_empty() {
+                format!("uplay://launch/{target}")
             } else {
                 String::new()
             },
-            uninstall_uri: if game.product_id > 0 {
-                format!("uplay://uninstall/{}", game.product_id)
-            } else {
+            install_uri: if target.is_empty() {
                 String::new()
+            } else {
+                format!("uplay://install/{target}")
+            },
+            uninstall_uri: if target.is_empty() {
+                String::new()
+            } else {
+                format!("uplay://uninstall/{target}")
             },
             cover_url: game.cover.clone(),
             hero_url: game.hero.clone(),
@@ -936,6 +953,31 @@ mod tests {
         assert_eq!(imported.uninstall_uri, "uplay://uninstall/5520");
         assert_eq!(imported.store_id, "5520");
         assert_eq!(merged.iter().filter(|g| g.id == "34").count(), 1);
+    }
+
+    #[test]
+    fn a_catalog_only_row_uses_its_space_id_in_the_client_links() {
+        let merged = merge_owned(
+            Vec::new(),
+            &[OwnedGame {
+                id: "6234f561-391d-4417-a11f-e039400ce0ca".into(),
+                product_id: 0,
+                name: "Immortals Fenyx Rising".into(),
+                cover: String::new(),
+                hero: String::new(),
+                description: String::new(),
+            }],
+        );
+        assert_eq!(merged.len(), 1);
+        assert_eq!(
+            merged[0].install_uri,
+            "uplay://install/6234f561-391d-4417-a11f-e039400ce0ca"
+        );
+        assert_eq!(
+            merged[0].launch_uri,
+            "uplay://launch/6234f561-391d-4417-a11f-e039400ce0ca"
+        );
+        assert!(merged[0].store_id.is_empty());
     }
 
     #[test]

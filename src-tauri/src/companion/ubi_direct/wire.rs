@@ -278,6 +278,22 @@ impl Demux {
         Ok(out)
     }
 
+    /// One product's configuration from the ownership service. Unlike the
+    /// initialize response, this works for a catalog entry the account has not
+    /// synced into its owned row yet.
+    pub(crate) async fn product_configuration(&mut self, product_id: u32) -> Result<String, String> {
+        let connection_id = self.ownership_connection().await?;
+        self.ownership_initialize(connection_id).await?;
+        let payload = self
+            .service_call(
+                connection_id,
+                &codec::product_config_request(2, product_id),
+            )
+            .await?;
+        codec::parse_product_config(&payload)
+            .ok_or_else(|| format!("no configuration for product {product_id}"))
+    }
+
     pub(crate) async fn ownership_token(&mut self, product_id: u32) -> Result<String, String> {
         let connection_id = self.ownership_connection().await?;
         self.ownership_initialize(connection_id).await?;
@@ -300,6 +316,50 @@ impl Demux {
             .service_call(connection_id, &codec::uplay_ticket_request(2, uplay_id))
             .await?;
         Ok(codec::parse_uplay_ticket(&payload))
+    }
+
+    /// Read the account's earned achievements from `ach_frontend`. This works
+    /// for a game the client has not installed, because the service reads the
+    /// account, not the local spool.
+    pub(crate) async fn achievements(
+        &mut self,
+        user_id: &str,
+        product_id: &str,
+        platform_id: &str,
+    ) -> Result<Vec<(u32, u64)>, String> {
+        let connection_id = self.open_connection("ach_frontend").await?;
+        let request = codec::achievements_request(1, user_id, product_id, platform_id);
+        self.write_service(connection_id, &request).await?;
+        for _ in 0..64 {
+            let downstream = self.read().await?;
+            if let Some(push) = downstream.push {
+                if push.client_outdated {
+                    return Err(
+                        "Demux says this client build is outdated; set EFXLVE_UBI_DEMUX_VERSION"
+                            .to_string(),
+                    );
+                }
+                if push.closed_connection == Some(connection_id) {
+                    return Err(format!(
+                        "Ubisoft closed ach_frontend (code {})",
+                        push.close_code
+                    ));
+                }
+                if let Some(data) = push.data {
+                    if data.connection_id == connection_id {
+                        let raw = if data.data.len() >= 4 {
+                            &data.data[4..]
+                        } else {
+                            &data.data
+                        };
+                        return Ok(codec::parse_achievements_rsp(raw));
+                    }
+                }
+            }
+        }
+        Err(format!(
+            "no ach_frontend response on connection {connection_id}"
+        ))
     }
 
     /// Ask `cloudsave_service` for signed S3 URLs for one or more save items.
