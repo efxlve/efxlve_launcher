@@ -43,8 +43,12 @@ Two layers share one format:
 
 - **Local backup** — `<config>/backups/<safe-key>/<timestamp>/`
   - `data/` is a raw copy of the game's save folder.
-  - `backup_info.json` stores id, app key, timestamp, size, file count and the
-    original save path.
+  - `backup_info.json` stores id, app key, timestamp, size, file count, the
+    original save path, the recognized logical root (`Documents`, `SavedGames`,
+    `LocalAppData`, `RoamingAppData`, `Home`) and the path below that root.
+    A restore on another PC resolves the same root under its own profile; an
+    older archive without those fields falls back to the absolute path and the
+    detection scans.
   - `<config>` is `%USERPROFILE%\.config\legendary` on Windows and
     `~/.config/legendary` on Linux/macOS.
 - **Cloud archive** — the local backup directory packed into

@@ -603,6 +603,10 @@ export interface SaveBackupInfo {
   size_bytes: number;
   file_count: number;
   save_path: string;
+  /** Recognized root (`Documents`, `LocalAppData`, …) or `Absolute`. */
+  save_root?: string;
+  /** Path below the root, with forward slashes; empty for `Absolute`. */
+  save_rel?: string;
   content_hash?: string | null;
 }
 

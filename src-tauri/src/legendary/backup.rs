@@ -18,6 +18,13 @@ pub struct SaveBackupInfo {
     pub size_bytes: u64,
     pub file_count: usize,
     pub save_path: String,
+    /// Recognized logical root (`LocalAppData`, `Documents`, `SavedGames`,
+    /// `RoamingAppData`, `Home`) or `Absolute` when no known root matches.
+    #[serde(default)]
+    pub save_root: String,
+    /// Path below `save_root`, with forward slashes. Empty for `Absolute`.
+    #[serde(default)]
+    pub save_rel: String,
     /// SHA-256 of the copied save tree, independent of timestamps. Older
     /// backups have no value and fall back to the timestamp conflict check.
     #[serde(default)]
@@ -197,6 +204,111 @@ pub fn tree_content_hash(root: &Path) -> Option<String> {
     Some(format!("{:x}", hasher.finalize()))
 }
 
+fn classify_save_path_with(
+    path: &Path,
+    home: &Path,
+    local: Option<&Path>,
+    roaming: Option<&Path>,
+) -> (String, String) {
+    let canonical = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+    let mut candidates: Vec<(&str, PathBuf)> = Vec::new();
+    if let Some(local) = local {
+        candidates.push(("LocalAppData", local.to_path_buf()));
+    }
+    if let Some(roaming) = roaming {
+        candidates.push(("RoamingAppData", roaming.to_path_buf()));
+    }
+    candidates.push(("Documents", home.join("Documents")));
+    candidates.push(("SavedGames", home.join("Saved Games")));
+    candidates.push(("Home", home.to_path_buf()));
+    for (kind, root) in candidates {
+        let Ok(root) = root.canonicalize() else {
+            continue;
+        };
+        if let Ok(rel) = canonical.strip_prefix(&root) {
+            if !rel.as_os_str().is_empty() {
+                return (
+                    kind.to_string(),
+                    rel.to_string_lossy().replace('\\', "/"),
+                );
+            }
+        }
+    }
+    ("Absolute".to_string(), String::new())
+}
+
+/// Splits a save folder into a recognized root and a relative path. Older
+/// backups only stored the absolute path; these fields make the same archive
+/// restorable on another user account or a different PC.
+pub fn save_root_kind(path: &Path) -> (String, String) {
+    let Some(home) = std::env::var_os("USERPROFILE")
+        .or_else(|| std::env::var_os("HOME"))
+        .map(PathBuf::from)
+    else {
+        return ("Absolute".to_string(), String::new());
+    };
+    let local = std::env::var_os("LOCALAPPDATA").map(PathBuf::from);
+    let roaming = std::env::var_os("APPDATA").map(PathBuf::from);
+    classify_save_path_with(path, &home, local.as_deref(), roaming.as_deref())
+}
+
+fn root_path_with(
+    kind: &str,
+    home: &Path,
+    local: Option<&Path>,
+    roaming: Option<&Path>,
+) -> Option<PathBuf> {
+    let path = match kind {
+        "LocalAppData" => local
+            .map(PathBuf::from)
+            .or_else(|| std::env::var_os("XDG_DATA_HOME").map(PathBuf::from))
+            .or_else(|| Some(home.join(".local").join("share"))),
+        "RoamingAppData" => roaming
+            .map(PathBuf::from)
+            .or_else(|| std::env::var_os("XDG_CONFIG_HOME").map(PathBuf::from))
+            .or_else(|| Some(home.join(".config"))),
+        "Documents" => Some(home.join("Documents")),
+        "SavedGames" => Some(home.join("Saved Games")),
+        "Home" => Some(home.to_path_buf()),
+        _ => None,
+    }?;
+    path.is_dir().then_some(path)
+}
+
+fn safe_save_rel(value: &str) -> Option<PathBuf> {
+    let path = Path::new(value);
+    if path.is_absolute() {
+        return None;
+    }
+    let mut clean = PathBuf::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::Normal(part) => clean.push(part),
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir
+            | std::path::Component::RootDir
+            | std::path::Component::Prefix(_) => return None,
+        }
+    }
+    (!clean.as_os_str().is_empty()).then_some(clean)
+}
+
+/// Resolves a stored logical root on this machine. `None` means the caller
+/// should fall back to the absolute path and the old detection order.
+pub fn backup_destination(info: &SaveBackupInfo) -> Option<PathBuf> {
+    if info.save_root.is_empty() || info.save_rel.is_empty() {
+        return None;
+    }
+    let rel = safe_save_rel(&info.save_rel)?;
+    let home = std::env::var_os("USERPROFILE")
+        .or_else(|| std::env::var_os("HOME"))
+        .map(PathBuf::from)?;
+    let local = std::env::var_os("LOCALAPPDATA").map(PathBuf::from);
+    let roaming = std::env::var_os("APPDATA").map(PathBuf::from);
+    let base = root_path_with(&info.save_root, &home, local.as_deref(), roaming.as_deref())?;
+    Some(base.join(rel))
+}
+
 fn snapshot_before_restore(app_name: &str, save_path: &Path) -> Result<Option<String>, String> {
     if !save_path.exists() {
         return Ok(None);
@@ -218,6 +330,7 @@ fn snapshot_before_restore(app_name: &str, save_path: &Path) -> Result<Option<St
     let (size_bytes, file_count) = copy_dir_all(save_path, &target.join("data"))
         .map_err(|error| format!("@t:backup.copyFailed\u{1f}{error}"))?;
     let content_hash = tree_content_hash(&target.join("data"));
+    let (save_root, save_rel) = save_root_kind(save_path);
     let info = SaveBackupInfo {
         id: backup_id.clone(),
         app_name: app_name.to_string(),
@@ -226,6 +339,8 @@ fn snapshot_before_restore(app_name: &str, save_path: &Path) -> Result<Option<St
         size_bytes,
         file_count,
         save_path: save_path.to_string_lossy().to_string(),
+        save_root,
+        save_rel,
         content_hash,
     };
     let info_json = serde_json::to_string_pretty(&info).map_err(|error| error.to_string())?;
@@ -883,6 +998,7 @@ pub fn create_backup(
     let formatted_date = format_backup_timestamp(now_ts);
 
     let content_hash = tree_content_hash(&target.join("data"));
+    let (save_root, save_rel) = save_root_kind(&source);
     let info = SaveBackupInfo {
         id: backup_id,
         app_name: app_name.to_string(),
@@ -891,6 +1007,8 @@ pub fn create_backup(
         size_bytes,
         file_count,
         save_path: save_path_str,
+        save_root,
+        save_rel,
         content_hash,
     };
 
@@ -944,8 +1062,11 @@ pub fn restore_backup(app_name: &str, backup_id: &str) -> Result<String, String>
         return Err("@t:backup.dataFolderNotFound".to_string());
     }
 
-    let mut dest = PathBuf::from(&info.save_path);
-    if !dest.exists() {
+    let logical = backup_destination(&info);
+    let mut dest = logical
+        .clone()
+        .unwrap_or_else(|| PathBuf::from(&info.save_path));
+    if logical.is_none() && !dest.exists() {
         let cfgs = super::commands::load_all_game_custom_configs();
         let custom = cfgs
             .get(app_name)
@@ -1043,6 +1164,8 @@ mod tests {
             size_bytes: 1024,
             file_count: 3,
             save_path: "C:\\Saves".into(),
+            save_root: "Absolute".into(),
+            save_rel: String::new(),
             content_hash: None,
         };
 
@@ -1050,6 +1173,57 @@ mod tests {
         let parsed: SaveBackupInfo = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.id, "12345");
         assert_eq!(parsed.file_count, 3);
+    }
+
+    #[test]
+    fn a_documents_save_keeps_a_logical_root() {
+        let base = std::env::temp_dir().join(format!(
+            "efxlve_logical_docs_{}_{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|value| value.as_millis())
+                .unwrap_or(0)
+        ));
+        let home = base.join("home");
+        let save = home.join("Documents").join("Studio").join("Game");
+        std::fs::create_dir_all(&save).unwrap();
+
+        let (root, rel) = classify_save_path_with(&save, &home, None, None);
+        assert_eq!(root, "Documents");
+        assert_eq!(rel, "Studio/Game");
+        let resolved = root_path_with(&root, &home, None, None)
+            .unwrap()
+            .join(safe_save_rel(&rel).unwrap());
+        assert_eq!(
+            resolved.canonicalize().unwrap(),
+            save.canonicalize().unwrap()
+        );
+        assert!(safe_save_rel("../outside").is_none());
+        assert!(safe_save_rel("/absolute").is_none());
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn a_local_appdata_save_is_classified_before_home() {
+        let base = std::env::temp_dir().join(format!(
+            "efxlve_logical_local_{}_{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|value| value.as_millis())
+                .unwrap_or(0)
+        ));
+        let home = base.join("home");
+        let local = home.join("AppData").join("Local");
+        let save = local.join("Studio").join("Game");
+        std::fs::create_dir_all(&save).unwrap();
+        std::fs::create_dir_all(home.join("Documents")).unwrap();
+
+        let (root, rel) = classify_save_path_with(&save, &home, Some(&local), None);
+        assert_eq!(root, "LocalAppData");
+        assert_eq!(rel, "Studio/Game");
+        let _ = std::fs::remove_dir_all(&base);
     }
 
     #[test]
