@@ -2141,6 +2141,7 @@
   "overlay.browserAddress": "Поиск в Google или введите адрес",
   "overlay.browserNewTab": "Новая вкладка",
   "overlay.browserPip": "Картинка в картинке",
+  "overlay.browserPipThisTab": "Отправить эту вкладку в угловой плеер",
   "overlay.browserPipExit": "Выйти из картинки в картинке",
   "overlay.browserPipClickThrough": "Пропускать клики (Ctrl+Shift+P, чтобы выключить)",
   "overlay.browserPipCorner": "Переместить в следующий угол",

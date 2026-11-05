@@ -2141,6 +2141,7 @@
   "overlay.browserAddress": "ค้นหาใน Google หรือพิมพ์ที่อยู่",
   "overlay.browserNewTab": "แท็บใหม่",
   "overlay.browserPip": "ภาพซ้อนภาพ",
+  "overlay.browserPipThisTab": "ส่งแท็บนี้ไปยังตัวเล่นมุมจอ",
   "overlay.browserPipExit": "ออกจากภาพซ้อนภาพ",
   "overlay.browserPipClickThrough": "คลิกทะลุ (Ctrl+Shift+P เพื่อปิด)",
   "overlay.browserPipCorner": "ย้ายไปมุมถัดไป",

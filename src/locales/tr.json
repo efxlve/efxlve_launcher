@@ -2141,6 +2141,7 @@
   "overlay.browserAddress": "Google'da ara veya adres gir",
   "overlay.browserNewTab": "Yeni sekme",
   "overlay.browserPip": "Resim içinde resim",
+  "overlay.browserPipThisTab": "Bu sekmeyi köşe oynatıcısına gönder",
   "overlay.browserPipExit": "Resim içinde resimden çık",
   "overlay.browserPipClickThrough": "Tıklamayı geçir (kapatmak için Ctrl+Shift+P)",
   "overlay.browserPipCorner": "Sonraki köşeye taşı",

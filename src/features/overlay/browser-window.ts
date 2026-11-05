@@ -169,6 +169,7 @@ function paintTabs(): void {
       <div class="ov-browser-tab${tab.active ? " is-active" : ""}" data-tab="${tab.id}" title="${esc(tab.url)}">
         <span class="ov-browser-tab-favicon">${icon(meta.iconName, 12)}</span>
         <span class="ov-browser-tab-title">${esc(meta.title)}</span>
+        <button class="ov-browser-tab-pip" data-tab-pip="${tab.id}" title="${esc(t("overlay.browserPipThisTab"))}" aria-label="${esc(t("overlay.browserPipThisTab"))}">${icon("minimize-2", 10)}</button>
         <button class="ov-browser-tab-x" data-tab-x="${tab.id}" title="${esc(t("common.close"))}">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
@@ -366,6 +367,18 @@ function wire(): void {
       return;
     }
 
+    // Send a background tab straight to the corner player.
+    const pipTabId = el.closest<HTMLElement>("[data-tab-pip]")?.dataset.tabPip;
+    if (pipTabId) {
+      const id = Number(pipTabId);
+      if (id) {
+        void invoke<boolean>("overlay_browser_pip_tab", { id, ...frameRect() }).catch(() =>
+          undefined,
+        );
+      }
+      return;
+    }
+
     // New tab button
     if (el.closest("[data-tab-new]")) {
       void newTab();
@@ -374,7 +387,7 @@ function wire(): void {
 
     // Activate tab
     const tabEl = el.closest<HTMLElement>("[data-tab]");
-    if (tabEl && !el.closest("[data-tab-x]")) {
+    if (tabEl && !el.closest("[data-tab-x]") && !el.closest("[data-tab-pip]")) {
       const tabId = Number(tabEl.dataset.tab);
       if (tabId) void activateTab(tabId);
       return;
@@ -399,7 +412,7 @@ function wire(): void {
     if (event.button !== 1) return;
     const el = event.target as HTMLElement;
     const tabEl = el.closest<HTMLElement>("[data-tab]");
-    if (tabEl && !el.closest("[data-tab-x]")) {
+    if (tabEl && !el.closest("[data-tab-x]") && !el.closest("[data-tab-pip]")) {
       event.preventDefault();
       const tabId = Number(tabEl.dataset.tab);
       if (tabId) void closeTab(tabId);

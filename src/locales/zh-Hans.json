@@ -2141,6 +2141,7 @@
   "overlay.browserAddress": "在 Google 搜索或输入网址",
   "overlay.browserNewTab": "新建标签页",
   "overlay.browserPip": "画中画",
+  "overlay.browserPipThisTab": "将此标签页发送到角落播放器",
   "overlay.browserPipExit": "退出画中画",
   "overlay.browserPipClickThrough": "点击穿透（Ctrl+Shift+P 关闭）",
   "overlay.browserPipCorner": "移到下一个角落",

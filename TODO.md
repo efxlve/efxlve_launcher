@@ -133,12 +133,14 @@ the field pass on exclusive fullscreen and validate the per-game profile.
 ## Achievement tracker field pass
 
 The Achievements widget now contains the tracked section and pins up to three
-locked achievements; pinning the widget keeps that section as a compact ghost
-HUD (`src/features/overlay/overlay.ts`). Validate on a real game: track from the
-achievement detail, pin the Achievements widget, close the panel, and confirm the
-progress bar survives; unlock one and confirm it disappears from the tracked set.
-The list filters by all, unlocked, locked, near and hidden, with hidden rows inline.
-Then add per-game tracker presets.
+locked achievements; the set is stored per game, so reopening a title or the
+overlay restores its own pins, and pinning the widget keeps that section as a
+compact ghost HUD (`src/features/overlay/overlay.ts`). Validate on a real game:
+track from the achievement detail, pin the Achievements widget, close the panel,
+and confirm the progress bar survives; unlock one and confirm it disappears from
+the tracked set. Switch to a second game and confirm its tracked list is its own.
+The list filters by all, unlocked, locked, near and hidden, with hidden rows
+inline.
 
 ## Notes image field pass
 
@@ -153,11 +155,13 @@ data URLs in an older notes file migrate on the next read.
 
 The browser's PiP button shrinks the window to a 16:9 corner player and keeps it
 when the panel closes (`src-tauri/src/overlay/browser.rs`,
-`src/features/overlay/browser-window.ts`). Validate on a borderless game and a
-multi-monitor/DPI setup: the player lands in the selected corner (top-right by
-default), the corner button moves it, the page fills the frame, the PiP bar
-restores and closes, the game keeps focus after close, and the browser reopens
-at full size. Then add a direct "send this tab to PiP" action.
+`src/features/overlay/browser-window.ts`). Each background tab also has its own
+PiP button that switches to that tab and enters the corner player in one action,
+so a guide can be sent over the game without activating it first. Validate on a
+borderless game and a multi-monitor/DPI setup: the player lands in the selected
+corner (top-right by default), the corner button moves it, the page fills the
+frame, the PiP bar restores and closes, the game keeps focus after close, and the
+browser reopens at full size. Then test the per-tab button on a second tab.
 
 ## Ubisoft direct install
 

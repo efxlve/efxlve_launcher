@@ -2141,6 +2141,7 @@
   "overlay.browserAddress": "Google で検索するかアドレスを入力",
   "overlay.browserNewTab": "新しいタブ",
   "overlay.browserPip": "ピクチャーインピクチャー",
+  "overlay.browserPipThisTab": "このタブをコーナープレーヤーに送る",
   "overlay.browserPipExit": "ピクチャーインピクチャーを終了",
   "overlay.browserPipClickThrough": "クリックを透過（Ctrl+Shift+P で解除）",
   "overlay.browserPipCorner": "次の角へ移動",

@@ -2141,6 +2141,7 @@
   "overlay.browserAddress": "Google पर खोजें या पता दर्ज करें",
   "overlay.browserNewTab": "नया टैब",
   "overlay.browserPip": "पिक्चर इन पिक्चर",
+  "overlay.browserPipThisTab": "इस टैब को कोने के प्लेयर में भेजें",
   "overlay.browserPipExit": "पिक्चर इन पिक्चर से बाहर",
   "overlay.browserPipClickThrough": "क्लिक-थ्रू (बंद करने के लिए Ctrl+Shift+P)",
   "overlay.browserPipCorner": "अगले कोने में ले जाएँ",

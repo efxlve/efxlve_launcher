@@ -2363,6 +2363,7 @@ fn main() {
             overlay::browser::overlay_browser_new_tab,
             overlay::browser::overlay_browser_close_tab,
             overlay::browser::overlay_browser_activate_tab,
+            overlay::browser::overlay_browser_pip_tab,
             overlay::browser::overlay_browser_close,
             overlay::browser::overlay_browser_set_position,
             overlay::browser::overlay_browser_raise,

@@ -2141,6 +2141,7 @@
   "overlay.browserAddress": "Google durchsuchen oder Adresse eingeben",
   "overlay.browserNewTab": "Neuer Tab",
   "overlay.browserPip": "Bild-in-Bild",
+  "overlay.browserPipThisTab": "Diesen Tab an den Eck-Player senden",
   "overlay.browserPipExit": "Bild-in-Bild beenden",
   "overlay.browserPipClickThrough": "Klick-durchlässig (Ctrl+Shift+P zum Ausschalten)",
   "overlay.browserPipCorner": "In die nächste Ecke verschieben",

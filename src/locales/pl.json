@@ -2141,6 +2141,7 @@
   "overlay.browserAddress": "Szukaj w Google lub wpisz adres",
   "overlay.browserNewTab": "Nowa karta",
   "overlay.browserPip": "Obraz w obrazie",
+  "overlay.browserPipThisTab": "Wyślij tę kartę do odtwarzacza w rogu",
   "overlay.browserPipExit": "Wyjdź z obrazu w obrazie",
   "overlay.browserPipClickThrough": "Przepuszczaj kliknięcia (Ctrl+Shift+P, aby wyłączyć)",
   "overlay.browserPipCorner": "Przenieś do następnego rogu",

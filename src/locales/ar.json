@@ -2141,6 +2141,7 @@
   "overlay.browserAddress": "ابحث في Google أو أدخل عنوانًا",
   "overlay.browserNewTab": "علامة تبويب جديدة",
   "overlay.browserPip": "صورة داخل صورة",
+  "overlay.browserPipThisTab": "إرسال هذا التبويب إلى المشغّل الجانبي",
   "overlay.browserPipExit": "الخروج من صورة داخل صورة",
   "overlay.browserPipClickThrough": "تمرير النقر (Ctrl+Shift+P للإيقاف)",
   "overlay.browserPipCorner": "الانتقال إلى الزاوية التالية",

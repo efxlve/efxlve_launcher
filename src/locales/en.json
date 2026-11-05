@@ -2141,6 +2141,7 @@
   "overlay.browserAddress": "Search Google or enter an address",
   "overlay.browserNewTab": "New tab",
   "overlay.browserPip": "Picture in picture",
+  "overlay.browserPipThisTab": "Send this tab to the corner player",
   "overlay.browserPipExit": "Exit picture in picture",
   "overlay.browserPipClickThrough": "Click-through (Ctrl+Shift+P to turn off)",
   "overlay.browserPipCorner": "Move to the next corner",

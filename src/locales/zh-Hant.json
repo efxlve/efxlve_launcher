@@ -2141,6 +2141,7 @@
   "overlay.browserAddress": "在 Google 搜尋或輸入網址",
   "overlay.browserNewTab": "新增分頁",
   "overlay.browserPip": "子母畫面",
+  "overlay.browserPipThisTab": "將此分頁傳送到角落播放器",
   "overlay.browserPipExit": "退出子母畫面",
   "overlay.browserPipClickThrough": "點擊穿透（Ctrl+Shift+P 關閉）",
   "overlay.browserPipCorner": "移到下一個角落",

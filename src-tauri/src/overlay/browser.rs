@@ -471,6 +471,26 @@ pub fn overlay_browser_activate_tab(app: AppHandle, id: u32, x: f64, y: f64, wid
     tab_list_payload()
 }
 
+/// Sends one tab straight to the corner player: switch to it, then enter PiP.
+/// The tab strip hides in PiP, so this is the direct path for a background tab.
+#[tauri::command]
+pub fn overlay_browser_pip_tab(
+    app: AppHandle,
+    id: u32,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+) -> bool {
+    if !tab_list().iter().any(|(tab, _)| *tab == id) {
+        return false;
+    }
+    set_active(id);
+    place_tabs(&app, x, y, width, height);
+    emit_tabs(&app);
+    overlay_browser_set_pip(app, true)
+}
+
 /// Moves the browser window position during drag.
 #[tauri::command]
 pub fn overlay_browser_set_position(app: AppHandle, x: i32, y: i32) {

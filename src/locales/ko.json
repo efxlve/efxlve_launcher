@@ -2141,6 +2141,7 @@
   "overlay.browserAddress": "Google에서 검색하거나 주소 입력",
   "overlay.browserNewTab": "새 탭",
   "overlay.browserPip": "화면 속 화면",
+  "overlay.browserPipThisTab": "이 탭을 코너 플레이어로 보내기",
   "overlay.browserPipExit": "화면 속 화면 종료",
   "overlay.browserPipClickThrough": "클릭 통과 (끄려면 Ctrl+Shift+P)",
   "overlay.browserPipCorner": "다음 모서리로 이동",
