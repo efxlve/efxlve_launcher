@@ -309,6 +309,53 @@ pub fn backup_destination(info: &SaveBackupInfo) -> Option<PathBuf> {
     Some(base.join(rel))
 }
 
+/// The folder a restore writes. The preview and the restore both call this,
+/// so the dialog can never name a different folder from the one the copy
+/// touches. Order: a logical profile root on this PC, the recorded absolute
+/// path, a custom save path, a re-rooted old profile path, then detection.
+fn resolve_restore_destination(app_name: &str, info: &SaveBackupInfo) -> PathBuf {
+    let logical = backup_destination(info);
+    let mut dest = logical
+        .clone()
+        .unwrap_or_else(|| PathBuf::from(&info.save_path));
+    if logical.is_some() || dest.exists() {
+        return dest;
+    }
+
+    let cfgs = super::commands::load_all_game_custom_configs();
+    let custom = cfgs
+        .get(app_name)
+        .and_then(|cfg| cfg.custom_save_path.as_deref())
+        .map(str::trim)
+        .filter(|path| !path.is_empty())
+        .map(PathBuf::from)
+        .filter(|path| path.exists());
+    if let Some(path) = custom {
+        dest = path;
+    } else if let Ok(current_user) =
+        std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME"))
+    {
+        let path_str = info.save_path.replace('\\', "/");
+        for marker in ["/Saved Games/", "/Documents/", "/AppData/"] {
+            if let Some(index) = path_str.find(marker) {
+                dest = Path::new(&current_user)
+                    .join(path_str[index + 1..].replace('/', std::path::MAIN_SEPARATOR_STR));
+                break;
+            }
+        }
+    }
+    if !dest.exists() {
+        let installed = super::cache::read_installed(&super::skip::default_config_dir());
+        let installed_game = installed.into_iter().find(|g| g.app_name == app_name);
+        let title = installed_game.as_ref().map(|g| g.title.as_str());
+        let install_path = installed_game.as_ref().map(|g| g.install_path.as_str());
+        if let Some(detected) = detect_save_path(app_name, title, install_path) {
+            dest = PathBuf::from(detected);
+        }
+    }
+    dest
+}
+
 /// How many files a restore preview lists. The rest are summarized by count,
 /// so a 40,000-file save tree never builds a huge IPC payload.
 const PREVIEW_FILE_LIMIT: usize = 200;
@@ -373,10 +420,13 @@ fn preview_from_backup_dir(
 
     // The same resolution restore_backup uses, so the preview never promises a
     // different folder from the one the restore would write.
-    let logical = backup_destination(&info);
-    let (destination, path_source) = match logical {
-        Some(path) => (path, "logical"),
-        None => (PathBuf::from(&info.save_path), "absolute"),
+    let destination = resolve_restore_destination(app_name, &info);
+    let path_source = if backup_destination(&info).is_some() {
+        "logical"
+    } else if destination == PathBuf::from(&info.save_path) {
+        "absolute"
+    } else {
+        "detected"
     };
     let target_exists = destination.is_dir();
     let current_hash = tree_content_hash(&destination);
@@ -1210,43 +1260,7 @@ pub fn restore_backup_checked(
         return Err("@t:backup.dataFolderNotFound".to_string());
     }
 
-    let logical = backup_destination(&info);
-    let mut dest = logical
-        .clone()
-        .unwrap_or_else(|| PathBuf::from(&info.save_path));
-    if logical.is_none() && !dest.exists() {
-        let cfgs = super::commands::load_all_game_custom_configs();
-        let custom = cfgs
-            .get(app_name)
-            .and_then(|cfg| cfg.custom_save_path.as_deref())
-            .map(str::trim)
-            .filter(|path| !path.is_empty())
-            .map(PathBuf::from)
-            .filter(|path| path.exists());
-        if let Some(path) = custom {
-            dest = path;
-        } else if let Ok(current_user) =
-            std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME"))
-        {
-            let path_str = info.save_path.replace('\\', "/");
-            if let Some(idx) = path_str.find("/Saved Games/") {
-                dest = Path::new(&current_user).join(&path_str[idx + 1..].replace('/', std::path::MAIN_SEPARATOR_STR));
-            } else if let Some(idx) = path_str.find("/Documents/") {
-                dest = Path::new(&current_user).join(&path_str[idx + 1..].replace('/', std::path::MAIN_SEPARATOR_STR));
-            } else if let Some(idx) = path_str.find("/AppData/") {
-                dest = Path::new(&current_user).join(&path_str[idx + 1..].replace('/', std::path::MAIN_SEPARATOR_STR));
-            }
-        }
-        if !dest.exists() {
-            let installed = super::cache::read_installed(&super::skip::default_config_dir());
-            let installed_game = installed.into_iter().find(|g| g.app_name == app_name);
-            let title = installed_game.as_ref().map(|g| g.title.as_str());
-            let install_path = installed_game.as_ref().map(|g| g.install_path.as_str());
-            if let Some(detected) = detect_save_path(app_name, title, install_path) {
-                dest = PathBuf::from(detected);
-            }
-        }
-    }
+    let dest = resolve_restore_destination(app_name, &info);
 
     // The preview named the exact save tree it described. A different tree now
     // means the game (or another tool) wrote new saves after the dialog opened.

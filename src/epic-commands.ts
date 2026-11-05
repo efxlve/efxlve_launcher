@@ -626,7 +626,7 @@ export interface BackupPreview {
   files: BackupPreviewFile[];
   truncated: boolean;
   savePath: string;
-  /** `logical` when rebuilt from a profile root, `absolute` otherwise. */
+  /** `logical` when rebuilt from a profile root, `absolute` for a recorded path, `detected` after a fallback scan. */
   pathSource: string;
   currentHash?: string | null;
   backupHash?: string | null;
