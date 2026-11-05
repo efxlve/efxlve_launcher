@@ -248,6 +248,10 @@ function storeSearchLinks(name: string): Array<{ id: string; label: string; url:
     { id: "steam", label: "Steam", url: `https://store.steampowered.com/search/?term=${query}` },
     { id: "epic", label: "Epic Games", url: `https://store.epicgames.com/en-US/search?q=${query}` },
     { id: "gog", label: "GOG", url: `https://www.gog.com/en/games?query=${query}` },
+    { id: "xbox", label: "Microsoft Store", url: `https://apps.microsoft.com/search?query=${query}` },
+    { id: "humble", label: "Humble Store", url: `https://www.humblebundle.com/store/search?search=${query}` },
+    { id: "fanatical", label: "Fanatical", url: `https://www.fanatical.com/en/search?search=${query}` },
+    { id: "gmg", label: "Green Man Gaming", url: `https://www.greenmangaming.com/search?query=${query}` },
     { id: "itch", label: "itch.io", url: `https://itch.io/search?q=${query}` },
   ];
 }
