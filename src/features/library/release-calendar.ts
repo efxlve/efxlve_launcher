@@ -227,7 +227,9 @@ function renderDay(
 
   const ranked = [...games].sort((left, right) => (right.hypes ?? 0) - (left.hypes ?? 0));
   const lead = ranked.find((item) => item.coverId) ?? ranked[0];
-  const leadCover = coverOf(lead, "cover_big");
+  // A 40 px cell cannot hold a readable title; the cover, day number and count
+  // are the whole story. The full list lives in the schedule on the right.
+  const leadCover = coverOf(lead, "thumb");
   const tip = `${dayFullLabel(year, month, day)} · ${games.map((item) => item.name).join(", ")}`;
   return `<button type="button" class="calendar-day has-games${stateClasses}" data-act="release-calendar-day" data-day="${day}" aria-pressed="${isSelected}" title="${esc(tip)}">
     ${leadCover ? `<span class="calendar-day-bg" style="background-image:url('${esc(leadCover)}')"></span><span class="calendar-day-scrim"></span>` : ""}
@@ -235,7 +237,6 @@ function renderDay(
       <span class="calendar-day-num${isToday ? " is-today" : ""}">${day}</span>
       <span class="calendar-day-badge tabular-nums">${games.length}</span>
     </span>
-    <span class="calendar-day-lead">${esc(lead.name)}</span>
   </button>`;
 }
 
@@ -273,15 +274,14 @@ function renderGrid(month: MonthSel, exact: UpcomingRelease[]): string {
 function renderScheduleCard(release: UpcomingRelease): string {
   const cover = coverOf(release, "cover_big");
   const storeList = (release.stores ?? [])
-    .slice(0, 3)
+    .slice(0, 2)
     .map((store) => `<span class="calendar-game-store">${esc(storeLabel(store.id, store.label))}</span>`)
     .join("");
-  const fallbackStore = `<span class="calendar-game-store is-muted">${esc(t("calendar.searchStores"))}</span>`;
   return `<button type="button" class="calendar-game-card" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
     ${cover ? `<img class="calendar-game-cover" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-game-cover placeholder">${icon("gamepad-2", 18)}</span>`}
     <span class="calendar-game-info">
       <span class="calendar-game-title">${esc(release.name)}</span>
-      <span class="calendar-game-stores">${storeList || fallbackStore}</span>
+      ${storeList ? `<span class="calendar-game-stores">${storeList}</span>` : ""}
     </span>
     <span class="calendar-game-chevron">${icon("chevron-right", 14)}</span>
   </button>`;
@@ -355,7 +355,7 @@ function renderHero(release: UpcomingRelease | null): string {
     .slice(0, 4)
     .map((store) => `<span class="calendar-store-tag">${esc(storeLabel(store.id, store.label))}</span>`)
     .join("");
-  const fallbackTag = `<span class="calendar-store-tag is-muted">${icon("search", 11)} <span>${esc(t("calendar.searchStores"))}</span></span>`;
+  const fallbackTag = `<span class="calendar-store-tag is-muted">${esc(t("calendar.whereToBuy"))}</span>`;
   const countdown = countdownLabel(release);
   return `<button type="button" class="calendar-hero${release.artworkId ? "" : " is-cover"}" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
     <span class="calendar-hero-art"${art ? ` style="background-image:url('${esc(art)}')" ` : ""}></span>
@@ -381,11 +381,7 @@ function renderToolbar(months: MonthInfo[], active: MonthSel): string {
   const previous = index > 0;
   const next = index >= 0 && index < months.length - 1;
   return `<div class="calendar-toolbar">
-    <div class="calendar-month-title">
-      <button type="button" class="icon-btn" data-act="release-calendar-prev" title="${esc(t("calendar.previousMonth"))}" aria-label="${esc(t("calendar.previousMonth"))}"${previous ? "" : " disabled"}>${icon("chevron-left", 16)}</button>
-      <h3>${esc(monthLabel(active.year, active.month - 1))} <span class="tabular-nums">${active.year}</span></h3>
-      <button type="button" class="icon-btn" data-act="release-calendar-next" title="${esc(t("calendar.nextMonth"))}" aria-label="${esc(t("calendar.nextMonth"))}"${next ? "" : " disabled"}>${icon("chevron-right", 16)}</button>
-    </div>
+    <button type="button" class="icon-btn" data-act="release-calendar-prev" title="${esc(t("calendar.previousMonth"))}" aria-label="${esc(t("calendar.previousMonth"))}"${previous ? "" : " disabled"}>${icon("chevron-left", 16)}</button>
     <div class="calendar-monthbar" role="tablist" aria-label="${esc(t("calendar.title"))}">${months
       .map((month) => {
         const isActive = sameMonth(month, active);
@@ -396,6 +392,7 @@ function renderToolbar(months: MonthInfo[], active: MonthSel): string {
         </button>`;
       })
       .join("")}</div>
+    <button type="button" class="icon-btn" data-act="release-calendar-next" title="${esc(t("calendar.nextMonth"))}" aria-label="${esc(t("calendar.nextMonth"))}"${next ? "" : " disabled"}>${icon("chevron-right", 16)}</button>
   </div>`;
 }
 
