@@ -1926,6 +1926,12 @@
 .calendar-day.is-selected .calendar-day-badge {
   background: var(--accent); color: var(--on-accent);
 }
+.calendar-day-follow {
+  position: absolute; right: 3px; bottom: 3px; z-index: 2;
+  display: grid; place-items: center; width: 14px; height: 14px;
+  border-radius: 3px; background: rgba(8, 9, 12, 0.66); color: var(--accent);
+}
+.calendar-day-follow svg { fill: currentColor; }
 
 /* Right-hand chronological release feed. */
 .calendar-schedule {

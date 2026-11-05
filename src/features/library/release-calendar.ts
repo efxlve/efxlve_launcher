@@ -302,6 +302,7 @@ function renderDay(
   // A 40 px cell cannot hold a readable title; the cover, day number and count
   // are the whole story. The full list lives in the schedule on the right.
   const leadCover = coverOf(lead, "thumb");
+  const hasFollowed = games.some((game) => followed.has(game.id));
   const tip = `${dayFullLabel(year, month, day)} · ${games.map((item) => item.name).join(", ")}`;
   return `<button type="button" class="calendar-day has-games${stateClasses}" data-act="release-calendar-day" data-day="${day}" aria-pressed="${isSelected}" title="${esc(tip)}">
     ${leadCover ? `<span class="calendar-day-bg" style="background-image:url('${esc(leadCover)}')"></span><span class="calendar-day-scrim"></span>` : ""}
@@ -309,6 +310,7 @@ function renderDay(
       <span class="calendar-day-num${isToday ? " is-today" : ""}">${day}</span>
       <span class="calendar-day-badge tabular-nums">${games.length}</span>
     </span>
+    ${hasFollowed ? `<span class="calendar-day-follow" aria-hidden="true">${icon("star", 9)}</span>` : ""}
   </button>`;
 }
 
