@@ -1709,6 +1709,55 @@
 .calendar-source {
   margin: 16px 2px 0; font-size: 11px; line-height: 1.6; color: var(--text-3);
 }
+/* A two-month view (November, December) should not leave a third empty track. */
+.calendar-months.cols-1 { grid-template-columns: minmax(0, 1fr); }
+.calendar-months.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* --- Upcoming release store picker --------------------------------------- */
+.release-stores-dialog { width: min(540px, 100%); padding: 0; }
+.release-stores-head {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px; border-bottom: 1px solid var(--line);
+}
+.release-stores-cover {
+  width: 64px; height: 86px; flex: none; object-fit: cover;
+  border-radius: var(--r-sm); background: var(--surface-2);
+}
+.release-stores-cover.placeholder { display: grid; place-items: center; color: var(--text-3); }
+.release-stores-head-text { flex: 1; min-width: 0; }
+.release-stores-title {
+  margin: 0 0 4px; font-size: 17px; font-weight: 700; color: var(--text);
+  overflow-wrap: anywhere;
+}
+.release-stores-date { margin: 0; font-size: 12px; color: var(--text-3); }
+.release-stores-section {
+  padding: 14px 18px 6px; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-3);
+}
+.release-stores-list { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px; }
+.release-store-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 34px; padding: 6px 11px;
+  border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+  background: var(--surface-1); color: var(--text);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background-color var(--ease), border-color var(--ease);
+}
+.release-store-btn:hover { background: var(--surface-2); border-color: var(--accent); }
+.release-store-btn.is-search {
+  font-weight: 500; color: var(--text-2); border-style: dashed;
+}
+.release-stores-empty {
+  margin: 0; font-size: 12px; line-height: 1.6; color: var(--text-3);
+}
+.release-stores-note {
+  display: flex; align-items: flex-start; gap: 7px;
+  margin: 14px 18px 0; font-size: 11px; line-height: 1.5; color: var(--text-3);
+}
+.release-stores-note svg { flex: none; margin-top: 1px; }
+.release-stores-dialog .modal-foot {
+  margin: 14px 0 0; padding: 12px 18px; border-top: 1px solid var(--line);
+}
 .calendar-loading, .calendar-empty {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 8px; min-height: 260px; text-align: center; color: var(--text-2);
@@ -1718,10 +1767,10 @@
   max-width: 420px; font-size: 11.5px; line-height: 1.6; color: var(--text-3);
 }
 @media (max-width: 900px) {
-  .calendar-months { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .calendar-months, .calendar-months.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 620px) {
-  .calendar-months { grid-template-columns: 1fr; }
+  .calendar-months, .calendar-months.cols-2 { grid-template-columns: 1fr; }
   .calendar-body { max-height: calc(92vh - 72px); }
 }
 

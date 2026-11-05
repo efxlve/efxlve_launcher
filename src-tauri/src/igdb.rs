@@ -18,6 +18,7 @@
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
@@ -1350,6 +1351,16 @@ pub async fn igdb_covers(app: AppHandle, query: String, limit: Option<usize>) ->
     Ok(hits)
 }
 
+/// One PC storefront the game can be bought from.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct UpcomingStore {
+    /// Stable kind: steam, epic, gog, xbox, itch, … or `official`.
+    pub id: String,
+    pub label: String,
+    pub url: String,
+}
+
 /// One PC release in the upcoming-release calendar.
 ///
 /// A release is not one date: IGDB's `human` string may carry only a year, a
@@ -1375,6 +1386,9 @@ pub struct IgdbUpcomingRelease {
     pub date: Option<String>,
     /// Unix seconds for `precision == "day"` only.
     pub timestamp: Option<i64>,
+    /// PC store links from IGDB, ready to open; empty when IGDB knows none.
+    #[serde(default)]
+    pub stores: Vec<UpcomingStore>,
 }
 
 /// A calendar full of undated shovelware helps nobody. IGDB's hype count is the
@@ -1385,12 +1399,147 @@ const UPCOMING_PAGE: usize = 500;
 
 fn upcoming_query(from: i64, to: i64, offset: usize) -> String {
     format!(
-        "fields name, hypes, cover.image_id, url, slug, release_dates.date, \
-         release_dates.human, release_dates.platform; \
+        "fields name, hypes, cover.image_id, url, slug, websites.url, \
+         release_dates.date, release_dates.human, release_dates.platform; \
          where release_dates.platform = 6 & release_dates.date >= {from} \
          & release_dates.date <= {to} & game_type = 0 & hypes >= {UPCOMING_MIN_HYPES}; \
          limit {UPCOMING_PAGE}; offset {offset};"
     )
+}
+
+/// Storefronts IGDB links by host. The label is the brand name shown in the
+/// store picker; the id keeps the order stable and lets the UI place icons.
+const STORE_SITES: &[(&str, &str, &str)] = &[
+    ("steampowered.com", "steam", "Steam"),
+    ("epicgames.com", "epic", "Epic Games"),
+    ("gog.com", "gog", "GOG"),
+    ("xbox.com", "xbox", "Microsoft Store"),
+    ("apps.microsoft.com", "xbox", "Microsoft Store"),
+    ("itch.io", "itch", "itch.io"),
+    ("ea.com", "ea", "EA App"),
+    ("origin.com", "ea", "EA App"),
+    ("ubisoft.com", "ubisoft", "Ubisoft Connect"),
+    ("uplay.com", "ubisoft", "Ubisoft Connect"),
+    ("battle.net", "battlenet", "Battle.net"),
+    ("blizzard.com", "battlenet", "Battle.net"),
+    ("humblebundle.com", "humble", "Humble Store"),
+    ("fanatical.com", "fanatical", "Fanatical"),
+    ("greenmangaming.com", "gmg", "Green Man Gaming"),
+    ("gamersgate.com", "gamersgate", "GamersGate"),
+    ("nuuvem.com", "nuuvem", "Nuuvem"),
+];
+
+/// Links that are useful on the IGDB page but are not a place to buy the game.
+const NON_STORE_SITES: &[&str] = &[
+    "wikipedia.org",
+    "fandom.com",
+    "starcitizen.tools",
+    "steamcommunity.com",
+    "reddit.com",
+    "twitter.com",
+    "x.com",
+    "facebook.com",
+    "instagram.com",
+    "youtube.com",
+    "youtu.be",
+    "twitch.tv",
+    "discord.gg",
+    "discord.com",
+    "bsky.app",
+    "tiktok.com",
+    "linkedin.com",
+    "pinterest.com",
+    "threads.net",
+    "telegram.org",
+    "t.me",
+    "vk.com",
+    "tumblr.com",
+    "playstation.com",
+    "nintendo.com",
+];
+
+fn domain_matches(host: &str, domain: &str) -> bool {
+    host == domain || host.ends_with(&format!(".{domain}"))
+}
+
+/// `(id, label)` for one website URL. A publisher site is kept as `official`;
+/// a social, wiki or console-only link is dropped because it cannot sell a PC
+/// game.
+fn store_site(url: &str) -> Option<(&'static str, &'static str)> {
+    let parsed = url::Url::parse(url).ok()?;
+    if parsed.scheme() != "http" && parsed.scheme() != "https" {
+        return None;
+    }
+    let host = parsed.host_str()?.to_ascii_lowercase();
+    let host = host.strip_prefix("www.").unwrap_or(&host).to_string();
+    if host == "amazon.com" || host.starts_with("amazon.") {
+        return Some(("amazon", "Amazon"));
+    }
+    for (domain, id, label) in STORE_SITES {
+        if domain_matches(&host, domain) {
+            return Some((id, label));
+        }
+    }
+    if NON_STORE_SITES
+        .iter()
+        .any(|domain| domain_matches(&host, domain))
+    {
+        return None;
+    }
+    Some(("official", "Official site"))
+}
+
+fn store_rank(id: &str) -> u8 {
+    match id {
+        "steam" => 0,
+        "epic" => 1,
+        "gog" => 2,
+        "xbox" => 3,
+        "itch" => 4,
+        "ea" => 5,
+        "ubisoft" => 6,
+        "battlenet" => 7,
+        "humble" => 8,
+        "fanatical" => 9,
+        "amazon" => 10,
+        "gmg" => 11,
+        "gamersgate" => 12,
+        "nuuvem" => 13,
+        _ => 14,
+    }
+}
+
+/// Exact PC store links from IGDB's `websites`, deduplicated and ordered so
+/// Steam, Epic and GOG lead. The official site closes the list.
+fn stores_from_websites(value: &serde_json::Value) -> Vec<UpcomingStore> {
+    let Some(sites) = value.get("websites").and_then(serde_json::Value::as_array) else {
+        return Vec::new();
+    };
+    let mut seen = HashSet::new();
+    let mut stores = Vec::new();
+    for site in sites {
+        let Some(url) = site.get("url").and_then(serde_json::Value::as_str) else {
+            continue;
+        };
+        let Some((id, label)) = store_site(url) else {
+            continue;
+        };
+        if !seen.insert(id) {
+            continue;
+        }
+        stores.push(UpcomingStore {
+            id: id.to_string(),
+            label: label.to_string(),
+            url: url.to_string(),
+        });
+    }
+    stores.sort_by(|left, right| {
+        store_rank(&left.id)
+            .cmp(&store_rank(&right.id))
+            .then(left.label.cmp(&right.label))
+    });
+    stores.truncate(10);
+    stores
 }
 
 fn month_number(value: &str) -> Option<u32> {
@@ -1525,6 +1674,7 @@ fn map_upcoming(value: &serde_json::Value, from: i64) -> Option<IgdbUpcomingRele
         day,
         date: exact.then(|| release_date(timestamp)),
         timestamp: exact.then_some(timestamp),
+        stores: stores_from_websites(value),
     })
 }
 
@@ -1994,6 +2144,11 @@ mod tests {
             "release_dates": [
                 { "platform": 49, "date": 1_800_000_000_i64, "human": "2027" },
                 { "platform": 6, "date": 1_814_313_600_i64, "human": "Q2 2027" }
+            ],
+            "websites": [
+                { "url": "https://store.steampowered.com/app/4045720" },
+                { "url": "https://www.reddit.com/r/Squadron42" },
+                { "url": "https://squadron42.com/" }
             ]
         });
         let release = map_upcoming(&value, 1_793_884_219).expect("upcoming");
@@ -2003,6 +2158,14 @@ mod tests {
         assert_eq!(release.timestamp, None);
         assert_eq!(release.cover_id, "cod3pg");
         assert_eq!(release.human, "Q2 2027");
+        assert_eq!(
+            release
+                .stores
+                .iter()
+                .map(|store| store.id.as_str())
+                .collect::<Vec<_>>(),
+            ["steam", "official"]
+        );
     }
 
     #[test]
@@ -2042,6 +2205,62 @@ mod tests {
         assert!(query.contains("hypes >= 5"));
         assert!(query.contains("offset 500"));
         assert!(query.contains("release_dates.human"));
+        assert!(query.contains("websites.url"));
+    }
+
+    #[test]
+    fn store_links_map_to_pc_storefronts() {
+        assert_eq!(
+            store_site("https://store.steampowered.com/app/4045720"),
+            Some(("steam", "Steam"))
+        );
+        assert_eq!(
+            store_site("https://store.epicgames.com/en-US/p/shadow-of-the-road"),
+            Some(("epic", "Epic Games"))
+        );
+        assert_eq!(
+            store_site("https://www.gog.com/en/game/shadow_of_the_road"),
+            Some(("gog", "GOG"))
+        );
+        assert_eq!(
+            store_site("https://www.xbox.com/en-us/games/store/fable/9pmn4dgrt1ln"),
+            Some(("xbox", "Microsoft Store"))
+        );
+        assert_eq!(
+            store_site("https://tanatb.itch.io/building-relationships"),
+            Some(("itch", "itch.io"))
+        );
+        assert_eq!(
+            store_site("https://www.amazon.co.uk/dp/B0EXAMPLE"),
+            Some(("amazon", "Amazon"))
+        );
+        assert_eq!(
+            store_site("https://squadron42.com/"),
+            Some(("official", "Official site"))
+        );
+        // Social, wiki and console-only pages cannot sell the PC game.
+        assert_eq!(store_site("https://www.reddit.com/r/Squadron42"), None);
+        assert_eq!(store_site("https://en.wikipedia.org/wiki/Squadron_42"), None);
+        assert_eq!(store_site("https://store.playstation.com/en-us/concept/1"), None);
+    }
+
+    #[test]
+    fn store_links_are_deduplicated_and_ordered() {
+        let value = serde_json::json!({
+            "websites": [
+                { "url": "https://www.gog.com/game/example" },
+                { "url": "https://store.steampowered.com/app/1" },
+                { "url": "https://store.steampowered.com/app/1?utm=x" },
+                { "url": "https://www.reddit.com/r/example" },
+                { "url": "https://x.com/example" }
+            ]
+        });
+        let stores = stores_from_websites(&value);
+        assert_eq!(
+            stores.iter().map(|store| store.id.as_str()).collect::<Vec<_>>(),
+            ["steam", "gog"]
+        );
+        assert_eq!(stores[0].url, "https://store.steampowered.com/app/1");
     }
 
     #[test]
@@ -2076,6 +2295,10 @@ mod tests {
         assert!(mapped
             .iter()
             .any(|release| release.precision == "quarter" || release.precision == "year"));
+        assert!(
+            mapped.iter().any(|release| !release.stores.is_empty()),
+            "IGDB should carry at least one PC store link in this sample"
+        );
         println!(
             "live upcoming: {} mapped; first {:?}",
             mapped.len(),

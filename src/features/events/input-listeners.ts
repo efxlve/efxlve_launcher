@@ -25,7 +25,7 @@ import { S, setTabSort } from "../../core/state";
 import { toast } from "../../core/toast";
 import { ubiDirectSetClientLaunch } from "../../companion";
 import { steamSetLaunchPref } from "../../steam";
-import { cancelReleaseCalendar, setReleaseCalendarYear } from "../library/release-calendar";
+import { cancelReleaseCalendar, cancelReleaseStores, setReleaseCalendarYear } from "../library/release-calendar";
 import { esc } from "../../core/utils";
 import { t as i18nT } from "../../i18n";
 import {
@@ -221,6 +221,8 @@ document.addEventListener("keydown", (e) => {
     if (cancelRestorePreview()) return;
     // The password prompt sits above every page and owns Escape while it is open.
     if (cancelPassword()) return;
+    // The store picker sits above the calendar and owns Escape first.
+    if (cancelReleaseStores()) return;
     // The release calendar is a page-level modal.
     if (cancelReleaseCalendar()) return;
     // The countdown sits above every page and owns Escape while it is open.

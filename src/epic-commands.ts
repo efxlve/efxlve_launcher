@@ -534,6 +534,14 @@ export interface GameStatusEvent {
 export const epicGetPlaytimes = () =>
   invoke<Record<string, PlaytimeRecord>>("epic_get_playtimes");
 
+/** One PC storefront that sells a game. */
+export interface UpcomingStore {
+  /** steam | epic | gog | xbox | itch | ea | ubisoft | battlenet | … | official */
+  id: string;
+  label: string;
+  url: string;
+}
+
 /** One PC release in the upcoming-release calendar. */
 export interface UpcomingRelease {
   id: number;
@@ -553,6 +561,8 @@ export interface UpcomingRelease {
   date?: string | null;
   /** Unix seconds, only when the day is known. */
   timestamp?: number | null;
+  /** Exact PC store links from IGDB; empty when none are known yet. */
+  stores: UpcomingStore[];
 }
 
 /** Upcoming PC releases from IGDB, cached in the backend for six hours. */

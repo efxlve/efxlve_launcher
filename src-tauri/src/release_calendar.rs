@@ -123,6 +123,7 @@ mod tests {
             day: Some(28),
             date: Some("2027-01-28".into()),
             timestamp: Some(1_800_000_000),
+            stores: Vec::new(),
         }
     }
 

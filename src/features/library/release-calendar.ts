@@ -25,6 +25,9 @@ let failed = false;
 let yearTouched = false;
 /** Bumped by a restart or close so a late answer cannot repaint a dead dialog. */
 let loadSeq = 0;
+/** The game whose store picker is open, if any. */
+let storeRelease: UpcomingRelease | null = null;
+let storeLayer: HTMLElement | null = null;
 
 function releaseYear(release: UpcomingRelease): number {
   if (release.year) return release.year;
@@ -101,9 +104,7 @@ function entryRow(release: UpcomingRelease, day: number, soft = false): string {
   const art = cover
     ? `<img class="calendar-entry-cover" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />`
     : `<span class="calendar-entry-cover placeholder">${icon("gamepad-2", 12)}</span>`;
-  const action = release.url
-    ? `data-act="open-external-url" data-url="${esc(release.url)}"`
-    : `data-act="prevent-modal-close"`;
+  const action = `data-act="release-stores" data-id="${release.id}"`;
   return `<button type="button" class="calendar-entry${soft ? " is-soft" : ""}" ${action} title="${esc(`${release.name} · ${release.human}`)}">
     ${art}
     <span class="calendar-entry-main">
@@ -130,7 +131,13 @@ function monthEntries(year: number, month: number): UpcomingRelease[] {
 }
 
 function renderMonths(year: number): string {
-  return `<div class="calendar-months">${MONTHS.map((month) => {
+  const now = new Date();
+  // The current year starts at today's month: a November calendar has no use
+  // for ten empty cards for months that already passed.
+  const firstMonth = year === now.getFullYear() ? now.getMonth() : 0;
+  const months = MONTHS.filter((month) => month >= firstMonth);
+  const columns = months.length === 1 ? " cols-1" : months.length === 2 ? " cols-2" : "";
+  return `<div class="calendar-months${columns}">${months.map((month) => {
     const rows = monthEntries(year, month);
     return `<div class="calendar-month${rows.length === 0 ? " is-empty" : ""}">
       <div class="calendar-month-head">
@@ -235,6 +242,114 @@ function renderCalendar(): void {
   if (nextBody && scrollTop > 0) nextBody.scrollTop = scrollTop;
 }
 
+/** Full label for the store dialog, with the same precision as the grid. */
+function dateLabel(release: UpcomingRelease): string {
+  if (hasExactDay(release)) {
+    return new Date(
+      releaseYear(release),
+      releaseMonth(release) - 1,
+      releaseDay(release),
+    ).toLocaleDateString(S.appLanguage || undefined, {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }
+  if (hasMonthOnly(release)) {
+    return `${monthLabel(releaseYear(release), releaseMonth(release) - 1)} ${releaseYear(release)}`;
+  }
+  return release.human;
+}
+
+function storeLabel(id: string, label: string): string {
+  return id === "official" ? t("calendar.officialSite") : label;
+}
+
+/** Search links for stores IGDB has no direct product URL for. */
+function storeSearchLinks(name: string): Array<{ id: string; label: string; url: string }> {
+  const query = encodeURIComponent(name);
+  return [
+    { id: "steam", label: "Steam", url: `https://store.steampowered.com/search/?term=${query}` },
+    { id: "epic", label: "Epic Games", url: `https://store.epicgames.com/en-US/search?q=${query}` },
+    { id: "gog", label: "GOG", url: `https://www.gog.com/en/games?query=${query}` },
+    { id: "itch", label: "itch.io", url: `https://itch.io/search?q=${query}` },
+  ];
+}
+
+function renderStoreDialog(): void {
+  if (!storeLayer || !storeRelease) return;
+  const release = storeRelease;
+  const cover = igdbImage(release.coverId, "cover_big");
+  const exact = (release.stores ?? []).map(
+    (store) =>
+      `<button type="button" class="release-store-btn" data-act="open-external-url" data-url="${esc(store.url)}">
+        <span>${esc(storeLabel(store.id, store.label))}</span>${icon("external", 12)}
+      </button>`,
+  );
+  const known = new Set((release.stores ?? []).map((store) => store.id));
+  const searches = storeSearchLinks(release.name)
+    .filter((store) => !known.has(store.id))
+    .map(
+      (store) =>
+        `<button type="button" class="release-store-btn is-search" data-act="open-external-url" data-url="${esc(store.url)}">
+          ${icon("search", 12)}<span>${esc(t("calendar.searchOn", { store: store.label }))}</span>
+        </button>`,
+    );
+  storeLayer.innerHTML = `
+    <div class="modal-backdrop" data-act="release-stores-close">
+      <div class="modal release-stores-dialog" role="dialog" aria-modal="true" data-act="prevent-modal-close">
+        <div class="release-stores-head">
+          ${cover ? `<img class="release-stores-cover" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="release-stores-cover placeholder">${icon("gamepad-2", 20)}</span>`}
+          <div class="release-stores-head-text">
+            <h3 class="release-stores-title">${esc(release.name)}</h3>
+            <p class="release-stores-date">${esc(dateLabel(release))}</p>
+          </div>
+          <button type="button" class="manage-head-close" data-act="release-stores-close" title="${esc(t("common.close"))}">${icon("x", 16)}</button>
+        </div>
+        <div class="release-stores-section">${esc(t("calendar.whereToBuy"))}</div>
+        <div class="release-stores-list">
+          ${exact.length > 0 ? exact.join("") : `<p class="release-stores-empty">${esc(t("calendar.noStoreLinks"))}</p>`}
+        </div>
+        <div class="release-stores-section">${esc(t("calendar.searchStores"))}</div>
+        <div class="release-stores-list is-search">${searches.join("")}</div>
+        <p class="release-stores-note">${icon("info", 12)}<span>${esc(t("calendar.storeNote"))}</span></p>
+        <div class="modal-foot">
+          <button type="button" class="btn ghost" data-act="release-stores-close">${esc(t("common.close"))}</button>
+          ${release.url ? `<button type="button" class="btn ghost" data-act="open-external-url" data-url="${esc(release.url)}">${icon("external", 13)} ${esc(t("calendar.igdbPage"))}</button>` : ""}
+        </div>
+      </div>
+    </div>`;
+  storeLayer.querySelector<HTMLButtonElement>('[data-act="release-stores-close"]')?.focus();
+}
+
+/** Opens the store picker for one upcoming release. */
+export function openReleaseStores(id: number): void {
+  if (!layer) return;
+  const release = releases.find((item) => item.id === id);
+  if (!release) return;
+  storeRelease = release;
+  if (!storeLayer) {
+    storeLayer = document.createElement("div");
+    storeLayer.className = "confirm-layer";
+    confirmRoot.appendChild(storeLayer);
+  }
+  renderStoreDialog();
+}
+
+/** Closes the store picker. */
+export function closeReleaseStores(): void {
+  storeLayer?.remove();
+  storeLayer = null;
+  storeRelease = null;
+}
+
+/** Cancels the store picker; true when there was one (Escape handling). */
+export function cancelReleaseStores(): boolean {
+  if (!storeLayer) return false;
+  closeReleaseStores();
+  return true;
+}
+
 async function load(refresh: boolean): Promise<void> {
   const seq = ++loadSeq;
   loading = true;
@@ -255,6 +370,7 @@ async function load(refresh: boolean): Promise<void> {
 
 /** Opens the upcoming-release calendar. */
 export function openReleaseCalendar(): void {
+  closeReleaseStores();
   releases = [];
   selectedYear = 0;
   yearTouched = false;
@@ -268,6 +384,7 @@ export function openReleaseCalendar(): void {
 }
 
 export function closeReleaseCalendar(): void {
+  closeReleaseStores();
   loadSeq++;
   layer?.remove();
   layer = null;
