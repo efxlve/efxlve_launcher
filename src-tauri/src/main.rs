@@ -2477,6 +2477,7 @@ fn main() {
             notes::notes_save,
             notes::notes_store_image,
             notes::notes_delete,
+            notes::notes_restore_last,
             notes::notes_import,
             notes::notes_import_text,
             notes::notes_export,

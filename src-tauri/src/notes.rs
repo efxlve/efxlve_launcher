@@ -509,6 +509,42 @@ pub fn notes_delete(app: AppHandle, id: String) -> Result<bool, String> {
     Ok(removed)
 }
 
+/// Brings back the newest recovery copy. A note whose id was reused gets a new
+/// id instead of replacing the live note.
+#[tauri::command]
+pub fn notes_restore_last(app: AppHandle) -> Result<Option<Note>, String> {
+    let dir = note_backup_dir(&app);
+    let Ok(entries) = std::fs::read_dir(&dir) else {
+        return Ok(None);
+    };
+    let mut files: Vec<PathBuf> = entries
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.extension().is_some_and(|extension| extension == "json"))
+        .collect();
+    files.sort();
+    let Some(path) = files.pop() else {
+        return Ok(None);
+    };
+    let text = std::fs::read_to_string(&path).map_err(|error| error.to_string())?;
+    let mut note: Note = serde_json::from_str(&text)
+        .map_err(|_| "@t:notes.restoreFailed".to_string())?;
+    let mut file = read_notes(&app);
+    if file.notes.len() >= MAX_NOTES {
+        return Err("@t:notes.full".to_string());
+    }
+    let now = now_ms();
+    if file.notes.iter().any(|existing| existing.id == note.id) {
+        note.id = format!("{now:x}-{:x}", NEXT_ID.fetch_add(1, Ordering::Relaxed));
+    }
+    note.scope = normalize_scope(&note.scope);
+    note.updated = now;
+    file.notes.push(note.clone());
+    write_notes(&app, &file)?;
+    let _ = std::fs::remove_file(path);
+    Ok(Some(note))
+}
+
 /// Imports the overlay's old localStorage notes. Runs once per file; later
 /// calls report 0.
 #[tauri::command]

@@ -189,6 +189,13 @@ export async function bulkCloudRestoreAction(): Promise<void> {
   let restored = 0;
   let failed = 0;
   for (const key of games) {
+    if (S.runningGames.has(key)) {
+      failed += 1;
+      S.cloudBulkProgress.done += 1;
+      S.cloudBulkProgress.failed = failed;
+      scheduleRender();
+      continue;
+    }
     try {
       const backups = await cloudBackupListGame(key);
       const latest = backups?.[0];
@@ -295,6 +302,13 @@ export async function downloadCloudBackupAction(
   remoteId: string,
   backupId: string,
 ): Promise<void> {
+  // Restoring under a running game leaves locked files and a half-replaced
+  // save tree. Ask the user to close it; the local snapshot is not a licence
+  // to overwrite live files.
+  if (S.runningGames.has(appName)) {
+    toast(t("cloud.closeGameFirst"), "err");
+    return;
+  }
   const remote = (S.cloudBackupsMap.get(appName) || []).find((entry) => entry.remoteId === remoteId);
   const local = S.gameBackupsMap.get(appName)?.[0];
   if (remote && local && local.timestamp > remote.timestamp + 60) {

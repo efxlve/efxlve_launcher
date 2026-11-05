@@ -93,7 +93,7 @@ import { CLIP_ENABLED_KEY, CLIP_FPS_KEY, CLIP_HEIGHT_KEY, CLIP_HOTKEY_KEY, CLIP_
 import { CLIP_FPS_SUPPORTED, clipFps as clipFpsSetting, clipHeight as clipHeightSetting, pushClipSettings } from "../screenshots/ss-settings";
 import { ssAddWebhook, ssRemoveWebhook, ssWebhooks } from "../screenshots/ss-settings";
 import { screenshotWebhookInfo } from "../../epic";
-import { cachedNotes, exportNotes, importNotesText, LAUNCHER_SCOPE, loadNotes, notesFontSize, setNotesFontSize } from "../notes/notes-client";
+import { cachedNotes, exportNotes, importNotesText, LAUNCHER_SCOPE, loadNotes, notesFontSize, restoreLastNote, setNotesFontSize } from "../notes/notes-client";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 import { handleCompatAction, loadCompatView, renderCompatSection } from "./compat-view";
 import { keepDiscordOpen } from "../discord/discord-view";
@@ -1549,9 +1549,14 @@ function renderNotes(): string {
      <button type="button" class="btn primary small" data-act="notes-import-text">${icon("upload", 13)} ${t("notes.importBtn")}</button>`,
     true,
   );
+  const restoreRow = row(
+    t("notes.restoreTitle"),
+    t("notes.restoreDesc"),
+    `<button type="button" class="btn ghost small" data-act="notes-restore-last">${icon("refresh", 13)} ${t("notes.restoreBtn")}</button>`,
+  );
   return (
     group(openRow + sidebarRow + statsRow + fontRow, t("settings.secNotes"), infoBox("notes.settingsInfo")) +
-    group(exportRow + importRow, t("notes.backupTitle"))
+    group(exportRow + importRow + restoreRow, t("notes.backupTitle"))
   );
 }
 
@@ -2830,6 +2835,18 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
       });
       return true;
     }
+    case "notes-restore-last":
+      void restoreLastNote()
+        .then((note) => {
+          if (!note) {
+            toast(t("notes.restoreNone"), "");
+            return;
+          }
+          toast(t("notes.restoreDone", { title: note.title || t("notes.untitled") }), "ok");
+          render();
+        })
+        .catch((error: unknown) => toast(String(error), "err"));
+      return true;
     case "task-stop":
     case "task-refresh":
     case "task-sort":

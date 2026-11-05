@@ -172,6 +172,13 @@ export async function deleteNote(id: string): Promise<boolean> {
   }
 }
 
+/** Brings back the most recently deleted note from its recovery copy. */
+export async function restoreLastNote(): Promise<Note | null> {
+  const note = await invoke<Note | null>("notes_restore_last");
+  if (note) cache = [...(cache ?? []).filter((item) => item.id !== note.id), note];
+  return note ?? null;
+}
+
 /** Writes an export next to the downloads and returns the file path. */
 export async function exportNotes(format: "json" | "markdown"): Promise<string | null> {
   try {
