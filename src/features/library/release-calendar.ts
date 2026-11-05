@@ -58,12 +58,6 @@ let storeRelease: UpcomingRelease | null = null;
 let storeLayer: HTMLElement | null = null;
 /** The card the bubble points at, so a second click can toggle it. */
 let storeAnchor: HTMLElement | null = null;
-/** A click pins the bubble; hover previews do not. */
-let storePinned = false;
-let hoverOpenTimer = 0;
-let hoverCloseTimer = 0;
-const HOVER_OPEN_MS = 220;
-const HOVER_CLOSE_MS = 180;
 
 function releaseYear(release: UpcomingRelease): number {
   if (release.year) return release.year;
@@ -441,24 +435,25 @@ function renderDay(
     </div>`;
   }
 
-  const ranked = [...games].sort((left, right) => (right.hypes ?? 0) - (left.hypes ?? 0));
-  const lead = ranked.find((item) => item.coverId) ?? ranked[0];
-  // A 40 px cell cannot hold a readable title; the cover, day number and count
-  // are the whole story. The full list lives in the schedule on the right.
-  const leadCover = coverOf(lead, "thumb");
   const hasFollowed = games.some((game) => followed.has(game.id));
+  const dots = games
+    .slice(0, 3)
+    .map(() => `<i></i>`)
+    .join("");
   const tip = `${dayFullLabel(year, month, day)} · ${games.map((item) => item.name).join(", ")}`;
   return `<button type="button" class="calendar-day has-games${stateClasses}" data-act="release-calendar-day" data-day="${day}" aria-pressed="${isSelected}" title="${esc(tip)}">
-    ${leadCover ? `<span class="calendar-day-bg" style="background-image:url('${esc(leadCover)}')"></span><span class="calendar-day-scrim"></span>` : ""}
     <span class="calendar-day-top">
       <span class="calendar-day-num${isToday ? " is-today" : ""}">${day}</span>
+      ${hasFollowed ? `<span class="calendar-day-follow" aria-hidden="true">${icon("star", 9)}</span>` : ""}
+    </span>
+    <span class="calendar-day-foot">
+      <span class="calendar-day-dots" aria-hidden="true">${dots}</span>
       <span class="calendar-day-badge tabular-nums">${games.length}</span>
     </span>
-    ${hasFollowed ? `<span class="calendar-day-follow" aria-hidden="true">${icon("star", 9)}</span>` : ""}
   </button>`;
 }
 
-function renderGrid(month: MonthSel, exact: UpcomingRelease[]): string {
+function renderSidebar(month: MonthSel, exact: UpcomingRelease[], heroId: number | null): string {
   const first = new Date(month.year, month.month - 1, 1);
   const lead = (first.getDay() + 6) % 7;
   const totalDays = new Date(month.year, month.month, 0).getDate();
@@ -479,28 +474,47 @@ function renderGrid(month: MonthSel, exact: UpcomingRelease[]): string {
   while (cells.length % 7 !== 0) {
     cells.push(`<div class="calendar-day is-blank"></div>`);
   }
-  return `<div class="calendar-sidebar">
+  return `<aside class="calendar-sidebar">
     <div class="calendar-mini-card">
+      <div class="calendar-mini-head">
+        <span class="calendar-mini-title">${esc(monthLabel(month.year, month.month - 1))} <span class="tabular-nums">${month.year}</span></span>
+        <span class="calendar-mini-count tabular-nums">${esc(t("col.gameCount", { count: String(exact.length) }))}</span>
+      </div>
       <div class="calendar-weekdays" aria-hidden="true">${weekdayLabels()
         .map((label) => `<span>${esc(label)}</span>`)
         .join("")}</div>
       <div class="calendar-grid">${cells.join("")}</div>
     </div>
-  </div>`;
+    ${renderTopReleases(heroId)}
+  </aside>`;
 }
 
 function renderScheduleCard(release: UpcomingRelease): string {
-  const cover = coverOf(release, "cover_small");
-  const storeList = (release.stores ?? [])
-    .slice(0, 2)
-    .map((store) => `<span class="calendar-game-store">${esc(storeLabel(store.id, store.label))}</span>`)
+  const cover = coverOf(release, "cover_big");
+  const stores = release.stores ?? [];
+  const storeBadges = stores
+    .slice(0, 3)
+    .map((store) => {
+      const logo = storeLogo(store.id, 11, "calendar-card-store-logo");
+      return logo
+        ? `<span class="calendar-card-store-chip" title="${esc(storeLabel(store.id, store.label))}">${logo}</span>`
+        : `<span class="calendar-card-store-chip is-text">${esc(storeLabel(store.id, store.label))}</span>`;
+    })
     .join("");
+  const storeNames = stores
+    .slice(0, 2)
+    .map((store) => storeLabel(store.id, store.label))
+    .join(" · ");
   return `<div class="calendar-game-shell">
-    <button type="button" class="calendar-game-card" data-act="release-stores" data-id="${release.id}">
-      ${cover ? `<img class="calendar-game-cover" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-game-cover placeholder">${icon("gamepad-2", 18)}</span>`}
+    <button type="button" class="calendar-game-card" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
+      <span class="calendar-game-stage">
+        ${cover ? `<img class="calendar-game-cover" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-game-cover placeholder">${icon("gamepad-2", 22)}</span>`}
+        <span class="calendar-game-scrim"></span>
+        ${storeBadges ? `<span class="calendar-game-badges">${storeBadges}</span>` : ""}
+      </span>
       <span class="calendar-game-info">
         <span class="calendar-game-title">${esc(release.name)}</span>
-        ${storeList ? `<span class="calendar-game-stores">${storeList}</span>` : ""}
+        <span class="calendar-game-sub">${esc(storeNames || dateLabel(release))}</span>
       </span>
     </button>
     ${renderFollowButton(release)}
@@ -524,8 +538,6 @@ function renderSchedule(month: MonthSel, exact: UpcomingRelease[]): string {
     list.push(release);
     buckets.set(day, list);
   }
-  // The most anticipated release of a day leads its row, matching the cover
-  // the mini grid already picked for that day.
   for (const games of buckets.values()) {
     games.sort(
       (left, right) =>
@@ -538,8 +550,6 @@ function renderSchedule(month: MonthSel, exact: UpcomingRelease[]): string {
   const todayTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const monthIsCurrent =
     month.year === now.getFullYear() && month.month === now.getMonth() + 1;
-  // The current month opens on today's releases, not on days that are already
-  // gone. A past day stays reachable from the mini grid, which filters this list.
   const visibleDays = hasFilter
     ? allDays.filter(([day]) => day === selectedDay)
     : monthIsCurrent
@@ -602,12 +612,15 @@ function renderHero(
     : release.coverId
       ? igdbImage(release.coverId, "cover_big_2x")
       : "";
-  const poster = coverOf(release, "cover_big");
+  const poster = coverOf(release, "cover_big_2x");
   const storeTags = (release.stores ?? [])
     .slice(0, 4)
-    .map((store) => `<span class="calendar-store-tag">${esc(storeLabel(store.id, store.label))}</span>`)
+    .map(
+      (store) =>
+        `<span class="calendar-store-tag">${storeLogo(store.id, 12, "release-store-logo")}<span>${esc(storeLabel(store.id, store.label))}</span></span>`,
+    )
     .join("");
-  const fallbackTag = `<span class="calendar-store-tag is-muted">${esc(t("calendar.whereToBuy"))}</span>`;
+  const fallbackTag = `<span class="calendar-store-tag is-muted">${icon("search", 11)}<span>${esc(t("calendar.whereToBuy"))}</span></span>`;
   const countdown = countdownLabel(release);
   return `<div class="calendar-hero-shell">
     <button type="button" class="calendar-hero${release.artworkId ? "" : " is-cover"}" data-act="release-stores" data-id="${release.id}">
@@ -624,7 +637,6 @@ function renderHero(
           <span class="calendar-hero-title">${esc(release.name)}</span>
           <span class="calendar-hero-stores">${storeTags || fallbackTag}</span>
         </span>
-        <span class="calendar-hero-arrow">${icon("arrow-right", 16)}</span>
       </span>
     </button>
     ${renderFollowButton(release)}
@@ -664,7 +676,7 @@ function renderTba(month: MonthSel): string {
     <div class="calendar-tba-head">${esc(t("calendar.dayUnknown"))}<span class="count tabular-nums">${tba.length}</span></div>
     <div class="calendar-tba-list">${tba
       .map((release) => {
-        const cover = coverOf(release, "cover_small");
+        const cover = coverOf(release, "cover_big");
         return `<div class="calendar-tba-shell">
           <button type="button" class="calendar-tba-card" data-act="release-stores" data-id="${release.id}">
             ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-tba-art placeholder">${icon("gamepad-2", 12)}</span>`}
@@ -699,7 +711,7 @@ function renderPending(year: number): string {
 }
 
 function renderWatchCard(release: UpcomingRelease): string {
-  const cover = coverOf(release, "cover_small");
+  const cover = coverOf(release, "cover_big");
   const storeList = (release.stores ?? [])
     .slice(0, 3)
     .map((store) => `<span class="calendar-game-store">${esc(storeLabel(store.id, store.label))}</span>`)
@@ -738,7 +750,7 @@ function renderSearchResults(): string {
 }
 
 function renderTopCard(release: UpcomingRelease, rank: number): string {
-  const cover = coverOf(release, "cover_small");
+  const cover = coverOf(release, "cover_big");
   const countdown = countdownLabel(release);
   return `<div class="calendar-top-card">
     <button type="button" class="calendar-top-main" data-act="release-stores" data-id="${release.id}">
@@ -758,7 +770,7 @@ function renderTopCard(release: UpcomingRelease, rank: number): string {
   </div>`;
 }
 
-/** The highest-hype releases across every month, not just the selected one. */
+/** The highest-hype releases across every month, stacked in the sidebar. */
 function renderTopReleases(heroId: number | null): string {
   const ranked = releases
     .filter((release) => release.id !== heroId && (release.hypes ?? 0) > 0)
@@ -766,7 +778,7 @@ function renderTopReleases(heroId: number | null): string {
       (left, right) =>
         (right.hypes ?? 0) - (left.hypes ?? 0) || left.name.localeCompare(right.name),
     )
-    .slice(0, 6);
+    .slice(0, 5);
   if (ranked.length === 0) return "";
   return `<section class="calendar-top" aria-label="${esc(t("calendar.mostAnticipated"))}">
     <div class="calendar-top-head">
@@ -821,24 +833,23 @@ function renderBody(): string {
   if (watching) {
     const watch = followedReleases();
     return `
-      ${renderHero(watch[0] ?? null, t("calendar.watchNext"))}
       ${renderToolbar(months, month)}
+      ${renderHero(watch[0] ?? null, t("calendar.watchNext"))}
       ${watch.length > 0 ? renderWatchlist(watch) : renderWatchEmpty()}
       <p class="calendar-source">${esc(t("calendar.sourceNote"))}</p>`;
   }
   const pool = monthGames(month);
   const exact = pool.filter(hasExactDay);
-  // Feature the month's most followed release that has key art, so the banner
-  // is both relevant and visually complete. Fall back to the most followed.
   const ranked = [...exact].sort((left, right) => (right.hypes ?? 0) - (left.hypes ?? 0));
   const hero = ranked.find((release) => release.artworkId) ?? ranked[0] ?? pool.find(hasMonthOnly) ?? null;
   return `
-    ${renderHero(hero)}
     ${renderToolbar(months, month)}
-    ${renderTopReleases(hero?.id ?? null)}
     <div class="calendar-workspace">
-      ${renderGrid(month, exact)}
-      ${renderSchedule(month, exact)}
+      ${renderSidebar(month, exact, hero?.id ?? null)}
+      <div class="calendar-main">
+        ${renderHero(hero)}
+        ${renderSchedule(month, exact)}
+      </div>
     </div>
     <p class="calendar-source">${esc(t("calendar.sourceNote"))}</p>`;
 }
@@ -1101,26 +1112,11 @@ export function refreshReleaseCalendar(): void {
   void load(true);
 }
 
-function clearStoreTimers(): void {
-  window.clearTimeout(hoverOpenTimer);
-  window.clearTimeout(hoverCloseTimer);
-  hoverOpenTimer = 0;
-  hoverCloseTimer = 0;
-}
-
 function ensureStoreLayer(): HTMLElement {
   if (storeLayer) return storeLayer;
   storeLayer = document.createElement("div");
   storeLayer.className = "release-popover-layer";
   confirmRoot.appendChild(storeLayer);
-  storeLayer.addEventListener("mouseover", () => {
-    window.clearTimeout(hoverCloseTimer);
-  });
-  storeLayer.addEventListener("mouseout", (event) => {
-    const related = event.relatedTarget as Node | null;
-    if (related && storeLayer?.contains(related)) return;
-    if (!storePinned) scheduleStoreClose();
-  });
   storeLayer.addEventListener("click", (event) => {
     const target = event.target as HTMLElement;
     if (target.closest('[data-act="open-external-url"]')) {
@@ -1181,7 +1177,7 @@ function refreshStoreAnchor(): void {
 function renderStorePopover(): void {
   if (!storeLayer || !storeRelease) return;
   const release = storeRelease;
-  const cover = coverOf(release, "cover_small");
+  const cover = coverOf(release, "cover_big");
   const exact = (release.stores ?? []).map(
     (store) =>
       `<button type="button" class="release-store-btn" data-act="open-external-url" data-url="${esc(store.url)}">
@@ -1225,40 +1221,18 @@ function renderStorePopover(): void {
       </div>
     </div>`;
   positionStorePopover();
-  if (storePinned) {
-    storeLayer.querySelector<HTMLButtonElement>('[data-act="release-stores-close"]')?.focus();
-  }
+  storeLayer.querySelector<HTMLButtonElement>('[data-act="release-stores-close"]')?.focus();
 }
 
-function scheduleStoreClose(): void {
-  window.clearTimeout(hoverCloseTimer);
-  hoverCloseTimer = window.setTimeout(() => {
-    if (!storePinned) closeReleaseStores();
-  }, HOVER_CLOSE_MS);
-}
-
-function previewReleaseStores(id: number, anchor: HTMLElement): void {
-  if (!layer || storePinned) return;
-  const release = releases.find((item) => item.id === id);
-  if (!release) return;
-  if (storeRelease?.id === id && storeAnchor === anchor && storeLayer) return;
-  storeRelease = release;
-  storeAnchor = anchor;
-  ensureStoreLayer();
-  renderStorePopover();
-}
-
-/** Clicking a card pins the store bubble; clicking the same card again closes it. */
+/** Clicking a card opens the store bubble; clicking the same card again closes it. */
 export function openReleaseStores(id: number, anchor?: HTMLElement | null): void {
   if (!layer) return;
   const release = releases.find((item) => item.id === id);
   if (!release) return;
-  if (storePinned && storeRelease?.id === id && storeLayer) {
+  if (storeRelease?.id === id && storeLayer) {
     closeReleaseStores();
     return;
   }
-  clearStoreTimers();
-  storePinned = true;
   storeRelease = release;
   storeAnchor =
     anchor ??
@@ -1269,14 +1243,12 @@ export function openReleaseStores(id: number, anchor?: HTMLElement | null): void
 
 /** Closes the store bubble. */
 export function closeReleaseStores(): void {
-  const restoreFocus = storePinned && Boolean(storeLayer?.contains(document.activeElement));
+  const restoreFocus = Boolean(storeLayer?.contains(document.activeElement));
   const anchor = storeAnchor;
-  clearStoreTimers();
   storeLayer?.remove();
   storeLayer = null;
   storeRelease = null;
   storeAnchor = null;
-  storePinned = false;
   if (restoreFocus && anchor?.isConnected) anchor.focus();
 }
 
@@ -1287,39 +1259,7 @@ export function cancelReleaseStores(): boolean {
   return true;
 }
 
-/* ---------- Hover preview and outside-click handling ---------- */
-
-document.addEventListener("mouseover", (event) => {
-  if (!layer) return;
-  const target = event.target as HTMLElement | null;
-  const anchor = target?.closest<HTMLElement>('[data-act="release-stores"]');
-  if (!anchor || !layer.contains(anchor)) return;
-  const related = event.relatedTarget as Node | null;
-  if (related && anchor.contains(related)) return;
-  if (storePinned) return;
-  const id = Number(anchor.dataset.id);
-  if (!Number.isFinite(id)) return;
-  window.clearTimeout(hoverOpenTimer);
-  window.clearTimeout(hoverCloseTimer);
-  hoverOpenTimer = window.setTimeout(() => {
-    if (!layer || !anchor.isConnected || storePinned) return;
-    previewReleaseStores(id, anchor);
-  }, HOVER_OPEN_MS);
-});
-
-document.addEventListener("mouseout", (event) => {
-  if (!layer) return;
-  const target = event.target as HTMLElement | null;
-  const anchor = target?.closest<HTMLElement>('[data-act="release-stores"]');
-  if (!anchor || !layer.contains(anchor)) return;
-  const related = event.relatedTarget as Node | null;
-  if (related && (anchor.contains(related) || storeLayer?.contains(related))) {
-    window.clearTimeout(hoverCloseTimer);
-    return;
-  }
-  window.clearTimeout(hoverOpenTimer);
-  if (!storePinned) scheduleStoreClose();
-});
+/* ---------- Outside-click and viewport handling ---------- */
 
 document.addEventListener("click", (event) => {
   if (!storeLayer) return;
