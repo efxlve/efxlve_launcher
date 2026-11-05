@@ -36,6 +36,8 @@ let failed = false;
 /** True while the body shows the followed list instead of one month. */
 let watching = false;
 let followed = loadFollowed();
+/** Title search across every month; empty means the normal month view. */
+let query = "";
 /** Bumped by a restart or close so a late answer cannot repaint a dead dialog. */
 let loadSeq = 0;
 /** The game whose store picker is open, if any. */
@@ -106,6 +108,17 @@ function releaseSortKey(release: UpcomingRelease): number {
 function followedReleases(): UpcomingRelease[] {
   return releases
     .filter((release) => followed.has(release.id))
+    .sort(
+      (left, right) =>
+        releaseSortKey(left) - releaseSortKey(right) || left.name.localeCompare(right.name),
+    );
+}
+
+function searchReleases(): UpcomingRelease[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return [];
+  return releases
+    .filter((release) => release.name.toLowerCase().includes(needle))
     .sort(
       (left, right) =>
         releaseSortKey(left) - releaseSortKey(right) || left.name.localeCompare(right.name),
@@ -523,6 +536,22 @@ function renderWatchCard(release: UpcomingRelease): string {
   </div>`;
 }
 
+function renderSearchResults(): string {
+  const matches = searchReleases();
+  const head = `<div class="calendar-search-head">
+    <span class="calendar-search-head-title">${icon("search", 13)} <span>${esc(t("calendar.searchResults", { count: String(matches.length) }))}</span></span>
+  </div>`;
+  if (matches.length === 0) {
+    return `${head}<div class="calendar-empty calendar-search-empty">
+      ${icon("search", 26)}
+      <div class="calendar-empty-title">${esc(t("calendar.searchEmpty", { query: query.trim() }))}</div>
+      <div class="calendar-empty-hint">${esc(t("calendar.searchHint"))}</div>
+    </div>`;
+  }
+  return `${head}<div class="calendar-watch-cards">${matches.map(renderWatchCard).join("")}</div>
+    <p class="calendar-source">${esc(t("calendar.sourceNote"))}</p>`;
+}
+
 function renderWatchlist(list: UpcomingRelease[]): string {
   return `<div class="calendar-watchlist">
     <div class="calendar-watch-head">
@@ -561,6 +590,7 @@ function emptyHtml(): string {
 function renderBody(): string {
   if (loading && releases.length === 0) return loadingHtml();
   if (releases.length === 0) return emptyHtml();
+  if (query.trim()) return renderSearchResults();
   const month = ensureSelectedMonth();
   if (!month) return emptyHtml();
   const months = availableMonths();
@@ -588,6 +618,17 @@ function renderBody(): string {
     <p class="calendar-source">${esc(t("calendar.sourceNote"))}</p>`;
 }
 
+/** Repaints only the body so the search field above it keeps focus and caret. */
+function paintSearchBody(): void {
+  if (!layer) return;
+  const body = layer.querySelector<HTMLElement>(".calendar-body");
+  if (!body) return;
+  body.innerHTML = renderBody();
+  body.scrollTop = 0;
+  const clear = layer.querySelector<HTMLElement>(".calendar-search-clear");
+  if (clear) clear.hidden = query.length === 0;
+}
+
 function renderCalendar(): void {
   if (!layer) return;
   const month = ensureSelectedMonth();
@@ -605,6 +646,11 @@ function renderCalendar(): void {
             )}</p>
           </div>
           <div class="calendar-head-actions">
+            <div class="calendar-search" role="search">
+              <span class="calendar-search-icon">${icon("search", 13)}</span>
+              <input class="calendar-search-input" type="text" value="${esc(query)}" placeholder="${esc(t("calendar.searchPlaceholder"))}" aria-label="${esc(t("calendar.searchPlaceholder"))}" autocomplete="off" spellcheck="false" />
+              <button type="button" class="calendar-search-clear" data-act="release-calendar-search-clear" title="${esc(t("common.clear"))}" aria-label="${esc(t("common.clear"))}"${query ? "" : " hidden"}>${icon("x", 12)}</button>
+            </div>
             <button type="button" class="icon-btn${loading ? " spinning" : ""}" data-act="release-calendar-refresh" title="${esc(t("calendar.refresh"))}" aria-label="${esc(t("calendar.refresh"))}" ${loading ? "disabled" : ""}>${icon("refresh", 15)}</button>
             <button type="button" class="manage-head-close" data-act="release-calendar-close" title="${esc(t("common.close"))}">${icon("x", 16)}</button>
           </div>
@@ -616,6 +662,11 @@ function renderCalendar(): void {
   if (nextBody && scrollTop > 0) nextBody.scrollTop = scrollTop;
   const activeTab = layer.querySelector<HTMLElement>(".calendar-month-tab.is-active");
   activeTab?.scrollIntoView({ block: "nearest", inline: "center" });
+  const searchInput = layer.querySelector<HTMLInputElement>(".calendar-search-input");
+  searchInput?.addEventListener("input", () => {
+    query = searchInput.value;
+    paintSearchBody();
+  });
 }
 
 async function load(refresh: boolean): Promise<void> {
@@ -647,6 +698,7 @@ export function openReleaseCalendar(): void {
   selected = null;
   selectedDay = null;
   watching = false;
+  query = "";
   failed = false;
   if (layer) layer.remove();
   layer = document.createElement("div");
@@ -665,6 +717,7 @@ export function closeReleaseCalendar(): void {
   selected = null;
   selectedDay = null;
   watching = false;
+  query = "";
   loading = false;
   failed = false;
 }
@@ -713,11 +766,18 @@ export function stepReleaseCalendarMonth(delta: -1 | 1): void {
 /** Follows or unfollows one release. The star is the only writer of this set. */
 export function toggleReleaseFollow(id: number): void {
   if (!Number.isFinite(id)) return;
+  const active = document.activeElement as HTMLElement | null;
+  const focusId = active?.dataset.act === "release-follow" ? active.dataset.id : null;
   if (followed.has(id)) followed.delete(id);
   else followed.add(id);
   saveFollowed();
   if (watching && followedReleases().length === 0) watching = false;
   renderCalendar();
+  if (focusId) {
+    layer
+      ?.querySelector<HTMLButtonElement>(`.calendar-follow-btn[data-id="${focusId}"]`)
+      ?.focus();
+  }
   if (storeLayer && storeRelease) {
     renderStoreDialog();
     storeLayer.querySelector<HTMLButtonElement>('[data-act="release-follow"]')?.focus();
@@ -729,6 +789,23 @@ export function toggleReleaseWatchlist(): void {
   watching = !watching;
   if (watching) selectedDay = null;
   renderCalendar();
+}
+
+/** Clears the title search and returns to the month view. */
+export function clearReleaseCalendarSearch(): void {
+  if (!layer) return;
+  query = "";
+  const input = layer.querySelector<HTMLInputElement>(".calendar-search-input");
+  if (input) input.value = "";
+  paintSearchBody();
+  input?.focus();
+}
+
+/** Escape clears a running search before the next press closes the calendar. */
+export function cancelReleaseCalendarSearch(): boolean {
+  if (!layer || !query.length) return false;
+  clearReleaseCalendarSearch();
+  return true;
 }
 
 /** Refresh button; bypasses the six-hour backend cache. */

@@ -114,7 +114,7 @@ import {
   updateLibraryFilterInPlace,
 } from "../library/library-view";
 import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
-import { closeReleaseCalendar, closeReleaseStores, openReleaseCalendar, openReleaseStores, refreshReleaseCalendar, setReleaseCalendarDay, setReleaseCalendarMonth, stepReleaseCalendarMonth, toggleReleaseFollow, toggleReleaseWatchlist } from "../library/release-calendar";
+import { clearReleaseCalendarSearch, closeReleaseCalendar, closeReleaseStores, openReleaseCalendar, openReleaseStores, refreshReleaseCalendar, setReleaseCalendarDay, setReleaseCalendarMonth, stepReleaseCalendarMonth, toggleReleaseFollow, toggleReleaseWatchlist } from "../library/release-calendar";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
@@ -596,6 +596,8 @@ document.addEventListener("click", (e) => {
     closeReleaseStores();
   } else if (act === "release-calendar-refresh") {
     refreshReleaseCalendar();
+  } else if (act === "release-calendar-search-clear") {
+    clearReleaseCalendarSearch();
   } else if (act === "release-calendar-watch") {
     toggleReleaseWatchlist();
   } else if (act === "release-follow" && id) {
