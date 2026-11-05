@@ -77,6 +77,7 @@ export function storeRect(): StoreRect {
  */
 export const COVERING_ROOT_IDS = [
   "modal-root",
+  "confirm-root",
   "storage-root",
   "manage-root",
   "install-root",
