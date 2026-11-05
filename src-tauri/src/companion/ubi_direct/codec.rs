@@ -49,6 +49,12 @@ fn push(field: u32, body: &[u8]) -> Vec<u8> {
     upstream
 }
 
+/// Answer the server's `KeepAlivePush`; UplayKit sends the same empty push back
+/// and a client that stays silent can have its service connections dropped.
+pub(crate) fn keep_alive_push() -> Vec<u8> {
+    push(3, &[])
+}
+
 pub(crate) fn authenticate_request(request_id: u32, ticket: &str) -> Vec<u8> {
     let token = token(ticket);
     let mut auth = Vec::new();
@@ -122,6 +128,7 @@ pub(crate) struct Push {
     pub client_outdated: bool,
     pub closed_connection: Option<u32>,
     pub close_code: u32,
+    pub keep_alive: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -227,6 +234,7 @@ fn parse_push_message(payload: &[u8]) -> Push {
                 out.closed_connection = Some(closed);
                 out.close_code = code;
             }
+            3 => out.keep_alive = true,
             5 => out.client_outdated = true,
             _ => {}
         },
@@ -895,6 +903,67 @@ mod tests {
             |_, _| {},
         );
         assert!(found);
+    }
+
+    #[test]
+    fn keepalive_push_is_parsed_and_answered() {
+        // Server -> client: Downstream.push.keep_alive (field 2 -> 3).
+        let mut push = Vec::new();
+        push_bytes(&mut push, 3, &[]);
+        let mut downstream = Vec::new();
+        push_bytes(&mut downstream, 2, &push);
+        let parsed = parse_downstream(&downstream);
+        assert!(parsed.push.expect("push").keep_alive);
+
+        // Client -> server: Upstream.push.keep_alive (field 2 -> 3).
+        let reply = keep_alive_push();
+        let mut found = false;
+        for_each_field(
+            &reply,
+            |outer, push| {
+                if outer != 2 {
+                    return;
+                }
+                for_each_field(
+                    push,
+                    |field, _| {
+                        if field == 3 {
+                            found = true;
+                        }
+                    },
+                    |_, _| {},
+                );
+            },
+            |_, _| {},
+        );
+        assert!(found);
+    }
+
+    #[test]
+    fn ownership_requests_carry_the_session_ticket() {
+        let bytes = ownership_initialize_request(1, "ticket", "session");
+        let mut ticket = String::new();
+        let mut session = String::new();
+        for_each_field(
+            &bytes,
+            |outer, req| {
+                if outer != 1 {
+                    return;
+                }
+                for_each_field(
+                    req,
+                    |field, value| match field {
+                        30 => ticket = String::from_utf8_lossy(value).to_string(),
+                        31 => session = String::from_utf8_lossy(value).to_string(),
+                        _ => {}
+                    },
+                    |_, _| {},
+                );
+            },
+            |_, _| {},
+        );
+        assert_eq!(ticket, "ticket");
+        assert_eq!(session, "session");
     }
 
     #[test]

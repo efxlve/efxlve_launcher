@@ -970,7 +970,12 @@ document.addEventListener("click", (e) => {
           count > 0 ? "ok" : "",
         );
       })
-      .catch((e: unknown) => toast(localizeMessage(String(e)), "err"))
+      .catch((e: unknown) => {
+        const message = String(e);
+        if (!message.includes("closed service connection")) {
+          toast(localizeMessage(message), "err");
+        }
+      })
       .finally(() => {
         if (button?.isConnected) button.disabled = false;
       });

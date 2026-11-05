@@ -355,7 +355,12 @@ async function openUbiInstallDialog(appName: string): Promise<void> {
     renderInstallDialog();
   } catch (e) {
     closeInstallDialog();
-    toast(localizeMessage(String(e)), "err");
+    const message = String(e);
+    // The plan already retried a transient service reset. Fall back to the
+    // client without putting a raw socket error in front of the user.
+    if (!message.includes("closed service connection")) {
+      toast(localizeMessage(message), "err");
+    }
     void companionGameAction("ubisoft", appName.slice(9), "install").catch(() => {});
   }
 }
@@ -404,7 +409,7 @@ export function renderInstallDialog(): void {
 
           ${isEa && S.installDialogEaOoa ? `<div class="install-ea-note">${icon("shield", 14)}<span>${esc(t("ea.launchNeedsClient"))}</span></div>` : ""}
           ${isEa && S.installDialogEaLegacy ? `<div class="install-ea-note is-direct">${icon("check", 14)}<span>${esc(t("ea.launchMode.directDesc"))}</span></div>` : ""}
-          ${isUbi ? `<div class="install-ea-note is-direct">${icon("check", 14)}<span>${esc(t("accounts.ubiDirectDetail5"))}</span></div>` : ""}
+          ${isUbi ? `<div class="install-ea-note is-direct">${icon("shield", 14)}<span>${esc(t("accounts.ubiDirectDetail5"))}</span></div>` : ""}
 
           <div class="install-field-label">${t("install.pathLabel")}</div>
           <div class="install-path-row">

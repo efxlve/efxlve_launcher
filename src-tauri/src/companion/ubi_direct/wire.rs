@@ -34,6 +34,16 @@ fn api_version() -> u32 {
         .unwrap_or(DEFAULT_API_VERSION)
 }
 
+/// A service close with code 0/1 is a transient socket reset. Codes 2 (multiple
+/// login) and 4 (no auth) mean the session itself is no longer usable.
+pub(crate) fn is_transient_service_close(error: &str) -> bool {
+    let code = error
+        .rsplit_once("(code ")
+        .and_then(|(_, rest)| rest.strip_suffix(')'))
+        .and_then(|value| value.trim().parse::<u32>().ok());
+    matches!(code, Some(0) | Some(1))
+}
+
 pub(crate) struct Demux {
     tls: TlsStream<TcpStream>,
     next_request_id: u32,
@@ -139,10 +149,19 @@ impl Demux {
                 .map_err(|e| format!("reading Demux frame body: {e}"))?;
             Ok(codec::parse_downstream(&body))
         };
-        match tokio::time::timeout(Duration::from_secs(20), fut).await {
-            Ok(result) => result,
-            Err(_) => Err("timed out waiting for a Demux response".to_string()),
+        let downstream = match tokio::time::timeout(Duration::from_secs(20), fut).await {
+            Ok(result) => result?,
+            Err(_) => return Err("timed out waiting for a Demux response".to_string()),
+        };
+        if downstream
+            .push
+            .as_ref()
+            .map(|push| push.keep_alive)
+            .unwrap_or(false)
+        {
+            self.write(&codec::keep_alive_push()).await?;
         }
+        Ok(downstream)
     }
 
     async fn authenticate(&mut self, ticket: &str) -> Result<(), String> {
@@ -219,6 +238,9 @@ impl Demux {
                     );
                 }
                 if push.closed_connection == Some(connection_id) {
+                    if matches!(push.close_code, 2 | 4) {
+                        return Err("@t:accounts.ubiSessionExpired".to_string());
+                    }
                     return Err(format!(
                         "Ubisoft closed service connection {connection_id} (code {})",
                         push.close_code
@@ -365,6 +387,9 @@ impl Demux {
                     );
                 }
                 if push.closed_connection == Some(connection_id) {
+                    if matches!(push.close_code, 2 | 4) {
+                        return Err("@t:accounts.ubiSessionExpired".to_string());
+                    }
                     return Err(format!(
                         "Ubisoft closed ach_frontend (code {})",
                         push.close_code
@@ -485,6 +510,21 @@ impl DownloadService {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_a_transient_service_close_is_retried() {
+        assert!(is_transient_service_close(
+            "Ubisoft closed service connection 1 (code 0)"
+        ));
+        assert!(is_transient_service_close(
+            "Ubisoft closed service connection 2 (code 1)"
+        ));
+        assert!(!is_transient_service_close(
+            "Ubisoft closed service connection 2 (code 2)"
+        ));
+        assert!(!is_transient_service_close("@t:accounts.ubiSessionExpired"));
+        assert!(!is_transient_service_close("no Demux response"));
+    }
 
     #[test]
     fn api_version_can_be_overridden() {

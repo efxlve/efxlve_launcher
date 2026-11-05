@@ -936,7 +936,13 @@ pub async fn ubi_direct_cloud_saves(install_path: String) -> Result<usize, Strin
         exe_dir.as_deref(),
         Some(&title),
     );
-    let count = ubi_direct::download_cloud_saves(product_id, uplay_id, &destination).await?;
+    let count = match ubi_direct::download_cloud_saves(product_id, uplay_id, &destination).await {
+        Err(error) if ubi_direct::is_transient_service_close(&error) => {
+            tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+            ubi_direct::download_cloud_saves(product_id, uplay_id, &destination).await?
+        }
+        other => other?,
+    };
     // A direct install reads the shim layout. Newer 36-byte cloud slots stay in
     // the Connect folder; classic slots are copied beside the shim now.
     if direct.is_some() {

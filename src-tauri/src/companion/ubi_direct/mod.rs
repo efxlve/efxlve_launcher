@@ -22,6 +22,7 @@ pub(crate) mod verify;
 pub(crate) mod wire;
 
 pub(crate) use achievements::merge as merge_achievements;
+pub(crate) use wire::is_transient_service_close;
 pub(crate) use adopt::{adopt as adopt_game, release as release_game, AdoptedInstall};
 pub(crate) use cloud_saves::download as download_cloud_saves;
 pub(crate) use relocate::{move_game, MovedInstall};
@@ -177,8 +178,20 @@ pub(crate) async fn remote_achievements(product_id: &str) -> Result<Vec<(u32, u6
         .await
 }
 
-/// Ask Demux for the owned base games and their current manifest ids.
+/// Ask Demux for the owned base games and their current manifest ids. A
+/// transient service close gets one fresh attempt, which is what makes the
+/// probe reliable while the client is also talking to Ubisoft.
 pub(crate) async fn probe() -> Result<UbiDirectProbe, String> {
+    match probe_once().await {
+        Err(error) if wire::is_transient_service_close(&error) => {
+            tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+            probe_once().await
+        }
+        other => other,
+    }
+}
+
+async fn probe_once() -> Result<UbiDirectProbe, String> {
     let (mut demux, session) = connect().await?;
     let owned = demux.owned_games().await?;
     record_achievement_metadata(&owned);
@@ -230,12 +243,39 @@ pub(crate) async fn plan_game(
     product_id: u32,
     install_dir: std::path::PathBuf,
 ) -> Result<install::InstallPlan, String> {
+    match plan_game_once(product_id, install_dir.clone()).await {
+        Err(error) if wire::is_transient_service_close(&error) => {
+            tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+            plan_game_once(product_id, install_dir).await
+        }
+        other => other,
+    }
+}
+
+async fn plan_game_once(
+    product_id: u32,
+    install_dir: std::path::PathBuf,
+) -> Result<install::InstallPlan, String> {
     let (mut demux, _) = connect().await?;
     install::probe_plan(&mut demux, product_id, &install_dir).await
 }
 
 /// Download and verify every file of an owned product.
 pub(crate) async fn install_game(
+    app: tauri::AppHandle,
+    product_id: u32,
+    install_dir: std::path::PathBuf,
+) -> Result<install::InstallSummary, String> {
+    match install_game_once(app.clone(), product_id, install_dir.clone()).await {
+        Err(error) if wire::is_transient_service_close(&error) => {
+            tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+            install_game_once(app, product_id, install_dir).await
+        }
+        other => other,
+    }
+}
+
+async fn install_game_once(
     app: tauri::AppHandle,
     product_id: u32,
     install_dir: std::path::PathBuf,
