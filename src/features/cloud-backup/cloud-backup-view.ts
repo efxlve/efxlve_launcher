@@ -81,7 +81,7 @@ export function renderCloudBackupSettingsGroup(): string {
           <div class="settings-row-desc">${t("cloud.folderDesc")}</div>
         </div>
         <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
-          <input id="cloud-folder-path" class="input" placeholder="${t("cloud.folderPath")}" value="${esc(st.folderPath)}" spellcheck="false" autocomplete="off" />
+          <input id="cloud-folder-path" class="input cloud-folder-path" placeholder="${t("cloud.folderPath")}" value="${esc(st.folderPath)}" spellcheck="false" autocomplete="off" />
           ${detectedFolders
             ? `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
                  <span style="font-size:11px;color:var(--text-3)">${t("cloud.folderDetected")}</span>
