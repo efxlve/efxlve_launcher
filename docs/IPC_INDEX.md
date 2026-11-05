@@ -226,7 +226,6 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_presence_configure` | `epicPresenceConfigure({ ... })` | `src-tauri/src/presence.rs` |
 | `epic_presence_update` | `epicPresenceUpdate({ ... })` | `src-tauri/src/presence.rs` |
 | `epic_preview_backup` | `epicPreviewBackup({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
-| `epic_release_calendar` | `epicReleaseCalendar({ ... })` | `src-tauri/src/release_calendar.rs` |
 | `epic_remove_saved_account` | `epicRemoveSavedAccount({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_remove_screenshot_root` | `epicRemoveScreenshotRoot({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_reorder_collections` | `epicReorderCollections({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
@@ -265,6 +264,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_take_pending_launch` | `epicTakePendingLaunch({ ... })` | `src-tauri/src/main.rs` |
 | `epic_test_steamgrid_key` | `epicTestSteamgridKey({ ... })` | `src-tauri/src/legendary/steamgrid.rs` |
 | `epic_uninstall_game` | `epicUninstallGame({ ... })` | `src-tauri/src/legendary/transfers/uninstall.rs` |
+| `epic_upcoming_releases` | `epicUpcomingReleases({ ... })` | `src-tauri/src/release_calendar.rs` |
 | `epic_verify_game` | `epicVerifyGame({ ... })` | `src-tauri/src/legendary/commands/verify.rs` |
 | `feedback_create_report` | `feedbackCreateReport({ ... })` | `src-tauri/src/feedback.rs` |
 | `feedback_has_crash` | `feedbackHasCrash({ ... })` | `src-tauri/src/feedback.rs` |

@@ -534,24 +534,30 @@ export interface GameStatusEvent {
 export const epicGetPlaytimes = () =>
   invoke<Record<string, PlaytimeRecord>>("epic_get_playtimes");
 
-export interface ReleaseCalendarQuery {
-  appName: string;
-  title: string;
+/** One PC release in the upcoming-release calendar. */
+export interface UpcomingRelease {
+  id: number;
+  name: string;
+  coverId: string;
+  url: string;
+  slug: string;
+  hypes: number;
+  /** IGDB's own label: "Dec 10, 2026", "Dec 2026", "Q2 2027", "2027". */
+  human: string;
+  /** day | month | quarter | year | unknown */
+  precision: string;
   year?: number | null;
-}
-
-export interface ReleaseCalendarEntry {
-  appName: string;
-  title: string;
+  month?: number | null;
+  day?: number | null;
+  /** ISO date, only when the day is known. */
   date?: string | null;
+  /** Unix seconds, only when the day is known. */
   timestamp?: number | null;
-  matchedName?: string;
-  fetchedAt?: number;
 }
 
-/** Full release dates for one view's games, cached in the backend. */
-export const epicReleaseCalendar = (queries: ReleaseCalendarQuery[], refresh = false) =>
-  invoke<ReleaseCalendarEntry[]>("epic_release_calendar", { queries, refresh });
+/** Upcoming PC releases from IGDB, cached in the backend for six hours. */
+export const epicUpcomingReleases = (refresh = false) =>
+  invoke<UpcomingRelease[]>("epic_upcoming_releases", { refresh });
 
 /**
  * Epic's own server-side playtime snapshot (`appName -> seconds`), including

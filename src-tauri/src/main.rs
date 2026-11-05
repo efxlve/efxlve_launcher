@@ -2006,7 +2006,7 @@ fn main() {
             app_set_decorations,
             app_set_minimize_to_tray,
             power::app_power_action,
-            release_calendar::epic_release_calendar,
+            release_calendar::epic_upcoming_releases,
             app_set_tray_labels,
             feedback::feedback_create_report,
             feedback::feedback_has_crash,

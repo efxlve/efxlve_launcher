@@ -315,14 +315,23 @@ async fn proxy_get(url: &str, endpoint: &str, body: &str) -> Result<serde_json::
 /// punctuation is folded to ASCII first: store catalogs write `Marvel’s` where
 /// IGDB has `Marvel's`, and the substring match is literal, so a curly apostrophe
 /// silently finds nothing.
+///
+/// Store titles also carry `®`, `™`, `©` and underscores (`WATCH_DOGS® 2`).
+/// IGDB's search treats those literally and returns an empty list, so they are
+/// dropped before the query is built.
 fn sanitize_query_text(text: &str) -> String {
     text.replace(['\u{2018}', '\u{2019}', '\u{02bc}'], "'")
         .replace(['\u{201c}', '\u{201d}', '\u{201e}'], " ")
         .replace(['\u{2013}', '\u{2014}'], "-")
         .replace('\u{00a0}', " ")
-        .replace(['"', '\\'], " ")
-        .trim()
-        .to_string()
+        .replace(
+            ['\u{00ae}', '\u{2122}', '\u{00a9}', '\u{2120}', '\u{2117}'],
+            "",
+        )
+        .replace(['"', '\\', '_'], " ")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 fn search_query(title: &str, limit: usize) -> String {
@@ -1341,6 +1350,222 @@ pub async fn igdb_covers(app: AppHandle, query: String, limit: Option<usize>) ->
     Ok(hits)
 }
 
+/// One PC release in the upcoming-release calendar.
+///
+/// A release is not one date: IGDB's `human` string may carry only a year, a
+/// quarter or a month. The calendar must not turn those into a made-up day, so
+/// the precision travels with the release and only a `day` has a real date.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct IgdbUpcomingRelease {
+    pub id: i64,
+    pub name: String,
+    pub cover_id: String,
+    pub url: String,
+    pub slug: String,
+    pub hypes: i64,
+    /// IGDB's own label: "Dec 10, 2026", "Dec 2026", "Q2 2027" or "2027".
+    pub human: String,
+    /// day | month | quarter | year | unknown
+    pub precision: String,
+    pub year: Option<i64>,
+    pub month: Option<u32>,
+    pub day: Option<u32>,
+    /// ISO date for `precision == "day"` only.
+    pub date: Option<String>,
+    /// Unix seconds for `precision == "day"` only.
+    pub timestamp: Option<i64>,
+}
+
+/// A calendar full of undated shovelware helps nobody. IGDB's hype count is the
+/// only forward-looking popularity signal before release, so the calendar asks
+/// for titles at least five people follow.
+const UPCOMING_MIN_HYPES: i64 = 5;
+const UPCOMING_PAGE: usize = 500;
+
+fn upcoming_query(from: i64, to: i64, offset: usize) -> String {
+    format!(
+        "fields name, hypes, cover.image_id, url, slug, release_dates.date, \
+         release_dates.human, release_dates.platform; \
+         where release_dates.platform = 6 & release_dates.date >= {from} \
+         & release_dates.date <= {to} & game_type = 0 & hypes >= {UPCOMING_MIN_HYPES}; \
+         limit {UPCOMING_PAGE}; offset {offset};"
+    )
+}
+
+fn month_number(value: &str) -> Option<u32> {
+    match value.get(..3)?.to_ascii_lowercase().as_str() {
+        "jan" => Some(1),
+        "feb" => Some(2),
+        "mar" => Some(3),
+        "apr" => Some(4),
+        "may" => Some(5),
+        "jun" => Some(6),
+        "jul" => Some(7),
+        "aug" => Some(8),
+        "sep" => Some(9),
+        "oct" => Some(10),
+        "nov" => Some(11),
+        "dec" => Some(12),
+        _ => None,
+    }
+}
+
+/// Reads IGDB's human date into a precision plus the fields it really knows.
+/// A "Q2 2027" entry has a year and a quarter, never a day.
+fn parse_release_human(human: &str) -> (String, Option<i64>, Option<u32>, Option<u32>) {
+    let parts: Vec<&str> = human.split_whitespace().collect();
+    let year_of = |text: &str| -> Option<i64> {
+        (text.len() == 4 && text.chars().all(|ch| ch.is_ascii_digit()))
+            .then(|| text.parse().ok())
+            .flatten()
+    };
+    match parts.as_slice() {
+        [year] => match year_of(year) {
+            Some(year) => ("year".to_string(), Some(year), None, None),
+            None => ("unknown".to_string(), None, None, None),
+        },
+        [quarter, year] if quarter.starts_with('Q') && quarter.len() == 2 => {
+            match (quarter[1..].parse::<u32>(), year_of(year)) {
+                (Ok(q), Some(year)) if (1..=4).contains(&q) => {
+                    ("quarter".to_string(), Some(year), None, None)
+                }
+                _ => ("unknown".to_string(), None, None, None),
+            }
+        }
+        [month, year] => match (month_number(month), year_of(year)) {
+            (Some(month), Some(year)) => ("month".to_string(), Some(year), Some(month), None),
+            _ => ("unknown".to_string(), None, None, None),
+        },
+        [month, day, year] => {
+            let day = day.trim_end_matches(',').parse::<u32>().ok();
+            match (month_number(month), day, year_of(year)) {
+                (Some(month), Some(day), Some(year)) if (1..=31).contains(&day) => (
+                    "day".to_string(),
+                    Some(year),
+                    Some(month),
+                    Some(day),
+                ),
+                _ => ("unknown".to_string(), None, None, None),
+            }
+        }
+        _ => ("unknown".to_string(), None, None, None),
+    }
+}
+
+/// The next PC release for one game. A game already released on PC is not
+/// upcoming even when it has a later re-release entry, so any past PC date
+/// disqualifies it.
+fn next_pc_release(value: &serde_json::Value, from: i64) -> Option<(i64, String)> {
+    let dates = value.get("release_dates")?.as_array()?;
+    let mut best: Option<(i64, String)> = None;
+    for release in dates {
+        if release.get("platform").and_then(serde_json::Value::as_i64) != Some(6) {
+            continue;
+        }
+        let Some(timestamp) = release.get("date").and_then(serde_json::Value::as_i64) else {
+            continue;
+        };
+        if timestamp <= 0 {
+            continue;
+        }
+        if timestamp < from {
+            // Already out on PC. A future re-release does not make the game new.
+            return None;
+        }
+        let human = release
+            .get("human")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("")
+            .to_string();
+        if best
+            .as_ref()
+            .map(|(earliest, _)| timestamp < *earliest)
+            .unwrap_or(true)
+        {
+            best = Some((timestamp, human));
+        }
+    }
+    best
+}
+
+fn map_upcoming(value: &serde_json::Value, from: i64) -> Option<IgdbUpcomingRelease> {
+    let id = value.get("id").and_then(serde_json::Value::as_i64)?;
+    let name = string_field(value, "name").trim().to_string();
+    if id <= 0 || name.is_empty() {
+        return None;
+    }
+    let (timestamp, human) = next_pc_release(value, from)?;
+    let (precision, year, month, day) = parse_release_human(&human);
+    // An empty human still has a release year on the row; use that rather than
+    // labelling the entry as completely unknown.
+    let (precision, year) = if precision == "unknown" && year.is_none() {
+        ("year".to_string(), Some(year_of(timestamp)))
+    } else {
+        (precision, year)
+    };
+    let exact = precision == "day";
+    Some(IgdbUpcomingRelease {
+        id,
+        name,
+        cover_id: value
+            .get("cover")
+            .map(|cover| string_field(cover, "image_id"))
+            .unwrap_or_default(),
+        url: string_field(value, "url"),
+        slug: string_field(value, "slug"),
+        hypes: value
+            .get("hypes")
+            .and_then(serde_json::Value::as_i64)
+            .unwrap_or(0),
+        human,
+        precision,
+        year,
+        month,
+        day,
+        date: exact.then(|| release_date(timestamp)),
+        timestamp: exact.then_some(timestamp),
+    })
+}
+
+/// Fetches upcoming PC releases between `from` and `to` (Unix seconds).
+/// Pages until IGDB returns a short page, so a busy window cannot hide titles.
+pub async fn igdb_upcoming_releases(
+    app: &AppHandle,
+    from: i64,
+    to: i64,
+) -> Result<Vec<IgdbUpcomingRelease>, String> {
+    let mut out: Vec<IgdbUpcomingRelease> = Vec::new();
+    let mut offset = 0usize;
+    loop {
+        let value = api_post(app, "games", &upcoming_query(from, to, offset)).await?;
+        let items = value.as_array().cloned().unwrap_or_default();
+        let count = items.len();
+        out.extend(items.iter().filter_map(|item| map_upcoming(item, from)));
+        if count < UPCOMING_PAGE || offset >= UPCOMING_PAGE * 3 {
+            break;
+        }
+        offset += UPCOMING_PAGE;
+    }
+    // The API order is not guaranteed; the calendar wants exact days first,
+    // then the part-known dates grouped by their year and month.
+    out.sort_by(|left, right| match (left.timestamp, right.timestamp) {
+        (Some(left_ts), Some(right_ts)) => left_ts
+            .cmp(&right_ts)
+            .then(left.name.to_lowercase().cmp(&right.name.to_lowercase())),
+        (Some(_), None) => std::cmp::Ordering::Less,
+        (None, Some(_)) => std::cmp::Ordering::Greater,
+        (None, None) => left
+            .year
+            .cmp(&right.year)
+            .then(left.month.cmp(&right.month))
+            .then(right.hypes.cmp(&left.hypes))
+            .then(left.name.to_lowercase().cmp(&right.name.to_lowercase())),
+    });
+    out.dedup_by_key(|release| release.id);
+    Ok(out)
+}
+
 /// The game page's entry point: an exact external id when the library knows
 /// one (Steam/GOG/Amazon), then the cached title lookup, then a title search
 /// with the year as a tiebreaker. `None` when nothing convincing matched.
@@ -1459,7 +1684,7 @@ mod tests {
 
     #[test]
     fn query_text_drops_quotes() {
-        assert_eq!(sanitize_query_text("  Halo \"Infinite\"  "), "Halo  Infinite");
+        assert_eq!(sanitize_query_text("  Halo \"Infinite\"  "), "Halo Infinite");
         assert!(search_query("Halo", 3).contains("search \"Halo\";"));
         assert!(game_query(42).contains("where id = 42;"));
     }
@@ -1474,6 +1699,23 @@ mod tests {
         assert_eq!(sanitize_query_text("Half\u{2013}Life"), "Half-Life");
         assert_eq!(sanitize_query_text("A\u{00a0}B"), "A B");
         assert_eq!(sanitize_query_text("\u{201c}Quoted\u{201d}"), "Quoted");
+    }
+
+    #[test]
+    fn query_text_drops_trademarks_and_store_separators() {
+        // These exact store titles used to send IGDB an empty answer.
+        assert_eq!(sanitize_query_text("Far Cry\u{00ae} 3"), "Far Cry 3");
+        assert_eq!(sanitize_query_text("WATCH_DOGS\u{00ae} 2"), "WATCH DOGS 2");
+        assert_eq!(
+            sanitize_query_text("GRIME\u{2122}: Definitive Edition"),
+            "GRIME: Definitive Edition"
+        );
+        assert_eq!(
+            sanitize_query_text("Assassin\u{2019}s Creed\u{00ae} Unity"),
+            "Assassin's Creed Unity"
+        );
+        assert_eq!(sanitize_query_text("A  B\u{00a9}"), "A B");
+        assert!(search_query("WATCH_DOGS\u{00ae} 2", 5).contains("search \"WATCH DOGS 2\";"));
     }
 
     #[test]
@@ -1527,7 +1769,7 @@ mod tests {
     #[test]
     fn name_like_query_asks_for_a_substring_and_drops_quotes() {
         let query = name_like_query("Dead \"by\" Daylight", 20);
-        assert!(query.contains("where name ~ *\"Dead  by  Daylight\"*;"));
+        assert!(query.contains("where name ~ *\"Dead by Daylight\"*;"));
         assert!(query.contains("limit 20;"));
         assert!(query.contains("rating_count"));
     }
@@ -1706,6 +1948,139 @@ mod tests {
         assert!(hit.release_date.starts_with("2007-"));
         assert!(hit.release_timestamp.is_some());
         assert_eq!(hit.year, Some(2007));
+    }
+
+    #[test]
+    fn release_precision_never_invents_a_day() {
+        assert_eq!(
+            parse_release_human("Dec 10, 2026"),
+            ("day".to_string(), Some(2026), Some(12), Some(10))
+        );
+        assert_eq!(
+            parse_release_human("Dec 31 2026"),
+            ("day".to_string(), Some(2026), Some(12), Some(31))
+        );
+        assert_eq!(
+            parse_release_human("Dec 2026"),
+            ("month".to_string(), Some(2026), Some(12), None)
+        );
+        assert_eq!(
+            parse_release_human("Q2 2027"),
+            ("quarter".to_string(), Some(2027), None, None)
+        );
+        assert_eq!(
+            parse_release_human("2027"),
+            ("year".to_string(), Some(2027), None, None)
+        );
+        assert_eq!(
+            parse_release_human("TBA"),
+            ("unknown".to_string(), None, None, None)
+        );
+        assert_eq!(
+            parse_release_human("Q9 2027"),
+            ("unknown".to_string(), None, None, None)
+        );
+    }
+
+    #[test]
+    fn an_upcoming_release_uses_its_pc_entry_and_keeps_partial_precision() {
+        let value = serde_json::json!({
+            "id": 19128,
+            "name": "Squadron 42",
+            "hypes": 61,
+            "url": "https://www.igdb.com/games/squadron-42",
+            "slug": "squadron-42",
+            "cover": { "image_id": "cod3pg" },
+            "release_dates": [
+                { "platform": 49, "date": 1_800_000_000_i64, "human": "2027" },
+                { "platform": 6, "date": 1_814_313_600_i64, "human": "Q2 2027" }
+            ]
+        });
+        let release = map_upcoming(&value, 1_793_884_219).expect("upcoming");
+        assert_eq!(release.precision, "quarter");
+        assert_eq!(release.year, Some(2027));
+        assert_eq!(release.date, None);
+        assert_eq!(release.timestamp, None);
+        assert_eq!(release.cover_id, "cod3pg");
+        assert_eq!(release.human, "Q2 2027");
+    }
+
+    #[test]
+    fn an_exact_day_release_carries_an_iso_date() {
+        let value = serde_json::json!({
+            "id": 7,
+            "name": "Witchbrook",
+            "hypes": 74,
+            "release_dates": [
+                { "platform": 6, "date": 1_801_094_400_i64, "human": "Jan 28, 2027" }
+            ]
+        });
+        let release = map_upcoming(&value, 1_793_884_219).expect("upcoming");
+        assert_eq!(release.precision, "day");
+        assert_eq!(release.date.as_deref(), Some("2027-01-28"));
+        assert_eq!(release.timestamp, Some(1_801_094_400));
+    }
+
+    #[test]
+    fn a_game_already_out_on_pc_is_not_upcoming() {
+        let value = serde_json::json!({
+            "id": 9,
+            "name": "Old Game",
+            "release_dates": [
+                { "platform": 6, "date": 1_500_000_000_i64, "human": "Jul 2017" },
+                { "platform": 6, "date": 1_800_000_000_i64, "human": "2027" }
+            ]
+        });
+        assert!(map_upcoming(&value, 1_793_884_219).is_none());
+    }
+
+    #[test]
+    fn the_upcoming_query_asks_for_followed_pc_main_games() {
+        let query = upcoming_query(1_793_884_219, 1_840_540_219, 500);
+        assert!(query.contains("release_dates.platform = 6"));
+        assert!(query.contains("game_type = 0"));
+        assert!(query.contains("hypes >= 5"));
+        assert!(query.contains("offset 500"));
+        assert!(query.contains("release_dates.human"));
+    }
+
+    #[test]
+    #[ignore = "talks to the shared IGDB proxy"]
+    fn live_upcoming_release_query() {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|duration| duration.as_secs() as i64)
+            .unwrap_or(0);
+        let query = upcoming_query(now, now + 400 * 86_400, 0);
+        let mut url = url::Url::parse("https://efxlve.com/api/igdb").expect("proxy url");
+        url.query_pairs_mut()
+            .append_pair("endpoint", "games")
+            .append_pair("q", &query);
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let value: serde_json::Value = runtime.block_on(async {
+            let response = reqwest::get(url).await.expect("proxy request");
+            assert!(response.status().is_success(), "proxy status");
+            response.json().await.expect("proxy json")
+        });
+        let items = value.as_array().expect("an array of games");
+        assert!(items.len() >= 20, "the live schedule should not be empty");
+        let mapped: Vec<IgdbUpcomingRelease> = items
+            .iter()
+            .filter_map(|item| map_upcoming(item, now))
+            .collect();
+        assert!(mapped.len() >= 10);
+        assert!(mapped.iter().any(|release| release.precision == "day"));
+        assert!(mapped
+            .iter()
+            .any(|release| release.precision == "quarter" || release.precision == "year"));
+        println!(
+            "live upcoming: {} mapped; first {:?}",
+            mapped.len(),
+            mapped.first()
+        );
     }
 
     #[test]

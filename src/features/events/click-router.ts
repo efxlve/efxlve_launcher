@@ -107,7 +107,6 @@ import {
   consumeCollectionDragClick,
   positionColDropdownMenu,
   libraryFilteredList,
-  epicVisibleSummaries,
   refreshLibraryForStoreFilter,
   refreshLibraryResultsInPlace,
   resetCardChunk,
@@ -580,7 +579,7 @@ document.addEventListener("click", (e) => {
   } else if (act === "source-filter" && t.dataset.val) {
     if (applyStoreFilter(t.dataset.val) && !refreshLibraryForStoreFilter()) render();
   } else if (act === "open-release-calendar") {
-    openReleaseCalendar(epicVisibleSummaries());
+    openReleaseCalendar();
   } else if (act === "release-calendar-close") {
     closeReleaseCalendar();
   } else if (act === "release-calendar-refresh") {

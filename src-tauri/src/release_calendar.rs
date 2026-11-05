@@ -1,55 +1,28 @@
-//! Release calendar: full dates for library games, batched and cached.
+//! Upcoming PC release calendar backed by IGDB.
 //!
-//! The library itself only carries a release year. This module asks IGDB for
-//! the exact date of one year's games, reuses the search cache inside `igdb`,
-//! and persists the answers in `<app_data>/release_calendar.json` so opening
-//! the calendar twice costs no requests. A hit is trusted for a week; a miss is
-//! retried after an hour, so an offline session does not pin an empty answer.
+//! One paged request covers the next 400 days and the answer is cached for six
+//! hours. IGDB's human date decides the precision: only a full date becomes a
+//! day in the calendar, a month stays in its month, and a quarter or a year goes
+//! to the "date not confirmed" list. No day is ever invented.
 
-use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
-use crate::igdb::{igdb_search, IgdbSearchHit};
+use crate::igdb::{igdb_upcoming_releases, IgdbUpcomingRelease};
 
-const HIT_TTL_SECS: u64 = 7 * 24 * 60 * 60;
-const MISS_TTL_SECS: u64 = 60 * 60;
-const MAX_QUERIES: usize = 80;
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ReleaseQuery {
-    pub app_name: String,
-    pub title: String,
-    #[serde(default)]
-    pub year: Option<i64>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ReleaseEntry {
-    pub app_name: String,
-    pub title: String,
-    /// ISO `YYYY-MM-DD`, or absent when IGDB has no full date.
-    #[serde(default)]
-    pub date: Option<String>,
-    #[serde(default)]
-    pub timestamp: Option<i64>,
-    /// IGDB's own title, so the UI can show when the match is an edition.
-    #[serde(default)]
-    pub matched_name: String,
-    /// Unix seconds, internal cache bookkeeping.
-    #[serde(default)]
-    pub fetched_at: u64,
-}
+const CACHE_TTL_SECS: u64 = 6 * 60 * 60;
+const WINDOW_DAYS: i64 = 400;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-struct CalendarCache {
+#[serde(rename_all = "camelCase")]
+struct UpcomingCache {
     #[serde(default)]
-    entries: HashMap<String, ReleaseEntry>,
+    fetched_at: u64,
+    #[serde(default)]
+    releases: Vec<IgdbUpcomingRelease>,
 }
 
 fn now_secs() -> u64 {
@@ -59,21 +32,27 @@ fn now_secs() -> u64 {
         .unwrap_or(0)
 }
 
+/// The schedule starts at midnight UTC, so a game releasing today is included
+/// even when the launcher opens after its storefront midnight.
+fn day_start(now: u64) -> i64 {
+    (now - now % 86_400) as i64
+}
+
 fn cache_path(app: &AppHandle) -> Option<PathBuf> {
     app.path()
         .app_data_dir()
         .ok()
-        .map(|dir| dir.join("release_calendar.json"))
+        .map(|dir| dir.join("upcoming_releases.json"))
 }
 
-fn read_cache(app: &AppHandle) -> CalendarCache {
+fn read_cache(app: &AppHandle) -> UpcomingCache {
     cache_path(app)
         .and_then(|path| std::fs::read_to_string(path).ok())
         .and_then(|text| serde_json::from_str(&text).ok())
         .unwrap_or_default()
 }
 
-fn write_cache(app: &AppHandle, cache: &CalendarCache) {
+fn write_cache(app: &AppHandle, cache: &UpcomingCache) {
     let Some(path) = cache_path(app) else {
         return;
     };
@@ -85,110 +64,106 @@ fn write_cache(app: &AppHandle, cache: &CalendarCache) {
     }
 }
 
-fn entry_is_fresh(entry: &ReleaseEntry, now: u64) -> bool {
-    let ttl = if entry.date.is_some() {
-        HIT_TTL_SECS
-    } else {
-        MISS_TTL_SECS
-    };
-    now.saturating_sub(entry.fetched_at) < ttl
+fn cache_is_fresh(cache: &UpcomingCache, now: u64) -> bool {
+    !cache.releases.is_empty() && now.saturating_sub(cache.fetched_at) < CACHE_TTL_SECS
 }
 
+/// Upcoming PC releases for the calendar. `refresh` bypasses the six-hour cache;
+/// a failed network request still serves the last good answer.
 #[tauri::command]
-pub async fn epic_release_calendar(
+pub async fn epic_upcoming_releases(
     app: AppHandle,
-    queries: Vec<ReleaseQuery>,
     refresh: Option<bool>,
-) -> Vec<ReleaseEntry> {
+) -> Result<Vec<IgdbUpcomingRelease>, String> {
     let refresh = refresh.unwrap_or(false);
     let now = now_secs();
     let mut cache = read_cache(&app);
-    let mut out = Vec::new();
-    let mut seen = HashSet::new();
-
-    for query in queries.into_iter().take(MAX_QUERIES) {
-        let app_name = query.app_name.trim().to_string();
-        if app_name.is_empty() || !seen.insert(app_name.clone()) {
-            continue;
-        }
-        if !refresh {
-            if let Some(entry) = cache.entries.get(&app_name) {
-                if entry_is_fresh(entry, now) {
-                    out.push(entry.clone());
-                    continue;
-                }
-            }
-        }
-
-        let matched = igdb_search(app.clone(), query.title.clone(), Some(5))
-            .await
-            .ok()
-            .and_then(|hits| {
-                IgdbSearchHit::best_match(&hits, &query.title, query.year).cloned()
-            });
-        let entry = ReleaseEntry {
-            app_name: app_name.clone(),
-            title: query.title,
-            date: matched
-                .as_ref()
-                .map(|hit| hit.release_date.trim().to_string())
-                .filter(|date| !date.is_empty()),
-            timestamp: matched.as_ref().and_then(|hit| hit.release_timestamp),
-            matched_name: matched.map(|hit| hit.name).unwrap_or_default(),
-            fetched_at: now,
-        };
-        cache.entries.insert(app_name, entry.clone());
-        out.push(entry);
+    if !refresh && cache_is_fresh(&cache, now) {
+        return Ok(cache.releases);
     }
 
-    write_cache(&app, &cache);
-    out
+    let from = day_start(now);
+    let to = from + WINDOW_DAYS * 86_400;
+    match igdb_upcoming_releases(&app, from, to).await {
+        Ok(releases) => {
+            if !releases.is_empty() {
+                cache.fetched_at = now;
+                cache.releases = releases.clone();
+                write_cache(&app, &cache);
+            }
+            Ok(releases)
+        }
+        Err(error) => {
+            // Offline must not empty a calendar that already had an answer.
+            if cache.releases.is_empty() {
+                Err(error)
+            } else {
+                Ok(cache.releases)
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    fn sample_release() -> IgdbUpcomingRelease {
+        IgdbUpcomingRelease {
+            id: 1,
+            name: "Example".into(),
+            cover_id: "abc".into(),
+            url: "https://www.igdb.com/games/example".into(),
+            slug: "example".into(),
+            hypes: 12,
+            human: "Jan 28, 2027".into(),
+            precision: "day".into(),
+            year: Some(2027),
+            month: Some(1),
+            day: Some(28),
+            date: Some("2027-01-28".into()),
+            timestamp: Some(1_800_000_000),
+        }
+    }
+
     #[test]
-    fn an_empty_cache_round_trips_through_json() {
-        let cache = CalendarCache::default();
+    fn a_fresh_cache_is_served_for_six_hours() {
+        let cache = UpcomingCache {
+            fetched_at: 1_000,
+            releases: vec![sample_release()],
+        };
+        assert!(cache_is_fresh(&cache, 1_000 + CACHE_TTL_SECS - 1));
+        assert!(!cache_is_fresh(&cache, 1_000 + CACHE_TTL_SECS));
+    }
+
+    #[test]
+    fn an_empty_cache_is_never_fresh() {
+        let cache = UpcomingCache {
+            fetched_at: 1_000,
+            releases: Vec::new(),
+        };
+        assert!(!cache_is_fresh(&cache, 1_001));
+    }
+
+    #[test]
+    fn the_window_starts_at_midnight_utc() {
+        assert_eq!(day_start(86_400 * 20_000 + 12_345), 86_400 * 20_000);
+        assert_eq!(day_start(86_400), 86_400);
+    }
+
+    #[test]
+    fn the_cache_round_trips_and_uses_camel_case() {
+        let cache = UpcomingCache {
+            fetched_at: 1_000,
+            releases: vec![sample_release()],
+        };
         let text = serde_json::to_string(&cache).unwrap();
-        let parsed: CalendarCache = serde_json::from_str(&text).unwrap();
-        assert!(parsed.entries.is_empty());
-    }
-
-    #[test]
-    fn a_hit_is_fresh_for_a_week_and_a_miss_for_an_hour() {
-        let hit = ReleaseEntry {
-            app_name: "steam::1".into(),
-            title: "Example".into(),
-            date: Some("2026-11-05".into()),
-            timestamp: Some(1_791_000_000),
-            matched_name: "Example".into(),
-            fetched_at: 1_000,
-        };
-        assert!(entry_is_fresh(&hit, 1_000 + HIT_TTL_SECS - 1));
-        assert!(!entry_is_fresh(&hit, 1_000 + HIT_TTL_SECS));
-        let miss = ReleaseEntry {
-            date: None,
-            ..hit
-        };
-        assert!(entry_is_fresh(&miss, 1_000 + MISS_TTL_SECS - 1));
-        assert!(!entry_is_fresh(&miss, 1_000 + MISS_TTL_SECS));
-    }
-
-    #[test]
-    fn the_entry_serializes_for_the_frontend() {
-        let entry = ReleaseEntry {
-            app_name: "gog::1".into(),
-            title: "Example".into(),
-            date: Some("2026-11-05".into()),
-            timestamp: Some(1_791_000_000),
-            matched_name: "Example".into(),
-            fetched_at: 1_000,
-        };
-        let value: serde_json::Value = serde_json::to_value(entry).unwrap();
-        assert_eq!(value.get("appName").and_then(|v| v.as_str()), Some("gog::1"));
-        assert_eq!(value.get("date").and_then(|v| v.as_str()), Some("2026-11-05"));
+        let parsed: UpcomingCache = serde_json::from_str(&text).unwrap();
+        assert_eq!(parsed.releases.len(), 1);
+        let value: serde_json::Value = serde_json::to_value(&parsed).unwrap();
+        assert_eq!(
+            value.pointer("/releases/0/coverId").and_then(|v| v.as_str()),
+            Some("abc")
+        );
     }
 }
