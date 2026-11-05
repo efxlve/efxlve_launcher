@@ -96,7 +96,14 @@ export function loadNotifications(): void {
             KNOWN_KINDS.has(n.kind) &&
             now - n.ts < RESTORE_TTL_MS,
         )
-        .map((n) => ({ ...n, read: true }))
+        .map((n) => ({
+          ...n,
+          // Launcher update rows written before the tab split carry kind
+          // `update` and no game key. Restoring them as they are would keep
+          // them in the Updates tab, which belongs to games.
+          kind: n.kind === "update" && !n.appName ? "app" : n.kind,
+          read: true,
+        }))
         .slice(0, MAX);
       if (!S.notifications.length) localStorage.removeItem(NOTIF_KEY);
     }
