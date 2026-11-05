@@ -1323,6 +1323,11 @@ document.addEventListener("click", (e) => {
     localStorage.setItem(SPEED_BITS_KEY, String(S.speedInBits));
     render();
   } else if (act === "settings-section" && t.dataset.section) {
+    // A palette or notification shortcut can reach a section from any page.
+    if (S.view !== "settings") {
+      closeAllModals();
+      setView("settings");
+    }
     S.settingsSection = t.dataset.section as typeof S.settingsSection;
     // Picking a section leaves the search: the section is what was asked for.
     resetSettingsSearch();
