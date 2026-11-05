@@ -1626,6 +1626,8 @@
   "calendar.searchResults": "Найдено релизов: {count}",
   "calendar.searchEmpty": "Нет релизов, соответствующих «{query}»",
   "calendar.searchHint": "Попробуйте более короткое название или очистите поиск.",
+  "calendar.monthEmpty": "В этом месяце нет будущих релизов с датой",
+  "calendar.monthEmptyHint": "Даты с точностью до месяца и неподтверждённые указаны ниже; выберите другой месяц.",
   "lib.updates": "Обновления",
   "lib.epicIntegration": "Интеграция Epic",
   "lib.desktopOnly": "Этот раздел работает только в приложении для компьютера.",

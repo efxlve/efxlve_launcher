@@ -1626,6 +1626,8 @@
   "calendar.searchResults": "تم العثور على {count} إصدار",
   "calendar.searchEmpty": "لا يوجد إصدار يطابق «{query}»",
   "calendar.searchHint": "جرّب عنوانًا أقصر أو امسح البحث.",
+  "calendar.monthEmpty": "لا توجد إصدارات قادمة بتاريخ محدد هذا الشهر",
+  "calendar.monthEmptyHint": "التواريخ الشهرية وغير المؤكدة مدرجة أدناه، أو اختر شهرًا آخر.",
   "lib.updates": "التحديثات",
   "lib.epicIntegration": "تكامل Epic",
   "lib.desktopOnly": "يعمل هذا القسم في تطبيق سطح المكتب فقط.",

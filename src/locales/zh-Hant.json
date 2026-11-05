@@ -1626,6 +1626,8 @@
   "calendar.searchResults": "找到 {count} 個發售",
   "calendar.searchEmpty": "沒有與「{query}」相符的發售",
   "calendar.searchHint": "試試更短的標題，或清除搜尋。",
+  "calendar.monthEmpty": "本月沒有已確定日期的即將發售",
+  "calendar.monthEmptyHint": "僅月份和未確認的日期列於下方，或選擇其他月份。",
   "lib.updates": "更新",
   "lib.epicIntegration": "Epic 整合",
   "lib.desktopOnly": "此部分僅在桌面應用程式中可用。",

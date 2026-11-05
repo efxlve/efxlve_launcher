@@ -1626,6 +1626,8 @@
   "calendar.searchResults": "พบการวางจำหน่าย {count} รายการ",
   "calendar.searchEmpty": "ไม่มีการวางจำหน่ายที่ตรงกับ “{query}”",
   "calendar.searchHint": "ลองใช้ชื่อที่สั้นลงหรือล้างการค้นหา",
+  "calendar.monthEmpty": "ไม่มีการวางจำหน่ายที่ระบุวันที่ในเดือนนี้",
+  "calendar.monthEmptyHint": "วันที่แบบระบุเดือนและที่ยังไม่ยืนยันแสดงอยู่ด้านล่าง หรือเลือกเดือนอื่น",
   "lib.updates": "อัปเดต",
   "lib.epicIntegration": "การเชื่อมต่อ Epic",
   "lib.desktopOnly": "ส่วนนี้ใช้ได้เฉพาะในแอปเดสก์ท็อป",

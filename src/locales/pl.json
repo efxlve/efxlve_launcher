@@ -1626,6 +1626,8 @@
   "calendar.searchResults": "Znaleziono premiery: {count}",
   "calendar.searchEmpty": "Brak premier pasujących do „{query}”",
   "calendar.searchHint": "Spróbuj krótszego tytułu lub wyczyść wyszukiwanie.",
+  "calendar.monthEmpty": "Brak nadchodzących premier z datą w tym miesiącu",
+  "calendar.monthEmptyHint": "Premiery z dokładnością do miesiąca i niepotwierdzone są poniżej; wybierz inny miesiąc.",
   "lib.updates": "Aktualizacje",
   "lib.epicIntegration": "Integracja Epic",
   "lib.desktopOnly": "Ta sekcja działa tylko w aplikacji na komputer.",

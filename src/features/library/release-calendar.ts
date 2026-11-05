@@ -251,21 +251,39 @@ function sameMonth(left: MonthSel | null, right: MonthSel | null): boolean {
   return Boolean(left && right && left.year === right.year && left.month === right.month);
 }
 
+function monthOrdinal(year: number, month: number): number {
+  return year * 12 + (month - 1);
+}
+
+function monthAt(ordinal: number): MonthSel {
+  return { year: Math.floor(ordinal / 12), month: (ordinal % 12) + 1 };
+}
+
+/**
+ * A continuous strip from the current month through the last dated release.
+ * Empty months stay visible with a zero badge: a hidden month between May and
+ * November looked like a broken jump, when it only meant no dated release.
+ */
 function availableMonths(): MonthInfo[] {
-  const map = new Map<string, MonthInfo>();
+  const now = new Date();
+  const first = monthOrdinal(now.getFullYear(), now.getMonth() + 1);
+  const counts = new Map<string, number>();
+  let last = first;
   for (const release of releases) {
     if (!hasExactDay(release) && !hasMonthOnly(release)) continue;
     const year = releaseYear(release);
     const month = releaseMonth(release);
     if (year <= 0 || month <= 0) continue;
     const key = `${year}-${month}`;
-    const entry = map.get(key) ?? { year, month, count: 0 };
-    entry.count += 1;
-    map.set(key, entry);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+    last = Math.max(last, monthOrdinal(year, month));
   }
-  return [...map.values()].sort(
-    (left, right) => left.year - right.year || left.month - right.month,
-  );
+  const months: MonthInfo[] = [];
+  for (let index = first; index <= last; index += 1) {
+    const month = monthAt(index);
+    months.push({ ...month, count: counts.get(`${month.year}-${month.month}`) ?? 0 });
+  }
+  return months;
 }
 
 function pickDefaultMonth(months: MonthInfo[]): MonthSel | null {
@@ -481,6 +499,14 @@ function renderScheduleCard(release: UpcomingRelease): string {
   </div>`;
 }
 
+function renderMonthEmpty(): string {
+  return `<div class="calendar-month-empty">
+    ${icon("calendar", 22)}
+    <div class="calendar-month-empty-title">${esc(t("calendar.monthEmpty"))}</div>
+    <div class="calendar-month-empty-hint">${esc(t("calendar.monthEmptyHint"))}</div>
+  </div>`;
+}
+
 function renderSchedule(month: MonthSel, exact: UpcomingRelease[]): string {
   const buckets = new Map<number, UpcomingRelease[]>();
   for (const release of exact) {
@@ -489,6 +515,14 @@ function renderSchedule(month: MonthSel, exact: UpcomingRelease[]): string {
     const list = buckets.get(day) ?? [];
     list.push(release);
     buckets.set(day, list);
+  }
+  // The most anticipated release of a day leads its row, matching the cover
+  // the mini grid already picked for that day.
+  for (const games of buckets.values()) {
+    games.sort(
+      (left, right) =>
+        (right.hypes ?? 0) - (left.hypes ?? 0) || left.name.localeCompare(right.name),
+    );
   }
   const allDays = [...buckets.entries()].sort((left, right) => left[0] - right[0]);
   const hasFilter = selectedDay !== null && buckets.has(selectedDay);
@@ -543,6 +577,7 @@ function renderSchedule(month: MonthSel, exact: UpcomingRelease[]): string {
 
   return `<div class="calendar-schedule">
     ${filterBar}
+    ${groups ? "" : renderMonthEmpty()}
     ${groups}
     ${hasFilter ? "" : renderTba(month)}
     ${hasFilter ? "" : renderPending(month.year)}
@@ -602,10 +637,10 @@ function renderToolbar(months: MonthInfo[], active: MonthSel): string {
     <div class="calendar-monthbar" role="tablist" aria-label="${esc(t("calendar.title"))}">${months
       .map((month) => {
         const isActive = sameMonth(month, active) && !watching;
-        return `<button type="button" class="calendar-month-tab${isActive ? " is-active" : ""}" role="tab" aria-selected="${isActive}" data-act="release-calendar-month" data-year="${month.year}" data-month="${month.month}">
+        return `<button type="button" class="calendar-month-tab${isActive ? " is-active" : ""}${month.count === 0 ? " is-empty" : ""}" role="tab" aria-selected="${isActive}" data-act="release-calendar-month" data-year="${month.year}" data-month="${month.month}">
           <span class="calendar-month-tab-main">${esc(monthLabel(month.year, month.month - 1))}</span>
           <span class="calendar-month-tab-year">${month.year}</span>
-          <span class="calendar-month-tab-count">${month.count}</span>
+          <span class="calendar-month-tab-count tabular-nums">${month.count}</span>
         </button>`;
       })
       .join("")}</div>

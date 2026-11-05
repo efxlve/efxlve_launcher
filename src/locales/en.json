@@ -1726,6 +1726,8 @@
   "calendar.searchResults": "{count} releases found",
   "calendar.searchEmpty": "No release matches “{query}”",
   "calendar.searchHint": "Try a shorter title or clear the search.",
+  "calendar.monthEmpty": "No upcoming dated releases this month",
+  "calendar.monthEmptyHint": "Month-only and unconfirmed dates are listed below, or pick another month.",
   "lib.updates": "Updates",
   "lib.epicIntegration": "Epic integration",
   "lib.desktopOnly": "This section only works in the desktop app.",

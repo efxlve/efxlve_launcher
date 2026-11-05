@@ -1626,6 +1626,8 @@
   "calendar.searchResults": "{count} 件の発売",
   "calendar.searchEmpty": "「{query}」に一致する発売はありません",
   "calendar.searchHint": "短いタイトルで試すか、検索をクリアしてください。",
+  "calendar.monthEmpty": "この月に日付確定の今後の発売はありません",
+  "calendar.monthEmptyHint": "月のみ・未確定の日付は下に表示されます。別の月も選べます。",
   "lib.updates": "アップデート",
   "lib.epicIntegration": "Epic 連携",
   "lib.desktopOnly": "このセクションはデスクトップアプリでのみ動作します。",

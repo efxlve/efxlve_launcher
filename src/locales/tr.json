@@ -1726,6 +1726,8 @@
   "calendar.searchResults": "{count} çıkış bulundu",
   "calendar.searchEmpty": "“{query}” ile eşleşen çıkış yok",
   "calendar.searchHint": "Daha kısa bir başlık deneyin veya aramayı temizleyin.",
+  "calendar.monthEmpty": "Bu ayın kalanında tarihi kesinleşmiş çıkış yok",
+  "calendar.monthEmptyHint": "Ay bazlı ve kesinleşmemiş tarihler aşağıda listelenir; başka bir ay seçebilirsin.",
   "lib.updates": "Güncellemeler",
   "lib.epicIntegration": "Epic entegrasyonu",
   "lib.desktopOnly": "Bu bölüm yalnızca masaüstü uygulamasında çalışır.",

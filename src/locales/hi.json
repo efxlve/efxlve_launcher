@@ -1726,6 +1726,8 @@
   "calendar.searchResults": "{count} रिलीज़ मिलीं",
   "calendar.searchEmpty": "“{query}” से मेल खाती कोई रिलीज़ नहीं",
   "calendar.searchHint": "छोटा शीर्षक आज़माएँ या खोज साफ़ करें।",
+  "calendar.monthEmpty": "इस महीने कोई आगामी तारीख-पुष्ट रिलीज़ नहीं",
+  "calendar.monthEmptyHint": "केवल महीने वाली और अपुष्ट तारीखें नीचे दी गई हैं, या दूसरा महीना चुनें।",
   "lib.updates": "अपडेट",
   "lib.epicIntegration": "Epic एकीकरण",
   "lib.desktopOnly": "यह अनुभाग केवल डेस्कटॉप ऐप में काम करता है।",

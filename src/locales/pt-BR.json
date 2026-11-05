@@ -1626,6 +1626,8 @@
   "calendar.searchResults": "{count} lançamentos encontrados",
   "calendar.searchEmpty": "Nenhum lançamento corresponde a “{query}”",
   "calendar.searchHint": "Tente um título mais curto ou limpe a busca.",
+  "calendar.monthEmpty": "Nenhum lançamento futuro com data neste mês",
+  "calendar.monthEmptyHint": "Datas por mês e não confirmadas aparecem abaixo, ou escolha outro mês.",
   "lib.updates": "Atualizações",
   "lib.epicIntegration": "Integração Epic",
   "lib.desktopOnly": "Esta seção só funciona no app de desktop.",
