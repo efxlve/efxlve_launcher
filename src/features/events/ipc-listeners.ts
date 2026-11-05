@@ -45,6 +45,7 @@ import { getVersion } from "@tauri-apps/api/app";
 import { eglLauncherPresent } from "../../egl-removal";
 import { gogPauseDownload, gogResumeDownload } from "../../gog";
 import { loadNotifications, pushNotification } from "../notifications/notifications";
+import { remindFollowedReleases } from "../library/release-calendar";
 import { initAutoUpdate } from "../downloads/auto-update";
 import { noteDownloadActivity, noteDownloadFinished, noteDownloadInterrupted } from "../downloads/finish-action";
 import { installArtFallback } from "../library/art-fallback";
@@ -285,6 +286,7 @@ export async function initApp(hooks: {
   // The selected language may lazy-load a small local chunk (non-bundled locales).
   // tr/en are bundled, so this resolves without a real await for most users.
   await setLanguage(S.appLanguage);
+  remindFollowedReleases();
   refreshSidebarToggle();
 
   // FIRST PAINT: paint the shell (skeleton) before any slow IPC so the window is

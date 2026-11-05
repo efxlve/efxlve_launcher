@@ -13,6 +13,7 @@ import { esc } from "../../core/utils";
 import { igdbImage } from "../../igdb";
 import { t } from "../../i18n";
 import { epicUpcomingReleases, type UpcomingRelease } from "../../epic";
+import { pushNotification } from "../notifications/notifications";
 
 interface MonthSel {
   year: number;
@@ -26,6 +27,12 @@ interface MonthInfo extends MonthSel {
 
 /** Followed releases are a local display choice; IGDB is never involved. */
 const FOLLOW_KEY = "efxlve-release-follows";
+/** The latest follow metadata, so a reminder does not need a network call. */
+const FOLLOW_CACHE_KEY = "efxlve-release-follow-cache";
+const REMINDER_KEY = "efxlve-release-reminders";
+const REMINDER_WINDOW_DAYS = 7;
+const REMINDER_KEEP_DAYS = 30;
+const MAX_REMINDERS_PER_DAY = 3;
 
 let layer: HTMLElement | null = null;
 let releases: UpcomingRelease[] = [];
@@ -114,6 +121,108 @@ function followedReleases(): UpcomingRelease[] {
       (left, right) =>
         releaseSortKey(left) - releaseSortKey(right) || left.name.localeCompare(right.name),
     );
+}
+
+function localDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+/** Keep a compact local copy so reminders work before IGDB is queried. */
+function rememberFollowedReleases(): void {
+  try {
+    const list = followedReleases();
+    if (list.length === 0) localStorage.removeItem(FOLLOW_CACHE_KEY);
+    else localStorage.setItem(FOLLOW_CACHE_KEY, JSON.stringify(list));
+  } catch {
+    // A full quota must not break the calendar.
+  }
+}
+
+/**
+ * One reminder per followed release per day, for releases within a week.
+ * Called at startup; the cache is written whenever the calendar loads or a
+ * star changes, so this needs no network and no IGDB call.
+ */
+export function remindFollowedReleases(): void {
+  let cache: UpcomingRelease[] = [];
+  try {
+    const raw = localStorage.getItem(FOLLOW_CACHE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+    if (Array.isArray(parsed)) cache = parsed as UpcomingRelease[];
+  } catch {
+    return;
+  }
+  const upcoming = cache
+    .filter(
+      (release) =>
+        release &&
+        typeof release.id === "number" &&
+        typeof release.name === "string" &&
+        followed.has(release.id) &&
+        hasExactDay(release),
+    )
+    .sort(
+      (left, right) =>
+        releaseSortKey(left) - releaseSortKey(right) || left.name.localeCompare(right.name),
+    );
+  if (upcoming.length === 0) return;
+
+  const now = new Date();
+  const todayKey = localDateKey(now);
+  const todayStart = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  let reminders: Record<string, string> = {};
+  try {
+    const raw = localStorage.getItem(REMINDER_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      reminders = parsed as Record<string, string>;
+    }
+  } catch {
+    reminders = {};
+  }
+
+  let changed = false;
+  let sent = 0;
+  const sentToday = Object.values(reminders).filter((day) => day === todayKey).length;
+  for (const release of upcoming) {
+    if (sentToday + sent >= MAX_REMINDERS_PER_DAY) break;
+    const target = Date.UTC(
+      releaseYear(release),
+      releaseMonth(release) - 1,
+      releaseDay(release),
+    );
+    const days = Math.round((target - todayStart) / 86_400_000);
+    if (days < 0 || days > REMINDER_WINDOW_DAYS) continue;
+    const key = String(release.id);
+    if (reminders[key] === todayKey) continue;
+    reminders[key] = todayKey;
+    changed = true;
+    sent += 1;
+    pushNotification({
+      kind: "info",
+      title: release.name,
+      body: `${releaseDateLabel(release)} · ${countdownLabel(release)}`,
+      context: t("calendar.watchlist"),
+      action: "open-release-calendar",
+      actionLabel: t("calendar.title"),
+    });
+  }
+
+  const cutoff = localDateKey(new Date(now.getTime() - REMINDER_KEEP_DAYS * 86_400_000));
+  for (const [key, day] of Object.entries(reminders)) {
+    if (day < cutoff) {
+      delete reminders[key];
+      changed = true;
+    }
+  }
+  if (!changed) return;
+  try {
+    localStorage.setItem(REMINDER_KEY, JSON.stringify(reminders));
+  } catch {
+    // Reminder history is disposable.
+  }
 }
 
 function searchReleases(): UpcomingRelease[] {
@@ -715,6 +824,7 @@ async function load(refresh: boolean): Promise<void> {
       selected = pickDefaultMonth(availableMonths());
       selectedDay = null;
     }
+    rememberFollowedReleases();
   } catch {
     if (seq !== loadSeq || !layer) return;
     releases = [];
@@ -835,6 +945,7 @@ export function toggleReleaseFollow(id: number): void {
   if (followed.has(id)) followed.delete(id);
   else followed.add(id);
   saveFollowed();
+  rememberFollowedReleases();
   if (watching && followedReleases().length === 0) watching = false;
   renderCalendar();
   if (focusId) {
