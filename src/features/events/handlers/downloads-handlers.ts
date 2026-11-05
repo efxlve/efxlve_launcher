@@ -33,12 +33,15 @@ import {
 import { openMoveGameModal } from "../../move-game/move-game-actions";
 import {
   clearStorageSearch,
+  clearStorageSelection,
   closeStorageManager,
+  moveStorageSelection,
   openStorageManager,
   setStorageDrive,
   setStorageSortMode,
   setStorageStoreFilter,
   toggleStorageMenu,
+  toggleStorageSelection,
 } from "../../storage/storage-view";
 import { toggleIgnoreUpdate } from "../../downloads/downloads-view";
 import {
@@ -562,6 +565,18 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
         closeStorageManager();
         void openMoveGameModal(id);
       }
+      return true;
+
+    case "storage-select-game":
+      if (id) toggleStorageSelection(id);
+      return true;
+
+    case "storage-clear-selection":
+      clearStorageSelection();
+      return true;
+
+    case "storage-move-selected":
+      moveStorageSelection();
       return true;
 
     case "storage-open-folder": {

@@ -38,9 +38,11 @@ export function updateMoveSpaceBadgeInPlace(): void {
   const s = summaryOf(S.activeMoveModalAppName);
   if (!s) return;
 
-  const curPath = s.installPath || "";
+  const batch = S.moveBatchApps.length > 0 ? S.moveBatchApps : [S.activeMoveModalAppName];
+  const isBatch = batch.length > 1;
+  const installSize = batch.reduce((sum, id) => sum + (summaryOf(id)?.installSize || 0), 0);
+  const curPath = isBatch ? "" : s.installPath || "";
   const curDrive = curPath.length >= 2 && curPath[1] === ":" ? curPath[0].toUpperCase() : "";
-  const installSize = s.installSize || 0;
   const targetDrive = S.moveSystemDrives.find(
     (d) => d.letter.toUpperCase() === S.selectedMoveDriveLetter.toUpperCase()
   );
@@ -56,6 +58,7 @@ export function updateMoveSpaceBadgeInPlace(): void {
     badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span>${t("move.invalidPath")}</span></div>`;
     canStart = false;
   } else if (
+    !isBatch &&
     S.selectedMoveTargetPath.trim().toLowerCase().replace(/[\\/]+$/, "") ===
     curPath.trim().toLowerCase().replace(/[\\/]+$/, "")
   ) {
@@ -81,7 +84,11 @@ export function updateMoveSpaceBadgeInPlace(): void {
     const gameFolderName =
       curPath.replace(/^[\\/]+|[\\/]+$/g, "").split(/[\\/]/).pop() || S.activeMoveModalAppName;
     const cleanBase = S.selectedMoveTargetPath.trim().replace(/[\\/]+$/, "");
-    const finalDestPath = cleanBase ? `${cleanBase}\\${gameFolderName}` : "—";
+    const finalDestPath = isBatch
+      ? cleanBase
+      : cleanBase
+        ? `${cleanBase}\\${gameFolderName}`
+        : "—";
     const pathHtml = `<strong title="${esc(finalDestPath)}">${esc(finalDestPath)}</strong>`;
     previewEl.innerHTML = `${icon("info", 13)} <span>${t("move.targetPreview", { path: pathHtml })}</span>`;
   }
@@ -135,10 +142,14 @@ export function renderMoveGameModalFrame(): void {
   const s = summaryOf(S.activeMoveModalAppName);
   if (!s) return;
 
+  const batch = S.moveBatchApps.length > 0 ? S.moveBatchApps : [s.appName];
+  const isBatch = batch.length > 1;
   const title = s.title;
-  const curPath = s.installPath || t("move.unknown");
-  const curDrive = curPath.length >= 2 && curPath[1] === ":" ? curPath[0].toUpperCase() : "";
-  const installSize = s.installSize || 0;
+  const curPath = isBatch
+    ? t("move.batchCurrent", { count: String(batch.length) })
+    : s.installPath || t("move.unknown");
+  const curDrive = isBatch ? "" : curPath.length >= 2 && curPath[1] === ":" ? curPath[0].toUpperCase() : "";
+  const installSize = batch.reduce((sum, id) => sum + (summaryOf(id)?.installSize || 0), 0);
 
   const driveCardsHtml =
     S.moveSystemDrives.length > 0
@@ -185,6 +196,7 @@ export function renderMoveGameModalFrame(): void {
     badgeHtml = `<div class="move-space-badge warn">${icon("info", 15)} <span>${t("move.invalidPath")}</span></div>`;
     canStart = false;
   } else if (
+    !isBatch &&
     S.selectedMoveTargetPath.trim().toLowerCase().replace(/[\\/]+$/, "") ===
     curPath.trim().toLowerCase().replace(/[\\/]+$/, "")
   ) {
@@ -250,7 +262,7 @@ export function renderMoveGameModalFrame(): void {
             <div class="move-modal-icon">${icon("hard-drive", 20)}</div>
             <div>
               <h2 class="move-modal-title">${t("move.title")}</h2>
-              <div class="move-modal-subtitle">${esc(title)}</div>
+              <div class="move-modal-subtitle">${esc(title)}${isBatch ? ` · ${esc(t("move.batchSubtitle", { count: String(batch.length) }))}` : ""}</div>
             </div>
           </div>
           <button class="move-modal-close" data-act="close-move-modal" title="${t("common.close")}" ${S.isMovingGame ? "disabled" : ""}>
@@ -347,7 +359,7 @@ export function renderMoveGameModalFrame(): void {
               data-id="${s.appName}"
               ${!canStart ? "disabled" : ""}
             >
-              ${icon("hard-drive", 14)} ${t("move.start")}
+              ${icon("hard-drive", 14)} ${isBatch ? esc(t("move.startBatch", { count: String(batch.length) })) : esc(t("move.start"))}
             </button>
           `
           }

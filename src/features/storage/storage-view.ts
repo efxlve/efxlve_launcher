@@ -20,6 +20,7 @@ import { t } from "../../i18n";
 import { epicGetSystemDrives, getThirdPartyLauncher, requiresThirdPartyLauncher, type SystemDriveInfo } from "../../epic";
 import { coverOf, steamArtAttrs, storeName } from "../profile/profile-view";
 import { storeLogo } from "../store/store-logos";
+import { openMoveGamesModal } from "../move-game/move-game-actions";
 
 export interface StorageGame {
   key: string;
@@ -33,6 +34,9 @@ export interface StorageGame {
 
 /** Bumped when the modal closes so a running measurement loop stops. */
 let measureToken = 0;
+
+/** Games ticked for a batch move; cleared when the manager closes. */
+const selectedGames = new Set<string>();
 
 interface StorageState {
   activeDrive: string;
@@ -53,6 +57,7 @@ const S_STORAGE: StorageState = {
 
 export function closeStorageManager(): void {
   measureToken++;
+  selectedGames.clear();
   if (storageRoot) storageRoot.innerHTML = "";
 }
 
@@ -154,6 +159,23 @@ function moveButton(g: StorageGame): string {
   return `<button type="button" class="icon-btn" data-act="storage-move-game" data-id="${esc(g.key)}" title="${t("manage.move")}">${icon("hard-drive", 15)}</button>`;
 }
 
+/** True when this row can join a batch move. */
+function movableGame(g: StorageGame): boolean {
+  if (!IS_WINDOWS) return false;
+  if (g.source !== "epic" && g.source !== "amazon") return false;
+  if (g.source === "epic") {
+    const partner = getThirdPartyLauncher(rawOf(g.key));
+    if (requiresThirdPartyLauncher(partner)) return false;
+  }
+  return true;
+}
+
+function selectBox(g: StorageGame): string {
+  if (!movableGame(g)) return `<span class="storage-select-spacer" aria-hidden="true"></span>`;
+  const selected = selectedGames.has(g.key);
+  return `<button type="button" class="storage-select-box${selected ? " is-on" : ""}" data-act="storage-select-game" data-id="${esc(g.key)}" role="checkbox" aria-checked="${selected}" title="${esc(t("storage.selectGame"))}">${selected ? icon("check", 12) : ""}</button>`;
+}
+
 function folderButton(g: StorageGame): string {
   if (!g.path) {
     return `<button type="button" class="icon-btn disabled-hint" disabled title="${esc(t("common.installPathUnknown"))}">${icon("folder", 15)}</button>`;
@@ -171,8 +193,10 @@ function gameRow(g: StorageGame): string {
   const size = shownSize(g);
   const store = `<span class="storage-game-store">${storeLogo(g.source, 13, "storage-store-logo")}<span>${esc(storeName(g.source))}</span></span>`;
   const cleanPath = g.path ? g.path.replace(/\//g, "\\") : "";
+  const selected = selectedGames.has(g.key);
   return `
-    <div class="storage-game-row">
+    <div class="storage-game-row${selected ? " is-selected" : ""}" data-storage-row="${esc(g.key)}">
+      ${selectBox(g)}
       <div class="storage-game-cover-wrap">
         ${g.cover ? `<img class="storage-game-thumb"${steamArtAttrs(g.key)} src="${esc(g.cover)}" alt="" loading="lazy" />` : `<div class="storage-game-thumb storage-thumb-fallback">${icon("gamepad-2", 18)}</div>`}
       </div>
@@ -191,6 +215,62 @@ function gameRow(g: StorageGame): string {
         <div class="storage-action-slot">${uninstallButton(g)}</div>
       </div>
     </div>`;
+}
+
+/** Ticks or unticks one row for a batch move and repaints only that row. */
+export function toggleStorageSelection(id: string): void {
+  if (!id) return;
+  if (selectedGames.has(id)) selectedGames.delete(id);
+  else selectedGames.add(id);
+  paintStorageSelection();
+}
+
+/** Drops the batch selection without closing the manager. */
+export function clearStorageSelection(): void {
+  if (selectedGames.size === 0) return;
+  selectedGames.clear();
+  paintStorageSelection();
+}
+
+/** Opens the move modal once for every ticked row. */
+export function moveStorageSelection(): void {
+  if (selectedGames.size === 0) return;
+  const installed = collectInstalled();
+  const movable = [...selectedGames].filter((key) => {
+    const game = installed.find((entry) => entry.key === key);
+    return Boolean(game && movableGame(game));
+  });
+  if (movable.length === 0) return;
+  selectedGames.clear();
+  closeStorageManager();
+  void openMoveGamesModal(movable);
+}
+
+function paintStorageSelection(): void {
+  const bar = document.getElementById("storage-selection-bar");
+  if (bar) {
+    const count = selectedGames.size;
+    bar.innerHTML = count === 0
+      ? ""
+      : `<div class="storage-selection-bar">
+          <span class="storage-selection-count">${esc(t("storage.selectedCount", { count }))}</span>
+          <div class="storage-selection-actions">
+            <button type="button" class="btn ghost small" data-act="storage-clear-selection">${esc(t("common.clear"))}</button>
+            <button type="button" class="btn primary small" data-act="storage-move-selected">${icon("hard-drive", 13)} ${esc(t("storage.moveSelected"))}</button>
+          </div>
+        </div>`;
+  }
+  document.querySelectorAll<HTMLElement>("[data-storage-row]").forEach((row) => {
+    const key = row.dataset.storageRow;
+    if (!key) return;
+    const selected = selectedGames.has(key);
+    row.classList.toggle("is-selected", selected);
+    const box = row.querySelector<HTMLElement>(".storage-select-box");
+    if (!box) return;
+    box.classList.toggle("is-on", selected);
+    box.setAttribute("aria-checked", String(selected));
+    box.innerHTML = selected ? icon("check", 12) : "";
+  });
 }
 
 function renderStorageGamesList(): void {
@@ -402,12 +482,14 @@ export function renderStorageManager(): void {
             </div>
           </div>
 
+          <div id="storage-selection-bar"></div>
           <div id="storage-games-container" class="storage-games-container"></div>
         </div>
       </div>
     </div>`;
 
   renderStorageGamesList();
+  paintStorageSelection();
 
   if (storageRoot && !storageRoot.dataset.boundStorage) {
     storageRoot.dataset.boundStorage = "1";

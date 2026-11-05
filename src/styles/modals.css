@@ -748,6 +748,55 @@
 .storage-game-row:hover {
   background: var(--surface-2);
 }
+.storage-game-row.is-selected {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+.storage-select-box,
+.storage-select-spacer {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.storage-select-box {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--on-accent);
+  cursor: pointer;
+  transition: background-color var(--ease), border-color var(--ease);
+}
+.storage-select-box:hover {
+  border-color: var(--accent);
+}
+.storage-select-box.is-on {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.storage-selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 12px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface-1));
+}
+.storage-selection-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.storage-selection-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .storage-game-cover-wrap {
   flex-shrink: 0;
   width: 38px;

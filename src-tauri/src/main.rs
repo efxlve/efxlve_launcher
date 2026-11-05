@@ -1852,6 +1852,11 @@ fn main() {
             // A marker left behind by a killed/restarted launcher becomes real
             // playtime before anything else reads the store.
             legendary::playtime_session::recover_stale();
+            // A staged cross-drive move finishes its record or drops its
+            // partial copy before the storage manager can show a stale path.
+            legendary::move_game::recover_interrupted_moves(
+                &legendary::skip::default_config_dir(),
+            );
             // The hotkey listener must already know the configured folder.
             let screenshot_settings = load_settings(app.handle());
             legendary::screenshots::set_screenshot_root(screenshot_settings.screenshot_dir);

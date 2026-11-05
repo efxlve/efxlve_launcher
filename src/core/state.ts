@@ -512,6 +512,9 @@ export const S = {
   libraryPath: "—",
   ctxMenuEl: (null) as HTMLElement | null,
   activeMoveModalAppName: (null) as string | null,
+  /** Games in one move run; the first entry is also the modal's subject. */
+  moveBatchApps: ([]) as string[],
+  moveBatchIndex: 0,
   moveSystemDrives: ([]) as SystemDriveInfo[],
   selectedMoveDriveLetter: ("") as string,
   selectedMoveTargetPath: ("") as string,

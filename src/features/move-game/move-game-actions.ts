@@ -24,7 +24,7 @@ import { nileGameSettings, nileMoveGame } from "../../nile";
 import { loadAmazonSession } from "../auth/amazon-auth-actions";
 import { updateManageModalInputsInPlace } from "../manage/manage-view";
 import { renderMoveGameModalFrame } from "./move-game-view";
-import { summaryOf } from "../../core/selectors";
+import { sourceOfKey, summaryOf } from "../../core/selectors";
 export function applyMovedGamePath(appName: string, newPath: string): void {
   if (!appName || !newPath) return;
 
@@ -58,12 +58,36 @@ export function closeMoveGameModal(): void {
   }
   S.activeMoveModalAppName = null;
   S.activeMoveProgress = null;
+  S.moveBatchApps = [];
+  S.moveBatchIndex = 0;
   const root = moveModalRoot || document.getElementById("move-modal-root");
   if (root) root.innerHTML = "";
 }
 
 
 export async function openMoveGameModal(appName: string): Promise<void> {
+  S.moveBatchApps = [appName];
+  S.moveBatchIndex = 0;
+  await prepareMoveModal(appName);
+}
+
+/** Opens the same modal for a multi-game move; the target is chosen once. */
+export async function openMoveGamesModal(appNames: string[]): Promise<void> {
+  const unique = [...new Set(appNames)].filter((id) => {
+    const sum = summaryOf(id);
+    const source = sourceOfKey(id);
+    return Boolean(sum?.installed) && (source === "epic" || source === "amazon");
+  });
+  if (unique.length === 0) {
+    toast(t("move.noSelection"), "");
+    return;
+  }
+  S.moveBatchApps = unique;
+  S.moveBatchIndex = 0;
+  await prepareMoveModal(unique[0]);
+}
+
+async function prepareMoveModal(appName: string): Promise<void> {
   if (S.isMovingGame) {
     toast(t("move.busy"), "");
     return;
@@ -131,86 +155,137 @@ export async function browseMoveTarget(): Promise<void> {
   }
 }
 
-export async function startMoveGame(appName: string): Promise<void> {
-  if (S.isMovingGame) return;
-  const s = summaryOf(appName);
-  if (!s) return;
+interface MoveOutcome {
+  ok: boolean;
+  message: string;
+  newPath: string;
+}
 
+async function moveOneGame(appName: string, target: string): Promise<MoveOutcome> {
+  const s = summaryOf(appName);
+  if (!s) return { ok: false, message: t("move.notInstalled"), newPath: "" };
   if (S.runningGames.has(appName)) {
-    toast(t("move.gameRunning"), "err");
-    return;
+    return { ok: false, message: t("move.gameRunning"), newPath: "" };
   }
   if (epicDlProgress(appName) !== null) {
-    toast(t("move.gameDownloading"), "err");
-    return;
+    return { ok: false, message: t("move.gameDownloading"), newPath: "" };
   }
 
+  const isAmazon = appName.startsWith("amazon::");
+  try {
+    const res = isAmazon
+      ? await nileMoveGame(appName, target)
+      : await epicMoveGame(appName, target);
+    if (!res.success) {
+      return { ok: false, message: res.message || t("common.error"), newPath: "" };
+    }
+    const newPath = res.new_path || (res as { newPath?: string }).newPath || "";
+    if (newPath) applyMovedGamePath(appName, newPath);
+    return { ok: true, message: res.message || t("move.success"), newPath };
+  } catch (err) {
+    return { ok: false, message: t("move.error", { msg: String(err) }), newPath: "" };
+  }
+}
+
+/**
+ * Moves one game or the selected batch to the chosen folder. A batch keeps the
+ * same modal open, updates the subject for each game, and refreshes the stores
+ * once at the end instead of after every folder.
+ */
+export async function startMoveGame(appName: string): Promise<void> {
+  if (S.isMovingGame) return;
   const target = S.selectedMoveTargetPath.trim();
   if (!target) {
     toast(t("move.invalidTarget"), "");
     return;
   }
 
+  const batch = S.moveBatchApps.length > 0 ? [...S.moveBatchApps] : [appName];
   S.isMovingGame = true;
-  S.activeMoveProgress = {
-    id: appName,
-    stage: "preparing",
-    percent: 0,
-    copied_bytes: 0,
-    total_bytes: s.installSize || 0,
-    speed: t("dl.starting"),
-    eta: t("common.calculating"),
-    current_file: "",
-    files_copied: 0,
-    total_files: 0,
-  };
-  renderMoveGameModalFrame();
+  const movedPaths: Array<[string, string]> = [];
+  let moved = 0;
+  let failure = "";
+  let failedApp = "";
 
-  try {
-    const isAmazon = appName.startsWith("amazon::");
-    const res = isAmazon ? await nileMoveGame(appName, target) : await epicMoveGame(appName, target);
-    if (res.success) {
-      const newPath = res.new_path || (res as any).newPath || "";
-      if (newPath) {
-        applyMovedGamePath(appName, newPath);
-      }
-      toast(res.message || t("move.success"), "ok");
-      S.isMovingGame = false;
-      closeMoveGameModal();
-
-      // Refresh the installed-games list from disk.
-      if (isAmazon) await loadAmazonSession(false);
-      else await refreshEpicInstalled();
-
-      // Fetch fresh settings in the background and keep state in sync.
-      try {
-        const freshSettings = isAmazon
-          ? await nileGameSettings(appName.slice(8))
-          : await epicGetGameSettings(appName);
-        if (S.activeManageSettings && S.activeManageSettings.appName === appName) {
-          S.activeManageSettings = freshSettings;
-          updateManageModalInputsInPlace(freshSettings);
-        }
-      } catch {}
-
-      // Re-apply the moved path in case refreshEpicInstalled replaced the summary.
-      if (newPath) {
-        applyMovedGamePath(appName, newPath);
-      }
-
-      // If the game detail drawer is open, repaint it smoothly.
-      if (S.currentModalAppName === appName) {
-        openEpicModal(appName, false);
-      }
-    } else {
-      toast(t("move.failed", { msg: res.message }), "err");
-      S.isMovingGame = false;
-      renderMoveGameModalFrame();
-    }
-  } catch (err) {
-    toast(t("move.error", { msg: String(err) }), "err");
-    S.isMovingGame = false;
+  for (let index = 0; index < batch.length; index++) {
+    const id = batch[index];
+    S.moveBatchIndex = index;
+    S.activeMoveModalAppName = id;
+    const sum = summaryOf(id);
+    S.activeMoveProgress = {
+      id,
+      stage: "preparing",
+      percent: 0,
+      copied_bytes: 0,
+      total_bytes: sum?.installSize || 0,
+      speed: t("dl.starting"),
+      eta: t("common.calculating"),
+      current_file: "",
+      files_copied: 0,
+      total_files: 0,
+    };
     renderMoveGameModalFrame();
+
+    const outcome = await moveOneGame(id, target);
+    if (!outcome.ok) {
+      failedApp = id;
+      failure = outcome.message;
+      break;
+    }
+    if (outcome.newPath) movedPaths.push([id, outcome.newPath]);
+    moved++;
+  }
+
+  S.isMovingGame = false;
+  S.activeMoveProgress = null;
+
+  if (failure) {
+    // A retry should continue with the games that did not land, not repeat the
+    // ones that already moved.
+    S.moveBatchApps = batch.slice(moved);
+    S.moveBatchIndex = 0;
+    S.activeMoveModalAppName = failedApp || batch[moved] || batch[0];
+    renderMoveGameModalFrame();
+    const message = batch.length > 1
+      ? t("move.batchFailed", { moved, count: batch.length, msg: failure })
+      : failure;
+    toast(message, "err");
+    return;
+  }
+
+  const movedAmazon = batch.some((id) => id.startsWith("amazon::"));
+  const movedEpic = batch.some((id) => !id.startsWith("amazon::"));
+  closeMoveGameModal();
+  const doneMessage = batch.length > 1
+    ? t("move.batchDone", { count: moved })
+    : movedPaths[0]
+      ? t("move.successPath", { a1: movedPaths[0][1] })
+      : t("move.success");
+  toast(doneMessage, "ok");
+
+  // Refresh the installed list once for the whole batch, then re-apply the new
+  // paths in case the refresh rebuilt the summary objects.
+  if (movedAmazon) await loadAmazonSession(false);
+  if (movedEpic) await refreshEpicInstalled();
+  for (const [id, newPath] of movedPaths) applyMovedGamePath(id, newPath);
+
+  // Keep an open Manage panel and game page on the new location.
+  const manageApp = S.activeManageSettings?.appName;
+  if (manageApp && batch.includes(manageApp)) {
+    try {
+      const freshSettings = manageApp.startsWith("amazon::")
+        ? await nileGameSettings(manageApp.slice(8))
+        : await epicGetGameSettings(manageApp);
+      if (S.activeManageSettings?.appName === manageApp) {
+        S.activeManageSettings = freshSettings;
+        updateManageModalInputsInPlace(freshSettings);
+      }
+    } catch {
+      // The moved path is already applied; a settings refresh is best effort.
+    }
+  }
+  if (S.currentModalAppName && batch.includes(S.currentModalAppName)) {
+    openEpicModal(S.currentModalAppName, false);
   }
 }
 

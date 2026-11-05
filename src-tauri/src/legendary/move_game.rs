@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::RwLock;
@@ -434,12 +434,20 @@ fn scan_dir_recursive(path: &Path) -> (usize, u64) {
     let mut bytes = 0;
     if let Ok(entries) = std::fs::read_dir(path) {
         for entry in entries.flatten() {
+            let Ok(file_type) = entry.file_type() else {
+                continue;
+            };
+            // Junctions and symlinks can point outside the game or loop; the
+            // copy pass refuses them, so they never count toward the size.
+            if file_type.is_symlink() {
+                continue;
+            }
             let p = entry.path();
-            if p.is_dir() {
+            if file_type.is_dir() {
                 let (f, b) = scan_dir_recursive(&p);
                 files += f;
                 bytes += b;
-            } else if p.is_file() {
+            } else if file_type.is_file() {
                 files += 1;
                 if let Ok(meta) = entry.metadata() {
                     bytes += meta.len();
@@ -523,6 +531,231 @@ pub(crate) enum MoveRecord {
     Epic,
     /// Nile's `installed.json` list (Amazon games).
     Amazon,
+}
+
+impl MoveRecord {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Epic => "epic",
+            Self::Amazon => "amazon",
+        }
+    }
+
+    fn from_str(value: &str) -> Option<Self> {
+        match value {
+            "epic" => Some(Self::Epic),
+            "amazon" => Some(Self::Amazon),
+            _ => None,
+        }
+    }
+}
+
+/// A cross-drive move writes through a staging folder. The journal makes the
+/// intent visible to the next launch: if the target landed but the record did
+/// not, the record is repaired; a half-copied staging folder is removed.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct MoveJournal {
+    app_name: String,
+    record: String,
+    source: String,
+    target: String,
+    stage: String,
+}
+
+fn now_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+fn move_journal_path(config_dir: &Path) -> PathBuf {
+    config_dir.join("efxlve-move-journal.json")
+}
+
+fn write_move_journal(config_dir: &Path, journal: &MoveJournal) -> Result<(), String> {
+    if let Some(parent) = config_dir.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let data = serde_json::to_string_pretty(journal).map_err(|e| e.to_string())?;
+    std::fs::write(move_journal_path(config_dir), data).map_err(|e| e.to_string())
+}
+
+fn clear_move_journal(config_dir: &Path) {
+    let _ = std::fs::remove_file(move_journal_path(config_dir));
+}
+
+fn stage_folder_name(app_name: &str) -> String {
+    let clean: String = app_name
+        .chars()
+        .map(|ch| if ch.is_ascii_alphanumeric() { ch } else { '_' })
+        .take(48)
+        .collect();
+    format!(".efxlve-move-{clean}-{:x}", now_ms())
+}
+
+/// Paths that must never be moved, deleted or used as a destination root.
+/// Children are fine: `C:\Program Files\Epic Games\Title` is a real install,
+/// while `C:\Program Files` itself is not a game folder.
+fn protected_roots() -> Vec<String> {
+    let mut roots: Vec<String> = Vec::new();
+    #[cfg(windows)]
+    {
+        for letter in b'A'..=b'Z' {
+            roots.push(format!("{}:\\", letter as char).to_ascii_lowercase());
+        }
+        for key in ["WINDIR", "ProgramFiles", "ProgramFiles(x86)", "ProgramData"] {
+            if let Ok(value) = std::env::var(key) {
+                roots.push(normalize_path(Path::new(&value)));
+            }
+        }
+        if let Ok(home) = std::env::var("USERPROFILE") {
+            let home = PathBuf::from(home);
+            roots.push(normalize_path(&home));
+            for sub in [
+                "Desktop",
+                "Documents",
+                "Downloads",
+                "Pictures",
+                "Videos",
+                "Music",
+                "AppData",
+                "OneDrive",
+            ] {
+                roots.push(normalize_path(&home.join(sub)));
+            }
+        }
+        if let Ok(public) = std::env::var("PUBLIC") {
+            roots.push(normalize_path(Path::new(&public)));
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        for path in ["/", "/home", "/usr", "/etc", "/var", "/tmp", "/opt", "/boot"] {
+            roots.push(normalize_path(Path::new(path)));
+        }
+        if let Ok(home) = std::env::var("HOME") {
+            let home = PathBuf::from(home);
+            roots.push(normalize_path(&home));
+            for sub in ["Desktop", "Documents", "Downloads"] {
+                roots.push(normalize_path(&home.join(sub)));
+            }
+        }
+    }
+    roots
+}
+
+/// Lowercase, forward slashes folded into backslashes, trailing separators
+/// removed. Used only for comparisons, never to build a real path.
+fn normalize_path(path: &Path) -> String {
+    path.to_string_lossy()
+        .replace('/', "\\")
+        .trim_end_matches('\\')
+        .to_ascii_lowercase()
+}
+
+/// True when the folder itself may be moved. A root, a home folder, a desktop
+/// or a symlink is not a game folder even if the record claims it is.
+fn folder_is_safe(path: &Path) -> bool {
+    if !path.is_absolute() || path.file_name().is_none() {
+        return false;
+    }
+    if std::fs::symlink_metadata(path)
+        .map(|meta| meta.file_type().is_symlink())
+        .unwrap_or(false)
+    {
+        return false;
+    }
+    let key = normalize_path(path);
+    !key.is_empty() && !protected_roots().iter().any(|root| root == &key)
+}
+
+/// True when one folder contains the other; moving either would move the
+/// destination into itself.
+fn folders_overlap(left: &Path, right: &Path) -> bool {
+    let left = normalize_path(left);
+    let right = normalize_path(right);
+    if left.is_empty() || right.is_empty() || left == right {
+        return left == right;
+    }
+    left.starts_with(&format!("{right}\\")) || right.starts_with(&format!("{left}\\"))
+}
+
+/// Repairs the store record after a move that reached the target but lost the
+/// launcher before writing the new path.
+fn repair_move_record(config_dir: &Path, journal: &MoveJournal) {
+    let Some(record) = MoveRecord::from_str(&journal.record) else {
+        return;
+    };
+    let installed_file = config_dir.join("installed.json");
+    let Ok(text) = std::fs::read_to_string(&installed_file) else {
+        return;
+    };
+    match record {
+        MoveRecord::Epic => {
+            let Ok(mut map) = serde_json::from_str::<HashMap<String, serde_json::Value>>(&text) else {
+                return;
+            };
+            let Some(entry) = map.get_mut(&journal.app_name) else {
+                return;
+            };
+            let Some(object) = entry.as_object_mut() else {
+                return;
+            };
+            object.insert(
+                "install_path".to_string(),
+                serde_json::Value::String(journal.target.clone()),
+            );
+            if let Ok(updated) = serde_json::to_string_pretty(&map) {
+                let _ = std::fs::write(&installed_file, updated);
+            }
+        }
+        MoveRecord::Amazon => {
+            let Ok(mut list) = serde_json::from_str::<Vec<serde_json::Value>>(&text) else {
+                return;
+            };
+            if set_nile_installed_path(&mut list, &journal.app_name, &journal.target) {
+                if let Ok(updated) = serde_json::to_string(&list) {
+                    let _ = std::fs::write(&installed_file, updated);
+                }
+            }
+        }
+    }
+}
+
+/// Runs once at startup: finishes the record side of a completed move and
+/// removes a staging folder that a crash left behind.
+pub fn recover_interrupted_moves(config_dir: &Path) {
+    let path = move_journal_path(config_dir);
+    let Ok(text) = std::fs::read_to_string(&path) else {
+        return;
+    };
+    let journal = match serde_json::from_str::<MoveJournal>(&text) {
+        Ok(value) => value,
+        Err(_) => {
+            let _ = std::fs::remove_file(path);
+            return;
+        }
+    };
+    let source = PathBuf::from(&journal.source);
+    let target = PathBuf::from(&journal.target);
+    let stage = PathBuf::from(&journal.stage);
+    let target_has_files = std::fs::read_dir(&target)
+        .map(|mut entries| entries.next().is_some())
+        .unwrap_or(false);
+    if target_has_files && !source.exists() {
+        repair_move_record(config_dir, &journal);
+    }
+    // Only remove a folder this launcher named; never trust an edited journal
+    // with an arbitrary path.
+    let stage_is_ours = stage
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.starts_with(".efxlve-move-"));
+    if stage_is_ours && stage.is_dir() {
+        let _ = std::fs::remove_dir_all(&stage);
+    }
+    let _ = std::fs::remove_file(path);
 }
 
 /// Moves a game to a new root folder (Epic record format).
@@ -642,6 +875,9 @@ async fn move_game_folder_internal(
     if !cur_path.is_dir() {
         return Err(format!("@t:move.folderMissing\u{1f}{}", cur_path.display()));
     }
+    if !folder_is_safe(&cur_path) {
+        return Err(format!("@t:move.unsafeSource\u{1f}{}", cur_path.display()));
+    }
 
     let folder_name = cur_path
         .file_name()
@@ -650,10 +886,19 @@ async fn move_game_folder_internal(
         .to_string();
 
     let target_base = PathBuf::from(target_base_dir.trim());
+    if !folder_is_safe(&target_base) {
+        return Err(format!("@t:move.unsafeTarget\u{1f}{}", target_base.display()));
+    }
     let new_game_path = target_base.join(&folder_name);
+    if !folder_is_safe(&new_game_path) {
+        return Err(format!("@t:move.unsafeTarget\u{1f}{}", new_game_path.display()));
+    }
 
     if cur_path == new_game_path {
         return Err("@t:move.alreadyThere".to_string());
+    }
+    if folders_overlap(&cur_path, &new_game_path) || folders_overlap(&cur_path, &target_base) {
+        return Err("@t:move.overlap".to_string());
     }
 
     // Avoid conflicts if the target folder already exists and is not empty
@@ -749,12 +994,28 @@ async fn move_game_folder_internal(
             .await
             .map_err(|e| format!("@t:move.renameFailed\u{1f}{}", e))?;
     } else {
-        // --- DIFFERENT DRIVE: streamed copy + progress + cancel ---
+        // --- DIFFERENT DRIVE: stage, copy, then rename into place ---
         let start_time = Instant::now();
         let mut copied_bytes: u64 = 0;
         let mut files_copied: usize = 0;
 
-        tokio::fs::create_dir_all(&new_game_path)
+        // Writing straight into the final folder leaves a half game there when
+        // the copy is interrupted, and the next attempt refuses the non-empty
+        // target. The staging folder plus the journal makes an interrupted run
+        // recoverable: the next boot removes the partial copy.
+        let stage_path = target_base.join(stage_folder_name(app_name));
+        write_move_journal(
+            config_dir,
+            &MoveJournal {
+                app_name: app_name.to_string(),
+                record: record.as_str().to_string(),
+                source: cur_path.to_string_lossy().to_string(),
+                target: new_game_path.to_string_lossy().to_string(),
+                stage: stage_path.to_string_lossy().to_string(),
+            },
+        )?;
+
+        tokio::fs::create_dir_all(&stage_path)
             .await
             .map_err(|e| format!("@t:move.targetDirFailed\u{1f}{}", e))?;
 
@@ -762,7 +1023,7 @@ async fn move_game_folder_internal(
             app,
             app_name,
             &cur_path,
-            &new_game_path,
+            &stage_path,
             &cur_path,
             total_bytes,
             total_files,
@@ -774,9 +1035,20 @@ async fn move_game_folder_internal(
         .await;
 
         if let Err(e) = copy_res {
-            // On cancel or error, clean up incomplete files at the target
-            let _ = tokio::fs::remove_dir_all(&new_game_path).await;
+            // On cancel or error, clean up the incomplete staging copy.
+            let _ = tokio::fs::remove_dir_all(&stage_path).await;
+            clear_move_journal(config_dir);
             return Err(e);
+        }
+
+        // The target was checked as empty above; make room for the rename.
+        if new_game_path.exists() {
+            let _ = tokio::fs::remove_dir_all(&new_game_path).await;
+        }
+        if let Err(e) = tokio::fs::rename(&stage_path, &new_game_path).await {
+            let _ = tokio::fs::remove_dir_all(&stage_path).await;
+            clear_move_journal(config_dir);
+            return Err(format!("@t:move.renameFailed\u{1f}{}", e));
         }
 
         // Copy complete: safely delete the source folder
@@ -790,7 +1062,7 @@ async fn move_game_folder_internal(
                 total_bytes,
                 speed: String::new(),
                 eta: "@t:move.finishing".to_string(),
-                current_file: "Eski konum temizleniyor…".to_string(),
+                current_file: "@t:move.cleaningSource".to_string(),
                 files_copied: total_files,
                 total_files,
             },
@@ -846,6 +1118,7 @@ async fn move_game_folder_internal(
     }
 
     // 5. Emit the completed progress
+    clear_move_journal(config_dir);
     let _ = app.emit(
         "move-progress",
         MoveGameProgress {
@@ -900,12 +1173,23 @@ fn copy_dir_with_progress<'a>(
             }
 
             let entry_path = entry.path();
+            let file_type = entry
+                .file_type()
+                .await
+                .map_err(|e| format!("@t:move.readDirFailed\u{1f}{}", e))?;
+            if file_type.is_symlink() {
+                // Following it could copy files from outside the game, or loop.
+                return Err(format!(
+                    "@t:move.symlinkBlocked\u{1f}{}",
+                    entry_path.display()
+                ));
+            }
             let rel_path = entry_path
                 .strip_prefix(root_src)
                 .map_err(|e| e.to_string())?;
             let target_item_path = dst_dir.join(rel_path);
 
-            if entry_path.is_dir() {
+            if file_type.is_dir() {
                 tokio::fs::create_dir_all(&target_item_path)
                     .await
                     .map_err(|e| format!("@t:move.mkdirFailed\u{1f}{}", e))?;
@@ -1153,5 +1437,130 @@ mod tests {
             assert!(!drives.is_empty());
             assert!(drives.iter().any(|d| d.letter == "C"));
         }
+    }
+
+    #[test]
+    fn path_comparisons_fold_case_and_separators() {
+        assert_eq!(normalize_path(Path::new("C:/Games/Title/")), "c:\\games\\title");
+        assert!(folders_overlap(
+            Path::new("C:\\Games"),
+            Path::new("C:\\Games\\Title")
+        ));
+        assert!(folders_overlap(
+            Path::new("C:\\Games\\Title"),
+            Path::new("C:\\Games\\Title")
+        ));
+        assert!(!folders_overlap(
+            Path::new("C:\\Games\\Title"),
+            Path::new("C:\\Games\\Title 2")
+        ));
+        assert!(!folders_overlap(
+            Path::new("C:\\Games\\Title"),
+            Path::new("D:\\Games\\Title")
+        ));
+    }
+
+    #[test]
+    fn roots_and_homes_are_not_game_folders() {
+        #[cfg(windows)]
+        {
+            assert!(!folder_is_safe(Path::new("C:\\")));
+            assert!(!folder_is_safe(Path::new("C:\\Windows")));
+            let home = std::env::var("USERPROFILE").expect("home");
+            assert!(!folder_is_safe(Path::new(&home)));
+            assert!(folder_is_safe(
+                &Path::new(&home).join("Games").join("Example")
+            ));
+        }
+        #[cfg(not(windows))]
+        {
+            assert!(!folder_is_safe(Path::new("/")));
+            assert!(!folder_is_safe(Path::new("/usr")));
+            assert!(folder_is_safe(Path::new("/mnt/games/Example")));
+        }
+    }
+
+    #[test]
+    fn stage_names_stay_inside_the_move_prefix() {
+        let name = stage_folder_name("epic::Some Game/With:Bad?Chars");
+        assert!(name.starts_with(".efxlve-move-"));
+        assert!(!name.contains('/'));
+        assert!(!name.contains('\\'));
+        assert!(!name.contains(':'));
+    }
+
+    #[test]
+    fn recovery_repairs_the_record_and_drops_a_stale_stage() {
+        let base = std::env::temp_dir().join(format!(
+            "efxlve_move_recovery_{}_{:x}",
+            std::process::id(),
+            now_ms()
+        ));
+        let config = base.join("config");
+        let target = base.join("target");
+        let stage = target.join(".efxlve-move-Test-1");
+        std::fs::create_dir_all(&config).unwrap();
+        std::fs::create_dir_all(&stage).unwrap();
+        std::fs::write(stage.join("partial.bin"), b"half").unwrap();
+        std::fs::write(target.join("game.exe"), b"game").unwrap();
+        let journal = MoveJournal {
+            app_name: "TestGame".to_string(),
+            record: "epic".to_string(),
+            source: base.join("source").to_string_lossy().to_string(),
+            target: target.to_string_lossy().to_string(),
+            stage: stage.to_string_lossy().to_string(),
+        };
+        write_move_journal(&config, &journal).unwrap();
+        std::fs::write(
+            config.join("installed.json"),
+            r#"{"TestGame":{"install_path":"C:\\Old","title":"Test"}}"#,
+        )
+        .unwrap();
+
+        recover_interrupted_moves(&config);
+
+        assert!(!stage.exists(), "the partial staging folder is removed");
+        assert!(!move_journal_path(&config).exists(), "the journal is consumed");
+        let map: HashMap<String, serde_json::Value> = serde_json::from_str(
+            &std::fs::read_to_string(config.join("installed.json")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            map["TestGame"]["install_path"].as_str(),
+            Some(target.to_string_lossy().as_ref())
+        );
+        assert_eq!(map["TestGame"]["title"], "Test");
+        let _ = std::fs::remove_dir_all(base);
+    }
+
+    #[test]
+    fn recovery_does_not_touch_a_target_without_a_finished_move() {
+        let base = std::env::temp_dir().join(format!(
+            "efxlve_move_partial_{}_{:x}",
+            std::process::id(),
+            now_ms()
+        ));
+        let config = base.join("config");
+        let target = base.join("target");
+        let stage = target.join(".efxlve-move-Test-2");
+        std::fs::create_dir_all(&config).unwrap();
+        std::fs::create_dir_all(&stage).unwrap();
+        std::fs::write(stage.join("partial.bin"), b"half").unwrap();
+        let journal = MoveJournal {
+            app_name: "TestGame".to_string(),
+            record: "epic".to_string(),
+            source: base.join("source").to_string_lossy().to_string(),
+            target: target.to_string_lossy().to_string(),
+            stage: stage.to_string_lossy().to_string(),
+        };
+        write_move_journal(&config, &journal).unwrap();
+
+        recover_interrupted_moves(&config);
+
+        assert!(!stage.exists());
+        assert!(!move_journal_path(&config).exists());
+        // No target, no record: installed.json must not be invented.
+        assert!(!config.join("installed.json").exists());
+        let _ = std::fs::remove_dir_all(base);
     }
 }
