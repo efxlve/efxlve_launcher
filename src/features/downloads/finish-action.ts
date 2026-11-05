@@ -46,6 +46,9 @@ export function launcherTransfersBusy(): boolean {
   if (S.amazonProgress.size > 0) return true;
   if (S.ubiDirectInstalling.size > 0) return true;
   if (S.eaContentInstalling.size > 0) return true;
+  // A finished download can hand over to a verify pass before the game is
+  // playable; powering off in that window would leave a half-checked install.
+  if (S.verifyingMap.size > 0) return true;
   // Other clients are watched too: sleeping through their transfer would
   // interrupt a download the launcher did not start but can still see.
   if (S.steamGames.some((game) => game.downloading)) return true;
