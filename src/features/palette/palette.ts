@@ -61,6 +61,7 @@ function commands(): Command[] {
     { label: t("palette.cmdSettings"), iconName: "settings", attrs: `data-view="settings"`, keywords: "settings ayarlar" },
     { label: t("accounts.title"), iconName: "user", attrs: `data-view="accounts"`, keywords: "accounts hesap" },
     { label: t("calendar.title"), iconName: "calendar", attrs: `data-act="open-release-calendar"`, keywords: "release calendar takvim cikis" },
+    { label: t("calendar.watchlist"), iconName: "star", attrs: `data-act="open-release-watchlist"`, keywords: "followed releases takip" },
   ];
   // Pages the user hid from the sidebar stay out of the palette too.
   if (notesSidebarVisible()) {

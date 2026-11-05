@@ -114,7 +114,7 @@ import {
   updateLibraryFilterInPlace,
 } from "../library/library-view";
 import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
-import { clearReleaseCalendarSearch, closeReleaseCalendar, closeReleaseStores, openReleaseCalendar, openReleaseCalendarSearch, openReleaseStores, refreshReleaseCalendar, setReleaseCalendarDay, setReleaseCalendarMonth, stepReleaseCalendarMonth, toggleReleaseFollow, toggleReleaseWatchlist } from "../library/release-calendar";
+import { clearReleaseCalendarSearch, closeReleaseCalendar, closeReleaseStores, openReleaseCalendar, openReleaseCalendarSearch, openReleaseCalendarWatchlist, openReleaseStores, refreshReleaseCalendar, setReleaseCalendarDay, setReleaseCalendarMonth, stepReleaseCalendarMonth, toggleReleaseFollow, toggleReleaseWatchlist } from "../library/release-calendar";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
@@ -582,6 +582,8 @@ document.addEventListener("click", (e) => {
     openReleaseCalendar();
   } else if (act === "open-release-calendar-search" && t.dataset.query) {
     openReleaseCalendarSearch(t.dataset.query);
+  } else if (act === "open-release-watchlist") {
+    openReleaseCalendarWatchlist();
   } else if (act === "release-calendar-close") {
     closeReleaseCalendar();
   } else if (act === "release-calendar-month" && t.dataset.year && t.dataset.month) {

@@ -746,6 +746,14 @@ export function openReleaseCalendarSearch(text: string): void {
   layer?.querySelector<HTMLInputElement>(".calendar-search-input")?.focus();
 }
 
+/** Opens the calendar directly on the followed list. */
+export function openReleaseCalendarWatchlist(): void {
+  openReleaseCalendar();
+  watching = true;
+  resetScroll = true;
+  renderCalendar();
+}
+
 export function closeReleaseCalendar(): void {
   closeReleaseStores();
   loadSeq++;
