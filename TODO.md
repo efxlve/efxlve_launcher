@@ -240,7 +240,8 @@ stays on the client. Open work:
   local slot; classic slots are then copied into a direct install. A live
   Rainbow Six Siege download returned `1.save` (86,051 bytes), `3.save`
   (29,492) and `4.save` (73,868), all with the 36-byte header the client uses.
-  The Ludusavi manifest is still open for titles outside those layouts.
+  The bundled Ludusavi index now resolves save folders for titles outside those
+  layouts; an explicit custom path still wins.
 - Online/anti-cheat titles (R6/BattlEye) and Connect-only DRM titles stay on the
   client. This is closed by design: BattlEye, Denuvo and their licenses are not
   bypassed. Direct adopt and launch both check the title and install folder
@@ -249,3 +250,23 @@ stays on the client. Open work:
   also closed by design: no compatible open-source R2 loader exists, so the
   launcher will not substitute one. The remaining Ubisoft verification is a
   live cloud-save download, which needs a signed-in account.
+
+## New surfaces field pass
+
+- Download finish actions: run a real queue with **Sleep** and **Shut down**,
+  confirm the countdown restores a tray-hidden window, cancels on a new
+  download, pause, failure or cancel, and runs only after 60 seconds.
+- Steam launch modes: with the client closed, bind a game to a second account
+  and offline mode, confirm `loginusers.vdf` is backed up and verified, the game
+  starts, and a running client is refused with the clear message. Restore the
+  backup and confirm the next default launch clears the offline flag.
+- Encrypted profile: export with a password, import it on a fresh profile, and
+  confirm a wrong password is rejected while an older plain `.efxprofile` still
+  imports. Then restore from the cloud to confirm the unencrypted cloud path is
+  unchanged.
+- Batch move: move two Epic games across drives, kill the launcher mid-copy,
+  and confirm the next start removes the staging folder and repairs
+  `installed.json`. Confirm a drive root, a home folder, a symlink and a target
+  inside the game folder are all refused.
+- Multi-note tabs: open three notes for one game, switch between them while the
+  700 ms save is pending, and confirm no note is duplicated or overwritten.

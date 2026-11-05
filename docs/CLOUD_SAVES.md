@@ -29,6 +29,8 @@ It does **not** back up the game itself, screenshots, videos or your account pas
 
 Before a restore overwrites anything, the launcher snapshots the current saves as `pre-restore-…`, so a wrong restore can be undone.
 
+A save folder is found in this order: an explicit custom path, the store's own install record, Ubisoft's product layout, the bundled Ludusavi index, then the generic folder scans. The Ludusavi index covers more than 11,000 titles and carries only concrete `save` paths, so a wildcard entry can never widen a backup to a whole user folder. When the save tree is byte-identical to the last successful upload, the next automatic upload keeps the existing cloud archive instead of packing and sending another copy.
+
 ## Technical notes
 
 The sections below describe the implementation and the roadmap for contributors. They are not required reading for setup.
@@ -47,6 +49,14 @@ Two layers share one format:
     `~/.config/legendary` on Linux/macOS.
 - **Cloud archive** — the local backup directory packed into
   `<timestamp>.tar.gz`, then uploaded with its SHA-256 and file count.
+- **Upload marker** — `<config>/backups/<safe-key>/.last-upload.json` records
+  the last uploaded id and save-tree hash. An automatic upload whose current
+  hash matches skips both the local archive and the network, but only while the
+  provider still lists that archive.
+- **Encrypted profile** — a `.efxprofile` with a non-empty password starts with
+  `EFXENC1`, a scrypt salt and an AES-256-GCM nonce. The importer detects the
+  magic and asks for the password; a plain `.efxprofile` from an older build
+  still imports without one.
 
 `<safe-key>` replaces `::` with `__` and removes characters that are invalid in
 a Windows path segment (`backup_key` in `legendary/backup.rs`). Epic names pass
