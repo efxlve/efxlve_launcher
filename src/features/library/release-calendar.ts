@@ -27,6 +27,7 @@ interface MonthInfo extends MonthSel {
 let layer: HTMLElement | null = null;
 let releases: UpcomingRelease[] = [];
 let selected: MonthSel | null = null;
+let selectedDay: number | null = null;
 let loading = false;
 let failed = false;
 /** Bumped by a restart or close so a late answer cannot repaint a dead dialog. */
@@ -179,16 +180,25 @@ function storeSearchLinks(name: string): Array<{ id: string; label: string; url:
   ];
 }
 
-function coverOf(release: UpcomingRelease, size: "thumb" | "cover_big_2x" = "thumb"): string {
+function coverOf(
+  release: UpcomingRelease,
+  size: "thumb" | "cover_big" | "cover_big_2x" = "cover_big",
+): string {
   return igdbImage(release.coverId, size);
 }
 
-function dayGame(release: UpcomingRelease): string {
-  const cover = coverOf(release);
-  return `<button type="button" class="calendar-day-game" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
-    ${cover ? `<img class="calendar-day-game-art" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-day-game-dot"></span>`}
-    <span class="calendar-day-game-title">${esc(release.name)}</span>
-  </button>`;
+function dayFullLabel(year: number, month: number, day: number): string {
+  return new Date(year, month - 1, day).toLocaleDateString(S.appLanguage || undefined, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
+function dayShortWeekday(year: number, month: number, day: number): string {
+  return new Date(year, month - 1, day).toLocaleDateString(S.appLanguage || undefined, {
+    weekday: "short",
+  });
 }
 
 function renderDay(
@@ -204,17 +214,35 @@ function renderDay(
   const isPast = date.getTime() < today.getTime();
   const weekday = (new Date(year, month - 1, day).getDay() + 6) % 7;
   const weekend = weekday >= 5;
-  return `<div class="calendar-day${isToday ? " is-today" : ""}${isPast ? " is-past" : ""}${weekend ? " is-weekend" : ""}">
-    <span class="calendar-day-num${isToday ? " is-today" : ""}">${day}</span>
-    ${games.length > 0 ? `<div class="calendar-day-games">${games.map(dayGame).join("")}</div>` : ""}
-  </div>`;
+  const isSelected = selectedDay === day;
+  const stateClasses = `${isToday ? " is-today" : ""}${isPast ? " is-past" : ""}${weekend ? " is-weekend" : ""}${isSelected ? " is-selected" : ""}`;
+
+  if (games.length === 0) {
+    return `<div class="calendar-day${stateClasses}">
+      <span class="calendar-day-top">
+        <span class="calendar-day-num${isToday ? " is-today" : ""}">${day}</span>
+      </span>
+    </div>`;
+  }
+
+  const ranked = [...games].sort((left, right) => (right.hypes ?? 0) - (left.hypes ?? 0));
+  const lead = ranked.find((item) => item.coverId) ?? ranked[0];
+  const leadCover = coverOf(lead, "cover_big");
+  const tip = `${dayFullLabel(year, month, day)} · ${games.map((item) => item.name).join(", ")}`;
+  return `<button type="button" class="calendar-day has-games${stateClasses}" data-act="release-calendar-day" data-day="${day}" aria-pressed="${isSelected}" title="${esc(tip)}">
+    ${leadCover ? `<span class="calendar-day-bg" style="background-image:url('${esc(leadCover)}')"></span><span class="calendar-day-scrim"></span>` : ""}
+    <span class="calendar-day-top">
+      <span class="calendar-day-num${isToday ? " is-today" : ""}">${day}</span>
+      <span class="calendar-day-badge tabular-nums">${games.length}</span>
+    </span>
+    <span class="calendar-day-lead">${esc(lead.name)}</span>
+  </button>`;
 }
 
-function renderGrid(month: MonthSel): string {
+function renderGrid(month: MonthSel, exact: UpcomingRelease[]): string {
   const first = new Date(month.year, month.month - 1, 1);
   const lead = (first.getDay() + 6) % 7;
   const totalDays = new Date(month.year, month.month, 0).getDate();
-  const games = monthGames(month).filter(hasExactDay);
   const cells: string[] = [];
   for (let index = 0; index < lead; index++) {
     cells.push(`<div class="calendar-day is-blank"></div>`);
@@ -225,17 +253,94 @@ function renderGrid(month: MonthSel): string {
         month.year,
         month.month,
         day,
-        games.filter((release) => releaseDay(release) === day),
+        exact.filter((release) => releaseDay(release) === day),
       ),
     );
   }
   while (cells.length % 7 !== 0) {
     cells.push(`<div class="calendar-day is-blank"></div>`);
   }
-  return `<div class="calendar-weekdays" aria-hidden="true">${weekdayLabels()
-    .map((label) => `<span>${esc(label)}</span>`)
-    .join("")}</div>
-    <div class="calendar-grid">${cells.join("")}</div>`;
+  return `<div class="calendar-sidebar">
+    <div class="calendar-mini-card">
+      <div class="calendar-weekdays" aria-hidden="true">${weekdayLabels()
+        .map((label) => `<span>${esc(label)}</span>`)
+        .join("")}</div>
+      <div class="calendar-grid">${cells.join("")}</div>
+    </div>
+  </div>`;
+}
+
+function renderScheduleCard(release: UpcomingRelease): string {
+  const cover = coverOf(release, "cover_big");
+  const storeList = (release.stores ?? [])
+    .slice(0, 3)
+    .map((store) => `<span class="calendar-game-store">${esc(storeLabel(store.id, store.label))}</span>`)
+    .join("");
+  const fallbackStore = `<span class="calendar-game-store is-muted">${esc(t("calendar.searchStores"))}</span>`;
+  return `<button type="button" class="calendar-game-card" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
+    ${cover ? `<img class="calendar-game-cover" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-game-cover placeholder">${icon("gamepad-2", 18)}</span>`}
+    <span class="calendar-game-info">
+      <span class="calendar-game-title">${esc(release.name)}</span>
+      <span class="calendar-game-stores">${storeList || fallbackStore}</span>
+    </span>
+    <span class="calendar-game-chevron">${icon("chevron-right", 14)}</span>
+  </button>`;
+}
+
+function renderSchedule(month: MonthSel, exact: UpcomingRelease[]): string {
+  const buckets = new Map<number, UpcomingRelease[]>();
+  for (const release of exact) {
+    const day = releaseDay(release);
+    if (day <= 0) continue;
+    const list = buckets.get(day) ?? [];
+    list.push(release);
+    buckets.set(day, list);
+  }
+  const allDays = [...buckets.entries()].sort((left, right) => left[0] - right[0]);
+  const hasFilter = selectedDay !== null && buckets.has(selectedDay);
+  const visibleDays = hasFilter
+    ? allDays.filter(([day]) => day === selectedDay)
+    : allDays;
+
+  const now = new Date();
+  const todayTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+  const filterBar = hasFilter && selectedDay !== null
+    ? `<div class="calendar-filter-bar">
+        <span class="calendar-filter-label">${icon("calendar", 13)} <span>${esc(dayFullLabel(month.year, month.month, selectedDay))}</span></span>
+        <button type="button" class="calendar-filter-reset" data-act="release-calendar-day" data-day="0">${esc(t("profile.showAll"))} <span class="tabular-nums">(${exact.length})</span></button>
+      </div>`
+    : "";
+
+  const groups = visibleDays
+    .map(([day, games]) => {
+      const dateObj = new Date(month.year, month.month - 1, day);
+      const isToday = dateObj.getTime() === todayTime;
+      const isPast = dateObj.getTime() < todayTime;
+      const countdown = countdownLabel(games[0]);
+      return `<section class="calendar-day-group${isToday ? " is-today" : ""}${isPast ? " is-past" : ""}">
+        <header class="calendar-day-header">
+          <div class="calendar-date-badge${isToday ? " is-today" : ""}">
+            <span class="calendar-date-num tabular-nums">${String(day).padStart(2, "0")}</span>
+            <span class="calendar-date-wk">${esc(dayShortWeekday(month.year, month.month, day))}</span>
+          </div>
+          <div class="calendar-date-meta">
+            <h4 class="calendar-date-title">${esc(dayFullLabel(month.year, month.month, day))}</h4>
+            <span class="calendar-date-sub tabular-nums">${esc(t("col.gameCount", { count: String(games.length) }))}</span>
+          </div>
+          ${countdown ? `<span class="calendar-date-countdown${isToday ? " is-today" : ""} tabular-nums">${esc(countdown)}</span>` : ""}
+        </header>
+        <div class="calendar-day-cards">${games.map(renderScheduleCard).join("")}</div>
+      </section>`;
+    })
+    .join("");
+
+  return `<div class="calendar-schedule">
+    ${filterBar}
+    ${groups}
+    ${hasFilter ? "" : renderTba(month)}
+    ${hasFilter ? "" : renderPending(month.year)}
+  </div>`;
 }
 
 function renderHero(release: UpcomingRelease | null): string {
@@ -245,48 +350,52 @@ function renderHero(release: UpcomingRelease | null): string {
     : release.coverId
       ? igdbImage(release.coverId, "cover_big_2x")
       : "";
-  const stores = (release.stores ?? [])
-    .slice(0, 3)
-    .map((store) => storeLabel(store.id, store.label))
-    .join(" · ");
+  const poster = coverOf(release, "cover_big_2x");
+  const storeTags = (release.stores ?? [])
+    .slice(0, 4)
+    .map((store) => `<span class="calendar-store-tag">${esc(storeLabel(store.id, store.label))}</span>`)
+    .join("");
+  const fallbackTag = `<span class="calendar-store-tag is-muted">${icon("search", 11)} <span>${esc(t("calendar.searchStores"))}</span></span>`;
   const countdown = countdownLabel(release);
   return `<button type="button" class="calendar-hero${release.artworkId ? "" : " is-cover"}" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
-    <span class="calendar-hero-art"${art ? ` style="background-image:url('${esc(art)}')"` : ""}></span>
+    <span class="calendar-hero-art"${art ? ` style="background-image:url('${esc(art)}')" ` : ""}></span>
     <span class="calendar-hero-shade"></span>
-    <span class="calendar-hero-body">
-      <span class="calendar-hero-kicker">${t("calendar.nextUp")}</span>
-      <span class="calendar-hero-title">${esc(release.name)}</span>
-      <span class="calendar-hero-meta">
-        <span class="calendar-hero-date">${esc(dateLabel(release))}</span>
-        ${countdown ? `<span class="calendar-hero-count">${esc(countdown)}</span>` : ""}
+    <span class="calendar-hero-content">
+      ${poster ? `<img class="calendar-hero-poster" src="${esc(poster)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-hero-poster placeholder">${icon("gamepad-2", 22)}</span>`}
+      <span class="calendar-hero-body">
+        <span class="calendar-hero-topline">
+          <span class="calendar-hero-kicker">${t("calendar.nextUp")}</span>
+          ${countdown ? `<span class="calendar-hero-count">${esc(countdown)}</span>` : ""}
+          <span class="calendar-hero-date">${esc(dateLabel(release))}</span>
+        </span>
+        <span class="calendar-hero-title">${esc(release.name)}</span>
+        <span class="calendar-hero-stores">${storeTags || fallbackTag}</span>
       </span>
-      <span class="calendar-hero-stores">${esc(stores || t("calendar.searchStores"))}</span>
+      <span class="calendar-hero-arrow">${icon("arrow-right", 16)}</span>
     </span>
-    <span class="calendar-hero-arrow">${icon("arrow-right", 18)}</span>
   </button>`;
 }
 
-function renderMonthBar(months: MonthInfo[], active: MonthSel): string {
-  return `<div class="calendar-monthbar" role="tablist" aria-label="${esc(t("calendar.title"))}">${months
-    .map((month) => {
-      const isActive = sameMonth(month, active);
-      return `<button type="button" class="calendar-month-tab${isActive ? " is-active" : ""}" role="tab" aria-selected="${isActive}" data-act="release-calendar-month" data-year="${month.year}" data-month="${month.month}">
-        <span class="calendar-month-tab-main">${esc(monthLabel(month.year, month.month - 1))}</span>
-        <span class="calendar-month-tab-year">${month.year}</span>
-        <span class="calendar-month-tab-count">${month.count}</span>
-      </button>`;
-    })
-    .join("")}</div>`;
-}
-
-function renderMonthTitle(months: MonthInfo[], active: MonthSel): string {
+function renderToolbar(months: MonthInfo[], active: MonthSel): string {
   const index = months.findIndex((month) => sameMonth(month, active));
   const previous = index > 0;
   const next = index >= 0 && index < months.length - 1;
-  return `<div class="calendar-month-title">
-    <button type="button" class="icon-btn" data-act="release-calendar-prev" title="${esc(t("calendar.previousMonth"))}" aria-label="${esc(t("calendar.previousMonth"))}"${previous ? "" : " disabled"}>${icon("chevron-left", 16)}</button>
-    <h3>${esc(monthLabel(active.year, active.month - 1))} <span>${active.year}</span></h3>
-    <button type="button" class="icon-btn" data-act="release-calendar-next" title="${esc(t("calendar.nextMonth"))}" aria-label="${esc(t("calendar.nextMonth"))}"${next ? "" : " disabled"}>${icon("chevron-right", 16)}</button>
+  return `<div class="calendar-toolbar">
+    <div class="calendar-month-title">
+      <button type="button" class="icon-btn" data-act="release-calendar-prev" title="${esc(t("calendar.previousMonth"))}" aria-label="${esc(t("calendar.previousMonth"))}"${previous ? "" : " disabled"}>${icon("chevron-left", 16)}</button>
+      <h3>${esc(monthLabel(active.year, active.month - 1))} <span class="tabular-nums">${active.year}</span></h3>
+      <button type="button" class="icon-btn" data-act="release-calendar-next" title="${esc(t("calendar.nextMonth"))}" aria-label="${esc(t("calendar.nextMonth"))}"${next ? "" : " disabled"}>${icon("chevron-right", 16)}</button>
+    </div>
+    <div class="calendar-monthbar" role="tablist" aria-label="${esc(t("calendar.title"))}">${months
+      .map((month) => {
+        const isActive = sameMonth(month, active);
+        return `<button type="button" class="calendar-month-tab${isActive ? " is-active" : ""}" role="tab" aria-selected="${isActive}" data-act="release-calendar-month" data-year="${month.year}" data-month="${month.month}">
+          <span class="calendar-month-tab-main">${esc(monthLabel(month.year, month.month - 1))}</span>
+          <span class="calendar-month-tab-year">${month.year}</span>
+          <span class="calendar-month-tab-count">${month.count}</span>
+        </button>`;
+      })
+      .join("")}</div>
   </div>`;
 }
 
@@ -297,7 +406,7 @@ function renderTba(month: MonthSel): string {
     <div class="calendar-tba-head">${esc(t("calendar.dayUnknown"))}<span class="count tabular-nums">${tba.length}</span></div>
     <div class="calendar-tba-list">${tba
       .map((release) => {
-        const cover = coverOf(release);
+        const cover = coverOf(release, "cover_big");
         return `<button type="button" class="calendar-tba-card" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
           ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-tba-art placeholder">${icon("gamepad-2", 12)}</span>`}
           <span class="calendar-tba-name">${esc(release.name)}</span>
@@ -319,10 +428,10 @@ function renderPending(year: number): string {
   const pending = pendingReleases(year);
   if (pending.length === 0) return "";
   return `<details class="calendar-unconfirmed">
-    <summary class="calendar-unconfirmed-head">${t("calendar.unconfirmed")} <span class="count tabular-nums">${pending.length}</span></summary>
+    <summary class="calendar-unconfirmed-head">${icon("chevron-right", 13)} <span>${t("calendar.unconfirmed")}</span> <span class="count tabular-nums">${pending.length}</span></summary>
     <div class="calendar-unconfirmed-list">${pending
       .map(
-        (release) => `<button type="button" class="calendar-chip" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${release.human}`)}"><span class="calendar-chip-name">${esc(release.name)}</span><span class="calendar-chip-when">${esc(release.human)}</span></button>`,
+        (release) => `<button type="button" class="calendar-chip" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${release.human}`)}"><span class="calendar-chip-name">${esc(release.name)}</span><span class="calendar-chip-when tabular-nums">${esc(release.human)}</span></button>`,
       )
       .join("")}</div>
   </details>`;
@@ -358,11 +467,11 @@ function renderBody(): string {
   const hero = ranked.find((release) => release.artworkId) ?? ranked[0] ?? pool.find(hasMonthOnly) ?? null;
   return `
     ${renderHero(hero)}
-    ${renderMonthBar(months, month)}
-    ${renderMonthTitle(months, month)}
-    ${renderGrid(month)}
-    ${renderTba(month)}
-    ${renderPending(month.year)}
+    ${renderToolbar(months, month)}
+    <div class="calendar-workspace">
+      ${renderGrid(month, exact)}
+      ${renderSchedule(month, exact)}
+    </div>
     <p class="calendar-source">${esc(t("calendar.sourceNote"))}</p>`;
 }
 
@@ -407,6 +516,7 @@ async function load(refresh: boolean): Promise<void> {
     releases = next;
     if (!selected || !availableMonths().some((month) => sameMonth(month, selected))) {
       selected = pickDefaultMonth(availableMonths());
+      selectedDay = null;
     }
   } catch {
     if (seq !== loadSeq || !layer) return;
@@ -422,6 +532,7 @@ export function openReleaseCalendar(): void {
   closeReleaseStores();
   releases = [];
   selected = null;
+  selectedDay = null;
   failed = false;
   if (layer) layer.remove();
   layer = document.createElement("div");
@@ -438,6 +549,7 @@ export function closeReleaseCalendar(): void {
   layer = null;
   releases = [];
   selected = null;
+  selectedDay = null;
   loading = false;
   failed = false;
 }
@@ -454,6 +566,17 @@ export function setReleaseCalendarMonth(year: number, month: number): void {
   if (!Number.isFinite(year) || !Number.isFinite(month)) return;
   if (!availableMonths().some((entry) => entry.year === year && entry.month === month)) return;
   selected = { year, month };
+  selectedDay = null;
+  renderCalendar();
+}
+
+/** Day tile in the mini month grid; clicking again or passing 0 clears the filter. */
+export function setReleaseCalendarDay(day: number | null): void {
+  if (day === null || !Number.isFinite(day) || day <= 0 || selectedDay === day) {
+    selectedDay = null;
+  } else {
+    selectedDay = day;
+  }
   renderCalendar();
 }
 
@@ -466,6 +589,7 @@ export function stepReleaseCalendarMonth(delta: -1 | 1): void {
   const next = months[index + delta];
   if (!next) return;
   selected = { year: next.year, month: next.month };
+  selectedDay = null;
   renderCalendar();
 }
 
