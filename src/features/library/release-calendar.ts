@@ -53,9 +53,17 @@ let resetScroll = false;
 let focusSearchWhenLoaded = false;
 /** Bumped by a restart or close so a late answer cannot repaint a dead dialog. */
 let loadSeq = 0;
-/** The game whose store picker is open, if any. */
+/** The game whose store bubble is open, if any. */
 let storeRelease: UpcomingRelease | null = null;
 let storeLayer: HTMLElement | null = null;
+/** The card the bubble points at, so a second click can toggle it. */
+let storeAnchor: HTMLElement | null = null;
+/** A click pins the bubble; hover previews do not. */
+let storePinned = false;
+let hoverOpenTimer = 0;
+let hoverCloseTimer = 0;
+const HOVER_OPEN_MS = 220;
+const HOVER_CLOSE_MS = 180;
 
 function releaseYear(release: UpcomingRelease): number {
   if (release.year) return release.year;
@@ -488,7 +496,7 @@ function renderScheduleCard(release: UpcomingRelease): string {
     .map((store) => `<span class="calendar-game-store">${esc(storeLabel(store.id, store.label))}</span>`)
     .join("");
   return `<div class="calendar-game-shell">
-    <button type="button" class="calendar-game-card" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
+    <button type="button" class="calendar-game-card" data-act="release-stores" data-id="${release.id}">
       ${cover ? `<img class="calendar-game-cover" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-game-cover placeholder">${icon("gamepad-2", 18)}</span>`}
       <span class="calendar-game-info">
         <span class="calendar-game-title">${esc(release.name)}</span>
@@ -602,7 +610,7 @@ function renderHero(
   const fallbackTag = `<span class="calendar-store-tag is-muted">${esc(t("calendar.whereToBuy"))}</span>`;
   const countdown = countdownLabel(release);
   return `<div class="calendar-hero-shell">
-    <button type="button" class="calendar-hero${release.artworkId ? "" : " is-cover"}" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
+    <button type="button" class="calendar-hero${release.artworkId ? "" : " is-cover"}" data-act="release-stores" data-id="${release.id}">
       <span class="calendar-hero-art"${art ? ` style="background-image:url('${esc(art)}')" ` : ""}></span>
       <span class="calendar-hero-shade"></span>
       <span class="calendar-hero-content">
@@ -658,7 +666,7 @@ function renderTba(month: MonthSel): string {
       .map((release) => {
         const cover = coverOf(release, "cover_small");
         return `<div class="calendar-tba-shell">
-          <button type="button" class="calendar-tba-card" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
+          <button type="button" class="calendar-tba-card" data-act="release-stores" data-id="${release.id}">
             ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-tba-art placeholder">${icon("gamepad-2", 12)}</span>`}
             <span class="calendar-tba-name">${esc(release.name)}</span>
             <span class="calendar-tba-when">${esc(releaseDateLabel(release))}</span>
@@ -684,7 +692,7 @@ function renderPending(year: number): string {
     <summary class="calendar-unconfirmed-head">${icon("chevron-right", 13)} <span>${t("calendar.unconfirmed")}</span> <span class="count tabular-nums">${pending.length}</span></summary>
     <div class="calendar-unconfirmed-list">${pending
       .map(
-        (release) => `<button type="button" class="calendar-chip" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${releaseDateLabel(release)}`)}"><span class="calendar-chip-name">${esc(release.name)}</span><span class="calendar-chip-when tabular-nums">${esc(releaseDateLabel(release))}</span></button>`,
+        (release) => `<button type="button" class="calendar-chip" data-act="release-stores" data-id="${release.id}"><span class="calendar-chip-name">${esc(release.name)}</span><span class="calendar-chip-when tabular-nums">${esc(releaseDateLabel(release))}</span></button>`,
       )
       .join("")}</div>
   </details>`;
@@ -698,7 +706,7 @@ function renderWatchCard(release: UpcomingRelease): string {
     .join("");
   const countdown = countdownLabel(release);
   return `<div class="calendar-watch-card">
-    <button type="button" class="calendar-watch-main" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
+    <button type="button" class="calendar-watch-main" data-act="release-stores" data-id="${release.id}">
       ${cover ? `<img class="calendar-watch-cover" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-watch-cover placeholder">${icon("gamepad-2", 18)}</span>`}
       <span class="calendar-watch-info">
         <span class="calendar-watch-title">${esc(release.name)}</span>
@@ -733,7 +741,7 @@ function renderTopCard(release: UpcomingRelease, rank: number): string {
   const cover = coverOf(release, "cover_small");
   const countdown = countdownLabel(release);
   return `<div class="calendar-top-card">
-    <button type="button" class="calendar-top-main" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
+    <button type="button" class="calendar-top-main" data-act="release-stores" data-id="${release.id}">
       <span class="calendar-top-art">
         ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-top-placeholder">${icon("gamepad-2", 16)}</span>`}
         <span class="calendar-top-rank tabular-nums">${rank}</span>
@@ -892,6 +900,7 @@ function renderCalendar(): void {
     query = searchInput.value;
     paintSearchBody();
   });
+  refreshStoreAnchor();
 }
 
 async function load(refresh: boolean): Promise<void> {
@@ -1056,7 +1065,7 @@ export function toggleReleaseFollow(id: number): void {
       ))?.focus();
   }
   if (storeLayer && storeRelease) {
-    renderStoreDialog();
+    renderStorePopover();
     storeLayer.querySelector<HTMLButtonElement>('[data-act="release-follow"]')?.focus();
   }
 }
@@ -1092,14 +1101,91 @@ export function refreshReleaseCalendar(): void {
   void load(true);
 }
 
-function renderStoreDialog(): void {
+function clearStoreTimers(): void {
+  window.clearTimeout(hoverOpenTimer);
+  window.clearTimeout(hoverCloseTimer);
+  hoverOpenTimer = 0;
+  hoverCloseTimer = 0;
+}
+
+function ensureStoreLayer(): HTMLElement {
+  if (storeLayer) return storeLayer;
+  storeLayer = document.createElement("div");
+  storeLayer.className = "release-popover-layer";
+  confirmRoot.appendChild(storeLayer);
+  storeLayer.addEventListener("mouseover", () => {
+    window.clearTimeout(hoverCloseTimer);
+  });
+  storeLayer.addEventListener("mouseout", (event) => {
+    const related = event.relatedTarget as Node | null;
+    if (related && storeLayer?.contains(related)) return;
+    if (!storePinned) scheduleStoreClose();
+  });
+  storeLayer.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement;
+    if (target.closest('[data-act="open-external-url"]')) {
+      window.setTimeout(closeReleaseStores, 0);
+    }
+  });
+  return storeLayer;
+}
+
+/** Keep the bubble beside its card, flipping or clamping at the viewport edges. */
+function positionStorePopover(): void {
+  const popover = storeLayer?.querySelector<HTMLElement>(".release-popover");
+  if (!popover || !storeAnchor) return;
+  const rect = storeAnchor.getBoundingClientRect();
+  const width = popover.offsetWidth;
+  const height = popover.offsetHeight;
+  const margin = 12;
+  const gap = 10;
+  let left = rect.right + gap;
+  let top = rect.top;
+  if (left + width > window.innerWidth - margin) left = rect.left - width - gap;
+  if (left < margin) {
+    left = Math.min(
+      Math.max(margin, rect.left),
+      Math.max(margin, window.innerWidth - width - margin),
+    );
+    const below = rect.bottom + 8;
+    top = below + height <= window.innerHeight - margin ? below : rect.top - height - 8;
+  }
+  top = Math.max(margin, Math.min(top, window.innerHeight - height - margin));
+  popover.style.left = `${Math.round(left)}px`;
+  popover.style.top = `${Math.round(top)}px`;
+}
+
+/** After a repaint, point the bubble at the new copy of the same card. */
+function refreshStoreAnchor(): void {
+  if (!storeLayer || !storeRelease) return;
+  const shell = storeAnchor?.closest<HTMLElement>(
+    ".calendar-hero-shell, .calendar-game-shell, .calendar-top-card, .calendar-watch-card, .calendar-tba-shell",
+  )?.classList[0];
+  const id = storeRelease.id;
+  const scoped = shell
+    ? layer?.querySelector<HTMLElement>(
+        `.${shell} [data-act="release-stores"][data-id="${id}"]`,
+      )
+    : null;
+  const anchor =
+    scoped ??
+    layer?.querySelector<HTMLElement>(`[data-act="release-stores"][data-id="${id}"]`);
+  if (!anchor) {
+    closeReleaseStores();
+    return;
+  }
+  storeAnchor = anchor;
+  positionStorePopover();
+}
+
+function renderStorePopover(): void {
   if (!storeLayer || !storeRelease) return;
   const release = storeRelease;
-  const cover = igdbImage(release.coverId, "cover_big");
+  const cover = coverOf(release, "cover_small");
   const exact = (release.stores ?? []).map(
     (store) =>
       `<button type="button" class="release-store-btn" data-act="open-external-url" data-url="${esc(store.url)}">
-        ${storeLogo(store.id, 14, "release-store-logo")}<span>${esc(storeLabel(store.id, store.label))}</span>${icon("external", 12)}
+        ${storeLogo(store.id, 13, "release-store-logo")}<span>${esc(storeLabel(store.id, store.label))}</span>${icon("external", 11)}
       </button>`,
   );
   const known = new Set((release.stores ?? []).map((store) => store.id));
@@ -1107,64 +1193,159 @@ function renderStoreDialog(): void {
     .filter((store) => !known.has(store.id))
     .map(
       (store) =>
-        `<button type="button" class="release-store-btn is-search" data-act="open-external-url" data-url="${esc(store.url)}">
-          ${storeLogo(store.id, 14, "release-store-logo") || icon("search", 12)}<span>${esc(t("calendar.searchOn", { store: store.label }))}</span>
+        `<button type="button" class="release-store-btn is-search" data-act="open-external-url" data-url="${esc(store.url)}" aria-label="${esc(t("calendar.searchOn", { store: store.label }))}">
+          ${storeLogo(store.id, 13, "release-store-logo") || icon("search", 11)}<span>${esc(store.label)}</span>
         </button>`,
     );
+  const followedNow = followed.has(release.id);
   storeLayer.innerHTML = `
-    <div class="modal-backdrop" data-act="release-stores-close">
-      <div class="modal release-stores-dialog" role="dialog" aria-modal="true" data-act="prevent-modal-close">
-        <div class="release-stores-head">
-          ${cover ? `<img class="release-stores-cover" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="release-stores-cover placeholder">${icon("gamepad-2", 20)}</span>`}
-          <div class="release-stores-head-text">
-            <h3 class="release-stores-title">${esc(release.name)}</h3>
-            <p class="release-stores-date">${esc(
-              [dateLabel(release), countdownLabel(release)].filter(Boolean).join(" · "),
-            )}</p>
-          </div>
-          <button type="button" class="manage-head-close" data-act="release-stores-close" title="${esc(t("common.close"))}">${icon("x", 16)}</button>
+    <div class="release-popover" role="dialog" aria-label="${esc(`${release.name} · ${dateLabel(release)}`)}">
+      <div class="release-popover-head">
+        ${cover ? `<img class="release-stores-cover" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="release-stores-cover placeholder">${icon("gamepad-2", 18)}</span>`}
+        <div class="release-stores-head-text">
+          <p class="release-stores-title">${esc(release.name)}</p>
+          <p class="release-stores-date">${esc(
+            [dateLabel(release), countdownLabel(release)].filter(Boolean).join(" · "),
+          )}</p>
         </div>
+        <button type="button" class="manage-head-close" data-act="release-stores-close" title="${esc(t("common.close"))}">${icon("x", 15)}</button>
+      </div>
+      <div class="release-popover-body">
         <div class="release-stores-section">${esc(t("calendar.whereToBuy"))}</div>
         <div class="release-stores-list">
           ${exact.length > 0 ? exact.join("") : `<p class="release-stores-empty">${esc(t("calendar.noStoreLinks"))}</p>`}
         </div>
         <div class="release-stores-section">${esc(t("calendar.searchStores"))}</div>
         <div class="release-stores-list is-search">${searches.join("")}</div>
-        <p class="release-stores-note">${icon("info", 12)}<span>${esc(t("calendar.storeNote"))}</span></p>
-        <div class="modal-foot">
-          <button type="button" class="btn ghost${followed.has(release.id) ? " is-following" : ""}" data-act="release-follow" data-id="${release.id}">${icon("star", 13)} ${esc(followed.has(release.id) ? t("calendar.following") : t("calendar.follow"))}</button>
-          <button type="button" class="btn ghost" data-act="release-stores-close">${esc(t("common.close"))}</button>
-          ${release.url ? `<button type="button" class="btn ghost" data-act="open-external-url" data-url="${esc(release.url)}">${icon("external", 13)} ${esc(t("calendar.igdbPage"))}</button>` : ""}
-        </div>
+        <p class="release-stores-note">${icon("info", 11)}<span>${esc(t("calendar.storeNote"))}</span></p>
+      </div>
+      <div class="release-popover-foot">
+        <button type="button" class="btn ghost small${followedNow ? " is-following" : ""}" data-act="release-follow" data-id="${release.id}">${icon("star", 12)} ${esc(followedNow ? t("calendar.following") : t("calendar.follow"))}</button>
+        ${release.url ? `<button type="button" class="release-popover-link" data-act="open-external-url" data-url="${esc(release.url)}">${icon("external", 11)} ${esc(t("calendar.igdbPage"))}</button>` : ""}
       </div>
     </div>`;
-  storeLayer.querySelector<HTMLButtonElement>('[data-act="release-stores-close"]')?.focus();
+  positionStorePopover();
+  if (storePinned) {
+    storeLayer.querySelector<HTMLButtonElement>('[data-act="release-stores-close"]')?.focus();
+  }
 }
 
-/** Opens the store picker for one upcoming release. */
-export function openReleaseStores(id: number): void {
+function scheduleStoreClose(): void {
+  window.clearTimeout(hoverCloseTimer);
+  hoverCloseTimer = window.setTimeout(() => {
+    if (!storePinned) closeReleaseStores();
+  }, HOVER_CLOSE_MS);
+}
+
+function previewReleaseStores(id: number, anchor: HTMLElement): void {
+  if (!layer || storePinned) return;
+  const release = releases.find((item) => item.id === id);
+  if (!release) return;
+  if (storeRelease?.id === id && storeAnchor === anchor && storeLayer) return;
+  storeRelease = release;
+  storeAnchor = anchor;
+  ensureStoreLayer();
+  renderStorePopover();
+}
+
+/** Clicking a card pins the store bubble; clicking the same card again closes it. */
+export function openReleaseStores(id: number, anchor?: HTMLElement | null): void {
   if (!layer) return;
   const release = releases.find((item) => item.id === id);
   if (!release) return;
-  storeRelease = release;
-  if (!storeLayer) {
-    storeLayer = document.createElement("div");
-    storeLayer.className = "confirm-layer";
-    confirmRoot.appendChild(storeLayer);
+  if (storePinned && storeRelease?.id === id && storeLayer) {
+    closeReleaseStores();
+    return;
   }
-  renderStoreDialog();
+  clearStoreTimers();
+  storePinned = true;
+  storeRelease = release;
+  storeAnchor =
+    anchor ??
+    layer.querySelector<HTMLElement>(`[data-act="release-stores"][data-id="${id}"]`);
+  ensureStoreLayer();
+  renderStorePopover();
 }
 
-/** Closes the store picker. */
+/** Closes the store bubble. */
 export function closeReleaseStores(): void {
+  const restoreFocus = storePinned && Boolean(storeLayer?.contains(document.activeElement));
+  const anchor = storeAnchor;
+  clearStoreTimers();
   storeLayer?.remove();
   storeLayer = null;
   storeRelease = null;
+  storeAnchor = null;
+  storePinned = false;
+  if (restoreFocus && anchor?.isConnected) anchor.focus();
 }
 
-/** Cancels the store picker; true when there was one (Escape handling). */
+/** Cancels the store bubble; true when there was one (Escape handling). */
 export function cancelReleaseStores(): boolean {
   if (!storeLayer) return false;
   closeReleaseStores();
   return true;
 }
+
+/* ---------- Hover preview and outside-click handling ---------- */
+
+document.addEventListener("mouseover", (event) => {
+  if (!layer) return;
+  const target = event.target as HTMLElement | null;
+  const anchor = target?.closest<HTMLElement>('[data-act="release-stores"]');
+  if (!anchor || !layer.contains(anchor)) return;
+  const related = event.relatedTarget as Node | null;
+  if (related && anchor.contains(related)) return;
+  if (storePinned) return;
+  const id = Number(anchor.dataset.id);
+  if (!Number.isFinite(id)) return;
+  window.clearTimeout(hoverOpenTimer);
+  window.clearTimeout(hoverCloseTimer);
+  hoverOpenTimer = window.setTimeout(() => {
+    if (!layer || !anchor.isConnected || storePinned) return;
+    previewReleaseStores(id, anchor);
+  }, HOVER_OPEN_MS);
+});
+
+document.addEventListener("mouseout", (event) => {
+  if (!layer) return;
+  const target = event.target as HTMLElement | null;
+  const anchor = target?.closest<HTMLElement>('[data-act="release-stores"]');
+  if (!anchor || !layer.contains(anchor)) return;
+  const related = event.relatedTarget as Node | null;
+  if (related && (anchor.contains(related) || storeLayer?.contains(related))) {
+    window.clearTimeout(hoverCloseTimer);
+    return;
+  }
+  window.clearTimeout(hoverOpenTimer);
+  if (!storePinned) scheduleStoreClose();
+});
+
+document.addEventListener("click", (event) => {
+  if (!storeLayer) return;
+  const target = event.target as HTMLElement | null;
+  if (!target || storeLayer.contains(target)) return;
+  if (
+    target.closest(
+      '[data-act="release-stores"], [data-act="release-calendar-close"], [data-act="release-stores-close"]',
+    )
+  ) {
+    return;
+  }
+  closeReleaseStores();
+});
+
+document.addEventListener(
+  "scroll",
+  (event) => {
+    if (!storeLayer) return;
+    const target = event.target as HTMLElement | null;
+    if (!target || storeLayer.contains(target)) return;
+    if (layer?.contains(target)) closeReleaseStores();
+  },
+  true,
+);
+
+window.addEventListener("resize", () => {
+  if (storeLayer) closeReleaseStores();
+});

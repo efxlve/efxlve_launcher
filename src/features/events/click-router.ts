@@ -114,7 +114,7 @@ import {
   updateLibraryFilterInPlace,
 } from "../library/library-view";
 import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
-import { clearReleaseCalendarSearch, closeReleaseCalendar, closeReleaseStores, openReleaseCalendar, openReleaseCalendarSearch, openReleaseCalendarWatchlist, openReleaseStores, refreshReleaseCalendar, setReleaseCalendarDay, setReleaseCalendarMonth, stepReleaseCalendarMonth, toggleReleaseFollow, toggleReleaseWatchlist } from "../library/release-calendar";
+import { clearReleaseCalendarSearch, closeReleaseCalendar, closeReleaseStores, isReleaseStoresOpen, openReleaseCalendar, openReleaseCalendarSearch, openReleaseCalendarWatchlist, openReleaseStores, refreshReleaseCalendar, setReleaseCalendarDay, setReleaseCalendarMonth, stepReleaseCalendarMonth, toggleReleaseFollow, toggleReleaseWatchlist } from "../library/release-calendar";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
@@ -585,7 +585,8 @@ document.addEventListener("click", (e) => {
   } else if (act === "open-release-watchlist") {
     openReleaseCalendarWatchlist();
   } else if (act === "release-calendar-close") {
-    closeReleaseCalendar();
+    if (isReleaseStoresOpen() && !t.classList.contains("manage-head-close")) closeReleaseStores();
+    else closeReleaseCalendar();
   } else if (act === "release-calendar-month" && t.dataset.year && t.dataset.month) {
     setReleaseCalendarMonth(Number(t.dataset.year), Number(t.dataset.month));
   } else if (act === "release-calendar-day" && t.dataset.day !== undefined) {
@@ -595,7 +596,7 @@ document.addEventListener("click", (e) => {
   } else if (act === "release-calendar-next") {
     stepReleaseCalendarMonth(1);
   } else if (act === "release-stores" && id) {
-    openReleaseStores(Number(id));
+    openReleaseStores(Number(id), t);
   } else if (act === "release-stores-close") {
     closeReleaseStores();
   } else if (act === "release-calendar-refresh") {

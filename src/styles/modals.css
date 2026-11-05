@@ -2263,57 +2263,76 @@
   margin: 14px 2px 0; font-size: 11px; line-height: 1.6; color: var(--text-3);
 }
 
-/* --- Upcoming release store picker --------------------------------------- */
-.release-stores-dialog { width: min(540px, 100%); padding: 0; }
-.release-stores-head {
-  display: flex; align-items: center; gap: 14px;
-  padding: 16px 18px; border-bottom: 1px solid var(--line);
+/* --- Release store bubble ------------------------------------------------- */
+.release-popover-layer {
+  position: fixed; inset: 0; z-index: 700; pointer-events: none;
+}
+.release-popover {
+  position: fixed; width: min(360px, calc(100vw - 24px));
+  max-height: min(70vh, 460px); overflow-y: auto; pointer-events: auto;
+  background: var(--surface-1); border: 1px solid var(--line-strong);
+  border-radius: var(--r-md); box-shadow: var(--shadow-pop);
+}
+.release-popover-head {
+  position: sticky; top: 0; z-index: 1;
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 12px 10px; border-bottom: 1px solid var(--line);
+  background: var(--surface-1);
 }
 .release-stores-cover {
-  width: 64px; height: 86px; flex: none; object-fit: cover;
-  border-radius: var(--r-sm); background: var(--surface-2);
+  width: 46px; height: 62px; flex: none; object-fit: cover;
+  border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2);
 }
 .release-stores-cover.placeholder { display: grid; place-items: center; color: var(--text-3); }
 .release-stores-head-text { flex: 1; min-width: 0; }
 .release-stores-title {
-  margin: 0 0 4px; font-size: 17px; font-weight: 700; color: var(--text);
-  overflow-wrap: anywhere;
+  margin: 0 0 3px; font-size: 14px; font-weight: 700; line-height: 1.25;
+  color: var(--text); overflow-wrap: anywhere;
 }
-.release-stores-date { margin: 0; font-size: 12px; color: var(--text-3); }
+.release-stores-date { margin: 0; font-size: 10.5px; color: var(--text-3); }
+.release-popover-head .manage-head-close { flex: none; }
+.release-popover-body { padding-bottom: 2px; }
 .release-stores-section {
-  padding: 14px 18px 6px; font-size: 10px; font-weight: 700;
+  padding: 10px 12px 5px; font-size: 9px; font-weight: 700;
   letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-3);
 }
-.release-stores-list { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px; }
+.release-stores-list { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 12px; }
 .release-store-btn {
-  display: inline-flex; align-items: center; gap: 7px;
-  min-height: 34px; padding: 6px 11px;
-  border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+  display: inline-flex; align-items: center; gap: 5px;
+  min-height: 27px; padding: 4px 8px;
+  border: 1px solid var(--line); border-radius: 4px;
   background: var(--surface-1); color: var(--text);
-  font-size: 12px; font-weight: 600; cursor: pointer;
+  font-size: 10.5px; font-weight: 600; cursor: pointer;
   transition: background-color var(--ease), border-color var(--ease);
 }
 .release-store-btn:hover { background: var(--surface-2); border-color: var(--accent); }
 .release-store-logo { flex: none; border-radius: 2px; object-fit: contain; }
 .release-store-btn.is-search {
-  font-weight: 500; color: var(--text-2); border-style: dashed;
+  font-weight: 500; color: var(--text-2); background: var(--surface-2);
 }
 .release-stores-empty {
-  margin: 0; font-size: 12px; line-height: 1.6; color: var(--text-3);
+  margin: 0; font-size: 11px; line-height: 1.5; color: var(--text-3);
 }
 .release-stores-note {
-  display: flex; align-items: flex-start; gap: 7px;
-  margin: 14px 18px 0; font-size: 11px; line-height: 1.5; color: var(--text-3);
+  display: flex; align-items: flex-start; gap: 6px;
+  margin: 10px 12px 12px; font-size: 10px; line-height: 1.5; color: var(--text-3);
 }
 .release-stores-note svg { flex: none; margin-top: 1px; }
-.release-stores-dialog .modal-foot {
-  margin: 14px 0 0; padding: 12px 18px; border-top: 1px solid var(--line);
+.release-popover-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 12px; border-top: 1px solid var(--line); background: var(--surface-1);
 }
-.release-stores-dialog .btn.is-following {
+.release-popover .btn.is-following {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
   color: var(--accent);
 }
-.release-stores-dialog .btn.is-following svg { fill: currentColor; }
+.release-popover .btn.is-following svg { fill: currentColor; }
+.release-popover-link {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 2px; border: 0; background: transparent;
+  color: var(--text-3); font-size: 10.5px; cursor: pointer;
+}
+.release-popover-link:hover { color: var(--text); }
 .calendar-loading, .calendar-empty {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 8px; min-height: 260px; text-align: center; color: var(--text-2);
