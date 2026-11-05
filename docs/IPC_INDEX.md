@@ -22,6 +22,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `app_get_autostart` | `appGetAutostart({ ... })` | `src-tauri/src/main.rs` |
 | `app_is_maximized` | `appIsMaximized({ ... })` | `src-tauri/src/main.rs` |
 | `app_minimize` | `appMinimize({ ... })` | `src-tauri/src/main.rs` |
+| `app_power_action` | `appPowerAction({ ... })` | `src-tauri/src/power.rs` |
 | `app_set_autostart` | `appSetAutostart({ ... })` | `src-tauri/src/main.rs` |
 | `app_set_decorations` | `appSetDecorations({ ... })` | `src-tauri/src/main.rs` |
 | `app_set_fullscreen` | `appSetFullscreen({ ... })` | `src-tauri/src/main.rs` |
@@ -46,12 +47,15 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `clip_stop` | `clipStop({ ... })` | `src-tauri/src/legendary/clip_recorder.rs` |
 | `clip_thumbnail` | `clipThumbnail({ ... })` | `src-tauri/src/legendary/clip_recorder.rs` |
 | `clip_trim` | `clipTrim({ ... })` | `src-tauri/src/legendary/clip_recorder.rs` |
+| `cloud_backup_apply_restore` | `cloudBackupApplyRestore({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
+| `cloud_backup_cancel_restore` | `cloudBackupCancelRestore({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_delete_remote` | `cloudBackupDeleteRemote({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_disconnect_gdrive` | `cloudBackupDisconnectGdrive({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_download_game` | `cloudBackupDownloadGame({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_get_settings` | `cloudBackupGetSettings({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_list_game` | `cloudBackupListGame({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_open_folder` | `cloudBackupOpenFolder({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
+| `cloud_backup_preview_game` | `cloudBackupPreviewGame({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_rclone_remotes` | `cloudBackupRcloneRemotes({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_remote_hash` | `cloudBackupRemoteHash({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_save_settings` | `cloudBackupSaveSettings({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
@@ -221,6 +225,8 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_presence_clear` | `epicPresenceClear({ ... })` | `src-tauri/src/presence.rs` |
 | `epic_presence_configure` | `epicPresenceConfigure({ ... })` | `src-tauri/src/presence.rs` |
 | `epic_presence_update` | `epicPresenceUpdate({ ... })` | `src-tauri/src/presence.rs` |
+| `epic_preview_backup` | `epicPreviewBackup({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
+| `epic_release_calendar` | `epicReleaseCalendar({ ... })` | `src-tauri/src/release_calendar.rs` |
 | `epic_remove_saved_account` | `epicRemoveSavedAccount({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_remove_screenshot_root` | `epicRemoveScreenshotRoot({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_reorder_collections` | `epicReorderCollections({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
@@ -334,6 +340,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `notes_import` | `notesImport({ ... })` | `src-tauri/src/notes.rs` |
 | `notes_import_text` | `notesImportText({ ... })` | `src-tauri/src/notes.rs` |
 | `notes_list` | `notesList({ ... })` | `src-tauri/src/notes.rs` |
+| `notes_restore_last` | `notesRestoreLast({ ... })` | `src-tauri/src/notes.rs` |
 | `notes_save` | `notesSave({ ... })` | `src-tauri/src/notes.rs` |
 | `notes_store_image` | `notesStoreImage({ ... })` | `src-tauri/src/notes.rs` |
 | `notif_overlay_act` | `notifOverlayAct({ ... })` | `src-tauri/src/notif_overlay.rs` |
@@ -354,6 +361,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `overlay_browser_navigate` | `overlayBrowserNavigate({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_new_tab` | `overlayBrowserNewTab({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_open` | `overlayBrowserOpen({ ... })` | `src-tauri/src/overlay/browser.rs` |
+| `overlay_browser_pip_tab` | `overlayBrowserPipTab({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_raise` | `overlayBrowserRaise({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_set_pip` | `overlayBrowserSetPip({ ... })` | `src-tauri/src/overlay/browser.rs` |
 | `overlay_browser_set_pip_click_through` | `overlayBrowserSetPipClickThrough({ ... })` | `src-tauri/src/overlay/browser.rs` |
@@ -383,6 +391,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `perf_mark` | `perfMark({ ... })` | `src-tauri/src/perf.rs` |
 | `powerpyx_game_guide` | `powerpyxGameGuide({ ... })` | `src-tauri/src/guides/powerpyx.rs` |
 | `prewarm_store_view` | `prewarmStoreView({ ... })` | `src-tauri/src/store_host.rs` |
+| `profile_archive_encrypted` | `profileArchiveEncrypted({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `profile_cloud_list` | `profileCloudList({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `profile_cloud_restore` | `profileCloudRestore({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `profile_cloud_upload` | `profileCloudUpload({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
@@ -440,8 +449,11 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `steam_get_saved_accounts` | `steamGetSavedAccounts({ ... })` | `src-tauri/src/steam_auth/session.rs` |
 | `steam_get_screenshot_full_data` | `steamGetScreenshotFullData({ ... })` | `src-tauri/src/steam/shots.rs` |
 | `steam_import_collections` | `steamImportCollections({ ... })` | `src-tauri/src/steam/collections.rs` |
+| `steam_launch_game` | `steamLaunchGame({ ... })` | `src-tauri/src/steam/launch_mode.rs` |
+| `steam_launch_prefs` | `steamLaunchPrefs({ ... })` | `src-tauri/src/steam/launch_mode.rs` |
 | `steam_library_art` | `steamLibraryArt({ ... })` | `src-tauri/src/steam_art.rs` |
 | `steam_list_installed` | `steamListInstalled({ ... })` | `src-tauri/src/steam/protocol.rs` |
+| `steam_login_accounts` | `steamLoginAccounts({ ... })` | `src-tauri/src/steam/launch_mode.rs` |
 | `steam_login_begin` | `steamLoginBegin({ ... })` | `src-tauri/src/steam_auth/session.rs` |
 | `steam_login_code` | `steamLoginCode({ ... })` | `src-tauri/src/steam_auth/session.rs` |
 | `steam_login_qr_begin` | `steamLoginQrBegin({ ... })` | `src-tauri/src/steam_auth/session.rs` |
@@ -456,6 +468,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `steam_set_achievement_notifications` | `steamSetAchievementNotifications({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `steam_set_achievement_source` | `steamSetAchievementSource({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `steam_set_api_key` | `steamSetApiKey({ ... })` | `src-tauri/src/steam/catalog.rs` |
+| `steam_set_launch_pref` | `steamSetLaunchPref({ ... })` | `src-tauri/src/steam/launch_mode.rs` |
 | `steam_start_achievement_watcher` | `steamStartAchievementWatcher({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `steam_start_emulator_watcher` | `steamStartEmulatorWatcher({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `steam_status` | `steamStatus({ ... })` | `src-tauri/src/steam/protocol.rs` |
