@@ -488,6 +488,32 @@ async fn collect_graphql(
     Ok(graphql_games(&value))
 }
 
+/// Merge the GraphQL catalog into the entitlement-backed list. A GraphQL-only
+/// space is a store claim, not a PC licence the client can install; it is
+/// added only when the entitlement call itself failed.
+fn merge_graphql(
+    games: &mut Vec<ubisoft::OwnedGame>,
+    found: Vec<ubisoft::OwnedGame>,
+    allow_new: bool,
+) {
+    for game in found {
+        if let Some(index) = games.iter().position(|existing| existing.id == game.id) {
+            let existing = &mut games[index];
+            if existing.name.is_empty() {
+                existing.name = game.name;
+            }
+            if existing.cover.is_empty() {
+                existing.cover = game.cover;
+            }
+            if existing.hero.is_empty() {
+                existing.hero = game.hero;
+            }
+        } else if allow_new {
+            games.push(game);
+        }
+    }
+}
+
 /// Owned games from the account API, ready for the local cache.
 ///
 /// Used right after the overlay sign-in; on success the refreshable session is
@@ -675,8 +701,11 @@ async fn import_inner(session: &Session, log: &mut Vec<serde_json::Value>) -> Re
         live = next;
     }
     let mut first_error = None;
-    let mut games = match collect_entitlements(&client, &live, log).await {
-        Ok(games) => games,
+    // A successful entitlement call is the PC licence list. The GraphQL list
+    // also carries store claims the client cannot install, so it is only used
+    // as the ownership source when the entitlement call itself failed.
+    let (mut games, entitlements_ok) = match collect_entitlements(&client, &live, log).await {
+        Ok(games) => (games, true),
         Err(err) => {
             first_error = Some(err);
             // The captured ticket can be stale; one more session POST is the
@@ -684,39 +713,22 @@ async fn import_inner(session: &Session, log: &mut Vec<serde_json::Value>) -> Re
             if let Some(next) = post_session(&client, &live).await {
                 live = next;
                 match collect_entitlements(&client, &live, log).await {
-                    Ok(games) => games,
+                    Ok(games) => (games, true),
                     Err(err) => {
                         first_error = Some(err);
-                        Vec::new()
+                        (Vec::new(), false)
                     }
                 }
             } else {
-                Vec::new()
+                (Vec::new(), false)
             }
         }
     };
+    log_note(log, "entitlements", entitlements_ok);
     // The catalog and the GraphQL list cover the same account from two sides;
-    // the union keeps a game that only one of them knows about and the catalog
-    // contributes the box art.
+    // the GraphQL pass contributes the box art and the fallback list.
     match collect_graphql(&client, &live, log).await {
-        Ok(found) => {
-            for game in found {
-                match games.iter_mut().find(|g| g.id == game.id) {
-                    Some(existing) => {
-                        if existing.name.is_empty() {
-                            existing.name = game.name;
-                        }
-                        if existing.cover.is_empty() {
-                            existing.cover = game.cover;
-                        }
-                        if existing.hero.is_empty() {
-                            existing.hero = game.hero;
-                        }
-                    }
-                    None => games.push(game),
-                }
-            }
-        }
+        Ok(found) => merge_graphql(&mut games, found, !entitlements_ok),
         Err(err) => {
             if first_error.is_none() {
                 first_error = Some(err);
@@ -1220,6 +1232,42 @@ mod tests {
         assert_eq!(games[0].description, "Hacking in Chicago.");
         assert_eq!(games[1].cover, "https://cdn/high.png");
         assert_eq!(games[1].description, "Legacy blurb");
+    }
+
+    fn owned(id: &str, name: &str, product_id: u32) -> ubisoft::OwnedGame {
+        ubisoft::OwnedGame {
+            id: id.into(),
+            product_id,
+            name: name.into(),
+            cover: String::new(),
+            hero: String::new(),
+            description: String::new(),
+        }
+    }
+
+    #[test]
+    fn graphql_store_claims_do_not_join_the_entitlement_list() {
+        let mut games = vec![owned("space-real", "Real Game", 1234)];
+        merge_graphql(
+            &mut games,
+            vec![
+                owned("space-real", "Real Game", 0),
+                owned("space-fenyx", "Immortals Fenyx Rising", 0),
+            ],
+            false,
+        );
+        assert_eq!(games.len(), 1);
+        assert_eq!(games[0].id, "space-real");
+
+        // A failed entitlement call keeps the GraphQL list as the fallback.
+        let mut fallback = Vec::new();
+        merge_graphql(
+            &mut fallback,
+            vec![owned("space-fenyx", "Immortals Fenyx Rising", 0)],
+            true,
+        );
+        assert_eq!(fallback.len(), 1);
+        assert_eq!(fallback[0].id, "space-fenyx");
     }
 
     #[test]
