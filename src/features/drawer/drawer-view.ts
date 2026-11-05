@@ -35,7 +35,7 @@ import { gameStatusOf, gameStatusOptions, statusMenuHtml, type GameStatus } from
 import { collectionHasGame } from "../../core/game-collections";
 import { canonicalGameTitle, clearWideArtCache, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, libraryPlaytime, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { storeVersionLabel } from "./external-versions";
-import { sideCard } from "./side-widgets";
+import { sideCard, sortDrawerCards, type DrawerCardId } from "./side-widgets";
 import { storeLogo } from "../store/store-logos";
 import { holdStoreForCover } from "../store/store-view";
 import { S } from "../../core/state";
@@ -2026,6 +2026,30 @@ export function renderDrawerOverview(
     igdbGameFor(s.appName)?.rating ?? null,
   )}</div>`;
 
+  // The sidebar order is a global preference; a card with nothing to say is
+  // dropped before sorting so the user never sees an empty slot.
+  const sideCardList: Array<{ id: DrawerCardId; html: string }> = [
+    { id: "achievements", html: renderNextAchievements(s.appName) },
+    {
+      id: "lengths",
+      html: sideCard(s.appName, "lengths", t("hltb.times"), "clock", hltbBlock, {
+        extraClass: "gp-lengths-card",
+      }),
+    },
+    {
+      id: "scores",
+      html: sideCard(s.appName, "scores", t("critic.scoresTitle"), "star", criticBlock, {
+        extraClass: "gp-critic-card",
+      }),
+    },
+    { id: "moments", html: renderMomentsStrip(s.appName) },
+    { id: "links", html: renderGameLinks(s) },
+  ];
+  const sideCards = sideCardList.filter((card) => card.html.trim().length > 0);
+  const orderedSideCards = sortDrawerCards(sideCards)
+    .map((card) => card.html)
+    .join("");
+
   // Main column order:
   // 1. About Game (top)
   // 2. News
@@ -2044,11 +2068,7 @@ export function renderDrawerOverview(
         ${personal}
       </div>
       <aside class="hub-overview-sidebar">
-        ${renderNextAchievements(s.appName)}
-        ${sideCard(s.appName, "lengths", t("hltb.times"), "clock", hltbBlock, { extraClass: "gp-lengths-card" })}
-        ${sideCard(s.appName, "scores", t("critic.scoresTitle"), "star", criticBlock, { extraClass: "gp-critic-card" })}
-        ${renderMomentsStrip(s.appName)}
-        ${renderGameLinks(s)}
+        ${orderedSideCards}
       </aside>
     </div>`;
 }

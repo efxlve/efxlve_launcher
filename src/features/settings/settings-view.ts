@@ -94,6 +94,12 @@ import { CLIP_FPS_SUPPORTED, clipFps as clipFpsSetting, clipHeight as clipHeight
 import { ssAddWebhook, ssRemoveWebhook, ssWebhooks } from "../screenshots/ss-settings";
 import { screenshotWebhookInfo } from "../../epic";
 import { cachedNotes, exportNotes, importNotesText, LAUNCHER_SCOPE, loadNotes, notesFontSize, restoreLastNote, setNotesFontSize } from "../notes/notes-client";
+import {
+  drawerCardOrder,
+  moveDrawerCard,
+  resetDrawerCardOrder,
+  type DrawerCardId,
+} from "../drawer/side-widgets";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 import { handleCompatAction, loadCompatView, renderCompatSection } from "./compat-view";
 import { keepDiscordOpen } from "../discord/discord-view";
@@ -1419,6 +1425,34 @@ function renderCustomCssRow(): string {
   );
 }
 
+/** Order controls for the five game-page sidebar cards. */
+function drawerOrderRow(): string {
+  const labels: Record<DrawerCardId, string> = {
+    achievements: t("drawer.nextAchievements"),
+    lengths: t("hltb.times"),
+    scores: t("critic.scoresTitle"),
+    moments: t("drawer.moments"),
+    links: t("drawer.linksTitle"),
+  };
+  const order = drawerCardOrder();
+  const rows = order
+    .map(
+      (id, index) => `<div class="drawer-order-row">
+        <span>${esc(labels[id])}</span>
+        <span class="drawer-order-arrows">
+          <button type="button" class="icon-btn" data-act="drawer-order-up" data-id="${id}" title="${esc(t("dl.moveUp"))}" ${index === 0 ? "disabled" : ""}>${icon("chevron-up", 13)}</button>
+          <button type="button" class="icon-btn" data-act="drawer-order-down" data-id="${id}" title="${esc(t("dl.moveDown"))}" ${index === order.length - 1 ? "disabled" : ""}>${icon("chevron-down", 13)}</button>
+        </span>
+      </div>`,
+    )
+    .join("");
+  return row(
+    t("settings.drawerOrderTitle"),
+    t("settings.drawerOrderDesc"),
+    `<div class="drawer-order">${rows}<button type="button" class="btn ghost small" data-act="drawer-order-reset">${t("settings.drawerOrderReset")}</button></div>`,
+  );
+}
+
 function renderAppearance(): string {
   const theme = themePanel.get();
   if (!theme) {
@@ -1451,6 +1485,7 @@ function renderAppearance(): string {
       row(t("settings.highlightInstalledTitle"), t("settings.highlightInstalledDesc"), toggle("toggle-highlight-installed", S.highlightInstalled)) +
       row(t("settings.sharedLibraryTitle"), t("settings.sharedLibraryDesc"), toggle("toggle-shared-library", S.showSharedLibrary)) +
       row(t("settings.startupTabTitle"), t("settings.startupTabDesc"), startupTabSelect()) +
+      drawerOrderRow() +
       row(t("fullscreen.mode"), t("controller.fullscreenModeDesc"), `<button class="btn ghost small" data-act="toggle-fullscreen-mode">${icon("maximize-2", 14)} ${t("fullscreen.toggle")}</button>`) +
       row(
         t("overlay.overlayLabel"),
@@ -2802,6 +2837,19 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
       }
       return true;
     }
+    case "drawer-order-up":
+    case "drawer-order-down": {
+      const id = _el.dataset.id as DrawerCardId | undefined;
+      if (id) {
+        moveDrawerCard(id, act === "drawer-order-up" ? -1 : 1);
+        render();
+      }
+      return true;
+    }
+    case "drawer-order-reset":
+      resetDrawerCardOrder();
+      render();
+      return true;
     case "notes-export": {
       const format = _el.dataset.format === "markdown" ? "markdown" : "json";
       void exportNotes(format).then((path) => {
