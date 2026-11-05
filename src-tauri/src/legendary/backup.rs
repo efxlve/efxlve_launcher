@@ -309,6 +309,142 @@ pub fn backup_destination(info: &SaveBackupInfo) -> Option<PathBuf> {
     Some(base.join(rel))
 }
 
+/// How many files a restore preview lists. The rest are summarized by count,
+/// so a 40,000-file save tree never builds a huge IPC payload.
+const PREVIEW_FILE_LIMIT: usize = 200;
+
+/// One file inside a local backup, relative to its `data/` folder.
+#[derive(Debug, Clone, Serialize)]
+pub struct BackupPreviewFile {
+    pub path: String,
+    pub size: u64,
+}
+
+/// What the user sees before a local backup overwrites the save folder.
+#[derive(Debug, Clone, Serialize)]
+pub struct BackupPreview {
+    pub app_name: String,
+    pub backup_id: String,
+    pub timestamp: u64,
+    pub formatted_date: String,
+    pub total_bytes: u64,
+    pub file_count: usize,
+    pub files: Vec<BackupPreviewFile>,
+    pub truncated: bool,
+    pub save_path: String,
+    /// `logical` when the path was rebuilt from a profile root on this PC,
+    /// `absolute` when the record only held a literal path.
+    pub path_source: String,
+    pub current_hash: Option<String>,
+    pub backup_hash: Option<String>,
+    /// True when the save folder already matches the backup byte for byte.
+    pub same_content: bool,
+    pub target_exists: bool,
+}
+
+/// A backup id is one folder name: `1750000000` or `pre-restore-…`. Anything
+/// with a separator, a drive prefix or `..` would escape the backup root.
+fn safe_backup_id(value: &str) -> Result<&str, String> {
+    let trimmed = value.trim();
+    let mut components = Path::new(trimmed).components();
+    let single = matches!(components.next(), Some(std::path::Component::Normal(_)))
+        && components.next().is_none();
+    if trimmed.is_empty() || !single {
+        return Err("@t:backup.invalidId".to_string());
+    }
+    Ok(trimmed)
+}
+
+fn preview_from_backup_dir(
+    app_name: &str,
+    backup_id: &str,
+    backup_dir: &Path,
+) -> Result<BackupPreview, String> {
+    let info_path = backup_dir.join("backup_info.json");
+    if !info_path.exists() {
+        return Err("@t:backup.infoNotFound".to_string());
+    }
+    let content = std::fs::read_to_string(&info_path).map_err(|e| e.to_string())?;
+    let info: SaveBackupInfo = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+    let data_src = backup_dir.join("data");
+    if !data_src.is_dir() {
+        return Err("@t:backup.dataFolderNotFound".to_string());
+    }
+
+    // The same resolution restore_backup uses, so the preview never promises a
+    // different folder from the one the restore would write.
+    let logical = backup_destination(&info);
+    let (destination, path_source) = match logical {
+        Some(path) => (path, "logical"),
+        None => (PathBuf::from(&info.save_path), "absolute"),
+    };
+    let target_exists = destination.is_dir();
+    let current_hash = tree_content_hash(&destination);
+    let backup_hash = info
+        .content_hash
+        .clone()
+        .or_else(|| tree_content_hash(&data_src));
+    let same_content = matches!(
+        (&current_hash, &backup_hash),
+        (Some(current), Some(backup)) if current == backup
+    );
+
+    let mut tree = Vec::new();
+    collect_tree_files(&data_src, &data_src, &mut tree);
+    tree.sort_by(|left, right| left.0.cmp(&right.0));
+    let file_count = if info.file_count > 0 {
+        info.file_count
+    } else {
+        tree.len()
+    };
+    let truncated = tree.len() > PREVIEW_FILE_LIMIT;
+    let total_bytes = if info.size_bytes > 0 {
+        info.size_bytes
+    } else {
+        tree.iter()
+            .filter_map(|(_, path)| std::fs::metadata(path).ok())
+            .map(|meta| meta.len())
+            .sum()
+    };
+    let files = tree
+        .into_iter()
+        .take(PREVIEW_FILE_LIMIT)
+        .map(|(path, source)| {
+            let size = std::fs::metadata(&source).map(|meta| meta.len()).unwrap_or(0);
+            BackupPreviewFile { path, size }
+        })
+        .collect();
+
+    Ok(BackupPreview {
+        app_name: app_name.to_string(),
+        backup_id: backup_id.to_string(),
+        timestamp: info.timestamp,
+        formatted_date: info.formatted_date,
+        total_bytes,
+        file_count,
+        files,
+        truncated,
+        save_path: destination.to_string_lossy().to_string(),
+        path_source: path_source.to_string(),
+        current_hash,
+        backup_hash,
+        same_content,
+        target_exists,
+    })
+}
+
+/// True when the save tree on disk still has the hash the preview described.
+fn save_tree_matches(destination: &Path, expected: &str) -> bool {
+    tree_content_hash(destination).as_deref() == Some(expected)
+}
+
+/// Describes a local backup without touching the save folder.
+pub fn preview_backup(app_name: &str, backup_id: &str) -> Result<BackupPreview, String> {
+    migrate_legacy_dir(app_name);
+    let id = safe_backup_id(backup_id)?;
+    preview_from_backup_dir(app_name, id, &app_backup_dir(app_name).join(id))
+}
+
 fn snapshot_before_restore(app_name: &str, save_path: &Path) -> Result<Option<String>, String> {
     if !save_path.exists() {
         return Ok(None);
@@ -1047,8 +1183,20 @@ pub fn list_backups(app_name: &str) -> Vec<SaveBackupInfo> {
 }
 
 pub fn restore_backup(app_name: &str, backup_id: &str) -> Result<String, String> {
+    restore_backup_checked(app_name, backup_id, None)
+}
+
+/// Restores a local backup. A non-empty `expected_current_hash` comes from the
+/// preview dialog: when the save tree changed in the meantime the restore is
+/// refused instead of overwriting a session the user just played.
+pub fn restore_backup_checked(
+    app_name: &str,
+    backup_id: &str,
+    expected_current_hash: Option<&str>,
+) -> Result<String, String> {
     migrate_legacy_dir(app_name);
-    let backup_dir = app_backup_dir(app_name).join(backup_id);
+    let id = safe_backup_id(backup_id)?;
+    let backup_dir = app_backup_dir(app_name).join(id);
     let info_path = backup_dir.join("backup_info.json");
     if !info_path.exists() {
         return Err("@t:backup.infoNotFound".to_string());
@@ -1100,6 +1248,14 @@ pub fn restore_backup(app_name: &str, backup_id: &str) -> Result<String, String>
         }
     }
 
+    // The preview named the exact save tree it described. A different tree now
+    // means the game (or another tool) wrote new saves after the dialog opened.
+    if let Some(expected) = expected_current_hash.filter(|value| !value.is_empty()) {
+        if !save_tree_matches(&dest, expected) {
+            return Err("@t:backup.changedSincePreview".to_string());
+        }
+    }
+
     // Keep the current saves before overwriting them. The snapshot stays in the
     // local backup list, so a wrong restore can be undone from the same panel.
     snapshot_before_restore(app_name, &dest)?;
@@ -1114,7 +1270,8 @@ pub fn restore_backup(app_name: &str, backup_id: &str) -> Result<String, String>
 
 pub fn delete_backup(app_name: &str, backup_id: &str) -> Result<(), String> {
     migrate_legacy_dir(app_name);
-    let target = app_backup_dir(app_name).join(backup_id);
+    let id = safe_backup_id(backup_id)?;
+    let target = app_backup_dir(app_name).join(id);
     if target.exists() {
         std::fs::remove_dir_all(target).map_err(|e| e.to_string())?;
     }
@@ -1383,6 +1540,128 @@ mod tests {
         assert!(dir.join("200").exists());
 
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Builds one local backup plus the save folder it describes. Returns
+    /// (root, backup, destination, info).
+    fn local_backup_fixture(name: &str) -> (PathBuf, PathBuf, PathBuf, SaveBackupInfo) {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve_preview_{name}_{}_{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|value| value.as_millis())
+                .unwrap_or(0)
+        ));
+        let backup = root.join("backup").join("1700000000");
+        let data = backup.join("data");
+        std::fs::create_dir_all(&data).unwrap();
+        std::fs::write(data.join("profile.sav"), b"alpha").unwrap();
+        std::fs::create_dir_all(data.join("nested")).unwrap();
+        std::fs::write(data.join("nested").join("slot1.sav"), b"beta").unwrap();
+
+        let destination = root.join("saves").join("Example");
+        std::fs::create_dir_all(&destination).unwrap();
+        std::fs::write(destination.join("profile.sav"), b"alpha").unwrap();
+        std::fs::create_dir_all(destination.join("nested")).unwrap();
+        std::fs::write(destination.join("nested").join("slot1.sav"), b"beta").unwrap();
+
+        let info = SaveBackupInfo {
+            id: "1700000000".into(),
+            app_name: "steam::1".into(),
+            timestamp: 1_700_000_000,
+            formatted_date: "14 Nov 2023".into(),
+            size_bytes: 9,
+            file_count: 2,
+            save_path: destination.to_string_lossy().to_string(),
+            save_root: String::new(),
+            save_rel: String::new(),
+            content_hash: tree_content_hash(&data),
+        };
+        std::fs::write(
+            backup.join("backup_info.json"),
+            serde_json::to_string_pretty(&info).unwrap(),
+        )
+        .unwrap();
+        (root, backup, destination, info)
+    }
+
+    #[test]
+    fn a_local_preview_lists_files_and_the_restore_target() {
+        let (root, backup, destination, _) = local_backup_fixture("list");
+        let preview = preview_from_backup_dir("steam::1", "1700000000", &backup).unwrap();
+        assert_eq!(preview.file_count, 2);
+        assert_eq!(preview.total_bytes, 9);
+        assert!(!preview.truncated);
+        assert_eq!(preview.path_source, "absolute");
+        assert_eq!(preview.save_path, destination.to_string_lossy());
+        assert!(preview.target_exists);
+        assert!(preview
+            .files
+            .iter()
+            .any(|file| file.path == "profile.sav" && file.size == 5));
+        assert!(preview
+            .files
+            .iter()
+            .any(|file| file.path == "nested/slot1.sav" && file.size == 4));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn an_identical_save_tree_is_reported_and_matches_the_guard() {
+        let (root, backup, destination, info) = local_backup_fixture("same");
+        let preview = preview_from_backup_dir("steam::1", "1700000000", &backup).unwrap();
+        assert!(preview.same_content);
+        let expected = preview.current_hash.clone().expect("preview hash");
+        assert!(save_tree_matches(&destination, &expected));
+
+        // A session after the preview invalidates the hash the dialog showed.
+        std::fs::write(destination.join("profile.sav"), b"newer").unwrap();
+        let after = preview_from_backup_dir("steam::1", "1700000000", &backup).unwrap();
+        assert!(!after.same_content);
+        assert!(!save_tree_matches(&destination, &expected));
+        assert_eq!(after.backup_hash, info.content_hash);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_preview_refuses_a_damaged_backup_and_a_bad_id() {
+        let (root, backup, _, _) = local_backup_fixture("damaged");
+        std::fs::remove_dir_all(backup.join("data")).unwrap();
+        assert_eq!(
+            preview_from_backup_dir("steam::1", "1700000000", &backup).unwrap_err(),
+            "@t:backup.dataFolderNotFound"
+        );
+        assert!(safe_backup_id("1700000000").is_ok());
+        assert!(safe_backup_id("pre-restore-1700000000").is_ok());
+        assert!(safe_backup_id("..").is_err());
+        assert!(safe_backup_id("../other").is_err());
+        assert!(safe_backup_id("folder/inside").is_err());
+        assert!(safe_backup_id("").is_err());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_preview_summarizes_a_long_file_list() {
+        let (root, backup, _, mut info) = local_backup_fixture("many");
+        let data = backup.join("data");
+        for index in 0..PREVIEW_FILE_LIMIT {
+            std::fs::write(data.join(format!("bulk_{index:04}.sav")), b"x").unwrap();
+        }
+        // An older record may not carry a count; the preview then counts the
+        // tree itself and still caps the list.
+        info.file_count = 0;
+        info.size_bytes = 0;
+        std::fs::write(
+            backup.join("backup_info.json"),
+            serde_json::to_string_pretty(&info).unwrap(),
+        )
+        .unwrap();
+        let preview = preview_from_backup_dir("steam::1", "1700000000", &backup).unwrap();
+        assert_eq!(preview.files.len(), PREVIEW_FILE_LIMIT);
+        assert!(preview.truncated);
+        assert!(preview.file_count > PREVIEW_FILE_LIMIT);
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     fn unix_fixture(name: &str) -> (PathBuf, PathBuf, PathBuf) {

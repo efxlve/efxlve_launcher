@@ -610,6 +610,30 @@ export interface SaveBackupInfo {
   content_hash?: string | null;
 }
 
+export interface BackupPreviewFile {
+  path: string;
+  size: number;
+}
+
+/** A local backup described before it may overwrite the save folder. */
+export interface BackupPreview {
+  appName: string;
+  backupId: string;
+  timestamp: number;
+  formattedDate: string;
+  totalBytes: number;
+  fileCount: number;
+  files: BackupPreviewFile[];
+  truncated: boolean;
+  savePath: string;
+  /** `logical` when rebuilt from a profile root, `absolute` otherwise. */
+  pathSource: string;
+  currentHash?: string | null;
+  backupHash?: string | null;
+  sameContent: boolean;
+  targetExists: boolean;
+}
+
 export const epicBackupSave = (appName: string, savePathOverride?: string) =>
   invoke<SaveBackupInfo>("epic_backup_save", { appName, savePathOverride: savePathOverride ?? null });
 
@@ -619,8 +643,23 @@ export const epicSetCustomSavePath = (appName: string, savePath: string | null) 
 export const epicListBackups = (appName: string) =>
   invoke<SaveBackupInfo[]>("epic_list_backups", { appName });
 
-export const epicRestoreBackup = (appName: string, backupId: string) =>
-  invoke<string>("epic_restore_backup", { appName, backupId });
+export const epicPreviewBackup = (appName: string, backupId: string) =>
+  invoke<BackupPreview>("epic_preview_backup", { appName, backupId });
+
+/**
+ * Restores a local backup. `expectedHash` is the save-tree hash the preview
+ * showed; the backend refuses the restore when the folder changed since then.
+ */
+export const epicRestoreBackup = (
+  appName: string,
+  backupId: string,
+  expectedHash?: string,
+) =>
+  invoke<string>("epic_restore_backup", {
+    appName,
+    backupId,
+    expectedHash: expectedHash ?? null,
+  });
 
 export const epicDeleteBackup = (appName: string, backupId: string) =>
   invoke<void>("epic_delete_backup", { appName, backupId });

@@ -191,11 +191,30 @@ pub fn epic_list_backups(app_name: String) -> Vec<crate::legendary::backup::Save
     crate::legendary::backup::list_backups(&app_name)
 }
 
-/// Restores a backup to the game.
+/// Describes a local backup before a restore overwrites the save folder.
 #[tauri::command]
-pub async fn epic_restore_backup(app_name: String, backup_id: String) -> Result<String, String> {
+pub fn epic_preview_backup(
+    app_name: String,
+    backup_id: String,
+) -> Result<crate::legendary::backup::BackupPreview, String> {
+    crate::legendary::backup::preview_backup(&app_name, &backup_id)
+}
+
+/// Restores a backup to the game. `expected_hash` is the save-tree hash from
+/// the preview: a different tree now means the game wrote new saves while the
+/// confirmation was open, so the restore is refused.
+#[tauri::command]
+pub async fn epic_restore_backup(
+    app_name: String,
+    backup_id: String,
+    expected_hash: Option<String>,
+) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        crate::legendary::backup::restore_backup(&app_name, &backup_id)
+        crate::legendary::backup::restore_backup_checked(
+            &app_name,
+            &backup_id,
+            expected_hash.as_deref(),
+        )
     })
     .await
     .map_err(|e| e.to_string())?

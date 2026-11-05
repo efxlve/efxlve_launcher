@@ -45,6 +45,7 @@ import {
   epicDeleteBackup,
   epicOpenBackupFolder,
   epicOpenFolderPath,
+  epicPreviewBackup,
   epicRestoreBackup,
   epicSaveGameSettings,
   epicSelectFolderDialog,
@@ -54,6 +55,7 @@ import {
   getThirdPartyLauncher,
   requiresThirdPartyLauncher,
 } from "../../../epic";
+import { askRestorePreview } from "../../cloud-backup/restore-preview-dialog";
 
 export function handleManageAction(act: string | undefined, t: HTMLElement, id?: string, targetEl?: HTMLElement): boolean {
   if (!act) return false;
@@ -342,10 +344,28 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
       if (id) {
         const bid = t.dataset.bid;
         if (bid) {
-          toast(i18nT("backup.restoring"), "");
-          epicRestoreBackup(id, bid)
-            .then((msg) => toast(msg, "ok"))
-            .catch((err) => toast(i18nT("backup.restoreFailed", { msg: localizeMessage(String(err)) }), "err"));
+          // Restoring under a running game leaves locked files and a
+          // half-replaced save tree.
+          if (S.runningGames.has(id)) {
+            toast(i18nT("cloud.closeGameFirst"), "err");
+            return true;
+          }
+          // A local restore used to start on a single click. Show the file
+          // list and target folder first, then pass the previewed hash so a
+          // session played in between refuses instead of being overwritten.
+          epicPreviewBackup(id, bid)
+            .then(async (preview) => {
+              if (!(await askRestorePreview(preview))) return;
+              toast(i18nT("backup.restoring"), "");
+              const msg = await epicRestoreBackup(id, bid, preview.currentHash ?? undefined);
+              toast(msg, "ok");
+            })
+            .catch((err) =>
+              toast(
+                i18nT("backup.restoreFailed", { msg: localizeMessage(String(err)) }),
+                "err",
+              ),
+            );
         }
       }
       return true;

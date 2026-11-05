@@ -81,6 +81,11 @@ one-use token valid for five minutes; applying it re-hashes the local save
 tree and refuses when the game wrote new saves while the preview was open.
 Closing the preview drops the token and the temporary archive.
 
+A local restore uses the same preview from the backup folder already on disk,
+shows the target folder the logical roots resolve to, and refuses while the
+game is running or when the save tree changed after the preview. Neither path
+can overwrite saves on a single stray click.
+
 ---
 
 ## 2. Providers

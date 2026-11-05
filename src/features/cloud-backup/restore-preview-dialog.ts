@@ -8,7 +8,20 @@ import { confirmRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
 import { esc, fmtBytes } from "../../core/utils";
 import { t } from "../../i18n";
-import type { RestorePreview } from "../../epic";
+
+/**
+ * The fields both restore paths share: a local backup directory and a
+ * downloaded cloud archive describe the same thing here.
+ */
+export interface RestorePreviewView {
+  formattedDate: string;
+  totalBytes: number;
+  fileCount: number;
+  files: Array<{ path: string; size: number }>;
+  savePath: string;
+  /** Only local previews know this; a cloud preview leaves it undefined. */
+  sameContent?: boolean;
+}
 
 let pending: ((answer: boolean) => void) | null = null;
 let layer: HTMLElement | null = null;
@@ -27,7 +40,7 @@ function closeLayer(): void {
 }
 
 /** Opens the preview; true restores, false cancels the pending token. */
-export function askRestorePreview(preview: RestorePreview): Promise<boolean> {
+export function askRestorePreview(preview: RestorePreviewView): Promise<boolean> {
   if (pending) {
     const resolve = pending;
     pending = null;
@@ -62,10 +75,11 @@ export function askRestorePreview(preview: RestorePreview): Promise<boolean> {
         <div class="restore-preview-files-head">${esc(t("cloud.previewFiles"))}<span class="count tabular-nums">${preview.fileCount}</span></div>
         <ul class="restore-preview-files">${rows || `<li><span>${esc(t("cloud.previewEmpty"))}</span></li>`}</ul>
         ${hidden > 0 ? `<div class="restore-preview-more">${esc(t("cloud.previewMore", { n: String(hidden) }))}</div>` : ""}
+        ${preview.sameContent ? `<p class="restore-preview-same">${icon("check-circle", 12)}<span>${esc(t("backup.previewSame"))}</span></p>` : ""}
         <p class="restore-preview-note">${icon("info", 12)}<span>${esc(t("cloud.previewNote"))}</span></p>
         <div class="modal-foot">
           <button type="button" class="btn ghost" data-act="restore-preview-cancel">${esc(t("common.cancel"))}</button>
-          <button type="button" class="btn primary" data-act="restore-preview-confirm">${icon("download", 13)} ${esc(t("cloud.previewRestore"))}</button>
+          <button type="button" class="btn primary" data-act="restore-preview-confirm"${preview.sameContent ? " disabled" : ""}>${icon("download", 13)} ${esc(t("cloud.previewRestore"))}</button>
         </div>
       </div>
     </div>`;
