@@ -58,6 +58,8 @@ let storeRelease: UpcomingRelease | null = null;
 let storeLayer: HTMLElement | null = null;
 /** The card the bubble points at, so a second click can toggle it. */
 let storeAnchor: HTMLElement | null = null;
+/** Direction of the latest month step (-1 prev, 1 next) so the view glides in. */
+let monthTransitionDir: -1 | 0 | 1 = 0;
 
 function releaseYear(release: UpcomingRelease): number {
   if (release.year) return release.year;
@@ -649,7 +651,7 @@ function renderToolbar(months: MonthInfo[], active: MonthSel): string {
   const next = index >= 0 && index < months.length - 1;
   return `<div class="calendar-toolbar">
     <button type="button" class="icon-btn" data-act="release-calendar-prev" title="${esc(t("calendar.previousMonth"))}" aria-label="${esc(t("calendar.previousMonth"))}"${previous ? "" : " disabled"}>${icon("chevron-left", 16)}</button>
-    <div class="calendar-monthbar" role="tablist" aria-label="${esc(t("calendar.title"))}">${months
+    <div class="calendar-monthbar" role="tablist" aria-label="${esc(t("calendar.title"))}"><span class="calendar-month-pill" aria-hidden="true"></span>${months
       .map((month) => {
         const isActive = sameMonth(month, active) && !watching;
         return `<button type="button" class="calendar-month-tab${isActive ? " is-active" : ""}${month.count === 0 ? " is-empty" : ""}" role="tab" aria-selected="${isActive}" data-act="release-calendar-month" data-year="${month.year}" data-month="${month.month}">
@@ -836,9 +838,16 @@ function renderBody(): string {
   const exact = pool.filter(hasExactDay);
   const ranked = [...exact].sort((left, right) => (right.hypes ?? 0) - (left.hypes ?? 0));
   const hero = ranked.find((release) => release.artworkId) ?? ranked[0] ?? pool.find(hasMonthOnly) ?? null;
+  const animClass =
+    monthTransitionDir < 0
+      ? " is-anim-prev"
+      : monthTransitionDir > 0
+        ? " is-anim-next"
+        : "";
+  monthTransitionDir = 0;
   return `
     ${renderToolbar(months, month)}
-    <div class="calendar-workspace">
+    <div class="calendar-workspace${animClass}">
       ${renderSidebar(month, exact, hero?.id ?? null)}
       <div class="calendar-main">
         ${renderHero(hero)}
@@ -865,6 +874,11 @@ function renderCalendar(): void {
   const month = ensureSelectedMonth();
   const watchCount = followedReleases().length;
   const scrollTop = layer.querySelector<HTMLElement>(".calendar-body")?.scrollTop ?? 0;
+  const prevBar = layer.querySelector<HTMLElement>(".calendar-monthbar");
+  const prevMonthScroll = prevBar ? prevBar.scrollLeft : null;
+  const prevTab = prevBar?.querySelector<HTMLElement>(".calendar-month-tab.is-active");
+  const prevTabLeft = prevTab ? prevTab.offsetLeft : null;
+  const prevTabWidth = prevTab ? prevTab.offsetWidth : null;
   layer.innerHTML = `
     <div class="modal-backdrop" data-act="release-calendar-close">
       <div class="modal calendar-dialog" role="dialog" aria-modal="true" data-act="prevent-modal-close">
@@ -905,23 +919,55 @@ function renderCalendar(): void {
     }
   }
   const monthbar = layer.querySelector<HTMLElement>(".calendar-monthbar");
+  const pill = monthbar?.querySelector<HTMLElement>(".calendar-month-pill");
   const activeTab = monthbar?.querySelector<HTMLElement>(".calendar-month-tab.is-active");
+  const syncMonthbarFade = (): void => {
+    if (!monthbar) return;
+    const maxScroll = Math.max(0, monthbar.scrollWidth - monthbar.clientWidth);
+    monthbar.classList.toggle("is-fade-left", monthbar.scrollLeft > 4);
+    monthbar.classList.toggle("is-fade-right", maxScroll - monthbar.scrollLeft > 4);
+  };
   if (monthbar && activeTab) {
-    const firstTab = monthbar.firstElementChild as HTMLElement | null;
-    if (activeTab === firstTab) {
-      monthbar.scrollLeft = 0;
-    } else {
-      const targetLeft =
-        activeTab.offsetLeft - monthbar.clientWidth / 2 + activeTab.clientWidth / 2;
-      monthbar.scrollLeft = Math.max(0, targetLeft);
+    if (pill) {
+      if (
+        prevTabLeft !== null &&
+        prevTabWidth !== null &&
+        (prevTabLeft !== activeTab.offsetLeft || prevTabWidth !== activeTab.offsetWidth)
+      ) {
+        pill.style.transition = "none";
+        pill.style.width = `${prevTabWidth}px`;
+        pill.style.transform = `translateX(${prevTabLeft}px)`;
+        pill.style.opacity = "1";
+        void pill.offsetWidth;
+        pill.style.transition = "";
+      }
+      pill.style.width = `${activeTab.offsetWidth}px`;
+      pill.style.transform = `translateX(${activeTab.offsetLeft}px)`;
+      pill.style.opacity = "1";
     }
+    const firstTab = monthbar.querySelector<HTMLElement>(".calendar-month-tab");
+    const targetLeft =
+      activeTab === firstTab
+        ? 0
+        : Math.max(
+            0,
+            activeTab.offsetLeft - monthbar.clientWidth / 2 + activeTab.clientWidth / 2,
+          );
+    if (prevMonthScroll !== null && Math.abs(prevMonthScroll - targetLeft) > 2) {
+      monthbar.scrollLeft = prevMonthScroll;
+      monthbar.scrollTo({ left: targetLeft, behavior: "smooth" });
+    } else {
+      monthbar.scrollLeft = targetLeft;
+    }
+    syncMonthbarFade();
+    monthbar.addEventListener("scroll", syncMonthbarFade, { passive: true });
   }
   monthbar?.addEventListener(
     "wheel",
     (event) => {
       if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
         event.preventDefault();
-        monthbar.scrollLeft += event.deltaY;
+        monthbar.scrollBy({ left: event.deltaY * 1.35, behavior: "smooth" });
       }
     },
     { passive: false },
@@ -1035,6 +1081,9 @@ export function cancelReleaseCalendar(): boolean {
 export function setReleaseCalendarMonth(year: number, month: number): void {
   if (!Number.isFinite(year) || !Number.isFinite(month)) return;
   if (!availableMonths().some((entry) => entry.year === year && entry.month === month)) return;
+  const prevOrd = selected ? monthOrdinal(selected.year, selected.month) : monthOrdinal(year, month);
+  const nextOrd = monthOrdinal(year, month);
+  monthTransitionDir = nextOrd < prevOrd ? -1 : nextOrd > prevOrd ? 1 : 0;
   selected = { year, month };
   selectedDay = null;
   watching = false;
@@ -1061,6 +1110,7 @@ export function stepReleaseCalendarMonth(delta: -1 | 1): void {
   const index = months.findIndex((entry) => sameMonth(entry, current));
   const next = months[index + delta];
   if (!next) return;
+  monthTransitionDir = delta;
   selected = { year: next.year, month: next.month };
   selectedDay = null;
   watching = false;
