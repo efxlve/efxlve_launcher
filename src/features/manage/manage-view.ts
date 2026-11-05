@@ -44,7 +44,7 @@ function row(title: string, desc: string, actions: string, extra = "", descId = 
 }
 
 /** Left-rail sections of the manage panel. */
-type ManageTab = "files" | "saves" | "cover" | "launch" | "playtime" | "library" | "danger";
+type ManageTab = "files" | "saves" | "cover" | "launch" | "playtime" | "library" | "danger" | "steam-launch";
 
 /**
  * One titled block of the panel. Every group is also a tab: the rail switches
@@ -725,6 +725,33 @@ function amazonManageBody(s: EpicSummary): string {
     </div>`;
 }
 
+/** Per-game Steam start choice: account to sign in and offline mode. */
+function steamLaunchGroup(steamId: string): string {
+  if (!IS_WINDOWS) return "";
+  const pref = S.steamLaunchPrefs[steamId] ?? { accountId: "", offline: false };
+  const options = S.steamLoginAccounts
+    .map(
+      (account) => `<option value="${esc(account.id)}"${pref.accountId === account.id ? " selected" : ""}>${esc(account.personaName || account.accountName || account.id)}${account.mostRecent ? ` · ${esc(t("steam.currentAccount"))}` : ""}</option>`,
+    )
+    .join("");
+  return group("steam-launch", "play", t("steam.launchModeTitle"), `
+    <div class="row mg-row stack">
+      <div class="mg-title">${t("steam.launchAccount")}</div>
+      <div class="mg-desc">${t("steam.launchAccountDesc")}</div>
+      <select class="settings-select" data-act="steam-launch-account" data-id="${esc(steamId)}" aria-label="${esc(t("steam.launchAccount"))}">
+        <option value="">${esc(t("steam.currentAccount"))}</option>
+        ${options}
+      </select>
+    </div>
+    <div class="row mg-row stack">
+      <div class="mg-title">${t("steam.offlineTitle")}</div>
+      <div class="mg-desc">${t("steam.offlineDesc")}</div>
+      <label class="switch"><input type="checkbox" data-act="steam-launch-offline" data-id="${esc(steamId)}" ${pref.offline ? "checked" : ""}/><span class="track"></span></label>
+    </div>
+    <div class="mg-note">${icon("info", 12)} ${esc(t("steam.launchModeNote"))}</div>
+  `);
+}
+
 export function renderDrawerManage(s: EpicSummary): string {
   // Amazon Games is managed by the launcher through Nile.
   const source = sourceOfKey(s.appName);
@@ -776,6 +803,8 @@ export function renderDrawerManage(s: EpicSummary): string {
           ${row(t("manage.verifyTitle"), t("steam.verifyDesc"),
             `<button class="btn ghost small" data-act="steam-action" data-id="${steamId}" data-mode="validate">${icon("shield", 13)} ${t("steam.validate")}</button>`)}
         `)}
+
+        ${steamLaunchGroup(steamId)}
 
         ${group("saves", "cloud", t("manage.groupSaves"), `
           <div class="row mg-row stack mg-callout">

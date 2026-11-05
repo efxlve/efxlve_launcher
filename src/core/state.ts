@@ -786,6 +786,10 @@ export const S = {
   controllerBridge: (null) as ControllerSupportStatus | null,
   steamStatus: (null) as import("../steam").SteamStatus | null,
   steamGames: [] as import("../steam").SteamGame[],
+  /** Accounts already present in the client's loginusers.vdf. */
+  steamLoginAccounts: [] as import("../steam").SteamLoginAccount[],
+  /** Per-app launch choice (SteamID64 + offline), keyed by app id. */
+  steamLaunchPrefs: {} as Record<string, import("../steam").SteamLaunchPref>,
   /** Installed and linked-account games from EA, Ubisoft, Xbox and Battle.net. */
   companionSummaries: [] as import("./types").LibraryItem[],
   /** Primary-store keys whose installed files come from a matching EA App copy. */

@@ -510,6 +510,33 @@ export const steamSwitchAccount = (steamId: string) =>
   invoke<SteamLoginStatus>("steam_switch_account", { steamId });
 export const steamRemoveSavedAccount = (steamId: string) =>
   invoke<void>("steam_remove_saved_account", { steamId });
+
+/** One account already present in the client's own `loginusers.vdf`. */
+export interface SteamLoginAccount {
+  id: string;
+  accountName: string;
+  personaName: string;
+  mostRecent: boolean;
+}
+
+/** Per-game launch choice: account to sign in and whether to start offline. */
+export interface SteamLaunchPref {
+  accountId: string;
+  offline: boolean;
+}
+
+export const steamLoginAccounts = () =>
+  invoke<SteamLoginAccount[]>("steam_login_accounts");
+
+export const steamLaunchPrefs = () =>
+  invoke<Record<string, SteamLaunchPref>>("steam_launch_prefs");
+
+export const steamSetLaunchPref = (appId: string, accountId: string, offline: boolean) =>
+  invoke<void>("steam_set_launch_pref", { appId, accountId, offline });
+
+/** Applies the saved launch choice, then hands the game to the client. */
+export const steamLaunchGame = (appId: string) =>
+  invoke<void>("steam_launch_game", { appId });
 /** Every owned game (installed or not); refreshes the access token silently. */
 export const steamOwnedGames = (force = false) =>
   invoke<SteamOwnedGames>("steam_owned_games", { force });

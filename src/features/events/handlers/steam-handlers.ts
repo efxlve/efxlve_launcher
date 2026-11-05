@@ -11,7 +11,7 @@ import { toast } from "../../../core/toast";
 import { askConfirm } from "../../../core/confirm-dialog";
 import { summaryOf } from "../../../core/selectors";
 import { t as i18nT } from "../../../i18n";
-import { steamGameAction, steamOpenClient, steamOpenDownloads, steamSetApiKey, steamWatchSession } from "../../../steam";
+import { steamGameAction, steamLaunchGame, steamOpenClient, steamOpenDownloads, steamSetApiKey, steamWatchSession } from "../../../steam";
 import {
   beginSteamQrLogin,
   cancelSteamLogin,
@@ -48,7 +48,7 @@ export function handleSteamAction(act: string | undefined, target: HTMLElement, 
         : "launch";
       if (id) {
         const run = () =>
-          void steamGameAction(id, mode)
+          void (mode === "launch" ? steamLaunchGame(id) : steamGameAction(id, mode))
             .then(() => {
               toast(i18nT("steam.opening"), "");
               if (mode === "launch" && S.steamExitAfterPlay) {

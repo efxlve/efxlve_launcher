@@ -13,6 +13,7 @@ mod cloud;
 mod collections;
 mod community;
 mod library;
+mod launch_mode;
 mod news;
 mod playtime;
 mod protondb;
@@ -63,6 +64,11 @@ pub use library::{
 // playtime.rs: SteamPlaytime, read_playtimes, steam_sync_playtime
 #[allow(unused_imports)]
 pub use playtime::*;
+
+// launch_mode.rs: SteamLaunchPref, SteamLoginAccount, steam_login_accounts,
+// steam_launch_prefs, steam_set_launch_pref, steam_launch_game
+#[allow(unused_imports)]
+pub use launch_mode::*;
 
 // protondb.rs: ProtonDbSummary, steam_protondb_summary
 #[allow(unused_imports)]

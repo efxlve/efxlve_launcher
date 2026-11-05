@@ -55,6 +55,7 @@ import { achGameNotificationsEnabled } from "../../core/ach-game-prefs";
 import { appMinimize, appSetAutostart } from "../../core/window";
 import { modalRoot } from "../../core/dom";
 
+import { steamLaunchPrefs, steamLoginAccounts } from "../../steam";
 import { clearLaunchStatus, refreshEpicInstalled, epicPlay, updateLaunchStatus } from "../../core/epic-actions";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadSteamLibrary, refreshSteamInstalled, startSteamLibraryWatch } from "../library/steam-library";
@@ -1286,6 +1287,14 @@ export async function initApp(hooks: {
         if (S.view === "library" && S.showCoverStats) hooks.scheduleRender();
         // Epic's server snapshot fills in the hours played outside this launcher.
         void syncEpicServerPlaytimes();
+      })
+      .catch(() => undefined);
+    // The Manage panel's Steam launch rows read these; the reads only touch
+    // local client files, so they stay behind the first paint.
+    void Promise.all([steamLoginAccounts(), steamLaunchPrefs()])
+      .then(([accounts, prefs]) => {
+        S.steamLoginAccounts = accounts;
+        S.steamLaunchPrefs = prefs;
       })
       .catch(() => undefined);
     // Independent boot reads; running them together removes serial IPC round trips.

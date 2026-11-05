@@ -23,6 +23,7 @@ import type { StartupTab } from "../../core/types";
 import { S, setTabSort } from "../../core/state";
 import { toast } from "../../core/toast";
 import { ubiDirectSetClientLaunch } from "../../companion";
+import { steamSetLaunchPref } from "../../steam";
 import { esc } from "../../core/utils";
 import { t as i18nT } from "../../i18n";
 import {
@@ -820,6 +821,24 @@ document.addEventListener("change", (e) => {
   if (act === "set-download-finish-action") {
     setDownloadFinishAction(normalizeDownloadFinishAction((t as HTMLSelectElement).value));
     render();
+    return;
+  }
+  if (act === "steam-launch-account" || act === "steam-launch-offline") {
+    const appId = t.dataset.id || "";
+    const current = S.steamLaunchPrefs[appId] ?? { accountId: "", offline: false };
+    const accountId = act === "steam-launch-account"
+      ? (t as HTMLSelectElement).value
+      : current.accountId;
+    const offline = act === "steam-launch-offline"
+      ? (t as HTMLInputElement).checked
+      : current.offline;
+    void steamSetLaunchPref(appId, accountId, offline)
+      .then(() => {
+        if (!accountId && !offline) delete S.steamLaunchPrefs[appId];
+        else S.steamLaunchPrefs[appId] = { accountId, offline };
+        toast(i18nT("steam.launchModeSaved"), "ok");
+      })
+      .catch((error: unknown) => toast(String(error), "err"));
     return;
   }
   if (act === "set-ui-scale") {
