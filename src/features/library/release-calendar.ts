@@ -14,6 +14,7 @@ import { igdbImage } from "../../igdb";
 import { t } from "../../i18n";
 import { epicUpcomingReleases, type UpcomingRelease } from "../../epic";
 import { pushNotification } from "../notifications/notifications";
+import { holdStoreForCover } from "../store/store-view";
 
 interface MonthSel {
   year: number;
@@ -840,6 +841,8 @@ async function load(refresh: boolean): Promise<void> {
 /** Opens the upcoming-release calendar. */
 export function openReleaseCalendar(): void {
   closeReleaseStores();
+  // A native store child ignores z-index; park it before the dialog paints.
+  holdStoreForCover();
   releases = [];
   selected = null;
   selectedDay = null;
