@@ -118,7 +118,7 @@ import { clearReleaseCalendarSearch, closeReleaseCalendar, closeReleaseStores, i
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaContentCancel, eaContentPlan, eaContentUninstall, eaContentVerify, eaDirectSetEnabled, eaLoginOpen, isTransientUbisoftError, ubiDirectAdopt, ubiDirectCancel, ubiDirectCloudSaves, ubiDirectImportSaves, ubiDirectMove, ubiDirectProbe, ubiDirectRelease, ubiDirectSetEnabled, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaContentCancel, eaContentPlan, eaContentUninstall, eaContentVerify, eaDirectSetEnabled, eaLoginOpen, isTransientUbisoftError, ubiDirectAdopt, ubiDirectCancel, ubiDirectCloudSaves, ubiDirectImportSaves, ubiDirectMove, ubiDirectRelease, ubiDirectSetEnabled, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { collectionGames } from "../../core/game-collections";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
@@ -140,7 +140,7 @@ import {
   renderNotificationPanel,
   selectNotifTab,
 } from "../notifications/notifications";
-import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, handleSettingsAction, resetSettingsSearch } from "../settings/settings-view";
+import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, refreshUbiDirectProbe, handleSettingsAction, resetSettingsSearch } from "../settings/settings-view";
 import { loadCompatView } from "../settings/compat-view";
 import { probeUbisoftClientDownloads } from "../downloads/downloads-view";
 import { openInstallDialog } from "../install/install-dialog";
@@ -1215,18 +1215,7 @@ document.addEventListener("click", (e) => {
     render();
     void loadSettingsView();
   } else if (act === "ubi-direct-rescan") {
-    if (S.ubiDirectLoading) return;
-    S.ubiDirectLoading = true;
-    render();
-    void ubiDirectProbe()
-      .then((probe) => {
-        S.ubiDirect = probe;
-      })
-      .catch((e: unknown) => toast(String(e), "err"))
-      .finally(() => {
-        S.ubiDirectLoading = false;
-        if (S.view === "settings") render();
-      });
+    refreshUbiDirectProbe(true);
   } else if (act === "epic-play" && id) {    void epicPlay(id);
   } else if (act === "epic-stop" && id) {
     void epicStop(id);

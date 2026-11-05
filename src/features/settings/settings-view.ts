@@ -543,12 +543,17 @@ function renderLaunchers(): string {
 
 function renderUbiDirect(): string {
   const probe = S.ubiDirect;
+  const scanning = S.ubiDirectLoading && !probe;
   const account = probe
     ? ` <span class="row-meta">${esc(probe.account || "Ubisoft")} · ${probe.installable}/${probe.total}</span>`
-    : "";
+    : scanning
+      ? ` <span class="row-meta">${t("settings.scanning")}</span>`
+      : "";
   const accountAction = probe
-    ? `<button class="btn ghost small" data-act="ubi-direct-rescan">${icon("refresh", 13)}</button>`
-    : `<button class="btn ghost small" data-view="accounts">${icon("user", 13)} ${t("settings.nileAccount")}</button>`;
+    ? `<button class="btn ghost small" data-act="ubi-direct-rescan" ${S.ubiDirectLoading ? "disabled" : ""}>${icon("refresh", 13)}</button>`
+    : scanning
+      ? ""
+      : `<button class="btn ghost small" data-view="accounts">${icon("user", 13)} ${t("settings.nileAccount")}</button>`;
   return row(
     t("settings.ubiDirectTitle"),
     `${t("settings.ubiDirectDesc")}${account}`,
@@ -2497,14 +2502,13 @@ export async function loadIntegrationsView(force = false): Promise<void> {
   S.settingsIntegrationsLoading = true;
   render();
   try {
-    const [eglList, eglPresent, eos, galaxyList, steamState, clientSettings, ubiDirect, ubiDirectState, eaDirect] = await Promise.all([
+    const [eglList, eglPresent, eos, galaxyList, steamState, clientSettings, ubiDirectState, eaDirect] = await Promise.all([
       epicDetectEglGames().catch(() => [] as EglDetectedGame[]),
       eglLauncherPresent().catch(() => false),
       eosOverlayStatus().catch(() => null),
       gogDetectGalaxyGames().catch(() => [] as GalaxyDetectedGame[]),
       steamStatus().catch(() => null),
       companionGetClientSettings().catch(() => null),
-      ubiDirectProbe().catch(() => null),
       ubiDirectStatus().catch(() => null),
       eaDirectStatus().catch(() => null),
     ]);
@@ -2516,7 +2520,6 @@ export async function loadIntegrationsView(force = false): Promise<void> {
     S.gogGalaxyDetected = galaxyList ?? [];
     S.steamStatus = steamState;
     S.companionCloseAfterPlay = clientSettings?.closeAfterPlay ?? {};
-    S.ubiDirect = ubiDirect;
     S.ubiDirectEnabled = ubiDirectState?.enabled ?? true;
     S.eaDirectEnabled = eaDirect?.enabled ?? false;
     S.eaDirectLastError = eaDirect?.lastError ?? "";
@@ -2528,6 +2531,31 @@ export async function loadIntegrationsView(force = false): Promise<void> {
     S.settingsIntegrationsLoading = false;
     render();
   }
+  // The Ubisoft ownership probe is a network round-trip, sometimes with a
+  // session refresh. It runs after the local scans so it cannot hold the whole
+  // page on "Scanning".
+  refreshUbiDirectProbe();
+}
+
+/**
+ * Refreshes the Ubisoft ownership probe beside the page instead of inside its
+ * loading await. The row shows a scanning hint until the answer lands.
+ */
+export function refreshUbiDirectProbe(reportError = false): void {
+  if (!isTauri || S.ubiDirectLoading) return;
+  S.ubiDirectLoading = true;
+  if (S.view === "settings") render();
+  void ubiDirectProbe()
+    .then((probe) => {
+      S.ubiDirect = probe;
+    })
+    .catch((error: unknown) => {
+      if (reportError) toast(String(error), "err");
+    })
+    .finally(() => {
+      S.ubiDirectLoading = false;
+      if (S.view === "settings") render();
+    });
 }
 
 /** Applies a new screenshots root and reports how many files were moved. */
