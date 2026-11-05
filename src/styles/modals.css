@@ -1678,8 +1678,8 @@
 .calendar-follow-btn:active svg { transform: scale(0.92); }
 .calendar-follow-btn.is-followed { color: var(--accent); }
 .calendar-follow-btn.is-followed svg {
-  fill: none; stroke: currentColor; stroke-width: 2.25;
-  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.32));
+  fill: currentColor; stroke: currentColor; stroke-width: 2;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.28));
 }
 
 /* Unified navigation toolbar: top-level month switcher above the workspace. */
@@ -1711,7 +1711,7 @@
   background: transparent;
   color: var(--text);
 }
-.calendar-watch-toggle.is-active svg { color: var(--accent); }
+.calendar-watch-toggle.is-active svg { color: var(--accent); fill: currentColor; }
 .calendar-watch-toggle-count {
   display: inline-grid; place-items: center;
   min-width: 17px; height: 17px; padding: 0 4px; border-radius: 4px;
@@ -2427,76 +2427,150 @@
   margin: 14px 2px 0; font-size: 11px; line-height: 1.6; color: var(--text-3);
 }
 
-/* --- Release store bubble ------------------------------------------------- */
+/* --- Release spotlight popover -------------------------------------------- */
+@keyframes release-popover-in {
+  from { opacity: 0; transform: translateY(5px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 .release-popover-layer {
   position: fixed; inset: 0; z-index: 700; pointer-events: none;
 }
 .release-popover {
-  position: fixed; width: min(360px, calc(100vw - 24px));
-  max-height: min(70vh, 460px); overflow-y: auto; pointer-events: auto;
+  position: fixed; width: min(324px, calc(100vw - 24px));
+  overflow: hidden; pointer-events: auto;
   background: var(--surface-1); border: 1px solid var(--line-strong);
   border-radius: var(--r-md); box-shadow: var(--shadow-pop);
+  animation: release-popover-in 170ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.release-popover-head {
-  position: sticky; top: 0; z-index: 1;
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 12px 12px 10px; border-bottom: 1px solid var(--line);
-  background: var(--surface-1);
+.release-popover-banner {
+  position: relative; height: 102px; overflow: hidden;
+  background: var(--surface-2);
+}
+.release-popover-banner-art {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center 22%;
+  opacity: 0.56; transition: transform 0.35s ease;
+}
+.release-popover-banner.is-cover .release-popover-banner-art {
+  background-position: center 30%; opacity: 0.36; transform: scale(1.08);
+}
+.release-popover-banner-scrim {
+  position: absolute; inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 11, 14, 0.25) 0%,
+    rgba(10, 11, 14, 0.72) 62%,
+    var(--surface-1) 100%
+  );
+}
+.release-popover-countdown {
+  position: absolute; top: 10px; left: 12px; z-index: 1;
+  padding: 2px 8px; border-radius: 4px;
+  background: var(--accent); color: var(--on-accent);
+  font-size: 10px; font-weight: 700;
+}
+.release-popover-close {
+  position: absolute; top: 8px; right: 8px; z-index: 2;
+  display: grid; place-items: center;
+  width: 26px; height: 26px; padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14); border-radius: var(--r-sm);
+  background: rgba(10, 11, 14, 0.65); color: rgba(255, 255, 255, 0.8);
+  cursor: pointer; transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+}
+.release-popover-close:hover {
+  border-color: rgba(255, 255, 255, 0.32); background: rgba(10, 11, 14, 0.9); color: #fff;
+}
+.release-popover-identity {
+  position: relative; z-index: 1;
+  display: flex; align-items: flex-end; gap: 12px;
+  margin-top: -36px; padding: 0 14px 12px;
 }
 .release-stores-cover {
-  width: 46px; height: 64px; flex: none; object-fit: cover;
-  border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2);
+  width: 60px; height: 84px; flex: none; object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.18); border-radius: var(--r-sm);
+  background: var(--surface-2); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.55);
 }
 .release-stores-cover.placeholder { display: grid; place-items: center; color: var(--text-3); }
-.release-stores-head-text { flex: 1; min-width: 0; }
+.release-stores-head-text {
+  flex: 1; min-width: 0; padding-bottom: 2px;
+}
 .release-stores-title {
-  margin: 0 0 3px; font-size: 14px; font-weight: 700; line-height: 1.25;
-  color: var(--text); overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow: hidden; margin: 0 0 4px;
+  font-size: 14.5px; font-weight: 750; line-height: 1.22;
+  letter-spacing: -0.01em; color: var(--text);
 }
-.release-stores-date { margin: 0; font-size: 10.5px; color: var(--text-3); }
-.release-popover-head .manage-head-close { flex: none; }
-.release-popover-body { padding-bottom: 2px; }
-.release-stores-section {
-  padding: 10px 12px 5px; font-size: 9px; font-weight: 700;
-  letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-3);
+.release-stores-date {
+  margin: 0; font-size: 11px; font-weight: 500; color: var(--text-3);
 }
-.release-stores-list { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 12px; }
+.release-popover-body {
+  padding: 0 14px 12px;
+}
+.release-stores-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;
+}
 .release-store-btn {
-  display: inline-flex; align-items: center; gap: 5px;
-  min-height: 27px; padding: 4px 8px;
-  border: 1px solid var(--line); border-radius: 4px;
-  background: var(--surface-1); color: var(--text);
-  font-size: 10.5px; font-weight: 600; cursor: pointer;
-  transition: background-color var(--ease), border-color var(--ease);
+  display: flex; align-items: center; gap: 7px;
+  min-width: 0; height: 32px; padding: 0 9px;
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--text-2);
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  transition: background-color var(--ease), border-color var(--ease), color var(--ease), transform 140ms ease;
 }
-.release-store-btn:hover { background: var(--surface-2); border-color: var(--accent); }
+.release-store-btn:hover {
+  background: var(--surface-3); border-color: var(--line-strong);
+  color: var(--text); transform: translateY(-1px);
+}
+.release-store-btn.is-direct {
+  border-color: var(--line-strong); color: var(--text);
+}
 .release-store-logo { flex: none; border-radius: 2px; object-fit: contain; }
-.release-store-btn.is-search {
-  font-weight: 500; color: var(--text-2); background: var(--surface-2);
+.release-store-name {
+  flex: 1; min-width: 0; text-align: left;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.release-stores-empty {
-  margin: 0; font-size: 11px; line-height: 1.5; color: var(--text-3);
+.release-store-arrow {
+  flex: none; display: inline-flex; color: var(--text-3); opacity: 0.7;
+  transition: opacity var(--ease), transform var(--ease);
 }
-.release-stores-note {
-  display: flex; align-items: flex-start; gap: 6px;
-  margin: 10px 12px 12px; font-size: 10px; line-height: 1.5; color: var(--text-3);
+.release-store-btn:hover .release-store-arrow {
+  opacity: 1; color: var(--text); transform: translate(1px, -1px);
 }
-.release-stores-note svg { flex: none; margin-top: 1px; }
 .release-popover-foot {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 9px 12px; border-top: 1px solid var(--line); background: var(--surface-1);
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px 12px; border-top: 1px solid var(--line);
+  background: var(--surface-1);
 }
-.release-popover .btn.is-following {
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
-  color: var(--accent);
+.release-follow-action {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  height: 32px; padding: 0 12px;
+  border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--text);
+  font-size: 11.5px; font-weight: 600; cursor: pointer;
+  transition: background-color var(--ease), border-color var(--ease), color var(--ease);
 }
-.release-popover .btn.is-following svg { fill: currentColor; }
+.release-follow-action:hover {
+  background: var(--surface-3); border-color: var(--text-2);
+}
+.release-follow-action.is-following {
+  border-color: var(--accent);
+  background: transparent;
+  color: var(--text);
+}
+.release-follow-action.is-following svg {
+  color: var(--accent); fill: currentColor;
+}
 .release-popover-link {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 4px 2px; border: 0; background: transparent;
-  color: var(--text-3); font-size: 10.5px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  height: 32px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: transparent; color: var(--text-3);
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  transition: border-color var(--ease), background-color var(--ease), color var(--ease);
 }
-.release-popover-link:hover { color: var(--text); }
+.release-popover-link:hover {
+  border-color: var(--line-strong); background: var(--surface-2); color: var(--text);
+}
 .calendar-loading, .calendar-empty {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 8px; min-height: 260px; text-align: center; color: var(--text-2);

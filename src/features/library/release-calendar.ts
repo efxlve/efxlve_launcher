@@ -377,7 +377,7 @@ function storeLabel(id: string, label: string): string {
   return id === "official" ? t("calendar.officialSite") : label;
 }
 
-/** Search links for stores IGDB has no direct product URL for. */
+/** Core PC storefronts shown in the quick-access grid. */
 function storeSearchLinks(name: string): Array<{ id: string; label: string; url: string }> {
   const query = encodeURIComponent(name);
   return [
@@ -385,10 +385,6 @@ function storeSearchLinks(name: string): Array<{ id: string; label: string; url:
     { id: "epic", label: "Epic Games", url: `https://store.epicgames.com/en-US/search?q=${query}` },
     { id: "gog", label: "GOG", url: `https://www.gog.com/en/games?query=${query}` },
     { id: "xbox", label: "Microsoft Store", url: `https://apps.microsoft.com/search?query=${query}` },
-    { id: "humble", label: "Humble Store", url: `https://www.humblebundle.com/store/search?search=${query}` },
-    { id: "fanatical", label: "Fanatical", url: `https://www.fanatical.com/en/search?search=${query}` },
-    { id: "gmg", label: "Green Man Gaming", url: `https://www.greenmangaming.com/search?query=${query}` },
-    { id: "itch", label: "itch.io", url: `https://itch.io/search?q=${query}` },
   ];
 }
 
@@ -1250,47 +1246,67 @@ function refreshStoreAnchor(): void {
 function renderStorePopover(): void {
   if (!storeLayer || !storeRelease) return;
   const release = storeRelease;
-  const cover = coverOf(release, "cover_big");
-  const exact = (release.stores ?? []).map(
-    (store) =>
-      `<button type="button" class="release-store-btn" data-act="open-external-url" data-url="${esc(store.url)}">
-        ${storeLogo(store.id, 13, "release-store-logo")}<span>${esc(storeLabel(store.id, store.label))}</span>${icon("external", 11)}
-      </button>`,
-  );
-  const known = new Set((release.stores ?? []).map((store) => store.id));
-  const searches = storeSearchLinks(release.name)
-    .filter((store) => !known.has(store.id))
+  const cover = coverOf(release, "cover_big_2x");
+  const art = release.artworkId ? igdbImage(release.artworkId, "1080p") : cover;
+  const countdown = countdownLabel(release);
+  const directById = new Map((release.stores ?? []).map((store) => [store.id, store]));
+  const primaryStores = storeSearchLinks(release.name).map((fallback) => {
+    const direct = directById.get(fallback.id);
+    if (direct) {
+      directById.delete(fallback.id);
+      return {
+        id: direct.id,
+        label: storeLabel(direct.id, direct.label),
+        url: direct.url,
+        direct: true,
+      };
+    }
+    return { ...fallback, direct: false };
+  });
+  for (const extra of directById.values()) {
+    primaryStores.unshift({
+      id: extra.id,
+      label: storeLabel(extra.id, extra.label),
+      url: extra.url,
+      direct: true,
+    });
+  }
+  const storeItems = primaryStores
+    .slice(0, 4)
     .map(
       (store) =>
-        `<button type="button" class="release-store-btn is-search" data-act="open-external-url" data-url="${esc(store.url)}" aria-label="${esc(t("calendar.searchOn", { store: store.label }))}">
-          ${storeLogo(store.id, 13, "release-store-logo") || icon("search", 11)}<span>${esc(store.label)}</span>
+        `<button type="button" class="release-store-btn${store.direct ? " is-direct" : ""}" data-act="open-external-url" data-url="${esc(store.url)}" title="${esc(store.direct ? store.label : t("calendar.searchOn", { store: store.label }))}">
+          ${storeLogo(store.id, 14, "release-store-logo") || icon("external", 12)}
+          <span class="release-store-name">${esc(store.label)}</span>
+          <span class="release-store-arrow">${icon("external", 11)}</span>
         </button>`,
-    );
+    )
+    .join("");
   const followedNow = followed.has(release.id);
   storeLayer.innerHTML = `
     <div class="release-popover" role="dialog" aria-label="${esc(`${release.name} · ${dateLabel(release)}`)}">
-      <div class="release-popover-head">
-        ${cover ? `<img class="release-stores-cover" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="release-stores-cover placeholder">${icon("gamepad-2", 18)}</span>`}
+      <div class="release-popover-banner${release.artworkId ? "" : " is-cover"}">
+        ${art ? `<span class="release-popover-banner-art" style="background-image:url('${esc(art)}')"></span>` : ""}
+        <span class="release-popover-banner-scrim"></span>
+        ${countdown ? `<span class="release-popover-countdown tabular-nums">${esc(countdown)}</span>` : ""}
+        <button type="button" class="release-popover-close" data-act="release-stores-close" title="${esc(t("common.close"))}" aria-label="${esc(t("common.close"))}">${icon("x", 14)}</button>
+      </div>
+      <div class="release-popover-identity">
+        ${cover ? `<img class="release-stores-cover" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="release-stores-cover placeholder">${icon("gamepad-2", 20)}</span>`}
         <div class="release-stores-head-text">
           <p class="release-stores-title">${esc(release.name)}</p>
-          <p class="release-stores-date">${esc(
-            [dateLabel(release), countdownLabel(release)].filter(Boolean).join(" · "),
-          )}</p>
+          <p class="release-stores-date tabular-nums">${esc(dateLabel(release))}</p>
         </div>
-        <button type="button" class="manage-head-close" data-act="release-stores-close" title="${esc(t("common.close"))}">${icon("x", 15)}</button>
       </div>
       <div class="release-popover-body">
-        <div class="release-stores-section">${esc(t("calendar.whereToBuy"))}</div>
-        <div class="release-stores-list">
-          ${exact.length > 0 ? exact.join("") : `<p class="release-stores-empty">${esc(t("calendar.noStoreLinks"))}</p>`}
-        </div>
-        <div class="release-stores-section">${esc(t("calendar.searchStores"))}</div>
-        <div class="release-stores-list is-search">${searches.join("")}</div>
-        <p class="release-stores-note">${icon("info", 11)}<span>${esc(t("calendar.storeNote"))}</span></p>
+        <div class="release-stores-grid">${storeItems}</div>
       </div>
       <div class="release-popover-foot">
-        <button type="button" class="btn ghost small${followedNow ? " is-following" : ""}" data-act="release-follow" data-id="${release.id}">${icon("star", 12)} ${esc(followedNow ? t("calendar.following") : t("calendar.follow"))}</button>
-        ${release.url ? `<button type="button" class="release-popover-link" data-act="open-external-url" data-url="${esc(release.url)}">${icon("external", 11)} ${esc(t("calendar.igdbPage"))}</button>` : ""}
+        <button type="button" class="release-follow-action${followedNow ? " is-following" : ""}" data-act="release-follow" data-id="${release.id}">
+          ${icon("star", 13)}
+          <span>${esc(followedNow ? t("calendar.following") : t("calendar.follow"))}</span>
+        </button>
+        ${release.url ? `<button type="button" class="release-popover-link" data-act="open-external-url" data-url="${esc(release.url)}" title="${esc(t("calendar.igdbPage"))}"><span>IGDB</span>${icon("external", 11)}</button>` : ""}
       </div>
     </div>`;
   positionStorePopover();
