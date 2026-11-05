@@ -17,12 +17,20 @@ import {
   spotifyPageVisible,
 } from "../../core/page-visibility";
 import { esc } from "../../core/utils";
+import { igdbImage } from "../../igdb";
 import { t } from "../../i18n";
-import { epicPortrait, type EpicSummary } from "../../epic";
+import {
+  epicPortrait,
+  epicUpcomingReleases,
+  type EpicSummary,
+  type UpcomingRelease,
+} from "../../epic";
 import { holdStoreForPalette, releaseStoreForPalette } from "../store/store-view";
 import { sharedSummaries } from "../library/shared-library";
+import { openReleaseCalendarSearch, releaseDateLabel } from "../library/release-calendar";
 
 const MAX_GAMES = 8;
+const MAX_UPCOMING = 4;
 
 interface Command {
   label: string;
@@ -32,6 +40,9 @@ interface Command {
 }
 
 let activeIndex = 0;
+let upcomingReleases: UpcomingRelease[] | null = null;
+let upcomingLoading = false;
+let upcomingFailed = false;
 
 function root(): HTMLElement | null {
   return document.getElementById("palette-root");
@@ -99,10 +110,40 @@ function gameItem(appName: string, title: string, installed: boolean, idx: numbe
     </div>`;
 }
 
+/** One cached IGDB call per session; the backend keeps its own six-hour cache. */
+function ensureUpcomingReleases(): void {
+  if (upcomingReleases || upcomingLoading || upcomingFailed) return;
+  upcomingLoading = true;
+  void epicUpcomingReleases(false)
+    .then((list) => {
+      upcomingReleases = list;
+      if (!isPaletteOpen()) return;
+      const input = document.getElementById("palette-input") as HTMLInputElement | null;
+      renderResults(input?.value ?? "");
+    })
+    .catch(() => {
+      upcomingFailed = true;
+    })
+    .finally(() => {
+      upcomingLoading = false;
+    });
+}
+
+function upcomingItem(release: UpcomingRelease, idx: number): string {
+  const cover = release.coverId ? igdbImage(release.coverId, "thumb") : "";
+  return `
+    <div class="palette-item" data-idx="${idx}" data-act="open-release-calendar-search" data-query="${esc(release.name)}" role="option">
+      ${cover ? `<img class="palette-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : icon("calendar", 16)}
+      <span class="palette-label">${esc(release.name)}</span>
+      <span class="chip">${esc(releaseDateLabel(release))}</span>
+    </div>`;
+}
+
 function renderResults(query: string): void {
   const list = document.getElementById("palette-results");
   if (!list) return;
   const q = query.trim().toLowerCase();
+  if (q.length >= 2) ensureUpcomingReleases();
 
   // The palette searches the same union the library shows — Epic, GOG and the
   // whole owned Steam library — plus games from other saved accounts when the
@@ -136,14 +177,23 @@ function renderResults(query: string): void {
     }
   }
 
+  const releases =
+    q && upcomingReleases
+      ? upcomingReleases
+          .filter((release) => release.name.toLowerCase().includes(q))
+          .slice(0, MAX_UPCOMING)
+          .map((release) => upcomingItem(release, idx++))
+      : [];
+
   const cmds = commands()
     .filter((c) => !q || c.label.toLowerCase().includes(q) || c.keywords.includes(q))
     .map((c) => `<div class="palette-item" data-idx="${idx++}" ${c.attrs} role="option">${icon(c.iconName, 16)}<span class="palette-label">${esc(c.label)}</span></div>`);
 
   list.innerHTML =
     (games.length ? `<div class="palette-group">${t("palette.games")}</div>${games.join("")}` : "") +
+    (releases.length ? `<div class="palette-group">${t("calendar.title")}</div>${releases.join("")}` : "") +
     (cmds.length ? `<div class="palette-group">${t("palette.commands")}</div>${cmds.join("")}` : "") +
-    (!games.length && !cmds.length ? emptyState("search", t("palette.empty")) : "");
+    (!games.length && !releases.length && !cmds.length ? emptyState("search", t("palette.empty")) : "");
   activeIndex = 0;
   highlight();
 }

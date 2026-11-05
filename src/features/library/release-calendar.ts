@@ -218,6 +218,11 @@ function dateLabel(release: UpcomingRelease): string {
   return release.human;
 }
 
+/** The same localized label for surfaces outside this dialog (command palette). */
+export function releaseDateLabel(release: UpcomingRelease): string {
+  return dateLabel(release);
+}
+
 function countdownLabel(release: UpcomingRelease): string {
   if (!hasExactDay(release)) return "";
   const now = new Date();
@@ -706,6 +711,14 @@ export function openReleaseCalendar(): void {
   confirmRoot.appendChild(layer);
   renderCalendar();
   void load(false);
+}
+
+/** Opens the calendar with a title search, used by the command palette. */
+export function openReleaseCalendarSearch(text: string): void {
+  openReleaseCalendar();
+  query = text.trim();
+  renderCalendar();
+  layer?.querySelector<HTMLInputElement>(".calendar-search-input")?.focus();
 }
 
 export function closeReleaseCalendar(): void {
