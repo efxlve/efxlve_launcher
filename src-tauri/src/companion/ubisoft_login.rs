@@ -527,7 +527,7 @@ pub(crate) async fn import_owned(session: &Session) -> Result<usize, String> {
         "name": !session.name.is_empty(),
         "remember": !session.remember.is_empty(),
     })];
-    let result = import_inner(session, &mut log).await;
+    let result = import_inner(session, &mut log, true).await;
     let mapped = result
         .as_ref()
         .map(|(count, _)| *count)
@@ -617,33 +617,40 @@ pub(crate) async fn sync_owned() -> UbiSync {
         Ok(client) => client,
         Err(err) => return UbiSync::Failed(err),
     };
-    let put = refresh_session(&client, &session).await;
-    let put_rejected = matches!(&put, RefreshOutcome::Rejected);
-    let mut live = match put {
-        RefreshOutcome::Renewed(next) => Some(next),
-        _ => None,
-    };
-    // The import flow already proved that a POST with the captured ticket works
-    // when the PUT does not; try it before falling back to the remember token.
-    if live.is_none() {
-        live = post_session(&client, &session).await;
-    }
-    let mut remember_rejected = false;
-    if live.is_none() {
-        let remembered = refresh_remember(&client, &session).await;
-        remember_rejected = matches!(&remembered, RefreshOutcome::Rejected);
-        if let RefreshOutcome::Renewed(next) = remembered {
-            live = Some(next);
+    let live = if super::ubi_direct::ubisoft_client_running() {
+        // The client owns the live session. Rotating it here makes Connect
+        // report a second sign-in and log the user out.
+        session.clone()
+    } else {
+        let put = refresh_session(&client, &session).await;
+        let put_rejected = matches!(&put, RefreshOutcome::Rejected);
+        let mut live = match put {
+            RefreshOutcome::Renewed(next) => Some(next),
+            _ => None,
+        };
+        // The import flow already proved that a POST with the captured ticket
+        // works when the PUT does not; try it before the remember token.
+        if live.is_none() {
+            live = post_session(&client, &session).await;
         }
-    }
-    let Some(live) = live else {
-        if should_clear_session(put_rejected, remember_rejected, session.remember.is_empty()) {
-            ubi_vault::clear();
-            return UbiSync::AuthLost;
+        let mut remember_rejected = false;
+        if live.is_none() {
+            let remembered = refresh_remember(&client, &session).await;
+            remember_rejected = matches!(&remembered, RefreshOutcome::Rejected);
+            if let RefreshOutcome::Renewed(next) = remembered {
+                live = Some(next);
+            }
         }
-        return UbiSync::Failed(
-            "could not refresh the Ubisoft session; keeping the saved ticket".to_string(),
-        );
+        let Some(live) = live else {
+            if should_clear_session(put_rejected, remember_rejected, session.remember.is_empty()) {
+                ubi_vault::clear();
+                return UbiSync::AuthLost;
+            }
+            return UbiSync::Failed(
+                "could not refresh the Ubisoft session; keeping the saved ticket".to_string(),
+            );
+        };
+        live
     };
     let signature = |games: Vec<ubisoft::OwnedGame>| -> std::collections::HashSet<(String, String, String)> {
         games
@@ -657,7 +664,7 @@ pub(crate) async fn sync_owned() -> UbiSync {
         "ticket": !live.ticket.is_empty(),
         "remember": !live.remember.is_empty(),
     })];
-    let result = import_inner(&live, &mut log).await;
+    let result = import_inner(&live, &mut log, false).await;
     let mapped = result
         .as_ref()
         .map(|(count, _)| *count)
@@ -686,19 +693,25 @@ pub(crate) async fn sync_owned() -> UbiSync {
     }
 }
 
-async fn import_inner(session: &Session, log: &mut Vec<serde_json::Value>) -> Result<(usize, Session), String> {
+async fn import_inner(
+    session: &Session,
+    log: &mut Vec<serde_json::Value>,
+    renew: bool,
+) -> Result<(usize, Session), String> {
     let client = http_client()?;
     let mut live = session.clone();
-    // The plugin order: post the captured session once, renew it, then read.
-    let posted = post_session(&client, &live).await;
-    log_note(log, "post-session", posted.is_some());
-    if let Some(next) = posted {
-        live = next;
-    }
-    let refreshed = refresh_session(&client, &live).await;
-    log_note(log, "put-session", matches!(refreshed, RefreshOutcome::Renewed(_)));
-    if let RefreshOutcome::Renewed(next) = refreshed {
-        live = next;
+    if renew {
+        // The plugin order: post the captured session once, renew it, then read.
+        let posted = post_session(&client, &live).await;
+        log_note(log, "post-session", posted.is_some());
+        if let Some(next) = posted {
+            live = next;
+        }
+        let refreshed = refresh_session(&client, &live).await;
+        log_note(log, "put-session", matches!(refreshed, RefreshOutcome::Renewed(_)));
+        if let RefreshOutcome::Renewed(next) = refreshed {
+            live = next;
+        }
     }
     let mut first_error = None;
     // A successful entitlement call is the PC licence list. The GraphQL list

@@ -54,9 +54,25 @@ pub(crate) struct UbiDirectProbe {
     pub games: Vec<UbiDirectGame>,
 }
 
+/// Whether Ubisoft Connect is running. The client owns the live session; the
+/// launcher must not rotate it while the client is using it.
+pub(crate) fn ubisoft_client_running() -> bool {
+    use sysinfo::{ProcessesToUpdate, System};
+    let mut system = System::new();
+    system.refresh_processes(ProcessesToUpdate::All, true);
+    system.processes().values().any(|process| {
+        process
+            .name()
+            .to_string_lossy()
+            .eq_ignore_ascii_case("UbisoftConnect.exe")
+    })
+}
+
 /// The stored ticket is usually already scoped to the launcher app id. Try it
-/// first; refresh the session and exchange the ticket only when Demux rejects it,
-/// because the exchange is rate limited per profile.
+/// first; refresh the session and exchange the ticket only when Demux rejects
+/// it. A running client keeps its own session, so the launcher never rotates a
+/// ticket underneath it: that makes Connect report a second sign-in and log the
+/// user out.
 async fn connect() -> Result<(wire::Demux, ubisoft_login::Session), String> {
     let session = ubisoft_login::stored_session()
         .ok_or_else(|| "@t:accounts.ubiSessionExpired".to_string())?;
@@ -64,6 +80,9 @@ async fn connect() -> Result<(wire::Demux, ubisoft_login::Session), String> {
     match wire::Demux::connect(&session.ticket).await {
         Ok(demux) => return Ok((demux, session)),
         Err(first) => {
+            if ubisoft_client_running() {
+                return Err("@t:accounts.ubiSessionExpired".to_string());
+            }
             let refreshed = ubisoft_login::refresh_stored_session()
                 .await
                 .unwrap_or_else(|| session.clone());
