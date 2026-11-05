@@ -580,8 +580,9 @@ document.addEventListener("click", (e) => {
     if (applyStoreFilter(t.dataset.val) && !refreshLibraryForStoreFilter()) render();
   } else if (act === "open-release-calendar") {
     openReleaseCalendar();
-  } else if (act === "open-release-calendar-search" && t.dataset.query) {
-    openReleaseCalendarSearch(t.dataset.query);
+  } else if (act === "open-release-calendar-search" && (t.dataset.query || t.dataset.id)) {
+    closeNotifPanel();
+    openReleaseCalendarSearch(t.dataset.query || t.dataset.id || "");
   } else if (act === "open-release-watchlist") {
     openReleaseCalendarWatchlist();
   } else if (act === "release-calendar-close") {

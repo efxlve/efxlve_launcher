@@ -455,7 +455,9 @@ function notificationMarkup(n: AppNotification): string {
     : n.appName
       ? `data-act="notif-open" data-id="${esc(n.appName)}"`
       : `data-act="notif-dismiss" data-id="${esc(n.id)}"`;
-  const actionData = n.actionData ? ` data-query="${esc(n.actionData)}"` : "";
+  const actionData = n.actionData
+    ? ` data-query="${esc(n.actionData)}" data-id="${esc(n.actionData)}"`
+    : "";
   // The subject (a game title) sits in the dim line before the timestamp.
   const meta = esc([n.context, relativeTime(n.ts)].filter(Boolean).join(" · "));
   // An unlock belongs to a game; its cover reads better than a repeated glyph.

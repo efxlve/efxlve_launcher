@@ -9,6 +9,7 @@
 import { confirmRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
+import { notifyBackgrounded } from "../../core/system-notify";
 import { esc } from "../../core/utils";
 import { igdbImage } from "../../igdb";
 import { t } from "../../i18n";
@@ -33,8 +34,13 @@ const FOLLOW_KEY = "efxlve-release-follows";
 const FOLLOW_CACHE_KEY = "efxlve-release-follow-cache";
 const REMINDER_KEY = "efxlve-release-reminders";
 const REMINDER_WINDOW_DAYS = 7;
+const RELEASED_GRACE_DAYS = 7;
 const REMINDER_KEEP_DAYS = 30;
 const MAX_REMINDERS_PER_DAY = 3;
+const REMINDER_CHECK_INTERVAL_MS = 30 * 60 * 1000;
+
+let reminderTimer = 0;
+let reminderRemoteSynced = false;
 
 let layer: HTMLElement | null = null;
 let releases: UpcomingRelease[] = [];
@@ -122,13 +128,38 @@ function releaseSortKey(release: UpcomingRelease): number {
   return year * 10_000 + month * 100 + day;
 }
 
-function followedReleases(): UpcomingRelease[] {
-  return releases
-    .filter((release) => followed.has(release.id))
-    .sort(
-      (left, right) =>
-        releaseSortKey(left) - releaseSortKey(right) || left.name.localeCompare(right.name),
-    );
+function loadFollowedCache(): UpcomingRelease[] {
+  try {
+    const raw = typeof localStorage === "undefined" ? null : localStorage.getItem(FOLLOW_CACHE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+    return Array.isArray(parsed) ? (parsed as UpcomingRelease[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function followedReleases(extra: UpcomingRelease[] = []): UpcomingRelease[] {
+  const byId = new Map<number, UpcomingRelease>();
+  for (const cached of loadFollowedCache()) {
+    if (
+      cached &&
+      typeof cached.id === "number" &&
+      typeof cached.name === "string" &&
+      followed.has(cached.id)
+    ) {
+      byId.set(cached.id, cached);
+    }
+  }
+  for (const release of extra) {
+    if (followed.has(release.id)) byId.set(release.id, release);
+  }
+  for (const release of releases) {
+    if (followed.has(release.id)) byId.set(release.id, release);
+  }
+  return [...byId.values()].sort(
+    (left, right) =>
+      releaseSortKey(left) - releaseSortKey(right) || left.name.localeCompare(right.name),
+  );
 }
 
 function localDateKey(date: Date): string {
@@ -138,9 +169,9 @@ function localDateKey(date: Date): string {
 }
 
 /** Keep a compact local copy so reminders work before IGDB is queried. */
-function rememberFollowedReleases(): void {
+function rememberFollowedReleases(extra: UpcomingRelease[] = []): void {
   try {
-    const list = followedReleases();
+    const list = followedReleases(extra);
     if (list.length === 0) localStorage.removeItem(FOLLOW_CACHE_KEY);
     else localStorage.setItem(FOLLOW_CACHE_KEY, JSON.stringify(list));
   } catch {
@@ -149,20 +180,14 @@ function rememberFollowedReleases(): void {
 }
 
 /**
- * One reminder per followed release once it enters the final week.
- * Called at startup; the cache is written whenever the calendar loads or a
- * star changes, so this needs no network and no IGDB call.
+ * Evaluates cached followed releases and notifies the user:
+ * - On release day (or within `RELEASED_GRACE_DAYS` if the launcher was closed
+ *   on launch day), fires a release alert with a corner toast and system toast.
+ * - During the final week before launch (`1..REMINDER_WINDOW_DAYS`), sends one
+ *   advance countdown reminder without blocking the release-day notification.
  */
-export function remindFollowedReleases(): void {
-  let cache: UpcomingRelease[] = [];
-  try {
-    const raw = localStorage.getItem(FOLLOW_CACHE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
-    if (Array.isArray(parsed)) cache = parsed as UpcomingRelease[];
-  } catch {
-    return;
-  }
-  const upcoming = cache
+function checkFollowedReleaseNotifications(): void {
+  const upcoming = loadFollowedCache()
     .filter(
       (release) =>
         release &&
@@ -194,18 +219,51 @@ export function remindFollowedReleases(): void {
   let changed = false;
   let sent = 0;
   const sentToday = Object.values(reminders).filter((day) => day === todayKey).length;
+
   for (const release of upcoming) {
-    if (sentToday + sent >= MAX_REMINDERS_PER_DAY) break;
     const target = Date.UTC(
       releaseYear(release),
       releaseMonth(release) - 1,
       releaseDay(release),
     );
     const days = Math.round((target - todayStart) / 86_400_000);
-    if (days < 0 || days > REMINDER_WINDOW_DAYS) continue;
-    const key = String(release.id);
-    if (reminders[key]) continue;
-    reminders[key] = todayKey;
+
+    // 1. Game has released (today or within the post-release grace window).
+    if (days <= 0 && days >= -RELEASED_GRACE_DAYS) {
+      const outKey = `out:${release.id}`;
+      const legacyDay = reminders[String(release.id)];
+      const releaseDayKey = release.date ?? "";
+      // A legacy pre-release reminder was recorded before `release.date` and
+      // must not suppress the actual release-day notification.
+      if (reminders[outKey] || (legacyDay && releaseDayKey && legacyDay >= releaseDayKey)) {
+        continue;
+      }
+      reminders[outKey] = todayKey;
+      changed = true;
+      const body =
+        days === 0
+          ? `${releaseDateLabel(release)} · ${t("calendar.today")}`
+          : releaseDateLabel(release);
+      pushNotification({
+        kind: "info",
+        title: release.name,
+        body,
+        context: t("calendar.watchlist"),
+        action: "open-release-calendar-search",
+        actionData: release.name,
+        actionLabel: t("calendar.whereToBuy"),
+        toast: true,
+      });
+      void notifyBackgrounded(release.name, body);
+      continue;
+    }
+
+    // 2. Pre-release reminder once the game enters the final week.
+    if (days < 1 || days > REMINDER_WINDOW_DAYS) continue;
+    if (sentToday + sent >= MAX_REMINDERS_PER_DAY) continue;
+    const soonKey = String(release.id);
+    if (reminders[soonKey]) continue;
+    reminders[soonKey] = todayKey;
     changed = true;
     sent += 1;
     pushNotification({
@@ -216,6 +274,7 @@ export function remindFollowedReleases(): void {
       action: "open-release-calendar-search",
       actionData: release.name,
       actionLabel: t("calendar.title"),
+      toast: true,
     });
   }
 
@@ -234,15 +293,47 @@ export function remindFollowedReleases(): void {
   }
 }
 
+/**
+ * Checks followed releases at startup, refreshes cached dates in the background
+ * when the user follows at least one title, and re-checks periodically so a
+ * session kept open across midnight still fires release-day notifications.
+ */
+export function remindFollowedReleases(): void {
+  checkFollowedReleaseNotifications();
+  if (!reminderTimer && typeof window !== "undefined") {
+    reminderTimer = window.setInterval(
+      checkFollowedReleaseNotifications,
+      REMINDER_CHECK_INTERVAL_MS,
+    );
+  }
+  if (!reminderRemoteSynced && followed.size > 0 && typeof window !== "undefined") {
+    reminderRemoteSynced = true;
+    window.setTimeout(() => {
+      if (S.offlineMode || followed.size === 0) return;
+      void epicUpcomingReleases(false)
+        .then((list) => {
+          rememberFollowedReleases(list);
+          checkFollowedReleaseNotifications();
+        })
+        .catch(() => {});
+    }, 6_000);
+  }
+}
+
 function searchReleases(): UpcomingRelease[] {
   const needle = query.trim().toLowerCase();
   if (!needle) return [];
-  return releases
-    .filter((release) => release.name.toLowerCase().includes(needle))
-    .sort(
-      (left, right) =>
-        releaseSortKey(left) - releaseSortKey(right) || left.name.localeCompare(right.name),
-    );
+  const byId = new Map<number, UpcomingRelease>();
+  for (const release of followedReleases()) {
+    if (release.name.toLowerCase().includes(needle)) byId.set(release.id, release);
+  }
+  for (const release of releases) {
+    if (release.name.toLowerCase().includes(needle)) byId.set(release.id, release);
+  }
+  return [...byId.values()].sort(
+    (left, right) =>
+      releaseSortKey(left) - releaseSortKey(right) || left.name.localeCompare(right.name),
+  );
 }
 
 function renderFollowButton(release: UpcomingRelease): string {
@@ -990,6 +1081,7 @@ async function load(refresh: boolean): Promise<void> {
       selectedDay = null;
     }
     rememberFollowedReleases();
+    checkFollowedReleaseNotifications();
   } catch {
     if (seq !== loadSeq || !layer) return;
     releases = [];
@@ -1128,6 +1220,7 @@ export function toggleReleaseFollow(id: number): void {
   else followed.add(id);
   saveFollowed();
   rememberFollowedReleases();
+  checkFollowedReleaseNotifications();
   if (watching && followedReleases().length === 0) watching = false;
   renderCalendar();
   if (focusId) {
@@ -1316,7 +1409,9 @@ function renderStorePopover(): void {
 /** Clicking a card opens the store bubble; clicking the same card again closes it. */
 export function openReleaseStores(id: number, anchor?: HTMLElement | null): void {
   if (!layer) return;
-  const release = releases.find((item) => item.id === id);
+  const release =
+    releases.find((item) => item.id === id) ??
+    followedReleases().find((item) => item.id === id);
   if (!release) return;
   if (storeRelease?.id === id && storeLayer) {
     closeReleaseStores();
