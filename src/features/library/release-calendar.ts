@@ -904,8 +904,28 @@ function renderCalendar(): void {
       nextBody.scrollTop = scrollTop;
     }
   }
-  const activeTab = layer.querySelector<HTMLElement>(".calendar-month-tab.is-active");
-  activeTab?.scrollIntoView({ block: "nearest", inline: "center" });
+  const monthbar = layer.querySelector<HTMLElement>(".calendar-monthbar");
+  const activeTab = monthbar?.querySelector<HTMLElement>(".calendar-month-tab.is-active");
+  if (monthbar && activeTab) {
+    const firstTab = monthbar.firstElementChild as HTMLElement | null;
+    if (activeTab === firstTab) {
+      monthbar.scrollLeft = 0;
+    } else {
+      const targetLeft =
+        activeTab.offsetLeft - monthbar.clientWidth / 2 + activeTab.clientWidth / 2;
+      monthbar.scrollLeft = Math.max(0, targetLeft);
+    }
+  }
+  monthbar?.addEventListener(
+    "wheel",
+    (event) => {
+      if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+        event.preventDefault();
+        monthbar.scrollLeft += event.deltaY;
+      }
+    },
+    { passive: false },
+  );
   const searchInput = layer.querySelector<HTMLInputElement>(".calendar-search-input");
   searchInput?.addEventListener("input", () => {
     query = searchInput.value;

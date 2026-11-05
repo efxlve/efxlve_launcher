@@ -1715,8 +1715,9 @@
 .calendar-monthbar {
   display: flex; align-items: center; gap: 4px;
   flex: 1; min-width: 0; overflow-x: auto; padding: 1px 0;
-  scrollbar-width: thin;
+  scrollbar-width: none;
 }
+.calendar-monthbar::-webkit-scrollbar { display: none; }
 .calendar-month-tab {
   display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto;
   height: 30px; padding: 0 10px;
@@ -1844,11 +1845,14 @@
 .calendar-day.has-games .calendar-day-num {
   font-weight: 700; color: var(--text);
 }
-.calendar-day-num.is-today {
-  display: inline-grid; place-items: center;
-  min-width: 17px; height: 17px; margin: -2px 0 0 -2px; padding: 0 3px;
-  border-radius: 4px; background: var(--accent); color: var(--on-accent);
-  font-size: 10px; font-weight: 800;
+.calendar-day-num.is-today,
+.calendar-day.has-games .calendar-day-num.is-today {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-weight: 800; color: var(--accent);
+}
+.calendar-day-num.is-today::after {
+  content: ""; width: 4px; height: 4px; border-radius: 50%;
+  background: var(--accent);
 }
 .calendar-day-follow {
   display: inline-grid; place-items: center;
