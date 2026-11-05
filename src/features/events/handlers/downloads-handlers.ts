@@ -20,6 +20,7 @@ import { setView } from "../../store/store-view";
 import { loadSettingsView } from "../../settings/settings-view";
 import { epicDownload } from "../../auth/auth-actions";
 import { epicCancel, epicUninstall, refreshEpicInstalled } from "../../../core/epic-actions";
+import { noteDownloadInterrupted } from "../../downloads/finish-action";
 import { closeManagePopup } from "../../manage/manage-view";
 import { gogCancelDownload, gogImportGame, gogPauseDownload, gogResumeDownload, gogSetInstallDir } from "../../../gog";
 import { amazonSetInstallDir } from "../../../nile";
@@ -147,6 +148,7 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
 
     case "epic-cancel":
       if (id) {
+        noteDownloadInterrupted();
         if (id.startsWith("gog::")) {
           void gogCancelDownload(id);
         } else {
@@ -172,6 +174,7 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
       return true;
 
     case "dl-pause":
+      noteDownloadInterrupted();
       if (id?.startsWith("gog::")) {
         gogPauseDownload(id)
           .then((msg) => {
@@ -252,6 +255,7 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
 
     case "dl-reorder-remove":
       if (id) {
+        noteDownloadInterrupted();
         epicReorderQueue(id, "remove")
           .then((q) => {
             S.dlQueueStatus = q;

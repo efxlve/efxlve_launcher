@@ -35,6 +35,8 @@ import {
   APP_ICON_KEY,
   CUSTOM_APP_ICON_KEY,
   PAUSE_ON_PLAY_KEY,
+  DOWNLOAD_FINISH_ACTION_KEY,
+  normalizeDownloadFinishAction,
   STEAM_EXIT_AFTER_PLAY_KEY,
   PROFILE_CARD_CHUNK,
   PROFILE_VIEW_MODE_KEY,
@@ -91,7 +93,7 @@ import { initialReduceEffects } from "./effects";
 import { loadGameStatus, loadUiScale } from "./game-status";
 import { readCustomCss } from "./custom-css";
 import { normalizeSurface } from "./themes";
-import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DrawerTab, EpicCopyOverride, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, NotifTab, SavedAccount, SettingsSection, View } from "./types";
+import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DownloadFinishAction, DrawerTab, EpicCopyOverride, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, NotifTab, SavedAccount, SettingsSection, View } from "./types";
 import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
 
 
@@ -542,6 +544,7 @@ export const S = {
   peakNetSpeedBytes: 0,
   speedInBits: (localStorage.getItem(SPEED_BITS_KEY) === "true") as boolean,
   pauseOnPlay: (localStorage.getItem(PAUSE_ON_PLAY_KEY) !== "false") as boolean,
+  downloadFinishAction: normalizeDownloadFinishAction(localStorage.getItem(DOWNLOAD_FINISH_ACTION_KEY)),
   steamExitAfterPlay: (localStorage.getItem(STEAM_EXIT_AFTER_PLAY_KEY) === "true") as boolean,
   autoDesktopShortcut: (localStorage.getItem(AUTO_SHORTCUT_KEY) !== "false") as boolean,
   autoPausedDl: (null) as string | null,

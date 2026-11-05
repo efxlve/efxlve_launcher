@@ -5,7 +5,7 @@
  * browser (where most features are disabled).
  */
 
-import type { EpicSort } from "./types";
+import type { DownloadFinishAction, EpicSort } from "./types";
 
 /** True when running inside the Tauri shell. */
 export const isTauri =
@@ -64,6 +64,13 @@ export const TM_PREFS_KEY = "efxlve-tm-prefs";
 export const SPEED_BITS_KEY = "efxlve-speed-bits";
 /** Pause active downloads while a game is running. */
 export const PAUSE_ON_PLAY_KEY = "efxlve-pause-on-play";
+/** Action after the last queued download: none, notify, sleep or shutdown. */
+export const DOWNLOAD_FINISH_ACTION_KEY = "efxlve-download-finish-action";
+
+/** Keeps a stored finish action inside the four supported values. */
+export function normalizeDownloadFinishAction(value: string | null): DownloadFinishAction {
+  return value === "notify" || value === "sleep" || value === "shutdown" ? value : "none";
+}
 /** Hide the Steam window on launch and quit Steam when the game closes. Default off. */
 export const STEAM_EXIT_AFTER_PLAY_KEY = "efxlve-steam-exit-after-play";
 

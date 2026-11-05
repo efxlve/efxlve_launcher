@@ -53,6 +53,7 @@ import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { applyWinbarAppIcon } from "../../core/app-icon";
 import { closeModal, viewEl } from "../../core/dom";
 import { answerChoice, answerConfirm, askConfirm } from "../../core/confirm-dialog";
+import { handleFinishAction, noteDownloadInterrupted } from "../downloads/finish-action";
 import { esc } from "../../core/utils";
 import { icon } from "../../core/icons";
 import { applySidebarPageVisibility, discordPageVisible, miniPlayerVisible, notesSidebarVisible, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
@@ -346,6 +347,7 @@ document.addEventListener("click", (e) => {
     answerChoice(null);
     return;
   }
+  if (handleFinishAction(act ?? "")) return;
 
   // Delegate to domain action handlers
   if (handleLibraryOptionAction(act, t)) return;
@@ -832,6 +834,7 @@ document.addEventListener("click", (e) => {
         .catch((e: unknown) => toast(String(e), "err"));
     });
   } else if (act === "ubi-direct-cancel" && id) {
+    noteDownloadInterrupted();
     const productId = Number(id);
     if (productId) {
       void ubiDirectCancel(productId).catch((e: unknown) =>
@@ -839,6 +842,7 @@ document.addEventListener("click", (e) => {
       );
     }
   } else if (act === "ea-content-cancel" && id) {
+    noteDownloadInterrupted();
     void eaContentCancel(id).catch((e: unknown) =>
       toast(localizeMessage(String(e)), "err"),
     );

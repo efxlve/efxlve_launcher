@@ -46,6 +46,7 @@ import { eglLauncherPresent } from "../../egl-removal";
 import { gogPauseDownload, gogResumeDownload } from "../../gog";
 import { loadNotifications, pushNotification } from "../notifications/notifications";
 import { initAutoUpdate } from "../downloads/auto-update";
+import { noteDownloadActivity, noteDownloadFinished, noteDownloadInterrupted } from "../downloads/finish-action";
 import { installArtFallback } from "../library/art-fallback";
 import { initAppUpdater } from "../updates/update-manager";
 import { CONTROLLER_BRIDGE_KEY, AUTOSTART_INIT_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, OVERLAY_DISABLED_KEY, isTauri } from "../../core/constants";
@@ -370,6 +371,7 @@ export async function initApp(hooks: {
       const dl = S.downloads.get(id);
       // A late line after the install finished must not revive the card.
       if (!dl) return;
+      noteDownloadActivity();
       const speedBytes = Math.round(speed * 1024 * 1024);
       const diskBytes = Math.round((diskSpeed ?? 0) * 1024 * 1024);
       const etaText = eta && eta !== "00:00:00" ? eta : t("common.calculating");
@@ -446,6 +448,7 @@ export async function initApp(hooks: {
 
     listenLater<UbiDirectProgress>("ubi-direct-progress", (event) => {
       const progress = event.payload;
+      noteDownloadActivity();
       S.ubiDirectInstalling.add(progress.productId);
       S.ubiDirectProgress[progress.productId] = progress;
       const row = findUbiCompanionRow(progress.productId);
@@ -489,6 +492,7 @@ export async function initApp(hooks: {
 
     listenLater<UbiDirectSummary>("ubi-direct-done", (event) => {
       const summary = event.payload;
+      noteDownloadFinished();
       S.ubiDirectInstalling.delete(summary.productId);
       delete S.ubiDirectProgress[summary.productId];
       const row = findUbiCompanionRow(summary.productId);
@@ -500,6 +504,7 @@ export async function initApp(hooks: {
 
     listenLater<{ productId: number; error: string }>("ubi-direct-failed", (event) => {
       const failure = event.payload;
+      noteDownloadInterrupted();
       S.ubiDirectInstalling.delete(failure.productId);
       delete S.ubiDirectProgress[failure.productId];
       const row = findUbiCompanionRow(failure.productId);
@@ -517,6 +522,7 @@ export async function initApp(hooks: {
     // Downloads row and the game page's button.
     listenLater<EaContentProgress>("ea-content-progress", (event) => {
       const progress = event.payload;
+      noteDownloadActivity();
       S.eaContentInstalling.add(progress.id);
       S.eaContentProgress[progress.id] = progress;
       const row = S.companionSummaries.find((game) => game.key === `ea::${progress.id}`);
@@ -542,6 +548,7 @@ export async function initApp(hooks: {
 
     listenLater<{ id: string; name: string; touchupError?: string }>("ea-content-done", (event) => {
       const done = event.payload;
+      noteDownloadFinished();
       S.eaContentInstalling.delete(done.id);
       delete S.eaContentProgress[done.id];
       const row = S.companionSummaries.find((game) => game.key === `ea::${done.id}`);
@@ -557,6 +564,7 @@ export async function initApp(hooks: {
 
     listenLater<{ id: string; name: string; error: string }>("ea-content-failed", (event) => {
       const failure = event.payload;
+      noteDownloadInterrupted();
       S.eaContentInstalling.delete(failure.id);
       delete S.eaContentProgress[failure.id];
       const row = S.companionSummaries.find((game) => game.key === `ea::${failure.id}`);
@@ -571,6 +579,7 @@ export async function initApp(hooks: {
 
     listenLater<DlProgressEvent>("download-progress", (event) => {
       const { id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes } = event.payload;
+      noteDownloadActivity();
       if (id.startsWith("gog::") && done) S.gogDlPaused = false;
       if (id.startsWith("gog::") && progress === 0 && !done) S.gogDlPaused = false;
       const title = libraryItemOf(id)?.title ?? S.epicSummariesMap.get(id)?.title ?? id;
@@ -654,6 +663,7 @@ export async function initApp(hooks: {
       pushRecentInstall(id, movedBytes);
       lastDlSample = null;
       pushNotification({ kind: "download", title: t("notif.downloadDone", { title }), appName: id });
+      noteDownloadFinished();
       // Per-install shortcut request from the install dialog (deferred until the
       // game files actually exist).
       if (S.pendingShortcutApps.has(id)) {
@@ -698,6 +708,7 @@ export async function initApp(hooks: {
       }
     });
     listenLater<{ id: string }>("download-paused", (event) => {
+      noteDownloadInterrupted();
       if (event.payload.id.startsWith("gog::")) S.gogDlPaused = true;
       else S.dlQueueStatus.isPaused = true;
       lastDlSample = null;
@@ -712,9 +723,11 @@ export async function initApp(hooks: {
     listenLater<{ id: string }>("download-resumed", (event) => {
       if (event.payload.id.startsWith("gog::")) S.gogDlPaused = false;
       else S.dlQueueStatus.isPaused = false;
+      noteDownloadActivity();
       if (S.view === "downloads") render();
     });
     listenLater<DownloadFailedEvent>("download-failed", (event) => {
+      noteDownloadInterrupted();
       if (event.payload.id.startsWith("gog::")) S.gogDlPaused = false;
       S.downloads.delete(event.payload.id);
       if (S.activeDlMetrics?.id === event.payload.id) S.activeDlMetrics = null;
@@ -737,6 +750,7 @@ export async function initApp(hooks: {
       });
     });
     listenLater<DownloadCancelledEvent>("download-cancelled", (event) => {
+      noteDownloadInterrupted();
       if (event.payload.id.startsWith("gog::")) S.gogDlPaused = false;
       S.downloads.delete(event.payload.id);
       if (S.activeDlMetrics?.id === event.payload.id) S.activeDlMetrics = null;

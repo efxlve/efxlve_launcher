@@ -347,6 +347,8 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
 .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .modal-title { font-size: 16px; font-weight: 600; margin: 0; }
 .modal-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+/* Download finish countdown: the seconds are the one number worth enlarging. */
+.finish-dialog #finish-count { font-size: 18px; color: var(--text); }
 /* --- Report dialog: head, field, diagnostics row, report file and foot, so the
    modal frame reads as one sectioned sheet instead of a bare form. --- */
 .feedback-layer { z-index: 620; }

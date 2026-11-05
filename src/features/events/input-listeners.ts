@@ -8,9 +8,10 @@ import { clearOverlayBlock, overlayBlockedGames, setOverlayAntiCheatOverride } f
  */
 
 import { applyWinbarAppIcon } from "../../core/app-icon";
-import { APP_ICON_KEY, CUSTOM_APP_ICON_KEY, AUTO_UPDATE_TIME_KEY, CASE_STORE_COLORS_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY, LIB_PAGE_SIZE_KEY, STARTUP_TAB_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeLibraryPageSize } from "../../core/constants";
+import { APP_ICON_KEY, CUSTOM_APP_ICON_KEY, AUTO_UPDATE_TIME_KEY, CASE_STORE_COLORS_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY, LIB_PAGE_SIZE_KEY, STARTUP_TAB_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeDownloadFinishAction, normalizeLibraryPageSize } from "../../core/constants";
 import { syncCaseCustomStoreColors } from "../library/case-colors";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
+import { cancelFinishCountdown, setDownloadFinishAction } from "../downloads/finish-action";
 import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "../../core/dom";
 import { cancelChoice, cancelConfirm } from "../../core/confirm-dialog";
 import { navGoBack, navGoForward } from "../../core/nav";
@@ -212,6 +213,8 @@ document.addEventListener("keydown", (e) => {
   }
 
   if (e.key === "Escape") {
+    // The countdown sits above every page and owns Escape while it is open.
+    if (cancelFinishCountdown()) return;
     // The shared choice/confirm dialogs own Escape while they are open.
     if (cancelChoice()) return;
     if (cancelConfirm()) return;
@@ -804,6 +807,11 @@ document.addEventListener("change", (e) => {
         .then(() => toast(i18nT("common.saved"), "ok"))
         .catch((e) => toast(String(e), "err"));
     }
+    return;
+  }
+  if (act === "set-download-finish-action") {
+    setDownloadFinishAction(normalizeDownloadFinishAction((t as HTMLSelectElement).value));
+    render();
     return;
   }
   if (act === "set-ui-scale") {

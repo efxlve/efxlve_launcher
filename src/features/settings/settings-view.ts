@@ -316,6 +316,16 @@ function renderDownloads(): string {
     group(
       row(t("downloads.speedBits"), t("downloads.speedBitsDesc"), toggle("toggle-speed-bits", S.speedInBits)) +
       row(t("downloads.pauseOnPlay"), t("downloads.pauseOnPlayDesc"), toggle("toggle-pause-on-play", S.pauseOnPlay)) +
+      row(
+        t("settings.finishActionTitle"),
+        t("settings.finishActionDesc"),
+        `<select class="settings-select" data-act="set-download-finish-action" aria-label="${esc(t("settings.finishActionTitle"))}">
+          <option value="none"${S.downloadFinishAction === "none" ? " selected" : ""}>${esc(t("feat.none"))}</option>
+          <option value="notify"${S.downloadFinishAction === "notify" ? " selected" : ""}>${esc(t("settings.finishActionNotify"))}</option>
+          <option value="sleep"${S.downloadFinishAction === "sleep" ? " selected" : ""}>${esc(t("settings.finishActionSleep"))}</option>
+          <option value="shutdown"${S.downloadFinishAction === "shutdown" ? " selected" : ""}>${esc(t("settings.finishActionShutdown"))}</option>
+        </select>`,
+      ) +
       (IS_WINDOWS
         ? row(t("settings.autoDesktopShortcut"), t("settings.autoDesktopShortcutDesc"), toggle("toggle-auto-desktop-shortcut", S.autoDesktopShortcut))
         : "") +

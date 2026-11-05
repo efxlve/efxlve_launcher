@@ -30,6 +30,7 @@ mod igdb;
 mod image_cache;
 mod perf;
 mod pc_check;
+mod power;
 mod task_manager;
 mod game_running;
 mod presence;
@@ -1997,6 +1998,7 @@ fn main() {
             app_close,
             app_set_decorations,
             app_set_minimize_to_tray,
+            power::app_power_action,
             app_set_tray_labels,
             feedback::feedback_create_report,
             feedback::feedback_has_crash,
