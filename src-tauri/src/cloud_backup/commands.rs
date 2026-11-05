@@ -86,6 +86,27 @@ pub async fn cloud_backup_download_game(
     manager::download_and_restore(&app_name, &remote_id, &backup_id).await
 }
 
+/// Downloads and describes a cloud backup without touching the save folder.
+#[command]
+pub async fn cloud_backup_preview_game(
+    app_name: String,
+    remote_id: String,
+    backup_id: String,
+) -> Result<manager::RestorePreview, String> {
+    manager::preview_restore(&app_name, &remote_id, &backup_id).await
+}
+
+/// Applies the previewed archive after re-checking its token and local saves.
+#[command]
+pub async fn cloud_backup_apply_restore(token: String) -> Result<String, String> {
+    manager::apply_restore(&token).await
+}
+
+#[command]
+pub fn cloud_backup_cancel_restore(token: String) {
+    manager::cancel_restore(&token);
+}
+
 #[command]
 pub async fn cloud_backup_delete_remote(remote_id: String) -> Result<(), String> {
     manager::delete_remote_backup(&remote_id).await

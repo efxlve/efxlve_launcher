@@ -71,6 +71,12 @@ A restore is deliberately two-step:
    refused. The snapshot appears in the normal local backup list, so a wrong
    restore can be undone without another provider.
 
+A cloud restore first downloads the archive and shows its file list, target
+folder, size and date without touching the saves. The confirmation is a
+one-use token valid for five minutes; applying it re-hashes the local save
+tree and refuses when the game wrote new saves while the preview was open.
+Closing the preview drops the token and the temporary archive.
+
 ---
 
 ## 2. Providers

@@ -9,6 +9,7 @@ import { t } from "../../i18n";
 import { scheduleRender } from "../../core/render";
 import { askConfirm } from "../../core/confirm-dialog";
 import { fmtCloudDate, updateManageCloudRowInPlace } from "./cloud-backup-view";
+import { askRestorePreview } from "./restore-preview-dialog";
 import {
   cloudBackupGetSettings,
   cloudBackupSaveSettings,
@@ -18,6 +19,9 @@ import {
   cloudBackupUploadGame,
   cloudBackupListGame,
   cloudBackupDownloadGame,
+  cloudBackupPreviewGame,
+  cloudBackupApplyRestore,
+  cloudBackupCancelRestore,
   cloudBackupDeleteRemote,
   cloudBackupRemoteHash,
   epicBackupSave,
@@ -337,12 +341,25 @@ export async function downloadCloudBackupAction(
     }
   }
   toast(t("cloud.downloading"), "");
+  let preview;
   try {
-    await cloudBackupDownloadGame(appName, remoteId, backupId);
+    preview = await cloudBackupPreviewGame(appName, remoteId, backupId);
+  } catch (err) {
+    toast(String(err), "err");
+    return;
+  }
+  const restore = await askRestorePreview(preview);
+  if (!restore) {
+    void cloudBackupCancelRestore(preview.token).catch(() => undefined);
+    return;
+  }
+  try {
+    await cloudBackupApplyRestore(preview.token);
     toast(t("cloud.downloadSuccess"), "ok");
     updateManageCloudRowInPlace(appName);
     scheduleRender();
   } catch (err) {
+    void cloudBackupCancelRestore(preview.token).catch(() => undefined);
     toast(String(err), "err");
   }
 }

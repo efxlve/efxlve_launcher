@@ -483,6 +483,51 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
   margin: 0; padding: 12px 18px;
 }
 .confirm-go { border-color: rgba(229, 72, 77, 0.35); font-weight: 600; }
+
+/* Cloud restore preview: a readable file list before a one-use token is spent. */
+.restore-preview-dialog { width: min(640px, 100%); padding: 0; }
+.restore-preview-dialog .modal-head {
+  margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--line);
+}
+.restore-preview-dialog .confirm-body { padding: 14px 18px 8px; }
+.restore-preview-target {
+  display: flex; align-items: flex-start; gap: 7px;
+  padding: 0 18px 10px; font-size: 11.5px; color: var(--text-3);
+  overflow-wrap: anywhere;
+}
+.restore-preview-target svg { flex: none; margin-top: 1px; }
+.restore-preview-files-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 18px 6px; font-size: 11px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.restore-preview-files-head .count {
+  padding: 1px 7px; border-radius: 999px;
+  background: var(--surface-3); color: var(--text-2); letter-spacing: 0;
+}
+.restore-preview-files {
+  list-style: none; margin: 0 18px; padding: 6px 10px;
+  max-height: 220px; overflow: auto;
+  background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+.restore-preview-files li {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 4px 0; border-bottom: 1px solid var(--line);
+  font-size: 11.5px; color: var(--text-2);
+}
+.restore-preview-files li:last-child { border-bottom: 0; }
+.restore-preview-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.restore-preview-size { flex: none; color: var(--text-3); }
+.restore-preview-more { padding: 6px 18px 0; font-size: 11px; color: var(--text-3); }
+.restore-preview-note {
+  display: flex; align-items: flex-start; gap: 7px;
+  margin: 10px 18px 0; font-size: 11.5px; line-height: 1.5; color: var(--text-3);
+}
+.restore-preview-note svg { flex: none; margin-top: 1px; }
+.restore-preview-dialog .modal-foot {
+  margin: 0; padding: 12px 18px; border-top: 1px solid var(--line);
+}
 .choice-options { display: grid; gap: 8px; padding: 0 18px 4px; }
 .choice-option {
   display: flex; flex-direction: column; align-items: flex-start; gap: 3px;

@@ -54,6 +54,7 @@ import { applyWinbarAppIcon } from "../../core/app-icon";
 import { closeModal, viewEl } from "../../core/dom";
 import { answerChoice, answerConfirm, askConfirm } from "../../core/confirm-dialog";
 import { answerPassword, cancelPassword } from "../../core/password-dialog";
+import { answerRestorePreview, cancelRestorePreview } from "../cloud-backup/restore-preview-dialog";
 import { handleFinishAction, noteDownloadInterrupted } from "../downloads/finish-action";
 import { esc } from "../../core/utils";
 import { icon } from "../../core/icons";
@@ -354,6 +355,14 @@ document.addEventListener("click", (e) => {
   }
   if (act === "password-cancel") {
     cancelPassword();
+    return;
+  }
+  if (act === "restore-preview-confirm") {
+    answerRestorePreview(true);
+    return;
+  }
+  if (act === "restore-preview-cancel") {
+    answerRestorePreview(false);
     return;
   }
   if (handleFinishAction(act ?? "")) return;

@@ -1095,5 +1095,35 @@ export const cloudBackupListGame = (appName: string) =>
 export const cloudBackupDownloadGame = (appName: string, remoteId: string, backupId: string) =>
   invoke<string>("cloud_backup_download_game", { appName, remoteId, backupId });
 
+export interface RestorePreviewFile {
+  path: string;
+  size: number;
+}
+
+/** A downloaded cloud archive described before it is allowed to overwrite. */
+export interface RestorePreview {
+  token: string;
+  appName: string;
+  backupId: string;
+  timestamp: number;
+  formattedDate: string;
+  totalBytes: number;
+  fileCount: number;
+  files: RestorePreviewFile[];
+  truncated: boolean;
+  savePath: string;
+  currentHash: string;
+  expiresAt: number;
+}
+
+export const cloudBackupPreviewGame = (appName: string, remoteId: string, backupId: string) =>
+  invoke<RestorePreview>("cloud_backup_preview_game", { appName, remoteId, backupId });
+
+export const cloudBackupApplyRestore = (token: string) =>
+  invoke<string>("cloud_backup_apply_restore", { token });
+
+export const cloudBackupCancelRestore = (token: string) =>
+  invoke<void>("cloud_backup_cancel_restore", { token });
+
 export const cloudBackupDeleteRemote = (remoteId: string) =>
   invoke<void>("cloud_backup_delete_remote", { remoteId });

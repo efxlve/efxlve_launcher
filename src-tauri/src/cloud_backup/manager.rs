@@ -1,13 +1,15 @@
 //! High-level Cloud Backup Manager for orchestrating local archives and remote cloud providers.
 
+use rand::RngCore;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter};
 
-use crate::cloud_backup::archive::{pack_backup_dir, unpack_backup_tar_gz};
+use crate::cloud_backup::archive::{pack_backup_dir, read_archive_summary, unpack_backup_tar_gz};
 use crate::cloud_backup::folder;
 use crate::cloud_backup::gdrive;
 use crate::cloud_backup::models::{CloudBackupEntry, CloudBackupProvider, CloudBackupSettings};
@@ -548,55 +550,286 @@ pub async fn list_cloud_backups(app_name: &str) -> Result<Vec<CloudBackupEntry>,
 }
 
 /// Downloads a remote backup, stores it into local backup store, and restores it to the game.
-pub async fn download_and_restore(
-    app_name: &str,
-    remote_id: &str,
-    backup_id: &str,
-) -> Result<String, String> {
-    let settings = load_settings();
+/// One file in the restore preview. Paths are relative to the game save tree.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RestorePreviewFile {
+    pub path: String,
+    pub size: u64,
+}
+
+/// What the user sees before a cloud save replaces the local one.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RestorePreview {
+    pub token: String,
+    pub app_name: String,
+    pub backup_id: String,
+    pub timestamp: u64,
+    pub formatted_date: String,
+    pub total_bytes: u64,
+    pub file_count: usize,
+    pub files: Vec<RestorePreviewFile>,
+    pub truncated: bool,
+    /// Resolved local save folder, empty when the launcher has no path yet.
+    pub save_path: String,
+    /// Save-tree hash when the preview opened. Empty when there were no saves.
+    pub current_hash: String,
+    pub expires_at: u64,
+}
+
+struct PendingRestore {
+    preview: RestorePreview,
+    archive: PathBuf,
+    local_hash: Option<String>,
+}
+
+/// A preview is valid for five minutes and one apply. Tokens live only in this
+/// process; the archive is a temporary file, never the cloud original.
+const PREVIEW_TTL_SECS: u64 = 300;
+const PREVIEW_FILE_LIMIT: usize = 200;
+
+static PENDING_RESTORES: OnceLock<Mutex<HashMap<String, PendingRestore>>> = OnceLock::new();
+
+fn pending_restores() -> &'static Mutex<HashMap<String, PendingRestore>> {
+    PENDING_RESTORES.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn now_secs() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .unwrap_or(0)
+}
+
+fn new_preview_token() -> String {
+    let mut bytes = [0u8; 16];
+    rand::thread_rng().fill_bytes(&mut bytes);
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+fn remove_pending_archive(pending: &PendingRestore) {
+    let _ = std::fs::remove_file(&pending.archive);
+}
+
+/// Drops expired previews and their temporary archives. Called before every
+/// new preview so a user who closes the dialog does not leave files behind.
+fn prune_expired_previews() {
+    let now = now_secs();
+    let Ok(mut map) = pending_restores().lock() else {
+        return;
+    };
+    let expired: Vec<String> = map
+        .iter()
+        .filter(|(_, pending)| pending.preview.expires_at <= now)
+        .map(|(token, _)| token.clone())
+        .collect();
+    for token in expired {
+        if let Some(pending) = map.remove(&token) {
+            remove_pending_archive(&pending);
+        }
+    }
+    drop(map);
+
+    // A previous launcher process can leave its downloaded archive behind.
+    // Only files this module names are touched, and only after an hour.
+    let Ok(entries) = std::fs::read_dir(std::env::temp_dir()) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().to_string();
+        if !name.starts_with("efxlve_restore_") || !name.ends_with(".tar.gz") {
+            continue;
+        }
+        let old = entry
+            .metadata()
+            .and_then(|meta| meta.modified())
+            .ok()
+            .and_then(|modified| modified.elapsed().ok())
+            .is_some_and(|age| age.as_secs() > 3600);
+        if old {
+            let _ = std::fs::remove_file(entry.path());
+        }
+    }
+}
+
+/// Downloads one remote archive to a unique temp file. The filename never
+/// contains the provider's remote id or the game key.
+async fn download_to_temp(settings: &CloudBackupSettings, remote_id: &str) -> Result<PathBuf, String> {
     let client = get_client();
+    let temp_archive = std::env::temp_dir().join(format!(
+        "efxlve_restore_{}_{}.tar.gz",
+        std::process::id(),
+        new_preview_token()
+    ));
 
-    let temp_archive =
-        std::env::temp_dir().join(format!("efxlve_download_{app_name}_{backup_id}.tar.gz"));
-
-    // 1. Download
-    match settings.provider {
+    let download = match settings.provider {
         CloudBackupProvider::Folder => {
-            folder::download_backup_folder(&settings.folder_path, remote_id, &temp_archive)?;
+            folder::download_backup_folder(&settings.folder_path, remote_id, &temp_archive)
         }
         CloudBackupProvider::Rclone => {
-            rclone::download_backup_rclone(&settings.rclone_remote, remote_id, &temp_archive).await?;
+            rclone::download_backup_rclone(&settings.rclone_remote, remote_id, &temp_archive).await
         }
         CloudBackupProvider::Webdav => {
-            let webdav = webdav_client(&settings)?;
-            let client = &webdav;
+            let webdav = webdav_client(settings)?;
             webdav::download_file_webdav(
-                client,
+                &webdav,
                 remote_id,
                 &settings.webdav_username,
                 &settings.webdav_password,
                 &temp_archive,
             )
-            .await?;
+            .await
         }
         CloudBackupProvider::GoogleDrive => {
             let refresh = settings.gdrive_refresh_token.as_deref().unwrap_or_default();
-            let (client_id, client_secret) = gdrive_credentials(&settings)?;
+            let (client_id, client_secret) = gdrive_credentials(settings)?;
             let access =
                 gdrive::refresh_access_token(client, client_id, client_secret, refresh).await?;
-            gdrive::download_backup_gdrive(client, &access, remote_id, &temp_archive).await?;
+            gdrive::download_backup_gdrive(client, &access, remote_id, &temp_archive).await
         }
         CloudBackupProvider::None => return Err("No active cloud provider.".to_string()),
+    };
+    if let Err(error) = download {
+        let _ = std::fs::remove_file(&temp_archive);
+        return Err(error);
+    }
+    Ok(temp_archive)
+}
+
+/// Downloads the archive and describes it without touching the save folder.
+pub async fn preview_restore(
+    app_name: &str,
+    remote_id: &str,
+    backup_id: &str,
+) -> Result<RestorePreview, String> {
+    prune_expired_previews();
+    let settings = load_settings();
+    if !settings.enabled || settings.provider == CloudBackupProvider::None {
+        return Err("Cloud backup is not enabled.".to_string());
+    }
+    let archive = download_to_temp(&settings, remote_id).await?;
+    let summary = match read_archive_summary(&archive, PREVIEW_FILE_LIMIT) {
+        Ok(summary) => summary,
+        Err(error) => {
+            let _ = std::fs::remove_file(&archive);
+            return Err(error);
+        }
+    };
+    let Some(info) = summary.info else {
+        let _ = std::fs::remove_file(&archive);
+        return Err("@t:backup.infoNotFound".to_string());
+    };
+
+    let resolved = resolve_save_path(app_name, None).ok();
+    let local_hash = resolved
+        .as_deref()
+        .and_then(|path| tree_content_hash(Path::new(path)));
+    let token = new_preview_token();
+    let expires_at = now_secs().saturating_add(PREVIEW_TTL_SECS);
+    let files: Vec<RestorePreviewFile> = summary
+        .files
+        .into_iter()
+        .map(|(path, size)| RestorePreviewFile { path, size })
+        .collect();
+    let total_bytes = if info.size_bytes > 0 {
+        info.size_bytes
+    } else {
+        files.iter().map(|file| file.size).sum()
+    };
+    let preview = RestorePreview {
+        token: token.clone(),
+        app_name: app_name.to_string(),
+        backup_id: backup_id.to_string(),
+        timestamp: info.timestamp,
+        formatted_date: info.formatted_date.clone(),
+        total_bytes,
+        file_count: if info.file_count > 0 {
+            info.file_count
+        } else {
+            files.len()
+        },
+        files,
+        truncated: summary.truncated,
+        save_path: resolved.clone().unwrap_or(info.save_path.clone()),
+        current_hash: local_hash.clone().unwrap_or_default(),
+        expires_at,
+    };
+
+    let mut map = pending_restores()
+        .lock()
+        .map_err(|_| "The restore queue is unavailable.".to_string())?;
+    map.insert(
+        token,
+        PendingRestore {
+            preview: preview.clone(),
+            archive,
+            local_hash,
+        },
+    );
+    Ok(preview)
+}
+
+/// Applies a preview after re-checking its age and the local save tree.
+pub async fn apply_restore(token: &str) -> Result<String, String> {
+    let pending = {
+        let Ok(mut map) = pending_restores().lock() else {
+            return Err("The restore queue is unavailable.".to_string());
+        };
+        map.remove(token)
+    };
+    let Some(pending) = pending else {
+        return Err("@t:cloud.previewExpired".to_string());
+    };
+    // One token, one attempt: a double click cannot restore twice.
+    if pending.preview.expires_at <= now_secs() {
+        remove_pending_archive(&pending);
+        return Err("@t:cloud.previewExpired".to_string());
     }
 
-    // 2. Unpack into local backup storage
-    let local_dest = app_backup_dir(app_name).join(backup_id);
-    let unpack_res = unpack_backup_tar_gz(&temp_archive, &local_dest);
-    let _ = std::fs::remove_file(&temp_archive);
-    unpack_res?;
+    // The saves may have changed while the preview was open. Restoring stale
+    // data over a fresh session is exactly what the confirmation is for.
+    let current_hash = resolve_save_path(&pending.preview.app_name, None)
+        .ok()
+        .and_then(|path| tree_content_hash(Path::new(&path)));
+    if current_hash != pending.local_hash {
+        remove_pending_archive(&pending);
+        return Err("@t:cloud.previewStale".to_string());
+    }
 
-    // 3. Restore to game's save folder
-    restore_backup(app_name, backup_id)
+    let local_dest = app_backup_dir(&pending.preview.app_name).join(&pending.preview.backup_id);
+    let unpack = unpack_backup_tar_gz(&pending.archive, &local_dest);
+    remove_pending_archive(&pending);
+    unpack?;
+    restore_backup(&pending.preview.app_name, &pending.preview.backup_id)
+}
+
+/// Drops one preview and its temporary archive when the user cancels.
+pub fn cancel_restore(token: &str) {
+    let Ok(mut map) = pending_restores().lock() else {
+        return;
+    };
+    if let Some(pending) = map.remove(token) {
+        remove_pending_archive(&pending);
+    }
+}
+
+/// Compatibility path for bulk restore and older callers: preview, then apply
+/// immediately. A failed apply also releases the temporary archive.
+pub async fn download_and_restore(
+    app_name: &str,
+    remote_id: &str,
+    backup_id: &str,
+) -> Result<String, String> {
+    let preview = preview_restore(app_name, remote_id, backup_id).await?;
+    let token = preview.token.clone();
+    match apply_restore(&token).await {
+        Ok(message) => Ok(message),
+        Err(error) => {
+            cancel_restore(&token);
+            Err(error)
+        }
+    }
 }
 
 /// Deletes a remote backup from the cloud provider.

@@ -9,6 +9,58 @@ use flate2::write::GzEncoder;
 use flate2::Compression;
 use sha2::{Digest, Sha256};
 
+use crate::legendary::backup::SaveBackupInfo;
+
+/// A light manifest read for the restore preview. `truncated` says the archive
+/// held more entries than the caller asked to list.
+pub struct ArchiveSummary {
+    pub info: Option<SaveBackupInfo>,
+    pub files: Vec<(String, u64)>,
+    pub truncated: bool,
+}
+
+/// Reads `backup_info.json` and the entry list in one pass. The archive stays
+/// on disk; nothing is unpacked.
+pub fn read_archive_summary(archive_file: &Path, limit: usize) -> Result<ArchiveSummary, String> {
+    let file = File::open(archive_file).map_err(|error| format!("Failed to open archive: {error}"))?;
+    let reader = BufReader::new(file);
+    let gz = GzDecoder::new(reader);
+    let mut archive = tar::Archive::new(gz);
+    let mut info: Option<SaveBackupInfo> = None;
+    let mut files: Vec<(String, u64)> = Vec::new();
+    let mut truncated = false;
+    for entry in archive.entries().map_err(|error| error.to_string())? {
+        let mut entry = entry.map_err(|error| error.to_string())?;
+        let path = entry
+            .path()
+            .map_err(|error| error.to_string())?
+            .to_string_lossy()
+            .replace('\\', "/");
+        if path == "backup_info.json" || path.ends_with("/backup_info.json") {
+            let mut text = String::new();
+            entry
+                .read_to_string(&mut text)
+                .map_err(|error| error.to_string())?;
+            info = serde_json::from_str(&text).ok();
+            continue;
+        }
+        if path.ends_with('/') || path == "." {
+            continue;
+        }
+        if files.len() >= limit {
+            truncated = true;
+            break;
+        }
+        let size = entry.header().size().unwrap_or(0);
+        files.push((path, size));
+    }
+    Ok(ArchiveSummary {
+        info,
+        files,
+        truncated,
+    })
+}
+
 /// Packages the entire backup folder (including data/ and backup_info.json) into a compressed .tar.gz archive.
 /// Returns (archive_size_bytes, sha256_checksum).
 pub fn pack_backup_dir(
@@ -193,6 +245,37 @@ mod tests {
             b"SAVEGAME_DATA_BINARY"
         );
 
+        let _ = std::fs::remove_dir_all(&temp_base);
+    }
+
+    #[test]
+    fn archive_summary_reads_the_manifest_and_files() {
+        let temp_base = std::env::temp_dir().join(format!(
+            "efxlve_test_summary_{}",
+            std::process::id()
+        ));
+        let src_dir = temp_base.join("source");
+        let archive_file = temp_base.join("backup.tar.gz");
+        let _ = std::fs::remove_dir_all(&temp_base);
+        std::fs::create_dir_all(src_dir.join("data")).unwrap();
+        std::fs::write(
+            src_dir.join("backup_info.json"),
+            r#"{"id":"1770000000","app_name":"steam::1","timestamp":1770000000,"formatted_date":"5 Nov 2026","size_bytes":4,"file_count":1,"save_path":"C:\\Saves\\One","content_hash":"abc"}"#,
+        )
+        .unwrap();
+        std::fs::write(src_dir.join("data").join("save.dat"), b"data").unwrap();
+        pack_backup_dir(&src_dir, &archive_file).unwrap();
+
+        let summary = read_archive_summary(&archive_file, 50).unwrap();
+        let info = summary.info.expect("backup_info.json must parse");
+        assert_eq!(info.id, "1770000000");
+        assert_eq!(info.save_path, "C:\\Saves\\One");
+        assert!(summary
+            .files
+            .iter()
+            .any(|(path, size)| path.ends_with("save.dat") && *size == 4));
+        assert!(!summary.truncated);
+        assert!(read_archive_summary(&archive_file, 0).unwrap().truncated);
         let _ = std::fs::remove_dir_all(&temp_base);
     }
 }

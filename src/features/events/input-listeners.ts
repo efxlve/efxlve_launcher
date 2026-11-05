@@ -15,6 +15,7 @@ import { cancelFinishCountdown, setDownloadFinishAction } from "../downloads/fin
 import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "../../core/dom";
 import { cancelChoice, cancelConfirm } from "../../core/confirm-dialog";
 import { answerPassword, cancelPassword } from "../../core/password-dialog";
+import { cancelRestorePreview } from "../cloud-backup/restore-preview-dialog";
 import { navGoBack, navGoForward } from "../../core/nav";
 import { openEpicModal, render } from "../../core/render";
 import { refreshSteamInstalled } from "../library/steam-library";
@@ -215,6 +216,8 @@ document.addEventListener("keydown", (e) => {
   }
 
   if (e.key === "Escape") {
+    // The restore preview sits above every page and owns Escape first.
+    if (cancelRestorePreview()) return;
     // The password prompt sits above every page and owns Escape while it is open.
     if (cancelPassword()) return;
     // The countdown sits above every page and owns Escape while it is open.
