@@ -209,7 +209,8 @@ export function remindFollowedReleases(): void {
       title: release.name,
       body: `${releaseDateLabel(release)} · ${countdownLabel(release)}`,
       context: t("calendar.watchlist"),
-      action: "open-release-calendar",
+      action: "open-release-calendar-search",
+      actionData: release.name,
       actionLabel: t("calendar.title"),
     });
   }

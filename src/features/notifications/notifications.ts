@@ -129,6 +129,8 @@ export interface NotifInput {
   appName?: string;
   /** Optional `data-act` routed when the entry is clicked. */
   action?: string;
+  /** Text the action needs, routed as `data-query`. */
+  actionData?: string;
   /** Short label for that action, shown as a chip inside the entry. */
   actionLabel?: string;
   toast?: boolean;
@@ -243,6 +245,7 @@ export function pushNotification(input: NotifInput): void {
     existing.body = input.body ?? existing.body;
     existing.context = input.context ?? existing.context;
     existing.action = input.action ?? existing.action;
+    existing.actionData = input.actionData ?? existing.actionData;
     existing.actionLabel = input.actionLabel ?? existing.actionLabel;
   } else {
     S.notifications.unshift({
@@ -253,6 +256,7 @@ export function pushNotification(input: NotifInput): void {
       context: input.context,
       appName: input.appName,
       action: input.action,
+      actionData: input.actionData,
       actionLabel: input.actionLabel,
       ts: now,
       read: false,
@@ -451,6 +455,7 @@ function notificationMarkup(n: AppNotification): string {
     : n.appName
       ? `data-act="notif-open" data-id="${esc(n.appName)}"`
       : `data-act="notif-dismiss" data-id="${esc(n.id)}"`;
+  const actionData = n.actionData ? ` data-query="${esc(n.actionData)}"` : "";
   // The subject (a game title) sits in the dim line before the timestamp.
   const meta = esc([n.context, relativeTime(n.ts)].filter(Boolean).join(" · "));
   // An unlock belongs to a game; its cover reads better than a repeated glyph.
@@ -460,7 +465,7 @@ function notificationMarkup(n: AppNotification): string {
       : `<span class="notif-item-icon kind-${n.kind}">${icon(KIND_ICON[n.kind], 14)}</span>`;
   const mark = n.kind === "achievement" && n.appName ? storeMark(n.appName) : "";
   return `
-    <button class="notif-item${n.read ? "" : " unread"}" ${action} data-nid="${esc(n.id)}">
+    <button class="notif-item${n.read ? "" : " unread"}" ${action}${actionData} data-nid="${esc(n.id)}">
       ${tile}
       <span class="notif-item-body">
         <span class="notif-item-title">${esc(n.title)}</span>
