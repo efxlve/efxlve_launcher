@@ -31,9 +31,91 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
-    version: "0.1.43",
+    version: "0.1.44",
     date: "2026-11-05",
     isCurrent: true,
+    added: [
+      {
+        en: "A release calendar now tracks upcoming PC games: a monthly grid, a featured release, poster cards, a most-anticipated list, store links, search and keyboard month switching.",
+        tr: "Çıkış takvimi yaklaşan PC oyunlarını izliyor: aylık ızgara, öne çıkan oyun, poster kartları, en çok beklenenler listesi, mağaza bağlantıları, arama ve klavyeyle ay geçişi.",
+      },
+      {
+        en: "Releases can be followed and kept in a shortlist; followed days are marked in the mini calendar, a reminder opens the release, and a notification arrives when a followed game launches.",
+        tr: "Çıkışlar takip edilip kısa listeye alınabiliyor; takip edilen günler mini takvimde işaretleniyor, hatırlatma çıkışı açıyor ve takip edilen oyun çıktığında bildirim geliyor.",
+      },
+      {
+        en: "Cloud save restores show which files will be overwritten before a local backup is applied or a one-use cloud token is spent, and local backups are verified first.",
+        tr: "Bulut kayıt geri yüklemeleri, yerel yedek uygulanmadan veya tek kullanımlık bulut anahtarı harcanmadan önce hangi dosyaların üzerine yazılacağını gösteriyor; yerel yedekler önce doğrulanıyor.",
+      },
+      {
+        en: "The game page gains store links, a one-click invisibility toggle and reorderable cards.",
+        tr: "Oyun sayfasına mağaza bağlantıları, tek tıkla görünmezlik anahtarı ve yeniden sıralanabilir kartlar eklendi.",
+      },
+      {
+        en: "Notes open in tabs, deleted notes can be restored, and a restore is blocked while the game is running.",
+        tr: "Notlar sekmelerde açılıyor, silinen notlar geri yüklenebiliyor ve oyun çalışırken geri yükleme engelleniyor.",
+      },
+      {
+        en: "Profile exports can be protected with a password, and the profile charts daily play activity.",
+        tr: "Profil dışa aktarımları parola ile korunabiliyor ve profil günlük oyun etkinliğini grafik olarak gösteriyor.",
+      },
+      {
+        en: "The download queue can put the PC to sleep or shut it down when the queue finishes.",
+        tr: "İndirme kuyruğu bittiğinde PC'yi uykuya alabiliyor veya kapatabiliyor.",
+      },
+      {
+        en: "Steam games get an account and offline launch mode; game moves can be staged in batches with recovery.",
+        tr: "Steam oyunlarına hesap ve çevrimdışı başlatma modu eklendi; oyun taşımaları toplu olarak hazırlanıp kurtarmayla uygulanabiliyor.",
+      },
+      {
+        en: "Any browser tab can be sent to the corner player, and the command palette now reaches every visible page, including upcoming releases and cloud backup settings.",
+        tr: "Herhangi bir tarayıcı sekmesi köşe oynatıcısına gönderilebiliyor; komut paleti yaklaşan çıkışlar ve bulut yedekleme ayarları dahil her görünür sayfaya ulaşıyor.",
+      },
+    ],
+    improved: [
+      {
+        en: "Cloud saves find save folders through the Ludusavi index, offer detected sync folders as one-click picks, skip unchanged uploads and resolve backups through logical profile roots.",
+        tr: "Bulut yedekleri kayıt klasörlerini Ludusavi diziniyle buluyor, algılanan senkron klasörlerini tek tıkla seçenek olarak sunuyor, değişmeyen yüklemeleri atlıyor ve yedekleri mantıksal profil kökleri üzerinden çözüyor.",
+      },
+      {
+        en: "Settings > Integrations paints from local data first; the Ubisoft ownership probe fills its row in the background instead of holding the page.",
+        tr: "Ayarlar > Entegrasyonlar önce yerel verilerle çiziliyor; Ubisoft sahiplik taraması sayfayı bekletmek yerine kendi satırını arka planda dolduruyor.",
+      },
+      {
+        en: "Cloud save provider fields share the same size across folder, Google Drive, WebDAV and rclone.",
+        tr: "Bulut yedekleme sağlayıcı alanları klasör, Google Drive, WebDAV ve rclone arasında aynı boyutu kullanıyor.",
+      },
+      {
+        en: "A download's finish action now waits for verification instead of racing it.",
+        tr: "İndirme bitiş eylemi doğrulamayla yarışmak yerine doğrulamayı bekliyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "White and Gloss themes: the calendar search field no longer draws a second border and focus ring inside its wrapper, and store marks are readable on light surfaces.",
+        tr: "Beyaz ve Gloss temaları: takvim arama alanı sarıcısının içinde ikinci bir kenarlık ve odak halkası çizmiyor; mağaza logoları açık yüzeylerde okunabiliyor.",
+      },
+      {
+        en: "A restore preview now targets the same folder the restore actually writes.",
+        tr: "Geri yükleme önizlemesi artık geri yüklemenin gerçekten yazdığı klasörü hedefliyor.",
+      },
+      {
+        en: "Followed release reminders fire once per release, month-only dates are localized, and focus returns to the same row after following.",
+        tr: "Takip edilen çıkış hatırlatmaları her çıkış için bir kez gösteriliyor, yalnızca ay içeren tarihler yerelleştiriliyor ve takip sonrası odak aynı satıra dönüyor.",
+      },
+      {
+        en: "The held store window stays behind confirm dialogs, and power countdowns remain visible.",
+        tr: "Bekletilen mağaza penceresi onay pencerelerinin arkasında kalıyor ve güç geri sayımları görünür kalıyor.",
+      },
+      {
+        en: "Launcher update rows moved to the System tab.",
+        tr: "Başlatıcı güncelleme satırları Sistem sekmesine taşındı.",
+      },
+    ],
+  },
+  {
+    version: "0.1.43",
+    date: "2026-11-05",
     added: [
       {
         en: "The direct install dialog offers a one-click handoff to the official client: Install with Ubisoft Connect or Install with EA App.",
