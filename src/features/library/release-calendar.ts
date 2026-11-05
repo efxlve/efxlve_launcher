@@ -368,7 +368,7 @@ function storeSearchLinks(name: string): Array<{ id: string; label: string; url:
 
 function coverOf(
   release: UpcomingRelease,
-  size: "thumb" | "cover_big" | "cover_big_2x" = "cover_big",
+  size: "thumb" | "cover_small" | "cover_big" | "cover_big_2x" = "cover_big",
 ): string {
   return igdbImage(release.coverId, size);
 }
@@ -460,7 +460,7 @@ function renderGrid(month: MonthSel, exact: UpcomingRelease[]): string {
 }
 
 function renderScheduleCard(release: UpcomingRelease): string {
-  const cover = coverOf(release, "cover_big");
+  const cover = coverOf(release, "cover_small");
   const storeList = (release.stores ?? [])
     .slice(0, 2)
     .map((store) => `<span class="calendar-game-store">${esc(storeLabel(store.id, store.label))}</span>`)
@@ -555,7 +555,7 @@ function renderHero(
     : release.coverId
       ? igdbImage(release.coverId, "cover_big_2x")
       : "";
-  const poster = coverOf(release, "cover_big_2x");
+  const poster = coverOf(release, "cover_big");
   const storeTags = (release.stores ?? [])
     .slice(0, 4)
     .map((store) => `<span class="calendar-store-tag">${esc(storeLabel(store.id, store.label))}</span>`)
@@ -617,7 +617,7 @@ function renderTba(month: MonthSel): string {
     <div class="calendar-tba-head">${esc(t("calendar.dayUnknown"))}<span class="count tabular-nums">${tba.length}</span></div>
     <div class="calendar-tba-list">${tba
       .map((release) => {
-        const cover = coverOf(release, "cover_big");
+        const cover = coverOf(release, "cover_small");
         return `<div class="calendar-tba-shell">
           <button type="button" class="calendar-tba-card" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
             ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-tba-art placeholder">${icon("gamepad-2", 12)}</span>`}
@@ -652,7 +652,7 @@ function renderPending(year: number): string {
 }
 
 function renderWatchCard(release: UpcomingRelease): string {
-  const cover = coverOf(release, "cover_big");
+  const cover = coverOf(release, "cover_small");
   const storeList = (release.stores ?? [])
     .slice(0, 3)
     .map((store) => `<span class="calendar-game-store">${esc(storeLabel(store.id, store.label))}</span>`)

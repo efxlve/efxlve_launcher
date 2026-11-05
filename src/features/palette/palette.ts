@@ -132,7 +132,7 @@ function ensureUpcomingReleases(): void {
 }
 
 function upcomingItem(release: UpcomingRelease, idx: number): string {
-  const cover = release.coverId ? igdbImage(release.coverId, "thumb") : "";
+  const cover = release.coverId ? igdbImage(release.coverId, "cover_small") : "";
   return `
     <div class="palette-item" data-idx="${idx}" data-act="open-release-calendar-search" data-query="${esc(release.name)}" role="option">
       ${cover ? `<img class="palette-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : icon("calendar", 16)}

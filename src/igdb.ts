@@ -132,6 +132,7 @@ export function igdbImage(
   imageId: string,
   size:
     | "thumb"
+    | "cover_small"
     | "cover_big"
     | "cover_big_2x"
     | "screenshot_big"
