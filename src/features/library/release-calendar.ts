@@ -142,7 +142,7 @@ function rememberFollowedReleases(): void {
 }
 
 /**
- * One reminder per followed release per day, for releases within a week.
+ * One reminder per followed release once it enters the final week.
  * Called at startup; the cache is written whenever the calendar loads or a
  * star changes, so this needs no network and no IGDB call.
  */
@@ -197,7 +197,7 @@ export function remindFollowedReleases(): void {
     const days = Math.round((target - todayStart) / 86_400_000);
     if (days < 0 || days > REMINDER_WINDOW_DAYS) continue;
     const key = String(release.id);
-    if (reminders[key] === todayKey) continue;
+    if (reminders[key]) continue;
     reminders[key] = todayKey;
     changed = true;
     sent += 1;
