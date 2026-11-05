@@ -209,6 +209,26 @@
   border-radius: var(--r-md);
 }
 .drawer-notes-editor-head { display: flex; align-items: center; gap: 8px; }
+.drawer-note-tabs {
+  display: flex; align-items: flex-end; gap: 3px;
+  overflow-x: auto; padding-bottom: 2px;
+  border-bottom: 1px solid var(--line); scrollbar-width: thin;
+}
+.drawer-note-tab {
+  display: flex; align-items: center; gap: 4px;
+  max-width: 168px; padding: 5px 9px;
+  border: 1px solid transparent; border-bottom: none;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  background: transparent; color: var(--text-3);
+  font-size: 11.5px; font-weight: 600; white-space: nowrap;
+  cursor: pointer; flex: 0 0 auto;
+  transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+}
+.drawer-note-tab span { overflow: hidden; text-overflow: ellipsis; }
+.drawer-note-tab:hover { background: var(--surface-2); color: var(--text-2); }
+.drawer-note-tab.active { background: var(--surface-2); border-color: var(--line); color: var(--text); }
+.drawer-note-tab.is-add { justify-content: center; min-width: 28px; color: var(--text-3); }
+.drawer-note-tab.is-add:hover { color: var(--text); }
 .drawer-notes-editor .notes-title-input { font-size: 15px; }
 .drawer-notes-editor .notes-body, .drawer-notes-editor .notes-preview { min-height: 220px; }
 

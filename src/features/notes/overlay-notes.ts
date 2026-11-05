@@ -28,6 +28,8 @@ let mode: "edit" | "preview" = "edit";
 let deleteArmed = false;
 let saveTimer: number | null = null;
 let wired = false;
+/** Guards a tab switch against a slower, earlier save finishing last. */
+let switchSeq = 0;
 /** The settings widget's repaint, handed over by the overlay (no cycle). */
 let settingsRepaint: (() => void) | null = null;
 
@@ -70,10 +72,36 @@ function rowHtml(note: Note): string {
     </button>`;
 }
 
+function tabsHtml(): string {
+  const tabs = notesForScope()
+    .map((note) => {
+      const title = note.title.trim() || t("notes.untitled");
+      return `<button type="button" class="ov-note-tab${draftId === note.id ? " active" : ""}" role="tab" aria-selected="${draftId === note.id}" data-ov="ov-note-switch" data-id="${esc(note.id)}" title="${esc(title)}">${note.pinned ? icon("pin", 9) : ""}<span>${esc(title)}</span></button>`;
+    })
+    .join("");
+  return `<div class="ov-note-tabs" role="tablist" aria-label="${esc(t("notes.title"))}">
+    ${tabs}
+    <button type="button" class="ov-note-tab is-add" data-ov="ov-note-new" title="${esc(t("notes.newNote"))}" aria-label="${esc(t("notes.newNote"))}">${icon("plus", 10)}</button>
+  </div>`;
+}
+
+function openDraft(note: Note): void {
+  editing = true;
+  draftId = note.id;
+  draftTitle = note.title;
+  draftBody = note.body;
+  draftImages = [...(note.images ?? [])];
+  draftPinned = note.pinned;
+  mode = "edit";
+  deleteArmed = false;
+  renderOverlayNotes();
+}
+
 function editorHtml(): string {
   const preview = mode === "preview";
   return `
     <div class="ov-notes-editor notes-font-${notesFontSize()}">
+      ${tabsHtml()}
       <div class="ov-notes-editor-head">
         <button class="ov-widget-tool-btn" data-ov="ov-note-back" title="${esc(t("notes.title"))}">${icon("arrow-left", 13)}</button>
         <input id="ov-note-title" class="ov-note-title" type="text" value="${esc(draftTitle)}" placeholder="${esc(t("notes.titlePlaceholder"))}" spellcheck="false" />
@@ -175,30 +203,50 @@ function queueSave(): void {
 /** The overlay click handler delegates here; true when the click was ours. */
 export function handleOverlayNotesAction(act: string | undefined, el: HTMLElement): boolean {
   switch (act) {
-    case "ov-note-new":
-      editing = true;
-      draftId = undefined;
-      draftTitle = "";
-      draftBody = "";
-      draftImages = [];
-      draftPinned = false;
-      mode = "edit";
-      deleteArmed = false;
-      renderOverlayNotes();
-      document.getElementById("ov-note-title")?.focus();
+    case "ov-note-new": {
+      if (saveTimer !== null) {
+        window.clearTimeout(saveTimer);
+        saveTimer = null;
+      }
+      const leavingEmpty = !draftId && !draftTitle.trim() && !draftBody.trim();
+      const token = ++switchSeq;
+      const pending = editing && !leavingEmpty ? flushSave() : Promise.resolve();
+      void pending.finally(() => {
+        if (token !== switchSeq) return;
+        editing = true;
+        draftId = undefined;
+        draftTitle = "";
+        draftBody = "";
+        draftImages = [];
+        draftPinned = false;
+        mode = "edit";
+        deleteArmed = false;
+        renderOverlayNotes();
+        document.getElementById("ov-note-title")?.focus();
+      });
       return true;
+    }
     case "ov-note-open": {
       const note = cachedNotes().find((item) => item.id === (el.dataset.id ?? ""));
       if (!note) return true;
-      editing = true;
-      draftId = note.id;
-      draftTitle = note.title;
-      draftBody = note.body;
-      draftImages = [...(note.images ?? [])];
-      draftPinned = note.pinned;
-      mode = "edit";
-      deleteArmed = false;
-      renderOverlayNotes();
+      openDraft(note);
+      return true;
+    }
+    case "ov-note-switch": {
+      const targetId = el.dataset.id ?? "";
+      if (!targetId || targetId === draftId) return true;
+      const target = cachedNotes().find((item) => item.id === targetId);
+      if (!target) return true;
+      if (saveTimer !== null) {
+        window.clearTimeout(saveTimer);
+        saveTimer = null;
+      }
+      const token = ++switchSeq;
+      const leavingEmpty = !draftId && !draftTitle.trim() && !draftBody.trim();
+      void (leavingEmpty ? Promise.resolve() : flushSave()).finally(() => {
+        if (token !== switchSeq) return;
+        openDraft(target);
+      });
       return true;
     }
     case "ov-note-back":

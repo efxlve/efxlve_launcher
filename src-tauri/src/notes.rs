@@ -22,6 +22,9 @@ const MAX_IMAGE_DATA: usize = 160_000;
 const MAX_ACHIEVEMENT: usize = 200;
 const MAX_GUIDE_URL: usize = 2048;
 const MAX_GUIDE_LINKS: usize = 20;
+/// Deleted notes keep a recovery copy; the newest N are enough to undo a
+/// mistake without turning the app data folder into a second notes archive.
+const MAX_NOTE_BACKUPS: usize = 100;
 
 /// Suffix for ids created in this process, so two notes saved in the same
 /// millisecond still differ.
@@ -303,6 +306,53 @@ fn note_image_dir(app: &AppHandle) -> PathBuf {
         .join("note-images")
 }
 
+/// Recovery copies of deleted notes, beside `notes.json`.
+fn note_backup_dir(app: &AppHandle) -> PathBuf {
+    app.path()
+        .app_data_dir()
+        .unwrap_or_else(|_| std::env::temp_dir())
+        .join("note-backups")
+}
+
+/// Writes one JSON copy before the note leaves the main file. A failure here
+/// never blocks the delete: the user asked for it, and the delete path should
+/// not fail because a housekeeping folder is unwritable.
+fn backup_note(app: &AppHandle, note: &Note) {
+    let dir = note_backup_dir(app);
+    if std::fs::create_dir_all(&dir).is_err() {
+        return;
+    }
+    let Ok(data) = serde_json::to_string_pretty(note) else {
+        return;
+    };
+    let name = format!("{:x}-{}.json", now_ms(), note.id);
+    if std::fs::write(dir.join(name), data).is_err() {
+        return;
+    }
+    prune_note_backups(&dir);
+}
+
+/// Keeps the newest `MAX_NOTE_BACKUPS` files; names start with the timestamp,
+/// so the plain name order is also the age order.
+fn prune_note_backups(dir: &std::path::Path) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    let mut files: Vec<PathBuf> = entries
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.extension().is_some_and(|extension| extension == "json"))
+        .collect();
+    if files.len() <= MAX_NOTE_BACKUPS {
+        return;
+    }
+    files.sort();
+    let excess = files.len() - MAX_NOTE_BACKUPS;
+    for path in files.into_iter().take(excess) {
+        let _ = std::fs::remove_file(path);
+    }
+}
+
 fn image_extension(mime: &str) -> Option<&'static str> {
     match mime {
         "image/png" => Some("png"),
@@ -448,8 +498,12 @@ pub fn notes_save(
 #[tauri::command]
 pub fn notes_delete(app: AppHandle, id: String) -> Result<bool, String> {
     let mut file = read_notes(&app);
+    let doomed = file.notes.iter().find(|note| note.id == id).cloned();
     let removed = delete_note(&mut file, &id);
     if removed {
+        if let Some(note) = doomed {
+            backup_note(&app, &note);
+        }
         write_notes(&app, &file)?;
     }
     Ok(removed)
@@ -861,5 +915,26 @@ mod tests {
         let markdown = notes_to_markdown(&file);
         assert!(markdown.contains("secret"));
         assert!(!markdown.contains("note-image:"));
+    }
+
+    #[test]
+    fn deleted_note_backups_keep_the_newest_hundred() {
+        let dir = std::env::temp_dir().join("efxlve_note_backups_test");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        for index in 0..(MAX_NOTE_BACKUPS + 5) {
+            std::fs::write(dir.join(format!("{index:08x}.json")), "{}").unwrap();
+        }
+        prune_note_backups(&dir);
+        let mut names: Vec<String> = std::fs::read_dir(&dir)
+            .unwrap()
+            .flatten()
+            .map(|entry| entry.file_name().to_string_lossy().to_string())
+            .collect();
+        names.sort();
+        assert_eq!(names.len(), MAX_NOTE_BACKUPS);
+        // The five oldest names were the ones dropped.
+        assert_eq!(names.first().map(String::as_str), Some("00000005.json"));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

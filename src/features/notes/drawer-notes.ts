@@ -30,6 +30,8 @@ let mode: "edit" | "preview" = "edit";
 let deleteArmed = false;
 let saveTimer: number | null = null;
 let wired = false;
+/** Guards a tab switch against a slower, earlier save finishing last. */
+let switchSeq = 0;
 
 function formatUpdated(ms: number): string {
   if (!ms) return "";
@@ -84,12 +86,44 @@ function noteRowHtml(note: Note): string {
     </button>`;
 }
 
+/** One tab per note in this scope, plus the new-note action. */
+function tabsHtml(): string {
+  if (!listScope) return "";
+  const notes = notesForScope(listScope);
+  const tabs = notes
+    .map((note) => {
+      const title = note.title.trim() || t("notes.untitled");
+      return `<button type="button" class="drawer-note-tab${draft.id === note.id ? " active" : ""}" role="tab" aria-selected="${draft.id === note.id}" data-act="drawer-note-switch" data-id="${esc(note.id)}" title="${esc(title)}">${note.pinned ? icon("pin", 10) : ""}<span>${esc(title)}</span></button>`;
+    })
+    .join("");
+  return `<div class="drawer-note-tabs" role="tablist" aria-label="${esc(t("notes.title"))}">
+    ${tabs}
+    <button type="button" class="drawer-note-tab is-add" data-act="drawer-note-new" title="${esc(t("notes.newNote"))}" aria-label="${esc(t("notes.newNote"))}">${icon("plus", 12)}</button>
+  </div>`;
+}
+
+function openNoteDraft(note: Note): void {
+  editing = true;
+  draft = {
+    id: note.id,
+    title: note.title,
+    body: note.body,
+    pinned: note.pinned,
+    color: note.color,
+    images: [...(note.images ?? [])],
+  };
+  mode = "edit";
+  deleteArmed = false;
+  repaint();
+}
+
 function editorHtml(): string {
   const preview = mode === "preview";
   const activeNote = draft.id ? cachedNotes().find((note) => note.id === draft.id) : undefined;
   const linkedGuides = activeNote ? noteGuideUrls(activeNote) : [];
   return `
     <div class="drawer-notes-editor">
+      ${tabsHtml()}
       <div class="drawer-notes-editor-head">
         <button class="btn ghost small" data-act="drawer-note-back">← ${esc(t("notes.title"))}</button>
         <input id="drawer-note-title" class="notes-title-input" type="text" value="${esc(draft.title)}" placeholder="${esc(t("notes.titlePlaceholder"))}" spellcheck="false" />
@@ -201,23 +235,50 @@ function queueSave(): void {
 
 /** The click-router delegates here; true when the click was ours. */export function handleDrawerNotesAction(act: string | undefined, el: HTMLElement): boolean {
   switch (act) {
-    case "drawer-note-new":
-      editing = true;
-      draft = { title: "", body: "", pinned: false, color: "", images: [] };
-      mode = "edit";
-      deleteArmed = false;
-      repaint();
-      document.getElementById("drawer-note-title")?.focus();
+    case "drawer-note-new": {
+      if (saveTimer !== null) {
+        window.clearTimeout(saveTimer);
+        saveTimer = null;
+      }
+      // Save the note being left before opening a fresh one; an empty draft is
+      // already what the user asked for, so it needs no round trip.
+      const leavingEmpty = !draft.id && !draft.title.trim() && !draft.body.trim();
+      const token = ++switchSeq;
+      const pending = editing && !leavingEmpty ? flushSave() : Promise.resolve();
+      void pending.finally(() => {
+        if (token !== switchSeq) return;
+        editing = true;
+        draft = { title: "", body: "", pinned: false, color: "", images: [] };
+        mode = "edit";
+        deleteArmed = false;
+        repaint();
+        document.getElementById("drawer-note-title")?.focus();
+      });
       return true;
+    }
     case "drawer-note-open": {
       const note = cachedNotes().find((item) => item.id === (el.dataset.id ?? ""));
       if (!note) return true;
-      editing = true;
-      draft = { id: note.id, title: note.title, body: note.body, pinned: note.pinned, color: note.color, images: [...(note.images ?? [])] };
-      mode = "edit";
-      deleteArmed = false;
-      repaint();
+      openNoteDraft(note);
       document.getElementById("drawer-note-title")?.focus();
+      return true;
+    }
+    case "drawer-note-switch": {
+      const targetId = el.dataset.id ?? "";
+      if (!targetId || targetId === draft.id) return true;
+      const target = cachedNotes().find((item) => item.id === targetId);
+      if (!target) return true;
+      if (saveTimer !== null) {
+        window.clearTimeout(saveTimer);
+        saveTimer = null;
+      }
+      const token = ++switchSeq;
+      const leavingEmpty = !draft.id && !draft.title.trim() && !draft.body.trim();
+      void (leavingEmpty ? Promise.resolve() : flushSave()).finally(() => {
+        if (token !== switchSeq) return;
+        openNoteDraft(target);
+        document.getElementById("drawer-note-title")?.focus();
+      });
       return true;
     }
     case "drawer-note-back":
