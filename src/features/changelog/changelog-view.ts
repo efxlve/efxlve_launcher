@@ -31,9 +31,51 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.43",
+    date: "2026-11-05",
+    isCurrent: true,
+    added: [
+      {
+        en: "The direct install dialog offers a one-click handoff to the official client: Install with Ubisoft Connect or Install with EA App.",
+        tr: "Doğrudan kurulum penceresi resmi istemciye tek tıkla devretme sunuyor: Ubisoft Connect ile kur veya EA App ile kur.",
+      },
+    ],
+    improved: [
+      {
+        en: "Ubisoft achievements and earned progress now load for games that are not installed, including progress earned on another PC.",
+        tr: "Ubisoft başarımları ve kazanılmış ilerleme, kurulu olmayan oyunlar için de yükleniyor; başka bir PC'de kazanılan ilerleme dahil.",
+      },
+      {
+        en: "The Ubisoft library is built from the PC entitlement list, so store claims the client cannot install no longer appear as owned games.",
+        tr: "Ubisoft kütüphanesi PC sahiplik listesinden oluşturuluyor; istemcinin kuramadığı mağaza hakları artık sahip olunan oyun olarak görünmüyor.",
+      },
+      {
+        en: "Ubisoft service connections now answer keep-alive pushes and retry a dropped socket once, so probes, installs and cloud saves survive a transient close.",
+        tr: "Ubisoft servis bağlantıları keep-alive yanıtı veriyor ve düşen soketi bir kez yeniden deniyor; tarama, kurulum ve bulut kayıtları geçici kopmalarda çalışmaya devam ediyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Installing or opening a Ubisoft game no longer signs the user out of Ubisoft Connect: the launcher stops rotating the session while the client is running.",
+        tr: "Bir Ubisoft oyununu kurmak veya açmak artık kullanıcıyı Ubisoft Connect'ten çıkarmıyor: istemci açıkken launcher oturumu döndürmüyor.",
+      },
+      {
+        en: "Ownership requests now carry the profile ticket and session id, so a direct install no longer stops with a closed service connection.",
+        tr: "Sahiplik istekleri artık profil bileti ve oturum kimliğini taşıyor; doğrudan kurulum kapalı servis bağlantısıyla durmuyor.",
+      },
+      {
+        en: "A TLS socket reset is retried once and reported as a normal connection close instead of a raw rustls error.",
+        tr: "TLS soket kopması bir kez yeniden deneniyor ve ham rustls hatası yerine normal bağlantı kapanması olarak bildiriliyor.",
+      },
+      {
+        en: "A store claim without a PC licence no longer appears in the Ubisoft library.",
+        tr: "PC lisansı olmayan bir mağaza hakkı artık Ubisoft kütüphanesinde görünmüyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.42",
     date: "2026-10-30",
-    isCurrent: true,
     added: [
       {
         en: "The overlay has a per-app audio mixer: every session on the default output gets its own volume and mute, with process icons, a master bus, named mix presets and a switch for the default output device.",

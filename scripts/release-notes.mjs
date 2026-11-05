@@ -43,7 +43,22 @@ const sections = [
   ["Fixed", section("fixed")],
 ].filter(([, lines]) => lines.length > 0);
 
+const download = [
+  "## Which file should I download?",
+  "",
+  "| I use | Download | What it is |",
+  "|---|---|---|",
+  `| **Windows 10/11 (64-bit)** | \`Efxlve.Launcher_${version}_x64-setup.exe\` | Recommended. Normal installer with Start-menu and uninstall entries. |`,
+  "| Windows, no installer | `efxlve-launcher-portable.zip` | Extract anywhere and run `efxlve-launcher.exe`. Launcher data stays in `portable-data` beside it. |",
+  `| **Linux (x86_64)** | \`Efxlve.Launcher_${version}_amd64.AppImage\` | Portable single file: \`chmod +x\` and run. |`,
+  `| **macOS (Apple Silicon)** | \`Efxlve.Launcher_${version}_aarch64.dmg\` | Open the DMG and drag the app to Applications. Unsigned preview: right-click > Open the first time. |`,
+  "",
+  "`.sig` files and `latest.json` are updater metadata; normal users do not need them.",
+  "",
+];
+
 const body = [
+  ...download,
   `## ${version}`,
   "",
   ...sections.flatMap(([title, lines]) => [`**${title}**`, "", ...lines.map((line) => `- ${line}`), ""]),

@@ -15,6 +15,10 @@ const targets = [
   ["src-tauri/Cargo.toml", /^version = "[^"]+"/m, `version = "${version}"`],
   ["README.md", /version-\d+\.\d+\.\d+-222/, `version-${version}-222`],
   ["README.md", /\*\*v\d+\.\d+\.\d+\*\*/, `**v${version}**`],
+  // The download table names the actual bundle files; keep it on the release.
+  ["README.md", /Efxlve\.Launcher_\d+\.\d+\.\d+_x64/, `Efxlve.Launcher_${version}_x64`],
+  ["README.md", /Efxlve\.Launcher_\d+\.\d+\.\d+_amd64/, `Efxlve.Launcher_${version}_amd64`],
+  ["README.md", /Efxlve\.Launcher_\d+\.\d+\.\d+_aarch64/, `Efxlve.Launcher_${version}_aarch64`],
   // The winbar shows this until `getVersion()` answers, and the browser preview
   // never gets an answer, so both literals follow the release.
   ["src/core/state.ts", /appVersion: "\d+\.\d+\.\d+"/, `appVersion: "${version}"`],
