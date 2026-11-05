@@ -1660,6 +1660,7 @@
   "accounts.eaLogin": "يفتح نافذة تسجيل الدخول. بعد تسجيل الدخول، يتم استيراد كل ألعاب EA التي تملكها.",
   "accounts.eaNoGames": "لم يتم العثور على ألعاب EA لهذا الحساب.",
   "accounts.eaLoginFailed": "تعذّر إكمال تسجيل الدخول إلى EA.",
+  "accounts.eaClientInstall": "التثبيت باستخدام EA App",
   "accounts.eaSessionExpired": "انتهت جلسة EA. سجّل الدخول مرة أخرى لتحديث المكتبة.",
   "accounts.xboxLogin": "يفتح نافذة تسجيل دخول Microsoft. بعد تسجيل الدخول، يتم استيراد ألعاب Xbox الخاصة بك.",
   "accounts.xboxNoGames": "لم يتم العثور على ألعاب Xbox لهذا الحساب.",

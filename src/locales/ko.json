@@ -1660,6 +1660,7 @@
   "accounts.eaLogin": "로그인 창을 엽니다. 로그인하면 보유한 모든 EA 게임을 가져옵니다.",
   "accounts.eaNoGames": "이 계정에서 EA 게임을 찾지 못했습니다.",
   "accounts.eaLoginFailed": "EA 로그인을 완료할 수 없습니다.",
+  "accounts.eaClientInstall": "EA App으로 설치",
   "accounts.eaSessionExpired": "EA 세션이 만료되었습니다. 다시 로그인하여 라이브러리를 새로 고치세요.",
   "accounts.xboxLogin": "Microsoft 로그인 창을 엽니다. 로그인하면 Xbox 타이틀을 가져옵니다.",
   "accounts.xboxNoGames": "이 계정에서 Xbox 타이틀을 찾지 못했습니다.",

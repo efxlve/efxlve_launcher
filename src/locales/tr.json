@@ -1760,6 +1760,7 @@
   "accounts.eaLogin": "Bir giriş penceresi açar. Girişten sonra sahip olduğun tüm EA oyunları içe aktarılır.",
   "accounts.eaNoGames": "Bu hesap için EA oyunu bulunamadı.",
   "accounts.eaLoginFailed": "EA girişi tamamlanamadı.",
+  "accounts.eaClientInstall": "EA App ile kur",
   "accounts.eaSessionExpired": "EA oturumu sona erdi. Kütüphaneyi yenilemek için tekrar giriş yap.",
   "accounts.xboxLogin": "Bir Microsoft giriş penceresi açar. Girişten sonra Xbox oyunların içe aktarılır.",
   "accounts.xboxNoGames": "Bu hesap için Xbox oyunu bulunamadı.",

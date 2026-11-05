@@ -1760,6 +1760,7 @@
   "accounts.eaLogin": "एक साइन-इन विंडो खोलता है। साइन इन करने के बाद, स्वामित्व वाले प्रत्येक EA गेम आयात किए जाते हैं।",
   "accounts.eaNoGames": "इस खाते के लिए कोई EA गेम नहीं मिला।",
   "accounts.eaLoginFailed": "EA साइन-इन पूरा नहीं हो सका।",
+  "accounts.eaClientInstall": "EA App के साथ इंस्टॉल करें",
   "accounts.eaSessionExpired": "EA सत्र समाप्त हो गया। लाइब्रेरी रीफ़्रेश करने के लिए दोबारा साइन इन करें।",
   "accounts.xboxLogin": "एक Microsoft साइन-इन विंडो खोलता है। साइन इन करने के बाद, आपके Xbox शीर्षक आयात किए जाते हैं।",
   "accounts.xboxNoGames": "इस खाते के लिए कोई Xbox शीर्षक नहीं मिला।",

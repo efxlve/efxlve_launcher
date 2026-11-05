@@ -1660,6 +1660,7 @@
   "accounts.eaLogin": "เปิดหน้าต่างลงชื่อเข้าใช้ หลังจากลงชื่อเข้าใช้ เกม EA ที่คุณเป็นเจ้าของทั้งหมดจะถูกนำเข้า",
   "accounts.eaNoGames": "ไม่พบเกม EA สำหรับบัญชีนี้",
   "accounts.eaLoginFailed": "ไม่สามารถลงชื่อเข้าใช้ EA ได้สำเร็จ",
+  "accounts.eaClientInstall": "ติดตั้งด้วย EA App",
   "accounts.eaSessionExpired": "เซสชัน EA หมดอายุ ลงชื่อเข้าใช้อีกครั้งเพื่อรีเฟรชคลังเกม",
   "accounts.xboxLogin": "เปิดหน้าต่างลงชื่อเข้าใช้ Microsoft หลังจากลงชื่อเข้าใช้ เกม Xbox ของคุณจะถูกนำเข้า",
   "accounts.xboxNoGames": "ไม่พบเกม Xbox สำหรับบัญชีนี้",

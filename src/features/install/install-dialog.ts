@@ -367,6 +367,13 @@ export function renderInstallDialog(): void {
   const isGog = appName.startsWith("gog::");
   const isEa = appName.startsWith("ea::");
   const isUbi = appName.startsWith("ubisoft::");
+  // The direct dialog is the default, but a first-time user may want the
+  // official client to own the install. Keep that path one click away.
+  const clientInstall = isUbi
+    ? `<button type="button" class="btn ghost small" data-act="install-client" data-id="${esc(appName)}">${icon("external", 13)} ${t("accounts.ubiClientInstall")}</button>`
+    : isEa
+      ? `<button type="button" class="btn ghost small" data-act="install-client" data-id="${esc(appName)}">${icon("external", 13)} ${t("accounts.eaClientInstall")}</button>`
+      : "";
   const s = summaryOf(appName);
   if (!s) return;
 
@@ -422,6 +429,7 @@ export function renderInstallDialog(): void {
         </div>
         <div class="install-footer">
           ${isGog ? `<button type="button" class="btn ghost small" data-act="gog-import-existing" data-id="${esc(appName)}">${t("settings.importInstalled")}</button>` : ""}
+          ${clientInstall}
           <span style="flex:1"></span>
           <button type="button" class="install-cancel-btn" data-act="install-cancel">${t("common.cancel")}</button>
           <button type="button" class="install-confirm-btn" data-act="install-confirm" data-id="${esc(appName)}" ${loading ? "disabled" : ""}>

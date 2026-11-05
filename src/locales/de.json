@@ -1660,6 +1660,7 @@
   "accounts.eaLogin": "Öffnet ein Anmeldefenster. Nach der Anmeldung werden alle eigenen EA-Spiele importiert.",
   "accounts.eaNoGames": "Für dieses Konto wurden keine EA-Spiele gefunden.",
   "accounts.eaLoginFailed": "Die EA-Anmeldung konnte nicht abgeschlossen werden.",
+  "accounts.eaClientInstall": "Mit EA App installieren",
   "accounts.eaSessionExpired": "EA-Sitzung abgelaufen. Melde dich erneut an, um die Bibliothek zu aktualisieren.",
   "accounts.xboxLogin": "Öffnet ein Microsoft-Anmeldefenster. Nach der Anmeldung werden deine Xbox-Titel importiert.",
   "accounts.xboxNoGames": "Für dieses Konto wurden keine Xbox-Titel gefunden.",

@@ -83,6 +83,18 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
       void browseInstallDir();
       return true;
 
+    case "install-client":
+      if (id) {
+        const store = id.startsWith("ea::") ? "ea" : id.startsWith("ubisoft::") ? "ubisoft" : "";
+        if (store) {
+          closeInstallDialog();
+          void companionGameAction(store, id.slice(store.length + 2), "install").catch(
+            (e: unknown) => toast(localizeMessage(String(e)), "err"),
+          );
+        }
+      }
+      return true;
+
     case "install-confirm":
       if (id) void confirmInstall();
       return true;

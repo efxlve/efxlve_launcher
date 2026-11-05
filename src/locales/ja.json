@@ -1660,6 +1660,7 @@
   "accounts.eaLogin": "サインインウィンドウを開きます。サインインすると、所有しているすべての EA ゲームがインポートされます。",
   "accounts.eaNoGames": "このアカウントの EA ゲームは見つかりませんでした。",
   "accounts.eaLoginFailed": "EA へのサインインを完了できませんでした。",
+  "accounts.eaClientInstall": "EA App でインストール",
   "accounts.eaSessionExpired": "EA のセッションが切れました。再度サインインしてライブラリを更新してください。",
   "accounts.xboxLogin": "Microsoft のサインインウィンドウを開きます。サインインすると、Xbox のタイトルがインポートされます。",
   "accounts.xboxNoGames": "このアカウントの Xbox タイトルは見つかりませんでした。",

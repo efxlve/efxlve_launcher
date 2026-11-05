@@ -1660,6 +1660,7 @@
   "accounts.eaLogin": "Apre una finestra di accesso. Dopo l'accesso, tutti i tuoi giochi EA vengono importati.",
   "accounts.eaNoGames": "Nessun gioco EA trovato per questo account.",
   "accounts.eaLoginFailed": "Impossibile completare l'accesso a EA.",
+  "accounts.eaClientInstall": "Installa con EA App",
   "accounts.eaSessionExpired": "Sessione EA scaduta. Accedi di nuovo per aggiornare la libreria.",
   "accounts.xboxLogin": "Apre una finestra di accesso Microsoft. Dopo l'accesso, i tuoi titoli Xbox vengono importati.",
   "accounts.xboxNoGames": "Nessun titolo Xbox trovato per questo account.",

@@ -1660,6 +1660,7 @@
   "accounts.eaLogin": "Открывает окно входа. После входа импортируются все ваши игры EA.",
   "accounts.eaNoGames": "Для этой учётной записи не найдено игр EA.",
   "accounts.eaLoginFailed": "Не удалось завершить вход в EA.",
+  "accounts.eaClientInstall": "Установить через EA App",
   "accounts.eaSessionExpired": "Сеанс EA истёк. Войдите снова, чтобы обновить библиотеку.",
   "accounts.xboxLogin": "Открывает окно входа Microsoft. После входа ваши игры Xbox импортируются.",
   "accounts.xboxNoGames": "Для этой учётной записи не найдено игр Xbox.",

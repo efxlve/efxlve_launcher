@@ -1660,6 +1660,7 @@
   "accounts.eaLogin": "Ouvre une fenêtre de connexion. Après connexion, tous vos jeux EA sont importés.",
   "accounts.eaNoGames": "Aucun jeu EA n'a été trouvé pour ce compte.",
   "accounts.eaLoginFailed": "La connexion à EA n'a pas pu aboutir.",
+  "accounts.eaClientInstall": "Installer avec l'EA App",
   "accounts.eaSessionExpired": "Session EA expirée. Reconnectez-vous pour actualiser la bibliothèque.",
   "accounts.xboxLogin": "Ouvre une fenêtre de connexion Microsoft. Après connexion, vos titres Xbox sont importés.",
   "accounts.xboxNoGames": "Aucun titre Xbox n'a été trouvé pour ce compte.",

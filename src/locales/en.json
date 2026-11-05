@@ -1760,6 +1760,7 @@
   "accounts.eaLogin": "Opens a sign-in window. After you sign in, every owned EA game is imported.",
   "accounts.eaNoGames": "No EA games came back for this account.",
   "accounts.eaLoginFailed": "EA sign-in could not be completed.",
+  "accounts.eaClientInstall": "Install with EA App",
   "accounts.eaSessionExpired": "EA session expired. Sign in again to refresh the library.",
   "accounts.xboxLogin": "Opens a Microsoft sign-in window. After you sign in, your Xbox titles are imported.",
   "accounts.xboxNoGames": "No Xbox titles came back for this account.",

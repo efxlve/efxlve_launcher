@@ -1660,6 +1660,7 @@
   "accounts.eaLogin": "Abre una ventana de inicio de sesión. Tras iniciar sesión, se importan todos tus juegos de EA.",
   "accounts.eaNoGames": "No se encontraron juegos de EA para esta cuenta.",
   "accounts.eaLoginFailed": "No se pudo completar el inicio de sesión de EA.",
+  "accounts.eaClientInstall": "Instalar con EA App",
   "accounts.eaSessionExpired": "La sesión de EA caducó. Inicia sesión de nuevo para actualizar la biblioteca.",
   "accounts.xboxLogin": "Abre una ventana de inicio de sesión de Microsoft. Tras iniciar sesión, se importan tus títulos de Xbox.",
   "accounts.xboxNoGames": "No se encontraron títulos de Xbox para esta cuenta.",
