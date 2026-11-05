@@ -49,6 +49,8 @@ let followed = loadFollowed();
 let query = "";
 /** A month, day or watch-list change starts at the top instead of the old scroll. */
 let resetScroll = false;
+/** Put the keyboard in the search field once the first load has painted. */
+let focusSearchWhenLoaded = false;
 /** Bumped by a restart or close so a late answer cannot repaint a dead dialog. */
 let loadSeq = 0;
 /** The game whose store picker is open, if any. */
@@ -837,6 +839,10 @@ async function load(refresh: boolean): Promise<void> {
   }
   loading = false;
   renderCalendar();
+  if (focusSearchWhenLoaded) {
+    focusSearchWhenLoaded = false;
+    layer?.querySelector<HTMLInputElement>(".calendar-search-input")?.focus();
+  }
 }
 
 /** Opens the upcoming-release calendar. */
@@ -850,6 +856,7 @@ export function openReleaseCalendar(): void {
   watching = false;
   query = "";
   resetScroll = true;
+  focusSearchWhenLoaded = true;
   failed = false;
   if (layer) layer.remove();
   layer = document.createElement("div");
@@ -886,6 +893,7 @@ export function closeReleaseCalendar(): void {
   watching = false;
   query = "";
   resetScroll = false;
+  focusSearchWhenLoaded = false;
   loading = false;
   failed = false;
 }

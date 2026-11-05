@@ -234,9 +234,17 @@ document.addEventListener("keydown", (e) => {
           active instanceof HTMLSelectElement ||
           active.isContentEditable),
     );
-    if (!typing) {
+    // An empty search box has no caret to move, so keep the month shortcut.
+    const emptySearch =
+      active instanceof HTMLInputElement &&
+      active.classList.contains("calendar-search-input") &&
+      active.value.length === 0;
+    if (!typing || emptySearch) {
       e.preventDefault();
       stepReleaseCalendarMonth(e.key === "ArrowLeft" ? -1 : 1);
+      if (emptySearch) {
+        document.querySelector<HTMLInputElement>(".calendar-search-input")?.focus();
+      }
       return;
     }
   }
