@@ -2223,6 +2223,7 @@
   transition: background-color var(--ease), border-color var(--ease);
 }
 .release-store-btn:hover { background: var(--surface-2); border-color: var(--accent); }
+.release-store-logo { flex: none; border-radius: 2px; object-fit: contain; }
 .release-store-btn.is-search {
   font-weight: 500; color: var(--text-2); border-style: dashed;
 }

@@ -14,6 +14,7 @@ import { igdbImage } from "../../igdb";
 import { t } from "../../i18n";
 import { epicUpcomingReleases, type UpcomingRelease } from "../../epic";
 import { pushNotification } from "../notifications/notifications";
+import { storeLogo } from "../store/store-logos";
 import { holdStoreForCover } from "../store/store-view";
 
 interface MonthSel {
@@ -1014,7 +1015,7 @@ function renderStoreDialog(): void {
   const exact = (release.stores ?? []).map(
     (store) =>
       `<button type="button" class="release-store-btn" data-act="open-external-url" data-url="${esc(store.url)}">
-        <span>${esc(storeLabel(store.id, store.label))}</span>${icon("external", 12)}
+        ${storeLogo(store.id, 14, "release-store-logo")}<span>${esc(storeLabel(store.id, store.label))}</span>${icon("external", 12)}
       </button>`,
   );
   const known = new Set((release.stores ?? []).map((store) => store.id));
@@ -1023,7 +1024,7 @@ function renderStoreDialog(): void {
     .map(
       (store) =>
         `<button type="button" class="release-store-btn is-search" data-act="open-external-url" data-url="${esc(store.url)}">
-          ${icon("search", 12)}<span>${esc(t("calendar.searchOn", { store: store.label }))}</span>
+          ${storeLogo(store.id, 14, "release-store-logo") || icon("search", 12)}<span>${esc(t("calendar.searchOn", { store: store.label }))}</span>
         </button>`,
     );
   storeLayer.innerHTML = `
