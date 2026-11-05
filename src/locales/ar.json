@@ -3356,6 +3356,7 @@
   "cloud.folderPath": "مجلد النسخ الاحتياطي",
   "cloud.folderBrowse": "اختيار مجلد",
   "cloud.folderSaved": "تم حفظ مجلد النسخ الاحتياطي.",
+  "cloud.folderDetected": "تم العثور عليه على هذا الكمبيوتر",
   "settings.ssPlatformNote": "لقطات الشاشة والمقاطع متاحة حاليًا على Windows فقط. لا يزال المعرض يقرأ المجلدات أدناه، بما في ذلك اللقطات من أدوات أخرى.",
   "controller.bridgeWindowsOnly": "جسر أذرع التحكم متاح على Windows فقط.",
   "settings.overlayLauncherNote": "افتح الطبقة العلوية من زر الرأس أو قائمة شريط النظام. اختصار لوحة المفاتيح العام متاح حاليًا على Windows فقط.",

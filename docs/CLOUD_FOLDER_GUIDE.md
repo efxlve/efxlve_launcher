@@ -36,11 +36,15 @@ Not sure where that is?
 
 ---
 
-## Step 1 — Create a save folder
+## Step 1 — Create a save folder (optional)
 
-Inside the synced folder, create a new folder named **EfxlveSaves**.
+The launcher can pick the sync root for you: when the Folder provider is open, any
+OneDrive, Dropbox, Google Drive, iCloud, Nextcloud or MEGA folder found on the PC
+appears as a **Detected on this PC** button. One click selects it, writes a small
+probe and creates the `efxlve_saves` subfolder.
 
-Examples:
+Prefer to choose the folder yourself? Create one named **EfxlveSaves** inside the
+synced folder:
 
 - `C:\Users\Efe\OneDrive\EfxlveSaves`
 - `C:\Users\Efe\Dropbox\EfxlveSaves`
@@ -56,10 +60,14 @@ Do not create it inside `Program Files` or another protected folder.
 2. Go to **Settings → Cloud**.
 3. Turn on **Enable Cloud Save Backup**.
 4. Under **Cloud Provider**, choose **Folder (OneDrive / Dropbox / NAS)**.
-5. Click **Choose folder** and select the **EfxlveSaves** folder you just created.
+5. Either press a detected folder button, or click **Choose folder** and select
+   the **EfxlveSaves** folder you created.
 6. Click **Test Connection**.
    - You should see a message like `Folder is ready: …`.
 7. Click **Save**.
+
+A detected button already saves and tests the folder, so step 6 is only needed
+after picking a folder by hand.
 
 If Test Connection fails, the folder is not writable or does not exist. Create it again and retry.
 

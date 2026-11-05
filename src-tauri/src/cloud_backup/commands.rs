@@ -2,9 +2,12 @@
 
 use tauri::{command, AppHandle};
 
+use crate::cloud_backup::folder;
 use crate::cloud_backup::gdrive;
 use crate::cloud_backup::manager;
-use crate::cloud_backup::models::{CloudBackupEntry, CloudBackupProvider, CloudBackupSettings};
+use crate::cloud_backup::models::{
+    CloudBackupEntry, CloudBackupProvider, CloudBackupSettings, CloudFolderSuggestion,
+};
 use crate::cloud_backup::profile_sync::{self, ProfileRestoreResult};
 
 #[command]
@@ -174,6 +177,12 @@ pub async fn profile_cloud_restore(
 #[command]
 pub async fn cloud_backup_rclone_remotes() -> Result<Vec<String>, String> {
     crate::cloud_backup::rclone::list_remotes().await
+}
+
+/// Sync folders already on this machine, offered as one-click Folder choices.
+#[command]
+pub fn cloud_backup_suggest_folders() -> Vec<CloudFolderSuggestion> {
+    folder::suggest_sync_folders()
 }
 
 /// Opens the Folder provider root in the system file manager, creating it when

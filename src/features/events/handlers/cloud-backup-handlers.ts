@@ -20,6 +20,7 @@ import {
   testCloudConnectionAction,
   updateCloudBackupSettings,
   uploadGameCloudAction,
+  useCloudFolderSuggestionAction,
 } from "../../cloud-backup/cloud-backup-actions";
 import {
   exportProfileAction,
@@ -195,6 +196,11 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
         const ok = await updateCloudBackupSettings({ folderPath: chosen });
         if (ok) toast(i18nT("cloud.folderSaved"), "ok");
       })();
+      return true;
+    }
+
+    case "cloud-folder-use-suggestion": {
+      void useCloudFolderSuggestionAction(t.dataset.path ?? "");
       return true;
     }
 

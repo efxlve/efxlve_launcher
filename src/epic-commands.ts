@@ -1118,6 +1118,12 @@ export interface CloudBackupEntry {
   remoteId: string;
 }
 
+/** A sync folder already on this machine, offered as a one-click choice. */
+export interface CloudFolderSuggestion {
+  client: string;
+  path: string;
+}
+
 export interface ProfileRestoreResult {
   filesRestored: number;
   localStorage: Record<string, string>;
@@ -1153,6 +1159,10 @@ export const cloudBackupSaveSettings = (settings: CloudBackupSettings) =>
   invoke<void>("cloud_backup_save_settings", { settings });
 
 export const cloudBackupOpenFolder = () => invoke<void>("cloud_backup_open_folder");
+
+/** Sync folders (OneDrive, Dropbox, MEGA, ...) already present on this PC. */
+export const cloudBackupSuggestFolders = () =>
+  invoke<CloudFolderSuggestion[]>("cloud_backup_suggest_folders");
 
 export const cloudBackupRemoteHash = (remoteId: string, backupId: string) =>
   invoke<string | null>("cloud_backup_remote_hash", { remoteId, backupId });

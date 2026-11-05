@@ -8,7 +8,7 @@
  *
  * This file is intentionally free of logic; it only declares state.
  */
-import { EPIC_STORE_URL, type CloudBackupSettings, type CloudBackupEntry } from "../epic";
+import { EPIC_STORE_URL, type CloudBackupSettings, type CloudBackupEntry, type CloudFolderSuggestion } from "../epic";
 import { initialLanguage, t } from "../i18n";
 import type { MtuProbe } from "../net-diag";
 import {
@@ -480,6 +480,8 @@ export const S = {
   cloudBackupSyncing: false,
   cloudBackupSyncingApp: (null) as string | null,
   cloudBackupsMap: (new Map()) as Map<string, CloudBackupEntry[]>,
+  /** Sync roots found on this PC; null until the Folder provider asks once. */
+  cloudFolderSuggestions: (null) as CloudFolderSuggestion[] | null,
   /** Remote launcher-profile archives; null until the first check. */
   launcherProfileArchives: (null) as CloudBackupEntry[] | null,
   launcherProfileLoading: false,

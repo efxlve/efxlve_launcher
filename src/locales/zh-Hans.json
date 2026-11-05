@@ -3356,6 +3356,7 @@
   "cloud.folderPath": "备份文件夹",
   "cloud.folderBrowse": "选择文件夹",
   "cloud.folderSaved": "备份文件夹已保存。",
+  "cloud.folderDetected": "已在此电脑上检测到",
   "settings.ssPlatformNote": "截屏和剪辑目前仅支持 Windows。图库仍会读取下方文件夹，包括其他工具截取的图片。",
   "controller.bridgeWindowsOnly": "手柄桥接目前仅支持 Windows。",
   "settings.overlayLauncherNote": "从标题栏按钮或托盘菜单打开叠加层。全局快捷键目前仅支持 Windows。",

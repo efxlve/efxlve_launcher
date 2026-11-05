@@ -60,6 +60,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `cloud_backup_remote_hash` | `cloudBackupRemoteHash({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_save_settings` | `cloudBackupSaveSettings({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_start_gdrive_auth` | `cloudBackupStartGdriveAuth({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
+| `cloud_backup_suggest_folders` | `cloudBackupSuggestFolders({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_test_connection` | `cloudBackupTestConnection({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_upload_game` | `cloudBackupUploadGame({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `comet_prepare` | `cometPrepare({ ... })` | `src-tauri/src/comet/mod.rs` |

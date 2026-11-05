@@ -3356,6 +3356,7 @@
   "cloud.folderPath": "Backup folder",
   "cloud.folderBrowse": "Choose folder",
   "cloud.folderSaved": "Backup folder saved.",
+  "cloud.folderDetected": "Detected on this PC",
   "settings.ssPlatformNote": "Screen capture and clips are Windows-only for now. The gallery still reads the folders below, including screenshots taken by other tools.",
   "controller.bridgeWindowsOnly": "The controller bridge is Windows-only.",
   "settings.overlayLauncherNote": "Open the overlay from the header button or the tray menu. The global hotkey is Windows-only for now.",

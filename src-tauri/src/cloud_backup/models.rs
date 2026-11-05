@@ -90,6 +90,16 @@ impl Default for CloudBackupSettings {
     }
 }
 
+/// A sync folder already present on this machine, offered as a one-click
+/// Folder provider choice. The launcher only writes inside `<path>/efxlve_saves`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CloudFolderSuggestion {
+    /// Client name shown on the button, e.g. `OneDrive` or `MEGA`.
+    pub client: String,
+    pub path: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CloudBackupEntry {

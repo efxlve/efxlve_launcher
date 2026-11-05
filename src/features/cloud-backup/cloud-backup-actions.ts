@@ -14,6 +14,7 @@ import {
   cloudBackupGetSettings,
   cloudBackupSaveSettings,
   cloudBackupTestConnection,
+  cloudBackupSuggestFolders,
   cloudBackupStartGdriveAuth,
   cloudBackupDisconnectGdrive,
   cloudBackupUploadGame,
@@ -94,6 +95,30 @@ export async function testCloudConnectionAction(): Promise<void> {
     S.cloudBackupTesting = false;
     scheduleRender();
   }
+}
+
+let folderSuggestionsLoading = false;
+
+/** Detects OneDrive, Dropbox, MEGA, ... once for the Folder quick picks. */
+export async function loadCloudFolderSuggestionsAction(): Promise<void> {
+  if (S.cloudFolderSuggestions !== null || folderSuggestionsLoading) return;
+  folderSuggestionsLoading = true;
+  try {
+    S.cloudFolderSuggestions = await cloudBackupSuggestFolders();
+  } catch {
+    S.cloudFolderSuggestions = [];
+  } finally {
+    folderSuggestionsLoading = false;
+    scheduleRender();
+  }
+}
+
+/** Selects a detected sync folder and verifies it without manual typing. */
+export async function useCloudFolderSuggestionAction(path: string): Promise<void> {
+  if (!path) return;
+  const ok = await updateCloudBackupSettings({ folderPath: path });
+  if (!ok) return;
+  await testCloudConnectionAction();
 }
 
 let gdriveAuthBusy = false;

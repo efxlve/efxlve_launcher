@@ -3356,6 +3356,7 @@
   "cloud.folderPath": "Pasta de backup",
   "cloud.folderBrowse": "Escolher pasta",
   "cloud.folderSaved": "Pasta de backup salva.",
+  "cloud.folderDetected": "Detectado neste PC",
   "settings.ssPlatformNote": "Capturas de tela e clipes por enquanto só funcionam no Windows. A galeria continua lendo as pastas abaixo, incluindo capturas de outras ferramentas.",
   "controller.bridgeWindowsOnly": "A ponte de controles só funciona no Windows.",
   "settings.overlayLauncherNote": "Abra o overlay pelo botão do cabeçalho ou pelo menu da bandeja. O atalho global por enquanto só funciona no Windows.",

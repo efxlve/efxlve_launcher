@@ -3356,6 +3356,7 @@
   "cloud.folderPath": "Yedek klasörü",
   "cloud.folderBrowse": "Klasör seç",
   "cloud.folderSaved": "Yedek klasörü kaydedildi.",
+  "cloud.folderDetected": "Bu bilgisayarda bulundu",
   "settings.ssPlatformNote": "Ekran görüntüsü alma ve klip kaydı şimdilik yalnızca Windows'ta çalışır. Galeri aşağıdaki klasörleri ve diğer araçlarla alınmış görüntüleri okumaya devam eder.",
   "controller.bridgeWindowsOnly": "Denetleyici köprüsü yalnızca Windows'ta çalışır.",
   "settings.overlayLauncherNote": "Overlay'i üst çubuktaki düğmeden veya sistem tepsisi menüsünden aç. Global kısayol şimdilik yalnızca Windows'ta çalışır.",

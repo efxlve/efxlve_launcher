@@ -3356,6 +3356,7 @@
   "cloud.folderPath": "備份資料夾",
   "cloud.folderBrowse": "選擇資料夾",
   "cloud.folderSaved": "備份資料夾已儲存。",
+  "cloud.folderDetected": "已在此電腦上偵測到",
   "settings.ssPlatformNote": "截圖與剪輯目前僅支援 Windows。圖庫仍會讀取下方資料夾，包括其他工具截取的圖片。",
   "controller.bridgeWindowsOnly": "手把橋接目前僅支援 Windows。",
   "settings.overlayLauncherNote": "從標題列按鈕或系統匣選單開啟疊加層。全域快速鍵目前僅支援 Windows。",

@@ -1,9 +1,10 @@
 //! Folder provider: a plain folder the user already syncs (OneDrive, Dropbox,
 //! Syncthing, a NAS mount). No account or OAuth setup is involved.
 
+use std::collections::HashSet;
 use std::path::{Component, Path, PathBuf};
 
-use crate::cloud_backup::models::CloudBackupEntry;
+use crate::cloud_backup::models::{CloudBackupEntry, CloudFolderSuggestion};
 use crate::legendary::backup::{backup_key, format_backup_timestamp};
 
 const ROOT: &str = "efxlve_saves";
@@ -177,6 +178,93 @@ pub fn delete_backup_folder(base: &str, remote_id: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Sync roots the user's desktop clients already created. Detection is
+/// read-only; the Folder provider still creates `efxlve_saves` inside the
+/// chosen root on Test Connection.
+pub fn suggest_sync_folders() -> Vec<CloudFolderSuggestion> {
+    let mut out = Vec::new();
+    let mut seen = HashSet::new();
+
+    // On Windows the environment is authoritative: OneDrive can live on another
+    // drive and a work account has its own variable.
+    #[cfg(windows)]
+    for (var, client) in [
+        ("OneDrive", "OneDrive"),
+        ("OneDriveConsumer", "OneDrive"),
+        ("OneDriveCommercial", "OneDrive (work)"),
+    ] {
+        if let Some(value) = std::env::var_os(var) {
+            push_existing(&mut out, &mut seen, client, &PathBuf::from(value));
+        }
+    }
+
+    let home = std::env::var_os("USERPROFILE")
+        .or_else(|| std::env::var_os("HOME"))
+        .map(PathBuf::from);
+    if let Some(home) = home {
+        for (client, relative) in [
+            ("OneDrive", "OneDrive"),
+            ("Dropbox", "Dropbox"),
+            ("Google Drive", "Google Drive"),
+            ("Google Drive", "GoogleDrive"),
+            ("iCloud Drive", "iCloudDrive"),
+            ("Nextcloud", "Nextcloud"),
+            ("MEGA", "MEGA"),
+            ("MEGA", "Mega"),
+            ("MEGA", "MEGAsync"),
+        ] {
+            push_existing(&mut out, &mut seen, client, &home.join(relative));
+        }
+
+        // macOS keeps every client under Library/CloudStorage with an account
+        // suffix, e.g. `OneDrive-Contoso`.
+        #[cfg(target_os = "macos")]
+        if let Ok(entries) = std::fs::read_dir(home.join("Library").join("CloudStorage")) {
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                let client = if name.starts_with("OneDrive") {
+                    "OneDrive"
+                } else if name.starts_with("GoogleDrive") {
+                    "Google Drive"
+                } else if name.starts_with("Dropbox") {
+                    "Dropbox"
+                } else if name.starts_with("iCloud") {
+                    "iCloud Drive"
+                } else {
+                    continue;
+                };
+                push_existing(&mut out, &mut seen, client, &entry.path());
+            }
+        }
+    }
+
+    out
+}
+
+fn push_existing(
+    out: &mut Vec<CloudFolderSuggestion>,
+    seen: &mut HashSet<String>,
+    client: &str,
+    path: &Path,
+) {
+    if !path.is_dir() {
+        return;
+    }
+    let text = path.to_string_lossy().to_string();
+    let key = if cfg!(windows) {
+        text.to_lowercase()
+    } else {
+        text.clone()
+    };
+    if !seen.insert(key) {
+        return;
+    }
+    out.push(CloudFolderSuggestion {
+        client: client.to_string(),
+        path: text,
+    });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -210,6 +298,25 @@ mod tests {
         assert!(!legacy.exists());
 
         let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn suggestions_skip_missing_folders_and_deduplicate() {
+        let root =
+            std::env::temp_dir().join(format!("efxlve-folder-suggest-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("OneDrive")).unwrap();
+
+        let mut out = Vec::new();
+        let mut seen = HashSet::new();
+        push_existing(&mut out, &mut seen, "OneDrive", &root.join("OneDrive"));
+        push_existing(&mut out, &mut seen, "OneDrive", &root.join("OneDrive"));
+        push_existing(&mut out, &mut seen, "MEGA", &root.join("MEGA"));
+
+        assert_eq!(out.len(), 1);
+        assert_eq!(out[0].client, "OneDrive");
+        assert!(out[0].path.ends_with("OneDrive"));
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]

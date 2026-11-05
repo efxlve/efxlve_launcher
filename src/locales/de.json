@@ -3356,6 +3356,7 @@
   "cloud.folderPath": "Backup-Ordner",
   "cloud.folderBrowse": "Ordner wählen",
   "cloud.folderSaved": "Backup-Ordner gespeichert.",
+  "cloud.folderDetected": "Auf diesem PC gefunden",
   "settings.ssPlatformNote": "Bildschirmfotos und Clips gibt es vorerst nur unter Windows. Die Galerie liest weiterhin die Ordner unten, auch Aufnahmen anderer Tools.",
   "controller.bridgeWindowsOnly": "Die Controller-Bridge gibt es nur unter Windows.",
   "settings.overlayLauncherNote": "Öffne das Overlay über die Kopfzeilen-Schaltfläche oder das Tray-Menü. Der globale Hotkey gibt es vorerst nur unter Windows.",

@@ -3356,6 +3356,7 @@
   "cloud.folderPath": "Папка резервных копий",
   "cloud.folderBrowse": "Выбрать папку",
   "cloud.folderSaved": "Папка резервных копий сохранена.",
+  "cloud.folderDetected": "Найдено на этом ПК",
   "settings.ssPlatformNote": "Снимки экрана и клипы пока доступны только в Windows. Галерея по-прежнему читает папки ниже, включая снимки из других программ.",
   "controller.bridgeWindowsOnly": "Мост контроллеров доступен только в Windows.",
   "settings.overlayLauncherNote": "Открывайте оверлей кнопкой в заголовке или из меню в трее. Глобальная горячая клавиша пока доступна только в Windows.",

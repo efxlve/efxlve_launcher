@@ -3356,6 +3356,7 @@
   "cloud.folderPath": "बैकअप फ़ोल्डर",
   "cloud.folderBrowse": "फ़ोल्डर चुनें",
   "cloud.folderSaved": "बैकअप फ़ोल्डर सहेजा गया।",
+  "cloud.folderDetected": "इस PC पर मिला",
   "settings.ssPlatformNote": "स्क्रीन कैप्चर और क्लिप अभी केवल Windows पर उपलब्ध हैं। गैलरी नीचे दिए फ़ोल्डरों को पढ़ती रहती है, जिनमें दूसरे टूल की कैप्चर भी शामिल हैं।",
   "controller.bridgeWindowsOnly": "कंट्रोलर ब्रिज केवल Windows पर उपलब्ध है।",
   "settings.overlayLauncherNote": "ओवरले को हेडर बटन या ट्रे मेनू से खोलें। ग्लोबल हॉटकी अभी केवल Windows पर उपलब्ध है।",

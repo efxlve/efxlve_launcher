@@ -3356,6 +3356,7 @@
   "cloud.folderPath": "バックアップフォルダー",
   "cloud.folderBrowse": "フォルダーを選択",
   "cloud.folderSaved": "バックアップフォルダーを保存しました。",
+  "cloud.folderDetected": "この PC で検出",
   "settings.ssPlatformNote": "画面キャプチャとクリップは今のところ Windows のみです。ギャラリーは下のフォルダーを引き続き読み込み、他のツールのキャプチャも表示します。",
   "controller.bridgeWindowsOnly": "コントローラーブリッジは Windows のみです。",
   "settings.overlayLauncherNote": "オーバーレイはヘッダーのボタンまたはトレイメニューから開きます。グローバルホットキーは今のところ Windows のみです。",

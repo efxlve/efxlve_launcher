@@ -104,6 +104,10 @@ Folder provider rules:
 
 - The chosen folder must be writable; **Test connection** creates
   `efxlve_saves`, writes and removes a probe file.
+- **Detected on this PC** buttons list sync roots that already exist, without
+  reading anything inside them: OneDrive (including a work account and another
+  drive), Dropbox, Google Drive, iCloud Drive, Nextcloud and MEGA. One click
+  saves the path and runs the same test; no manual typing is needed.
 - A downloaded/deleted archive must resolve inside `efxlve_saves`; absolute
   paths and `..` components are rejected before any file operation.
 - The folder is a plain directory. The launcher never talks to the cloud
@@ -217,10 +221,11 @@ Google Drive for desktop, iCloud Drive, Nextcloud desktop, Syncthing or a NAS
 share mounted as a drive.
 
 1. Install and sign in to the sync client, and let it finish its first sync.
-2. Create a folder for the launcher, for example `EfxlveSaves` inside OneDrive,
-   Dropbox or `~/Nextcloud`.
-3. Settings → Cloud → enable the feature → choose **Folder** → **Choose
-   folder** → **Save** → **Test Connection**.
+2. Settings → Cloud → enable the feature → choose **Folder**. Press the
+   **Detected on this PC** button for the client, or choose a folder by hand
+   (for example `EfxlveSaves` inside OneDrive).
+3. **Test Connection** creates `efxlve_saves` when the folder is writable, then
+   **Save**.
 4. Archives appear as `<folder>/efxlve_saves/<game-key>/<timestamp>.tar.gz` and
    the sync client uploads them like any other file. The launcher never talks to
    the cloud directly in this mode.
@@ -358,8 +363,8 @@ Cloud:
   `cloud_backup_test_connection`, `cloud_backup_upload_game`,
   `cloud_backup_list_game`, `cloud_backup_download_game`,
   `cloud_backup_delete_remote`, `cloud_backup_delete_all_remote`,
-  `cloud_backup_open_folder`, `cloud_backup_rclone_remotes`,
-  `cloud_backup_remote_hash`
+  `cloud_backup_open_folder`, `cloud_backup_suggest_folders`,
+  `cloud_backup_rclone_remotes`, `cloud_backup_remote_hash`
 
 Google Drive auth:
 
