@@ -945,6 +945,11 @@ export function toggleReleaseFollow(id: number): void {
   if (!Number.isFinite(id)) return;
   const active = document.activeElement as HTMLElement | null;
   const focusId = active?.dataset.act === "release-follow" ? active.dataset.id : null;
+  // The hero, schedule and search list can show the same release. Remember
+  // which surface the star belonged to so focus returns to that same row.
+  const focusShell = active?.closest<HTMLElement>(
+    ".calendar-hero-shell, .calendar-game-shell, .calendar-watch-card, .calendar-tba-shell",
+  )?.classList[0];
   if (followed.has(id)) followed.delete(id);
   else followed.add(id);
   saveFollowed();
@@ -952,9 +957,15 @@ export function toggleReleaseFollow(id: number): void {
   if (watching && followedReleases().length === 0) watching = false;
   renderCalendar();
   if (focusId) {
-    layer
-      ?.querySelector<HTMLButtonElement>(`.calendar-follow-btn[data-id="${focusId}"]`)
-      ?.focus();
+    const scoped = focusShell
+      ? layer?.querySelector<HTMLButtonElement>(
+          `.${focusShell} .calendar-follow-btn[data-id="${focusId}"]`,
+        )
+      : null;
+    (scoped ??
+      layer?.querySelector<HTMLButtonElement>(
+        `.calendar-follow-btn[data-id="${focusId}"]`,
+      ))?.focus();
   }
   if (storeLayer && storeRelease) {
     renderStoreDialog();
