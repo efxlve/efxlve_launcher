@@ -759,6 +759,16 @@ export function closeReleaseCalendar(): void {
   failed = false;
 }
 
+/** True while the upcoming-release dialog is mounted. */
+export function isReleaseCalendarOpen(): boolean {
+  return Boolean(layer);
+}
+
+/** True while the store picker sits above the calendar. */
+export function isReleaseStoresOpen(): boolean {
+  return Boolean(storeLayer);
+}
+
 /** Cancels the open calendar; true when there was one (Escape handling). */
 export function cancelReleaseCalendar(): boolean {
   if (!layer) return false;

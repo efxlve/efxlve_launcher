@@ -25,7 +25,7 @@ import { S, setTabSort } from "../../core/state";
 import { toast } from "../../core/toast";
 import { ubiDirectSetClientLaunch } from "../../companion";
 import { steamSetLaunchPref } from "../../steam";
-import { cancelReleaseCalendar, cancelReleaseCalendarSearch, cancelReleaseStores } from "../library/release-calendar";
+import { cancelReleaseCalendar, cancelReleaseCalendarSearch, cancelReleaseStores, isReleaseCalendarOpen, isReleaseStoresOpen, stepReleaseCalendarMonth } from "../library/release-calendar";
 import { esc } from "../../core/utils";
 import { t as i18nT } from "../../i18n";
 import {
@@ -212,6 +212,31 @@ document.addEventListener("keydown", (e) => {
     if (e.key === "ArrowRight") {
       e.preventDefault();
       navigateScreenshotLightbox("next");
+      return;
+    }
+  }
+
+  // Plain arrows walk the release calendar while its search field is not focused.
+  if (
+    (e.key === "ArrowLeft" || e.key === "ArrowRight") &&
+    !e.altKey &&
+    !e.ctrlKey &&
+    !e.metaKey &&
+    !e.shiftKey &&
+    isReleaseCalendarOpen() &&
+    !isReleaseStoresOpen()
+  ) {
+    const active = document.activeElement as HTMLElement | null;
+    const typing = Boolean(
+      active &&
+        (active instanceof HTMLInputElement ||
+          active instanceof HTMLTextAreaElement ||
+          active instanceof HTMLSelectElement ||
+          active.isContentEditable),
+    );
+    if (!typing) {
+      e.preventDefault();
+      stepReleaseCalendarMonth(e.key === "ArrowLeft" ? -1 : 1);
       return;
     }
   }
