@@ -24,12 +24,18 @@ interface MonthInfo extends MonthSel {
   count: number;
 }
 
+/** Followed releases are a local display choice; IGDB is never involved. */
+const FOLLOW_KEY = "efxlve-release-follows";
+
 let layer: HTMLElement | null = null;
 let releases: UpcomingRelease[] = [];
 let selected: MonthSel | null = null;
 let selectedDay: number | null = null;
 let loading = false;
 let failed = false;
+/** True while the body shows the followed list instead of one month. */
+let watching = false;
+let followed = loadFollowed();
 /** Bumped by a restart or close so a late answer cannot repaint a dead dialog. */
 let loadSeq = 0;
 /** The game whose store picker is open, if any. */
@@ -64,6 +70,52 @@ function hasExactDay(release: UpcomingRelease): boolean {
 
 function hasMonthOnly(release: UpcomingRelease): boolean {
   return release.precision === "month" && releaseYear(release) > 0 && releaseMonth(release) > 0;
+}
+
+function loadFollowed(): Set<number> {
+  try {
+    const raw = typeof localStorage === "undefined" ? null : localStorage.getItem(FOLLOW_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+    const list = Array.isArray(parsed) ? parsed : [];
+    return new Set(
+      list.filter((id): id is number => typeof id === "number" && Number.isFinite(id)),
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+function saveFollowed(): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    if (followed.size === 0) localStorage.removeItem(FOLLOW_KEY);
+    else localStorage.setItem(FOLLOW_KEY, JSON.stringify([...followed]));
+  } catch {
+    // A full quota must not break the calendar.
+  }
+}
+
+/** Exact days first inside a month, then month-only entries, then the rest. */
+function releaseSortKey(release: UpcomingRelease): number {
+  const year = releaseYear(release) || 9999;
+  const month = releaseMonth(release) || 13;
+  const day = hasExactDay(release) ? releaseDay(release) : hasMonthOnly(release) ? 32 : 33;
+  return year * 10_000 + month * 100 + day;
+}
+
+function followedReleases(): UpcomingRelease[] {
+  return releases
+    .filter((release) => followed.has(release.id))
+    .sort(
+      (left, right) =>
+        releaseSortKey(left) - releaseSortKey(right) || left.name.localeCompare(right.name),
+    );
+}
+
+function renderFollowButton(release: UpcomingRelease, extraClass = ""): string {
+  const isFollowed = followed.has(release.id);
+  const label = isFollowed ? t("calendar.unfollow") : t("calendar.follow");
+  return `<button type="button" class="calendar-follow-btn${isFollowed ? " is-followed" : ""}${extraClass ? ` ${extraClass}` : ""}" data-act="release-follow" data-id="${release.id}" aria-pressed="${isFollowed}" title="${esc(label)}" aria-label="${esc(label)}">${icon("star", 14)}</button>`;
 }
 
 function sameMonth(left: MonthSel | null, right: MonthSel | null): boolean {
@@ -277,14 +329,16 @@ function renderScheduleCard(release: UpcomingRelease): string {
     .slice(0, 2)
     .map((store) => `<span class="calendar-game-store">${esc(storeLabel(store.id, store.label))}</span>`)
     .join("");
-  return `<button type="button" class="calendar-game-card" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
-    ${cover ? `<img class="calendar-game-cover" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-game-cover placeholder">${icon("gamepad-2", 18)}</span>`}
-    <span class="calendar-game-info">
-      <span class="calendar-game-title">${esc(release.name)}</span>
-      ${storeList ? `<span class="calendar-game-stores">${storeList}</span>` : ""}
-    </span>
-    <span class="calendar-game-chevron">${icon("chevron-right", 14)}</span>
-  </button>`;
+  return `<div class="calendar-game-shell">
+    <button type="button" class="calendar-game-card" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
+      ${cover ? `<img class="calendar-game-cover" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-game-cover placeholder">${icon("gamepad-2", 18)}</span>`}
+      <span class="calendar-game-info">
+        <span class="calendar-game-title">${esc(release.name)}</span>
+        ${storeList ? `<span class="calendar-game-stores">${storeList}</span>` : ""}
+      </span>
+    </button>
+    ${renderFollowButton(release)}
+  </div>`;
 }
 
 function renderSchedule(month: MonthSel, exact: UpcomingRelease[]): string {
@@ -343,7 +397,10 @@ function renderSchedule(month: MonthSel, exact: UpcomingRelease[]): string {
   </div>`;
 }
 
-function renderHero(release: UpcomingRelease | null): string {
+function renderHero(
+  release: UpcomingRelease | null,
+  kicker = t("calendar.nextUp"),
+): string {
   if (!release) return "";
   const art = release.artworkId
     ? igdbImage(release.artworkId, "1080p")
@@ -357,34 +414,42 @@ function renderHero(release: UpcomingRelease | null): string {
     .join("");
   const fallbackTag = `<span class="calendar-store-tag is-muted">${esc(t("calendar.whereToBuy"))}</span>`;
   const countdown = countdownLabel(release);
-  return `<button type="button" class="calendar-hero${release.artworkId ? "" : " is-cover"}" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
-    <span class="calendar-hero-art"${art ? ` style="background-image:url('${esc(art)}')" ` : ""}></span>
-    <span class="calendar-hero-shade"></span>
-    <span class="calendar-hero-content">
-      ${poster ? `<img class="calendar-hero-poster" src="${esc(poster)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-hero-poster placeholder">${icon("gamepad-2", 22)}</span>`}
-      <span class="calendar-hero-body">
-        <span class="calendar-hero-topline">
-          <span class="calendar-hero-kicker">${t("calendar.nextUp")}</span>
-          ${countdown ? `<span class="calendar-hero-count">${esc(countdown)}</span>` : ""}
-          <span class="calendar-hero-date">${esc(dateLabel(release))}</span>
+  return `<div class="calendar-hero-shell">
+    <button type="button" class="calendar-hero${release.artworkId ? "" : " is-cover"}" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
+      <span class="calendar-hero-art"${art ? ` style="background-image:url('${esc(art)}')" ` : ""}></span>
+      <span class="calendar-hero-shade"></span>
+      <span class="calendar-hero-content">
+        ${poster ? `<img class="calendar-hero-poster" src="${esc(poster)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-hero-poster placeholder">${icon("gamepad-2", 22)}</span>`}
+        <span class="calendar-hero-body">
+          <span class="calendar-hero-topline">
+            <span class="calendar-hero-kicker">${kicker}</span>
+            ${countdown ? `<span class="calendar-hero-count">${esc(countdown)}</span>` : ""}
+            <span class="calendar-hero-date">${esc(dateLabel(release))}</span>
+          </span>
+          <span class="calendar-hero-title">${esc(release.name)}</span>
+          <span class="calendar-hero-stores">${storeTags || fallbackTag}</span>
         </span>
-        <span class="calendar-hero-title">${esc(release.name)}</span>
-        <span class="calendar-hero-stores">${storeTags || fallbackTag}</span>
+        <span class="calendar-hero-arrow">${icon("arrow-right", 16)}</span>
       </span>
-      <span class="calendar-hero-arrow">${icon("arrow-right", 16)}</span>
-    </span>
-  </button>`;
+    </button>
+    ${renderFollowButton(release, "is-hero-follow")}
+  </div>`;
 }
 
 function renderToolbar(months: MonthInfo[], active: MonthSel): string {
   const index = months.findIndex((month) => sameMonth(month, active));
   const previous = index > 0;
   const next = index >= 0 && index < months.length - 1;
+  const watchCount = followedReleases().length;
+  const watchButton =
+    watchCount > 0 || watching
+      ? `<button type="button" class="calendar-watch-toggle${watching ? " is-active" : ""}" data-act="release-calendar-watch" aria-pressed="${watching}" title="${esc(t("calendar.watchlist"))}" aria-label="${esc(t("calendar.watchlist"))}">${icon("star", 13)}<span class="tabular-nums">${watchCount}</span></button>`
+      : "";
   return `<div class="calendar-toolbar">
     <button type="button" class="icon-btn" data-act="release-calendar-prev" title="${esc(t("calendar.previousMonth"))}" aria-label="${esc(t("calendar.previousMonth"))}"${previous ? "" : " disabled"}>${icon("chevron-left", 16)}</button>
     <div class="calendar-monthbar" role="tablist" aria-label="${esc(t("calendar.title"))}">${months
       .map((month) => {
-        const isActive = sameMonth(month, active);
+        const isActive = sameMonth(month, active) && !watching;
         return `<button type="button" class="calendar-month-tab${isActive ? " is-active" : ""}" role="tab" aria-selected="${isActive}" data-act="release-calendar-month" data-year="${month.year}" data-month="${month.month}">
           <span class="calendar-month-tab-main">${esc(monthLabel(month.year, month.month - 1))}</span>
           <span class="calendar-month-tab-year">${month.year}</span>
@@ -392,6 +457,7 @@ function renderToolbar(months: MonthInfo[], active: MonthSel): string {
         </button>`;
       })
       .join("")}</div>
+    ${watchButton}
     <button type="button" class="icon-btn" data-act="release-calendar-next" title="${esc(t("calendar.nextMonth"))}" aria-label="${esc(t("calendar.nextMonth"))}"${next ? "" : " disabled"}>${icon("chevron-right", 16)}</button>
   </div>`;
 }
@@ -434,6 +500,48 @@ function renderPending(year: number): string {
   </details>`;
 }
 
+function renderWatchCard(release: UpcomingRelease): string {
+  const cover = coverOf(release, "cover_big");
+  const storeList = (release.stores ?? [])
+    .slice(0, 3)
+    .map((store) => `<span class="calendar-game-store">${esc(storeLabel(store.id, store.label))}</span>`)
+    .join("");
+  const countdown = countdownLabel(release);
+  return `<div class="calendar-watch-card">
+    <button type="button" class="calendar-watch-main" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
+      ${cover ? `<img class="calendar-watch-cover" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-watch-cover placeholder">${icon("gamepad-2", 18)}</span>`}
+      <span class="calendar-watch-info">
+        <span class="calendar-watch-title">${esc(release.name)}</span>
+        <span class="calendar-watch-meta">
+          <span class="calendar-watch-date tabular-nums">${esc(dateLabel(release))}</span>
+          ${countdown ? `<span class="calendar-watch-count tabular-nums">${esc(countdown)}</span>` : ""}
+        </span>
+        ${storeList ? `<span class="calendar-game-stores">${storeList}</span>` : ""}
+      </span>
+    </button>
+    ${renderFollowButton(release, "is-watch-follow")}
+  </div>`;
+}
+
+function renderWatchlist(list: UpcomingRelease[]): string {
+  return `<div class="calendar-watchlist">
+    <div class="calendar-watch-head">
+      <span class="calendar-watch-head-title">${icon("star", 13)} <span>${esc(t("calendar.watchlist"))}</span></span>
+      <span class="calendar-watch-head-count tabular-nums">${list.length}</span>
+    </div>
+    <div class="calendar-watch-cards">${list.map(renderWatchCard).join("")}</div>
+  </div>`;
+}
+
+function renderWatchEmpty(): string {
+  return `<div class="calendar-empty calendar-watch-empty">
+      ${icon("star", 26)}
+      <div class="calendar-empty-title">${esc(t("calendar.watchEmpty"))}</div>
+      <div class="calendar-empty-hint">${esc(t("calendar.watchHint"))}</div>
+      <button type="button" class="btn ghost" data-act="release-calendar-watch">${esc(t("calendar.watchBack"))}</button>
+    </div>`;
+}
+
 function loadingHtml(): string {
   return `<div class="calendar-loading">
       <span class="spinner"></span>
@@ -456,6 +564,14 @@ function renderBody(): string {
   const month = ensureSelectedMonth();
   if (!month) return emptyHtml();
   const months = availableMonths();
+  if (watching) {
+    const watch = followedReleases();
+    return `
+      ${renderHero(watch[0] ?? null, t("calendar.watchNext"))}
+      ${renderToolbar(months, month)}
+      ${watch.length > 0 ? renderWatchlist(watch) : renderWatchEmpty()}
+      <p class="calendar-source">${esc(t("calendar.sourceNote"))}</p>`;
+  }
   const pool = monthGames(month);
   const exact = pool.filter(hasExactDay);
   // Feature the month's most followed release that has key art, so the banner
@@ -530,6 +646,7 @@ export function openReleaseCalendar(): void {
   releases = [];
   selected = null;
   selectedDay = null;
+  watching = false;
   failed = false;
   if (layer) layer.remove();
   layer = document.createElement("div");
@@ -547,6 +664,7 @@ export function closeReleaseCalendar(): void {
   releases = [];
   selected = null;
   selectedDay = null;
+  watching = false;
   loading = false;
   failed = false;
 }
@@ -564,6 +682,7 @@ export function setReleaseCalendarMonth(year: number, month: number): void {
   if (!availableMonths().some((entry) => entry.year === year && entry.month === month)) return;
   selected = { year, month };
   selectedDay = null;
+  watching = false;
   renderCalendar();
 }
 
@@ -587,6 +706,28 @@ export function stepReleaseCalendarMonth(delta: -1 | 1): void {
   if (!next) return;
   selected = { year: next.year, month: next.month };
   selectedDay = null;
+  watching = false;
+  renderCalendar();
+}
+
+/** Follows or unfollows one release. The star is the only writer of this set. */
+export function toggleReleaseFollow(id: number): void {
+  if (!Number.isFinite(id)) return;
+  if (followed.has(id)) followed.delete(id);
+  else followed.add(id);
+  saveFollowed();
+  if (watching && followedReleases().length === 0) watching = false;
+  renderCalendar();
+  if (storeLayer && storeRelease) {
+    renderStoreDialog();
+    storeLayer.querySelector<HTMLButtonElement>('[data-act="release-follow"]')?.focus();
+  }
+}
+
+/** Switches the body between the month view and the followed list. */
+export function toggleReleaseWatchlist(): void {
+  watching = !watching;
+  if (watching) selectedDay = null;
   renderCalendar();
 }
 
@@ -634,6 +775,7 @@ function renderStoreDialog(): void {
         <div class="release-stores-list is-search">${searches.join("")}</div>
         <p class="release-stores-note">${icon("info", 12)}<span>${esc(t("calendar.storeNote"))}</span></p>
         <div class="modal-foot">
+          <button type="button" class="btn ghost${followed.has(release.id) ? " is-following" : ""}" data-act="release-follow" data-id="${release.id}">${icon("star", 13)} ${esc(followed.has(release.id) ? t("calendar.following") : t("calendar.follow"))}</button>
           <button type="button" class="btn ghost" data-act="release-stores-close">${esc(t("common.close"))}</button>
           ${release.url ? `<button type="button" class="btn ghost" data-act="open-external-url" data-url="${esc(release.url)}">${icon("external", 13)} ${esc(t("calendar.igdbPage"))}</button>` : ""}
         </div>
