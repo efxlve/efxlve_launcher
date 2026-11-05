@@ -61,7 +61,11 @@
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
-:root[data-surface="white"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo) {
+:root[data-surface="white"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo, .pcard-store-logo, .col-store-logo-img) {
+  filter: brightness(0);
+  opacity: 0.85;
+}
+:root[data-surface="white"] .release-store-btn .release-store-logo {
   filter: brightness(0);
   opacity: 0.85;
 }
@@ -114,13 +118,25 @@
   border-color: var(--line);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
-:root[data-surface="white"] :is(.search input, .notes-search input, .notes-search-input) {
+:root[data-surface="white"] :is(.search input, .notes-search input, .notes-search-input,
+  .calendar-search-input, .palette-input input,
+  .storage-search-input, .ss-studio-search, .install-path-input,
+  .ced .col-search-wrap .text-input) {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   padding: 0 !important;
+  outline: none !important;
+}
+:root[data-surface="white"] .notes-title-input,
+:root[data-surface="white"] .notes-title-input:focus {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   outline: none !important;
 }
 :root[data-surface="white"] .notes-search {
@@ -327,8 +343,12 @@
   background: #ffffff;
   border-color: var(--line-strong);
 }
+:root[data-surface="white"] .calendar-search {
+  border-color: var(--line-strong);
+}
 :root[data-surface="white"] :is(input, select, textarea, .input, .text-input, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input):focus,
 :root[data-surface="white"] .search:focus-within,
+:root[data-surface="white"] .calendar-search:focus-within,
 :root[data-surface="white"] .install-path-input-wrap:focus-within {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(17, 19, 24, 0.08);
@@ -680,12 +700,16 @@
   border-color: rgba(16, 78, 130, 0.24);
   box-shadow: inset 0 1px 2px rgba(8, 60, 110, 0.1);
 }
+:root[data-surface="gloss"] .calendar-search {
+  border-color: var(--line-strong);
+}
 :root[data-surface="gloss"] :is(
   input, select, textarea, .input, .text-input,
   .settings-search, .music-input, .music-select, .storage-search-input,
   .move-path-input, .install-path-input
 ):focus,
 :root[data-surface="gloss"] .search:focus-within,
+:root[data-surface="gloss"] .calendar-search:focus-within,
 :root[data-surface="gloss"] .install-path-input-wrap:focus-within {
   border-color: #3d9de4;
   box-shadow: 0 0 0 3px rgba(61, 157, 228, 0.22), inset 0 1px 2px rgba(8, 60, 110, 0.1);
@@ -770,7 +794,11 @@
   background: linear-gradient(180deg, #ffffff 0%, #f4f9fd 48%, #e0eef8 50%, #eef6fc 100%);
   box-shadow: 0 1px 3px rgba(0, 35, 75, 0.4), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="gloss"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo) {
+:root[data-surface="gloss"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo, .pcard-store-logo, .col-store-logo-img) {
+  filter: brightness(0) saturate(100%) invert(18%) sepia(35%) saturate(1400%) hue-rotate(175deg);
+  opacity: 0.88;
+}
+:root[data-surface="gloss"] .release-store-btn .release-store-logo {
   filter: brightness(0) saturate(100%) invert(18%) sepia(35%) saturate(1400%) hue-rotate(175deg);
   opacity: 0.88;
 }
@@ -850,7 +878,10 @@
 :root[data-surface="gloss"] .compat-note.info-box svg {
   color: #0b4a8c;
 }
-:root[data-surface="gloss"] :is(.search input, .notes-search input, .notes-search-input) {
+:root[data-surface="gloss"] :is(.search input, .notes-search input, .notes-search-input,
+  .calendar-search-input, .palette-input input,
+  .storage-search-input, .ss-studio-search, .install-path-input,
+  .ced .col-search-wrap .text-input) {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -859,7 +890,19 @@
   padding: 0 !important;
   outline: none !important;
 }
-:root[data-surface="gloss"] :is(.search input, .notes-search input, .notes-search-input):focus {
+:root[data-surface="gloss"] .notes-title-input,
+:root[data-surface="gloss"] .notes-title-input:focus {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  outline: none !important;
+}
+:root[data-surface="gloss"] :is(.search input, .notes-search input, .notes-search-input,
+  .calendar-search-input, .palette-input input, .notes-title-input,
+  .storage-search-input, .ss-studio-search, .install-path-input,
+  .ced .col-search-wrap .text-input):focus {
   background: transparent !important;
   box-shadow: none !important;
   outline: none !important;
