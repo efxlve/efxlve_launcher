@@ -10,6 +10,7 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { DOWNLOAD_FINISH_ACTION_KEY, isTauri } from "../../core/constants";
 import { confirmRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
@@ -186,6 +187,16 @@ function showCountdown(action: PowerAction): void {
   confirmRoot.appendChild(layer);
   // The safe action owns the keyboard while the countdown runs.
   layer.querySelector<HTMLButtonElement>('[data-act="finish-cancel"]')?.focus();
+  // A minimized or tray-hidden window must show the countdown: a shutdown the
+  // user cannot see or cancel is worse than no shutdown at all.
+  if (isTauri) {
+    const win = getCurrentWindow();
+    void win
+      .show()
+      .then(() => win.unminimize())
+      .then(() => win.setFocus())
+      .catch(() => undefined);
+  }
 
   countdownTimer = window.setInterval(() => {
     // A fresh download during the countdown keeps the machine awake.

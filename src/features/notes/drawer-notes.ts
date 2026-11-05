@@ -103,6 +103,8 @@ function tabsHtml(): string {
 }
 
 function openNoteDraft(note: Note): void {
+  // An earlier tab switch may still be waiting on a save; this open wins.
+  switchSeq++;
   editing = true;
   draft = {
     id: note.id,

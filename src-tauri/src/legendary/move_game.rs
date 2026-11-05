@@ -974,6 +974,18 @@ async fn move_game_folder_internal(
 
     if is_same_drive {
         // --- SAME DRIVE: instant rename (~0.05s) ---
+        // A journal still matters here: a crash after the rename but before
+        // installed.json is written would leave the record on the old path.
+        write_move_journal(
+            config_dir,
+            &MoveJournal {
+                app_name: app_name.to_string(),
+                record: record.as_str().to_string(),
+                source: cur_path.to_string_lossy().to_string(),
+                target: new_game_path.to_string_lossy().to_string(),
+                stage: String::new(),
+            },
+        )?;
         let _ = app.emit(
             "move-progress",
             MoveGameProgress {
@@ -990,9 +1002,15 @@ async fn move_game_folder_internal(
             },
         );
 
-        tokio::fs::rename(&cur_path, &new_game_path)
-            .await
-            .map_err(|e| format!("@t:move.renameFailed\u{1f}{}", e))?;
+        // The pre-check allowed an existing empty target; a rename cannot
+        // replace it, so remove the empty folder first.
+        if new_game_path.exists() {
+            let _ = tokio::fs::remove_dir_all(&new_game_path).await;
+        }
+        if let Err(e) = tokio::fs::rename(&cur_path, &new_game_path).await {
+            clear_move_journal(config_dir);
+            return Err(format!("@t:move.renameFailed\u{1f}{}", e));
+        }
     } else {
         // --- DIFFERENT DRIVE: stage, copy, then rename into place ---
         let start_time = Instant::now();

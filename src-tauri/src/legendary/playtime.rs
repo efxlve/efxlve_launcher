@@ -150,6 +150,9 @@ pub fn set_game_playtime(
         rec.session_count = 1;
     } else if total_seconds == 0 {
         rec.session_count = 0;
+        // Clearing the total also clears the daily history; otherwise the
+        // activity chart would keep showing time the user just removed.
+        rec.sessions.clear();
     }
 
     match last_played {
