@@ -3,7 +3,7 @@
  * custom save paths, local backups, playtime editor, move game across drives).
  */
 
-import { toast } from "../../../core/toast";
+import { progressToast, toast } from "../../../core/toast";
 import { formatSyncStamp, localizeMessage, t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import { esc, fmtBytes, parseEnvText } from "../../../core/utils";
@@ -353,19 +353,29 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
           // A local restore used to start on a single click. Show the file
           // list and target folder first, then pass the previewed hash so a
           // session played in between refuses instead of being overwritten.
-          epicPreviewBackup(id, bid)
-            .then(async (preview) => {
+          // The preview also re-hashes the backup itself: a damaged copy is
+          // stopped here, before it can overwrite a working save tree.
+          void (async () => {
+            const checking = progressToast(i18nT("backup.verifying"));
+            try {
+              const preview = await epicPreviewBackup(id, bid);
+              checking.close();
+              if (preview.damaged) {
+                toast(i18nT("backup.damaged"), "err");
+                return;
+              }
               if (!(await askRestorePreview(preview))) return;
               toast(i18nT("backup.restoring"), "");
               const msg = await epicRestoreBackup(id, bid, preview.currentHash ?? undefined);
               toast(msg, "ok");
-            })
-            .catch((err) =>
+            } catch (err) {
+              checking.close();
               toast(
                 i18nT("backup.restoreFailed", { msg: localizeMessage(String(err)) }),
                 "err",
-              ),
-            );
+              );
+            }
+          })();
         }
       }
       return true;

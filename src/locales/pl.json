@@ -1227,6 +1227,8 @@
   "backup.restoreError": "Błąd podczas przywracania kopii: {a1}",
   "backup.restored": "Przywrócono pliki: {a1} ({a2})",
   "backup.previewSame": "Te zapisy już odpowiadają kopii.",
+  "backup.verifying": "Sprawdzanie kopii…",
+  "backup.damaged": "Kopia jest uszkodzona: pliki nie pasują już do zapisanej sumy kontrolnej. Przywracanie zatrzymano.",
   "backup.changedSincePreview": "Zapisy zmieniły się podczas otwartego podglądu. Otwórz kopię ponownie.",
   "backup.invalidId": "Nieprawidłowy identyfikator kopii.",
   "col.nameEmpty": "Nazwa kolekcji nie może być pusta",

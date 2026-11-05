@@ -384,6 +384,9 @@ pub struct BackupPreview {
     pub path_source: String,
     pub current_hash: Option<String>,
     pub backup_hash: Option<String>,
+    /// True when the files in `data/` no longer match the checksum recorded
+    /// when the backup was created. A damaged backup is never restored.
+    pub damaged: bool,
     /// True when the save folder already matches the backup byte for byte.
     pub same_content: bool,
     pub target_exists: bool,
@@ -400,6 +403,26 @@ fn safe_backup_id(value: &str) -> Result<&str, String> {
         return Err("@t:backup.invalidId".to_string());
     }
     Ok(trimmed)
+}
+
+/// Verifies the copied save tree against the checksum recorded when the backup
+/// was made. Older backups carry no checksum and stay restorable; a checksum
+/// mismatch means the files changed or were corrupted on disk.
+fn verify_backup_tree(info: &SaveBackupInfo, data_src: &Path) -> Result<(), String> {
+    let Some(recorded) = info
+        .content_hash
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    else {
+        return Ok(());
+    };
+    let actual = tree_content_hash(data_src)
+        .ok_or_else(|| "@t:backup.dataFolderNotFound".to_string())?;
+    if actual != recorded {
+        return Err("@t:backup.damaged".to_string());
+    }
+    Ok(())
 }
 
 fn preview_from_backup_dir(
@@ -430,10 +453,19 @@ fn preview_from_backup_dir(
     };
     let target_exists = destination.is_dir();
     let current_hash = tree_content_hash(&destination);
-    let backup_hash = info
+    let actual_backup_hash = tree_content_hash(&data_src);
+    let recorded_hash = info
         .content_hash
-        .clone()
-        .or_else(|| tree_content_hash(&data_src));
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+    let damaged = matches!(
+        (recorded_hash, actual_backup_hash.as_deref()),
+        (Some(recorded), Some(actual)) if recorded != actual
+    );
+    let backup_hash = recorded_hash
+        .map(str::to_string)
+        .or(actual_backup_hash);
     let same_content = matches!(
         (&current_hash, &backup_hash),
         (Some(current), Some(backup)) if current == backup
@@ -478,6 +510,7 @@ fn preview_from_backup_dir(
         path_source: path_source.to_string(),
         current_hash,
         backup_hash,
+        damaged,
         same_content,
         target_exists,
     })
@@ -1259,6 +1292,9 @@ pub fn restore_backup_checked(
     if !data_src.exists() {
         return Err("@t:backup.dataFolderNotFound".to_string());
     }
+    // A copy whose files no longer match the checksum recorded at backup time
+    // would restore corruption over a working save tree.
+    verify_backup_tree(&info, &data_src)?;
 
     let dest = resolve_restore_destination(app_name, &info);
 
@@ -1607,6 +1643,7 @@ mod tests {
         assert_eq!(preview.file_count, 2);
         assert_eq!(preview.total_bytes, 9);
         assert!(!preview.truncated);
+        assert!(!preview.damaged);
         assert_eq!(preview.path_source, "absolute");
         assert_eq!(preview.save_path, destination.to_string_lossy());
         assert!(preview.target_exists);
@@ -1618,6 +1655,42 @@ mod tests {
             .files
             .iter()
             .any(|file| file.path == "nested/slot1.sav" && file.size == 4));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_corrupted_backup_is_marked_and_refused() {
+        let (root, backup, _, info) = local_backup_fixture("corrupt");
+        let data = backup.join("data");
+        let preview = preview_from_backup_dir("steam::1", "1700000000", &backup).unwrap();
+        assert!(!preview.damaged);
+        assert!(verify_backup_tree(&info, &data).is_ok());
+
+        // One changed byte is enough: the recorded checksum no longer matches.
+        std::fs::write(data.join("profile.sav"), b"alphA").unwrap();
+        let preview = preview_from_backup_dir("steam::1", "1700000000", &backup).unwrap();
+        assert!(preview.damaged);
+        assert_eq!(preview.backup_hash, info.content_hash);
+        assert_eq!(
+            verify_backup_tree(&info, &data).unwrap_err(),
+            "@t:backup.damaged"
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn an_older_backup_without_a_checksum_stays_restorable() {
+        let (root, backup, _, mut info) = local_backup_fixture("old");
+        info.content_hash = None;
+        std::fs::write(
+            backup.join("backup_info.json"),
+            serde_json::to_string_pretty(&info).unwrap(),
+        )
+        .unwrap();
+        let preview = preview_from_backup_dir("steam::1", "1700000000", &backup).unwrap();
+        assert!(!preview.damaged);
+        assert!(preview.backup_hash.is_some(), "the preview still hashes the tree");
+        assert!(verify_backup_tree(&info, &backup.join("data")).is_ok());
         let _ = std::fs::remove_dir_all(&root);
     }
 

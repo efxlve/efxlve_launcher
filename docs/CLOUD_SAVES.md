@@ -83,8 +83,10 @@ Closing the preview drops the token and the temporary archive.
 
 A local restore uses the same preview from the backup folder already on disk,
 shows the target folder the logical roots resolve to, and refuses while the
-game is running or when the save tree changed after the preview. Neither path
-can overwrite saves on a single stray click.
+game is running or when the save tree changed after the preview. The preview
+also re-hashes the backup against the checksum recorded when it was created, so
+a damaged copy is refused instead of restored. Neither path can overwrite saves
+on a single stray click.
 
 ---
 

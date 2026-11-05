@@ -21,6 +21,8 @@ export interface RestorePreviewView {
   savePath: string;
   /** Only local previews know this; a cloud preview leaves it undefined. */
   sameContent?: boolean;
+  /** True when the local backup failed its checksum verification. */
+  damaged?: boolean;
 }
 
 let pending: ((answer: boolean) => void) | null = null;
@@ -67,7 +69,7 @@ export function askRestorePreview(preview: RestorePreviewView): Promise<boolean>
         <p class="confirm-body">${esc(
           t("cloud.previewSummary", {
             date: preview.formattedDate || "—",
-            size: fmtBytes(preview.totalBytes),
+            size: fmtPreviewSize(preview.totalBytes),
             count: String(preview.fileCount),
           }),
         )}</p>
@@ -75,11 +77,12 @@ export function askRestorePreview(preview: RestorePreviewView): Promise<boolean>
         <div class="restore-preview-files-head">${esc(t("cloud.previewFiles"))}<span class="count tabular-nums">${preview.fileCount}</span></div>
         <ul class="restore-preview-files">${rows || `<li><span>${esc(t("cloud.previewEmpty"))}</span></li>`}</ul>
         ${hidden > 0 ? `<div class="restore-preview-more">${esc(t("cloud.previewMore", { n: String(hidden) }))}</div>` : ""}
-        ${preview.sameContent ? `<p class="restore-preview-same">${icon("check-circle", 12)}<span>${esc(t("backup.previewSame"))}</span></p>` : ""}
+        ${preview.damaged ? `<p class="restore-preview-damaged">${icon("alert-triangle", 12)}<span>${esc(t("backup.damaged"))}</span></p>` : ""}
+        ${preview.sameContent && !preview.damaged ? `<p class="restore-preview-same">${icon("check-circle", 12)}<span>${esc(t("backup.previewSame"))}</span></p>` : ""}
         <p class="restore-preview-note">${icon("info", 12)}<span>${esc(t("cloud.previewNote"))}</span></p>
         <div class="modal-foot">
           <button type="button" class="btn ghost" data-act="restore-preview-cancel">${esc(t("common.cancel"))}</button>
-          <button type="button" class="btn primary" data-act="restore-preview-confirm"${preview.sameContent ? " disabled" : ""}>${icon("download", 13)} ${esc(t("cloud.previewRestore"))}</button>
+          <button type="button" class="btn primary" data-act="restore-preview-confirm"${preview.sameContent || preview.damaged ? " disabled" : ""}>${icon("download", 13)} ${esc(t("cloud.previewRestore"))}</button>
         </div>
       </div>
     </div>`;

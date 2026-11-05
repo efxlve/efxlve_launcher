@@ -630,6 +630,8 @@ export interface BackupPreview {
   pathSource: string;
   currentHash?: string | null;
   backupHash?: string | null;
+  /** True when the backup files no longer match the recorded checksum. */
+  damaged: boolean;
   sameContent: boolean;
   targetExists: boolean;
 }

@@ -1227,6 +1227,8 @@
   "backup.restoreError": "Fehler beim Wiederherstellen der Sicherung: {a1}",
   "backup.restored": "{a1} Dateien ({a2}) erfolgreich wiederhergestellt",
   "backup.previewSame": "Diese Spielstände stimmen bereits mit dem Backup überein.",
+  "backup.verifying": "Backup wird geprüft…",
+  "backup.damaged": "Das Backup ist beschädigt: Die Dateien stimmen nicht mehr mit der gespeicherten Prüfsumme überein. Die Wiederherstellung wurde gestoppt.",
   "backup.changedSincePreview": "Die Spielstände haben sich während der Vorschau geändert. Öffne das Backup erneut.",
   "backup.invalidId": "Ungültige Backup-ID.",
   "col.nameEmpty": "Der Sammlungsname darf nicht leer sein",

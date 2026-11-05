@@ -1299,6 +1299,8 @@
   "backup.restoreError": "Error while restoring backup: {a1}",
   "backup.restored": "{a1} files ({a2}) restored successfully",
   "backup.previewSame": "These saves already match the backup.",
+  "backup.verifying": "Checking the backup…",
+  "backup.damaged": "The backup is damaged: its files no longer match the recorded checksum. The restore was stopped.",
   "backup.changedSincePreview": "The saves changed while the preview was open. Open the backup again.",
   "backup.invalidId": "Invalid backup id.",
   "col.nameEmpty": "Collection name cannot be empty",

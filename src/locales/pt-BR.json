@@ -1227,6 +1227,8 @@
   "backup.restoreError": "Erro ao restaurar o backup: {a1}",
   "backup.restored": "{a1} arquivos ({a2}) restaurados",
   "backup.previewSame": "Estes saves já correspondem ao backup.",
+  "backup.verifying": "Verificando o backup…",
+  "backup.damaged": "O backup está danificado: os arquivos não correspondem mais ao checksum registrado. A restauração foi interrompida.",
   "backup.changedSincePreview": "Os saves mudaram enquanto a prévia estava aberta. Abra o backup novamente.",
   "backup.invalidId": "ID de backup inválido.",
   "col.nameEmpty": "O nome da coleção não pode ficar vazio",

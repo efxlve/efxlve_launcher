@@ -1227,6 +1227,8 @@
   "backup.restoreError": "还原备份时出错：{a1}",
   "backup.restored": "已成功还原 {a1} 个文件（{a2}）",
   "backup.previewSame": "这些存档已经与备份一致。",
+  "backup.verifying": "正在检查备份…",
+  "backup.damaged": "备份已损坏：文件与记录的校验和不符。恢复已停止。",
   "backup.changedSincePreview": "预览打开期间存档发生了变化。请重新打开备份。",
   "backup.invalidId": "备份 ID 无效。",
   "col.nameEmpty": "合集名称不能为空",

@@ -1227,6 +1227,8 @@
   "backup.restoreError": "Error al restaurar la copia: {a1}",
   "backup.restored": "{a1} archivos ({a2}) restaurados correctamente",
   "backup.previewSame": "Estas partidas ya coinciden con la copia.",
+  "backup.verifying": "Comprobando la copia…",
+  "backup.damaged": "La copia está dañada: sus archivos ya no coinciden con la suma de comprobación guardada. La restauración se detuvo.",
   "backup.changedSincePreview": "Las partidas cambiaron mientras la vista previa estaba abierta. Abre la copia de nuevo.",
   "backup.invalidId": "Identificador de copia no válido.",
   "col.nameEmpty": "El nombre de la colección no puede estar vacío",

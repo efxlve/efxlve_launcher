@@ -1227,6 +1227,8 @@
   "backup.restoreError": "백업을 복원하는 중 오류: {a1}",
   "backup.restored": "파일 {a1}개 ({a2})를 복원했습니다",
   "backup.previewSame": "이 저장 파일은 이미 백업과 일치합니다.",
+  "backup.verifying": "백업을 확인하는 중…",
+  "backup.damaged": "백업이 손상되었습니다: 파일이 기록된 체크섬과 일치하지 않습니다. 복원을 중단했습니다.",
   "backup.changedSincePreview": "미리보기가 열려 있는 동안 저장 파일이 변경되었습니다. 백업을 다시 여세요.",
   "backup.invalidId": "잘못된 백업 ID입니다.",
   "col.nameEmpty": "컬렉션 이름은 비울 수 없습니다",

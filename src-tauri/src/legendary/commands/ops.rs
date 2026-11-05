@@ -191,13 +191,19 @@ pub fn epic_list_backups(app_name: String) -> Vec<crate::legendary::backup::Save
     crate::legendary::backup::list_backups(&app_name)
 }
 
-/// Describes a local backup before a restore overwrites the save folder.
+/// Describes a local backup before a restore overwrites the save folder. The
+/// full tree is hashed off the main thread, so a large backup never freezes
+/// the window while its integrity is checked.
 #[tauri::command]
-pub fn epic_preview_backup(
+pub async fn epic_preview_backup(
     app_name: String,
     backup_id: String,
 ) -> Result<crate::legendary::backup::BackupPreview, String> {
-    crate::legendary::backup::preview_backup(&app_name, &backup_id)
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::legendary::backup::preview_backup(&app_name, &backup_id)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// Restores a backup to the game. `expected_hash` is the save-tree hash from

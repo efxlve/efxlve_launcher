@@ -1227,6 +1227,8 @@
   "backup.restoreError": "Erreur lors de la restauration : {a1}",
   "backup.restored": "{a1} fichiers ({a2}) restaurés",
   "backup.previewSame": "Ces sauvegardes correspondent déjà à la sauvegarde.",
+  "backup.verifying": "Vérification de la sauvegarde…",
+  "backup.damaged": "La sauvegarde est endommagée : ses fichiers ne correspondent plus à la somme de contrôle enregistrée. La restauration a été arrêtée.",
   "backup.changedSincePreview": "Les sauvegardes ont changé pendant l'aperçu. Rouvrez la sauvegarde.",
   "backup.invalidId": "Identifiant de sauvegarde invalide.",
   "col.nameEmpty": "Le nom de la collection ne peut pas être vide",
