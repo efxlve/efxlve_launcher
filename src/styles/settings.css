@@ -195,11 +195,10 @@
   background: var(--surface-2); padding: 1px 6px; border-radius: 4px; overflow-wrap: break-word;
 }
 .settings-row-control { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; flex: 1 1 auto; min-width: 0; max-width: 100%; }
-/* Cloud Saves > Folder backup. The path is the row's primary control, so it is
-   a step taller and wider than a default field. The field sits in a column
-   flex container, where `.mg-inline .input { flex: 1 }` would otherwise shrink
-   its height back to the content. */
-.mg-inline .input.cloud-folder-path { flex: 0 0 auto; height: 38px; padding: 0 12px; font-size: 13.5px; }
+/* Cloud Saves provider fields. They sit in a column flex container, where
+   `.mg-inline .input { flex: 1 }` would otherwise shrink the height back to
+   the content and make the boxes shorter than a normal input. */
+.mg-inline .input.cloud-field { flex: 0 0 auto; height: 38px; padding: 0 12px; font-size: 13.5px; }
 /* A switch plus one action in the same control column. */
 .settings-inline-control { display: flex; align-items: center; gap: 10px; }
 /* Settings > Appearance > Custom CSS. The textarea is the row's whole control,

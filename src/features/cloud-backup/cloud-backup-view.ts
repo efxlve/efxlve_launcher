@@ -81,7 +81,7 @@ export function renderCloudBackupSettingsGroup(): string {
           <div class="settings-row-desc">${t("cloud.folderDesc")}</div>
         </div>
         <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
-          <input id="cloud-folder-path" class="input cloud-folder-path" placeholder="${t("cloud.folderPath")}" value="${esc(st.folderPath)}" spellcheck="false" autocomplete="off" />
+          <input id="cloud-folder-path" class="input cloud-field" placeholder="${t("cloud.folderPath")}" value="${esc(st.folderPath)}" spellcheck="false" autocomplete="off" />
           ${detectedFolders
             ? `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
                  <span style="font-size:11px;color:var(--text-3)">${t("cloud.folderDetected")}</span>
@@ -124,11 +124,11 @@ export function renderCloudBackupSettingsGroup(): string {
         <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
           <div style="display:flex;flex-direction:column;gap:4px">
             <label style="font-size: 11px; color: var(--text-2); font-weight: 500;">${t("cloud.gdriveClientId")}</label>
-            <input id="cloud-gdrive-client-id" class="input" placeholder="123456789-xxxxxxxx.apps.googleusercontent.com" value="${esc(st.gdriveClientId || "")}" spellcheck="false" autocomplete="off" />
+            <input id="cloud-gdrive-client-id" class="input cloud-field" placeholder="123456789-xxxxxxxx.apps.googleusercontent.com" value="${esc(st.gdriveClientId || "")}" spellcheck="false" autocomplete="off" />
           </div>
           <div style="display:flex;flex-direction:column;gap:4px">
             <label style="font-size: 11px; color: var(--text-2); font-weight: 500;">${t("cloud.gdriveClientSecret")}</label>
-            <input id="cloud-gdrive-client-secret" type="password" class="input" placeholder="GOCSPX-xxxxxxxxx (${t("cloud.gdriveClientSecret")})" value="${esc(st.gdriveClientSecret || "")}" spellcheck="false" autocomplete="off" />
+            <input id="cloud-gdrive-client-secret" type="password" class="input cloud-field" placeholder="GOCSPX-xxxxxxxxx (${t("cloud.gdriveClientSecret")})" value="${esc(st.gdriveClientSecret || "")}" spellcheck="false" autocomplete="off" />
           </div>
           <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-top:4px">
             ${isConnected ? `<span class="chip ok">${esc(email)}</span>` : ""}
@@ -155,10 +155,10 @@ export function renderCloudBackupSettingsGroup(): string {
           <div class="settings-row-desc">${t("cloud.webdavConfigDesc")}</div>
         </div>
         <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
-          <input id="cloud-webdav-url" class="input" placeholder="https://nextcloud.example.com/remote.php/dav/files/user/" value="${esc(st.webdavUrl)}" spellcheck="false" autocomplete="off" />
+          <input id="cloud-webdav-url" class="input cloud-field" placeholder="https://nextcloud.example.com/remote.php/dav/files/user/" value="${esc(st.webdavUrl)}" spellcheck="false" autocomplete="off" />
           <div style="display:flex;gap:8px">
-            <input id="cloud-webdav-user" class="input" placeholder="${t("cloud.username")}" value="${esc(st.webdavUsername)}" spellcheck="false" autocomplete="off" style="flex:1" />
-            <input id="cloud-webdav-pass" type="password" class="input" placeholder="${t("cloud.password")}" value="${esc(st.webdavPassword)}" spellcheck="false" autocomplete="off" style="flex:1" />
+            <input id="cloud-webdav-user" class="input cloud-field" placeholder="${t("cloud.username")}" value="${esc(st.webdavUsername)}" spellcheck="false" autocomplete="off" style="flex:1" />
+            <input id="cloud-webdav-pass" type="password" class="input cloud-field" placeholder="${t("cloud.password")}" value="${esc(st.webdavPassword)}" spellcheck="false" autocomplete="off" style="flex:1" />
           </div>
           <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2)">
             <input type="checkbox" data-act="toggle-webdav-invalid-cert" ${st.webdavAllowInvalidCert ? "checked" : ""} />
@@ -185,7 +185,7 @@ export function renderCloudBackupSettingsGroup(): string {
           <div class="settings-row-desc">${t("cloud.rcloneDesc")}</div>
         </div>
         <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
-          <input id="cloud-rclone-remote" class="input" placeholder="gdrive:efxlve_saves" value="${esc(st.rcloneRemote)}" spellcheck="false" autocomplete="off" />
+          <input id="cloud-rclone-remote" class="input cloud-field" placeholder="gdrive:efxlve_saves" value="${esc(st.rcloneRemote)}" spellcheck="false" autocomplete="off" />
           <div id="cloud-rclone-remotes" style="display:flex;gap:6px;flex-wrap:wrap"></div>
           <div class="mg-note" style="color:var(--text-3);font-size:11px;line-height:1.5">${icon("info", 12)} ${t("cloud.rcloneHint")}</div>
           <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
