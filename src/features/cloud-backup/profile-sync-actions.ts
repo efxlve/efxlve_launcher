@@ -6,6 +6,7 @@
 
 import { relaunch } from "@tauri-apps/plugin-process";
 import { askConfirm } from "../../core/confirm-dialog";
+import { askPassword } from "../../core/password-dialog";
 import { scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -18,6 +19,7 @@ import {
   profileCloudList,
   profileCloudRestore,
   profileCloudUpload,
+  profileArchiveEncrypted,
   profileExport,
   profileImport,
   type ProfileRestoreResult,
@@ -71,8 +73,20 @@ async function finishRestore(result: ProfileRestoreResult): Promise<void> {
 export async function exportProfileAction(): Promise<void> {
   const folder = await epicSelectFolderDialog(null, t("profile.pickFolder")).catch(() => null);
   if (!folder) return;
+  const password = await askPassword({
+    title: t("profile.encryptTitle"),
+    body: t("profile.encryptBody"),
+    placeholder: t("profile.passwordPlaceholder"),
+    confirm: t("profile.export"),
+    cancel: t("common.cancel"),
+  });
+  if (password === null) return;
   try {
-    const path = await profileExport(folder, collectProfileLocalStorage());
+    const path = await profileExport(
+      folder,
+      collectProfileLocalStorage(),
+      password.trim() || undefined,
+    );
     toast(t("profile.exported", { path }), "ok");
     await epicOpenFolderPath(folder).catch(() => undefined);
   } catch (error) {
@@ -83,6 +97,23 @@ export async function exportProfileAction(): Promise<void> {
 export async function importProfileAction(): Promise<void> {
   const path = await customGamesPickFile(undefined, t("profile.pickFile")).catch(() => null);
   if (!path) return;
+  const encrypted = await profileArchiveEncrypted(path).catch(() => false);
+  let password: string | undefined;
+  if (encrypted) {
+    const entered = await askPassword({
+      title: t("profile.decryptTitle"),
+      body: t("profile.decryptBody"),
+      placeholder: t("profile.passwordPlaceholder"),
+      confirm: t("profile.restore"),
+      cancel: t("common.cancel"),
+    });
+    if (entered === null) return;
+    if (!entered.trim()) {
+      toast(t("profile.passwordRequired"), "err");
+      return;
+    }
+    password = entered;
+  }
   const proceed = await askConfirm({
     title: t("profile.import"),
     body: t("profile.importConfirm"),
@@ -91,7 +122,7 @@ export async function importProfileAction(): Promise<void> {
   });
   if (!proceed) return;
   try {
-    const result = await profileImport(path);
+    const result = await profileImport(path, password);
     await finishRestore(result);
   } catch (error) {
     toast(String(error), "err");

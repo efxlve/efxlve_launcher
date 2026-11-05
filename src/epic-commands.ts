@@ -1042,11 +1042,19 @@ export interface ProfileRestoreResult {
   safetyArchive: string;
 }
 
-export const profileExport = (folder: string, localStorage: Record<string, string>) =>
-  invoke<string>("profile_export", { folder, localStorage });
+export const profileExport = (
+  folder: string,
+  localStorage: Record<string, string>,
+  password?: string,
+) =>
+  invoke<string>("profile_export", { folder, localStorage, password: password ?? null });
 
-export const profileImport = (path: string) =>
-  invoke<ProfileRestoreResult>("profile_import", { path });
+export const profileImport = (path: string, password?: string) =>
+  invoke<ProfileRestoreResult>("profile_import", { path, password: password ?? null });
+
+/** True when the picked profile is encrypted; the UI asks for a password then. */
+export const profileArchiveEncrypted = (path: string) =>
+  invoke<boolean>("profile_archive_encrypted", { path });
 
 export const profileCloudUpload = (localStorage: Record<string, string>) =>
   invoke<CloudBackupEntry>("profile_cloud_upload", { localStorage });

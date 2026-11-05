@@ -14,6 +14,7 @@ import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { cancelFinishCountdown, setDownloadFinishAction } from "../downloads/finish-action";
 import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "../../core/dom";
 import { cancelChoice, cancelConfirm } from "../../core/confirm-dialog";
+import { answerPassword, cancelPassword } from "../../core/password-dialog";
 import { navGoBack, navGoForward } from "../../core/nav";
 import { openEpicModal, render } from "../../core/render";
 import { refreshSteamInstalled } from "../library/steam-library";
@@ -213,6 +214,8 @@ document.addEventListener("keydown", (e) => {
   }
 
   if (e.key === "Escape") {
+    // The password prompt sits above every page and owns Escape while it is open.
+    if (cancelPassword()) return;
     // The countdown sits above every page and owns Escape while it is open.
     if (cancelFinishCountdown()) return;
     // The shared choice/confirm dialogs own Escape while they are open.
@@ -314,6 +317,11 @@ document.addEventListener("keydown", (e) => {
   }
   if (e.key === "Enter") {
     const activeEl = document.activeElement as HTMLElement | null;
+    if (activeEl && activeEl.id === "password-dialog-input") {
+      e.preventDefault();
+      answerPassword();
+      return;
+    }
     if (activeEl && activeEl.id === "sgdb-search-input" && S.activeCustomCoverAppName) {
       e.preventDefault();
       searchAndLoadSteamGrid(S.activeCustomCoverAppName);

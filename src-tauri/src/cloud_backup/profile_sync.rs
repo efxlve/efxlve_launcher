@@ -14,6 +14,7 @@ use serde_json::{json, Value};
 use tauri::{AppHandle, Manager};
 
 use crate::cloud_backup::archive::{pack_backup_dir, unpack_backup_tar_gz};
+use crate::cloud_backup::crypto;
 use crate::cloud_backup::manager;
 use crate::cloud_backup::models::CloudBackupEntry;
 use crate::legendary::skip::default_config_dir;
@@ -266,10 +267,13 @@ fn cleanup(path: &Path) {
 }
 
 /// Writes the profile archive to a user-picked folder and returns its path.
+/// A non-empty `password` writes the encrypted envelope instead of a plain
+/// tar.gz; both use the `.efxprofile` extension and the importer detects which.
 pub fn export_to_file(
     app: &AppHandle,
     folder: &str,
     local_storage: &Value,
+    password: Option<String>,
 ) -> Result<String, String> {
     let folder = PathBuf::from(folder.trim());
     if !folder.is_dir() {
@@ -277,8 +281,27 @@ pub fn export_to_file(
     }
     let stage = build_stage(app, local_storage)?;
     let target = folder.join(format!("efxlve_profile_{}.efxprofile", now_secs()));
-    let result = pack_backup_dir(&stage, &target).map(|_| target.display().to_string());
+    let secret = password
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+    let Some(secret) = secret else {
+        let result = pack_backup_dir(&stage, &target).map(|_| target.display().to_string());
+        cleanup(&stage);
+        return result;
+    };
+
+    let plain = std::env::temp_dir().join(format!(
+        "efxlve_profile_plain_{}_{}.tar.gz",
+        std::process::id(),
+        now_secs()
+    ));
+    let packed = pack_backup_dir(&stage, &plain);
     cleanup(&stage);
+    packed?;
+    let result = crypto::encrypt_file(&plain, &target, secret)
+        .map(|_| target.display().to_string());
+    let _ = fs::remove_file(&plain);
     result
 }
 
@@ -460,7 +483,11 @@ fn restore_from_dir_in(
     })
 }
 
-pub fn import_file(app: &AppHandle, archive: &str) -> Result<ProfileRestoreResult, String> {
+pub fn import_file(
+    app: &AppHandle,
+    archive: &str,
+    password: Option<String>,
+) -> Result<ProfileRestoreResult, String> {
     let path = Path::new(archive);
     let size = fs::metadata(path)
         .map_err(|error| format!("Could not read the profile archive: {error}"))?
@@ -470,8 +497,20 @@ pub fn import_file(app: &AppHandle, archive: &str) -> Result<ProfileRestoreResul
     }
     let unpack = unpack_dir();
     let _ = fs::remove_dir_all(&unpack);
-    let result = unpack_backup_tar_gz(Path::new(archive), &unpack)
-        .and_then(|_| restore_from_dir(app, &unpack));
+    let plain = std::env::temp_dir().join(format!(
+        "efxlve_profile_plain_{}_{}.tar.gz",
+        std::process::id(),
+        now_secs()
+    ));
+    let unpack_result = if crypto::is_encrypted(path) {
+        let secret = password.unwrap_or_default();
+        crypto::decrypt_file(path, &plain, &secret)
+            .and_then(|_| unpack_backup_tar_gz(&plain, &unpack))
+    } else {
+        unpack_backup_tar_gz(path, &unpack)
+    };
+    let _ = fs::remove_file(&plain);
+    let result = unpack_result.and_then(|_| restore_from_dir(app, &unpack));
     cleanup(&unpack);
     result
 }
@@ -482,7 +521,7 @@ pub async fn restore_from_cloud(
     backup_id: &str,
 ) -> Result<ProfileRestoreResult, String> {
     let archive = manager::download_cloud_archive(remote_id, backup_id).await?;
-    let result = import_file(app, &archive.display().to_string());
+    let result = import_file(app, &archive.display().to_string(), None);
     let _ = fs::remove_file(&archive);
     result
 }

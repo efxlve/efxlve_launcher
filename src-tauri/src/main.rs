@@ -2464,6 +2464,7 @@ fn main() {
             cloud_backup::commands::cloud_backup_remote_hash,
             cloud_backup::commands::profile_export,
             cloud_backup::commands::profile_import,
+            cloud_backup::commands::profile_archive_encrypted,
             cloud_backup::commands::profile_cloud_upload,
             cloud_backup::commands::profile_cloud_list,
             cloud_backup::commands::profile_cloud_restore,

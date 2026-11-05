@@ -53,6 +53,7 @@ import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { applyWinbarAppIcon } from "../../core/app-icon";
 import { closeModal, viewEl } from "../../core/dom";
 import { answerChoice, answerConfirm, askConfirm } from "../../core/confirm-dialog";
+import { answerPassword, cancelPassword } from "../../core/password-dialog";
 import { handleFinishAction, noteDownloadInterrupted } from "../downloads/finish-action";
 import { esc } from "../../core/utils";
 import { icon } from "../../core/icons";
@@ -345,6 +346,14 @@ document.addEventListener("click", (e) => {
   }
   if (act === "choice-cancel") {
     answerChoice(null);
+    return;
+  }
+  if (act === "password-confirm") {
+    answerPassword();
+    return;
+  }
+  if (act === "password-cancel") {
+    cancelPassword();
     return;
   }
   if (handleFinishAction(act ?? "")) return;

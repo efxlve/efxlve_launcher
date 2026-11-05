@@ -96,13 +96,25 @@ pub fn profile_export(
     app: AppHandle,
     folder: String,
     local_storage: serde_json::Value,
+    password: Option<String>,
 ) -> Result<String, String> {
-    profile_sync::export_to_file(&app, &folder, &local_storage)
+    profile_sync::export_to_file(&app, &folder, &local_storage, password)
 }
 
 #[command]
-pub fn profile_import(app: AppHandle, path: String) -> Result<ProfileRestoreResult, String> {
-    profile_sync::import_file(&app, &path)
+pub fn profile_import(
+    app: AppHandle,
+    path: String,
+    password: Option<String>,
+) -> Result<ProfileRestoreResult, String> {
+    profile_sync::import_file(&app, &path, password)
+}
+
+/// True when the picked profile is password-protected; the UI only asks for a
+/// password when this answers yes.
+#[command]
+pub fn profile_archive_encrypted(path: String) -> bool {
+    crate::cloud_backup::crypto::is_encrypted(std::path::Path::new(&path))
 }
 
 #[command]
