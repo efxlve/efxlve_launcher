@@ -534,6 +534,25 @@ export interface GameStatusEvent {
 export const epicGetPlaytimes = () =>
   invoke<Record<string, PlaytimeRecord>>("epic_get_playtimes");
 
+export interface ReleaseCalendarQuery {
+  appName: string;
+  title: string;
+  year?: number | null;
+}
+
+export interface ReleaseCalendarEntry {
+  appName: string;
+  title: string;
+  date?: string | null;
+  timestamp?: number | null;
+  matchedName?: string;
+  fetchedAt?: number;
+}
+
+/** Full release dates for one view's games, cached in the backend. */
+export const epicReleaseCalendar = (queries: ReleaseCalendarQuery[], refresh = false) =>
+  invoke<ReleaseCalendarEntry[]>("epic_release_calendar", { queries, refresh });
+
 /**
  * Epic's own server-side playtime snapshot (`appName -> seconds`), including
  * hours played outside this launcher. Cached on disk for a few hours.

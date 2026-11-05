@@ -270,10 +270,3 @@ stays on the client. Open work:
   inside the game folder are all refused.
 - Multi-note tabs: open three notes for one game, switch between them while the
   700 ms save is pending, and confirm no note is duplicated or overwritten.
-
-## Remaining report follow-ups
-
-- Release calendar: the library only stores a release year, and IGDB answers a
-  full date per title only after its page opens. A monthly calendar would invent
-  days, so it needs a batched full-date source or a persisted per-title lookup
-  before it can be built honestly.

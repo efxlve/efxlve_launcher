@@ -1276,6 +1276,9 @@ export function renderEpic(): string {
     <button class="icon-btn lib-create-btn" data-act="import-custom-games-folder" title="${esc(t("customGames.importFolderTitle"))}" aria-label="${esc(t("customGames.importFolderTitle"))}">
       ${icon("folder", 17)}
     </button>
+    <button class="icon-btn lib-create-btn" data-act="open-release-calendar" title="${esc(t("calendar.title"))}" aria-label="${esc(t("calendar.title"))}">
+      ${icon("calendar", 17)}
+    </button>
     ${sourceDropdown}
     ${filterButton}
     <div class="sort-dropdown-container">

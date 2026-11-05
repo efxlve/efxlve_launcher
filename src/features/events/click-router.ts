@@ -107,6 +107,7 @@ import {
   consumeCollectionDragClick,
   positionColDropdownMenu,
   libraryFilteredList,
+  epicVisibleSummaries,
   refreshLibraryForStoreFilter,
   refreshLibraryResultsInPlace,
   resetCardChunk,
@@ -114,6 +115,7 @@ import {
   updateLibraryFilterInPlace,
 } from "../library/library-view";
 import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
+import { closeReleaseCalendar, openReleaseCalendar, refreshReleaseCalendar } from "../library/release-calendar";
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
@@ -577,6 +579,12 @@ document.addEventListener("click", (e) => {
     else render();
   } else if (act === "source-filter" && t.dataset.val) {
     if (applyStoreFilter(t.dataset.val) && !refreshLibraryForStoreFilter()) render();
+  } else if (act === "open-release-calendar") {
+    openReleaseCalendar(epicVisibleSummaries());
+  } else if (act === "release-calendar-close") {
+    closeReleaseCalendar();
+  } else if (act === "release-calendar-refresh") {
+    refreshReleaseCalendar();
   } else if (act === "toggle-lib-filters") {
     S.isFilterPanelOpen = !S.isFilterPanelOpen;
     S.isStoreDropdownOpen = false;

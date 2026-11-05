@@ -459,12 +459,53 @@ pub struct IgdbSearchHit {
     pub id: i64,
     pub name: String,
     pub year: Option<i64>,
+    /// ISO `YYYY-MM-DD` when IGDB has a full date; empty for a year-only entry.
+    #[serde(default)]
+    pub release_date: String,
+    #[serde(default)]
+    pub release_timestamp: Option<i64>,
     pub cover_id: String,
     pub rating: Option<f64>,
     /// IGDB's URL name for the game: `igdb.com/games/<slug>` is the only link
     /// that works, the numeric id lands on a search page.
     #[serde(default)]
     pub slug: String,
+}
+
+impl IgdbSearchHit {
+    /// The best hit for one library title: exact name first, then the year the
+    /// store already knows, then community rating. Mirrors the page matcher.
+    pub fn best_match<'a>(hits: &'a [Self], title: &str, year: Option<i64>) -> Option<&'a Self> {
+        let wanted = normalize_title(title);
+        let mut best: Option<(&Self, i32)> = None;
+        for hit in hits {
+            let normalized = normalize_title(&hit.name);
+            if normalized.is_empty() {
+                continue;
+            }
+            let mut score = 0;
+            if normalized == wanted {
+                score += 100;
+            } else if normalized.contains(&wanted) || wanted.contains(&normalized) {
+                score += 40;
+            }
+            if let (Some(wanted_year), Some(hit_year)) = (year, hit.year) {
+                let distance = (wanted_year - hit_year).abs();
+                score += if distance == 0 {
+                    30
+                } else if distance <= 1 {
+                    20
+                } else {
+                    0
+                };
+            }
+            score += hit.rating.unwrap_or(0.0).min(100.0) as i32 / 10;
+            if best.map(|(_, best_score)| score > best_score).unwrap_or(true) {
+                best = Some((hit, score));
+            }
+        }
+        best.map(|(hit, _)| hit)
+    }
 }
 
 /// One community channel from IGDB's `websites`: kind is "official",
@@ -552,6 +593,8 @@ fn map_search_hit(value: &serde_json::Value) -> IgdbSearchHit {
         id: value.get("id").and_then(serde_json::Value::as_i64).unwrap_or(0),
         name: string_field(value, "name"),
         year: timestamp.map(year_of),
+        release_date: timestamp.map(release_date).unwrap_or_default(),
+        release_timestamp: timestamp,
         cover_id: value
             .get("cover")
             .map(|cover| string_field(cover, "image_id"))
@@ -936,7 +979,9 @@ fn write_map(path: Option<PathBuf>, map: &serde_json::Map<String, serde_json::Va
 const CACHE_SCHEMA: u32 = 5;
 
 /// Bumped when `IgdbSearchHit` / `IgdbCoverHit` change shape.
-const SEARCH_CACHE_SCHEMA: u32 = 1;
+/// Bumped when the cached hit shape changes. Version 2 added full release
+/// dates, so old entries without them are not reused by the calendar.
+const SEARCH_CACHE_SCHEMA: u32 = 2;
 
 /// A search answer is stable, but IGDB adds games: a hit is trusted for a week,
 /// a miss for the usual month (the same rule the title lookup follows).
@@ -1648,5 +1693,33 @@ mod tests {
             search_cache_name("search", "ライフイズストレンジ", 8),
             search_cache_name("search", "ライフソウル", 8)
         );
+    }
+
+    #[test]
+    fn a_search_hit_carries_the_full_release_date() {
+        let hit = map_search_hit(&serde_json::json!({
+            "id": 2,
+            "name": "Halo 3",
+            "first_release_date": 1_193_769_600_i64,
+            "rating": 88.0
+        }));
+        assert!(hit.release_date.starts_with("2007-"));
+        assert!(hit.release_timestamp.is_some());
+        assert_eq!(hit.year, Some(2007));
+    }
+
+    #[test]
+    fn a_calendar_match_prefers_the_exact_title_and_year() {
+        let hits = vec![
+            map_search_hit(&serde_json::json!({
+                "id": 1, "name": "Halo 3: ODST", "first_release_date": 1_224_057_600_i64
+            })),
+            map_search_hit(&serde_json::json!({
+                "id": 2, "name": "Halo 3", "first_release_date": 1_193_769_600_i64
+            })),
+        ];
+        let hit = IgdbSearchHit::best_match(&hits, "Halo 3", Some(2007)).expect("match");
+        assert_eq!(hit.name, "Halo 3");
+        assert_eq!(hit.id, 2);
     }
 }
