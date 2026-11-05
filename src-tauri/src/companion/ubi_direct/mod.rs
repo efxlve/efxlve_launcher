@@ -77,7 +77,7 @@ async fn connect() -> Result<(wire::Demux, ubisoft_login::Session), String> {
     let session = ubisoft_login::stored_session()
         .ok_or_else(|| "@t:accounts.ubiSessionExpired".to_string())?;
 
-    match wire::Demux::connect(&session.ticket).await {
+    match wire::Demux::connect(&session.ticket, &session.session_id).await {
         Ok(demux) => return Ok((demux, session)),
         Err(first) => {
             if ubisoft_client_running() {
@@ -87,14 +87,16 @@ async fn connect() -> Result<(wire::Demux, ubisoft_login::Session), String> {
                 .await
                 .unwrap_or_else(|| session.clone());
             if refreshed.ticket != session.ticket {
-                if let Ok(demux) = wire::Demux::connect(&refreshed.ticket).await {
+                if let Ok(demux) =
+                    wire::Demux::connect(&refreshed.ticket, &refreshed.session_id).await
+                {
                     return Ok((demux, refreshed));
                 }
             }
             let exchanged = auth::exchange_demux_ticket(&refreshed)
                 .await
                 .map_err(|error| format!("{first}; ticket exchange failed: {error}"))?;
-            let demux = wire::Demux::connect(&exchanged).await?;
+            let demux = wire::Demux::connect(&exchanged, &refreshed.session_id).await?;
             Ok((demux, refreshed))
         }
     }

@@ -37,12 +37,14 @@ fn api_version() -> u32 {
 pub(crate) struct Demux {
     tls: TlsStream<TcpStream>,
     next_request_id: u32,
+    ticket: String,
+    session_id: String,
 }
 
 impl Demux {
     /// Connect, report the client build, and authenticate with a `ubi_v1`
     /// ticket. The caller keeps the ticket because reconnects reuse it.
-    pub(crate) async fn connect(ticket: &str) -> Result<Self, String> {
+    pub(crate) async fn connect(ticket: &str, session_id: &str) -> Result<Self, String> {
         let _ = rustls::crypto::ring::default_provider().install_default();
 
         let mut roots = rustls::RootCertStore::empty();
@@ -66,6 +68,8 @@ impl Demux {
         let mut demux = Self {
             tls,
             next_request_id: 1,
+            ticket: ticket.to_string(),
+            session_id: session_id.to_string(),
         };
         // The server names the current protocol build; announcing a stale one
         // can make a service ignore requests while ownership still answers.
@@ -240,8 +244,11 @@ impl Demux {
     }
 
     async fn ownership_initialize(&mut self, connection_id: u32) -> Result<Vec<u8>, String> {
-        self.service_call(connection_id, &codec::ownership_initialize_request(1))
-            .await
+        self.service_call(
+            connection_id,
+            &codec::ownership_initialize_request(1, &self.ticket, &self.session_id),
+        )
+        .await
     }
 
     /// The account's owned products, with the embedded configuration blob.
@@ -269,7 +276,12 @@ impl Demux {
         let payload = self
             .service_call(
                 connection_id,
-                &codec::ownership_manifests_request(2, product_ids),
+                &codec::ownership_manifests_request(
+                    2,
+                    product_ids,
+                    &self.ticket,
+                    &self.session_id,
+                ),
             )
             .await?;
         for (product_id, manifest) in codec::parse_manifests_rsp(&payload) {
@@ -287,7 +299,12 @@ impl Demux {
         let payload = self
             .service_call(
                 connection_id,
-                &codec::product_config_request(2, product_id),
+                &codec::product_config_request(
+                    2,
+                    product_id,
+                    &self.ticket,
+                    &self.session_id,
+                ),
             )
             .await?;
         codec::parse_product_config(&payload)
@@ -300,7 +317,12 @@ impl Demux {
         let payload = self
             .service_call(
                 connection_id,
-                &codec::ownership_token_request(2, product_id),
+                &codec::ownership_token_request(
+                    2,
+                    product_id,
+                    &self.ticket,
+                    &self.session_id,
+                ),
             )
             .await?;
         codec::parse_ownership_token(&payload)
@@ -313,7 +335,10 @@ impl Demux {
         let connection_id = self.ownership_connection().await?;
         self.ownership_initialize(connection_id).await?;
         let payload = self
-            .service_call(connection_id, &codec::uplay_ticket_request(2, uplay_id))
+            .service_call(
+                connection_id,
+                &codec::uplay_ticket_request(2, uplay_id, &self.ticket, &self.session_id),
+            )
             .await?;
         Ok(codec::parse_uplay_ticket(&payload))
     }
@@ -472,7 +497,7 @@ mod tests {
     #[tokio::test]
     #[ignore = "opens a live TLS socket to Ubisoft; no account needed"]
     async fn live_demux_rejects_a_bad_ticket() {
-        let error = Demux::connect("not-a-real-ticket")
+        let error = Demux::connect("not-a-real-ticket", "")
             .await
             .err()
             .expect("a fake ticket must not authenticate");

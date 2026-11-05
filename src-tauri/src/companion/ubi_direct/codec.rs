@@ -29,6 +29,17 @@ fn request(request_id: u32, field: u32, body: &[u8]) -> Vec<u8> {
     upstream
 }
 
+/// The ownership service's `Req` also carries the profile's ticket and session
+/// id. The connection authentication alone is not enough for every service.
+fn push_ownership_auth(req: &mut Vec<u8>, ticket: &str, session_id: &str) {
+    if !ticket.is_empty() {
+        push_string(req, 30, ticket);
+    }
+    if !session_id.is_empty() {
+        push_string(req, 31, session_id);
+    }
+}
+
 /// A `Push` wrapped in `Upstream`.
 fn push(field: u32, body: &[u8]) -> Vec<u8> {
     let mut p = Vec::new();
@@ -283,7 +294,11 @@ fn parse_owned_games(payload: &[u8]) -> Vec<OwnedGame> {
     out
 }
 
-pub(crate) fn ownership_initialize_request(request_id: u32) -> Vec<u8> {
+pub(crate) fn ownership_initialize_request(
+    request_id: u32,
+    ticket: &str,
+    session_id: &str,
+) -> Vec<u8> {
     let mut init = Vec::new();
     push_bool(&mut init, 2, true);
     // The service rejects an initialize that does not name a protocol version.
@@ -291,6 +306,7 @@ pub(crate) fn ownership_initialize_request(request_id: u32) -> Vec<u8> {
     let mut req = Vec::new();
     push_varint_field(&mut req, 1, u64::from(request_id));
     push_bytes(&mut req, 2, &init);
+    push_ownership_auth(&mut req, ticket, session_id);
     let mut upstream = Vec::new();
     push_bytes(&mut upstream, 1, &req);
     upstream
@@ -472,12 +488,18 @@ pub(crate) fn parse_achievements_rsp(payload: &[u8]) -> Vec<(u32, u64)> {
     out
 }
 
-pub(crate) fn ownership_manifests_request(request_id: u32, product_ids: &[u32]) -> Vec<u8> {
+pub(crate) fn ownership_manifests_request(
+    request_id: u32,
+    product_ids: &[u32],
+    ticket: &str,
+    session_id: &str,
+) -> Vec<u8> {
     let mut asked = Vec::new();
     push_packed_u32(&mut asked, 1, product_ids);
     let mut req = Vec::new();
     push_varint_field(&mut req, 1, u64::from(request_id));
     push_bytes(&mut req, 10, &asked);
+    push_ownership_auth(&mut req, ticket, session_id);
     let mut upstream = Vec::new();
     push_bytes(&mut upstream, 1, &req);
     upstream
@@ -519,12 +541,18 @@ pub(crate) fn parse_manifests_rsp(payload: &[u8]) -> Vec<(u32, String)> {
 /// `GetProductConfigReq`: one product's configuration, whether or not the
 /// ownership row is in this account's list. A catalog-only entry needs this to
 /// reach its achievement hash.
-pub(crate) fn product_config_request(request_id: u32, product_id: u32) -> Vec<u8> {
+pub(crate) fn product_config_request(
+    request_id: u32,
+    product_id: u32,
+    ticket: &str,
+    session_id: &str,
+) -> Vec<u8> {
     let mut body = Vec::new();
     push_varint_field(&mut body, 1, u64::from(product_id));
     let mut req = Vec::new();
     push_varint_field(&mut req, 1, u64::from(request_id));
     push_bytes(&mut req, 9, &body);
+    push_ownership_auth(&mut req, ticket, session_id);
     let mut upstream = Vec::new();
     push_bytes(&mut upstream, 1, &req);
     upstream
@@ -550,12 +578,18 @@ pub(crate) fn parse_product_config(payload: &[u8]) -> Option<String> {
     (success && !configuration.trim().is_empty()).then_some(configuration)
 }
 
-pub(crate) fn ownership_token_request(request_id: u32, product_id: u32) -> Vec<u8> {
+pub(crate) fn ownership_token_request(
+    request_id: u32,
+    product_id: u32,
+    ticket: &str,
+    session_id: &str,
+) -> Vec<u8> {
     let mut body = Vec::new();
     push_varint_field(&mut body, 1, u64::from(product_id));
     let mut req = Vec::new();
     push_varint_field(&mut req, 1, u64::from(request_id));
     push_bytes(&mut req, 28, &body);
+    push_ownership_auth(&mut req, ticket, session_id);
     let mut upstream = Vec::new();
     push_bytes(&mut upstream, 1, &req);
     upstream
@@ -581,12 +615,18 @@ pub(crate) fn parse_ownership_token(payload: &[u8]) -> Option<String> {
     (success && !token.is_empty()).then_some(token)
 }
 
-pub(crate) fn uplay_ticket_request(request_id: u32, uplay_id: u32) -> Vec<u8> {
+pub(crate) fn uplay_ticket_request(
+    request_id: u32,
+    uplay_id: u32,
+    ticket: &str,
+    session_id: &str,
+) -> Vec<u8> {
     let mut body = Vec::new();
     push_varint_field(&mut body, 1, u64::from(uplay_id));
     let mut req = Vec::new();
     push_varint_field(&mut req, 1, u64::from(request_id));
     push_bytes(&mut req, 14, &body);
+    push_ownership_auth(&mut req, ticket, session_id);
     let mut upstream = Vec::new();
     push_bytes(&mut upstream, 1, &req);
     upstream
@@ -823,7 +863,7 @@ mod tests {
     #[test]
     fn packed_product_ids_round_trip() {
         let ids = [12u32, 34, 56];
-        let bytes = ownership_manifests_request(2, &ids);
+        let bytes = ownership_manifests_request(2, &ids, "", "");
         // The request nests Req field 10 -> packed field 1.
         let mut found = false;
         for_each_field(
@@ -933,7 +973,7 @@ mod tests {
 
     #[test]
     fn product_configuration_reads_the_yaml_and_names_the_product() {
-        let request = product_config_request(4, 5405);
+        let request = product_config_request(4, 5405, "", "");
         let mut requested_product = 0u32;
         for_each_field(
             &request,
