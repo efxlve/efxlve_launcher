@@ -38,6 +38,8 @@ let watching = false;
 let followed = loadFollowed();
 /** Title search across every month; empty means the normal month view. */
 let query = "";
+/** A month, day or watch-list change starts at the top instead of the old scroll. */
+let resetScroll = false;
 /** Bumped by a restart or close so a late answer cannot repaint a dead dialog. */
 let loadSeq = 0;
 /** The game whose store picker is open, if any. */
@@ -370,17 +372,29 @@ function renderSchedule(month: MonthSel, exact: UpcomingRelease[]): string {
   }
   const allDays = [...buckets.entries()].sort((left, right) => left[0] - right[0]);
   const hasFilter = selectedDay !== null && buckets.has(selectedDay);
-  const visibleDays = hasFilter
-    ? allDays.filter(([day]) => day === selectedDay)
-    : allDays;
-
   const now = new Date();
   const todayTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const monthIsCurrent =
+    month.year === now.getFullYear() && month.month === now.getMonth() + 1;
+  // The current month opens on today's releases, not on days that are already
+  // gone. A past day stays reachable from the mini grid, which filters this list.
+  const visibleDays = hasFilter
+    ? allDays.filter(([day]) => day === selectedDay)
+    : monthIsCurrent
+      ? allDays.filter(
+          ([day]) => new Date(month.year, month.month - 1, day).getTime() >= todayTime,
+        )
+      : allDays;
+  const upcomingTotal = monthIsCurrent
+    ? allDays
+        .filter(([day]) => new Date(month.year, month.month - 1, day).getTime() >= todayTime)
+        .reduce((sum, [, games]) => sum + games.length, 0)
+    : exact.length;
 
   const filterBar = hasFilter && selectedDay !== null
     ? `<div class="calendar-filter-bar">
         <span class="calendar-filter-label">${icon("calendar", 13)} <span>${esc(dayFullLabel(month.year, month.month, selectedDay))}</span></span>
-        <button type="button" class="calendar-filter-reset" data-act="release-calendar-day" data-day="0">${esc(t("profile.showAll"))} <span class="tabular-nums">(${exact.length})</span></button>
+        <button type="button" class="calendar-filter-reset" data-act="release-calendar-day" data-day="0">${esc(t("profile.showAll"))} <span class="tabular-nums">(${upcomingTotal})</span></button>
       </div>`
     : "";
 
@@ -630,6 +644,7 @@ function paintSearchBody(): void {
   if (!body) return;
   body.innerHTML = renderBody();
   body.scrollTop = 0;
+  resetScroll = false;
   const clear = layer.querySelector<HTMLElement>(".calendar-search-clear");
   if (clear) clear.hidden = query.length === 0;
 }
@@ -664,7 +679,14 @@ function renderCalendar(): void {
       </div>
     </div>`;
   const nextBody = layer.querySelector<HTMLElement>(".calendar-body");
-  if (nextBody && scrollTop > 0) nextBody.scrollTop = scrollTop;
+  if (nextBody) {
+    if (resetScroll) {
+      nextBody.scrollTop = 0;
+      resetScroll = false;
+    } else if (scrollTop > 0) {
+      nextBody.scrollTop = scrollTop;
+    }
+  }
   const activeTab = layer.querySelector<HTMLElement>(".calendar-month-tab.is-active");
   activeTab?.scrollIntoView({ block: "nearest", inline: "center" });
   const searchInput = layer.querySelector<HTMLInputElement>(".calendar-search-input");
@@ -704,6 +726,7 @@ export function openReleaseCalendar(): void {
   selectedDay = null;
   watching = false;
   query = "";
+  resetScroll = true;
   failed = false;
   if (layer) layer.remove();
   layer = document.createElement("div");
@@ -731,6 +754,7 @@ export function closeReleaseCalendar(): void {
   selectedDay = null;
   watching = false;
   query = "";
+  resetScroll = false;
   loading = false;
   failed = false;
 }
@@ -749,6 +773,7 @@ export function setReleaseCalendarMonth(year: number, month: number): void {
   selected = { year, month };
   selectedDay = null;
   watching = false;
+  resetScroll = true;
   renderCalendar();
 }
 
@@ -759,6 +784,7 @@ export function setReleaseCalendarDay(day: number | null): void {
   } else {
     selectedDay = day;
   }
+  resetScroll = true;
   renderCalendar();
 }
 
@@ -773,6 +799,7 @@ export function stepReleaseCalendarMonth(delta: -1 | 1): void {
   selected = { year: next.year, month: next.month };
   selectedDay = null;
   watching = false;
+  resetScroll = true;
   renderCalendar();
 }
 
@@ -801,6 +828,7 @@ export function toggleReleaseFollow(id: number): void {
 export function toggleReleaseWatchlist(): void {
   watching = !watching;
   if (watching) selectedDay = null;
+  resetScroll = true;
   renderCalendar();
 }
 
