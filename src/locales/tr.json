@@ -1694,6 +1694,7 @@
   "calendar.subtitle": "{count} çıkış · {games} oyun",
   "calendar.loading": "Çıkış tarihleri aranıyor…",
   "calendar.loadingHint": "İlk tarama her oyun için IGDB'ye bir kez sorar ve bir hafta önbellekte tutar.",
+  "calendar.loadingMore": "Daha fazla tarih yükleniyor…",
   "calendar.refresh": "Tarihleri yenile",
   "calendar.empty": "Bu görünüm için tam çıkış tarihi bulunamadı.",
   "calendar.emptyHint": "IGDB çevrimdışı olabilir veya bu oyunların yalnızca yılı var. Tarihleri yenile'yi deneyin.",

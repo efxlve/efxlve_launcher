@@ -1594,6 +1594,7 @@
   "calendar.subtitle": "{count} premier · {games} gier",
   "calendar.loading": "Wyszukiwanie dat premier…",
   "calendar.loadingHint": "Pierwsze skanowanie pyta IGDB raz na grę i zapisuje odpowiedź na tydzień.",
+  "calendar.loadingMore": "Ładowanie kolejnych dat…",
   "calendar.refresh": "Odśwież daty",
   "calendar.empty": "Nie znaleziono pełnych dat premier dla tego widoku.",
   "calendar.emptyHint": "IGDB może być offline lub te gry mają tylko rok. Spróbuj Odśwież daty.",

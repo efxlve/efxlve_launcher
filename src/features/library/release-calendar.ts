@@ -17,6 +17,8 @@ import { epicReleaseCalendar, type ReleaseCalendarEntry, type EpicSummary } from
 import { summaryOf } from "../../core/selectors";
 
 const MAX_GAMES = 80;
+/** One backend call at a time; the first dates appear before the last query. */
+const LOAD_BATCH = 16;
 const MONTHS = Array.from({ length: 12 }, (_, index) => index);
 
 interface DatedEntry extends ReleaseCalendarEntry {
@@ -31,6 +33,10 @@ let entries: ReleaseCalendarEntry[] = [];
 let selectedYear = 0;
 let loading = false;
 let capped = false;
+/** Set once the user picks a year, so a later batch cannot steal it. */
+let yearTouched = false;
+/** Bumped by a restart or close so a finishing batch cannot repaint a dead dialog. */
+let loadSeq = 0;
 
 function dateParts(entry: ReleaseCalendarEntry): DatedEntry | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec((entry.date ?? "").trim());
@@ -89,17 +95,21 @@ function renderMonths(year: number, dated: DatedEntry[]): string {
   }).join("")}</div>`;
 }
 
-function renderBody(): string {
-  if (loading) {
-    return `<div class="calendar-loading">
+function loadingHtml(): string {
+  return `<div class="calendar-loading">
       <span class="spinner"></span>
       <div class="calendar-loading-title">${t("calendar.loading")}</div>
       <div class="calendar-loading-hint">${t("calendar.loadingHint")}</div>
     </div>`;
-  }
+}
+
+function renderBody(): string {
   const dated = datedEntries();
   const years = availableYears();
+  // Before the first usable batch there is nothing to draw; once a batch has
+  // dates, keep it on screen and only append a small "still loading" line.
   if (years.length === 0) {
+    if (loading) return loadingHtml();
     return `<div class="calendar-empty">
       ${icon("calendar", 26)}
       <div class="calendar-empty-title">${t("calendar.empty")}</div>
@@ -121,16 +131,20 @@ function renderBody(): string {
           </div>`
         : ""
     }
-    ${capped ? `<div class="calendar-capped">${esc(t("calendar.capped", { n: String(MAX_GAMES) }))}</div>` : ""}`;
+    ${capped ? `<div class="calendar-capped">${esc(t("calendar.capped", { n: String(MAX_GAMES) }))}</div>` : ""}
+    ${loading ? `<div class="calendar-loading-more"><span class="spinner"></span><span>${t("calendar.loadingMore")}</span></div>` : ""}`;
 }
 
 function renderCalendar(): void {
   if (!layer) return;
   const dated = datedEntries();
   const years = availableYears();
-  if (years.length > 0 && !years.includes(selectedYear)) {
+  if (years.length > 0) {
+    // Default to the current year; when a later batch adds it while the user
+    // has not picked a year, move there instead of staying on an older one.
     const now = new Date().getFullYear();
-    selectedYear = years.includes(now) ? now : years[0];
+    const preferred = years.includes(now) ? now : years[0];
+    if (!yearTouched || !years.includes(selectedYear)) selectedYear = preferred;
   }
   const total = selectedYear > 0
     ? dated.filter((entry) => entry.year === selectedYear).length
@@ -138,6 +152,8 @@ function renderCalendar(): void {
   const yearOptions = years
     .map((year) => `<option value="${year}"${year === selectedYear ? " selected" : ""}>${year}</option>`)
     .join("");
+  // A batch repaint must not throw the reader back to the top.
+  const scrollTop = layer.querySelector<HTMLElement>(".calendar-body")?.scrollTop ?? 0;
   layer.innerHTML = `
     <div class="modal-backdrop" data-act="release-calendar-close">
       <div class="modal calendar-dialog" role="dialog" aria-modal="true" data-act="prevent-modal-close">
@@ -155,29 +171,46 @@ function renderCalendar(): void {
         <div class="calendar-body">${renderBody()}</div>
       </div>
     </div>`;
+  const nextBody = layer.querySelector<HTMLElement>(".calendar-body");
+  if (nextBody && scrollTop > 0) nextBody.scrollTop = scrollTop;
   if (!layer.dataset.bound) {
     layer.dataset.bound = "1";
   }
 }
 
 async function load(refresh: boolean): Promise<void> {
+  const seq = ++loadSeq;
   loading = true;
+  entries = [];
   renderCalendar();
-  try {
-    entries = await epicReleaseCalendar(
-      games.map((game) => ({
-        appName: game.appName,
-        title: game.title,
-        year: game.releaseYear ?? null,
-      })),
-      refresh,
-    );
-  } catch {
-    entries = [];
-  } finally {
+  const queue = games.map((game) => ({
+    appName: game.appName,
+    title: game.title,
+    year: game.releaseYear ?? null,
+  }));
+  if (queue.length === 0) {
     loading = false;
     renderCalendar();
+    return;
   }
+  for (let index = 0; index < queue.length; index += LOAD_BATCH) {
+    const batch = queue.slice(index, index + LOAD_BATCH);
+    try {
+      const got = await epicReleaseCalendar(batch, refresh);
+      if (seq !== loadSeq || !layer) return;
+      // Merge instead of replace: an earlier batch may already be on screen.
+      const names = new Set(got.map((entry) => entry.appName));
+      entries = entries.filter((entry) => !names.has(entry.appName)).concat(got);
+    } catch {
+      // One failed batch keeps the dates already shown; the next batch and the
+      // refresh button still work.
+      if (seq !== loadSeq || !layer) return;
+    }
+    renderCalendar();
+  }
+  if (seq !== loadSeq) return;
+  loading = false;
+  renderCalendar();
 }
 
 /** Opens the calendar for the current library view. */
@@ -193,6 +226,7 @@ export function openReleaseCalendar(nextGames: EpicSummary[]): void {
   capped = nextGames.length > MAX_GAMES;
   entries = [];
   selectedYear = 0;
+  yearTouched = false;
   if (layer) layer.remove();
   layer = document.createElement("div");
   layer.className = "calendar-layer";
@@ -202,6 +236,7 @@ export function openReleaseCalendar(nextGames: EpicSummary[]): void {
 }
 
 export function closeReleaseCalendar(): void {
+  loadSeq++;
   layer?.remove();
   layer = null;
   games = [];
@@ -219,6 +254,7 @@ export function cancelReleaseCalendar(): boolean {
 /** Year selector change; handled by the input listener. */
 export function setReleaseCalendarYear(year: number): void {
   if (!Number.isFinite(year)) return;
+  yearTouched = true;
   selectedYear = year;
   renderCalendar();
 }

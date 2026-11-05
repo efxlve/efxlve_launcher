@@ -1594,6 +1594,7 @@
   "calendar.subtitle": "{count} 個發行 · {games} 個遊戲",
   "calendar.loading": "正在尋找發行日期…",
   "calendar.loadingHint": "首次掃描會為每個遊戲向 IGDB 查詢一次，並將結果快取一週。",
+  "calendar.loadingMore": "正在載入更多日期…",
   "calendar.refresh": "重新整理日期",
   "calendar.empty": "此檢視未找到完整的發行日期。",
   "calendar.emptyHint": "IGDB 可能離線，或者這些遊戲只有年份。請嘗試重新整理日期。",

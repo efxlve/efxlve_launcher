@@ -1594,6 +1594,7 @@
   "calendar.subtitle": "{count} Veröffentlichungen · {games} Spiele",
   "calendar.loading": "Veröffentlichungsdaten werden gesucht…",
   "calendar.loadingHint": "Der erste Scan fragt IGDB einmal pro Spiel und speichert die Antwort eine Woche lang.",
+  "calendar.loadingMore": "Weitere Daten werden geladen…",
   "calendar.refresh": "Daten aktualisieren",
   "calendar.empty": "Für diese Ansicht wurden keine vollständigen Veröffentlichungsdaten gefunden.",
   "calendar.emptyHint": "IGDB ist möglicherweise offline, oder diese Spiele haben nur ein Jahr. Versuche „Daten aktualisieren“.",

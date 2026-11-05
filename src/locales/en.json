@@ -1694,6 +1694,7 @@
   "calendar.subtitle": "{count} releases · {games} games",
   "calendar.loading": "Looking up release dates…",
   "calendar.loadingHint": "The first scan asks IGDB once per game and is cached for a week.",
+  "calendar.loadingMore": "Loading more dates…",
   "calendar.refresh": "Refresh dates",
   "calendar.empty": "No full release dates were found for this view.",
   "calendar.emptyHint": "IGDB may be offline, or these games only have a year. Try Refresh dates.",

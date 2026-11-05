@@ -1594,6 +1594,7 @@
   "calendar.subtitle": "{count} uscite · {games} giochi",
   "calendar.loading": "Ricerca delle date di uscita…",
   "calendar.loadingHint": "La prima scansione interroga IGDB una volta per gioco e memorizza la risposta per una settimana.",
+  "calendar.loadingMore": "Caricamento di altre date…",
   "calendar.refresh": "Aggiorna date",
   "calendar.empty": "Nessuna data di uscita completa trovata per questa vista.",
   "calendar.emptyHint": "IGDB potrebbe essere offline, oppure questi giochi hanno solo l'anno. Prova Aggiorna date.",

@@ -1594,6 +1594,7 @@
   "calendar.subtitle": "{count} إصدار · {games} ألعاب",
   "calendar.loading": "جارٍ البحث عن تواريخ الإصدار…",
   "calendar.loadingHint": "يسأل الفحص الأول IGDB مرة واحدة لكل لعبة ويحفظ الإجابة لأسبوع.",
+  "calendar.loadingMore": "جارٍ تحميل المزيد من التواريخ…",
   "calendar.refresh": "تحديث التواريخ",
   "calendar.empty": "لم يتم العثور على تواريخ إصدار كاملة لهذا العرض.",
   "calendar.emptyHint": "قد يكون IGDB غير متصل، أو هذه الألعاب لديها السنة فقط. جرّب تحديث التواريخ.",
