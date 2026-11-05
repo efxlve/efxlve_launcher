@@ -1728,6 +1728,7 @@
   "calendar.searchHint": "Daha kısa bir başlık deneyin veya aramayı temizleyin.",
   "calendar.monthEmpty": "Bu ayın kalanında tarihi kesinleşmiş çıkış yok",
   "calendar.monthEmptyHint": "Ay bazlı ve kesinleşmemiş tarihler aşağıda listelenir; başka bir ay seçebilirsin.",
+  "calendar.mostAnticipated": "En çok beklenenler",
   "lib.updates": "Güncellemeler",
   "lib.epicIntegration": "Epic entegrasyonu",
   "lib.desktopOnly": "Bu bölüm yalnızca masaüstü uygulamasında çalışır.",

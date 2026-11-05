@@ -1628,6 +1628,7 @@
   "calendar.searchHint": "试试更短的标题，或清除搜索。",
   "calendar.monthEmpty": "本月没有已确定日期的即将发售",
   "calendar.monthEmptyHint": "仅月份和未确认的日期列在下方，或选择其他月份。",
+  "calendar.mostAnticipated": "最受期待",
   "lib.updates": "更新",
   "lib.epicIntegration": "Epic 集成",
   "lib.desktopOnly": "此部分仅在桌面应用中可用。",

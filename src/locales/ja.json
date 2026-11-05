@@ -1628,6 +1628,7 @@
   "calendar.searchHint": "短いタイトルで試すか、検索をクリアしてください。",
   "calendar.monthEmpty": "この月に日付確定の今後の発売はありません",
   "calendar.monthEmptyHint": "月のみ・未確定の日付は下に表示されます。別の月も選べます。",
+  "calendar.mostAnticipated": "最も期待されている作品",
   "lib.updates": "アップデート",
   "lib.epicIntegration": "Epic 連携",
   "lib.desktopOnly": "このセクションはデスクトップアプリでのみ動作します。",

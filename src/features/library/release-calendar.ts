@@ -729,6 +729,45 @@ function renderSearchResults(): string {
     <p class="calendar-source">${esc(t("calendar.sourceNote"))}</p>`;
 }
 
+function renderTopCard(release: UpcomingRelease, rank: number): string {
+  const cover = coverOf(release, "cover_small");
+  const countdown = countdownLabel(release);
+  return `<div class="calendar-top-card">
+    <button type="button" class="calendar-top-main" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
+      <span class="calendar-top-art">
+        ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-top-placeholder">${icon("gamepad-2", 16)}</span>`}
+        <span class="calendar-top-rank tabular-nums">${rank}</span>
+      </span>
+      <span class="calendar-top-info">
+        <span class="calendar-top-name">${esc(release.name)}</span>
+        <span class="calendar-top-meta">
+          <span class="calendar-top-date tabular-nums">${esc(releaseDateLabel(release))}</span>
+          ${countdown ? `<span class="calendar-top-countdown tabular-nums">${esc(countdown)}</span>` : ""}
+        </span>
+      </span>
+    </button>
+    ${renderFollowButton(release)}
+  </div>`;
+}
+
+/** The highest-hype releases across every month, not just the selected one. */
+function renderTopReleases(heroId: number | null): string {
+  const ranked = releases
+    .filter((release) => release.id !== heroId && (release.hypes ?? 0) > 0)
+    .sort(
+      (left, right) =>
+        (right.hypes ?? 0) - (left.hypes ?? 0) || left.name.localeCompare(right.name),
+    )
+    .slice(0, 6);
+  if (ranked.length === 0) return "";
+  return `<section class="calendar-top" aria-label="${esc(t("calendar.mostAnticipated"))}">
+    <div class="calendar-top-head">
+      <span class="calendar-top-title">${icon("sparkles", 13)} <span>${esc(t("calendar.mostAnticipated"))}</span></span>
+    </div>
+    <div class="calendar-top-rail">${ranked.map((release, index) => renderTopCard(release, index + 1)).join("")}</div>
+  </section>`;
+}
+
 function renderWatchlist(list: UpcomingRelease[]): string {
   return `<div class="calendar-watchlist">
     <div class="calendar-watch-head">
@@ -788,6 +827,7 @@ function renderBody(): string {
   return `
     ${renderHero(hero)}
     ${renderToolbar(months, month)}
+    ${renderTopReleases(hero?.id ?? null)}
     <div class="calendar-workspace">
       ${renderGrid(month, exact)}
       ${renderSchedule(month, exact)}
@@ -996,7 +1036,7 @@ export function toggleReleaseFollow(id: number): void {
   // The hero, schedule and search list can show the same release. Remember
   // which surface the star belonged to so focus returns to that same row.
   const focusShell = active?.closest<HTMLElement>(
-    ".calendar-hero-shell, .calendar-game-shell, .calendar-watch-card, .calendar-tba-shell",
+    ".calendar-hero-shell, .calendar-game-shell, .calendar-top-card, .calendar-watch-card, .calendar-tba-shell",
   )?.classList[0];
   if (followed.has(id)) followed.delete(id);
   else followed.add(id);

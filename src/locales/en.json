@@ -1728,6 +1728,7 @@
   "calendar.searchHint": "Try a shorter title or clear the search.",
   "calendar.monthEmpty": "No upcoming dated releases this month",
   "calendar.monthEmptyHint": "Month-only and unconfirmed dates are listed below, or pick another month.",
+  "calendar.mostAnticipated": "Most anticipated",
   "lib.updates": "Updates",
   "lib.epicIntegration": "Epic integration",
   "lib.desktopOnly": "This section only works in the desktop app.",

@@ -1628,6 +1628,7 @@
   "calendar.searchHint": "Essayez un titre plus court ou effacez la recherche.",
   "calendar.monthEmpty": "Aucune sortie datée à venir ce mois-ci",
   "calendar.monthEmptyHint": "Les dates au mois et non confirmées sont listées ci-dessous, ou choisissez un autre mois.",
+  "calendar.mostAnticipated": "Les plus attendus",
   "lib.updates": "Mises à jour",
   "lib.epicIntegration": "Intégration Epic",
   "lib.desktopOnly": "Cette section ne fonctionne que dans l'app de bureau.",

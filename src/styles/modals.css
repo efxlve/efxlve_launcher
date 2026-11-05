@@ -1847,6 +1847,59 @@
   background: var(--surface-2); color: var(--text-2);
 }
 
+/* Cross-month top picks: the notable releases a single month view can bury. */
+.calendar-top { display: flex; flex-direction: column; gap: 7px; margin: -2px 0 14px; }
+.calendar-top-head { display: flex; align-items: center; gap: 7px; padding: 0 2px; }
+.calendar-top-title {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-2);
+}
+.calendar-top-title svg { color: var(--accent); }
+.calendar-top-rail {
+  display: flex; gap: 8px; overflow-x: auto;
+  padding: 1px 1px 4px; scrollbar-width: thin;
+}
+.calendar-top-card { position: relative; flex: 0 0 228px; }
+.calendar-top-main {
+  display: flex; align-items: center; gap: 9px; width: 100%; min-height: 72px;
+  padding: 6px 36px 6px 6px; border: 1px solid var(--line);
+  border-radius: var(--r-sm); background: var(--surface-1);
+  color: var(--text); text-align: left; cursor: pointer;
+  transition: background-color var(--ease), border-color var(--ease), transform var(--ease);
+}
+.calendar-top-main:hover {
+  background: var(--surface-2); border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+.calendar-top-art {
+  position: relative; display: block; width: 42px; height: 58px; flex: none;
+  overflow: hidden; border-radius: 4px; background: var(--surface-2);
+}
+.calendar-top-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.calendar-top-placeholder { display: grid; place-items: center; width: 100%; height: 100%; color: var(--text-3); }
+.calendar-top-rank {
+  position: absolute; top: 3px; left: 3px; display: grid; place-items: center;
+  min-width: 15px; height: 15px; padding: 0 3px; border-radius: 3px;
+  background: rgba(8, 9, 12, 0.76); color: #fff;
+  font-size: 8.5px; font-weight: 700;
+}
+.calendar-top-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.calendar-top-name {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow: hidden; font-size: 12px; font-weight: 600; line-height: 1.25;
+}
+.calendar-top-meta { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.calendar-top-date { font-size: 9.5px; color: var(--text-3); }
+.calendar-top-countdown {
+  padding: 1px 4px; border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent); font-size: 9px; font-weight: 700;
+}
+.calendar-top-card > .calendar-follow-btn {
+  position: absolute; top: 8px; right: 8px; width: 22px; height: 22px;
+}
+
 /* Split workspace: compact visual month grid on the left, release feed on the right. */
 .calendar-workspace {
   display: grid;
