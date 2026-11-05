@@ -10,6 +10,12 @@
 import { allStoreSummaries, rawOf, sharedOwnerOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { emptyState, icon, type IconName } from "../../core/icons";
+import {
+  discordPageVisible,
+  notesSidebarVisible,
+  screenshotsSidebarVisible,
+  spotifyPageVisible,
+} from "../../core/page-visibility";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 import { epicPortrait, type EpicSummary } from "../../epic";
@@ -42,12 +48,31 @@ function commands(): Command[] {
     { label: t("nav.downloads"), iconName: "download", attrs: `data-view="downloads"`, keywords: "downloads indirmeler queue" },
     { label: t("palette.cmdProfile"), iconName: "users", attrs: `data-view="profile"`, keywords: "profile profil" },
     { label: t("palette.cmdSettings"), iconName: "settings", attrs: `data-view="settings"`, keywords: "settings ayarlar" },
+    { label: t("accounts.title"), iconName: "user", attrs: `data-view="accounts"`, keywords: "accounts hesap" },
+    { label: t("calendar.title"), iconName: "calendar", attrs: `data-act="open-release-calendar"`, keywords: "release calendar takvim cikis" },
+  ];
+  // Pages the user hid from the sidebar stay out of the palette too.
+  if (notesSidebarVisible()) {
+    list.push({ label: t("notes.title"), iconName: "edit", attrs: `data-view="notes"`, keywords: "notes notlar" });
+  }
+  if (screenshotsSidebarVisible()) {
+    list.push({ label: t("ss.title"), iconName: "clapperboard", attrs: `data-view="screenshots"`, keywords: "media screenshots gallery medya ekran goruntuleri" });
+  }
+  if (spotifyPageVisible()) {
+    list.push({ label: t("overlay.tabSpotify"), iconName: "spotify", attrs: `data-view="music"`, keywords: "spotify music muzik" });
+  }
+  if (discordPageVisible()) {
+    list.push({ label: t("discord.title"), iconName: "discord", attrs: `data-view="discord"`, keywords: "discord chat sohbet" });
+  }
+  list.push(
     { label: t("palette.cmdRefresh"), iconName: "refresh", attrs: `data-act="epic-refresh"`, keywords: "refresh sync yenile" },
     { label: t("palette.cmdStorage"), iconName: "hard-drive", attrs: `data-act="open-storage-manager"`, keywords: "storage disk depolama" },
     { label: t("palette.cmdOffline"), iconName: S.offlineMode ? "wifi" : "wifi-off", attrs: `data-act="toggle-offline-mode"`, keywords: "offline online cevrimdisi" },
     { label: t("fullscreen.mode"), iconName: "maximize-2", attrs: `data-act="toggle-fullscreen-mode"`, keywords: "tam ekran fullscreen controller gamepad" },
+    { label: t("notif.title"), iconName: "bell", attrs: `data-act="toggle-notifications"`, keywords: "notifications bildirim" },
+    { label: t("settings.viewChangelog"), iconName: "clock", attrs: `data-act="open-changelog"`, keywords: "changelog whats new surum notlari" },
     { label: t("settings.feedbackOpen"), iconName: "mail", attrs: `data-act="open-feedback"`, keywords: "feedback bug report sorun bildir" },
-  ];
+  );
   return list;
 }
 
