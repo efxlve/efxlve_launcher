@@ -9,6 +9,18 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PlaySession {
+    /// Unix seconds when the session started. The end is `started_at + seconds`.
+    pub started_at: u64,
+    pub seconds: u64,
+}
+
+/// Sessions kept per game. A recap only needs recent months, and this keeps a
+/// heavily played title from turning `playtime.json` into a large file. The
+/// all-time total and session count are separate and stay complete.
+pub const MAX_SESSIONS_PER_GAME: usize = 2000;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PlaytimeRecord {
     pub total_seconds: u64,
     pub session_count: u32,
@@ -16,6 +28,9 @@ pub struct PlaytimeRecord {
     pub last_played_timestamp: Option<u64>,
     #[serde(default)]
     pub last_played: Option<String>,
+    /// Recent sessions, oldest first. Older records load with an empty list.
+    #[serde(default)]
+    pub sessions: Vec<PlaySession>,
 }
 
 impl Default for PlaytimeRecord {
@@ -25,6 +40,7 @@ impl Default for PlaytimeRecord {
             session_count: 0,
             last_played_timestamp: None,
             last_played: None,
+            sessions: Vec::new(),
         }
     }
 }
@@ -63,19 +79,48 @@ pub fn get_game_playtime(app_name: &str) -> PlaytimeRecord {
     store.get(app_name).cloned().unwrap_or_default()
 }
 
-pub fn record_session(app_name: &str, session_seconds: u64) -> Result<PlaytimeRecord, String> {
-    let path = playtime_file_path();
-    let mut store = read_playtime_store(&path);
-
-    let now_ts = SystemTime::now()
+fn now_secs() -> u64 {
+    SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())
-        .unwrap_or(0);
+        .unwrap_or(0)
+}
+
+/// Appends one session span and drops the oldest entries over the cap.
+fn push_session(rec: &mut PlaytimeRecord, started_at: u64, seconds: u64) {
+    if seconds == 0 {
+        return;
+    }
+    rec.sessions.push(PlaySession {
+        started_at,
+        seconds,
+    });
+    let excess = rec.sessions.len().saturating_sub(MAX_SESSIONS_PER_GAME);
+    if excess > 0 {
+        rec.sessions.drain(0..excess);
+    }
+}
+
+pub fn record_session(app_name: &str, session_seconds: u64) -> Result<PlaytimeRecord, String> {
+    record_session_at(app_name, session_seconds, now_secs())
+}
+
+/// Records a session that ended at `ended_at` (Unix seconds). Keeping the span
+/// lets the profile split a midnight-crossing session across both days.
+pub fn record_session_at(
+    app_name: &str,
+    session_seconds: u64,
+    ended_at: u64,
+) -> Result<PlaytimeRecord, String> {
+    let path = playtime_file_path();
+    let mut store = read_playtime_store(&path);
+    let now_ts = ended_at.max(1);
 
     let rec = store.entry(app_name.to_string()).or_default();
     rec.total_seconds = rec.total_seconds.saturating_add(session_seconds);
     rec.session_count = rec.session_count.saturating_add(1);
     rec.last_played_timestamp = Some(now_ts);
+    push_session(rec, now_ts.saturating_sub(session_seconds), session_seconds);
 
     // Simple UTC/ISO format
     let days = now_ts / 86400;
@@ -169,5 +214,36 @@ mod tests {
         // Test clearing last_played
         rec.last_played = None;
         assert_eq!(rec.last_played, None);
+    }
+
+    #[test]
+    fn old_records_load_without_sessions() {
+        let record: PlaytimeRecord = serde_json::from_str(
+            r#"{"total_seconds":3600,"session_count":2,"last_played":"2026"}"#,
+        )
+        .expect("an older record must still parse");
+        assert_eq!(record.total_seconds, 3600);
+        assert!(record.sessions.is_empty());
+    }
+
+    #[test]
+    fn sessions_keep_the_newest_and_drop_the_oldest() {
+        let mut rec = PlaytimeRecord::default();
+        for index in 0..(MAX_SESSIONS_PER_GAME + 5) {
+            push_session(&mut rec, index as u64, 60);
+        }
+        assert_eq!(rec.sessions.len(), MAX_SESSIONS_PER_GAME);
+        assert_eq!(rec.sessions.first().map(|s| s.started_at), Some(5));
+        assert_eq!(
+            rec.sessions.last().map(|s| s.started_at),
+            Some((MAX_SESSIONS_PER_GAME + 4) as u64)
+        );
+    }
+
+    #[test]
+    fn a_zero_length_session_is_not_stored() {
+        let mut rec = PlaytimeRecord::default();
+        push_session(&mut rec, 1_000, 0);
+        assert!(rec.sessions.is_empty());
     }
 }

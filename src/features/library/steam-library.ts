@@ -169,6 +169,7 @@ function mergeSteamPlaytimes(records: Record<string, SteamPlaytime>): void {
       total_seconds: record.seconds,
       session_count: existing?.session_count ?? 0,
       last_played_timestamp: record.lastPlayed ?? existing?.last_played_timestamp,
+      sessions: existing?.sessions,
     });
   }
 }
@@ -185,6 +186,7 @@ function mergeOwnedPlaytimes(owned: SteamOwnedGame[]): void {
       total_seconds: seconds,
       session_count: existing?.session_count ?? 0,
       last_played_timestamp: existing?.last_played_timestamp,
+      sessions: existing?.sessions,
     });
   }
 }

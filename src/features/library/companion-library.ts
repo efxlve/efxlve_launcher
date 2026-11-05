@@ -244,6 +244,7 @@ async function fillCompanionPlaytime(): Promise<void> {
             session_count: existing?.session_count ?? 0,
             last_played_timestamp: existing?.last_played_timestamp,
             last_played: existing?.last_played,
+            sessions: existing?.sessions,
           });
           changed = true;
           if (S.currentModalAppName === key) changedCurrent = true;

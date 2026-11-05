@@ -24,6 +24,7 @@ import { t } from "../../i18n";
 
 import { epicPortrait, type ProfileGameRecord } from "../../epic";
 import { storeLogo } from "../store/store-logos";
+import { renderPlayActivity } from "./play-activity";
 import { STORE_LABELS } from "../store/store-view";
 
 export function coverOf(appName: string, fallback = ""): string {
@@ -1257,6 +1258,7 @@ export function renderProfile(): string {
       ${renderShowcase()}
       ${showData ? renderUnlockRow(scope) : ""}
       ${showData ? renderRecentRow(scope) : ""}
+      ${showData ? renderPlayActivity(scope) : ""}
       ${renderAchievementsPanel(games, filtered)}
     </div>`;
 }

@@ -974,11 +974,26 @@ export async function initApp(hooks: {
           // Replacing the map with it would drop a 300h game to 1h, so the
           // shown value is the higher of the two (Epic's hours never shrink).
           const shownSeconds = S.playtimeMap.get(id)?.total_seconds ?? 0;
+          // Keep the daily history in step without a disk round trip: the
+          // backend already wrote the same span, and a later reload replaces
+          // this copy with the stored one.
+          const sessions = [...(S.playtimeMap.get(id)?.sessions ?? [])];
+          if (sessionSeconds && sessionSeconds > 0) {
+            const endedAt = lastPlayedTimestamp && lastPlayedTimestamp > 0
+              ? lastPlayedTimestamp
+              : Math.floor(Date.now() / 1000);
+            sessions.push({
+              started_at: Math.max(0, endedAt - sessionSeconds),
+              seconds: sessionSeconds,
+            });
+            if (sessions.length > 2000) sessions.splice(0, sessions.length - 2000);
+          }
           S.playtimeMap.set(id, {
             total_seconds: Math.max(totalSeconds, shownSeconds),
             session_count: sessionCount || 1,
             last_played: lastPlayed,
             last_played_timestamp: lastPlayedTimestamp,
+            sessions,
           });
           // Pull Epic's fresh total now; max() keeps it safe if Epic lags behind.
           // GOG and Steam hours come from their own local sources below/at boot.

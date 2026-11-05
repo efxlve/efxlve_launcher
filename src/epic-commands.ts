@@ -504,11 +504,19 @@ export const epicCheckUpdates = () =>
 
 /* ---------- Playtime & live game status ---------- */
 
+export interface PlaySession {
+  /** Unix seconds when the session started. */
+  started_at: number;
+  seconds: number;
+}
+
 export interface PlaytimeRecord {
   total_seconds: number;
   session_count: number;
   last_played_timestamp?: number;
   last_played?: string;
+  /** Recent sessions, oldest first. Older records have no list. */
+  sessions?: PlaySession[];
 }
 
 export interface GameStatusEvent {
