@@ -620,7 +620,7 @@ function renderTba(month: MonthSel): string {
         return `<button type="button" class="calendar-tba-card" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${dateLabel(release)}`)}">
           ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="calendar-tba-art placeholder">${icon("gamepad-2", 12)}</span>`}
           <span class="calendar-tba-name">${esc(release.name)}</span>
-          <span class="calendar-tba-when">${esc(release.human)}</span>
+          <span class="calendar-tba-when">${esc(releaseDateLabel(release))}</span>
         </button>`;
       })
       .join("")}</div>
@@ -641,7 +641,7 @@ function renderPending(year: number): string {
     <summary class="calendar-unconfirmed-head">${icon("chevron-right", 13)} <span>${t("calendar.unconfirmed")}</span> <span class="count tabular-nums">${pending.length}</span></summary>
     <div class="calendar-unconfirmed-list">${pending
       .map(
-        (release) => `<button type="button" class="calendar-chip" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${release.human}`)}"><span class="calendar-chip-name">${esc(release.name)}</span><span class="calendar-chip-when tabular-nums">${esc(release.human)}</span></button>`,
+        (release) => `<button type="button" class="calendar-chip" data-act="release-stores" data-id="${release.id}" title="${esc(`${release.name} · ${releaseDateLabel(release)}`)}"><span class="calendar-chip-name">${esc(release.name)}</span><span class="calendar-chip-when tabular-nums">${esc(releaseDateLabel(release))}</span></button>`,
       )
       .join("")}</div>
   </details>`;
@@ -1016,7 +1016,9 @@ function renderStoreDialog(): void {
           ${cover ? `<img class="release-stores-cover" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="release-stores-cover placeholder">${icon("gamepad-2", 20)}</span>`}
           <div class="release-stores-head-text">
             <h3 class="release-stores-title">${esc(release.name)}</h3>
-            <p class="release-stores-date">${esc(dateLabel(release))}</p>
+            <p class="release-stores-date">${esc(
+              [dateLabel(release), countdownLabel(release)].filter(Boolean).join(" · "),
+            )}</p>
           </div>
           <button type="button" class="manage-head-close" data-act="release-stores-close" title="${esc(t("common.close"))}">${icon("x", 16)}</button>
         </div>
