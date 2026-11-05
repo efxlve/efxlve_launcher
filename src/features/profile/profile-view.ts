@@ -927,6 +927,9 @@ function renderProfileHero(
                 ? `<button type="button" class="btn ghost small profile-hero-action-btn" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>`
                 : ""}
               <button type="button" class="btn ghost small profile-hero-action-btn" data-view="accounts">${icon("settings", 13)}<span>${t("accounts.manageAccounts")}</span></button>
+              <button type="button" class="btn ghost small profile-hero-action-btn${S.presenceEnabled ? "" : " is-muted"}" data-act="toggle-presence" title="${esc(t("profile.presenceToggleTip"))}" aria-pressed="${S.presenceEnabled}">
+                ${icon(S.presenceEnabled ? "eye" : "eye-off", 13)}<span>${esc(S.presenceEnabled ? t("profile.presenceVisible") : t("profile.presenceHidden"))}</span>
+              </button>
               <button class="icon-btn profile-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${overviewStores().length > 1 ? t("profile.refreshTitleMulti") : t("profile.refreshTitle")}">${icon("refresh", 14)}</button>
             </div>
           </div>

@@ -434,6 +434,11 @@
   transform: scale(0.97);
 }
 
+.profile-hero-action-btn.is-muted {
+  color: var(--text-3);
+  border-style: dashed;
+}
+
 .profile-refresh-btn {
   width: 28px;
   height: 28px;

@@ -1980,6 +1980,28 @@ async function loadEaLaunchMode(appName: string, eaKey: string): Promise<void> {
   }
 }
 
+/** Small external-link card: mods, wiki and the Steam database. */
+function renderGameLinks(s: EpicSummary): string {
+  const query = encodeURIComponent(s.title.trim());
+  const steamApp = s.appName.startsWith("steam::") ? s.appName.slice(7) : "";
+  const steamUrl = /^\d+$/.test(steamApp)
+    ? `https://steamdb.info/app/${steamApp}/`
+    : `https://steamdb.info/search/?a=app&q=${query}`;
+  const links = [
+    { label: t("drawer.nexusMods"), url: `https://www.nexusmods.com/search/?gsearch=${query}` },
+    { label: t("drawer.pcgamingwiki"), url: `https://www.pcgamingwiki.com/w/index.php?search=${query}` },
+    { label: t("drawer.steamdb"), url: steamUrl },
+  ];
+  const rows = links
+    .map(
+      (link) => `<button type="button" class="gp-link-row" data-act="open-external-url" data-url="${esc(link.url)}" title="${esc(link.label)}">
+        <span>${esc(link.label)}</span>${icon("external", 11)}
+      </button>`,
+    )
+    .join("");
+  return sideCard(s.appName, "links", t("drawer.linksTitle"), "link", `<div class="gp-links">${rows}</div>`);
+}
+
 export function renderDrawerOverview(
   s: EpicSummary,
   partner: ThirdPartyLauncherInfo | null = null,
@@ -2026,6 +2048,7 @@ export function renderDrawerOverview(
         ${sideCard(s.appName, "lengths", t("hltb.times"), "clock", hltbBlock, { extraClass: "gp-lengths-card" })}
         ${sideCard(s.appName, "scores", t("critic.scoresTitle"), "star", criticBlock, { extraClass: "gp-critic-card" })}
         ${renderMomentsStrip(s.appName)}
+        ${renderGameLinks(s)}
       </aside>
     </div>`;
 }

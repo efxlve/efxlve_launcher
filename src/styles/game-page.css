@@ -3698,3 +3698,33 @@ details.ach-personal {
   .ach-powerpyx-facts { display: none; }
   .ach-personal-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* --- Game page links: mods, wiki and SteamDB in one folded card --- */
+.gp-links {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gp-link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--ease), color var(--ease);
+}
+
+.gp-link-row:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
