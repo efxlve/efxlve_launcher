@@ -647,11 +647,6 @@ function renderToolbar(months: MonthInfo[], active: MonthSel): string {
   const index = months.findIndex((month) => sameMonth(month, active));
   const previous = index > 0;
   const next = index >= 0 && index < months.length - 1;
-  const watchCount = followedReleases().length;
-  const watchButton =
-    watchCount > 0 || watching
-      ? `<button type="button" class="calendar-watch-toggle${watching ? " is-active" : ""}" data-act="release-calendar-watch" aria-pressed="${watching}" title="${esc(t("calendar.watchlist"))}" aria-label="${esc(t("calendar.watchlist"))}">${icon("star", 13)}<span class="tabular-nums">${watchCount}</span></button>`
-      : "";
   return `<div class="calendar-toolbar">
     <button type="button" class="icon-btn" data-act="release-calendar-prev" title="${esc(t("calendar.previousMonth"))}" aria-label="${esc(t("calendar.previousMonth"))}"${previous ? "" : " disabled"}>${icon("chevron-left", 16)}</button>
     <div class="calendar-monthbar" role="tablist" aria-label="${esc(t("calendar.title"))}">${months
@@ -664,7 +659,6 @@ function renderToolbar(months: MonthInfo[], active: MonthSel): string {
         </button>`;
       })
       .join("")}</div>
-    ${watchButton}
     <button type="button" class="icon-btn" data-act="release-calendar-next" title="${esc(t("calendar.nextMonth"))}" aria-label="${esc(t("calendar.nextMonth"))}"${next ? "" : " disabled"}>${icon("chevron-right", 16)}</button>
   </div>`;
 }
@@ -869,6 +863,7 @@ function paintSearchBody(): void {
 function renderCalendar(): void {
   if (!layer) return;
   const month = ensureSelectedMonth();
+  const watchCount = followedReleases().length;
   const scrollTop = layer.querySelector<HTMLElement>(".calendar-body")?.scrollTop ?? 0;
   layer.innerHTML = `
     <div class="modal-backdrop" data-act="release-calendar-close">
@@ -883,6 +878,11 @@ function renderCalendar(): void {
             )}</p>
           </div>
           <div class="calendar-head-actions">
+            <button type="button" class="calendar-watch-toggle${watching ? " is-active" : ""}" data-act="release-calendar-watch" aria-pressed="${watching}" title="${esc(t("calendar.watchlist"))}">
+              ${icon("star", 13)}
+              <span class="calendar-watch-toggle-label">${esc(t("calendar.watchlist"))}</span>
+              ${watchCount > 0 ? `<span class="calendar-watch-toggle-count tabular-nums">${watchCount}</span>` : ""}
+            </button>
             <div class="calendar-search" role="search">
               <span class="calendar-search-icon">${icon("search", 13)}</span>
               <input class="calendar-search-input" type="text" value="${esc(query)}" placeholder="${esc(t("calendar.searchPlaceholder"))}" aria-label="${esc(t("calendar.searchPlaceholder"))}" autocomplete="off" spellcheck="false" />
@@ -944,8 +944,6 @@ async function load(refresh: boolean): Promise<void> {
 /** Opens the upcoming-release calendar. */
 export function openReleaseCalendar(): void {
   closeReleaseStores();
-  // A native store child ignores z-index; park it before the dialog paints.
-  holdStoreForCover();
   releases = [];
   selected = null;
   selectedDay = null;
@@ -958,6 +956,8 @@ export function openReleaseCalendar(): void {
   layer = document.createElement("div");
   layer.className = "calendar-layer";
   confirmRoot.appendChild(layer);
+  // A native store child ignores z-index; park it now that confirmRoot holds the layer.
+  holdStoreForCover();
   renderCalendar();
   void load(false);
 }
@@ -1084,7 +1084,10 @@ export function toggleReleaseFollow(id: number): void {
 /** Switches the body between the month view and the followed list. */
 export function toggleReleaseWatchlist(): void {
   watching = !watching;
-  if (watching) selectedDay = null;
+  if (watching) {
+    selectedDay = null;
+    query = "";
+  }
   resetScroll = true;
   renderCalendar();
 }

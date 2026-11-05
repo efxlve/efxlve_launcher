@@ -152,6 +152,8 @@ export function updatePageHeader(): void {
     const showTabs = S.view === "store";
     const wasHidden = bar ? bar.hidden : true;
     if (bar) bar.hidden = !showTabs;
+    const calBtn = document.getElementById("store-calendar-btn");
+    if (calBtn) calBtn.hidden = !showTabs;
     if (showTabs) {
       switcher.querySelectorAll<HTMLElement>("[data-store]").forEach((btn) => {
         const active = (btn.dataset.store || "epic") === (S.activeStore || "epic");

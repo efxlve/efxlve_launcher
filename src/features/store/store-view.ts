@@ -176,7 +176,7 @@ export function holdStoreForPalette(): Promise<void> {
  * covering root is empty again.
  */
 export function holdStoreForCover(): void {
-  if (S.view !== "store" || !S.storeShown) return;
+  if (S.view !== "store") return;
   void holdStoreOverlay("cover");
   watchCoversThenRelease();
 }

@@ -34,6 +34,7 @@ import "./features/events/input-listeners";
 import { initApp } from "./features/events/ipc-listeners";
 import { updateGamepadHud } from "./features/gamepad/gamepad";
 import { closeHideGamesModal } from "./features/library/hide-games";
+import { closeReleaseCalendar } from "./features/library/release-calendar";
 import { closeHideAchievementsModal } from "./features/profile/hide-achievements";
 import { patchLibraryGridInPlace, positionColDropdownMenu, renderEpic, setupLibScrollObserver } from "./features/library/library-view";
 import { renderAccounts } from "./features/accounts/accounts-view";
@@ -140,6 +141,7 @@ function render(): void {
     // Spotify pages their child host would paint over them.
     closeNotifPanel();
     closeChangelogModal();
+  closeReleaseCalendar();
   }
 
   if (S.view === "store") {
@@ -221,6 +223,7 @@ function closeAllModals(): void {
   closeAddCustomGameModal();
   closeManagePopup();
   closeChangelogModal();
+  closeReleaseCalendar();
   if (selectiveRoot) selectiveRoot.innerHTML = "";
   if (playtimeRoot) playtimeRoot.innerHTML = "";
 }
