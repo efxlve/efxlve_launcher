@@ -31,9 +31,27 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.45",
+    date: "2026-11-06",
+    isCurrent: true,
+    fixed: [
+      {
+        en: "Store sign-ins survive a restart: recovering the WebView2 profile now clears only its caches, so store cookies and local storage stay in place.",
+        tr: "Mağaza oturumları yeniden başlatmada korunuyor: WebView2 profili kurtarılırken artık yalnızca önbellekler temizleniyor; mağaza çerezleri ve yerel depolama yerinde kalıyor.",
+      },
+      {
+        en: "The Steam store profile lives in local app data, so a roaming Windows profile or logoff no longer drops its sign-in.",
+        tr: "Steam mağaza profili yerel uygulama verisinde tutuluyor; dolaşan Windows profili veya oturum kapatma artık girişi düşürmüyor.",
+      },
+      {
+        en: "If the old profile had already been reset, sign in to the stores once after this update; later restarts keep the session.",
+        tr: "Eski profil daha önce sıfırlandıysa bu güncellemeden sonra mağazalara bir kez giriş yapın; sonraki yeniden başlatmalar oturumu korur.",
+      },
+    ],
+  },
+  {
     version: "0.1.44",
     date: "2026-11-05",
-    isCurrent: true,
     added: [
       {
         en: "A release calendar now tracks upcoming PC games: a monthly grid, a featured release, poster cards, a most-anticipated list, store links, search and keyboard month switching.",
