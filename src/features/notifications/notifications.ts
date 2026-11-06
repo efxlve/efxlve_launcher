@@ -25,8 +25,8 @@ import { embeddedContentShown, syncStoreViewSize } from "../store/store-view";
 import { overlayThemeStyle } from "../../core/overlay-theme";
 
 const MAX = 50;
-/** Fixed dropdown width: the four tabs must fit without wrapping. */
-const PANEL_WIDTH = 400;
+/** Fixed dropdown width: the four equal tabs must fit without wrapping. */
+const PANEL_WIDTH = 440;
 /** Re-pushing the same event within this window refreshes instead of duplicating. */
 const DEDUPE_MS = 10 * 60 * 1000;
 /** Restored history older than this is dropped: it is news, not a mailbox. */
@@ -352,6 +352,8 @@ interface NotifPanelData {
   updates: AppNotification[];
   /** Unlocks from the running session, newest first. */
   session: AppNotification[];
+  /** Cloud backup and restore events. */
+  cloud: AppNotification[];
   /** Everything the System tab lists after the launcher status. */
   system: AppNotification[];
   counts: Record<NotifTab, number>;
@@ -384,18 +386,20 @@ function notifPanelData(): NotifPanelData {
   const system = S.notifications.filter(
     (n) => notifTabOf(n.kind) === "system" && !(launcher > 0 && n.kind === "app"),
   );
+  const cloud = S.notifications.filter((n) => notifTabOf(n.kind) === "cloud");
   return {
     pending,
     updates,
     session,
+    cloud,
     system,
     // The chip reports work, not history: games waiting for an update, unlocks
-    // from this session, and a launcher update the user can start or install.
+    // from this session, a launcher update the user can start, and cloud events.
     counts: {
       updates: pending.length,
       achievements: session.length,
       system: launcher,
-      cloud: 0,
+      cloud: cloud.length,
     },
   };
 }
@@ -520,14 +524,23 @@ function emptyState(tab: NotifTab): string {
 
 function panelMarkup(data: NotifPanelData, unread: number): string {
   const tab = S.notifTab;
-  const history = tab === "updates" ? data.updates : tab === "achievements" ? [] : data.system;
+  const history =
+    tab === "updates"
+      ? data.updates
+      : tab === "achievements"
+        ? []
+        : tab === "cloud"
+          ? data.cloud
+          : data.system;
   // Live status first, then the event log behind it.
   const live =
     tab === "updates"
       ? data.pending.map(pendingUpdateMarkup).join("")
       : tab === "achievements"
         ? data.session.map(notificationMarkup).join("")
-        : launcherUpdateMarkup();
+        : tab === "system"
+          ? launcherUpdateMarkup()
+          : "";
   const rows = live + history.map(notificationMarkup).join("");
   const body = rows
     ? `<div class="notif-list" role="tabpanel">${rows}</div>`
@@ -631,7 +644,7 @@ export function renderNotificationPanel(): void {
   const pendingNames = data.pending.map((s) => s.appName).join(",");
   // `updates.length` moves when a row's game leaves or joins the library while
   // the panel is open: the row is gated on the game still being installed.
-  const sig = `${S.notifications.length}|${unread}|${first?.ts ?? 0}|${first?.read ?? false}|${S.appLanguage}|${S.notifTab}|${pendingNames}|${data.updates.length}|${data.counts.updates}|${data.counts.achievements}|${data.counts.system}|${S.appUpdateStatus}|${S.appUpdateVersion}`;
+  const sig = `${S.notifications.length}|${unread}|${first?.ts ?? 0}|${first?.read ?? false}|${S.appLanguage}|${S.notifTab}|${pendingNames}|${data.updates.length}|${data.cloud.length}|${data.counts.updates}|${data.counts.achievements}|${data.counts.system}|${data.counts.cloud}|${S.appUpdateStatus}|${S.appUpdateVersion}`;
   const covers = storeCoversUi();
   if (sig === notifPanelSig && (root.firstChild || (covers && notifOverlayOn))) return;
   notifPanelSig = sig;

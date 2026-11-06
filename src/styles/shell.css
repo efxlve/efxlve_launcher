@@ -1032,7 +1032,7 @@ html.win-compact .page-search span { display: none; }
 #notif-root { position: relative; z-index: 400; }
 .notif-panel {
   position: fixed; left: 0; top: 0;
-  width: 400px; max-width: calc(100vw - 16px); max-height: 70vh;
+  width: 440px; max-width: calc(100vw - 16px); max-height: 70vh;
   display: flex; flex-direction: column; overflow: hidden;
   background: var(--surface-1); border: 1px solid var(--line-strong); border-radius: var(--r-md);
   box-shadow: var(--shadow-pop);
@@ -1045,16 +1045,24 @@ html.win-compact .page-search span { display: none; }
   padding: 4px 6px; border-radius: 4px; cursor: pointer;
 }
 .notif-action:hover { background: var(--surface-2); color: var(--text); }
-/* Category strip: Updates / Achievements / System / Cloud, one underline like .tab. */
-.notif-tabs { display: flex; align-items: center; gap: 10px; padding: 0 14px; border-bottom: 1px solid var(--line); }
-.notif-tabs .tab { height: 35px; font-size: 12px; gap: 5px; }
-.notif-tabs .tab svg { width: 13px; height: 13px; opacity: 0.75; }
+/* Category strip: four equal tabs, one underline like .tab. */
+.notif-tabs {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center;
+  gap: 6px; padding: 0 10px; border-bottom: 1px solid var(--line);
+}
+.notif-tabs .tab {
+  height: 35px; font-size: 11.5px; gap: 4px; justify-content: center;
+  min-width: 0; padding: 0 4px;
+}
+.notif-tabs .tab > span:not(.count) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notif-tabs .tab svg { width: 13px; height: 13px; opacity: 0.75; flex-shrink: 0; }
 .notif-tabs .tab.active svg { opacity: 1; }
 .notif-tabs .tab .count {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 15px; height: 17px; padding: 0 4px; border-radius: 9px;
+  min-width: 13px; height: 16px; padding: 0 3px; border-radius: 9px;
   background: var(--surface-3); color: var(--text-2);
-  font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums;
+  font-size: 9.5px; font-weight: 600; font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 .notif-tabs .tab.active .count { color: var(--text); }
 .notif-list { overflow-y: auto; flex: 1; min-height: 0; display: flex; flex-direction: column; }
