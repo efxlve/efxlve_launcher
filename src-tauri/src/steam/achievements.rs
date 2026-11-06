@@ -358,15 +358,6 @@ pub(super) fn apply_rarity(
     }
 }
 
-/// Achievement icon file name → the community CDN URL the Web API path also uses.
-pub(super) fn steam_icon_url(app_id: &str, file: &str) -> String {
-    if file.is_empty() {
-        String::new()
-    } else {
-        format!("https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/{app_id}/{file}")
-    }
-}
-
 /// `group:bit` → unlock time, straight from the client's stats file.
 pub(super) fn read_unlock_times(
     steam: &Path,
@@ -1287,10 +1278,11 @@ async fn fetch_community_schema(
     }
 }
 
-/// The community page publishes achievement icons as bare file names
-/// (`8a61….jpg`), not URLs. The launcher renders them from Steam's public CDN,
-/// so an absolute URL stays as it is and a file name gets the app path.
-fn community_icon_url(app_id: &str, raw: &str) -> String {
+/// Achievement icon file name or URL → the image the card renders. The client
+/// cache and the community page publish bare file names (`8a61….jpg`); the Web
+/// API publishes full URLs. Absolute values stay as they are, protocol-relative
+/// values get `https:`, and a bare file name gets the app path.
+fn achievement_icon_url(app_id: &str, raw: &str) -> String {
     let value = raw.trim();
     if value.is_empty() {
         return String::new();
@@ -1322,8 +1314,8 @@ fn build_emulator_achievements(
         // wrong achievement.
         let state = is_emulator_unlocked(emu, &entry.api_name, index, "");
         let (unlocked, unlock_time, progress) = state.unwrap_or((false, 0, 0.0));
-        let achieved_icon = community_icon_url(app_id, &entry.icon_achieved);
-        let unachieved_icon = community_icon_url(app_id, &entry.icon_unachieved);
+        let achieved_icon = achievement_icon_url(app_id, &entry.icon_achieved);
+        let unachieved_icon = achievement_icon_url(app_id, &entry.icon_unachieved);
         let icon = if unlocked {
             &achieved_icon
         } else {
@@ -1500,7 +1492,7 @@ pub fn read_local_achievements_with_app(
                 } else {
                     None
                 },
-                icon_link: steam_icon_url(app_id, file),
+                icon_link: achievement_icon_url(app_id, file),
                 hidden,
                 // The local schema does not mark base/DLC groups; Steam
                 // achievements are presented as one base-game set.
@@ -1951,11 +1943,7 @@ pub async fn steam_get_achievements(
             } else {
                 None
             },
-            icon_link: if file.is_empty() {
-                String::new()
-            } else {
-                format!("https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/{app_id}/{file}")
-            },
+            icon_link: achievement_icon_url(&app_id, file),
             tier: percent.map(tier_for_percent),
             rarity: percent.map(|p| AchievementRarity { percent: Some(p) }),
             hidden: hidden_flag,
@@ -3783,20 +3771,28 @@ mod tests {
     }
 
     #[test]
-    fn community_icon_file_names_become_cdn_urls() {
+    fn achievement_icon_urls_keep_absolute_values_and_expand_file_names() {
         assert_eq!(
-            community_icon_url("384190", "on.jpg"),
+            achievement_icon_url("384190", "on.jpg"),
             "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/384190/on.jpg"
         );
+        // The Web API already returns full URLs; they must not get the app path twice.
         assert_eq!(
-            community_icon_url("384190", "https://cdn.example/on.jpg"),
+            achievement_icon_url(
+                "384190",
+                "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/384190/on.jpg"
+            ),
+            "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/384190/on.jpg"
+        );
+        assert_eq!(
+            achievement_icon_url("384190", "https://cdn.example/on.jpg"),
             "https://cdn.example/on.jpg"
         );
         assert_eq!(
-            community_icon_url("384190", "//cdn.example/on.jpg"),
+            achievement_icon_url("384190", "//cdn.example/on.jpg"),
             "https://cdn.example/on.jpg"
         );
-        assert_eq!(community_icon_url("384190", "  "), "");
+        assert_eq!(achievement_icon_url("384190", "  "), "");
     }
 
     #[test]
