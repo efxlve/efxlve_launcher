@@ -389,11 +389,33 @@
   .col-import-grid, .col-settings-grid { grid-template-columns: 1fr; }
 }
 .settings-select { height: 32px; min-width: 160px; }
-.drawer-order { display: flex; flex-direction: column; gap: 3px; min-width: 220px; }
-.drawer-order-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--text-2); }
-.drawer-order-arrows { display: flex; align-items: center; gap: 2px; }
-.drawer-order-arrows .icon-btn { width: 24px; height: 24px; }
-.drawer-order > .btn { align-self: flex-start; margin-top: 4px; }
+.drawer-order {
+  display: flex; flex-direction: column; gap: 2px;
+  width: 320px; max-width: 100%; padding: 6px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--surface-1);
+}
+.drawer-order-row {
+  display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 5px 8px;
+  border-radius: 7px; font-size: 12.5px; color: var(--text-2);
+  transition: background-color var(--ease), color var(--ease);
+}
+.drawer-order-row:hover { background: var(--surface-2); color: var(--text); }
+.drawer-order-icon {
+  width: 26px; height: 26px; flex-shrink: 0; border-radius: 7px;
+  display: grid; place-items: center; background: var(--surface-2); color: var(--text-3);
+}
+.drawer-order-row:hover .drawer-order-icon { background: var(--surface-3); color: var(--text); }
+.drawer-order-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drawer-order-arrows { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.drawer-order-arrows .icon-btn { width: 26px; height: 26px; border: 1px solid transparent; border-radius: 6px; }
+.drawer-order-arrows .icon-btn:hover:not(:disabled) { background: var(--surface-3); border-color: var(--line); color: var(--text); }
+.drawer-order-arrows .icon-btn:disabled { opacity: 0.25; }
+.drawer-order > .drawer-order-reset {
+  align-self: stretch; justify-content: center; gap: 6px; margin-top: 4px; height: 34px;
+  border: 0; border-top: 1px solid var(--line); border-radius: 0 0 7px 7px;
+  color: var(--text-3); font-size: 11.5px;
+}
+.drawer-order > .drawer-order-reset:hover { background: var(--surface-2); color: var(--text); }
 .ubi-direct-progress { margin: 6px 0 12px; }
 .ubi-direct-bar {
   height: 6px; border-radius: 999px; overflow: hidden;

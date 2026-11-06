@@ -1440,11 +1440,19 @@ function drawerOrderRow(): string {
     moments: t("drawer.moments"),
     links: t("drawer.linksTitle"),
   };
+  const glyphs: Record<DrawerCardId, IconName> = {
+    achievements: "trophy",
+    lengths: "clock",
+    scores: "star",
+    moments: "image",
+    links: "external",
+  };
   const order = drawerCardOrder();
   const rows = order
     .map(
       (id, index) => `<div class="drawer-order-row">
-        <span>${esc(labels[id])}</span>
+        <span class="drawer-order-icon" aria-hidden="true">${icon(glyphs[id], 14)}</span>
+        <span class="drawer-order-label">${esc(labels[id])}</span>
         <span class="drawer-order-arrows">
           <button type="button" class="icon-btn" data-act="drawer-order-up" data-id="${id}" title="${esc(t("dl.moveUp"))}" ${index === 0 ? "disabled" : ""}>${icon("chevron-up", 13)}</button>
           <button type="button" class="icon-btn" data-act="drawer-order-down" data-id="${id}" title="${esc(t("dl.moveDown"))}" ${index === order.length - 1 ? "disabled" : ""}>${icon("chevron-down", 13)}</button>
@@ -1455,7 +1463,7 @@ function drawerOrderRow(): string {
   return row(
     t("settings.drawerOrderTitle"),
     t("settings.drawerOrderDesc"),
-    `<div class="drawer-order">${rows}<button type="button" class="btn ghost small" data-act="drawer-order-reset">${t("settings.drawerOrderReset")}</button></div>`,
+    `<div class="drawer-order">${rows}<button type="button" class="btn ghost small drawer-order-reset" data-act="drawer-order-reset">${icon("refresh", 12)} ${t("settings.drawerOrderReset")}</button></div>`,
   );
 }
 
