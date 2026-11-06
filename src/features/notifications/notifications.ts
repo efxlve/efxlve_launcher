@@ -76,6 +76,18 @@ export function isNotifTab(value: string): value is NotifTab {
   return value === "updates" || value === "achievements" || value === "system";
 }
 
+/**
+ * True while a game update row still has its game on disk. An update row
+ * describes work on an install, so without one the row is neither news nor an
+ * unread item, even while it is still in the persisted history. A store list
+ * that has not loaded yet resolves nothing, so the row simply stays hidden
+ * until its game does.
+ */
+function updateRowLive(n: AppNotification): boolean {
+  if (n.kind !== "update" || !n.appName) return true;
+  return Boolean(summaryOf(n.appName)?.installed);
+}
+
 /** Restores the persisted notification history (invalid entries are dropped). */
 export function loadNotifications(): void {
   bindNotifOverlay();
@@ -273,7 +285,7 @@ export function pushNotification(input: NotifInput): void {
 
 export function unreadCount(): number {
   let n = 0;
-  for (const x of S.notifications) if (!x.read) n++;
+  for (const x of S.notifications) if (!x.read && updateRowLive(x)) n++;
   return n;
 }
 
@@ -352,7 +364,8 @@ function notifPanelData(): NotifPanelData {
     (n) =>
       notifTabOf(n.kind) === "updates" &&
       // A live row already names the game; its older one-liner would repeat it.
-      !(n.kind === "update" && n.appName && pendingKeys.has(n.appName)),
+      !(n.kind === "update" && n.appName && pendingKeys.has(n.appName)) &&
+      updateRowLive(n),
   );
   // The Achievements tab is the session log: a restored row from yesterday is
   // history, not something unlocked while the launcher was running.
@@ -606,7 +619,9 @@ export function renderNotificationPanel(): void {
   // each time was pure DOM churn. Skip when the visible content is unchanged.
   const first = S.notifications[0];
   const pendingNames = data.pending.map((s) => s.appName).join(",");
-  const sig = `${S.notifications.length}|${unread}|${first?.ts ?? 0}|${first?.read ?? false}|${S.appLanguage}|${S.notifTab}|${pendingNames}|${data.counts.updates}|${data.counts.achievements}|${data.counts.system}|${S.appUpdateStatus}|${S.appUpdateVersion}`;
+  // `updates.length` moves when a row's game leaves or joins the library while
+  // the panel is open: the row is gated on the game still being installed.
+  const sig = `${S.notifications.length}|${unread}|${first?.ts ?? 0}|${first?.read ?? false}|${S.appLanguage}|${S.notifTab}|${pendingNames}|${data.updates.length}|${data.counts.updates}|${data.counts.achievements}|${data.counts.system}|${S.appUpdateStatus}|${S.appUpdateVersion}`;
   const covers = storeCoversUi();
   if (sig === notifPanelSig && (root.firstChild || (covers && notifOverlayOn))) return;
   notifPanelSig = sig;
