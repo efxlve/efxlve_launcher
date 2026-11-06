@@ -300,6 +300,36 @@ pub async fn fetch_owned_games(
     ))
 }
 
+/// The client's own app list, which still contains free licenses the account
+/// claimed but never launched. Best effort: a stopped or old client may reject
+/// the call, and the player-service list above remains the source of truth.
+pub async fn fetch_client_apps(
+    client: &reqwest::Client,
+    access_token: &str,
+) -> Result<Vec<SteamOwnedGame>, String> {
+    let response = client
+        .get(CLIENT_APP_LIST_URL)
+        .query(&[
+            ("access_token", access_token),
+            ("fields", "games"),
+            ("language", "english"),
+            ("format", "json"),
+        ])
+        .send()
+        .await
+        .map_err(|_| "@t:steam.err.network".to_string())?;
+    if !response.status().is_success() {
+        return Err("@t:steam.err.network".to_string());
+    }
+    let payload: Value = response
+        .json()
+        .await
+        .map_err(|_| "@t:steam.err.steam".to_string())?;
+    Ok(parse_client_apps(
+        payload.get("response").unwrap_or(&Value::Null),
+    ))
+}
+
 /* ---------- Commands ---------- */
 
 /// Sign-in shape for the QR flow: the challenge URL plus an inline SVG QR code.
@@ -643,18 +673,37 @@ pub async fn steam_owned_games(app: tauri::AppHandle, force: Option<bool>) -> Re
     }
 
     let client = http_client()?;
-    let token = match cached {
+    let mut token = match cached {
         Some(token) => token,
         None => refresh_access_token(&client).await?,
     };
 
-    let games = match fetch_owned_games(&client, &token, &steam_id).await {
+    let mut games = match fetch_owned_games(&client, &token, &steam_id).await {
         Err(err) if err == "@t:steam.err.sessionExpired" => {
-            let fresh = refresh_access_token(&client).await?;
-            fetch_owned_games(&client, &fresh, &steam_id).await?
+            token = refresh_access_token(&client).await?;
+            fetch_owned_games(&client, &token, &steam_id).await?
         }
         other => other?,
     };
+    // The player service omits free licenses the account claimed but never
+    // launched. The client's own app list still has them. Merge best-effort,
+    // with a sanity cap so a catalog-sized response can never flood the library.
+    if let Ok(extra) = fetch_client_apps(&client, &token).await {
+        let cap = games.games.len().saturating_mul(2).saturating_add(5_000);
+        if extra.len() <= cap {
+            let mut known: std::collections::HashSet<String> =
+                games.games.iter().map(|g| g.app_id.clone()).collect();
+            for game in extra {
+                if known.insert(game.app_id.clone()) {
+                    games.games.push(game);
+                }
+            }
+            games
+                .games
+                .sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+            games.game_count = games.games.len() as i64;
+        }
+    }
     write_owned_cache(&app, &steam_id, &games);
     Ok(games)
 }
@@ -666,8 +715,9 @@ pub async fn steam_owned_games(app: tauri::AppHandle, force: Option<bool>) -> Re
 const OWNED_CACHE_TTL_SECS: u64 = 60 * 60 * 24;
 
 /// Bumped when the owned-list request changes shape. A list cached by an older
-/// query (without free-sub licenses) must not keep hiding the missing games.
-const OWNED_CACHE_VERSION: u32 = 1;
+/// query (without client-applications, or free-sub licenses) must not keep
+/// hiding the missing games.
+const OWNED_CACHE_VERSION: u32 = 2;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 struct OwnedCache {

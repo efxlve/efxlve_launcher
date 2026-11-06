@@ -18,6 +18,10 @@ use serde::{Deserialize, Serialize};
 
 pub const API_BASE: &str = "https://api.steampowered.com/IAuthenticationService";
 pub const OWNED_GAMES_URL: &str = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/";
+/// The client's own app list also contains free licenses the account claimed but
+/// never launched, which `GetOwnedGames` leaves out.
+pub const CLIENT_APP_LIST_URL: &str =
+    "https://api.steampowered.com/IClientCommService/GetClientAppList/v1/";
 pub const FAMILY_GROUP_URL: &str =
     "https://api.steampowered.com/IFamilyGroupsService/GetFamilyGroupForUser/v1/";
 pub const SHARED_LIBRARY_URL: &str =
@@ -221,7 +225,7 @@ mod session;
 pub(crate) mod vault;
 mod wire;
 
-// session.rs: http_client, field, field_str, field_i64, ApiCall, post_form, get_rsa_key, encrypt_password, finalize_web_login, generate_access_token, fetch_owned_games, owned_games_query, fetch_family_group, fetch_shared_apps, family_shared_with, SteamQrLogin, steam_login_qr_begin, qr_svg, steam_login_begin, steam_login_code, steam_login_status, steam_logout, steam_get_saved_accounts, steam_switch_account, steam_remove_saved_account, steam_owned_games, steam_family_shared_apps, refresh_access_token
+// session.rs: http_client, field, field_str, field_i64, ApiCall, post_form, get_rsa_key, encrypt_password, finalize_web_login, generate_access_token, fetch_owned_games, owned_games_query, fetch_client_apps, fetch_family_group, fetch_shared_apps, family_shared_with, SteamQrLogin, steam_login_qr_begin, qr_svg, steam_login_begin, steam_login_code, steam_login_status, steam_logout, steam_get_saved_accounts, steam_switch_account, steam_remove_saved_account, steam_owned_games, steam_family_shared_apps, refresh_access_token
 #[allow(unused_imports)]
 pub use session::*;
 
@@ -267,6 +271,7 @@ pub use wire::{
     PollOutcome,
     parse_poll_response,
     parse_owned_games,
+    parse_client_apps,
     token_exp_secs,
     jwt_sub,
     jwt_claim,

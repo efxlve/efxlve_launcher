@@ -331,7 +331,39 @@ pub fn parse_owned_games(response: &Value) -> SteamOwnedGames {
     }
 }
 
-/// Expiry of a JWT access token, in Unix seconds (0 when unreadable).
+/// `GetClientAppList` payload → the extra games the client knows about.
+///
+/// Steam's player service leaves out free licenses the account claimed but never
+/// launched. The client's own app list still has them, so the caller merges this
+/// best-effort list over the owned one. DLCs are nested under `dlcs` and are not
+/// top-level apps, so this parser only reads `response.apps`.
+pub fn parse_client_apps(response: &Value) -> Vec<SteamOwnedGame> {
+    response
+        .get("apps")
+        .and_then(Value::as_array)
+        .map(|entries| {
+            entries
+                .iter()
+                .filter_map(|g| {
+                    let app_id = field_str(g, "appid", "appId");
+                    let name = field_str(g, "name", "name");
+                    if app_id.is_empty() || name.is_empty() {
+                        return None;
+                    }
+                    Some(SteamOwnedGame {
+                        name,
+                        playtime_forever: field_i64(g, "playtime_forever", "playtimeForever"),
+                        playtime_two_weeks: field_i64(g, "playtime_2weeks", "playtime2weeks"),
+                        icon_url: String::new(),
+                        app_id,
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+
 pub fn token_exp_secs(token: &str) -> u64 {
     jwt_claim(token, "exp")
         .and_then(|v| v.as_u64())

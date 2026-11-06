@@ -152,6 +152,25 @@ fn owned_games_query_asks_for_free_and_unvetted_licenses() {
 }
 
 #[test]
+fn client_app_list_keeps_named_top_level_games() {
+    let response = serde_json::json!({
+        "apps": [
+            { "appid": 1085660, "name": "Destiny 2", "playtime_forever": 0 },
+            { "appid": 620, "name": "Portal 2", "playtime_forever": 90 },
+            { "appid": 228980, "name": "" },
+            { "appid": "", "name": "Broken" },
+            { "appid": 123, "name": "A DLC row" }
+        ]
+    });
+    let games = parse_client_apps(&response);
+    assert_eq!(games.len(), 3);
+    assert_eq!(games[0].app_id, "1085660");
+    assert_eq!(games[0].name, "Destiny 2");
+    assert_eq!(games[1].playtime_forever, 90);
+    assert_eq!(games[2].app_id, "123");
+}
+
+#[test]
 fn shared_library_payload_is_flattened() {
     let response = serde_json::json!({
         "apps": [
