@@ -53,6 +53,7 @@ mod spotify_host;
 mod store_host;
 mod store_theme;
 mod vault_id;
+mod window_state;
 mod winreg;
 
 use std::sync::Mutex;
@@ -1947,6 +1948,10 @@ fn main() {
             if let Some(win) = app.get_window("main") {
                 let _ = win.set_decorations(false);
                 hide_accent_border(&win);
+                // Before the window is shown: restoring afterwards would flash
+                // the factory size and jump to the remembered one.
+                window_state::restore(&win);
+                window_state::start(app.handle().clone());
                 // A borderless window must still be a taskbar window. Some
                 // Windows/driver combinations start it hidden or minimized;
                 // force the declared state before the user sees a missing UI.
@@ -2025,6 +2030,9 @@ fn main() {
         })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                // The debounced writer may still be waiting out the last drag;
+                // a close that hides to the tray or exits must keep it.
+                window_state::flush(&window.app_handle());
                 let pref = window.app_handle().state::<TrayPref>();
                 if pref
                     .minimize_to_tray
@@ -2055,6 +2063,14 @@ fn main() {
                 let minimized = window.is_minimized().unwrap_or(false);
                 let hidden = !window.is_visible().unwrap_or(true);
                 set_main_view_suspended(window.app_handle(), minimized || hidden);
+            }
+            if window.label() == "main"
+                && matches!(
+                    event,
+                    tauri::WindowEvent::Resized(_) | tauri::WindowEvent::Moved(_)
+                )
+            {
+                window_state::remember();
             }
             if let tauri::WindowEvent::Focused(focused) = event {
                 if *focused {
@@ -2627,12 +2643,17 @@ fn main() {
     install_crash_logger(&app);
     app.run(|app_handle, event| {
         if let tauri::RunEvent::ExitRequested { .. } = event {
+            // Windows still exist here; the last drag may not have settled.
+            window_state::flush(app_handle);
             if !EXITING.swap(true, std::sync::atomic::Ordering::Relaxed) {
                 perf::write_line_global("boot: exit requested");
             }
         }
         if let tauri::RunEvent::Exit = event {
             EXITING.store(true, std::sync::atomic::Ordering::Relaxed);
+            // The last geometry must be on disk even when a tray quit skips
+            // the window close event.
+            window_state::stop(app_handle);
             // The last line of a run. Without it a log cannot tell a clean quit
             // from a process that died between two boots.
             perf::write_line_global("boot: exit");

@@ -22,6 +22,7 @@
         "center": true,
         "decorations": false,
         "backgroundColor": "#07080d",
+        "visible": false,
         "create": false
       },
       {
