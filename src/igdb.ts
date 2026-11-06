@@ -127,7 +127,7 @@ export function igdbExternalId(appName: string): { category: number; uid: string
   return null;
 }
 
-/** `images.igdb.com` size templates; any size also accepts a `_2x` suffix. */
+/** `images.igdb.com` size templates; full `http(s)` URLs from Steam/GOG pass through unchanged. */
 export function igdbImage(
   imageId: string,
   size:
@@ -140,5 +140,7 @@ export function igdbImage(
     | "720p"
     | "1080p" = "cover_big",
 ): string {
-  return imageId ? `https://images.igdb.com/igdb/image/upload/t_${size}/${imageId}.jpg` : "";
+  if (!imageId) return "";
+  if (/^https?:\/\//i.test(imageId)) return imageId;
+  return `https://images.igdb.com/igdb/image/upload/t_${size}/${imageId}.jpg`;
 }
