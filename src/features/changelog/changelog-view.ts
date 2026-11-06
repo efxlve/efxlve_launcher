@@ -31,9 +31,45 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
-    version: "0.1.45",
+    version: "0.1.46",
     date: "2026-11-06",
     isCurrent: true,
+    added: [
+      {
+        en: "Cloud-save backup and restore events now have their own notification tab with a full history.",
+        tr: "Bulut kayıt yedekleme ve geri yükleme olayları artık tam geçmişiyle kendi bildirim sekmesinde görünüyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Steam games claimed for free without being launched (Destiny 2 and similar \"Add to Library\" titles) now appear in the library, along with profile-limited apps Steam hides by default.",
+        tr: "Başlatılmadan kütüphaneye eklenen ücretsiz Steam oyunları (Destiny 2 gibi) ve Steam'in varsayılan olarak gizlediği profil kısıtlı uygulamalar artık kütüphanede görünüyor.",
+      },
+      {
+        en: "Steam achievement icons load again with a Web API key: absolute icon URLs are no longer prefixed with the CDN path a second time.",
+        tr: "Web API anahtarı tanımlıyken Steam başarım ikonları yeniden yükleniyor; tam ikon adreslerine artık ikinci kez CDN yolu eklenmiyor.",
+      },
+      {
+        en: "The main window remembers its size across restarts.",
+        tr: "Ana pencere yeniden başlatmalarda boyutunu hatırlıyor.",
+      },
+      {
+        en: "Update notifications no longer list games that have been uninstalled.",
+        tr: "Güncelleme bildirimleri artık kaldırılmış oyunları listelemiyor.",
+      },
+      {
+        en: "The store loading screen stays on the storefront its tab opens.",
+        tr: "Mağaza yükleme ekranı, sekmesinin açtığı mağazada kalıyor.",
+      },
+      {
+        en: "The Ubisoft store stays signed in after its in-page login.",
+        tr: "Ubisoft mağazası sayfa içi girişten sonra oturumunu koruyor.",
+      },
+    ],
+  },
+  {
+    version: "0.1.45",
+    date: "2026-11-06",
     fixed: [
       {
         en: "Store sign-ins survive a restart: recovering the WebView2 profile now clears only its caches, so store cookies and local storage stay in place.",
@@ -42,10 +78,6 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
       {
         en: "The Steam store profile lives in local app data, so a roaming Windows profile or logoff no longer drops its sign-in.",
         tr: "Steam mağaza profili yerel uygulama verisinde tutuluyor; dolaşan Windows profili veya oturum kapatma artık girişi düşürmüyor.",
-      },
-      {
-        en: "Ubisoft's store sign-in now uses the store's own in-page login, so the tab stays signed in instead of only importing the library.",
-        tr: "Ubisoft mağaza girişi artık mağazanın kendi sayfa içi girişini kullanıyor; böylece yalnızca kütüphane aktarılmıyor, mağaza sekmesi de oturum açmış kalıyor.",
       },
       {
         en: "If the old profile had already been reset, sign in to the stores once after this update; later restarts keep the session.",
