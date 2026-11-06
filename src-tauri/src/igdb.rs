@@ -485,6 +485,8 @@ pub struct IgdbSearchHit {
 impl IgdbSearchHit {
     /// The best hit for one library title: exact name first, then the year the
     /// store already knows, then community rating. Mirrors the page matcher.
+    /// Only the calendar test calls it, so it stays out of the binary.
+    #[cfg(test)]
     pub fn best_match<'a>(hits: &'a [Self], title: &str, year: Option<i64>) -> Option<&'a Self> {
         let wanted = normalize_title(title);
         let mut best: Option<(&Self, i32)> = None;

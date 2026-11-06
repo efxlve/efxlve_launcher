@@ -828,7 +828,7 @@ pub fn read_installed_with_catalog(
     // legendary rewrites installed.json while an install runs, so a read can
     // land mid-write. Never overwrite a file this pass could not read: the map
     // would only hold what the EGL scan rebuilt, losing legendary's records.
-    let mut writable = match std::fs::read_to_string(&installed_file) {
+    let writable = match std::fs::read_to_string(&installed_file) {
         Ok(text) => match serde_json::from_str::<HashMap<String, InstalledGame>>(&text) {
             Ok(loaded) => {
                 map = loaded;
