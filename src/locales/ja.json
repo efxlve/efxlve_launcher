@@ -3697,5 +3697,14 @@
   "ea.launchMode.actionPlay": "このゲームを所有する EA アカウントで EA App にサインインしたままにして、[プレイ] を押してください。初回起動時に認証を完了するため EA App が開く場合があります。",
   "ea.launchMode.actionInstall": "EA App をインストールしてサインインしてください。EFXLVE はこのタイトルのインストールと更新に EA App を使い、その後ゲームを直接起動します。",
   "ea.launchNeedsClient": "This title uses EA activation (OOA). The launcher can install and update the files, but launching opens the EA App.",
-  "ea.uninstallLeftFiles": "アンインストーラーは終了しましたが、{a1} にファイルが残っています。EFXLVE を管理者として実行するか、フォルダーを削除してください。"
+  "ea.uninstallLeftFiles": "アンインストーラーは終了しましたが、{a1} にファイルが残っています。EFXLVE を管理者として実行するか、フォルダーを削除してください。",
+  "lib.coverSize": "グリッド密度",
+  "lib.coverSizeAuto": "自動",
+  "lib.coverSizeAutoDesc": "ウィンドウに合わせる",
+  "lib.coverSizePerRow": "{count} / 行",
+  "settings.coverSizeDesc": "ライブラリのグリッドを変更します。「自動」はウィンドウ幅に合わせます。",
+  "lib.coverSizeCompact": "コンパクト",
+  "lib.coverSizeStandard": "標準",
+  "lib.coverSizeLarge": "大",
+  "lib.coverSizeXl": "特大"
 }

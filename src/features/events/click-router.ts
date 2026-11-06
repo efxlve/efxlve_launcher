@@ -115,7 +115,7 @@ import {
 } from "../library/library-view";
 import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
 import { clearReleaseCalendarSearch, closeReleaseCalendar, closeReleaseStores, isReleaseStoresOpen, openReleaseCalendar, openReleaseCalendarSearch, openReleaseCalendarWatchlist, openReleaseStores, refreshReleaseCalendar, setReleaseCalendarDay, setReleaseCalendarMonth, stepReleaseCalendarMonth, toggleReleaseFollow, toggleReleaseWatchlist } from "../library/release-calendar";
-import { handleLibraryOptionAction } from "../library/library-options";
+import { handleLibraryOptionAction, syncCoverSizeMenu } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
 import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaContentCancel, eaContentPlan, eaContentUninstall, eaContentVerify, eaDirectSetEnabled, eaLoginOpen, isTransientUbisoftError, ubiDirectAdopt, ubiDirectCancel, ubiDirectCloudSaves, ubiDirectImportSaves, ubiDirectMove, ubiDirectRelease, ubiDirectSetEnabled, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, ubiStoreSignin, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
@@ -199,6 +199,14 @@ document.addEventListener("click", (e) => {
     S.isStoreDropdownOpen = false;
     const menu = document.getElementById("store-dropdown-menu");
     if (menu) menu.classList.remove("show");
+  }
+
+  // Close the cover-size menu when clicking outside it.
+  if (S.isCoverSizeOpen && !targetEl.closest(".cover-size-container")) {
+    S.isCoverSizeOpen = false;
+    const menu = document.getElementById("cover-size-menu");
+    if (menu) menu.classList.remove("show");
+    document.querySelector<HTMLElement>('[data-act="toggle-cover-size"]')?.setAttribute("aria-expanded", "false");
   }
 
   // Close the collection dropdown when clicking outside it.
@@ -578,6 +586,24 @@ document.addEventListener("click", (e) => {
     else render();
   } else if (act === "source-filter" && t.dataset.val) {
     if (applyStoreFilter(t.dataset.val) && !refreshLibraryForStoreFilter()) render();
+  } else if (act === "toggle-cover-size") {
+    S.isCoverSizeOpen = !S.isCoverSizeOpen;
+    S.isSortDropdownOpen = false;
+    S.isStoreDropdownOpen = false;
+    S.isColDropdownOpen = false;
+    document.getElementById("sort-dropdown-menu")?.classList.remove("show");
+    document.getElementById("store-dropdown-menu")?.classList.remove("show");
+    document.getElementById("col-dropdown-menu")?.classList.remove("show");
+    const menu = document.getElementById("cover-size-menu");
+    if (menu) {
+      menu.classList.toggle("show", S.isCoverSizeOpen);
+      document
+        .querySelector<HTMLElement>('[data-act="toggle-cover-size"]')
+        ?.setAttribute("aria-expanded", String(S.isCoverSizeOpen));
+      if (S.isCoverSizeOpen) syncCoverSizeMenu();
+    } else {
+      render();
+    }
   } else if (act === "open-release-calendar") {
     openReleaseCalendar();
   } else if (act === "open-release-calendar-search" && (t.dataset.query || t.dataset.id)) {
@@ -761,6 +787,9 @@ document.addEventListener("click", (e) => {
     if ((mode === "grid" || mode === "list") && mode !== S.epicViewMode) {
       S.epicViewMode = mode;
       localStorage.setItem("efxlve-view-mode", mode);
+      S.isCoverSizeOpen = false;
+      document.getElementById("cover-size-menu")?.classList.remove("show");
+      document.querySelector<HTMLElement>('[data-act="toggle-cover-size"]')?.setAttribute("aria-expanded", "false");
       document.querySelectorAll<HTMLElement>("[data-act='lib-view-mode']").forEach((b) => {
         b.classList.toggle("active", b.dataset.val === mode);
       });

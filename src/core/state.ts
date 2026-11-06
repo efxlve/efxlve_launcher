@@ -49,6 +49,9 @@ import {
   SS_QUALITY_KEY,
   SPEED_BITS_KEY,
   COVER_TITLES_KEY,
+  COVER_SIZE_KEY,
+  COVER_SIZE_VALUES,
+  type CoverSize,
   STORE_BADGE_KEY,
   STORE_ICONS_KEY,
   CASE_COVERS_KEY,
@@ -535,6 +538,7 @@ export const S = {
   prevRenderedColId: (undefined) as string | null | undefined,
   isSortDropdownOpen: false,
   isStoreDropdownOpen: false,
+  isCoverSizeOpen: false,
   storeExtensionsState: (null) as Record<string, { id: string; name: string; version: string; installed: boolean; enabled: boolean; sizeBytes: number }> | null,
   storeExtensionDownloading: (null) as string | null,
   isColDropdownOpen: false,
@@ -637,6 +641,8 @@ export const S = {
   minimizeOnGame: (localStorage.getItem(MINIMIZE_ON_GAME_KEY) === "true") as boolean,
   showCoverStats: (localStorage.getItem(COVER_STATS_KEY) !== "false") as boolean,
   showCoverTitles: (localStorage.getItem(COVER_TITLES_KEY) === "true") as boolean,
+  /** Library grid density; "auto" keeps the responsive six-column default. */
+  coverSize: COVER_SIZE_VALUES.find((size) => size === localStorage.getItem(COVER_SIZE_KEY)) ?? "auto",
   showStoreBadge: (localStorage.getItem(STORE_BADGE_KEY) === "true") as boolean,
   /** Optional: storefront mark on grid covers. */
   showStoreIcons: (localStorage.getItem(STORE_ICONS_KEY) === "true") as boolean,

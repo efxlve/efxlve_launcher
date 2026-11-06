@@ -9,6 +9,7 @@ import { clearOverlayBlock, overlayBlockedGames, setOverlayAntiCheatOverride } f
 
 import { applyWinbarAppIcon } from "../../core/app-icon";
 import { APP_ICON_KEY, CUSTOM_APP_ICON_KEY, AUTO_UPDATE_TIME_KEY, CASE_STORE_COLORS_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY, LIB_PAGE_SIZE_KEY, STARTUP_TAB_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeDownloadFinishAction, normalizeLibraryPageSize } from "../../core/constants";
+import { setCoverSize } from "../library/library-options";
 import { syncCaseCustomStoreColors } from "../library/case-colors";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { cancelFinishCountdown, setDownloadFinishAction } from "../downloads/finish-action";
@@ -342,6 +343,13 @@ document.addEventListener("keydown", (e) => {
     if (S.isFilterPanelOpen) {
       S.isFilterPanelOpen = false;
       render();
+      return;
+    }
+    // The library cover-size menu is a light popover; it closes before the page.
+    if (S.isCoverSizeOpen) {
+      S.isCoverSizeOpen = false;
+      document.getElementById("cover-size-menu")?.classList.remove("show");
+      document.querySelector<HTMLElement>('[data-act="toggle-cover-size"]')?.setAttribute("aria-expanded", "false");
       return;
     }
     // An open dropdown in the game page closes first: Escape on the `...` menu
@@ -916,6 +924,11 @@ document.addEventListener("change", (e) => {
     localStorage.setItem(LIB_PAGE_SIZE_KEY, String(S.libPageSize));
     S.libPage = 1;
     render();
+    return;
+  }
+  if (act === "set-cover-size") {
+    // Shared by Settings > Appearance and the library View menu.
+    setCoverSize((t as HTMLSelectElement).value);
     return;
   }
   if (act === "startup-tab") {

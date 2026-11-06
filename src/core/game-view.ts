@@ -87,7 +87,7 @@ export function libraryCoverStats(appName: string): string {
   const chips: string[] = [];
   const secs = libraryPlaytime({ appName, title: summaryOf(appName)?.title ?? appName }).seconds;
   if (secs > 0) {
-    chips.push(`<span class="cover-stat">${icon("clock", 12)}<span>${esc(fmtPlaytime(secs))}</span></span>`);
+    chips.push(`<span class="cover-stat" data-cover-stat="playtime">${icon("clock", 12)}<span>${esc(fmtPlaytime(secs))}</span></span>`);
   }
   const ach = achSummaryOf(appName);
   const known = ach?.progress_known !== false;
@@ -95,10 +95,10 @@ export function libraryCoverStats(appName: string): string {
   if (ach?.supported && ach.total_achievements > 0) {
     const label = known ? `${ach.user_unlocked}/${ach.total_achievements}` : String(ach.total_achievements);
     chips.push(
-      `<span class="cover-stat${done ? " done" : ""}">${icon("trophy", 12)}<span>${label}</span></span>`,
+      `<span class="cover-stat${done ? " done" : ""}" data-cover-stat="ach">${icon("trophy", 12)}<span>${label}</span></span>`,
     );
   } else if (done) {
-    chips.push(`<span class="cover-stat done">${icon("trophy", 12)}</span>`);
+    chips.push(`<span class="cover-stat done" data-cover-stat="ach">${icon("trophy", 12)}</span>`);
   }
   if (chips.length === 0) return "";
   return `<div class="cover-stats" data-cover-stats>${chips.join("")}</div>`;

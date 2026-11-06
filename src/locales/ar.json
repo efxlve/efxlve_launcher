@@ -3697,5 +3697,14 @@
   "ea.launchMode.actionPlay": "أبقِ EA App مثبّتًا ومسجّل الدخول بحساب EA الذي يملك هذه اللعبة، ثم اضغط تشغيل. قد يفتح التشغيل الأول EA App لإكمال التنشيط.",
   "ea.launchMode.actionInstall": "ثبّت EA App وسجّل الدخول. يستخدمه EFXLVE لتثبيت هذا العنوان وتحديثه، ثم يشغّل اللعبة مباشرة.",
   "ea.launchNeedsClient": "This title uses EA activation (OOA). The launcher can install and update the files, but launching opens the EA App.",
-  "ea.uninstallLeftFiles": "انتهى برنامج الإزالة لكن الملفات ما زالت في {a1}. شغّل EFXLVE كمسؤول أو احذف المجلد."
+  "ea.uninstallLeftFiles": "انتهى برنامج الإزالة لكن الملفات ما زالت في {a1}. شغّل EFXLVE كمسؤول أو احذف المجلد.",
+  "lib.coverSize": "كثافة الشبكة",
+  "lib.coverSizeAuto": "تلقائي",
+  "lib.coverSizeAutoDesc": "يتبع النافذة",
+  "lib.coverSizePerRow": "{count} / صف",
+  "settings.coverSizeDesc": "يغيّر شبكة المكتبة. «تلقائي» يتبع عرض النافذة.",
+  "lib.coverSizeCompact": "مضغوط",
+  "lib.coverSizeStandard": "قياسي",
+  "lib.coverSizeLarge": "كبير",
+  "lib.coverSizeXl": "كبير جدًا"
 }

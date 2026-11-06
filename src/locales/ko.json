@@ -3697,5 +3697,14 @@
   "ea.launchMode.actionPlay": "이 게임을 소유한 EA 계정으로 EA App에 로그인한 상태를 유지하고 플레이를 누르세요. 첫 실행 시 인증을 마치기 위해 EA App이 열릴 수 있습니다.",
   "ea.launchMode.actionInstall": "EA App을 설치하고 로그인하세요. EFXLVE는 이 타이틀을 설치하고 업데이트할 때 EA App을 사용한 뒤 게임을 직접 실행합니다.",
   "ea.launchNeedsClient": "This title uses EA activation (OOA). The launcher can install and update the files, but launching opens the EA App.",
-  "ea.uninstallLeftFiles": "제거 프로그램이 끝났지만 {a1}에 파일이 남아 있습니다. EFXLVE를 관리자 권한으로 실행하거나 폴더를 삭제하세요."
+  "ea.uninstallLeftFiles": "제거 프로그램이 끝났지만 {a1}에 파일이 남아 있습니다. EFXLVE를 관리자 권한으로 실행하거나 폴더를 삭제하세요.",
+  "lib.coverSize": "그리드 밀도",
+  "lib.coverSizeAuto": "자동",
+  "lib.coverSizeAutoDesc": "창에 맞춤",
+  "lib.coverSizePerRow": "{count} / 행",
+  "settings.coverSizeDesc": "라이브러리 그리드를 변경합니다. 자동은 창 너비에 맞춥니다.",
+  "lib.coverSizeCompact": "컴팩트",
+  "lib.coverSizeStandard": "표준",
+  "lib.coverSizeLarge": "크게",
+  "lib.coverSizeXl": "아주 크게"
 }

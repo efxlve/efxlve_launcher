@@ -3697,5 +3697,14 @@
   "ea.launchMode.actionPlay": "EA App'i kurulu tutun ve bu oyunun sahibi olan EA hesabıyla oturum açın, ardından Oyna'ya basın. İlk başlatma aktivasyonu tamamlamak için EA App'i açabilir.",
   "ea.launchMode.actionInstall": "EA App'i kurun ve oturum açın. EFXLVE bu oyunu kurmak ve güncellemek için EA App'i kullanır, ardından oyunu doğrudan başlatır.",
   "ea.launchNeedsClient": "Bu oyun EA aktivasyonu (OOA) kullanıyor. Launcher dosyaları kurabilir ve güncelleyebilir, ancak başlatma EA App'i açar.",
-  "ea.uninstallLeftFiles": "Kaldırıcı bitti ama {a1} içinde dosyalar kaldı. EFXLVE'yi yönetici olarak çalıştırın veya klasörü silin."
+  "ea.uninstallLeftFiles": "Kaldırıcı bitti ama {a1} içinde dosyalar kaldı. EFXLVE'yi yönetici olarak çalıştırın veya klasörü silin.",
+  "lib.coverSize": "Grid yoğunluğu",
+  "lib.coverSizeAuto": "Otomatik",
+  "lib.coverSizeAutoDesc": "Pencereyi takip eder",
+  "lib.coverSizePerRow": "{count} / satır",
+  "settings.coverSizeDesc": "Kütüphane grid'ini değiştirir. Otomatik seçeneği pencere genişliğini takip eder.",
+  "lib.coverSizeCompact": "Kompakt",
+  "lib.coverSizeStandard": "Standart",
+  "lib.coverSizeLarge": "Büyük",
+  "lib.coverSizeXl": "Çok büyük"
 }

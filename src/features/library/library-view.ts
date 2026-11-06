@@ -27,6 +27,7 @@ import { t } from "../../i18n";
 import { sharedSummaries } from "./shared-library";
 import { steamAppOsList } from "./steam-library";
 import { allStoresMenuCount, enabledStoreKey, pickShownCopy, storeFilterLabel, storeFilterMenuHtml, storeFilterRowOn } from "./store-filter";
+import { coverSizeMenuHtml, syncCoverSizeMenu } from "./library-options";
 import { LIB_FILTERS_ENABLED, libFiltersActiveCount, matchesLibFilters, renderLibFilterPanel, studioOf } from "./library-filters";
 /** Sort options shown in the library sort dropdown, in the menu order. */
 export function getSortOptions(): { id: EpicSort; label: string }[] {
@@ -564,7 +565,7 @@ function renderResults(itemsHtml: string, sentinelHtml: string): string {
   const caseClasses = S.showCaseCovers
     ? ` has-case-covers${!S.caseShelfShadow ? " no-shelf-shadow" : ""}${!S.caseGlare ? " no-case-glare" : ""}`
     : "";
-  return `<div class="pgrid${S.showCoverTitles || S.showStoreBadge ? " has-captions" : ""}${caseClasses}${highlightCls}">${itemsHtml}${sentinelHtml}</div>`;
+  return `<div class="pgrid${S.showCoverTitles || S.showStoreBadge ? " has-captions" : ""}${caseClasses}${highlightCls}" data-cover-size="${S.coverSize}">${itemsHtml}${sentinelHtml}</div>`;
 }
 
 /**
@@ -883,7 +884,10 @@ function wireCardSettle(): void {
   cardSettleWired = true;
 
   window.addEventListener("scroll", () => { cachedCardRect = null; }, { passive: true });
-  window.addEventListener("resize", () => { cachedCardRect = null; }, { passive: true });
+  window.addEventListener("resize", () => {
+    cachedCardRect = null;
+    if (S.isCoverSizeOpen) syncCoverSizeMenu();
+  }, { passive: true });
 
   document.addEventListener(
     "pointermove",
@@ -1018,7 +1022,7 @@ function libraryHeader(tools: string, filters: string): string {
 
 export function renderSkeletonLibrary(): string {
   const cards = Array.from({ length: 12 }, () => `<div class="pcard"><div class="pcard-art skeleton"></div></div>`).join("");
-  return `${libraryHeader("", "")}<div class="pgrid">${cards}</div>`;
+  return `${libraryHeader("", "")}<div class="pgrid" data-cover-size="${S.coverSize}">${cards}</div>`;
 }
 
 export function syncLibraryHeadingCount(): void {
@@ -1289,9 +1293,15 @@ export function renderEpic(): string {
           <button class="sort-menu-item-btn ${S.epicSort === opt.id ? "selected" : ""}" data-act="select-sort" data-sort="${opt.id}">${esc(opt.label)}</button>`).join("")}
       </div>
     </div>
-    <div class="seg" role="group" aria-label="${t("lib.viewMode")}">
-      <button class="${S.epicViewMode === "grid" ? "active" : ""}" data-act="lib-view-mode" data-val="grid" title="${t("lib.viewGrid")}">${icon("layout-grid", 14)}</button>
-      <button class="${S.epicViewMode === "list" ? "active" : ""}" data-act="lib-view-mode" data-val="list" title="${t("lib.viewList")}">${icon("list", 14)}</button>
+    <div class="lib-view-group cover-size-container">
+      <div class="seg" role="group" aria-label="${t("lib.viewMode")}">
+        <button class="${S.epicViewMode === "grid" ? "active" : ""}" data-act="lib-view-mode" data-val="grid" title="${t("lib.viewGrid")}">${icon("layout-grid", 14)}</button>
+        <button class="${S.epicViewMode === "list" ? "active" : ""}" data-act="lib-view-mode" data-val="list" title="${t("lib.viewList")}">${icon("list", 14)}</button>
+        <button class="seg-menu-btn lib-cover-size-btn" data-act="toggle-cover-size" title="${esc(t("lib.coverSize"))}" aria-label="${esc(t("lib.coverSize"))}" aria-expanded="${S.isCoverSizeOpen}">
+          ${icon("chevron-down", 11)}
+        </button>
+      </div>
+      ${coverSizeMenuHtml()}
     </div>
     <button class="icon-btn lib-random-btn" data-act="lib-random-game" title="${esc(t("library.random"))}" aria-label="${esc(t("library.random"))}">${icon("shuffle", 16)}</button>
     <button class="icon-btn lib-hide-btn" data-act="open-hide-games" title="${esc(t("lib.hideGamesTip"))}" aria-label="${esc(t("lib.hideGamesTip"))}">${icon("eye-off", 16)}</button>

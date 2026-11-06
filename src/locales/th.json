@@ -3697,5 +3697,14 @@
   "ea.launchMode.actionPlay": "ติดตั้ง EA App และลงชื่อเข้าใช้ด้วยบัญชี EA ที่เป็นเจ้าของเกมนี้ไว้ แล้วกดเล่น การเปิดครั้งแรกอาจเปิด EA App เพื่อทำการเปิดใช้งานให้เสร็จ",
   "ea.launchMode.actionInstall": "ติดตั้ง EA App และลงชื่อเข้าใช้ EFXLVE จะใช้ EA App ในการติดตั้งและอัปเดตเกมนี้ จากนั้นจะเปิดเกมโดยตรง",
   "ea.launchNeedsClient": "This title uses EA activation (OOA). The launcher can install and update the files, but launching opens the EA App.",
-  "ea.uninstallLeftFiles": "ตัวถอนการติดตั้งเสร็จแล้วแต่ยังมีไฟล์เหลือใน {a1} ให้เรียกใช้ EFXLVE ในฐานะผู้ดูแลระบบหรือลบโฟลเดอร์"
+  "ea.uninstallLeftFiles": "ตัวถอนการติดตั้งเสร็จแล้วแต่ยังมีไฟล์เหลือใน {a1} ให้เรียกใช้ EFXLVE ในฐานะผู้ดูแลระบบหรือลบโฟลเดอร์",
+  "lib.coverSize": "ความหนาแน่นของตาราง",
+  "lib.coverSizeAuto": "อัตโนมัติ",
+  "lib.coverSizeAutoDesc": "ตามหน้าต่าง",
+  "lib.coverSizePerRow": "{count} / แถว",
+  "settings.coverSizeDesc": "เปลี่ยนตารางคลังเกม อัตโนมัติจะปรับตามความกว้างของหน้าต่าง",
+  "lib.coverSizeCompact": "กะทัดรัด",
+  "lib.coverSizeStandard": "มาตรฐาน",
+  "lib.coverSizeLarge": "ใหญ่",
+  "lib.coverSizeXl": "ใหญ่พิเศษ"
 }

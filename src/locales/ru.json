@@ -3697,5 +3697,14 @@
   "ea.launchMode.actionPlay": "Оставьте EA App установленным и войдите в аккаунт EA, которому принадлежит игра, затем нажмите «Играть». При первом запуске EA App может открыться для завершения активации.",
   "ea.launchMode.actionInstall": "Установите EA App и войдите в аккаунт. EFXLVE использует его для установки и обновления игры, а затем запускает её напрямую.",
   "ea.launchNeedsClient": "This title uses EA activation (OOA). The launcher can install and update the files, but launching opens the EA App.",
-  "ea.uninstallLeftFiles": "Деинсталлятор завершил работу, но в {a1} остались файлы. Запустите EFXLVE от имени администратора или удалите папку."
+  "ea.uninstallLeftFiles": "Деинсталлятор завершил работу, но в {a1} остались файлы. Запустите EFXLVE от имени администратора или удалите папку.",
+  "lib.coverSize": "Плотность сетки",
+  "lib.coverSizeAuto": "Авто",
+  "lib.coverSizeAutoDesc": "По размеру окна",
+  "lib.coverSizePerRow": "{count} / ряд",
+  "settings.coverSizeDesc": "Меняет сетку библиотеки. «Авто» подстраивается под ширину окна.",
+  "lib.coverSizeCompact": "Компактный",
+  "lib.coverSizeStandard": "Стандартный",
+  "lib.coverSizeLarge": "Крупный",
+  "lib.coverSizeXl": "Очень крупный"
 }

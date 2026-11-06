@@ -113,6 +113,17 @@ export const GAME_STATUS_KEY = "efxlve-game-status";
 export const COVER_STATS_KEY = "efxlve-cover-stats";
 /** Show the game title under each cover tile in the library grid. */
 export const COVER_TITLES_KEY = "efxlve-cover-titles";
+/** Library grid cover density. "auto" follows the window; the rest set a target width. */
+export const COVER_SIZE_KEY = "efxlve-cover-size";
+export type CoverSize = "auto" | "compact" | "standard" | "large" | "xl";
+export const COVER_SIZE_VALUES: readonly CoverSize[] = ["auto", "compact", "standard", "large", "xl"];
+/** Target cover width in CSS pixels for each manual density. */
+export const COVER_SIZE_TARGET: Record<Exclude<CoverSize, "auto">, number> = {
+  compact: 140,
+  standard: 180,
+  large: 210,
+  xl: 260,
+};
 /** Show a store source badge when viewing all stores. */
 export const STORE_BADGE_KEY = "efxlve-store-badge";
 /** Show the storefront mark on every grid cover. Off by default. */

@@ -10,6 +10,7 @@ import launcherIcon from "../../../src-tauri/icons/128x128@2x.png";
 import { invoke } from "@tauri-apps/api/core";
 import { CUSTOM_CSS_LIMIT, DISCORD_INVITE_URL, LIB_PAGE_SIZES, OVERLAY_ENABLED_KEY, OVERLAY_HOTKEY_KEY, SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY, isSteamDeckDevice, isTauri } from "../../core/constants";
 import { createLazyPanel, panelLoadingState } from "./lazy-panel";
+import { coverSizeSelectHtml } from "../library/library-options";
 import { measuredSize } from "../../core/folder-size";
 import { imageCacheSize, IMAGE_THUMB_WIDTH } from "../../core/picture-cache";
 import { emptyState, icon, type IconName } from "../../core/icons";
@@ -1478,6 +1479,7 @@ function renderAppearance(): string {
       row(t("settings.reduceEffectsTitle"), t("settings.reduceEffectsDesc"), toggle("toggle-reduce-effects", S.reduceEffects)) +
       row(t("settings.coverStatsTitle"), t("settings.coverStatsDesc"), toggle("toggle-cover-stats", S.showCoverStats)) +
       row(t("settings.coverTitlesTitle"), t("settings.coverTitlesDesc"), toggle("toggle-cover-titles", S.showCoverTitles)) +
+      row(t("lib.coverSize"), t("settings.coverSizeDesc"), coverSizeSelectHtml()) +
       row(t("settings.storeBadgeTitle"), t("settings.storeBadgeDesc"), toggle("toggle-store-badge", S.showStoreBadge)) +
       row(t("settings.storeIconsTitle"), t("settings.storeIconsDesc"), toggle("toggle-store-icons", S.showStoreIcons)) +
       row(

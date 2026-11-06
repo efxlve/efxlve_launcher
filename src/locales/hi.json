@@ -3697,5 +3697,14 @@
   "ea.launchMode.actionPlay": "EA App इंस्टॉल रखें और उस EA अकाउंट से साइन इन रहें जिसके पास यह गेम है, फिर Play दबाएँ। पहला लॉन्च एक्टिवेशन पूरा करने के लिए EA App खोल सकता है।",
   "ea.launchMode.actionInstall": "EA App इंस्टॉल करें और साइन इन करें। EFXLVE इसका उपयोग इस टाइटल को इंस्टॉल और अपडेट करने के लिए करता है, फिर गेम सीधे लॉन्च करता है।",
   "ea.launchNeedsClient": "This title uses EA activation (OOA). The launcher can install and update the files, but launching opens the EA App.",
-  "ea.uninstallLeftFiles": "अनइंस्टॉलर समाप्त हो गया, लेकिन {a1} में फ़ाइलें बची हैं। EFXLVE को व्यवस्थापक के रूप में चलाएँ या फ़ोल्डर हटाएँ।"
+  "ea.uninstallLeftFiles": "अनइंस्टॉलर समाप्त हो गया, लेकिन {a1} में फ़ाइलें बची हैं। EFXLVE को व्यवस्थापक के रूप में चलाएँ या फ़ोल्डर हटाएँ।",
+  "lib.coverSize": "ग्रिड घनत्व",
+  "lib.coverSizeAuto": "स्वचालित",
+  "lib.coverSizeAutoDesc": "विंडो के अनुसार",
+  "lib.coverSizePerRow": "{count} / पंक्ति",
+  "settings.coverSizeDesc": "लाइब्रेरी ग्रिड बदलता है। स्वचालित विंडो की चौड़ाई के अनुसार चलता है।",
+  "lib.coverSizeCompact": "संक्षिप्त",
+  "lib.coverSizeStandard": "मानक",
+  "lib.coverSizeLarge": "बड़ा",
+  "lib.coverSizeXl": "बहुत बड़ा"
 }

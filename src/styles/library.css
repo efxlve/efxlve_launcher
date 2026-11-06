@@ -76,6 +76,50 @@
 .store-option-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .store-option-count { color: var(--text-3); font-size: 12px; margin-left: auto; min-width: 2.6em; text-align: right; font-variant-numeric: tabular-nums; }
 
+/* --- Cover size menu --- */
+.lib-view-group { position: relative; display: flex; align-items: center; }
+.lib-tools .seg > .lib-cover-size-btn {
+  position: relative; width: 20px; height: 34px; padding: 0; margin-left: 2px;
+  display: grid; place-items: center; border: 0; background: transparent;
+  color: var(--text-3); border-radius: 4px;
+}
+.lib-tools .seg > .lib-cover-size-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.06); }
+.lib-tools .seg > .lib-cover-size-btn::before {
+  content: ""; position: absolute; left: -2px; top: 6px; bottom: 6px; width: 1px; background: var(--line);
+}
+.lib-tools .seg > .lib-cover-size-btn svg { width: 11px; height: 11px; }
+.cover-size-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; left: auto; z-index: 60;
+  width: 292px; padding: 7px; display: none;
+  background: var(--surface-2); border: 1px solid var(--line-strong);
+  border-radius: 10px; box-shadow: var(--shadow-pop);
+}
+.cover-size-menu.show { display: block; }
+.cover-size-head {
+  padding: 5px 8px 8px; color: var(--text); font-size: 12.5px; font-weight: 600;
+}
+.cover-size-option {
+  display: flex; align-items: center; gap: 9px; width: 100%; min-height: 36px;
+  padding: 4px 8px; border: 0; border-radius: 6px; background: transparent;
+  color: var(--text-2); text-align: left; cursor: pointer; font: inherit;
+}
+.cover-size-option:hover { background: rgba(255, 255, 255, 0.06); color: var(--text); }
+.cover-size-option.selected { background: rgba(255, 255, 255, 0.09); color: var(--text); }
+.cover-size-swatch {
+  flex: none; width: 22px; height: 22px; padding: 1px; display: grid;
+  grid-template-columns: repeat(var(--sw, 3), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--sh, 3), minmax(0, 1fr));
+  gap: 2px; color: var(--text-3);
+}
+.cover-size-option.selected .cover-size-swatch { color: var(--text); }
+.cover-size-swatch i { display: block; background: currentColor; opacity: 0.5; border-radius: 1px; }
+.cover-size-swatch[data-size="auto"] { border: 1px dashed currentColor; border-radius: 3px; }
+.cover-size-swatch[data-size="auto"] i { opacity: 0.75; }
+.cover-size-name { flex: 1; min-width: 0; font-size: 12px; font-weight: 500; }
+.cover-size-name small { display: block; margin-top: 1px; color: var(--text-3); font-size: 10px; font-weight: 400; }
+.cover-size-count { flex: none; color: var(--text-3); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+.cover-size-check { flex: none; width: 14px; display: inline-flex; color: var(--text); }
+
 /* --- Collections dropdown in filter bar --- */
 .col-dropdown-container { position: relative; display: inline-flex; align-items: center; }
 .lib-col-dropdown-btn {
@@ -152,6 +196,14 @@
 @container (max-width: 520px) {
   .pgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* Manual density: a target width lets the grid pick its own column count.
+   Higher specificity than the responsive `auto` ladder above. */
+.pgrid[data-cover-size="compact"] { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.pgrid[data-cover-size="standard"] { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.pgrid[data-cover-size="large"] { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+.pgrid[data-cover-size="xl"] { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+/* The physical case header needs room for the store banner and OS badge. */
+.pgrid.has-case-covers[data-cover-size="compact"] { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
 .lib-sentinel { grid-column: 1 / -1; height: 24px; pointer-events: none; }
 .pcard {
   position: relative; cursor: pointer; min-width: 0;
@@ -171,6 +223,7 @@
 .pcard:focus-visible { outline-offset: 3px; }
 .pcard-art {
   position: relative; aspect-ratio: 2 / 3; border-radius: var(--r-md); overflow: hidden;
+  container-type: inline-size;
   background: var(--surface-2); outline: 1px solid var(--line); outline-offset: -1px;
   transform-origin: center center;
   /* Smooth spring settle when leaving; fast tracking while moving the pointer. */
@@ -549,6 +602,23 @@
 .pbadge.missing { color: #e5484d; gap: 4px; pointer-events: auto; }
 .pbadge.update { color: #f0b232; }
 .pbadge.now { color: #3ddc84; }
+
+/* Compact covers: keep the on-cover chrome in proportion with the artwork. */
+@container (max-width: 170px) {
+  .cover-stats { top: 6px; left: 6px; gap: 3px; }
+  .cover-stat { height: 18px; padding: 0 5px; gap: 3px; border-radius: 5px; font-size: 10.5px; }
+  .cover-stat svg { width: 10px; height: 10px; }
+  .cover-store { right: 6px; bottom: 7px; width: 18px; height: 18px; border-radius: 5px; }
+  .cover-store-logo { width: 11px; height: 11px; }
+  .pcard .pbadge { right: 6px; top: 6px; height: 17px; padding: 0 5px; font-size: 9.5px; }
+}
+/* At the densest sizes playtime gives way; the trophy count is the priority. */
+@container (max-width: 125px) {
+  .cover-stat[data-cover-stat="playtime"] { display: none; }
+  .cover-stat { height: 16px; padding: 0 4px; font-size: 9.5px; }
+  .cover-stat svg { width: 9px; height: 9px; }
+  .cover-store { display: none; }
+}
 
 .card-dl-track { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; z-index: 5; background: rgba(0, 0, 0, 0.6); }
 .card-dl-bar { height: 100%; background: var(--accent); transition: width 200ms linear; }

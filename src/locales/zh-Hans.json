@@ -3697,5 +3697,14 @@
   "ea.launchMode.actionPlay": "请保持 EA App 已安装，并登录拥有此游戏的 EA 账户，然后点击“开始游戏”。首次启动可能会打开 EA App 以完成激活。",
   "ea.launchMode.actionInstall": "安装 EA App 并登录。EFXLVE 会用 EA App 安装和更新这款游戏，然后直接启动它。",
   "ea.launchNeedsClient": "This title uses EA activation (OOA). The launcher can install and update the files, but launching opens the EA App.",
-  "ea.uninstallLeftFiles": "卸载程序已完成，但 {a1} 中仍有文件。请以管理员身份运行 EFXLVE 或删除该文件夹。"
+  "ea.uninstallLeftFiles": "卸载程序已完成，但 {a1} 中仍有文件。请以管理员身份运行 EFXLVE 或删除该文件夹。",
+  "lib.coverSize": "网格密度",
+  "lib.coverSizeAuto": "自动",
+  "lib.coverSizeAutoDesc": "跟随窗口",
+  "lib.coverSizePerRow": "{count} / 行",
+  "settings.coverSizeDesc": "更改库网格。自动会跟随窗口宽度。",
+  "lib.coverSizeCompact": "紧凑",
+  "lib.coverSizeStandard": "标准",
+  "lib.coverSizeLarge": "大",
+  "lib.coverSizeXl": "特大"
 }

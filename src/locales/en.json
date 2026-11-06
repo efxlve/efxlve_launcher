@@ -3697,5 +3697,14 @@
   "ea.launchMode.actionPlay": "Keep the EA App installed and signed in with the account that owns this game, then press Play. The first launch may open the EA App to finish activation.",
   "ea.launchMode.actionInstall": "Install the EA App and sign in. EFXLVE uses it to install and update this title, then launches the game directly.",
   "ea.launchNeedsClient": "This title uses EA activation (OOA). The launcher can install and update the files, but launching opens the EA App.",
-  "ea.uninstallLeftFiles": "The uninstaller finished, but files remain in {a1}. Run EFXLVE as administrator or remove the folder."
+  "ea.uninstallLeftFiles": "The uninstaller finished, but files remain in {a1}. Run EFXLVE as administrator or remove the folder.",
+  "lib.coverSize": "Grid density",
+  "lib.coverSizeAuto": "Auto",
+  "lib.coverSizeAutoDesc": "Follows the window",
+  "lib.coverSizePerRow": "{count} / row",
+  "settings.coverSizeDesc": "Changes the library grid. Auto follows the window width.",
+  "lib.coverSizeCompact": "Compact",
+  "lib.coverSizeStandard": "Standard",
+  "lib.coverSizeLarge": "Large",
+  "lib.coverSizeXl": "Extra large"
 }
