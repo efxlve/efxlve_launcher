@@ -512,6 +512,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `ubi_open_saves` | `ubiOpenSaves({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_save_path` | `ubiSavePath({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_set_install_dir` | `ubiSetInstallDir({ ... })` | `src-tauri/src/companion/mod.rs` |
+| `ubi_store_signin` | `ubiStoreSignin({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `uninstall_store_extension` | `uninstallStoreExtension({ ... })` | `src-tauri/src/store_host.rs` |
 | `xbox_gamepass_catalog` | `xboxGamepassCatalog({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `xbox_gamepass_detail` | `xboxGamepassDetail({ ... })` | `src-tauri/src/companion/mod.rs` |

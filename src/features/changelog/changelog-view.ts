@@ -44,6 +44,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         tr: "Steam mağaza profili yerel uygulama verisinde tutuluyor; dolaşan Windows profili veya oturum kapatma artık girişi düşürmüyor.",
       },
       {
+        en: "Ubisoft's store sign-in now uses the store's own in-page login, so the tab stays signed in instead of only importing the library.",
+        tr: "Ubisoft mağaza girişi artık mağazanın kendi sayfa içi girişini kullanıyor; böylece yalnızca kütüphane aktarılmıyor, mağaza sekmesi de oturum açmış kalıyor.",
+      },
+      {
         en: "If the old profile had already been reset, sign in to the stores once after this update; later restarts keep the session.",
         tr: "Eski profil daha önce sıfırlandıysa bu güncellemeden sonra mağazalara bir kez giriş yapın; sonraki yeniden başlatmalar oturumu korur.",
       },

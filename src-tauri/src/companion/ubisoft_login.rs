@@ -34,33 +34,25 @@ fragment gameProps on Game { id spaceId name } \
 fragment ownedGameProps on Game { ...gameProps viewer { meta { id ownedPlatformGroups { id name type } } } } \
 fragment ownedGamesList on User { ownedGames: games(filterBy: {isOwned: true}) { totalCount nodes { ...ownedGameProps } } }";
 
-/// Page script for the overlay login webview.
+/// Page script for the Ubisoft store tab and the standalone overlay login page.
 ///
-/// The page posts the session to `/v3/profiles/sessions`; this captures that
-/// response and hands a base64 payload to `https://efxlve.local/ubi-session`,
-/// where the store host picks it up. The two-factor page also gets its device
-/// name filled in, the way the Galaxy plugin does.
+/// The standalone page posts the session to `/v3/profiles/sessions`; this
+/// captures that response and hands a base64 payload to
+/// `https://efxlve.local/ubi-session`, where the store host picks it up.
+///
+/// The store page is different: its own `UPlayConnect-Login` call is what saves
+/// the store cookie, so the script forces the store's in-page modal login (a
+/// child webview has no popup), lets the store finish that call, and only then
+/// hands the session over for the library import. Without that the library was
+/// imported but the store tab was still signed out.
 pub(crate) const WATCH_SCRIPT: &str = r#"
 (function () {
   if (window.__efxlveUbiHooks) return;
   window.__efxlveUbiHooks = true;
-  // Only the overlay login page hands out a session; the store page must not
-  // re-trigger an import on every visit.
+  // Only these two pages hand a session over.
   var loginHost = location.hostname === "connect.cdn.ubisoft.com";
+  var storeHost = /(^|\.)store\.(ubisoft|ubi)\.com$/i.test(location.hostname);
   var session = null;
-  // The storefront's LOG IN calls `window.open` on the webauth page. A child
-  // webview has no popup, so the click did nothing. Continue on the overlay
-  // login page instead: it is the flow this script watches, and the store tab
-  // reloads logged in when the session lands. Other popups keep their URL.
-  var overlayUrl = "__EFXLVE_UBI_OVERLAY__";
-  var realOpen = window.open;
-  window.open = function (url) {
-    if (typeof url === "string" && /ubisoft\.com|ubi\.com/i.test(url)) {
-      location.href = /webauth|\/login|signin/i.test(url) ? overlayUrl : url;
-      return null;
-    }
-    return realOpen ? realOpen.apply(this, arguments) : null;
-  };
   function b64(text) {
     var bytes = new TextEncoder().encode(text);
     var bin = "";
@@ -81,30 +73,183 @@ pub(crate) const WATCH_SCRIPT: &str = r#"
     } catch (e) {}
     return body;
   }
-  function done() {
-    if (!session || window.__efxlveUbiSent) return;
-    window.__efxlveUbiSent = true;
-    var payload = {
-      ticket: session.ticket || "",
-      sessionId: session.sessionId || "",
-      userId: session.userId || "",
-      nameOnPlatform: session.nameOnPlatform || "",
-      rememberMeTicket: session.rememberMeTicket || ""
+  function payload(data) {
+    if (typeof data === "string") {
+      try { data = JSON.parse(data); } catch (e) { return null; }
+    }
+    if (!data || typeof data !== "object") return null;
+    if (data.payload && typeof data.payload === "object") data = data.payload;
+    // A two-factor login answers with an intermediate ticket, not a session.
+    if (data.twoFactorAuthenticationTicket) return null;
+    var ticket = data.ticket || "";
+    var sessionId = data.sessionId || "";
+    if (!ticket || !sessionId) return null;
+    return {
+      ticket: ticket,
+      sessionId: sessionId,
+      userId: data.userId || data.profileId || "",
+      nameOnPlatform: data.nameOnPlatform || data.username || "",
+      rememberMeTicket: data.rememberMeTicket || data.remember || ""
     };
-    location.replace("https://efxlve.local/ubi-session#" + b64(JSON.stringify(payload)));
+  }
+  function handoff(data) {
+    var live = payload(data);
+    if (!live || window.__efxlveUbiSent) return;
+    window.__efxlveUbiSent = true;
+    window.__efxlveUbiWantSession = false;
+    clearTimeout(window.__efxlveUbiWantTimer);
+    try { sessionStorage.removeItem("__efxlveUbiWantSession"); } catch (e) {}
+    location.replace("https://efxlve.local/ubi-session#" + b64(JSON.stringify(live)));
+  }
+  // Any Ubisoft login (the store's own button, the widget, or the Accounts
+  // card) should import the library. The flag lapses so a later overlay
+  // refresh cannot take the tab over long after the user finished signing in.
+  function wantSession() {
+    window.__efxlveUbiWantSession = true;
+    try { sessionStorage.setItem("__efxlveUbiWantSession", "1"); } catch (e) {}
+    clearTimeout(window.__efxlveUbiWantTimer);
+    window.__efxlveUbiWantTimer = setTimeout(function () {
+      window.__efxlveUbiWantSession = false;
+      try { sessionStorage.removeItem("__efxlveUbiWantSession"); } catch (e) {}
+    }, 600000);
   }
   function take(data) {
-    if (!data || !data.ticket || data.twoFactorAuthenticationTicket) return;
-    session = data;
+    var live = payload(data);
+    if (!live) return;
+    session = live;
     clearTimeout(window.__efxlveUbiTimer);
-    window.__efxlveUbiTimer = setTimeout(done, 10000);
+    window.__efxlveUbiTimer = setTimeout(function () { handoff(session); }, 10000);
   }
   function inspect(url, method, text) {
     if (!loginHost || !url) return;
     if (url.indexOf("/profiles/sessions") !== -1 && method === "POST") {
       try { take(JSON.parse(text)); } catch (e) {}
     } else if (url.indexOf("/configcache/api/postauth") !== -1) {
-      done();
+      handoff(session);
+    }
+  }
+  // The store ships loginType=popup for Chrome. A child webview has no popup,
+  // and the store only saves its own session after its in-page modal login
+  // finishes. Force the modal type before the store reads the attribute.
+  function forceModalLogin() {
+    var box = document.querySelector(".overlay-settings");
+    if (box && box.getAttribute("data-login-type") !== "modal") {
+      box.setAttribute("data-login-type", "modal");
+    }
+  }
+  if (storeHost) {
+    try {
+      var observer = new MutationObserver(forceModalLogin);
+      observer.observe(document.documentElement || document, { childList: true, subtree: true });
+      document.addEventListener("DOMContentLoaded", function () {
+        forceModalLogin();
+        observer.disconnect();
+      }, true);
+      forceModalLogin();
+    } catch (e) {}
+    // The store posts the connect payload to UPlayConnect-Login right after
+    // this event; let that call set the store cookie before the hand-off.
+    document.addEventListener("CONNECT_SDK_LOADED", function (event) {
+      if (!window.__efxlveUbiWantSession || window.__efxlveUbiSent) return;
+      var live = payload(event.detail);
+      if (!live) return;
+      setTimeout(function () { handoff(live); }, 4000);
+    });
+    // A login started from the store itself (the header button or the widget)
+    // must import the library too, not only the Accounts card.
+    document.addEventListener("click", function (event) {
+      var node = event.target;
+      while (node && node !== document) {
+        var names = typeof node.className === "string" ? node.className : "";
+        if (/(^|\s)(js-enforced-login-btn|check-ubisoft-login)(\s|$)/.test(names)) {
+          wantSession();
+          return;
+        }
+        node = node.parentElement;
+      }
+    }, true);
+    var widgetTries = 0;
+    var widgetTimer = setInterval(function () {
+      widgetTries += 1;
+      var widget = window.overlayWidget;
+      if (widget && typeof widget.login === "function" && !widget.__efxlveLoginWrapped) {
+        clearInterval(widgetTimer);
+        try {
+          var originalLogin = widget.login;
+          widget.login = function () {
+            wantSession();
+            return originalLogin.apply(this, arguments);
+          };
+          widget.__efxlveLoginWrapped = true;
+        } catch (e) {}
+      } else if (widgetTries >= 300) {
+        clearInterval(widgetTimer);
+      }
+    }, 200);
+    // Called by the Accounts card when the user asks to sign in. A store that
+    // is already signed in hands its session over immediately; otherwise the
+    // widget opens its modal and the login event is captured above.
+    window.__efxlveUbiSignIn = function () {
+      if (window.__efxlveUbiSignInBusy) return;
+      window.__efxlveUbiSignInBusy = true;
+      setTimeout(function () { window.__efxlveUbiSignInBusy = false; }, 5000);
+      wantSession();
+      var attempts = 0;
+      var timer = setInterval(function () {
+        attempts += 1;
+        if (!window.overlayWidget || !window.overlayWidget.getTicket) {
+          if (attempts >= 300) clearInterval(timer);
+          return;
+        }
+        clearInterval(timer);
+        window.overlayWidget.getTicket(function (ticket) {
+          var live = ticket && ticket.status === "ok" ? payload(ticket.payload) : null;
+          if (live) {
+            handoff(live);
+            return;
+          }
+          try {
+            if (window.overlayWidget.toggleLoginType) {
+              window.overlayWidget.toggleLoginType("modal");
+            }
+            if (window.overlayWidget.login) {
+              setTimeout(function () {
+                try { window.overlayWidget.login(); } catch (e) {}
+              }, 800);
+            }
+          } catch (e) {}
+        });
+      }, 100);
+    };
+    // A store reload can win the race against the hand-off. Resume the silent
+    // capture on the new page; if the user cancelled, drop the flag instead of
+    // reopening the modal on every visit.
+    var resume = false;
+    try { resume = sessionStorage.getItem("__efxlveUbiWantSession") === "1"; } catch (e) {}
+    if (resume) {
+      window.__efxlveUbiWantSession = true;
+      var resumeTries = 0;
+      var resumeTimer = setInterval(function () {
+        resumeTries += 1;
+        if (!window.overlayWidget || !window.overlayWidget.getTicket) {
+          if (resumeTries >= 300) {
+            clearInterval(resumeTimer);
+            window.__efxlveUbiWantSession = false;
+            try { sessionStorage.removeItem("__efxlveUbiWantSession"); } catch (e) {}
+          }
+          return;
+        }
+        clearInterval(resumeTimer);
+        window.overlayWidget.getTicket(function (ticket) {
+          var live = ticket && ticket.status === "ok" ? payload(ticket.payload) : null;
+          if (live) {
+            handoff(live);
+          } else {
+            window.__efxlveUbiWantSession = false;
+            try { sessionStorage.removeItem("__efxlveUbiWantSession"); } catch (e) {}
+          }
+        });
+      }, 150);
     }
   }
   var open = XMLHttpRequest.prototype.open;
@@ -122,8 +267,33 @@ pub(crate) const WATCH_SCRIPT: &str = r#"
     ) {
       body = withRememberMe(body);
     }
+    var sentBody = body;
+    var storeLogin =
+      storeHost &&
+      xhr.__efxMethod === "POST" &&
+      String(xhr.__efxUrl || "").indexOf("/UPlayConnect-Login") !== -1;
     xhr.addEventListener("load", function () {
       if (xhr.status !== 200) return;
+      if (storeLogin && window.__efxlveUbiWantSession) {
+        var fields = null;
+        if (sentBody && typeof sentBody === "object") {
+          fields = sentBody;
+        } else {
+          try { fields = JSON.parse(sentBody); } catch (e) {}
+          if (!fields) {
+            try {
+              fields = {};
+              new URLSearchParams(String(sentBody || "")).forEach(function (value, key) {
+                fields[key] = value;
+              });
+            } catch (e) { fields = null; }
+          }
+        }
+        var live = payload(fields);
+        if (live) {
+          handoff(live);
+        }
+      }
       var text = "";
       try {
         text = xhr.responseText;
@@ -140,15 +310,43 @@ pub(crate) const WATCH_SCRIPT: &str = r#"
       var url = (typeof input === "string") ? input : (input && input.url) || "";
       var method = (init && init.method) ? String(init.method).toUpperCase() : "GET";
       var args = [input, init];
+      var sentBody = init && init.body;
       if (method === "POST" && url.indexOf("/profiles/sessions") !== -1 && init && init.body) {
         var nextInit = {};
         for (var key in init) nextInit[key] = init[key];
         nextInit.body = withRememberMe(init.body);
         args = [input, nextInit];
+        sentBody = nextInit.body;
       }
+      var storeLogin =
+        storeHost &&
+        method === "POST" &&
+        url.indexOf("/UPlayConnect-Login") !== -1;
       return origFetch.apply(this, args).then(function (response) {
         if (response && response.ok) {
-          response.clone().text().then(function (text) { inspect(url, method, text); }).catch(function () {});
+          response.clone().text().then(function (text) {
+            if (storeLogin && window.__efxlveUbiWantSession) {
+              var fields = null;
+              if (sentBody && typeof sentBody === "object") {
+                fields = sentBody;
+              } else {
+                try { fields = JSON.parse(sentBody); } catch (e) {}
+                if (!fields) {
+                  try {
+                    fields = {};
+                    new URLSearchParams(String(sentBody || "")).forEach(function (value, key) {
+                      fields[key] = value;
+                    });
+                  } catch (e) { fields = null; }
+                }
+              }
+              var live = payload(fields);
+              if (live) {
+                handoff(live);
+              }
+            }
+            inspect(url, method, text);
+          }).catch(function () {});
         }
         return response;
       });
@@ -156,6 +354,9 @@ pub(crate) const WATCH_SCRIPT: &str = r#"
   }
   window.__efxlveUbiRetry = function () {
     window.__efxlveUbiSent = false;
+    window.__efxlveUbiWantSession = false;
+    clearTimeout(window.__efxlveUbiWantTimer);
+    try { sessionStorage.removeItem("__efxlveUbiWantSession"); } catch (e) {}
   };
   if (location.href.indexOf("two-fa-email") !== -1) {
     var tries = 0;
@@ -201,8 +402,15 @@ pub(crate) fn session_from_fragment(fragment: &str) -> Option<Session> {
     Some(session)
 }
 
+/// Bumped for every sign-in request and every hand-off. A retry loop stops as
+/// soon as its request is answered, so a logged-in store reload cannot start
+/// another import.
+static SIGNIN_GENERATION: std::sync::atomic::AtomicU64 =
+    std::sync::atomic::AtomicU64::new(0);
+
 /// Called by the store host when the login page navigates to the hand-off URL.
 pub(crate) fn accept_session(app: &AppHandle, fragment: &str) {
+    SIGNIN_GENERATION.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
     let Some(session) = session_from_fragment(fragment) else {
         reset_page_flag(app);
         return;
@@ -234,6 +442,65 @@ pub(crate) fn accept_session(app: &AppHandle, fragment: &str) {
             Err(message) => fail(&app, &message),
         }
     });
+}
+
+/// Polls for the store script in the current document. A cold view can still
+/// be on `about:blank` when the Accounts card asks to sign in, so the command
+/// re-evaluates this until the store document owns it.
+const STORE_SIGNIN_SCRIPT: &str = "(function () {\
+  if (window.__efxlveUbiSignInStarted) return;\
+  var tries = 0;\
+  var timer = setInterval(function () {\
+    tries += 1;\
+    if (typeof window.__efxlveUbiSignIn === 'function') {\
+      clearInterval(timer);\
+      window.__efxlveUbiSignInStarted = true;\
+      window.__efxlveUbiSignIn();\
+    } else if (tries >= 100) {\
+      clearInterval(timer);\
+    }\
+  }, 100);\
+})();";
+
+/// Opens Ubisoft's in-page sign-in on the store tab.
+///
+/// The store does not persist its session until its own `UPlayConnect-Login`
+/// call runs, so the Accounts card signs in here instead of on the standalone
+/// overlay page. The injected script waits for the page, hands over a session
+/// that is already valid, or opens the widget's modal login.
+pub(crate) fn open_store_signin(app: &AppHandle) -> Result<(), String> {
+    use std::sync::atomic::Ordering;
+    let window = app
+        .get_window("main")
+        .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
+    let view = window
+        .get_webview("store-view-ubisoft")
+        .ok_or_else(|| "@t:store.viewCreateFailed".to_string())?;
+    let generation = SIGNIN_GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
+    view.eval(STORE_SIGNIN_SCRIPT)
+        .map_err(|error| error.to_string())?;
+    // The first eval can land in the initial empty document. The store
+    // navigation replaces it, so repeat until the real page has the script;
+    // the page guard makes the retries no-ops after the first success. A
+    // hand-off bumps the generation, which stops this loop before the reloaded
+    // store page can start a second import.
+    let handle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        for _ in 0..60 {
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            if SIGNIN_GENERATION.load(Ordering::SeqCst) != generation {
+                break;
+            }
+            let Some(window) = handle.get_window("main") else {
+                break;
+            };
+            let Some(view) = window.get_webview("store-view-ubisoft") else {
+                break;
+            };
+            let _ = view.eval(STORE_SIGNIN_SCRIPT);
+        }
+    });
+    Ok(())
 }
 
 fn fail(app: &AppHandle, message: &str) {
@@ -1188,6 +1455,17 @@ mod tests {
         assert_eq!(session.remember, "rm");
         assert!(session_from_fragment("not-base64").is_none());
         assert!(session_from_fragment(&fragment(r#"{"sessionId":"S"}"#)).is_none());
+    }
+
+    #[test]
+    fn the_store_script_keeps_the_store_login_in_page() {
+        // The store persists its own session in UPlayConnect-Login. Hijacking
+        // its popup to the standalone overlay was what left the tab signed out.
+        assert!(WATCH_SCRIPT.contains("UPlayConnect-Login"));
+        assert!(WATCH_SCRIPT.contains("toggleLoginType(\"modal\")"));
+        assert!(WATCH_SCRIPT.contains("data-login-type"));
+        assert!(WATCH_SCRIPT.contains("__efxlveUbiSignIn"));
+        assert!(!WATCH_SCRIPT.contains("window.open ="));
     }
 
     #[test]

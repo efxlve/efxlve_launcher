@@ -298,17 +298,6 @@ export const LUNA_STORE_URL = "https://luna.amazon.com/claims/home";
 export const XBOX_STORE_URL = "https://www.xbox.com/games/all-games/pc?PlayWith=PC";
 export const UBISOFT_STORE_URL = "https://store.ubi.com/";
 
-/**
- * Ubisoft's overlay login page, the same start URL the Galaxy Uplay plugin
- * uses. It is only opened for the sign-in; the tab itself is the store page.
- */
-export const UBISOFT_LOGIN_URL =
-  "https://connect.cdn.ubisoft.com/overlay/default/" +
-  "?env=prod&isStandalone=true&platform=pc&deviceType=desktop" +
-  "&locale=en-US&spaceId=0a706b37-4b88-4437-b8f4-4ed2458c9518" +
-  "&applicationId=20adeb9c-6dad-404e-af1e-b12b4594e86e" +
-  "&country=US&region=WW&ownershipGroup=empty";
-
 const STORE_URLS: Record<StoreId, string> = {
   epic: EPIC_STORE_URL,
   gog: GOG_STORE_URL,

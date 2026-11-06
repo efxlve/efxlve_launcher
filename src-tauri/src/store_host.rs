@@ -225,14 +225,11 @@ fn is_login_page(url: &url::Url) -> bool {
     )
 }
 
-/// Ubisoft's overlay login page: the same start URL the sign-in action and the
-/// Galaxy Uplay plugin use. The storefront's own LOG IN button opens a popup to
-/// `connect.ubisoft.com`, which a child webview cannot show, so that click is
-/// routed here instead.
-const UBISOFT_OVERLAY_LOGIN: &str = "https://connect.cdn.ubisoft.com/overlay/default/?env=prod&isStandalone=true&platform=pc&deviceType=desktop&locale=en-US&spaceId=0a706b37-4b88-4437-b8f4-4ed2458c9518&applicationId=20adeb9c-6dad-404e-af1e-b12b4594e86e&country=US&region=WW&ownershipGroup=empty";
-
 /// A Ubisoft sign-in URL: the store's LOG IN hands a webauth/connect page to
-/// `window.open`. Every other popup keeps the default (denied) behaviour.
+/// `window.open`. A child webview cannot show popups, so the store host asks the
+/// page to continue in its own in-page modal instead; that is the flow whose
+/// `UPlayConnect-Login` call saves the store session. Every other popup keeps
+/// the default (denied) behaviour.
 fn is_ubisoft_auth_url(url: &url::Url) -> bool {
     let host = url.host_str().unwrap_or("").to_ascii_lowercase();
     let ubi_host = host == "ubisoft.com"
@@ -780,9 +777,12 @@ fn create_store_builder(
                 }
                 if store_id == "ubisoft" && is_ubisoft_auth_url(&url) {
                     if let Some(view) = app_popup.get_webview(&popup_label) {
-                        if let Ok(target) = UBISOFT_OVERLAY_LOGIN.parse::<url::Url>() {
-                            let _ = view.navigate(target);
-                        }
+                        // The popup is gone, but the store's in-page modal is
+                        // the path that ends with its own UPlayConnect-Login
+                        // call, which is what keeps the store signed in.
+                        let _ = view.eval(
+                            "if (window.__efxlveUbiSignIn) window.__efxlveUbiSignIn();",
+                        );
                     }
                 }
                 tauri::webview::NewWindowResponse::Deny
@@ -792,11 +792,7 @@ fn create_store_builder(
         builder = builder.initialization_script(crate::companion::bnet_watch_script());
     }
     if store_id == "ubisoft" {
-        // The overlay URL is filled into the script so the storefront's LOG IN
-        // popup can continue on the page the session capture understands.
-        let ubi_script = crate::companion::ubi_watch_script()
-            .replace("__EFXLVE_UBI_OVERLAY__", UBISOFT_OVERLAY_LOGIN);
-        builder = builder.initialization_script(ubi_script);
+        builder = builder.initialization_script(crate::companion::ubi_watch_script());
     }
     // The Xbox storefront only ships a light theme; this paints it with the
     // launcher's dark surface and flips its header to Microsoft's dark theme.
@@ -1951,7 +1947,7 @@ mod tests {
 
     #[test]
     fn ubisoft_sign_in_popups_are_recognised() {
-        // The storefront's LOG IN popup, and the overlay page the launcher uses.
+        // The storefront's LOG IN popup, and the standalone overlay page.
         let webauth = url::Url::parse("https://connect.ubisoft.com/v2/webauth?spaceId=x").unwrap();
         let overlay = url::Url::parse("https://connect.cdn.ubisoft.com/overlay/default/?env=prod").unwrap();
         assert!(super::is_ubisoft_auth_url(&webauth));

@@ -480,6 +480,12 @@ pub fn companion_hide_login(app: tauri::AppHandle) {
     signin::hide_login(&app);
 }
 
+/// Opens Ubisoft's own in-page sign-in on the store tab.
+#[tauri::command]
+pub fn ubi_store_signin(app: tauri::AppHandle) -> Result<(), String> {
+    ubisoft_login::open_store_signin(&app)
+}
+
 /// Opens the EA sign-in window (PKCE + PC signature) over the main window.
 #[tauri::command]
 pub async fn ea_login_open(app: tauri::AppHandle) -> Result<(), String> {

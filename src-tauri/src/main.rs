@@ -2272,6 +2272,7 @@ fn main() {
             companion::companion_resolve_covers,
             companion::companion_show_login,
             companion::companion_hide_login,
+            companion::ubi_store_signin,
             companion::ea_login_open,
             companion::ea_login_hide,
             companion::xbox_login_open,

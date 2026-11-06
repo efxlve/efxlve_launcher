@@ -328,6 +328,12 @@ export const companionOpenClient = (store: CompanionStore) =>
 export const companionShowLogin = (x: number, y: number, width: number, height: number) =>
   invoke<void>("companion_show_login", { x, y, width, height });
 
+/**
+ * Opens Ubisoft's own in-page sign-in on the store tab. The store saves its
+ * session in that flow; the library import follows the session hand-off.
+ */
+export const ubiStoreSignin = () => invoke<void>("ubi_store_signin");
+
 /** Opens the EA sign-in window (PKCE + hardware signature). */
 export const eaLoginOpen = () => invoke<void>("ea_login_open");
 

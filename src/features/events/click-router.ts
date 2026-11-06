@@ -118,7 +118,7 @@ import { clearReleaseCalendarSearch, closeReleaseCalendar, closeReleaseStores, i
 import { handleLibraryOptionAction } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaContentCancel, eaContentPlan, eaContentUninstall, eaContentVerify, eaDirectSetEnabled, eaLoginOpen, isTransientUbisoftError, ubiDirectAdopt, ubiDirectCancel, ubiDirectCloudSaves, ubiDirectImportSaves, ubiDirectMove, ubiDirectRelease, ubiDirectSetEnabled, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaContentCancel, eaContentPlan, eaContentUninstall, eaContentVerify, eaDirectSetEnabled, eaLoginOpen, isTransientUbisoftError, ubiDirectAdopt, ubiDirectCancel, ubiDirectCloudSaves, ubiDirectImportSaves, ubiDirectMove, ubiDirectRelease, ubiDirectSetEnabled, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, ubiStoreSignin, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { collectionGames } from "../../core/game-collections";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
@@ -130,7 +130,7 @@ import { toggleFullscreenMode } from "../gamepad/fullscreen-mode";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { closeStorageMenus } from "../storage/storage-view";
-import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, moveStoreOrder, openStore, openStoreUrl, playerProfileStale, purgeStoreViews, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, storeEpicAssistantEnabled, setStoreEpicAssistant, storeSteamCurrencyEnabled, setStoreSteamCurrency, UBISOFT_LOGIN_URL, visibleHeaderStores } from "../store/store-view";
+import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, moveStoreOrder, openStore, openStoreUrl, playerProfileStale, purgeStoreViews, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, storeEpicAssistantEnabled, setStoreEpicAssistant, storeSteamCurrencyEnabled, setStoreSteamCurrency, storeUrlFor, visibleHeaderStores } from "../store/store-view";
 import {
   clearNotifications,
   closeNotifPanel,
@@ -798,16 +798,25 @@ document.addEventListener("click", (e) => {
         const raw = String(e);
         toast(raw.startsWith("@t:") ? i18nT(raw.slice(3)) : raw || i18nT(failure.slice(3)), "err");
       });
+    } else if (id === "ubisoft") {
+      // The store's own login call is what saves its cookie; the standalone
+      // overlay page only imported the library and left the tab signed out.
+      S.activeStore = "ubisoft";
+      pushNavHistory({ view: "store" });
+      void openStoreUrl(storeUrlFor("ubisoft"), "store")
+        .then(() => ubiStoreSignin())
+        .catch((e: unknown) => {
+          const raw = String(e);
+          toast(raw.startsWith("@t:") ? i18nT(raw.slice(3)) : raw, "err");
+        });
     } else {
-      const store = id === "ubisoft" ? "ubisoft" : "battlenet";
       // The login page is used once; the tab itself stays a store page.
-      const loginUrl = store === "ubisoft" ? UBISOFT_LOGIN_URL : BATTLENET_ACCOUNT_URL;
       void invoke("companion_hide_login").catch(() => {});
-      S.activeStore = store;
+      S.activeStore = "battlenet";
       pushNavHistory({ view: "store" });
       void invoke("destroy_store_view")
         .catch(() => {})
-        .then(() => openStoreUrl(loginUrl, "store"));
+        .then(() => openStoreUrl(BATTLENET_ACCOUNT_URL, "store"));
     }
   } else if (act === "companion-link" && id) {
     const store = id as CompanionStore;
