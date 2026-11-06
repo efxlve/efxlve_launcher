@@ -204,12 +204,37 @@ export function releaseStoreForPalette(): void {
   releaseStoreOverlay("palette");
 }
 
-/** Storefront the loading screen names; the child stays hidden until it paints. */
-let loadingStoreId: StoreId = "epic";
+/**
+ * The storefront the loading screen names: the tab the header marks active.
+ * Reading the shared state keeps the placeholder and the highlighted tab in
+ * step on every path that opens a store (tab click, history, prewarm, a child
+ * Rust reports as pending).
+ */
+function storeLoadingTitle(): string {
+  const name = STORE_LABELS[S.activeStore] ?? STORE_LABELS.epic;
+  return `${name} · ${t("store.starting")}`;
+}
 
-export function renderStoreLoadingScreen(): string {
-  const name = STORE_LABELS[loadingStoreId] ?? STORE_LABELS.epic;
-  return `<div class="store-loading-screen"><span class="spinner"></span><span class="store-loading-title">${name} · ${t("store.starting")}</span></div>`;
+/** Placeholder markup shown until the native store child paints. */
+function renderStoreLoadingScreen(): string {
+  return `<div class="store-loading-screen"><span class="spinner"></span><span class="store-loading-title">${storeLoadingTitle()}</span></div>`;
+}
+
+/**
+ * Paints the placeholder shown until the native store child is on screen, or
+ * retitles the one already there. The store render path calls it for every
+ * storefront, warm ones included: a parked child or a pending load must never
+ * leave the previous storefront's name (or the previous page's DOM) under the
+ * store tabs.
+ */
+export function paintStoreLoadingScreen(host: HTMLElement): void {
+  const title = host.querySelector<HTMLElement>(".store-loading-screen .store-loading-title");
+  if (title) {
+    const next = storeLoadingTitle();
+    if (title.textContent !== next) title.textContent = next;
+    return;
+  }
+  host.innerHTML = renderStoreLoadingScreen();
 }
 
 /** Storefronts that can live in the embedded store webview, in menu order. */
@@ -333,11 +358,6 @@ export function storeUrlFor(store: StoreId): string {
  * the way; Rust reports the ones it closes to stay inside its memory budget.
  */
 const warmStores = new Set<StoreId>();
-
-/** True when this URL's storefront can be shown immediately. */
-export function isStoreWarm(url: string): boolean {
-  return warmStores.has(storeIdForUrl(url));
-}
 
 /**
  * Rust keeps only a few storefronts alive (each one is a renderer process) and
@@ -539,12 +559,16 @@ export async function openStoreUrl(url: string, mode: "store" | "profile"): Prom
   cancelStoreDestroy();
   const store = storeIdForUrl(url);
   S.activeStore = store;
-  loadingStoreId = store;
   if (S.view === "store" && S.storeShown && S.lastStoreUrl === url && S.storeMode === mode) return;
   const epoch = ++storeOpenEpoch;
   // A warm storefront is on screen within a frame; only a cold one needs the
   // loading screen and the progress sweep.
   const warm = warmStores.has(store);
+  // A cold storefront parks the previous child on the Rust side right away
+  // while its own page boots. The store stops counting as shown until that call
+  // answers, so the render below paints the loading screen for the store that
+  // is coming under the tab the user just picked.
+  if (!warm) S.storeShown = false;
   S.lastStoreUrl = url;
   S.storeMode = mode;
   S.view = "store";
@@ -653,7 +677,6 @@ export async function showEmbeddedStore(url: string, rect: StoreRect): Promise<v
   cancelStoreDestroy();
   const store = storeIdForUrl(url);
   S.activeStore = store;
-  loadingStoreId = store;
   const epoch = ++storeOpenEpoch;
   const warm = warmStores.has(store);
   S.lastStoreUrl = url;

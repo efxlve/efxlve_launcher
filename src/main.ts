@@ -50,7 +50,7 @@ import { renderNotesPage } from "./features/notes/notes-view";
 import { renderScreenshotsPage } from "./features/screenshots/screenshots-page";
 import { closeManagePopup } from "./features/manage/manage-view";
 import { closeStorageManager } from "./features/storage/storage-view";
-import { embeddedStoreHeld, hideStore, isStoreWarm, renderStoreLoadingScreen } from "./features/store/store-view";
+import { embeddedStoreHeld, hideStore, paintStoreLoadingScreen } from "./features/store/store-view";
 import { applyWinbarAppIcon } from "./core/app-icon";
 import { applyUiScale } from "./core/game-status";
 import { applyCrosshairConfig, loadCrosshair, setCrosshairVisible } from "./core/crosshair";
@@ -145,10 +145,11 @@ function render(): void {
   }
 
   if (S.view === "store") {
-    // Only paint the loading screen until the native store webview is shown; a
-    // re-render afterwards would restart the animation for nothing. A storefront
-    // that is still warm appears within a frame, so it skips the screen entirely.
-    if (!S.storeShown && !isStoreWarm(S.lastStoreUrl)) viewEl.innerHTML = renderStoreLoadingScreen();
+    // Paint (or retitle) the placeholder until the native store webview is on
+    // screen. It must run for a warm storefront too: a parked or still-loading
+    // child would otherwise leave the previous storefront's placeholder, or the
+    // previous page's DOM, under the store tabs.
+    if (!S.storeShown) paintStoreLoadingScreen(viewEl);
     updateChrome();
     renderNotificationPanel();
     presenceSync();
