@@ -64,6 +64,12 @@ let storeRelease: UpcomingRelease | null = null;
 let storeLayer: HTMLElement | null = null;
 /** The card the bubble points at, so a second click can toggle it. */
 let storeAnchor: HTMLElement | null = null;
+/** A hover preview is not pinned; a click pins the spotlight. */
+let storePreview = false;
+let hoverOpenTimer = 0;
+let hoverCloseTimer = 0;
+const HOVER_OPEN_MS = 300;
+const HOVER_CLOSE_MS = 220;
 /** Direction of the latest month step (-1 prev, 1 next) so the view glides in. */
 let monthTransitionDir: -1 | 0 | 1 = 0;
 
@@ -1274,11 +1280,33 @@ export function refreshReleaseCalendar(): void {
   void load(true);
 }
 
+function clearStoreTimers(): void {
+  window.clearTimeout(hoverOpenTimer);
+  window.clearTimeout(hoverCloseTimer);
+  hoverOpenTimer = 0;
+  hoverCloseTimer = 0;
+}
+
+function scheduleStoreClose(): void {
+  window.clearTimeout(hoverCloseTimer);
+  hoverCloseTimer = window.setTimeout(() => {
+    if (storePreview) closeReleaseStores();
+  }, HOVER_CLOSE_MS);
+}
+
 function ensureStoreLayer(): HTMLElement {
   if (storeLayer) return storeLayer;
   storeLayer = document.createElement("div");
   storeLayer.className = "release-popover-layer";
   confirmRoot.appendChild(storeLayer);
+  storeLayer.addEventListener("mouseover", () => {
+    window.clearTimeout(hoverCloseTimer);
+  });
+  storeLayer.addEventListener("mouseout", (event) => {
+    const related = event.relatedTarget as Node | null;
+    if (related && storeLayer?.contains(related)) return;
+    if (storePreview) scheduleStoreClose();
+  });
   storeLayer.addEventListener("click", (event) => {
     const target = event.target as HTMLElement;
     if (target.closest('[data-act="open-external-url"]')) {
@@ -1403,20 +1431,50 @@ function renderStorePopover(): void {
       </div>
     </div>`;
   positionStorePopover();
-  storeLayer.querySelector<HTMLButtonElement>('[data-act="release-stores-close"]')?.focus();
+  if (!storePreview) {
+    storeLayer.querySelector<HTMLButtonElement>('[data-act="release-stores-close"]')?.focus();
+  }
+}
+
+function findStoreRelease(id: number): UpcomingRelease | null {
+  return (
+    releases.find((item) => item.id === id) ??
+    followedReleases().find((item) => item.id === id) ??
+    null
+  );
+}
+
+function previewReleaseStores(id: number, anchor: HTMLElement): void {
+  if (!layer) return;
+  // A pinned spotlight wins over incidental hover movements.
+  if (storeLayer && !storePreview) return;
+  const release = findStoreRelease(id);
+  if (!release) return;
+  if (storePreview && storeRelease?.id === id && storeAnchor === anchor) return;
+  storeRelease = release;
+  storeAnchor = anchor;
+  storePreview = true;
+  ensureStoreLayer();
+  renderStorePopover();
 }
 
 /** Clicking a card opens the store bubble; clicking the same card again closes it. */
 export function openReleaseStores(id: number, anchor?: HTMLElement | null): void {
   if (!layer) return;
-  const release =
-    releases.find((item) => item.id === id) ??
-    followedReleases().find((item) => item.id === id);
+  const release = findStoreRelease(id);
   if (!release) return;
+  clearStoreTimers();
   if (storeRelease?.id === id && storeLayer) {
-    closeReleaseStores();
+    if (storePreview) {
+      storePreview = false;
+      if (anchor) storeAnchor = anchor;
+      renderStorePopover();
+    } else {
+      closeReleaseStores();
+    }
     return;
   }
+  storePreview = false;
   storeRelease = release;
   storeAnchor =
     anchor ??
@@ -1429,10 +1487,12 @@ export function openReleaseStores(id: number, anchor?: HTMLElement | null): void
 export function closeReleaseStores(): void {
   const restoreFocus = Boolean(storeLayer?.contains(document.activeElement));
   const anchor = storeAnchor;
+  clearStoreTimers();
   storeLayer?.remove();
   storeLayer = null;
   storeRelease = null;
   storeAnchor = null;
+  storePreview = false;
   if (restoreFocus && anchor?.isConnected) anchor.focus();
 }
 
@@ -1443,7 +1503,41 @@ export function cancelReleaseStores(): boolean {
   return true;
 }
 
-/* ---------- Outside-click and viewport handling ---------- */
+/* ---------- Hover preview, outside-click and viewport handling ---------- */
+
+document.addEventListener("mouseover", (event) => {
+  if (!layer) return;
+  const target = event.target as HTMLElement | null;
+  const anchor = target?.closest<HTMLElement>('[data-act="release-stores"]');
+  if (!anchor || !layer.contains(anchor)) return;
+  const related = event.relatedTarget as Node | null;
+  if (related && anchor.contains(related)) return;
+  // A pinned spotlight owns the interaction until it is closed.
+  if (storeLayer && !storePreview) return;
+  const id = Number(anchor.dataset.id);
+  if (!Number.isFinite(id)) return;
+  window.clearTimeout(hoverOpenTimer);
+  window.clearTimeout(hoverCloseTimer);
+  hoverOpenTimer = window.setTimeout(() => {
+    if (!layer || !anchor.isConnected) return;
+    if (storeLayer && !storePreview) return;
+    previewReleaseStores(id, anchor);
+  }, HOVER_OPEN_MS);
+});
+
+document.addEventListener("mouseout", (event) => {
+  if (!layer) return;
+  const target = event.target as HTMLElement | null;
+  const anchor = target?.closest<HTMLElement>('[data-act="release-stores"]');
+  if (!anchor || !layer.contains(anchor)) return;
+  const related = event.relatedTarget as Node | null;
+  if (related && (anchor.contains(related) || storeLayer?.contains(related))) {
+    window.clearTimeout(hoverCloseTimer);
+    return;
+  }
+  window.clearTimeout(hoverOpenTimer);
+  if (storePreview) scheduleStoreClose();
+});
 
 document.addEventListener("click", (event) => {
   if (!storeLayer) return;
