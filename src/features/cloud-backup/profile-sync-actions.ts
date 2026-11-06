@@ -24,6 +24,12 @@ import {
   profileImport,
   type ProfileRestoreResult,
 } from "../../epic";
+import {
+  notifyProfileRestoreDone,
+  notifyProfileRestoreFailed,
+  notifyProfileUploadDone,
+  notifyProfileUploadFailed,
+} from "./cloud-notify";
 
 function fmtCloudDate(timestamp: number): string {
   if (!timestamp) return "-";
@@ -176,8 +182,10 @@ async function runScheduledProfileUpload(): Promise<void> {
     await cloudBackupSaveSettings(next);
     S.cloudBackupSettings = next;
     scheduleRender();
-  } catch {
+    notifyProfileUploadDone(fmtCloudDate(entry.timestamp));
+  } catch (error) {
     // A failed automatic upload must not interrupt the launcher; the next run retries.
+    notifyProfileUploadFailed(String(error));
   }
 }
 
@@ -196,9 +204,11 @@ export async function uploadProfileAction(): Promise<void> {
       S.cloudBackupSettings = next;
     }
     toast(t("profile.uploaded", { date: fmtCloudDate(entry.timestamp) }), "ok");
+    notifyProfileUploadDone(fmtCloudDate(entry.timestamp));
     scheduleRender();
   } catch (error) {
     toast(String(error), "err");
+    notifyProfileUploadFailed(String(error));
   }
 }
 
@@ -218,7 +228,11 @@ export async function restoreProfileFromCloudAction(): Promise<void> {
   try {
     const result = await profileCloudRestore(latest.remoteId, latest.backupId);
     await finishRestore(result);
+    // After applyProfileLocalStorage: the restored profile may carry its own
+    // notification history, and this row must survive that copy.
+    notifyProfileRestoreDone();
   } catch (error) {
     toast(String(error), "err");
+    notifyProfileRestoreFailed(String(error));
   }
 }

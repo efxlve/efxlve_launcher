@@ -11,6 +11,16 @@ import { askConfirm } from "../../core/confirm-dialog";
 import { fmtCloudDate, updateManageCloudRowInPlace } from "./cloud-backup-view";
 import { askRestorePreview } from "./restore-preview-dialog";
 import {
+  cloudGameTitle,
+  notifyBulkCloudBackupDone,
+  notifyBulkCloudRestoreDone,
+  notifyCloudRestoreDone,
+  notifyCloudRestoreFailed,
+  notifyCloudUploadDone,
+  notifyCloudUploadFailed,
+  notifyLocalBackupSummary,
+} from "./cloud-notify";
+import {
   cloudBackupGetSettings,
   cloudBackupSaveSettings,
   cloudBackupTestConnection,
@@ -182,11 +192,13 @@ export async function bulkCloudBackupAction(): Promise<void> {
   S.cloudBulkProgress = { done: 0, total: games.length, failed: 0 };
   scheduleRender();
   let failed = 0;
+  const failedTitles: string[] = [];
   for (const key of games) {
     try {
       await cloudBackupUploadGame(key);
     } catch {
       failed += 1;
+      failedTitles.push(cloudGameTitle(key));
     }
     S.cloudBulkProgress.done += 1;
     S.cloudBulkProgress.failed = failed;
@@ -196,6 +208,7 @@ export async function bulkCloudBackupAction(): Promise<void> {
   S.cloudBulkProgress = null;
   scheduleRender();
   toast(t("cloud.bulkDone", { total, failed }), failed > 0 ? "err" : "ok");
+  notifyBulkCloudBackupDone(total, failed, failedTitles);
 }
 
 /** Restores the newest cloud backup of every installed managed game. */
@@ -217,9 +230,11 @@ export async function bulkCloudRestoreAction(): Promise<void> {
   scheduleRender();
   let restored = 0;
   let failed = 0;
+  const failedTitles: string[] = [];
   for (const key of games) {
     if (S.runningGames.has(key)) {
       failed += 1;
+      failedTitles.push(cloudGameTitle(key));
       S.cloudBulkProgress.done += 1;
       S.cloudBulkProgress.failed = failed;
       scheduleRender();
@@ -234,6 +249,7 @@ export async function bulkCloudRestoreAction(): Promise<void> {
       }
     } catch {
       failed += 1;
+      failedTitles.push(cloudGameTitle(key));
     }
     S.cloudBulkProgress.done += 1;
     S.cloudBulkProgress.failed = failed;
@@ -242,6 +258,7 @@ export async function bulkCloudRestoreAction(): Promise<void> {
   S.cloudBulkProgress = null;
   scheduleRender();
   toast(t("cloud.bulkRestoreDone", { total: restored, failed }), failed > 0 ? "err" : "ok");
+  notifyBulkCloudRestoreDone(restored, failed, failedTitles);
 }
 
 let localBackupTimer: number | null = null;
@@ -272,11 +289,13 @@ async function runScheduledLocalBackup(): Promise<void> {
   S.cloudBulkProgress = { done: 0, total: games.length, failed: 0 };
   scheduleRender();
   let failed = 0;
+  const failedTitles: string[] = [];
   for (const key of games) {
     try {
       await epicBackupSave(key);
     } catch {
       failed += 1;
+      failedTitles.push(cloudGameTitle(key));
     }
     S.cloudBulkProgress.done += 1;
     S.cloudBulkProgress.failed = failed;
@@ -288,6 +307,7 @@ async function runScheduledLocalBackup(): Promise<void> {
   if (failed > 0) {
     console.warn(`scheduled local backup: ${failed} game(s) failed`);
   }
+  notifyLocalBackupSummary(games.length, failed, failedTitles);
 }
 
 export async function uploadGameCloudAction(appName: string, backupId?: string): Promise<void> {
@@ -300,12 +320,14 @@ export async function uploadGameCloudAction(appName: string, backupId?: string):
     const entry = await cloudBackupUploadGame(appName, backupId);
     const unchanged = !backupId && entry.timestamp < Math.floor(Date.now() / 1000) - 30;
     toast(t(unchanged ? "cloud.uploadUnchanged" : "cloud.uploadSuccess"), unchanged ? "" : "ok");
+    notifyCloudUploadDone(appName, unchanged);
     const existing = S.cloudBackupsMap.get(appName) || [];
     S.cloudBackupsMap.set(appName, [entry, ...existing.filter((e) => e.backupId !== entry.backupId)]);
     updateManageCloudRowInPlace(appName);
     scheduleRender();
   } catch (err) {
     toast(String(err), "err");
+    notifyCloudUploadFailed(appName, String(err));
     updateManageCloudRowInPlace(appName);
   } finally {
     S.cloudBackupSyncing = false;
@@ -371,6 +393,7 @@ export async function downloadCloudBackupAction(
     preview = await cloudBackupPreviewGame(appName, remoteId, backupId);
   } catch (err) {
     toast(String(err), "err");
+    notifyCloudRestoreFailed(appName, String(err));
     return;
   }
   const restore = await askRestorePreview(preview);
@@ -379,13 +402,15 @@ export async function downloadCloudBackupAction(
     return;
   }
   try {
-    await cloudBackupApplyRestore(preview.token);
+    const msg = await cloudBackupApplyRestore(preview.token);
     toast(t("cloud.downloadSuccess"), "ok");
+    notifyCloudRestoreDone(appName, msg);
     updateManageCloudRowInPlace(appName);
     scheduleRender();
   } catch (err) {
     void cloudBackupCancelRestore(preview.token).catch(() => undefined);
     toast(String(err), "err");
+    notifyCloudRestoreFailed(appName, String(err));
   }
 }
 

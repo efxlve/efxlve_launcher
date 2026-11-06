@@ -45,6 +45,12 @@ import { getVersion } from "@tauri-apps/api/app";
 import { eglLauncherPresent } from "../../egl-removal";
 import { gogPauseDownload, gogResumeDownload } from "../../gog";
 import { loadNotifications, pushNotification } from "../notifications/notifications";
+import {
+  notifyCloudUploadDone,
+  notifyCloudUploadFailed,
+  notifyLocalBackupDone,
+  notifyLocalBackupFailed,
+} from "../cloud-backup/cloud-notify";
 import { remindFollowedReleases } from "../library/release-calendar";
 import { initAutoUpdate } from "../downloads/auto-update";
 import { noteDownloadActivity, noteDownloadFinished, noteDownloadInterrupted } from "../downloads/finish-action";
@@ -1013,12 +1019,12 @@ export async function initApp(hooks: {
         // Opt-in: back up local saves when the game closes.
         if (S.autoBackupOnExit && S.epicSummariesMap.get(id)?.installed) {
           void epicBackupSave(id)
-            .then(() => pushNotification({ kind: "info", title: t("notif.backupLocalDone", { title }), appName: id }))
+            .then(() => notifyLocalBackupDone(id))
             .catch((err) => {
               const msg = String(err);
               // No recorded save folder is not a failed cloud sync.
               if (msg.includes("backup.noSaveDir") || msg.includes("backup.saveDirMissing")) return;
-              pushNotification({ kind: "error", title: t("notif.backupFailed", { title }), appName: id });
+              notifyLocalBackupFailed(id, msg);
             });
         }
       }
@@ -1121,7 +1127,6 @@ export async function initApp(hooks: {
 
     listenLater<{ id: string; success: boolean; message?: string; syncedAt?: string }>("cloud-sync-complete", (event) => {
       const cloudSub = document.getElementById("manage-cloud-subtitle");
-      const title = libraryItemOf(event.payload.id)?.title ?? S.epicSummariesMap.get(event.payload.id)?.title;
       // The transfer is over; the bar folds away and the row shows the result.
       S.cloudSyncProgress.delete(event.payload.id);
       updateManageSyncBar(event.payload.id);
@@ -1135,8 +1140,8 @@ export async function initApp(hooks: {
         }
         if (cloudSub) cloudSub.textContent = t("manage.lastSync", { time: formatSyncStamp(syncedAt) });
         // A successful upload is an event worth keeping; the toast alone vanishes.
-        if (title && event.payload.success && S.cloudBackupSettings?.enabled && S.cloudBackupSettings.provider !== "none") {
-          pushNotification({ kind: "cloud", title: t("notif.backupCloudDone", { title }), appName: event.payload.id });
+        if (S.cloudBackupSettings?.enabled && S.cloudBackupSettings.provider !== "none") {
+          notifyCloudUploadDone(event.payload.id);
         }
         return;
       }
@@ -1145,7 +1150,7 @@ export async function initApp(hooks: {
       toast(detail || t("backup.failed", { msg: "" }), "err");
       // A failed upload can be the path-MTU black hole; surface it once.
       void checkMtuAfterSyncFailure();
-      if (title) pushNotification({ kind: "cloud-error", title: t("notif.cloudSyncFailed", { title }), body: detail, appName: event.payload.id });
+      notifyCloudUploadFailed(event.payload.id, detail);
     });
 
     // Discord: a message raises the sidebar count, and the overlay's own call

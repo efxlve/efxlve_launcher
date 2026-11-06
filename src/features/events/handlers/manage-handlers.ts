@@ -56,6 +56,12 @@ import {
   requiresThirdPartyLauncher,
 } from "../../../epic";
 import { askRestorePreview } from "../../cloud-backup/restore-preview-dialog";
+import {
+  notifyLocalBackupDone,
+  notifyLocalBackupFailed,
+  notifyLocalRestoreDone,
+  notifyLocalRestoreFailed,
+} from "../../cloud-backup/cloud-notify";
 
 export function handleManageAction(act: string | undefined, t: HTMLElement, id?: string, targetEl?: HTMLElement): boolean {
   if (!act) return false;
@@ -300,6 +306,7 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
         epicBackupSave(id)
           .then((b) => {
             toast(i18nT("backup.created", { size: fmtBytes(b.size_bytes), count: b.file_count }), "ok");
+            notifyLocalBackupDone(id);
             const cur = S.gameBackupsMap.get(id) || [];
             S.gameBackupsMap.set(id, [b, ...cur.filter((x) => x.id !== b.id)]);
             const listEl = document.getElementById("manage-backup-list");
@@ -320,16 +327,19 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
                   }
                   const b = await epicBackupSave(id, chosen);
                   toast(i18nT("backup.created", { size: fmtBytes(b.size_bytes), count: b.file_count }), "ok");
+                  notifyLocalBackupDone(id);
                   const cur = S.gameBackupsMap.get(id) || [];
                   S.gameBackupsMap.set(id, [b, ...cur.filter((x) => x.id !== b.id)]);
                   const listEl = document.getElementById("manage-backup-list");
                   if (listEl) listEl.innerHTML = renderBackupListHtml(id);
                 } catch (innerErr) {
                   toast(i18nT("backup.failed", { msg: localizeMessage(String(innerErr)) }), "err");
+                  notifyLocalBackupFailed(id, String(innerErr));
                 }
               }
             } else {
               toast(i18nT("backup.failed", { msg: localizeMessage(errStr) }), "err");
+              notifyLocalBackupFailed(id, errStr);
             }
           })
           .finally(() => {
@@ -362,18 +372,21 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
               checking.close();
               if (preview.damaged) {
                 toast(i18nT("backup.damaged"), "err");
+                notifyLocalRestoreFailed(id, i18nT("backup.damaged"));
                 return;
               }
               if (!(await askRestorePreview(preview))) return;
               toast(i18nT("backup.restoring"), "");
               const msg = await epicRestoreBackup(id, bid, preview.currentHash ?? undefined);
               toast(msg, "ok");
+              notifyLocalRestoreDone(id, msg);
             } catch (err) {
               checking.close();
               toast(
                 i18nT("backup.restoreFailed", { msg: localizeMessage(String(err)) }),
                 "err",
               );
+              notifyLocalRestoreFailed(id, String(err));
             }
           })();
         }
