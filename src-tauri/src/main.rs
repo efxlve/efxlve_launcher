@@ -154,6 +154,56 @@ mod run_marker_tests {
     }
 }
 
+#[cfg(test)]
+mod webview_recovery_tests {
+    use super::{clear_cache_dirs, WEBVIEW_CACHE_DIRS};
+
+    #[test]
+    fn cache_recovery_keeps_cookies_and_local_storage() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve-webview-recovery-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|elapsed| elapsed.as_nanos())
+                .unwrap_or(0)
+        ));
+        let profile = root.join("EBWebView");
+        let cache = profile.join("Default").join("Cache");
+        let cookies = profile.join("Default").join("Network").join("Cookies");
+        let storage = profile
+            .join("Default")
+            .join("Local Storage")
+            .join("leveldb");
+        std::fs::create_dir_all(&cache).unwrap();
+        std::fs::create_dir_all(&storage).unwrap();
+        std::fs::create_dir_all(cookies.parent().unwrap()).unwrap();
+        std::fs::write(cache.join("data_0"), b"cache").unwrap();
+        std::fs::write(&cookies, b"cookies").unwrap();
+        std::fs::write(storage.join("CURRENT"), b"storage").unwrap();
+
+        assert!(clear_cache_dirs(&profile) >= 1);
+        assert!(!cache.exists(), "the broken cache must be removed");
+        assert!(cookies.is_file(), "cookie recovery must keep store sign-ins");
+        assert!(
+            storage.join("CURRENT").is_file(),
+            "localStorage must survive the recovery"
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn recovery_never_targets_a_session_database() {
+        for path in WEBVIEW_CACHE_DIRS {
+            let lower = path.to_ascii_lowercase();
+            assert!(!lower.contains("cookies"), "cookie database in {path}");
+            assert!(!lower.contains("local storage"), "localStorage in {path}");
+            assert!(!lower.contains("indexeddb"), "IndexedDB in {path}");
+            assert!(!lower.contains("session storage"), "sessionStorage in {path}");
+        }
+    }
+}
+
 /// When set, closing the window hides it to the system tray instead of quitting
 /// so downloads keep running in the background. On by default; the frontend
 /// applies the stored preference once it boots.
@@ -986,11 +1036,51 @@ fn create_config_window(app: &tauri::App, label: &str) -> Result<(), String> {
         .map_err(|error| error.to_string())
 }
 
-/// Moves the launcher's WebView2 profile aside so the retry starts clean.
+/// Cache folders inside the WebView2 profile. Clearing these recovers a wedged
+/// renderer while leaving the cookie and localStorage databases in place, so a
+/// store sign-in is not lost when the launcher has to recover from a crash.
+const WEBVIEW_CACHE_DIRS: &[&str] = &[
+    "Default/Cache",
+    "Default/Code Cache",
+    "Default/GPUCache",
+    "Default/DawnGraphiteCache",
+    "Default/DawnWebGPUCache",
+    "Default/Network/Cache",
+    "Default/Service Worker/CacheStorage",
+    "Default/Service Worker/ScriptCache",
+    "Default/Shared Dictionary",
+    "Default/optimization_guide_hint_cache_store",
+    "GPUPersistentCache",
+    "GrShaderCache",
+    "ShaderCache",
+];
+
+/// Removes the cache folders under one WebView2 profile. Cookies, localStorage,
+/// IndexedDB and the session databases are deliberately kept.
+fn clear_cache_dirs(profile: &std::path::Path) -> usize {
+    let mut cleared = 0;
+    for relative in WEBVIEW_CACHE_DIRS {
+        let path = profile.join(relative);
+        if std::fs::remove_dir_all(&path).is_ok() {
+            cleared += 1;
+        }
+    }
+    cleared
+}
+
+fn clear_webview_caches(app: &tauri::App) -> usize {
+    app.path()
+        .app_local_data_dir()
+        .ok()
+        .map(|dir| clear_cache_dirs(&dir.join("EBWebView")))
+        .unwrap_or(0)
+}
+
+/// Moves the launcher's WebView2 profile aside so the next attempt starts clean.
 ///
-/// A profile the runtime cannot open is the usual reason a window never shows
-/// up, and keeping the folder makes the failure permanent. The old profile is
-/// renamed, not deleted, so a user can put it back.
+/// This is the last resort: it also drops every store sign-in and the shell's
+/// localStorage. Callers must exhaust the cache-clearing retries first. The old
+/// profile is renamed, not deleted, so a user can put it back.
 fn quarantine_webview_profile(app: &tauri::App) -> Option<std::path::PathBuf> {
     let dir = app.path().app_local_data_dir().ok()?.join("EBWebView");
     if !dir.is_dir() {
@@ -998,17 +1088,16 @@ fn quarantine_webview_profile(app: &tauri::App) -> Option<std::path::PathBuf> {
     }
     let stamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .map(|elapsed| elapsed.as_secs() % 86_400)
-        .map(|secs| format!("{:02}{:02}{:02}", secs / 3600, (secs / 60) % 60, secs % 60))
-        .unwrap_or_else(|_| "old".into());
+        .map(|elapsed| elapsed.as_secs())
+        .unwrap_or(0);
     let target = dir.with_file_name(format!("EBWebView.bak-{stamp}"));
     std::fs::rename(&dir, &target).ok().map(|_| target)
 }
 
 /// Counts consecutive runs that never reached a clean exit. Two in a row is
-/// treated as a broken WebView2 profile: the profile is moved aside and the
-/// next boot runs with software rendering, which recovers the common cases
-/// without the user deleting anything by hand.
+/// treated as a broken renderer: its cache is cleared and the next boot runs
+/// with software rendering. The profile itself stays, so store sign-ins and
+/// the shell's localStorage survive the recovery.
 fn boot_state_path(app: &AppHandle) -> Option<std::path::PathBuf> {
     app.path()
         .app_data_dir()
@@ -1056,38 +1145,64 @@ fn recover_broken_webview(app: &tauri::App, recovery: bool, early_crash: bool) {
     // A crash in the first seconds is the WebView2 profile/GPU failure this
     // recovery exists for; reset on the very next launch instead of making the
     // user relaunch three times. A force-kill after a long session only counts
-    // toward the slower two-strike path.
+    // toward the slower two-strike path. Clear the caches, never the profile:
+    // moving EBWebView aside also removes every store cookie and localStorage.
     if early_crash || streak >= 2 {
-        let moved = quarantine_webview_profile(app)
-            .map(|path| path.display().to_string())
-            .unwrap_or_else(|| "no profile folder".into());
-        // A GPU driver crash also survives a profile reset; software rendering
-        // is slower but gets the user back into the launcher.
+        let cleared = clear_webview_caches(app);
+        // A GPU driver crash also survives a cache clear; software rendering is
+        // slower but gets the user back into the launcher.
         if std::env::var_os("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS").is_none() {
             std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--disable-gpu");
         }
         perf::write_line_global(&format!(
-            "boot: repeated crash; webview profile {moved}; software rendering enabled"
+            "boot: repeated crash; cleared {cleared} webview cache folders; profile and store sessions kept; software rendering enabled"
         ));
         streak = 0;
     }
     write_crash_streak(handle, streak);
 }
 
-/// Builds the main window, retrying once without the previous webview profile.
+/// Builds the main window, giving the current WebView2 profile three attempts.
+///
+/// A previous launcher or its WebView2 processes can still hold the profile for
+/// a moment during an update, a restart or a Windows shutdown. Moving the
+/// profile aside on that first failure is what used to drop every store
+/// sign-in, so the first retry waits for the lock instead. Only a profile that
+/// keeps failing has its caches cleared, and the whole profile is moved aside
+/// as a last resort after all three attempts. The old profile is kept next to
+/// the new one under an `EBWebView.bak-*` name.
 fn create_main_window(app: &tauri::App) -> Result<(), String> {
-    match create_config_window(app, "main") {
-        Ok(()) => Ok(()),
-        Err(first) => {
-            let moved = quarantine_webview_profile(app)
-                .map(|path| path.display().to_string())
-                .unwrap_or_else(|| "nothing to move".into());
-            perf::write_line_global(&format!(
-                "boot: main window failed: {first}; profile: {moved}"
-            ));
-            create_config_window(app, "main").map_err(|second| format!("{first} / retry: {second}"))
+    let mut first_error = String::new();
+    for attempt in 0..3 {
+        match create_config_window(app, "main") {
+            Ok(()) => return Ok(()),
+            Err(error) => {
+                if attempt == 0 {
+                    // The profile is usually released within a second.
+                    first_error = error;
+                    perf::write_line_global(&format!(
+                        "boot: main window failed: {first_error}; waiting for the webview profile"
+                    ));
+                    std::thread::sleep(std::time::Duration::from_millis(1200));
+                } else if attempt == 1 {
+                    let cleared = clear_webview_caches(app);
+                    perf::write_line_global(&format!(
+                        "boot: main window retry failed: {error}; cleared {cleared} cache folders; profile kept"
+                    ));
+                } else {
+                    perf::write_line_global(&format!(
+                        "boot: main window failed three times: {error}; resetting the webview profile"
+                    ));
+                }
+            }
         }
     }
+    let moved = quarantine_webview_profile(app)
+        .map(|path| path.display().to_string())
+        .unwrap_or_else(|| "nothing to move".into());
+    perf::write_line_global(&format!("boot: webview profile moved to {moved}"));
+    create_config_window(app, "main")
+        .map_err(|error| format!("{first_error} / profile reset: {error}"))
 }
 
 /// A launcher without a webview must not keep running: the tray icon stays, the

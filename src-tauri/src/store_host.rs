@@ -877,10 +877,56 @@ fn store_extensions_disabled_dir(app: &AppHandle) -> std::path::PathBuf {
 
 /// A dedicated WebView2 profile: extension support changes the environment,
 /// and profiles with different settings must not share a data directory.
+///
+/// The profile lives in LocalAppData, not the roaming `store_extensions` folder:
+/// a WebView2 user data directory is cache-heavy and a roaming profile can drop
+/// or replace it at logoff, which signs the Steam store out.
 fn store_extensions_profile_dir(app: &AppHandle) -> std::path::PathBuf {
-    let dir = store_extensions_dir(app).join("profile");
-    let _ = std::fs::create_dir_all(&dir);
-    dir
+    let old = store_extensions_dir(app).join("profile");
+    let new = app
+        .path()
+        .app_local_data_dir()
+        .map(|root| root.join("store_extensions").join("profile"))
+        .unwrap_or_else(|_| old.clone());
+    // The rename needs the destination's parent to exist.
+    let _ = std::fs::create_dir_all(&new);
+    if migrate_steam_profile(&old, &new) {
+        new
+    } else {
+        // The old profile is the only copy and could not be moved. Keep using
+        // it rather than starting empty and losing the sign-in.
+        let _ = std::fs::create_dir_all(&old);
+        old
+    }
+}
+
+/// One migration at a time: a prewarm and a store open can race here.
+static STEAM_PROFILE_MIGRATION: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// Moves the old Roaming Steam profile to its LocalAppData home once. A failed
+/// move falls back to a copy. False means the old profile is still the only
+/// copy, so the caller must keep using it.
+fn migrate_steam_profile(old: &std::path::Path, new: &std::path::Path) -> bool {
+    let _guard = STEAM_PROFILE_MIGRATION
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let old_profile = old.join("EBWebView");
+    let new_profile = new.join("EBWebView");
+    if new_profile.exists() || !old_profile.is_dir() {
+        return true;
+    }
+    if std::fs::rename(&old_profile, &new_profile).is_ok() {
+        let _ = std::fs::remove_dir(old);
+        return true;
+    }
+    if copy_extension_dir(&old_profile, &new_profile).is_ok() {
+        let _ = std::fs::remove_dir_all(&old_profile);
+        let _ = std::fs::remove_dir(old);
+        return true;
+    }
+    // A half-written copy must not look like a completed migration next time.
+    let _ = std::fs::remove_dir_all(&new_profile);
+    false
 }
 
 fn store_extensions_tmp_dir(app: &AppHandle) -> std::path::PathBuf {
@@ -1990,5 +2036,40 @@ mod tests {
         let (_, size) = super::snapshot_stamp(&dir);
         assert_eq!(size, 18);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_steam_profile_moves_out_of_roaming_once() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve-steam-profile-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|elapsed| elapsed.as_nanos())
+                .unwrap_or(0)
+        ));
+        let old = root.join("roaming").join("profile");
+        let new = root.join("local").join("profile");
+        let old_cookies = old
+            .join("EBWebView")
+            .join("Default")
+            .join("Network")
+            .join("Cookies");
+        std::fs::create_dir_all(old_cookies.parent().unwrap()).unwrap();
+        std::fs::write(&old_cookies, b"steamLoginSecure=kept").unwrap();
+
+        assert!(super::migrate_steam_profile(&old, &new));
+        assert!(!old.join("EBWebView").exists(), "the old profile is moved");
+        let new_cookies = new
+            .join("EBWebView")
+            .join("Default")
+            .join("Network")
+            .join("Cookies");
+        assert_eq!(std::fs::read(&new_cookies).unwrap(), b"steamLoginSecure=kept");
+
+        // A second call must not move or clear the profile again.
+        assert!(super::migrate_steam_profile(&old, &new));
+        assert_eq!(std::fs::read(&new_cookies).unwrap(), b"steamLoginSecure=kept");
+        let _ = std::fs::remove_dir_all(&root);
     }
 }
