@@ -265,10 +265,10 @@ fn overlay_document(panel_html: &str) -> String {
       .notif-action { border: none; background: transparent; color: var(--text-2, #9a9a9a); font-size: 12px;
         padding: 4px 6px; border-radius: 4px; cursor: pointer; }
       .notif-action:hover { background: var(--surface-2, #141414); color: var(--text, #ffffff); }
-      .notif-tabs { display: flex; align-items: center; gap: 14px; padding: 0 14px;
+      .notif-tabs { display: flex; align-items: center; gap: 10px; padding: 0 14px;
         border-bottom: 1px solid var(--line, rgba(255,255,255,0.06)); }
       .notif-tabs .tab { position: relative; height: 35px; padding: 0; border: none; background: none;
-        color: var(--text-2, #9a9a9a); font-size: 12.5px; font-weight: 500; cursor: pointer;
+        color: var(--text-2, #9a9a9a); font-size: 12px; font-weight: 500; cursor: pointer;
         display: inline-flex; align-items: center; gap: 5px; }
       .notif-tabs .tab svg { width: 13px; height: 13px; opacity: 0.75; }
       .notif-tabs .tab.active svg { opacity: 1; }
@@ -276,9 +276,9 @@ fn overlay_document(panel_html: &str) -> String {
       .notif-tabs .tab.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px;
         height: 2px; background: var(--accent, #ffffff); }
       .notif-tabs .tab .count { display: inline-flex; align-items: center; justify-content: center;
-        min-width: 17px; height: 17px; padding: 0 5px; border-radius: 9px;
+        min-width: 15px; height: 17px; padding: 0 4px; border-radius: 9px;
         background: var(--surface-3, #1e1e1e); color: var(--text-2, #9a9a9a);
-        font-size: 10.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+        font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
       .notif-tabs .tab.active .count { color: var(--text, #ffffff); }
       .notif-list { overflow-y: auto; flex: 1; min-height: 0; display: flex; flex-direction: column; }
       .notif-item { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 10px 14px;
@@ -298,6 +298,8 @@ fn overlay_document(panel_html: &str) -> String {
       .notif-item-icon.kind-error { color: var(--err, #e5484d); }
       .notif-item-icon.kind-social { color: var(--accent, #ffffff); }
       .notif-item-icon.kind-achievement { color: var(--warn, #e0a32e); }
+      .notif-item-icon.kind-cloud { color: var(--accent, #ffffff); }
+      .notif-item-icon.kind-cloud-error { color: var(--err, #e5484d); }
       .notif-item-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
       .notif-item-title { font-size: 13px; font-weight: 500; }
       .notif-item-text { font-size: 12px; color: var(--text-2, #9a9a9a); overflow: hidden;
@@ -553,7 +555,7 @@ pub fn hide_notif_overlay(app: AppHandle) -> Result<(), String> {
     let (_, _, width, height) = OVERLAY_RECT
         .lock()
         .map(|slot| *slot)
-        .unwrap_or((-10000.0, -10000.0, 360.0, 480.0));
+        .unwrap_or((-10000.0, -10000.0, 400.0, 480.0));
     let _ = webview.set_bounds(panel_rect(-10000.0, -10000.0, width, height));
     let _ = webview.hide();
     Ok(())

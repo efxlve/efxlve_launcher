@@ -3,9 +3,9 @@
  *
  * Keeps a capped, persisted history of notable events (download finished,
  * update available, errors, social...). The bell lives in the sidebar footer;
- * the panel is a fixed dropdown anchored to it. The list is split into three
- * tabs — Updates, Achievements, System — and the Updates/System tabs add the
- * live status on top of the history. Items are real buttons so the 10-foot
+ * the panel is a fixed dropdown anchored to it. The list is split into four
+ * tabs — Updates, Achievements, System, Cloud — and the Updates/System tabs add
+ * the live status on top of the history. Items are real buttons so the 10-foot
  * gamepad focus model keeps working.
  */
 
@@ -25,6 +25,8 @@ import { embeddedContentShown, syncStoreViewSize } from "../store/store-view";
 import { overlayThemeStyle } from "../../core/overlay-theme";
 
 const MAX = 50;
+/** Fixed dropdown width: the four tabs must fit without wrapping. */
+const PANEL_WIDTH = 400;
 /** Re-pushing the same event within this window refreshes instead of duplicating. */
 const DEDUPE_MS = 10 * 60 * 1000;
 /** Restored history older than this is dropped: it is news, not a mailbox. */
@@ -44,6 +46,8 @@ const KIND_ICON: Record<NotifKind, Parameters<typeof icon>[0]> = {
   info: "info",
   social: "users",
   achievement: "trophy",
+  cloud: "cloud",
+  "cloud-error": "alert-triangle",
 };
 
 /** Every persisted kind; an unknown value from an older build is dropped. */
@@ -54,6 +58,7 @@ const TAB_LABEL: Record<NotifTab, string> = {
   updates: "notif.tabUpdates",
   achievements: "notif.tabAchievements",
   system: "notif.tabSystem",
+  cloud: "notif.tabCloud",
 };
 
 /** Glyph that names each tab before its label. */
@@ -61,19 +66,21 @@ const TAB_ICON: Record<NotifTab, Parameters<typeof icon>[0]> = {
   updates: "refresh",
   achievements: "trophy",
   system: "monitor",
+  cloud: "cloud",
 };
 
-const TAB_ORDER: readonly NotifTab[] = ["updates", "achievements", "system"];
+const TAB_ORDER: readonly NotifTab[] = ["updates", "achievements", "system", "cloud"];
 
 /** The tab that owns a notification kind. */
 export function notifTabOf(kind: NotifKind): NotifTab {
   if (kind === "update" || kind === "download") return "updates";
   if (kind === "achievement") return "achievements";
+  if (kind === "cloud" || kind === "cloud-error") return "cloud";
   return "system";
 }
 
 export function isNotifTab(value: string): value is NotifTab {
-  return value === "updates" || value === "achievements" || value === "system";
+  return value === "updates" || value === "achievements" || value === "system" || value === "cloud";
 }
 
 /**
@@ -238,7 +245,7 @@ export function pushNotification(input: NotifInput): void {
   if (input.kind === "download" && !prefs.downloads) return;
   if ((input.kind === "update" || input.kind === "app") && !prefs.updates) return;
   if (input.kind === "social" && !prefs.social) return;
-  if (input.kind === "error" && !prefs.errors) return;
+  if ((input.kind === "error" || input.kind === "cloud-error") && !prefs.errors) return;
   const storeKey = storeKeyFromAppName(input.appName);
   if (storeKey && prefs.disabledStores.includes(storeKey)) return;
 
@@ -327,7 +334,7 @@ export function updateNotifBadge(): void {
 let notifPanelSig = "";
 /** The dropdown is a child webview above the store, not HTML under it. */
 let notifOverlayOn = false;
-let notifOverlayBox = { w: 360, h: 320 };
+let notifOverlayBox = { w: PANEL_WIDTH, h: 320 };
 let notifOverlayBound = false;
 
 /** True while a native store child would paint over an HTML dropdown. */
@@ -388,6 +395,7 @@ function notifPanelData(): NotifPanelData {
       updates: pending.length,
       achievements: session.length,
       system: launcher,
+      cloud: 0,
     },
   };
 }
@@ -504,7 +512,9 @@ function emptyState(tab: NotifTab): string {
       ? (["download", "notif.emptyUpdates"] as const)
       : tab === "achievements"
         ? (["trophy", "notif.emptyAchievements"] as const)
-        : (["info", "notif.emptySystem"] as const);
+        : tab === "cloud"
+          ? (["cloud", "notif.emptyCloud"] as const)
+          : (["info", "notif.emptySystem"] as const);
   return `<div class="notif-empty">${icon(glyph, 26)}<p>${esc(t(key))}</p></div>`;
 }
 
@@ -551,12 +561,12 @@ function overlayOrigin(width: number, height: number): { x: number; y: number } 
 /** Shows the list in a child webview that paints above the store. */
 async function presentStoreOverlay(panelHtml: string): Promise<void> {
   const holder = document.createElement("div");
-  holder.style.cssText = "position:fixed;left:-4000px;top:0;width:360px;visibility:hidden;";
+  holder.style.cssText = `position:fixed;left:-4000px;top:0;width:${PANEL_WIDTH}px;visibility:hidden;`;
   holder.innerHTML = panelHtml;
   document.body.appendChild(holder);
   const panel = holder.querySelector<HTMLElement>(".notif-panel");
   const height = Math.max(120, Math.min(panel?.offsetHeight ?? 320, Math.round(window.innerHeight * 0.7)));
-  const width = Math.min(360, Math.max(160, window.innerWidth - 16));
+  const width = Math.min(PANEL_WIDTH, Math.max(160, window.innerWidth - 16));
   holder.remove();
   notifOverlayBox = { w: width, h: height };
   const { x, y } = overlayOrigin(width, height);

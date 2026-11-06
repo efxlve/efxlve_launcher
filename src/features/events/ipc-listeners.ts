@@ -1136,7 +1136,7 @@ export async function initApp(hooks: {
         if (cloudSub) cloudSub.textContent = t("manage.lastSync", { time: formatSyncStamp(syncedAt) });
         // A successful upload is an event worth keeping; the toast alone vanishes.
         if (title && event.payload.success && S.cloudBackupSettings?.enabled && S.cloudBackupSettings.provider !== "none") {
-          pushNotification({ kind: "info", title: t("notif.backupCloudDone", { title }), appName: event.payload.id });
+          pushNotification({ kind: "cloud", title: t("notif.backupCloudDone", { title }), appName: event.payload.id });
         }
         return;
       }
@@ -1145,7 +1145,7 @@ export async function initApp(hooks: {
       toast(detail || t("backup.failed", { msg: "" }), "err");
       // A failed upload can be the path-MTU black hole; surface it once.
       void checkMtuAfterSyncFailure();
-      if (title) pushNotification({ kind: "error", title: t("notif.cloudSyncFailed", { title }), body: detail, appName: event.payload.id });
+      if (title) pushNotification({ kind: "cloud-error", title: t("notif.cloudSyncFailed", { title }), body: detail, appName: event.payload.id });
     });
 
     // Discord: a message raises the sidebar count, and the overlay's own call
