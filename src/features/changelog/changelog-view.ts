@@ -31,9 +31,35 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.47",
+    date: "2026-11-07",
+    isCurrent: true,
+    added: [
+      {
+        en: "The library toolbar has a Grid density menu: Auto, Compact, Standard, Large and Extra large. The grid updates live, and the choice is remembered per device.",
+        tr: "Kütüphane araç çubuğuna Grid yoğunluğu menüsü eklendi: Auto, Compact, Standard, Large ve Extra large. Grid anında güncelleniyor ve seçim cihaz başına hatırlanıyor.",
+      },
+    ],
+    improved: [
+      {
+        en: "The game page card order in Settings is a compact card with icons, clearer move buttons and a reset footer.",
+        tr: "Ayarlar'daki oyun sayfası kart sırası artık ikonlu, kompakt bir kart; taşıma butonları ve sıfırlama alanı daha net.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Steam free licenses claimed but never launched (Destiny 2 and similar titles) now come from the Steam client's own app list, so a download is no longer needed to make them appear.",
+        tr: "Hiç başlatılmadan hesaba eklenen ücretsiz Steam lisansları (Destiny 2 gibi) artık Steam istemcisinin kendi uygulama listesinden geliyor; görünmeleri için indirme başlatmak gerekmiyor.",
+      },
+      {
+        en: "The Cloud notification tab lists only backup and restore events; system and launcher-update rows no longer leak into it. The four notification tabs are equal width.",
+        tr: "Cloud bildirim sekmesi yalnızca yedekleme ve geri yükleme olaylarını listeliyor; sistem ve launcher güncelleme satırları artık buraya sızmıyor. Dört bildirim sekmesi eşit genişlikte.",
+      },
+    ],
+  },
+  {
     version: "0.1.46",
     date: "2026-11-06",
-    isCurrent: true,
     added: [
       {
         en: "Cloud-save backup and restore events now have their own notification tab with a full history.",
