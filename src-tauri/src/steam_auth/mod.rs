@@ -221,7 +221,7 @@ mod session;
 pub(crate) mod vault;
 mod wire;
 
-// session.rs: http_client, field, field_str, field_i64, ApiCall, post_form, get_rsa_key, encrypt_password, finalize_web_login, generate_access_token, fetch_owned_games, fetch_family_group, fetch_shared_apps, family_shared_with, SteamQrLogin, steam_login_qr_begin, qr_svg, steam_login_begin, steam_login_code, steam_login_status, steam_logout, steam_get_saved_accounts, steam_switch_account, steam_remove_saved_account, steam_owned_games, steam_family_shared_apps, refresh_access_token
+// session.rs: http_client, field, field_str, field_i64, ApiCall, post_form, get_rsa_key, encrypt_password, finalize_web_login, generate_access_token, fetch_owned_games, owned_games_query, fetch_family_group, fetch_shared_apps, family_shared_with, SteamQrLogin, steam_login_qr_begin, qr_svg, steam_login_begin, steam_login_code, steam_login_status, steam_logout, steam_get_saved_accounts, steam_switch_account, steam_remove_saved_account, steam_owned_games, steam_family_shared_apps, refresh_access_token
 #[allow(unused_imports)]
 pub use session::*;
 

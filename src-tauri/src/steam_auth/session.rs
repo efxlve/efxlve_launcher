@@ -252,9 +252,26 @@ pub(super) fn status_ends_session(status: reqwest::StatusCode) -> bool {
     status == reqwest::StatusCode::UNAUTHORIZED
 }
 
-/// Every owned game (installed or not), with Steam's own playtime. The
-/// `steamid` parameter is mandatory with an access token: Steam's gateway
-/// rejects the request with "Missing required routing parameter" without it.
+/// Query for the signed-in account's owned games. `include_played_free_games`
+/// only returns free games the account has launched; `include_free_sub` adds
+/// the free licenses claimed with "Add to Library" (Destiny 2 and other rows
+/// that were missing), and `skip_unvetted_apps=false` keeps profile-limited
+/// titles. The `steamid` parameter is mandatory with an access token: Steam's
+/// gateway rejects the request with "Missing required routing parameter"
+/// without it.
+pub fn owned_games_query<'a>(access_token: &'a str, steam_id: &'a str) -> Vec<(&'a str, &'a str)> {
+    vec![
+        ("access_token", access_token),
+        ("steamid", steam_id),
+        ("include_appinfo", "1"),
+        ("include_played_free_games", "1"),
+        ("include_free_sub", "1"),
+        ("skip_unvetted_apps", "false"),
+        ("format", "json"),
+    ]
+}
+
+/// Every owned game (installed or not), with Steam's own playtime.
 pub async fn fetch_owned_games(
     client: &reqwest::Client,
     access_token: &str,
@@ -262,13 +279,7 @@ pub async fn fetch_owned_games(
 ) -> Result<SteamOwnedGames, String> {
     let response = client
         .get(OWNED_GAMES_URL)
-        .query(&[
-            ("access_token", access_token),
-            ("steamid", steam_id),
-            ("include_appinfo", "1"),
-            ("include_played_free_games", "1"),
-            ("format", "json"),
-        ])
+        .query(&owned_games_query(access_token, steam_id))
         .send()
         .await
         .map_err(|_| "@t:steam.err.network".to_string())?;
@@ -654,8 +665,14 @@ pub async fn steam_owned_games(app: tauri::AppHandle, force: Option<bool>) -> Re
 /// enough that the network call happens twice a day instead of every launch.
 const OWNED_CACHE_TTL_SECS: u64 = 60 * 60 * 24;
 
+/// Bumped when the owned-list request changes shape. A list cached by an older
+/// query (without free-sub licenses) must not keep hiding the missing games.
+const OWNED_CACHE_VERSION: u32 = 1;
+
 #[derive(serde::Serialize, serde::Deserialize)]
 struct OwnedCache {
+    #[serde(default)]
+    version: u32,
     steam_id: String,
     at: u64,
     games: SteamOwnedGames,
@@ -672,7 +689,7 @@ fn read_owned_cache(app: &tauri::AppHandle, steam_id: &str) -> Option<SteamOwned
     let path = owned_cache_path(app)?;
     let raw = std::fs::read(path).ok()?;
     let cache: OwnedCache = serde_json::from_slice(&raw).ok()?;
-    if cache.steam_id != steam_id {
+    if cache.version != OWNED_CACHE_VERSION || cache.steam_id != steam_id {
         return None;
     }
     let now = std::time::SystemTime::now()
@@ -694,6 +711,7 @@ fn write_owned_cache(app: &tauri::AppHandle, steam_id: &str, games: &SteamOwnedG
         .map(|d| d.as_secs())
         .unwrap_or(0);
     let cache = OwnedCache {
+        version: OWNED_CACHE_VERSION,
         steam_id: steam_id.to_string(),
         at: now,
         games: games.clone(),

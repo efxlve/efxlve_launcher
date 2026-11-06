@@ -140,6 +140,18 @@ fn owned_games_payload_is_flattened() {
 }
 
 #[test]
+fn owned_games_query_asks_for_free_and_unvetted_licenses() {
+    let query = owned_games_query("token", "76561198000000000");
+    assert!(query.contains(&("access_token", "token")));
+    assert!(query.contains(&("steamid", "76561198000000000")));
+    assert!(query.contains(&("include_played_free_games", "1")));
+    // Free-to-keep rows and F2P games added without launching them.
+    assert!(query.contains(&("include_free_sub", "1")));
+    // Profile-limited titles that Steam skips by default.
+    assert!(query.contains(&("skip_unvetted_apps", "false")));
+}
+
+#[test]
 fn shared_library_payload_is_flattened() {
     let response = serde_json::json!({
         "apps": [
