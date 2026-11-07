@@ -1994,7 +1994,7 @@
   "feedback.openFolder": "Rapor klasörünü aç",
   "feedback.createFailed": "Rapor oluşturulamadı:",
   "changelog.title": "Yenilikler",
-  "changelog.current": "Güncel",
+  "changelog.current": "Bu sürüm",
   "changelog.added": "Yeni",
   "changelog.improved": "İyileştirildi",
   "changelog.fixed": "Düzeltildi",

@@ -1,10 +1,12 @@
 # Builds and publishes Efxlve Launcher on every version tag.
 #
 # Flow: bump the version in `src-tauri/tauri.conf.json` (and `Cargo.toml`),
-# commit, then push a matching tag (e.g. `v0.1.1`). The action builds the app,
-# creates/updates the GitHub Release for that tag, uploads the installers and
-# `.sig` files, and publishes `latest.json` — the static endpoint the in-app
-# updater polls (`https://github.com/efxlve/efxlve_launcher/releases/latest/download/latest.json`).
+# commit, then push a matching tag (e.g. `v0.1.1`). The action builds the app
+# into a draft release and uploads the installers and `.sig` files. A final job
+# rewrites `latest.json` to stable release download URLs and publishes the draft
+# only after every asset exists, so the updater never sees a release with a
+# missing installer. `latest.json` is the static endpoint the in-app updater
+# polls (`https://github.com/efxlve/efxlve_launcher/releases/latest/download/latest.json`).
 #
 # Required repository secrets:
 # - TAURI_SIGNING_PRIVATE_KEY          (content of ~/.tauri/efxlve.key)
@@ -91,7 +93,7 @@ jobs:
           tagName: v__VERSION__
           releaseName: "Efxlve Launcher v__VERSION__"
           releaseBody: "Installers and updater packages are attached below."
-          releaseDraft: false
+          releaseDraft: true
           prerelease: false
           updaterJsonPreferNsis: true
           args: ${{ matrix.args }}
@@ -117,3 +119,37 @@ jobs:
         run: |
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           gh release upload "v$version" efxlve-launcher-portable.zip --clobber
+
+  publish-release:
+    needs: publish-tauri
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rewrite the updater feed to release download URLs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          mkdir -p updater
+          asset_id=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/v$version" \
+            --jq '.assets[] | select(.name == "latest.json") | .id')
+          if [ -z "$asset_id" ]; then
+            echo "latest.json is missing from v$version" >&2
+            exit 1
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id" \
+            -H "Accept: application/octet-stream" > updater/latest.json
+          node scripts/rewrite-updater-json.mjs "$version" updater/latest.json
+          gh release upload "v$version" updater/latest.json --clobber
+
+      - name: Publish the draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          gh release edit "v$version" --draft=false --latest

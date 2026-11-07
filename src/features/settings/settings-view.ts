@@ -50,7 +50,7 @@ import { raSetCredentials, raTest } from "../../retroachievements";
 import { LANGUAGES, localizeMessage, t } from "../../i18n";
 import { renderAccountSettings } from "../accounts/accounts-view";
 import { loadSavedAccounts } from "../auth/account-switcher";
-import { appUpdateInstallBlocked } from "../updates/update-manager";
+import { appUpdateBlockedBy, appUpdateInstallBlocked } from "../updates/update-manager";
 import { renderEosSettingsRow, syncEosNotice } from "../eos/eos-install";
 import {
   controllerSupportStatus,
@@ -1886,6 +1886,7 @@ function renderScreenshots(): string {
 
 function renderSystem(): string {
   const blocked = appUpdateInstallBlocked();
+  const blockedBy = blocked ? appUpdateBlockedBy() : "";
   const statusText =
     S.appUpdateStatus === "checking" ? t("appUpdate.checking")
     : S.appUpdateStatus === "available" ? t("appUpdate.availableShort", { version: S.appUpdateVersion })
@@ -1903,7 +1904,10 @@ function renderSystem(): string {
       ? `<button type="button" class="btn primary small" data-act="app-update-download">${t("appUpdate.downloadNow")}</button>`
       : `<button type="button" class="btn ghost small" data-act="app-update-check" ${S.appUpdateStatus === "checking" ? "disabled" : ""}>${t("appUpdate.checkBtn")}</button>`;
 
-  const updateDesc = [t("appUpdate.desc"), `<span class="app-update-status" id="app-update-status">${statusText}</span>`, S.appUpdateStatus === "ready" && blocked ? t("appUpdate.blockedHint") : ""]
+  const blockedHint = blockedBy
+    ? `${t("appUpdate.blockedHint")} (${esc(blockedBy)})`
+    : t("appUpdate.blockedHint");
+  const updateDesc = [t("appUpdate.desc"), `<span class="app-update-status" id="app-update-status">${statusText}</span>`, S.appUpdateStatus === "ready" && blocked ? blockedHint : ""]
     .filter(Boolean)
     .join(" ");
   const progress = S.appUpdateStatus === "downloading" || S.appUpdateStatus === "ready"

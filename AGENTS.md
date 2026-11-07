@@ -172,8 +172,10 @@ Rules for these files:
 
 ## Release
 
-The workflow pushes a placeholder body (`releaseBody` in
-`.github/workflows/release.yml`). Replace it after the tag publishes:
+The workflow keeps the release as a draft until every platform's assets and the
+rewritten `latest.json` are uploaded, then publishes it. A release is never
+visible with a missing updater asset. The body is a placeholder (`releaseBody`
+in `.github/workflows/release.yml`); replace it after the tag publishes:
 
 ```powershell
 node scripts/release-notes.mjs 0.1.34 "$env:TEMP\notes.md"

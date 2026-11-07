@@ -22,7 +22,6 @@ export interface ChangelogText {
 export interface ChangelogRelease {
   version: string;
   date: string;
-  isCurrent?: boolean;
   items?: ChangelogText[];
   added?: ChangelogText[];
   improved?: ChangelogText[];
@@ -33,7 +32,6 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
     version: "0.1.47",
     date: "2026-11-07",
-    isCurrent: true,
     added: [
       {
         en: "The library toolbar has a Grid density menu: Auto, Compact, Standard, Large and Extra large. The grid updates live, and the choice is remembered per device.",
@@ -1715,7 +1713,10 @@ function changelogModalHtml(): string {
   const currentVersion = S.appVersion || "0.1.16";
 
   const releasesHtml = CHANGELOG_DATA.map((rel) => {
-    const isCurrent = rel.isCurrent || rel.version === currentVersion;
+    // "This version" belongs to the running build only. Marking the newest
+    // changelog row as well made the modal claim two current versions while an
+    // update was waiting in the bell.
+    const isCurrent = rel.version === currentVersion;
     return `
       <div class="changelog-release">
         <div class="changelog-rel-header">

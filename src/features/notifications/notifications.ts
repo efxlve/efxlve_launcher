@@ -113,16 +113,15 @@ export function loadNotifications(): void {
             n &&
             typeof n.id === "string" &&
             KNOWN_KINDS.has(n.kind) &&
-            now - n.ts < RESTORE_TTL_MS,
+            now - n.ts < RESTORE_TTL_MS &&
+            // Launcher update rows are live status, not history: a restored
+            // "v0.1.44 ready" row outlives the update it describes and cannot
+            // install anything after the restart. The Updates tab rebuilds the
+            // current row from S.appUpdateStatus instead.
+            n.kind !== "app" &&
+            !(n.kind === "update" && !n.appName),
         )
-        .map((n) => ({
-          ...n,
-          // Launcher update rows written before the tab split carry kind
-          // `update` and no game key. Restoring them as they are would keep
-          // them in the Updates tab, which belongs to games.
-          kind: n.kind === "update" && !n.appName ? "app" : n.kind,
-          read: true,
-        }))
+        .map((n) => ({ ...n, read: true }))
         .slice(0, MAX);
       if (!S.notifications.length) localStorage.removeItem(NOTIF_KEY);
     }

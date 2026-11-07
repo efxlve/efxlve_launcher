@@ -1994,7 +1994,7 @@
   "feedback.openFolder": "Open report folder",
   "feedback.createFailed": "Could not create the report:",
   "changelog.title": "What's New",
-  "changelog.current": "Current",
+  "changelog.current": "This version",
   "changelog.added": "Added",
   "changelog.improved": "Improved",
   "changelog.fixed": "Fixed",

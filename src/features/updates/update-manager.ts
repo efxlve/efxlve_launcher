@@ -22,6 +22,7 @@ import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { APP_AUTO_UPDATE_KEY, isTauri } from "../../core/constants";
 import { scheduleRender } from "../../core/render";
+import { summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
@@ -43,6 +44,27 @@ export function appUpdateInstallBlocked(): boolean {
     if (!dl.done) return true;
   }
   return S.activeDlMetrics !== null;
+}
+
+/**
+ * Names the game or download that is holding the launcher restart back, so the
+ * deferred toast can say what to close instead of only "a download or game".
+ */
+export function appUpdateBlockedBy(): string {
+  if (S.runningGames.size > 0) {
+    const key = S.runningGames.values().next().value;
+    if (key) return summaryOf(key)?.title ?? key;
+  }
+  if (S.dlQueueStatus.queue.length > 0) {
+    const key = S.dlQueueStatus.queue[0];
+    if (key) return summaryOf(key)?.title ?? key;
+  }
+  for (const dl of S.downloads.values()) {
+    if (!dl.done) return dl.title;
+  }
+  const active = S.activeDlMetrics;
+  if (active) return summaryOf(active.id)?.title ?? active.id;
+  return "";
 }
 
 /** Windows toast plus the in-app toast, so an update is visible outside the bell. */
@@ -133,6 +155,9 @@ export async function checkForAppUpdate(manual = false): Promise<void> {
     if (S.appAutoUpdate) void downloadAppUpdate();
   } catch (e) {
     if (manual) {
+      // The user asked for a fresh answer; do not leave the old Update object
+      // behind as a row whose Download button can only fail again.
+      pendingUpdate = null;
       S.appUpdateStatus = "error";
       S.appUpdateError = String(e);
       toast(t("appUpdate.checkFailed"), "err");
@@ -183,10 +208,19 @@ export async function downloadAppUpdate(): Promise<void> {
     });
     void announceUpdate(readyTitle, readyBody);
   } catch (e) {
+    // Keep the Update object out of the next retry: a 404 usually means the
+    // release asset moved or the first request raced the release upload. The
+    // notification offers a fresh check, which reads a new URL from the feed.
+    pendingUpdate = null;
     S.appUpdateStatus = "error";
     S.appUpdateError = String(e);
     scheduleRender();
-    pushNotification({ kind: "error", title: t("appUpdate.downloadFailed") });
+    pushNotification({
+      kind: "error",
+      title: t("appUpdate.downloadFailed"),
+      action: "app-update-check",
+      actionLabel: t("appUpdate.checkBtn"),
+    });
   }
 }
 
@@ -194,14 +228,16 @@ export async function downloadAppUpdate(): Promise<void> {
 export async function installAppUpdate(): Promise<void> {
   if (!isTauri || !pendingUpdate || S.appUpdateStatus !== "ready") return;
   if (appUpdateInstallBlocked()) {
-    toast(t("appUpdate.deferred"), "");
+    const blocker = appUpdateBlockedBy();
+    toast(blocker ? `${t("appUpdate.deferred")} (${blocker})` : t("appUpdate.deferred"), "");
     return;
   }
   try {
     await pendingUpdate.install();
     await relaunch();
   } catch (e) {
-    S.appUpdateStatus = "error";
+    // The bytes are still downloaded, so keep the update ready and let the user
+    // retry the install instead of throwing the package away.
     S.appUpdateError = String(e);
     scheduleRender();
     toast(t("appUpdate.installFailed"), "err");
