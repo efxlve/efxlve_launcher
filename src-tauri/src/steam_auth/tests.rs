@@ -155,11 +155,12 @@ fn owned_games_query_asks_for_free_and_unvetted_licenses() {
 fn client_app_list_keeps_named_top_level_games() {
     let response = serde_json::json!({
         "apps": [
-            { "appid": 1085660, "name": "Destiny 2", "playtime_forever": 0 },
-            { "appid": 620, "name": "Portal 2", "playtime_forever": 90 },
-            { "appid": 228980, "name": "" },
-            { "appid": "", "name": "Broken" },
-            { "appid": 123, "name": "A DLC row" }
+            { "appid": 1085660, "app": "Destiny 2", "app_type": "game" },
+            { "appid": 620, "app": "Portal 2", "app_type": "game", "playtime_forever": 90 },
+            { "appid": 123, "name": "Legacy name" },
+            { "appid": 228980, "app": "Steamworks Common Redistributables", "app_type": "tool" },
+            { "appid": 1504980, "app": "Friend's Pass", "app_type": "demo" },
+            { "appid": "", "app": "Broken" }
         ]
     });
     let games = parse_client_apps(&response);
@@ -168,6 +169,7 @@ fn client_app_list_keeps_named_top_level_games() {
     assert_eq!(games[0].name, "Destiny 2");
     assert_eq!(games[1].playtime_forever, 90);
     assert_eq!(games[2].app_id, "123");
+    assert_eq!(games[2].name, "Legacy name");
 }
 
 #[test]
@@ -622,3 +624,5 @@ fn live_steam_owned_probe() {
         }
     });
 }
+
+

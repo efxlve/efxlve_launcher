@@ -346,8 +346,15 @@ pub fn parse_client_apps(response: &Value) -> Vec<SteamOwnedGame> {
                 .iter()
                 .filter_map(|g| {
                     let app_id = field_str(g, "appid", "appId");
-                    let name = field_str(g, "name", "name");
+                    // The client list calls the display name `app`. Tools, demos
+                    // and beta branches share the same array, so the type gate
+                    // keeps the library to real games.
+                    let name = field_str(g, "app", "name");
+                    let app_type = field_str(g, "app_type", "appType");
                     if app_id.is_empty() || name.is_empty() {
+                        return None;
+                    }
+                    if !app_type.is_empty() && app_type != "game" {
                         return None;
                     }
                     Some(SteamOwnedGame {

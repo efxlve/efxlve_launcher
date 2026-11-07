@@ -312,6 +312,7 @@ pub async fn fetch_client_apps(
         .query(&[
             ("access_token", access_token),
             ("fields", "games"),
+            ("filters", "none"),
             ("language", "english"),
             ("format", "json"),
         ])
@@ -715,9 +716,9 @@ pub async fn steam_owned_games(app: tauri::AppHandle, force: Option<bool>) -> Re
 const OWNED_CACHE_TTL_SECS: u64 = 60 * 60 * 24;
 
 /// Bumped when the owned-list request changes shape. A list cached by an older
-/// query (without client-applications, or free-sub licenses) must not keep
-/// hiding the missing games.
-const OWNED_CACHE_VERSION: u32 = 2;
+/// query (without client-applications, or with the wrong client name field)
+/// must not keep hiding the missing games.
+const OWNED_CACHE_VERSION: u32 = 3;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 struct OwnedCache {
