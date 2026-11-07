@@ -46,6 +46,7 @@ mod steam_running;
 mod steam_session;
 mod steam_watch;
 mod storage_usage;
+mod upscalers;
 mod notif_overlay;
 mod overlay;
 mod spotify;
@@ -2400,6 +2401,16 @@ fn main() {
             custom_games::custom_games_pick_file,
             custom_games::custom_games_search_steam,
             custom_games::custom_games_steam_details,
+            upscalers::upscalers_scan_game,
+            upscalers::upscalers_list_imported,
+            upscalers::upscalers_import_dll,
+            upscalers::upscalers_catalog,
+            upscalers::upscalers_download_latest,
+            upscalers::upscalers_download_swap,
+            upscalers::upscalers_swap,
+            upscalers::upscalers_restore,
+            upscalers::upscalers_discard_backup,
+            upscalers::upscalers_pick_dll,
             steam::steam_get_game_screenshots,
             steam::steam_get_screenshot_full_data,
             steam_auth::steam_login_begin,

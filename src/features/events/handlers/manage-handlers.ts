@@ -62,9 +62,14 @@ import {
   notifyLocalRestoreDone,
   notifyLocalRestoreFailed,
 } from "../../cloud-backup/cloud-notify";
+import { handleUpscalerAction } from "../../upscalers/upscaler-panel";
 
 export function handleManageAction(act: string | undefined, t: HTMLElement, id?: string, targetEl?: HTMLElement): boolean {
   if (!act) return false;
+  if (act.startsWith("upscaler-")) {
+    void handleUpscalerAction(act, t);
+    return true;
+  }
 
   switch (act) {
     case "manage-game":

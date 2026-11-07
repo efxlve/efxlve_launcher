@@ -514,6 +514,16 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `ubi_set_install_dir` | `ubiSetInstallDir({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `ubi_store_signin` | `ubiStoreSignin({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `uninstall_store_extension` | `uninstallStoreExtension({ ... })` | `src-tauri/src/store_host.rs` |
+| `upscalers_catalog` | `upscalersCatalog({ ... })` | `src-tauri/src/upscalers/mod.rs` |
+| `upscalers_discard_backup` | `upscalersDiscardBackup({ ... })` | `src-tauri/src/upscalers/mod.rs` |
+| `upscalers_download_latest` | `upscalersDownloadLatest({ ... })` | `src-tauri/src/upscalers/mod.rs` |
+| `upscalers_download_swap` | `upscalersDownloadSwap({ ... })` | `src-tauri/src/upscalers/mod.rs` |
+| `upscalers_import_dll` | `upscalersImportDll({ ... })` | `src-tauri/src/upscalers/mod.rs` |
+| `upscalers_list_imported` | `upscalersListImported({ ... })` | `src-tauri/src/upscalers/mod.rs` |
+| `upscalers_pick_dll` | `upscalersPickDll({ ... })` | `src-tauri/src/upscalers/mod.rs` |
+| `upscalers_restore` | `upscalersRestore({ ... })` | `src-tauri/src/upscalers/mod.rs` |
+| `upscalers_scan_game` | `upscalersScanGame({ ... })` | `src-tauri/src/upscalers/mod.rs` |
+| `upscalers_swap` | `upscalersSwap({ ... })` | `src-tauri/src/upscalers/mod.rs` |
 | `xbox_gamepass_catalog` | `xboxGamepassCatalog({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `xbox_gamepass_detail` | `xboxGamepassDetail({ ... })` | `src-tauri/src/companion/mod.rs` |
 | `xbox_install` | `xboxInstall({ ... })` | `src-tauri/src/companion/mod.rs` |

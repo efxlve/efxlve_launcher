@@ -20,6 +20,7 @@ import { storeVersionLabel } from "../drawer/external-versions";
 import { ubiDirectLaunchMode, ubiSavePath } from "../../companion";
 import { renderManageCloudBackupRow, updateManageCloudRowInPlace } from "../cloud-backup/cloud-backup-view";
 import { initCloudBackupSettings, loadCloudBackupsAction } from "../cloud-backup/cloud-backup-actions";
+import { hydrateUpscalerPanel, upscalerGroup } from "../upscalers/upscaler-panel";
 export { updateManageCloudRowInPlace };
 
 /** Serializes env vars as one KEY=VALUE per line for the manage textarea. */
@@ -44,7 +45,7 @@ function row(title: string, desc: string, actions: string, extra = "", descId = 
 }
 
 /** Left-rail sections of the manage panel. */
-type ManageTab = "files" | "saves" | "cover" | "launch" | "playtime" | "library" | "danger" | "steam-launch";
+type ManageTab = "files" | "saves" | "cover" | "launch" | "playtime" | "library" | "graphics" | "danger" | "steam-launch";
 
 /**
  * One titled block of the panel. Every group is also a tab: the rail switches
@@ -116,6 +117,9 @@ export function setManageTab(tab: string): void {
   }
   const body = dialog.querySelector<HTMLElement>(".manage-body");
   if (body) body.scrollTop = 0;
+  // The scan and the catalog call leave the panel only when the user asks for
+  // this tab, so an untouched Manage panel never walks a game folder.
+  if (target.dataset.tab === "graphics") void hydrateUpscalerPanel();
 }
 
 /** Reads the section the panel is showing, for the search header. */
@@ -319,6 +323,7 @@ export function openManagePopup(appName: string): void {
           <div class="manage-body">
             <div class="manage-search-empty" id="manage-search-empty" hidden>${esc(t("manage.searchEmpty"))}</div>
             ${renderDrawerManage(s)}
+            ${IS_WINDOWS && s.installed && s.installPath ? `<div class="manage-tab-content">${upscalerGroup(s)}</div>` : ""}
           </div>
         </div>
       </div>
