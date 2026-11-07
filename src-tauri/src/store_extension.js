@@ -30,14 +30,28 @@
     var CSS_TEXT = `
         /* The dark canvas belongs to the root element. An opaque body background
            is painted as a normal box and covers artwork placed at a negative
-           z-index (the Epic store hero uses z-index: -1). */
+           z-index (the Epic store hero uses z-index: -1). The colour is the
+           store's own dark surface, so the bars that paint it do not sit on a
+           darker page. */
         html {
-            background-color: #07080d !important;
+            background-color: #101014 !important;
             color-scheme: dark !important;
         }
         body {
             background-color: transparent !important;
             color-scheme: dark !important;
+        }
+
+        /* Epic paints its legacy site header, its store bar and the game tabs
+           in different greys. One surface keeps the embedded store from
+           reading as two stacked apps. */
+        egs-navigation,
+        div:has(> egs-navigation),
+        nav[class*="topNav" i],
+        div[class*="tertiaryNav" i],
+        [data-testid="sticky-nav"],
+        main > div:has(#SearchLayout) {
+            background-color: #101014 !important;
         }
 
         /* Anti-FOUC overlay: holds the page in obsidian until the first paint is ready,
@@ -276,6 +290,28 @@
     }
     injectStyle();
 
+    // 2a. The site header is a web component: its shadow root sits outside the
+    // page CSS, so the legacy top row kept an older grey while the store bar and
+    // the canvas follow the dark surface.
+    function paintStoreChrome() {
+        try {
+            var hosts = document.querySelectorAll('egs-navigation');
+            for (var i = 0; i < hosts.length; i++) {
+                var root = hosts[i].shadowRoot;
+                if (!root) continue;
+                var style = root.querySelector ? root.querySelector('#efxlve-nav-surface') : null;
+                if (!style) {
+                    style = document.createElement('style');
+                    style.id = 'efxlve-nav-surface';
+                    (root.head || root).appendChild(style);
+                }
+                var css = '#global-header, .global-header { background-color: #101014 !important; }';
+                if (style.textContent !== css) style.textContent = css;
+            }
+        } catch (e) {}
+    }
+    paintStoreChrome();
+
     // 2b. Install the anti-FOUC overlay as early as possible, remove it smoothly on first paint.
     function installVeil() {
         try {
@@ -377,6 +413,7 @@
     var dlCheckCount = 0;
     var dlCheckTimer = setInterval(function() {
         hideDownloadButton();
+        paintStoreChrome();
         dlCheckCount++;
         if (dlCheckCount > 6) clearInterval(dlCheckTimer);
     }, 500);
@@ -654,6 +691,7 @@
         isScanning = true;
         try {
             injectStyle();
+            paintStoreChrome();
             hideDownloadButton();
             var i18n = getI18n();
 
