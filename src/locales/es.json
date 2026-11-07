@@ -3706,5 +3706,7 @@
   "lib.coverSizeCompact": "Compacto",
   "lib.coverSizeStandard": "Estándar",
   "lib.coverSizeLarge": "Grande",
-  "lib.coverSizeXl": "Muy grande"
+  "lib.coverSizeXl": "Muy grande",
+  "fullscreen.allowTitle": "Permitir modo pantalla completa",
+  "fullscreen.allowDesc": "Desactívalo para que las conexiones de mando, el botón Menú del mando, F11 y el botón de la barra de título no entren en modo pantalla completa."
 }

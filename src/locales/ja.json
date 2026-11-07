@@ -3706,5 +3706,7 @@
   "lib.coverSizeCompact": "コンパクト",
   "lib.coverSizeStandard": "標準",
   "lib.coverSizeLarge": "大",
-  "lib.coverSizeXl": "特大"
+  "lib.coverSizeXl": "特大",
+  "fullscreen.allowTitle": "全画面モードを許可",
+  "fullscreen.allowDesc": "オフにすると、コントローラーの接続、コントローラーのメニューボタン、F11、タイトルバーのボタンで全画面モードに切り替わりません。"
 }

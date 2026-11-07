@@ -804,11 +804,19 @@ function renderController(): string {
   const deckNote = isSteamDeckDevice() || pads.some((g) => controllerKind(g.id) === "steamdeck")
     ? `<p class="page-sub">${t("controller.deckNote")}</p>`
     : "";
-  const fullscreenAuto = row(
-    t("controller.fullscreenAutoTitle"),
-    t("controller.fullscreenAutoDesc"),
-    toggle("toggle-fullscreen-auto", S.fullscreenAutoEnter),
+  const fullscreenMaster = row(
+    t("fullscreen.allowTitle"),
+    t("fullscreen.allowDesc"),
+    toggle("toggle-fullscreen-enabled", S.fullscreenModeEnabled),
   );
+  // The auto-enter preference cannot do anything while the mode itself is off.
+  const fullscreenAuto = S.fullscreenModeEnabled
+    ? row(
+        t("controller.fullscreenAutoTitle"),
+        t("controller.fullscreenAutoDesc"),
+        toggle("toggle-fullscreen-auto", S.fullscreenAutoEnter),
+      )
+    : "";
   const bridge = row(
     t("controller.bridgeTitle"),
     t("controller.bridgeDesc"),
@@ -819,7 +827,7 @@ function renderController(): string {
   const virtualNote = IS_WINDOWS && status?.bridgeRunning
     ? infoBox("controller.bridgeVirtualNote")
     : "";
-  return group(padRows, t("controller.padsTitle")) + virtualNote + group(fullscreenAuto, t("fullscreen.mode")) + deckNote + (IS_WINDOWS ? group(bridge, t("settings.secController")) : "");
+  return group(padRows, t("controller.padsTitle")) + virtualNote + group(fullscreenMaster + fullscreenAuto, t("fullscreen.mode")) + deckNote + (IS_WINDOWS ? group(bridge, t("settings.secController")) : "");
 }
 
 /** Steam card: the optional Web API key. Behavior toggles live in After playing. */
@@ -1501,7 +1509,9 @@ function renderAppearance(): string {
       row(t("settings.sharedLibraryTitle"), t("settings.sharedLibraryDesc"), toggle("toggle-shared-library", S.showSharedLibrary)) +
       row(t("settings.startupTabTitle"), t("settings.startupTabDesc"), startupTabSelect()) +
       drawerOrderRow() +
-      row(t("fullscreen.mode"), t("controller.fullscreenModeDesc"), `<button class="btn ghost small" data-act="toggle-fullscreen-mode">${icon("maximize-2", 14)} ${t("fullscreen.toggle")}</button>`) +
+      (S.fullscreenModeEnabled
+        ? row(t("fullscreen.mode"), t("controller.fullscreenModeDesc"), `<button class="btn ghost small" data-act="toggle-fullscreen-mode">${icon("maximize-2", 14)} ${t("fullscreen.toggle")}</button>`)
+        : "") +
       row(
         t("overlay.overlayLabel"),
         t("settings.overlayToggleDesc"),

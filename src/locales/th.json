@@ -3706,5 +3706,7 @@
   "lib.coverSizeCompact": "กะทัดรัด",
   "lib.coverSizeStandard": "มาตรฐาน",
   "lib.coverSizeLarge": "ใหญ่",
-  "lib.coverSizeXl": "ใหญ่พิเศษ"
+  "lib.coverSizeXl": "ใหญ่พิเศษ",
+  "fullscreen.allowTitle": "อนุญาตโหมดเต็มหน้าจอ",
+  "fullscreen.allowDesc": "ปิดเพื่อไม่ให้การเชื่อมต่อคอนโทรลเลอร์ ปุ่มเมนูบนคอนโทรลเลอร์ F11 และปุ่มบนแถบชื่อเรื่องเข้าสู่โหมดเต็มหน้าจอ"
 }

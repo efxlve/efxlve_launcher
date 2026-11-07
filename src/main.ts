@@ -33,6 +33,7 @@ import "./features/events/click-router";
 import "./features/events/input-listeners";
 import { initApp } from "./features/events/ipc-listeners";
 import { updateGamepadHud } from "./features/gamepad/gamepad";
+import { updateFullscreenUi } from "./features/gamepad/fullscreen-mode";
 import { closeHideGamesModal } from "./features/library/hide-games";
 import { closeReleaseCalendar } from "./features/library/release-calendar";
 import { closeHideAchievementsModal } from "./features/profile/hide-achievements";
@@ -67,6 +68,8 @@ void achievementGetNotificationOptions()
 applyReduceEffects(S.reduceEffects);
 if (S.uiScale !== 100) void applyUiScale(S.uiScale);
 applyCustomCss(S.customCss);
+// The master switch hides the title-bar Full Screen button before first paint.
+updateFullscreenUi();
 document.documentElement.classList.add("ready");
 applyWinbarAppIcon();
 perfMark("main:module");

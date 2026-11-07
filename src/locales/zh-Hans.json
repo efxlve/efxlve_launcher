@@ -3706,5 +3706,7 @@
   "lib.coverSizeCompact": "紧凑",
   "lib.coverSizeStandard": "标准",
   "lib.coverSizeLarge": "大",
-  "lib.coverSizeXl": "特大"
+  "lib.coverSizeXl": "特大",
+  "fullscreen.allowTitle": "允许全屏模式",
+  "fullscreen.allowDesc": "关闭后，连接手柄、手柄菜单键、F11 和标题栏按钮都无法进入全屏模式。"
 }

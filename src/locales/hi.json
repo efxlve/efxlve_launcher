@@ -3706,5 +3706,7 @@
   "lib.coverSizeCompact": "संक्षिप्त",
   "lib.coverSizeStandard": "मानक",
   "lib.coverSizeLarge": "बड़ा",
-  "lib.coverSizeXl": "बहुत बड़ा"
+  "lib.coverSizeXl": "बहुत बड़ा",
+  "fullscreen.allowTitle": "पूर्ण स्क्रीन मोड की अनुमति दें",
+  "fullscreen.allowDesc": "इसे बंद करने पर कंट्रोलर कनेक्शन, कंट्रोलर का मेनू बटन, F11 और शीर्षक-पट्टी बटन पूर्ण स्क्रीन मोड में नहीं जा सकेंगे।"
 }

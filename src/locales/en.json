@@ -3706,5 +3706,7 @@
   "lib.coverSizeCompact": "Compact",
   "lib.coverSizeStandard": "Standard",
   "lib.coverSizeLarge": "Large",
-  "lib.coverSizeXl": "Extra large"
+  "lib.coverSizeXl": "Extra large",
+  "fullscreen.allowTitle": "Allow Full Screen Mode",
+  "fullscreen.allowDesc": "Turn this off to stop controller connections, the controller Menu button, F11 and the title-bar button from entering Full Screen Mode."
 }

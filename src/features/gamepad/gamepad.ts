@@ -127,20 +127,25 @@ export function updateGamepadHud(active = true): void {
 
   hud.classList.remove("hidden");
   const kind = S.gamepadKind;
-  const hudKey = `${S.isFullscreen ? "f" : "w"}|${S.view}|${S.appLanguage}|${kind}`;
+  const hudKey = `${S.isFullscreen ? "f" : "w"}|${S.fullscreenModeEnabled ? "on" : "off"}|${S.view}|${S.appLanguage}|${kind}`;
   if (hudKey === lastHudKey) return;
   lastHudKey = hudKey;
 
   const dpad = `<span class="gp-glyph btn-dpad">D-Pad</span>`;
 
-  hud.innerHTML = [
+  const items = [
     hudItem(faceGlyph(kind, "a"), t("common.play") + " / " + t("gamepad.select")),
     hudItem(faceGlyph(kind, "b"), t("common.back")),
     hudItem(faceGlyph(kind, "x"), t("gamepad.favorite")),
     hudItem(bumperGlyphs(kind), t("gamepad.tabs")),
-    hudItem(`<span class="gp-glyph">Menu</span>`, S.isFullscreen ? t("fullscreen.exit") : t("fullscreen.mode")),
-    hudItem(dpad, t("gamepad.navigate")),
-  ].join("");
+  ];
+  // The Menu button does nothing while the mode is switched off, so the HUD
+  // must not advertise it.
+  if (S.fullscreenModeEnabled) {
+    items.push(hudItem(`<span class="gp-glyph">Menu</span>`, S.isFullscreen ? t("fullscreen.exit") : t("fullscreen.mode")));
+  }
+  items.push(hudItem(dpad, t("gamepad.navigate")));
+  hud.innerHTML = items.join("");
 }
 
 /* ========================================================================= */
@@ -418,7 +423,7 @@ function gamepadLoop(): void {
     switchFilterTab(true);
   }
   if (justPressed(mask, BTN_START) || justPressed(mask, BTN_GUIDE)) {
-    void toggleFullscreenMode();
+    if (S.fullscreenModeEnabled) void toggleFullscreenMode();
   }
   if (justPressed(mask, BTN_SELECT)) {
     openPalette();
@@ -451,7 +456,7 @@ export function initGamepadSupport(): void {
     lastHudKey = "";
 
     // Auto-enter Fullscreen Mode if enabled
-    if (S.fullscreenAutoEnter) {
+    if (S.fullscreenAutoEnter && S.fullscreenModeEnabled) {
       void setFullscreenMode(true);
     }
 

@@ -3706,5 +3706,7 @@
   "lib.coverSizeCompact": "Kompakt",
   "lib.coverSizeStandard": "Standard",
   "lib.coverSizeLarge": "Groß",
-  "lib.coverSizeXl": "Sehr groß"
+  "lib.coverSizeXl": "Sehr groß",
+  "fullscreen.allowTitle": "Vollbildmodus erlauben",
+  "fullscreen.allowDesc": "Schalte dies aus, damit Controller-Verbindungen, die Menü-Taste des Controllers, F11 und die Titelleisten-Schaltfläche nicht in den Vollbildmodus wechseln."
 }

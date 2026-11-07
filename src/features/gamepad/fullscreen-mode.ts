@@ -19,6 +19,9 @@ export function isFullscreenMode(): boolean {
 }
 
 export async function setFullscreenMode(on: boolean): Promise<void> {
+  // The master switch removes every entry point (controller, shortcut, button),
+  // not only the controller auto-enter path.
+  if (on && !S.fullscreenModeEnabled) return;
   if (S.isFullscreen === on) return;
   S.isFullscreen = on;
 
@@ -66,6 +69,9 @@ export async function toggleFullscreenMode(): Promise<void> {
 export function updateFullscreenUi(): void {
   const btn = document.getElementById("btn-fullscreen-mode");
   if (!btn) return;
+
+  // A switched-off mode has no title-bar entry point either.
+  btn.hidden = !S.fullscreenModeEnabled;
 
   btn.classList.toggle("active", S.isFullscreen);
   const iconSpan = btn.querySelector(".fullscreen-icon-wrap");

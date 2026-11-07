@@ -192,6 +192,8 @@ export const SOURCE_FILTER_KEY = "efxlve-source-filter-v2";
 export const PREFERRED_VERSION_KEY = "efxlve-preferred-version";
 /** Enter Full Screen Mode automatically when a controller connects. */
 export const FULLSCREEN_AUTO_KEY = "efxlve-fullscreen-auto";
+/** Master switch: "true" removes every path into Full Screen Mode. */
+export const FULLSCREEN_DISABLED_KEY = "efxlve-fullscreen-disabled";
 /** Saved full screen state. */
 export const FULLSCREEN_MODE_KEY = "efxlve-fullscreen-mode";
 

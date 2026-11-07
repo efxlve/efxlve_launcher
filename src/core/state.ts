@@ -73,6 +73,7 @@ import {
   type CaseColorMode,
   SEPARATE_COPIES_KEY,
   FULLSCREEN_AUTO_KEY,
+  FULLSCREEN_DISABLED_KEY,
   FULLSCREEN_MODE_KEY,
   isSteamDeckDevice,
   INSTALLED_ICON_KEY,
@@ -671,6 +672,15 @@ export const S = {
   separateCopies: (localStorage.getItem(SEPARATE_COPIES_KEY) === "true") as boolean,
   /** Full Screen Mode state and auto-enter preference. */
   isFullscreen: false,
+  /** Master switch: off means no controller, shortcut or button enters it. */
+  fullscreenModeEnabled: (() => {
+    try {
+      return localStorage.getItem(FULLSCREEN_DISABLED_KEY) !== "true";
+    } catch {
+      /* ignore */
+    }
+    return true;
+  })() as boolean,
   fullscreenAutoEnter: (() => {
     try {
       const v = localStorage.getItem(FULLSCREEN_AUTO_KEY);

@@ -44,6 +44,7 @@ import {
   CUSTOM_CSS_LIMIT,
   APP_ICON_KEY,
   FULLSCREEN_AUTO_KEY,
+  FULLSCREEN_DISABLED_KEY,
   CONTROLLER_BRIDGE_KEY,
   MINIMIZE_ON_GAME_KEY,
   AUTOSTART_INIT_KEY,
@@ -126,7 +127,7 @@ import { isSmartCollection, smartCollection } from "../library/smart-collections
 import { switchAccount } from "../auth/account-switcher";
 import { switchGogAccount } from "../auth/gog-account-switcher";
 import { openPalette } from "../palette/palette";
-import { toggleFullscreenMode } from "../gamepad/fullscreen-mode";
+import { setFullscreenMode, toggleFullscreenMode, updateFullscreenUi } from "../gamepad/fullscreen-mode";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { closeStorageMenus } from "../storage/storage-view";
@@ -1554,6 +1555,13 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-fullscreen-auto") {
     S.fullscreenAutoEnter = !S.fullscreenAutoEnter;
     localStorage.setItem(FULLSCREEN_AUTO_KEY, String(S.fullscreenAutoEnter));
+    render();
+  } else if (act === "toggle-fullscreen-enabled") {
+    S.fullscreenModeEnabled = !S.fullscreenModeEnabled;
+    localStorage.setItem(FULLSCREEN_DISABLED_KEY, String(!S.fullscreenModeEnabled));
+    // Switching the mode off must also leave it if it is currently on.
+    if (!S.fullscreenModeEnabled) void setFullscreenMode(false);
+    updateFullscreenUi();
     render();
   } else if (act === "toggle-shared-library") {
     S.showSharedLibrary = !S.showSharedLibrary;

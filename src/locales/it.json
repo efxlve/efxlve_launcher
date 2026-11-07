@@ -3706,5 +3706,7 @@
   "lib.coverSizeCompact": "Compatto",
   "lib.coverSizeStandard": "Standard",
   "lib.coverSizeLarge": "Grande",
-  "lib.coverSizeXl": "Molto grande"
+  "lib.coverSizeXl": "Molto grande",
+  "fullscreen.allowTitle": "Consenti modalità schermo intero",
+  "fullscreen.allowDesc": "Disattivala per impedire a connessioni del controller, al pulsante Menu del controller, a F11 e al pulsante della barra del titolo di attivare la modalità schermo intero."
 }

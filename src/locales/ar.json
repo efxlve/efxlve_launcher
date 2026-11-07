@@ -3706,5 +3706,7 @@
   "lib.coverSizeCompact": "مضغوط",
   "lib.coverSizeStandard": "قياسي",
   "lib.coverSizeLarge": "كبير",
-  "lib.coverSizeXl": "كبير جدًا"
+  "lib.coverSizeXl": "كبير جدًا",
+  "fullscreen.allowTitle": "السماح بوضع ملء الشاشة",
+  "fullscreen.allowDesc": "أوقفه لمنع اتصال وحدة التحكم وزر القائمة في وحدة التحكم وF11 وزر شريط العنوان من الدخول إلى وضع ملء الشاشة."
 }

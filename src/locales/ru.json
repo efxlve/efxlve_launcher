@@ -3706,5 +3706,7 @@
   "lib.coverSizeCompact": "Компактный",
   "lib.coverSizeStandard": "Стандартный",
   "lib.coverSizeLarge": "Крупный",
-  "lib.coverSizeXl": "Очень крупный"
+  "lib.coverSizeXl": "Очень крупный",
+  "fullscreen.allowTitle": "Разрешить полноэкранный режим",
+  "fullscreen.allowDesc": "Отключите, чтобы подключение геймпада, кнопка Menu на геймпаде, F11 и кнопка в заголовке окна не могли включать полноэкранный режим."
 }
