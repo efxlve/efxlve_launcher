@@ -9,6 +9,8 @@ pub enum UpscalerKind {
     Dlss,
     DlssFg,
     DlssRr,
+    /// DLSS 5 Neural Rendering runtime (`nvngx_dlssnr.dll`).
+    DlssNr,
     Fsr31Dx12,
     Fsr31Vk,
     Xess,
@@ -24,6 +26,7 @@ impl UpscalerKind {
             Self::Dlss => "nvngx_dlss.dll",
             Self::DlssFg => "nvngx_dlssg.dll",
             Self::DlssRr => "nvngx_dlssd.dll",
+            Self::DlssNr => "nvngx_dlssnr.dll",
             Self::Fsr31Dx12 => "amd_fidelityfx_dx12.dll",
             Self::Fsr31Vk => "amd_fidelityfx_vk.dll",
             Self::Xess => "libxess.dll",
@@ -39,6 +42,7 @@ impl UpscalerKind {
             Self::Dlss => "dlss",
             Self::DlssFg => "dlss_g",
             Self::DlssRr => "dlss_d",
+            Self::DlssNr => "dlss_nr",
             Self::Fsr31Dx12 => "fsr_31_dx12",
             Self::Fsr31Vk => "fsr_31_vk",
             Self::Xess => "xess",
@@ -54,6 +58,7 @@ impl UpscalerKind {
             Self::Dlss => "dlss",
             Self::DlssFg => "dlss_g",
             Self::DlssRr => "dlss_d",
+            Self::DlssNr => "dlss_nr",
             Self::Fsr31Dx12 => "fsr_31_dx12",
             Self::Fsr31Vk => "fsr_31_vk",
             Self::Xess => "xess",
@@ -69,21 +74,23 @@ impl UpscalerKind {
             Self::Dlss => 0,
             Self::DlssFg => 1,
             Self::DlssRr => 2,
-            Self::Fsr31Dx12 => 3,
-            Self::Fsr31Vk => 4,
-            Self::Xess => 5,
-            Self::XessDx11 => 6,
-            Self::XessFg => 7,
-            Self::Xell => 8,
+            Self::DlssNr => 3,
+            Self::Fsr31Dx12 => 4,
+            Self::Fsr31Vk => 5,
+            Self::Xess => 6,
+            Self::XessDx11 => 7,
+            Self::XessFg => 8,
+            Self::Xell => 9,
         }
     }
 
     /// Maps a file name to its family. Windows file names are case-insensitive.
     pub fn from_file_name(name: &str) -> Option<Self> {
-        const ALL: [UpscalerKind; 9] = [
+        const ALL: [UpscalerKind; 10] = [
             UpscalerKind::Dlss,
             UpscalerKind::DlssFg,
             UpscalerKind::DlssRr,
+            UpscalerKind::DlssNr,
             UpscalerKind::Fsr31Dx12,
             UpscalerKind::Fsr31Vk,
             UpscalerKind::Xess,

@@ -1,6 +1,6 @@
 //! Finds the upscaler DLLs a game already ships.
 //!
-//! Only the nine known file names are hashed; the directory walk itself is the
+//! Only the ten known file names are hashed; the directory walk itself is the
 //! expensive part, so the scan stays on demand instead of running for every
 //! installed game at startup.
 
@@ -85,6 +85,14 @@ pub fn scan_game(install_path: &str, game_key: &str) -> Result<GameUpscalers, St
                 continue;
             }
             if file_type.is_dir() {
+                // Another tool's backup tree is not a second live copy.
+                let folder_name = path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .unwrap_or_default();
+                if is_backup_folder(folder_name) {
+                    continue;
+                }
                 // Junctions are directories on Windows; walking one can loop.
                 let metadata = entry.metadata().ok();
                 if metadata.as_ref().is_some_and(is_reparse_point) {
@@ -121,6 +129,12 @@ pub fn scan_game(install_path: &str, game_key: &str) -> Result<GameUpscalers, St
         install_path: root.to_string_lossy().to_string(),
         dlls: found,
     })
+}
+
+/// Backup folders left by other swappers must not appear as live DLLs.
+fn is_backup_folder(name: &str) -> bool {
+    let lower = name.to_ascii_lowercase();
+    lower.contains("dlss") && lower.contains("backup")
 }
 
 #[cfg(windows)]
@@ -160,6 +174,24 @@ mod tests {
         let result = scan_game(&root.to_string_lossy(), "test::game").expect("scan");
         assert_eq!(result.dlls.len(), 1);
         assert_eq!(result.dlls[0].file_name, "nvngx_dlss.dll");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn scan_ignores_another_swappers_backup_tree() {
+        let root = std::env::temp_dir().join("efxlve-upscaler-backup-scan-test");
+        let _ = std::fs::remove_dir_all(&root);
+        let backup = root
+            .join("_DLSS_Backup")
+            .join("originals")
+            .join("8306e23d");
+        std::fs::create_dir_all(&backup).expect("create backup folder");
+        std::fs::write(backup.join("nvngx_dlss.dll"), b"backup").expect("write backup dll");
+        std::fs::write(root.join("nvngx_dlss.dll"), b"live").expect("write live dll");
+
+        let result = scan_game(&root.to_string_lossy(), "test::game").expect("scan");
+        assert_eq!(result.dlls.len(), 1);
+        assert!(!result.dlls[0].path.to_ascii_lowercase().contains("_dlss_backup"));
         let _ = std::fs::remove_dir_all(&root);
     }
 }

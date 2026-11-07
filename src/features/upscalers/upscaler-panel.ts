@@ -38,6 +38,7 @@ const KIND_LABEL: Record<UpscalerKind, string> = {
   dlss: "DLSS Super Resolution",
   dlssFg: "DLSS Frame Generation",
   dlssRr: "DLSS Ray Reconstruction",
+  dlssNr: "DLSS 5 Neural Rendering",
   fsr31Dx12: "FSR 3.1 (DirectX 12)",
   fsr31Vk: "FSR 3.1 (Vulkan)",
   xess: "XeSS",
@@ -72,9 +73,28 @@ export function upscalerGroup(game: ManageGameLike): string {
           <div class="mg-note">${icon("info", 12)} ${esc(t("upscaler.closeGame"))}</div>
           <div class="mg-inline">
             <button class="btn ghost small" data-act="upscaler-refresh">${icon("refresh", 13)} ${esc(t("upscaler.rescan"))}</button>
-            <button class="btn primary small" data-act="upscaler-import">${icon("upload", 13)} ${esc(t("upscaler.import"))}</button>
+            <button class="btn primary small" data-act="upscaler-update-all" disabled>${icon("download", 13)} ${esc(t("upscaler.updateAll"))}</button>
+            <button class="btn ghost small" data-act="upscaler-import">${icon("upload", 13)} ${esc(t("upscaler.import"))}</button>
           </div>
         </div>
+        <details class="upscaler-guide">
+          <summary>${icon("info", 13)} ${esc(t("upscaler.guideTitle"))}</summary>
+          <div class="upscaler-guide-body">
+            <p>${esc(t("upscaler.guideIntro"))}</p>
+            <p>${esc(t("upscaler.guideSupported"))}</p>
+            <ul>
+              <li><strong>DLSS Super Resolution</strong> — ${esc(t("upscaler.guideSr"))}</li>
+              <li><strong>DLSS Frame Generation</strong> — ${esc(t("upscaler.guideFg"))}</li>
+              <li><strong>DLSS Ray Reconstruction</strong> — ${esc(t("upscaler.guideRr"))}</li>
+              <li><strong>DLSS 5 Neural Rendering</strong> — ${esc(t("upscaler.guideNr"))}</li>
+              <li><strong>FSR / XeSS</strong> — ${esc(t("upscaler.guideOther"))}</li>
+            </ul>
+            <p>${esc(t("upscaler.guideAll"))}</p>
+            <p>${esc(t("upscaler.guideCannot"))}</p>
+            <p>${esc(t("upscaler.guideCommunity"))}</p>
+            <p>${esc(t("upscaler.guideRestore"))}</p>
+          </div>
+        </details>
         <div data-upscaler-root data-game-key="${esc(game.appName)}" data-install-path="${esc(installPath)}">
           <div data-upscaler-body><div class="mg-note">${esc(t("upscaler.scanning"))}</div></div>
         </div>
@@ -136,6 +156,10 @@ function renderDll(
   // Same choice as the backend: newest signed stable, then newest signed beta.
   const latest = catalog.find((entry) => !entry.isDev) ?? catalog[0];
   const stateLabel = dll.state === "swapped" ? t("upscaler.swapped") : t("upscaler.original");
+  const recommended =
+    dll.kind === "dlss"
+      ? `<span class="chip">${esc(t("upscaler.recommended"))}</span>`
+      : "";
   const versionLabel = dll.version
     ? `v${esc(dll.version)}`
     : esc(t("upscaler.unknownVersion"));
@@ -170,9 +194,9 @@ function renderDll(
       : `<span class="chip">${esc(t("upscaler.catalogUnavailable"))}</span>`;
 
   return `
-    <div class="row mg-row stack upscaler-row" data-search="${esc(search)}">
+    <div class="row mg-row stack upscaler-row" data-upscaler-dll data-dll-path="${esc(dll.path)}" data-kind="${dll.kind}" data-version="${esc(dll.version)}" data-latest-version="${latest ? esc(latest.version) : ""}" data-search="${esc(search)}">
       <div class="upscaler-head">
-        <div class="mg-title">${esc(KIND_LABEL[dll.kind])} <span class="chip ${dll.state === "swapped" ? "warn" : "ok"}">${esc(stateLabel)}</span></div>
+        <div class="mg-title">${esc(KIND_LABEL[dll.kind])} <span class="chip ${dll.state === "swapped" ? "warn" : "ok"}">${esc(stateLabel)}</span>${recommended}</div>
         <div class="mg-desc"><span class="tabular-nums">${versionLabel}</span> · ${fmtBytes(dll.size)}</div>
       </div>
       <div class="mg-path upscaler-path">${esc(dll.path)}</div>
@@ -212,6 +236,15 @@ function renderDll(
         </div>
       </details>
     </div>`;
+}
+
+/** Enables the one-click update only when a row has a newer catalog version. */
+function refreshUpdateAllState(root: HTMLElement): void {
+  const button = root
+    .closest("section")
+    ?.querySelector<HTMLButtonElement>('[data-act="upscaler-update-all"]');
+  if (!button) return;
+  button.disabled = !root.querySelector('[data-act="upscaler-download-latest"]');
 }
 
 function renderBody(
@@ -257,6 +290,7 @@ export async function hydrateUpscalerPanel(force = false): Promise<void> {
   const installPath = root.dataset.installPath ?? "";
   if (!installPath) {
     body.innerHTML = `<div class="mg-note">${esc(t("upscaler.empty"))}</div>`;
+    refreshUpdateAllState(root);
     return;
   }
 
@@ -270,6 +304,7 @@ export async function hydrateUpscalerPanel(force = false): Promise<void> {
     root.dataset.generation === generation;
 
   body.innerHTML = `<div class="mg-note">${esc(t("upscaler.scanning"))}</div>`;
+  refreshUpdateAllState(root);
   const catalogPromise = loadCatalog(force)
     .then((entries) => ({ entries }))
     .catch((error: unknown) => ({
@@ -286,6 +321,7 @@ export async function hydrateUpscalerPanel(force = false): Promise<void> {
   root.dataset.loaded = "1";
   const cached = catalogCache?.entries ?? [];
   body.innerHTML = renderBody(scan, imported, cached, "", cached.length === 0);
+  refreshUpdateAllState(root);
 
   const catalogResult = await catalogPromise;
   if (!current()) return;
@@ -294,6 +330,7 @@ export async function hydrateUpscalerPanel(force = false): Promise<void> {
   } else {
     body.innerHTML = renderBody(scan, imported, [], catalogResult.error, false);
   }
+  refreshUpdateAllState(root);
 }
 
 function panelRoot(element: HTMLElement): HTMLElement | null {
@@ -342,6 +379,63 @@ export async function handleUpscalerAction(
     case "upscaler-refresh":
       await hydrateUpscalerPanel(true);
       return true;
+
+    case "upscaler-update-all": {
+      if (!installPath || !root) return true;
+      const rows = Array.from(
+        root.querySelectorAll<HTMLElement>("[data-upscaler-dll]"),
+      ).filter((row) =>
+        row.querySelector('[data-act="upscaler-download-latest"]'),
+      );
+      if (rows.length === 0) {
+        toast(t("upscaler.noUpdates"), "");
+        return true;
+      }
+      if (!(await confirmRisk())) return true;
+      await withBusy(element, async () => {
+        let done = 0;
+        let updated = 0;
+        const failures: string[] = [];
+        for (const row of rows) {
+          const path = row.dataset.dllPath ?? "";
+          const kind = row.dataset.kind as UpscalerKind | undefined;
+          const current = row.dataset.version ?? "";
+          const latest = row.dataset.latestVersion ?? "";
+          if (!path || !kind) continue;
+          done += 1;
+          if (current && latest && current === latest) {
+            continue;
+          }
+          try {
+            await upscalersDownloadLatest(installPath, path, kind);
+            updated += 1;
+          } catch (error) {
+            failures.push(`${KIND_LABEL[kind]}: ${actionErrorMessage(error)}`);
+          }
+          if (element instanceof HTMLButtonElement) {
+            element.textContent = t("upscaler.updating", {
+              done,
+              total: rows.length,
+            });
+          }
+        }
+        if (failures.length > 0) {
+          toast(
+            `${t("upscaler.updateAllPartial", {
+              ok: updated,
+              total: rows.length,
+            })} ${failures[0]}`,
+            "err",
+          );
+        } else if (updated === 0) {
+          toast(t("upscaler.allCurrent"), "ok");
+        } else {
+          toast(t("upscaler.updatedAll", { count: updated }), "ok");
+        }
+        await hydrateUpscalerPanel(true);
+      });
+      return true;
+    }
 
     case "upscaler-import": {
       const picked = await upscalersPickDll(t("upscaler.pickTitle")).catch(
