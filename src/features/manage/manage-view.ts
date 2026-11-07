@@ -383,6 +383,12 @@ export function openManagePopup(appName: string): void {
   const body = manageRoot.querySelector<HTMLElement>(".manage-body");
   const nav = manageRoot.querySelector<HTMLElement>(".manage-nav");
   const sections = Array.from(body?.querySelectorAll<HTMLElement>(".manage-group[data-tab]") ?? []);
+  // Removal always sits at the bottom of the rail, after every other action.
+  // The groups keep their DOM order; only the rail is reordered.
+  sections.sort(
+    (left, right) =>
+      Number(left.dataset.tab === "danger") - Number(right.dataset.tab === "danger"),
+  );
   if (nav) {
     nav.innerHTML = sections
       .map((section) => {
