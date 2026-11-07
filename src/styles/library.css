@@ -1827,10 +1827,9 @@ html.win-compact .lrow-store-name { display: none; }
 .lrow:hover { background: var(--surface-2); }
 /* List density presets: Compact trims the row and its secondary text, Large
    gives the cover and title more room. */
-.lib-list[data-list-density="compact"] { --lrow-art-col: 42px; --lrow-h: 60px; --lrow-art-w: 36px; --lrow-art-h: 48px; --lrow-name-size: 13.5px; --lrow-store-w: 44px; }
+.lib-list[data-list-density="compact"] { --lrow-art-col: 42px; --lrow-h: 60px; --lrow-art-w: 36px; --lrow-art-h: 48px; --lrow-name-size: 13.5px; }
 .lib-list[data-list-density="large"] { --lrow-art-col: 68px; --lrow-h: 106px; --lrow-art-w: 62px; --lrow-art-h: 84px; --lrow-name-size: 16px; }
-.lib-list[data-list-density="compact"] .lrow-meta,
-.lib-list[data-list-density="compact"] .lrow-store-name { display: none; }
+.lib-list[data-list-density="compact"] .lrow-meta { display: none; }
 .lib-list[data-list-density="large"] .lrow-meta,
 .lib-list[data-list-density="large"] .lrow-store-name { font-size: 13.5px; }
 .lrow-art { position: relative; width: var(--lrow-art-w); height: var(--lrow-art-h); border-radius: 5px; overflow: hidden; background: var(--surface-3); }
