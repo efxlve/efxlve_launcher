@@ -124,6 +124,10 @@ export const COVER_SIZE_TARGET: Record<Exclude<CoverSize, "auto">, number> = {
   large: 210,
   xl: 260,
 };
+/** Library list row density: row height, cover size and how many details show. */
+export const LIST_DENSITY_KEY = "efxlve-list-density";
+export type ListDensity = "compact" | "standard" | "large";
+export const LIST_DENSITY_VALUES: readonly ListDensity[] = ["compact", "standard", "large"];
 /** Show a store source badge when viewing all stores. */
 export const STORE_BADGE_KEY = "efxlve-store-badge";
 /** Show the storefront mark on every grid cover. Off by default. */

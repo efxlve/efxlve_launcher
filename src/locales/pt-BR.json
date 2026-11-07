@@ -3708,5 +3708,7 @@
   "lib.coverSizeLarge": "Grande",
   "lib.coverSizeXl": "Muito grande",
   "fullscreen.allowTitle": "Permitir modo tela cheia",
-  "fullscreen.allowDesc": "Desative para impedir que conexões de controle, o botão Menu do controle, F11 e o botão da barra de título entrem no modo tela cheia."
+  "fullscreen.allowDesc": "Desative para impedir que conexões de controle, o botão Menu do controle, F11 e o botão da barra de título entrem no modo tela cheia.",
+  "lib.listDensity": "Densidade da lista",
+  "settings.listDensityDesc": "Altura das linhas e tamanho das capas na visualização em lista."
 }

@@ -52,6 +52,9 @@ import {
   COVER_SIZE_KEY,
   COVER_SIZE_VALUES,
   type CoverSize,
+  LIST_DENSITY_KEY,
+  LIST_DENSITY_VALUES,
+  type ListDensity,
   STORE_BADGE_KEY,
   STORE_ICONS_KEY,
   CASE_COVERS_KEY,
@@ -644,6 +647,11 @@ export const S = {
   showCoverTitles: (localStorage.getItem(COVER_TITLES_KEY) === "true") as boolean,
   /** Library grid density; "auto" keeps the responsive six-column default. */
   coverSize: COVER_SIZE_VALUES.find((size) => size === localStorage.getItem(COVER_SIZE_KEY)) ?? "auto",
+  /** Library list row density. */
+  listDensity: (() => {
+    const stored = localStorage.getItem(LIST_DENSITY_KEY);
+    return LIST_DENSITY_VALUES.includes(stored as ListDensity) ? (stored as ListDensity) : "standard";
+  })(),
   showStoreBadge: (localStorage.getItem(STORE_BADGE_KEY) === "true") as boolean,
   /** Optional: storefront mark on grid covers. */
   showStoreIcons: (localStorage.getItem(STORE_ICONS_KEY) === "true") as boolean,

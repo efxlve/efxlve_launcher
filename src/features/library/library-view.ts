@@ -27,7 +27,7 @@ import { t } from "../../i18n";
 import { sharedSummaries } from "./shared-library";
 import { steamAppOsList } from "./steam-library";
 import { allStoresMenuCount, enabledStoreKey, pickShownCopy, storeFilterLabel, storeFilterMenuHtml, storeFilterRowOn } from "./store-filter";
-import { coverSizeMenuHtml, syncCoverSizeMenu } from "./library-options";
+import { coverSizeMenuHtml, listDensityMenuHtml, syncDensityMenu } from "./library-options";
 import { LIB_FILTERS_ENABLED, libFiltersActiveCount, matchesLibFilters, renderLibFilterPanel, studioOf } from "./library-filters";
 /** Sort options shown in the library sort dropdown, in the menu order. */
 export function getSortOptions(): { id: EpicSort; label: string }[] {
@@ -557,7 +557,7 @@ function renderResults(itemsHtml: string, sentinelHtml: string): string {
   const highlightCls = isHighlight ? " dim-uninstalled contrast-titles highlight-installed" : "";
   if (S.epicViewMode === "list") {
     return `
-      <div class="lib-list${highlightCls} has-store-col has-ach-progress">
+      <div class="lib-list${highlightCls} has-store-col has-ach-progress" data-list-density="${S.listDensity}">
         <div class="lrow-head"><span></span><span>${t("lib.colTitle")}</span><span>${t("lib.colStore")}</span><span>${t("lib.colAchievements")}</span><span>${t("lib.colPlaytime")}</span><span>${t("lib.colSize")}</span><span></span></div>
         ${itemsHtml}${sentinelHtml}
       </div>`;
@@ -886,7 +886,7 @@ function wireCardSettle(): void {
   window.addEventListener("scroll", () => { cachedCardRect = null; }, { passive: true });
   window.addEventListener("resize", () => {
     cachedCardRect = null;
-    if (S.isCoverSizeOpen) syncCoverSizeMenu();
+    if (S.isCoverSizeOpen) syncDensityMenu();
   }, { passive: true });
 
   document.addEventListener(
@@ -1273,6 +1273,7 @@ export function renderEpic(): string {
       ${filterCount > 0 ? `<span class="lib-filter-badge tabular-nums">${filterCount}</span>` : ""}
     </button>`
     : "";
+  const densityLabel = S.epicViewMode === "list" ? t("lib.listDensity") : t("lib.coverSize");
   const tools = `
     <button class="icon-btn lib-create-btn" data-act="open-add-custom-game-modal" title="${esc(t("customGames.addTitle"))}" aria-label="${esc(t("customGames.addTitle"))}">
       ${icon("plus", 17)}
@@ -1297,11 +1298,11 @@ export function renderEpic(): string {
       <div class="seg" role="group" aria-label="${t("lib.viewMode")}">
         <button class="${S.epicViewMode === "grid" ? "active" : ""}" data-act="lib-view-mode" data-val="grid" title="${t("lib.viewGrid")}">${icon("layout-grid", 14)}</button>
         <button class="${S.epicViewMode === "list" ? "active" : ""}" data-act="lib-view-mode" data-val="list" title="${t("lib.viewList")}">${icon("list", 14)}</button>
-        <button class="seg-menu-btn lib-cover-size-btn" data-act="toggle-cover-size" title="${esc(t("lib.coverSize"))}" aria-label="${esc(t("lib.coverSize"))}" aria-expanded="${S.isCoverSizeOpen}">
+        <button class="seg-menu-btn lib-cover-size-btn" data-act="toggle-cover-size" title="${esc(densityLabel)}" aria-label="${esc(densityLabel)}" aria-expanded="${S.isCoverSizeOpen}">
           ${icon("chevron-down", 11)}
         </button>
       </div>
-      ${coverSizeMenuHtml()}
+      ${S.epicViewMode === "list" ? listDensityMenuHtml() : coverSizeMenuHtml()}
     </div>
     <button class="icon-btn lib-random-btn" data-act="lib-random-game" title="${esc(t("library.random"))}" aria-label="${esc(t("library.random"))}">${icon("shuffle", 16)}</button>
     <button class="icon-btn lib-hide-btn" data-act="open-hide-games" title="${esc(t("lib.hideGamesTip"))}" aria-label="${esc(t("lib.hideGamesTip"))}">${icon("eye-off", 16)}</button>

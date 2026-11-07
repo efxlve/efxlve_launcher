@@ -3708,5 +3708,7 @@
   "lib.coverSizeLarge": "Duży",
   "lib.coverSizeXl": "Bardzo duży",
   "fullscreen.allowTitle": "Zezwalaj na tryb pełnoekranowy",
-  "fullscreen.allowDesc": "Wyłącz, aby podłączenie kontrolera, przycisk Menu kontrolera, F11 i przycisk paska tytułu nie włączały trybu pełnoekranowego."
+  "fullscreen.allowDesc": "Wyłącz, aby podłączenie kontrolera, przycisk Menu kontrolera, F11 i przycisk paska tytułu nie włączały trybu pełnoekranowego.",
+  "lib.listDensity": "Gęstość listy",
+  "settings.listDensityDesc": "Wysokość wierszy i rozmiar okładek w widoku listy."
 }

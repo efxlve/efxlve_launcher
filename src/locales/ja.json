@@ -3708,5 +3708,7 @@
   "lib.coverSizeLarge": "大",
   "lib.coverSizeXl": "特大",
   "fullscreen.allowTitle": "全画面モードを許可",
-  "fullscreen.allowDesc": "オフにすると、コントローラーの接続、コントローラーのメニューボタン、F11、タイトルバーのボタンで全画面モードに切り替わりません。"
+  "fullscreen.allowDesc": "オフにすると、コントローラーの接続、コントローラーのメニューボタン、F11、タイトルバーのボタンで全画面モードに切り替わりません。",
+  "lib.listDensity": "リストの密度",
+  "settings.listDensityDesc": "リスト表示の行の高さとカバーサイズ。"
 }

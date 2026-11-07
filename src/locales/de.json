@@ -3708,5 +3708,7 @@
   "lib.coverSizeLarge": "Groß",
   "lib.coverSizeXl": "Sehr groß",
   "fullscreen.allowTitle": "Vollbildmodus erlauben",
-  "fullscreen.allowDesc": "Schalte dies aus, damit Controller-Verbindungen, die Menü-Taste des Controllers, F11 und die Titelleisten-Schaltfläche nicht in den Vollbildmodus wechseln."
+  "fullscreen.allowDesc": "Schalte dies aus, damit Controller-Verbindungen, die Menü-Taste des Controllers, F11 und die Titelleisten-Schaltfläche nicht in den Vollbildmodus wechseln.",
+  "lib.listDensity": "Listendichte",
+  "settings.listDensityDesc": "Zeilenhöhe und Covergröße in der Listenansicht."
 }

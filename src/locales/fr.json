@@ -3708,5 +3708,7 @@
   "lib.coverSizeLarge": "Grand",
   "lib.coverSizeXl": "Très grand",
   "fullscreen.allowTitle": "Autoriser le mode plein écran",
-  "fullscreen.allowDesc": "Désactivez cette option pour empêcher la connexion d'une manette, le bouton Menu de la manette, F11 et le bouton de la barre de titre de passer en mode plein écran."
+  "fullscreen.allowDesc": "Désactivez cette option pour empêcher la connexion d'une manette, le bouton Menu de la manette, F11 et le bouton de la barre de titre de passer en mode plein écran.",
+  "lib.listDensity": "Densité de la liste",
+  "settings.listDensityDesc": "Hauteur des lignes et taille des jaquettes dans la vue liste."
 }

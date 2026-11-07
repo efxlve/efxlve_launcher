@@ -3708,5 +3708,7 @@
   "lib.coverSizeLarge": "大",
   "lib.coverSizeXl": "特大",
   "fullscreen.allowTitle": "允許全螢幕模式",
-  "fullscreen.allowDesc": "關閉後，連接控制器、控制器選單鍵、F11 與標題列按鈕都無法進入全螢幕模式。"
+  "fullscreen.allowDesc": "關閉後，連接控制器、控制器選單鍵、F11 與標題列按鈕都無法進入全螢幕模式。",
+  "lib.listDensity": "清單密度",
+  "settings.listDensityDesc": "清單檢視中的列高與封面大小。"
 }

@@ -13,7 +13,10 @@ import {
   COVER_SIZE_VALUES,
   COVER_TITLES_KEY,
   LIB_PAGINATION_KEY,
+  LIST_DENSITY_KEY,
+  LIST_DENSITY_VALUES,
   type CoverSize,
+  type ListDensity,
 } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { icon } from "../../core/icons";
@@ -61,19 +64,54 @@ export function normalizeCoverSize(value: unknown): CoverSize {
 export function applyCoverSize(): void {
   const grid = document.querySelector<HTMLElement>("#lib-results .pgrid");
   if (grid) grid.dataset.coverSize = S.coverSize;
-  syncCoverSizeMenu();
+  syncDensityMenu();
 }
 
 /** Persist the chosen density and repaint the open menu in place. */
 export function setCoverSize(value: unknown): void {
   const size = normalizeCoverSize(value);
   if (size === S.coverSize) {
-    syncCoverSizeMenu();
+    syncDensityMenu();
     return;
   }
   S.coverSize = size;
   localStorage.setItem(COVER_SIZE_KEY, size);
   applyCoverSize();
+}
+
+const LIST_DENSITY_LABEL_KEYS: Record<ListDensity, string> = {
+  compact: "lib.coverSizeCompact",
+  standard: "lib.coverSizeStandard",
+  large: "lib.coverSizeLarge",
+};
+
+/** Localized list density name. The grid presets share the same three names. */
+export function listDensityLabel(density: ListDensity): string {
+  return t(LIST_DENSITY_LABEL_KEYS[density]);
+}
+
+/** Accepts a stored or select value; anything unknown becomes Standard. */
+export function normalizeListDensity(value: unknown): ListDensity {
+  return LIST_DENSITY_VALUES.includes(value as ListDensity) ? (value as ListDensity) : "standard";
+}
+
+/** Applies a list density to the mounted rows without rebuilding the library. */
+export function applyListDensity(): void {
+  const list = document.querySelector<HTMLElement>("#lib-results .lib-list");
+  if (list) list.dataset.listDensity = S.listDensity;
+  syncDensityMenu();
+}
+
+/** Persist the chosen list density and repaint the open menu in place. */
+export function setListDensity(value: unknown): void {
+  const density = normalizeListDensity(value);
+  if (density === S.listDensity) {
+    syncDensityMenu();
+    return;
+  }
+  S.listDensity = density;
+  localStorage.setItem(LIST_DENSITY_KEY, density);
+  applyListDensity();
 }
 
 function coverGap(grid: HTMLElement | null): number {
@@ -129,6 +167,50 @@ export function syncCoverSizeMenu(): void {
   }
 }
 
+/** Moves the check in the list-density menu without re-rendering the rows. */
+function syncListDensityMenu(): void {
+  const menu = document.getElementById("cover-size-menu");
+  if (!menu) return;
+  for (const density of LIST_DENSITY_VALUES) {
+    const option = menu.querySelector<HTMLElement>(
+      `[data-act="list-density-set"][data-density="${density}"]`,
+    );
+    if (!option) continue;
+    const selected = density === S.listDensity;
+    option.classList.toggle("selected", selected);
+    option.setAttribute("aria-checked", String(selected));
+    const check = option.querySelector<HTMLElement>(".cover-size-check");
+    if (check) check.innerHTML = selected ? icon("check", 13) : "";
+  }
+}
+
+/** The open menu follows the active view: covers in grid, rows in list. */
+export function syncDensityMenu(): void {
+  if (S.epicViewMode === "list") syncListDensityMenu();
+  else syncCoverSizeMenu();
+}
+
+/**
+ * Rebuilds the trigger and menu for the active view mode. Switching between
+ * grid and list patches only the results, so the density control must follow
+ * without a full page render.
+ */
+export function syncDensityControl(): void {
+  const container = document.querySelector<HTMLElement>(".cover-size-container");
+  if (!container) return;
+  const label = S.epicViewMode === "list" ? t("lib.listDensity") : t("lib.coverSize");
+  const btn = container.querySelector<HTMLElement>('[data-act="toggle-cover-size"]');
+  if (btn) {
+    btn.title = label;
+    btn.setAttribute("aria-label", label);
+    btn.setAttribute("aria-expanded", String(S.isCoverSizeOpen));
+  }
+  const oldMenu = container.querySelector("#cover-size-menu");
+  if (oldMenu) {
+    oldMenu.outerHTML = S.epicViewMode === "list" ? listDensityMenuHtml() : coverSizeMenuHtml();
+  }
+}
+
 /** Tiny density swatch: more, smaller squares mean smaller covers. */
 function coverSizeSwatch(size: CoverSize): string {
   const shape: Record<CoverSize, [number, number]> = {
@@ -163,10 +245,39 @@ export function coverSizeMenuHtml(): string {
   </div>`;
 }
 
+/** Row-line swatch: more, thinner lines mean tighter rows. */
+function listDensitySwatch(density: ListDensity): string {
+  const lines = density === "compact" ? 5 : density === "large" ? 3 : 4;
+  return `<span class="list-density-swatch" data-density="${density}" aria-hidden="true">${"<i></i>".repeat(lines)}</span>`;
+}
+
+/** The list-view counterpart of the cover-density menu. */
+export function listDensityMenuHtml(): string {
+  const options = LIST_DENSITY_VALUES.map((density) => {
+    const selected = density === S.listDensity;
+    return `<button type="button" class="cover-size-option${selected ? " selected" : ""}" data-act="list-density-set" data-density="${density}" role="menuitemradio" aria-checked="${selected}">
+      ${listDensitySwatch(density)}
+      <span class="cover-size-name">${esc(listDensityLabel(density))}</span>
+      <span class="cover-size-check" aria-hidden="true">${selected ? icon("check", 13) : ""}</span>
+    </button>`;
+  }).join("");
+  return `<div id="cover-size-menu" class="cover-size-menu${S.isCoverSizeOpen ? " show" : ""}" role="menu" aria-label="${esc(t("lib.listDensity"))}">
+    <div class="cover-size-head">${esc(t("lib.listDensity"))}</div>
+    ${options}
+  </div>`;
+}
+
 /** Settings mirror of the same preference. */
 export function coverSizeSelectHtml(): string {
   return `<select class="settings-select" data-act="set-cover-size" aria-label="${esc(t("lib.coverSize"))}">
     ${COVER_SIZE_VALUES.map((size) => `<option value="${size}"${S.coverSize === size ? " selected" : ""}>${esc(coverSizeLabel(size))}</option>`).join("")}
+  </select>`;
+}
+
+/** Settings mirror of the list density. */
+export function listDensitySelectHtml(): string {
+  return `<select class="settings-select" data-act="set-list-density" aria-label="${esc(t("lib.listDensity"))}">
+    ${LIST_DENSITY_VALUES.map((density) => `<option value="${density}"${S.listDensity === density ? " selected" : ""}>${esc(listDensityLabel(density))}</option>`).join("")}
   </select>`;
 }
 
@@ -203,6 +314,9 @@ export function handleLibraryOptionAction(act: string | undefined, el: HTMLEleme
       return true;
     case "cover-size-set":
       setCoverSize(el.dataset.size);
+      return true;
+    case "list-density-set":
+      setListDensity(el.dataset.density);
       return true;
     case "lib-page": {
       const page = Number(el.dataset.page);

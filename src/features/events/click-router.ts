@@ -116,7 +116,7 @@ import {
 } from "../library/library-view";
 import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
 import { clearReleaseCalendarSearch, closeReleaseCalendar, closeReleaseStores, isReleaseStoresOpen, openReleaseCalendar, openReleaseCalendarSearch, openReleaseCalendarWatchlist, openReleaseStores, refreshReleaseCalendar, setReleaseCalendarDay, setReleaseCalendarMonth, stepReleaseCalendarMonth, toggleReleaseFollow, toggleReleaseWatchlist } from "../library/release-calendar";
-import { handleLibraryOptionAction, syncCoverSizeMenu } from "../library/library-options";
+import { handleLibraryOptionAction, syncDensityControl, syncDensityMenu } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
 import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaContentCancel, eaContentPlan, eaContentUninstall, eaContentVerify, eaDirectSetEnabled, eaLoginOpen, isTransientUbisoftError, ubiDirectAdopt, ubiDirectCancel, ubiDirectCloudSaves, ubiDirectImportSaves, ubiDirectMove, ubiDirectRelease, ubiDirectSetEnabled, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, ubiStoreSignin, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
@@ -202,7 +202,7 @@ document.addEventListener("click", (e) => {
     if (menu) menu.classList.remove("show");
   }
 
-  // Close the cover-size menu when clicking outside it.
+  // Close the density menu when clicking outside it.
   if (S.isCoverSizeOpen && !targetEl.closest(".cover-size-container")) {
     S.isCoverSizeOpen = false;
     const menu = document.getElementById("cover-size-menu");
@@ -601,7 +601,7 @@ document.addEventListener("click", (e) => {
       document
         .querySelector<HTMLElement>('[data-act="toggle-cover-size"]')
         ?.setAttribute("aria-expanded", String(S.isCoverSizeOpen));
-      if (S.isCoverSizeOpen) syncCoverSizeMenu();
+      if (S.isCoverSizeOpen) syncDensityMenu();
     } else {
       render();
     }
@@ -794,7 +794,11 @@ document.addEventListener("click", (e) => {
       document.querySelectorAll<HTMLElement>("[data-act='lib-view-mode']").forEach((b) => {
         b.classList.toggle("active", b.dataset.val === mode);
       });
+      // Only the results are rebuilt here; the density trigger and its menu
+      // must switch from covers to rows (or back) in place, after the new
+      // result markup exists so the row counts are measured against it.
       if (!refreshLibraryResultsInPlace()) render();
+      else syncDensityControl();
     }
   } else if (act === "open-hide-games") {
     openHideGamesModal();

@@ -3708,5 +3708,7 @@
   "lib.coverSizeLarge": "Grande",
   "lib.coverSizeXl": "Muy grande",
   "fullscreen.allowTitle": "Permitir modo pantalla completa",
-  "fullscreen.allowDesc": "Desactívalo para que las conexiones de mando, el botón Menú del mando, F11 y el botón de la barra de título no entren en modo pantalla completa."
+  "fullscreen.allowDesc": "Desactívalo para que las conexiones de mando, el botón Menú del mando, F11 y el botón de la barra de título no entren en modo pantalla completa.",
+  "lib.listDensity": "Densidad de la lista",
+  "settings.listDensityDesc": "Altura de fila y tamaño de carátula en la vista de lista."
 }

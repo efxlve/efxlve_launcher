@@ -3708,5 +3708,7 @@
   "lib.coverSizeLarge": "Büyük",
   "lib.coverSizeXl": "Çok büyük",
   "fullscreen.allowTitle": "Tam Ekran Moduna izin ver",
-  "fullscreen.allowDesc": "Kapatırsanız gamepad bağlantısı, gamepad Menü düğmesi, F11 ve başlık çubuğu düğmesi Tam Ekran Moduna geçemez."
+  "fullscreen.allowDesc": "Kapatırsanız gamepad bağlantısı, gamepad Menü düğmesi, F11 ve başlık çubuğu düğmesi Tam Ekran Moduna geçemez.",
+  "lib.listDensity": "Liste yoğunluğu",
+  "settings.listDensityDesc": "Liste görünümündeki satır yüksekliği ve kapak boyutu."
 }

@@ -3708,5 +3708,7 @@
   "lib.coverSizeLarge": "크게",
   "lib.coverSizeXl": "아주 크게",
   "fullscreen.allowTitle": "전체 화면 모드 허용",
-  "fullscreen.allowDesc": "끄면 컨트롤러 연결, 컨트롤러 메뉴 버튼, F11 및 제목 표시줄 버튼으로 전체 화면 모드에 들어갈 수 없습니다."
+  "fullscreen.allowDesc": "끄면 컨트롤러 연결, 컨트롤러 메뉴 버튼, F11 및 제목 표시줄 버튼으로 전체 화면 모드에 들어갈 수 없습니다.",
+  "lib.listDensity": "목록 밀도",
+  "settings.listDensityDesc": "목록 보기의 행 높이와 표지 크기."
 }
