@@ -102,7 +102,7 @@ export function upscalerGroup(game: ManageGameLike): string {
         <div data-upscaler-root data-game-key="${esc(game.appName)}" data-install-path="${esc(installPath)}">
           <div data-upscaler-body><div class="mg-note">${esc(t("upscaler.scanning"))}</div></div>
         </div>
-        <div class="mg-note upscaler-legal">${icon("info", 12)} ${esc(t("upscaler.legal"))}</div>
+        <div class="upscaler-legal">${esc(t("upscaler.legal"))}</div>
       </div>
     </section>`;
 }
