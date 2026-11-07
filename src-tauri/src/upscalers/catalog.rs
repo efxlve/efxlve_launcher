@@ -50,7 +50,6 @@ fn parse_manifest(text: &str) -> Result<Vec<CatalogEntry>, String> {
         UpscalerKind::Dlss,
         UpscalerKind::DlssFg,
         UpscalerKind::DlssRr,
-        UpscalerKind::DlssNr,
         UpscalerKind::Fsr31Dx12,
         UpscalerKind::Fsr31Vk,
         UpscalerKind::Xess,

@@ -13,7 +13,6 @@ export type UpscalerKind =
   | "dlss"
   | "dlssFg"
   | "dlssRr"
-  | "dlssNr"
   | "fsr31Dx12"
   | "fsr31Vk"
   | "xess"

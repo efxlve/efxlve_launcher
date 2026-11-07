@@ -38,7 +38,6 @@ const KIND_LABEL: Record<UpscalerKind, string> = {
   dlss: "DLSS Super Resolution",
   dlssFg: "DLSS Frame Generation",
   dlssRr: "DLSS Ray Reconstruction",
-  dlssNr: "DLSS 5 Neural Rendering",
   fsr31Dx12: "FSR 3.1 (DirectX 12)",
   fsr31Vk: "FSR 3.1 (Vulkan)",
   xess: "XeSS",
@@ -46,6 +45,29 @@ const KIND_LABEL: Record<UpscalerKind, string> = {
   xessFg: "XeSS Frame Generation",
   xell: "XeLL",
 };
+
+function kindDescription(kind: UpscalerKind): string {
+  switch (kind) {
+    case "dlss":
+      return t("upscaler.descDlss");
+    case "dlssFg":
+      return t("upscaler.descDlssFg");
+    case "dlssRr":
+      return t("upscaler.descDlssRr");
+    case "fsr31Dx12":
+      return t("upscaler.descFsrDx12");
+    case "fsr31Vk":
+      return t("upscaler.descFsrVk");
+    case "xess":
+      return t("upscaler.descXess");
+    case "xessDx11":
+      return t("upscaler.descXessDx11");
+    case "xessFg":
+      return t("upscaler.descXessFg");
+    case "xell":
+      return t("upscaler.descXell");
+  }
+}
 
 const CATALOG_TTL_MS = 10 * 60 * 1000;
 let catalogCache: { at: number; entries: CatalogEntry[] } | null = null;
@@ -77,24 +99,6 @@ export function upscalerGroup(game: ManageGameLike): string {
             <button class="btn ghost small" data-act="upscaler-import">${icon("upload", 13)} ${esc(t("upscaler.import"))}</button>
           </div>
         </div>
-        <details class="upscaler-guide">
-          <summary>${icon("info", 13)} ${esc(t("upscaler.guideTitle"))}</summary>
-          <div class="upscaler-guide-body">
-            <p>${esc(t("upscaler.guideIntro"))}</p>
-            <p>${esc(t("upscaler.guideSupported"))}</p>
-            <ul>
-              <li><strong>DLSS Super Resolution</strong> — ${esc(t("upscaler.guideSr"))}</li>
-              <li><strong>DLSS Frame Generation</strong> — ${esc(t("upscaler.guideFg"))}</li>
-              <li><strong>DLSS Ray Reconstruction</strong> — ${esc(t("upscaler.guideRr"))}</li>
-              <li><strong>DLSS 5 Neural Rendering</strong> — ${esc(t("upscaler.guideNr"))}</li>
-              <li><strong>FSR / XeSS</strong> — ${esc(t("upscaler.guideOther"))}</li>
-            </ul>
-            <p>${esc(t("upscaler.guideAll"))}</p>
-            <p>${esc(t("upscaler.guideCannot"))}</p>
-            <p>${esc(t("upscaler.guideCommunity"))}</p>
-            <p>${esc(t("upscaler.guideRestore"))}</p>
-          </div>
-        </details>
         <div data-upscaler-root data-game-key="${esc(game.appName)}" data-install-path="${esc(installPath)}">
           <div data-upscaler-body><div class="mg-note">${esc(t("upscaler.scanning"))}</div></div>
         </div>
@@ -156,10 +160,7 @@ function renderDll(
   // Same choice as the backend: newest signed stable, then newest signed beta.
   const latest = catalog.find((entry) => !entry.isDev) ?? catalog[0];
   const stateLabel = dll.state === "swapped" ? t("upscaler.swapped") : t("upscaler.original");
-  const recommended =
-    dll.kind === "dlss"
-      ? `<span class="chip">${esc(t("upscaler.recommended"))}</span>`
-      : "";
+  const description = kindDescription(dll.kind);
   const versionLabel = dll.version
     ? `v${esc(dll.version)}`
     : esc(t("upscaler.unknownVersion"));
@@ -170,7 +171,7 @@ function renderDll(
         }),
       )
     : esc(t("upscaler.noBackup"));
-  const search = `${KIND_LABEL[dll.kind]} ${versionLabel} ${stateLabel} ${dll.path} ${backupLabel}`;
+  const search = `${KIND_LABEL[dll.kind]} ${versionLabel} ${stateLabel} ${description} ${dll.path} ${backupLabel}`;
 
   const catalogOptions = catalog
     .map(
@@ -196,10 +197,11 @@ function renderDll(
   return `
     <div class="row mg-row stack upscaler-row" data-upscaler-dll data-dll-path="${esc(dll.path)}" data-kind="${dll.kind}" data-version="${esc(dll.version)}" data-latest-version="${latest ? esc(latest.version) : ""}" data-search="${esc(search)}">
       <div class="upscaler-head">
-        <div class="mg-title">${esc(KIND_LABEL[dll.kind])} <span class="chip ${dll.state === "swapped" ? "warn" : "ok"}">${esc(stateLabel)}</span>${recommended}</div>
+        <div class="mg-title">${esc(KIND_LABEL[dll.kind])} <span class="chip ${dll.state === "swapped" ? "warn" : "ok"}">${esc(stateLabel)}</span></div>
         <div class="mg-desc"><span class="tabular-nums">${versionLabel}</span> · ${fmtBytes(dll.size)}</div>
       </div>
       <div class="mg-path upscaler-path">${esc(dll.path)}</div>
+      <div class="mg-desc upscaler-desc">${esc(description)}</div>
       <div class="upscaler-actions">
         ${downloadLatest}
         <button class="btn ghost small" data-act="upscaler-restore" data-dll-path="${esc(dll.path)}" ${dll.backupPath ? "" : "disabled"}>${icon("refresh", 13)} ${esc(t("upscaler.restore"))}</button>

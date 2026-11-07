@@ -1,6 +1,6 @@
 //! Finds the upscaler DLLs a game already ships.
 //!
-//! Only the ten known file names are hashed; the directory walk itself is the
+//! Only the nine known file names are hashed; the directory walk itself is the
 //! expensive part, so the scan stays on demand instead of running for every
 //! installed game at startup.
 
