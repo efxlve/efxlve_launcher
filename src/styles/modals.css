@@ -1489,7 +1489,93 @@
 .cover-preview-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .cover-preview-card.logo img { object-fit: contain; padding: 16px; }
 .cover-logo-size { display: flex; align-items: center; gap: 8px; }
-.cover-meta-label { font-size: 11px; color: var(--text-3); }
+.cover-logo-layout-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.cover-logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cover-logo-anchors {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.cover-anchor-btn {
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-1);
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--ease), border-color var(--ease), color var(--ease);
+}
+.cover-anchor-btn:hover {
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+.cover-anchor-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.cover-anchor-custom-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 4px;
+  background: var(--accent-tint);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+}
+.cover-logo-scale-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 150px;
+  max-width: 240px;
+}
+.cover-logo-scale-wrap input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.cover-logo-scale-val {
+  min-width: 38px;
+  text-align: right;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.cover-meta-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+#sort-name-root .playtime-overlay { z-index: 360; }
+#sort-name-modal-input { width: 100%; }
+.cover-meta-label { font-size: 11px; font-weight: 600; color: var(--text-3); }
 .cover-preview-empty { width: 100%; height: 100%; display: grid; place-items: center; color: var(--text-3); }
 .cover-preview-badge { position: absolute; left: 6px; bottom: 6px; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(14, 15, 18, 0.85); }
 .cover-preview-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }

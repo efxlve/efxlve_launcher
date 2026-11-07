@@ -334,6 +334,8 @@ pub struct SteamAppMetadata {
     pub release_year: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub oslist: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub metacritic_score: Option<u32>,
 }
 
 /// Metadata for every app in the client's own `appcache/appinfo.vdf`.
@@ -403,6 +405,7 @@ pub fn parse_appinfo_metadata(data: &[u8]) -> std::collections::HashMap<String, 
                     genres,
                     release_year,
                     oslist,
+                    metacritic_score: None,
                 },
             );
         }
@@ -612,17 +615,71 @@ pub(super) fn cached_app_metadata(
     map
 }
 
+/// Fills missing metadata and Metacritic scores from previously cached store
+/// detail files (`<app_data>/steam/details/{app_id}_{lang}.json`), with zero
+/// network traffic.
+fn merge_cached_store_details(
+    details_dir: &Path,
+    out: &mut std::collections::HashMap<String, SteamAppMetadata>,
+) {
+    let Ok(entries) = std::fs::read_dir(details_dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let Some(stem) = path.file_stem().and_then(|s| s.to_str()) else {
+            continue;
+        };
+        if path.extension().and_then(|s| s.to_str()) != Some("json") {
+            continue;
+        }
+        let Some((app_id, _lang)) = stem.split_once('_') else {
+            continue;
+        };
+        if app_id.is_empty() || !app_id.bytes().all(|b| b.is_ascii_digit()) {
+            continue;
+        }
+        let Some((details, _)) =
+            crate::lookup_cache::read::<SteamGameDetails>(&path, DETAILS_CACHE_VERSION)
+        else {
+            continue;
+        };
+        let meta = out.entry(app_id.to_string()).or_default();
+        if meta.metacritic_score.is_none() {
+            meta.metacritic_score = details.metacritic_score.filter(|s| *s > 0 && *s <= 100);
+        }
+        if meta.release_year.is_none() {
+            meta.release_year = year_from_text(&details.release_date);
+        }
+        if meta.developer.is_none() {
+            meta.developer = details
+                .developers
+                .iter()
+                .map(|d| d.trim())
+                .find(|d| !d.is_empty())
+                .map(str::to_string);
+        }
+        if meta.genres.is_empty() && !details.genres.is_empty() {
+            meta.genres = details.genres;
+        }
+    }
+}
+
 /// Studio, genres and release year for the whole Steam library, read once from
 /// the client's own app cache. Empty when Steam or its cache is missing.
 #[tauri::command]
 pub fn steam_app_metadata(
     app: tauri::AppHandle,
 ) -> std::collections::HashMap<String, SteamAppMetadata> {
+    use tauri::Manager;
     let timer = crate::perf::Timer::start("rust:steam_app_metadata");
     let cache_path = metadata_cache_path(&app);
-    let result = steam_install_path()
+    let mut result = steam_install_path()
         .map(|steam| cached_app_metadata(&steam, cache_path.as_deref()))
         .unwrap_or_default();
+    if let Ok(app_dir) = app.path().app_data_dir() {
+        merge_cached_store_details(&app_dir.join("steam").join("details"), &mut result);
+    }
     timer.done_global();
     result
 }
@@ -1121,6 +1178,7 @@ mod tests {
                 genres: vec!["Role-playing (RPG)".to_string()],
                 release_year: Some(2020),
                 oslist: Some("windows".to_string()),
+                metacritic_score: None,
             },
         );
         let cache = MetadataCacheFile {
@@ -1464,6 +1522,38 @@ mod tests {
             details.metacritic_url.as_deref(),
             Some("https://www.metacritic.com/game/pc/portal-2")
         );
+    }
+    #[test]
+    fn merge_cached_details_hydrates_metacritic_and_missing_fields() {
+        let dir = std::env::temp_dir().join(format!(
+            "efxlve_steam_details_test_{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let details = parse_app_details(
+            "620",
+            &serde_json::json!({
+                "name": "Portal 2",
+                "developers": ["Valve"],
+                "genres": [{ "description": "Action" }],
+                "release_date": { "date": "18 Apr, 2011" },
+                "metacritic": { "score": 95, "url": "https://www.metacritic.com/game/pc/portal-2" }
+            }),
+        );
+        crate::lookup_cache::write(
+            &dir.join("620_english.json"),
+            DETAILS_CACHE_VERSION,
+            &details,
+        );
+        let mut out = std::collections::HashMap::new();
+        merge_cached_store_details(&dir, &mut out);
+        let meta = out.get("620").expect("merged 620");
+        assert_eq!(meta.metacritic_score, Some(95));
+        assert_eq!(meta.release_year, Some(2011));
+        assert_eq!(meta.developer.as_deref(), Some("Valve"));
+        assert_eq!(meta.genres, vec!["Action"]);
+        let _ = std::fs::remove_dir_all(&dir);
     }
     /// Live check for the client's own DLC list (`appcache/appinfo.vdf`).
     /// Run: `cargo test live_steam_client_dlc -- --ignored --nocapture`

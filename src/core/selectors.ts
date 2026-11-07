@@ -76,6 +76,8 @@ export function epicToLibraryItem(s: EpicSummary): LibraryItem {
     updateAvailable: s.updateAvailable,
     cloudSavesSupported: true,
     dlcCount: s.dlcCount,
+    genres: s.genres,
+    releaseYear: s.releaseYear ?? null,
   };
 }
 

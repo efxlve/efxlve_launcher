@@ -20,6 +20,10 @@ import {
   CUSTOM_HEROES_KEY,
   CUSTOM_LOGOS_KEY,
   CUSTOM_LOGO_SIZES_KEY,
+  CUSTOM_LOGO_LAYOUTS_KEY,
+  CUSTOM_SORT_NAMES_KEY,
+  LIB_GROUP_BY_KEY,
+  LIB_COLLAPSED_GROUPS_KEY,
   GAME_SCENE_KEY,
   FAV_KEY,
   HIDDEN_ACH_KEY,
@@ -103,7 +107,7 @@ import { initialReduceEffects } from "./effects";
 import { loadGameStatus, loadUiScale } from "./game-status";
 import { readCustomCss } from "./custom-css";
 import { normalizeSurface } from "./themes";
-import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, DlMetrics, DownloadFinishAction, DrawerTab, EpicCopyOverride, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibraryItem, NotifTab, SavedAccount, SettingsSection, View } from "./types";
+import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, CustomLogoLayout, CustomLogoSize, DlMetrics, DownloadFinishAction, DrawerTab, EpicCopyOverride, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibGroupBy, LibraryItem, LogoAnchor, NotifTab, SavedAccount, SettingsSection, View } from "./types";
 import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
 
 
@@ -139,6 +143,63 @@ function loadJsonRecord(key: string): Record<string, string> {
   } catch {
     return {};
   }
+}
+
+const LIB_GROUP_MODES: readonly LibGroupBy[] = [
+  "none",
+  "status",
+  "rating",
+  "year",
+  "store",
+  "playtime",
+  "genre",
+];
+
+function normalizeLibGroupBy(raw: string | null): LibGroupBy {
+  return raw && (LIB_GROUP_MODES as readonly string[]).includes(raw)
+    ? (raw as LibGroupBy)
+    : "none";
+}
+
+const LOGO_ANCHORS: readonly LogoAnchor[] = [
+  "bottom-left",
+  "bottom-center",
+  "bottom-right",
+  "center",
+  "top-left",
+  "top-center",
+  "custom",
+];
+
+function loadCustomLogoLayouts(legacySizes: Record<string, CustomLogoSize>): Record<string, CustomLogoLayout> {
+  const out: Record<string, CustomLogoLayout> = {};
+  try {
+    const raw = JSON.parse(localStorage.getItem(CUSTOM_LOGO_LAYOUTS_KEY) ?? "{}") as Record<string, unknown>;
+    for (const [appName, val] of Object.entries(raw)) {
+      if (!val || typeof val !== "object") continue;
+      const obj = val as Record<string, unknown>;
+      const anchorRaw = typeof obj.anchor === "string" ? obj.anchor : "bottom-left";
+      const anchor: LogoAnchor = (LOGO_ANCHORS as readonly string[]).includes(anchorRaw)
+        ? (anchorRaw as LogoAnchor)
+        : "bottom-left";
+      const x = typeof obj.x === "number" && Number.isFinite(obj.x) ? Math.max(0, Math.min(100, obj.x)) : 4;
+      const y = typeof obj.y === "number" && Number.isFinite(obj.y) ? Math.max(0, Math.min(100, obj.y)) : 88;
+      const scale = typeof obj.scale === "number" && Number.isFinite(obj.scale)
+        ? Math.round(Math.max(40, Math.min(180, obj.scale)))
+        : 100;
+      out[appName] = { anchor, x, y, scale };
+    }
+  } catch {
+    // Ignore malformed saved layout entries.
+  }
+  for (const [appName, size] of Object.entries(legacySizes)) {
+    if (out[appName]) continue;
+    const scale = size === "small" ? 72 : size === "large" ? 135 : 100;
+    if (scale !== 100) {
+      out[appName] = { anchor: "bottom-left", x: 4, y: 88, scale };
+    }
+  }
+  return out;
 }
 
 /** Key of the combined profile's photo (sidebar chip and Overview header). */
@@ -353,7 +414,18 @@ export const S = {
   customCovers: loadJsonRecord(CUSTOM_COVERS_KEY),
   customHeroes: loadJsonRecord(CUSTOM_HEROES_KEY),
   customLogos: loadJsonRecord(CUSTOM_LOGOS_KEY),
-  customLogoSizes: loadJsonRecord(CUSTOM_LOGO_SIZES_KEY) as Record<string, import("./types").CustomLogoSize>,
+  customLogoSizes: loadJsonRecord(CUSTOM_LOGO_SIZES_KEY) as Record<string, CustomLogoSize>,
+  customLogoLayouts: loadCustomLogoLayouts(loadJsonRecord(CUSTOM_LOGO_SIZES_KEY) as Record<string, CustomLogoSize>),
+  /** True while interactive drag/resize mode is active on `.gp-hero`. */
+  isAdjustingLogo: false,
+  /** Custom per-game sort titles ("Sort As") keyed by library appName. */
+  customSortNames: loadJsonRecord(CUSTOM_SORT_NAMES_KEY),
+  /** App name whose "Edit Sort Name" modal is open, or null. */
+  sortNameModalAppName: (null) as string | null,
+  /** Active library grouping dimension ("none" = flat). */
+  libGroupBy: normalizeLibGroupBy(localStorage.getItem(LIB_GROUP_BY_KEY)),
+  /** Collapsed group keys formatted as `${groupBy}:${groupId}`. */
+  collapsedLibGroups: loadStrSet(LIB_COLLAPSED_GROUPS_KEY),
   /** Blurred game art behind the shell instead of the flat theme background. */
   gameScene: localStorage.getItem(GAME_SCENE_KEY) === "true",
   customAvatars: migrateAvatarKeys(loadJsonRecord(CUSTOM_AVATARS_KEY)),
@@ -404,6 +476,14 @@ export const S = {
   loadedCritic: (new Map()) as Map<string, CriticData>,
   /** Best cached review score per library key, loaded from the disk cache. */
   gameRatings: (new Map()) as Map<string, number>,
+  /** Cached PC/first release years keyed by library key or `meta:<normalizedTitle>`. */
+  cachedReleaseYears: (new Map()) as Map<string, number>,
+  /** Cached genre lists keyed by library key or `meta:<normalizedTitle>`. */
+  cachedGenres: (new Map()) as Map<string, string[]>,
+  /** Cached developer names keyed by library key or `meta:<normalizedTitle>`. */
+  cachedDevelopers: (new Map()) as Map<string, string>,
+  /** Cached primary franchise/collection name keyed by library key or `meta:<normalizedTitle>`. */
+  gameFranchises: (new Map()) as Map<string, string>,
   loadingCriticFor: new Set<string>(),
   loadingAboutFor: new Set<string>(),
   appLanguage: initialLanguage(),

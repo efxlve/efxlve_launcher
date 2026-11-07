@@ -2209,22 +2209,51 @@
 }
 
 /* ---------- Game-art backdrop (acrylic shell) ----------
-   #game-scene is a fixed, blurred copy of the selected game's wide art. The
-   shell's opaque backgrounds become translucent so the picture reads through
-   the title bar, sidebar, library and game page. A theme's own scene yields to
-   this mode: the game picture is the point. */
+   #game-scene holds two crossfading blurred wide-art layers behind the entire
+   window. Shell chrome (#winbar, #sidebar, #page-header), library surfaces and
+   the game page become translucent so the hovered/opened game's palette washes
+   seamlessly across every region without hard seams or flicker. */
 #game-scene {
   position: fixed;
-  inset: -64px;
+  inset: -72px;
   z-index: 0;
   pointer-events: none;
-  background: var(--bg) var(--game-scene-image, none) center / cover no-repeat;
-  filter: blur(42px) saturate(1.16) brightness(0.74);
+  background: var(--bg);
+  filter: blur(52px) saturate(1.26) brightness(0.5);
   transform: translateZ(0);
   opacity: 0;
-  transition: opacity 260ms ease;
+  transition: opacity 320ms ease;
 }
-html[data-game-scene="on"] #game-scene { opacity: 1; }
+.game-scene-layer {
+  position: absolute;
+  inset: 0;
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.game-scene-layer.is-active {
+  opacity: 1;
+}
+html.reduce-effects #game-scene,
+html.reduce-effects .game-scene-layer {
+  transition: none !important;
+}
+html[data-game-scene="on"] #game-scene {
+  opacity: 1;
+}
+html[data-game-scene="on"] {
+  --surface-1: color-mix(in srgb, var(--bg) 62%, rgba(255, 255, 255, 0.06));
+  --surface-2: color-mix(in srgb, var(--bg) 52%, rgba(255, 255, 255, 0.1));
+  --surface-3: color-mix(in srgb, var(--bg) 44%, rgba(255, 255, 255, 0.15));
+}
+html[data-surface="white"][data-game-scene="on"],
+html[data-surface="gloss"][data-game-scene="on"] {
+  --surface-1: rgba(255, 255, 255, 0.68);
+  --surface-2: rgba(255, 255, 255, 0.78);
+  --surface-3: rgba(255, 255, 255, 0.88);
+}
 html[data-game-scene="on"] body {
   background: transparent !important;
 }
@@ -2237,26 +2266,35 @@ html[data-game-scene="on"] #app {
   background: transparent;
 }
 html[data-game-scene="on"] #winbar,
-html[data-game-scene="on"] #sidebar {
-  background: color-mix(in srgb, var(--bg) 58%, transparent) !important;
-  backdrop-filter: blur(22px) saturate(1.12);
-  -webkit-backdrop-filter: blur(22px) saturate(1.12);
+html[data-game-scene="on"] #sidebar,
+html[data-game-scene="on"] #page-header:not(:has(#store-tabs-bar:not([hidden]))) {
+  background: color-mix(in srgb, var(--bg) 50%, transparent) !important;
 }
 html[data-game-scene="on"] #main-col,
+html[data-game-scene="on"] #content,
 html[data-game-scene="on"] #view {
   background: transparent !important;
 }
 html[data-game-scene="on"] .overlay {
+  background: color-mix(in srgb, var(--bg) 34%, transparent) !important;
+}
+html[data-game-scene="on"] .gp-hero {
   background: transparent !important;
+}
+html[data-game-scene="on"] .gp-hero-backdrop {
+  opacity: 0 !important;
+}
+html[data-game-scene="on"] .gp-hero-img:not(.is-portrait) {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 66%, rgba(0, 0, 0, 0.45) 88%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 66%, rgba(0, 0, 0, 0.45) 88%, transparent 100%);
 }
 html[data-game-scene="on"] .gp-hero-scrim {
   background: linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0.42) 0%,
-    rgba(0, 0, 0, 0.05) 20%,
-    rgba(0, 0, 0, 0.15) 54%,
-    rgba(0, 0, 0, 0.72) 80%,
-    rgba(0, 0, 0, 0.95) 94%,
+    rgba(0, 0, 0, 0.34) 0%,
+    rgba(0, 0, 0, 0.04) 24%,
+    rgba(0, 0, 0, 0.14) 56%,
+    rgba(0, 0, 0, 0.52) 82%,
     transparent 100%
   ) !important;
 }
@@ -2266,5 +2304,5 @@ html[data-game-scene="on"] .gp-bar {
 }
 html[data-surface="white"][data-game-scene="on"] #game-scene,
 html[data-surface="gloss"][data-game-scene="on"] #game-scene {
-  filter: blur(42px) saturate(1.08) brightness(1.04);
+  filter: blur(52px) saturate(1.1) brightness(1.06);
 }

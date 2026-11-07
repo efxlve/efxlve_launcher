@@ -570,6 +570,40 @@ export interface EpicSummary {
   releaseYear?: number | null;
 }
 
+/** Extracts a sane release year from Epic catalog metadata when present. */
+export function epicReleaseYear(g: EpicGame): number | null {
+  const meta = g.metadata;
+  if (!meta) return null;
+  const maxYear = new Date().getFullYear() + 2;
+  const parseYear = (val: unknown): number | null => {
+    if (typeof val === "number" && Number.isFinite(val)) {
+      const y = val > 10_000_000_000 ? new Date(val).getUTCFullYear() : val > 10_000_000 ? new Date(val * 1000).getUTCFullYear() : Math.trunc(val);
+      return y >= 1975 && y <= maxYear ? y : null;
+    }
+    if (typeof val !== "string" || !val) return null;
+    const match = val.match(/\b(19[7-9]\d|20\d{2})\b/);
+    if (!match) return null;
+    const y = Number(match[1]);
+    return y >= 1975 && y <= maxYear ? y : null;
+  };
+
+  for (const key of ["releaseDate", "pcReleaseDate", "initialReleaseDate", "effectiveDate"]) {
+    const y = parseYear(meta[key]);
+    if (y !== null) return y;
+  }
+  const attrs = meta.customAttributes as Record<string, { value?: string }> | undefined;
+  if (attrs && typeof attrs === "object") {
+    for (const [k, v] of Object.entries(attrs)) {
+      const kl = k.toLowerCase();
+      if (kl.includes("releasedate") || kl.includes("release_date")) {
+        const y = parseYear(v?.value);
+        if (y !== null) return y;
+      }
+    }
+  }
+  return parseYear(meta.creationDate);
+}
+
 /** Filters out DLCs and skipped broken items, merging in installed info. */
 export function summarize(
   games: EpicGame[],
@@ -602,6 +636,7 @@ export function summarize(
         installSize: ins?.install_size ?? 0,
         installedVersion: ins?.version ?? null,
         updateAvailable: !!ins && ver !== "—" && ins.version !== ver,
+        releaseYear: epicReleaseYear(g),
       };
     })
     .sort((a, b) => a.title.localeCompare(b.title, "tr"));

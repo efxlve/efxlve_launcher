@@ -2648,6 +2648,7 @@ fn main() {
             igdb::igdb_game,
             igdb::igdb_covers,
             igdb::igdb_enrich,
+            igdb::igdb_cached_library,
         ])
         .build(tauri::generate_context!())
         .expect("Tauri application failed to build");

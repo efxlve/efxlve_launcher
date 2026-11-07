@@ -21,6 +21,9 @@
           if (surface === "soft" || surface === "white" || surface === "gloss") {
             document.documentElement.dataset.surface = surface;
           }
+          if (localStorage.getItem("efxlve-game-scene") === "true") {
+            document.documentElement.dataset.gameScene = "on";
+          }
           var w = parseInt(localStorage.getItem("efxlve-sidebar-w") || "", 10);
           if (w >= 72 && w <= 400) {
             document.documentElement.style.setProperty("--sidebar-w", w + "px");
@@ -31,7 +34,10 @@
     </script>
   </head>
   <body>
-    <div id="game-scene" aria-hidden="true"></div>
+    <div id="game-scene" aria-hidden="true">
+      <div class="game-scene-layer is-a"></div>
+      <div class="game-scene-layer is-b"></div>
+    </div>
     <div id="app">
       <header id="winbar" data-tauri-drag-region>
         <img id="winbar-icon" class="winbar-icon" alt="" data-tauri-drag-region /><span class="winbar-title" data-tauri-drag-region>Efxlve Launcher</span>
@@ -163,6 +169,7 @@
           </header>
           <main id="content">
             <section id="view"></section>
+            <nav id="lib-alpha" class="lib-alpha" hidden></nav>
           </main>
         </div>
       </div>
@@ -187,6 +194,7 @@
     <div id="changelog-root"></div>
     <div id="custom-game-root"></div>
     <div id="feedback-root"></div>
+    <div id="sort-name-root"></div>
     <div id="confirm-root"></div>
     <div id="account-switch" class="account-switch" hidden>
       <span class="spinner"></span>

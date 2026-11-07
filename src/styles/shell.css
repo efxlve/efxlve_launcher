@@ -1025,6 +1025,10 @@ html.win-compact .page-search span { display: none; }
 /* The bar only exists once the page overflows. Reserving its gutter keeps the
    cover grid from jumping sideways when a short library grows. */
 #view { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable; padding: 20px 28px 40px; }
+#content.has-lib-alpha > #view { padding-right: 46px; }
+@media (max-width: 900px) {
+  #content.has-lib-alpha > #view { padding-right: 28px; }
+}
 /* The TV shell has its own boot animation; sliding it 8px would make #view
    overflow and flash overlay scrollbars at the window edge. */
 #view.view-enter > * { animation: page-in var(--ease-in) both; }

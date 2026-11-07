@@ -21,6 +21,7 @@ import { ubiDirectLaunchMode, ubiSavePath } from "../../companion";
 import { renderManageCloudBackupRow, updateManageCloudRowInPlace } from "../cloud-backup/cloud-backup-view";
 import { initCloudBackupSettings, loadCloudBackupsAction } from "../cloud-backup/cloud-backup-actions";
 import { hydrateUpscalerPanel, upscalerGroup } from "../upscalers/upscaler-panel";
+import { customSortNameOf } from "../library/sort-name";
 export { updateManageCloudRowInPlace };
 
 /** Serializes env vars as one KEY=VALUE per line for the manage textarea. */
@@ -78,6 +79,28 @@ function installSizeRow(size: number, installed: boolean): string {
     t("feat.installedSize"),
     "",
     `<span class="mg-size-value tabular-nums">${esc(fmtBytes(size))}</span>`,
+  );
+}
+
+/** Shared Library section in Manage: custom Sort Name + Hide from Library. */
+function libraryManageGroup(appName: string, title: string): string {
+  const customSort = customSortNameOf(appName, title);
+  const sortDesc = customSort
+    ? `${esc(t("manage.sortNameActive"))}: <strong>${esc(customSort)}</strong>`
+    : t("manage.sortNameDesc");
+  return group(
+    "library",
+    "eye-off",
+    t("nav.library"),
+    `${row(
+      t("manage.sortNameTitle"),
+      `<span id="manage-sort-name-desc" data-app="${esc(appName)}">${sortDesc}</span>`,
+      `<button class="btn ghost small" data-act="open-sort-name-modal" data-id="${esc(appName)}">${icon("arrow-down-a-z", 13)} ${t("manage.sortNameEdit")}</button>`,
+    )}${row(
+      t("manage.hideTitle"),
+      t("manage.hideDesc"),
+      `<button class="btn ghost small" data-act="hide-game" data-id="${esc(appName)}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`,
+    )}`,
   );
 }
 
@@ -596,8 +619,7 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
       ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
       ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtime)}</span>`, "", "", playtimeBreakdownHtml(s.appName, s.title)), t("manage.totalPlaytime"))}
-      ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
-        `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
+      ${libraryManageGroup(s.appName, s.title)}
       ${s.installed ? dangerGroup(row(t("manage.uninstallTitle"), source === "ubisoft" ? t("manage.dangerDesc") : t("accounts.companionUninstallDesc", { name: brand }),
         `<button class="btn danger small" data-act="companion-uninstall" data-id="${s.appName}" data-store="${source}">${icon("trash", 13)} ${t("common.uninstall")}</button>`)) : ""}
     </div>`;
@@ -729,8 +751,7 @@ function amazonManageBody(s: EpicSummary): string {
         pt?.session_count ? t("manage.sessionMeta", { count: pt.session_count, last: esc(lastPlayedLabel(pt.last_played)) }) : t("manage.noSession"),
           `<button class="btn ghost small" data-act="open-edit-playtime" data-id="${s.appName}">${icon("edit", 13)} ${t("manage.editTime")}</button>`,
           playtimeBreakdownHtml(s.appName, s.title), "manage-playtime-meta"), t("manage.totalPlaytime"))}
-      ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
-        `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
+      ${libraryManageGroup(s.appName, s.title)}
       ${s.installed ? dangerGroup(row(t("manage.dangerTitle"), t("amazon.uninstallDesc"),
         `<button class="btn danger small" data-act="amazon-uninstall" data-id="${esc(id)}">${icon("trash", 13)} ${t("manage.uninstallTitle")}</button>`)) : ""}
     </div>`;
@@ -800,8 +821,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
             `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
           ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, playtimeSources(s.appName, s.title).length > 1 ? t("manage.playtimeAllCopies") : t("steam.playtimeSource"), "", playtimeBreakdownHtml(s.appName, s.title)), t("manage.totalPlaytime"))}
-          ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
-            `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
+          ${libraryManageGroup(s.appName, s.title)}
         </div>`;
     }
     return `
@@ -833,8 +853,7 @@ export function renderDrawerManage(s: EpicSummary): string {
 
         ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeSteam)}</span>`, t("steam.playtimeSource"), "", playtimeBreakdownHtml(s.appName, s.title)), t("manage.totalPlaytime"))}
 
-        ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
-          `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
+        ${libraryManageGroup(s.appName, s.title)}
 
         ${dangerGroup(row(t("manage.dangerTitle"), t("steam.uninstallDesc"),
           `<button class="btn danger small" data-act="steam-action" data-id="${steamId}" data-mode="uninstall">${icon("trash", 13)} ${t("steam.uninstall")}</button>`))}
@@ -870,8 +889,7 @@ export function renderDrawerManage(s: EpicSummary): string {
         ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
           `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
         ${group("playtime", "clock", t("manage.groupPlaytime"), row(`${t("manage.totalPlaytime")}: <span class="tabular-nums">${esc(playtimeGog)}</span>`, "", "", playtimeBreakdownHtml(s.appName, s.title)), t("manage.totalPlaytime"))}
-        ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
-          `<button class="btn ghost small" data-act="hide-game" data-id="${s.appName}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
+        ${libraryManageGroup(s.appName, s.title)}
         ${s.installed ? dangerGroup(row(t("manage.dangerTitle"), t("manage.dangerDesc"),
           `<button class="btn danger small" data-act="epic-uninstall" data-id="${s.appName}">${icon("trash", 13)} ${t("common.uninstall")}</button>`)) : ""}
       </div>`;
@@ -998,8 +1016,7 @@ export function renderDrawerManage(s: EpicSummary): string {
         </div>
       `, t("manage.totalPlaytime"))}
 
-      ${group("library", "eye-off", t("nav.library"), row(t("manage.hideTitle"), t("manage.hideDesc"),
-        `<button class="btn ghost small" data-act="hide-game" data-id="${id}">${icon("eye-off", 13)} ${t("manage.hide")}</button>`))}
+      ${libraryManageGroup(id, s.title)}
 
       ${s.installed ? dangerGroup(row(t("manage.dangerTitle"), t("manage.dangerDesc"),
         `<button class="btn danger small" data-act="epic-uninstall" data-id="${id}">${icon("trash", 13)} ${t("manage.uninstallTitle")}</button>`)) : ""}

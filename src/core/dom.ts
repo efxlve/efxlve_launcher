@@ -6,6 +6,7 @@
  * keeps hot paths free of repeated `getElementById` calls.
  */
 
+import { syncGameSceneRest } from "./game-scene";
 import { updatePageHeader, updateSidebarActive } from "./nav";
 import { presenceSync, updateGamepadHud } from "./render";
 import { S } from "./state";
@@ -57,6 +58,8 @@ export function syncSidebarGameActive(): void {
 export function closeModal(): void {
   modalRoot.innerHTML = "";
   S.currentModalAppName = null;
+  S.isAdjustingLogo = false;
+  document.body.classList.remove("game-hub-open");
   // Screenshot data URLs are tens of megabytes for a full gallery; they are
   // only meaningful while the drawer is open, so free them with it.
   S.loadedScreenshots.clear();
@@ -66,6 +69,7 @@ export function closeModal(): void {
   updatePageHeader();
   // Drop per-game manage state along with the drawer that owns the manage tab.
   S.activeManageSettings = null;
+  syncGameSceneRest();
   updateGamepadHud(S.gamepadPolling);
   presenceSync();
 }

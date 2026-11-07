@@ -84,6 +84,7 @@ import {
   registerOpenEpicModal,
   registerPresenceSync,
   registerRender,
+  registerRepaintGameHero,
   render,
 } from "../../core/render";
 import { S } from "../../core/state";
@@ -110,6 +111,7 @@ import {
   openEpicModal,
   paintGameMeta,
   refreshAchievementsAfterSession,
+  repaintGameHero,
   startStoreAchievementSession,
 } from "../drawer/drawer-view";
 import { rememberCloudSync } from "../drawer/drawer-widgets";
@@ -287,6 +289,7 @@ export async function initApp(hooks: {
   registerCloseAllModals(hooks.closeAllModals);
   registerGamepadHud(updateGamepadHud);
   registerOpenEpicModal(openEpicModal);
+  registerRepaintGameHero(repaintGameHero);
   registerPresenceSync(syncPresence);
   registerNotify((input) => pushNotification(input));
 

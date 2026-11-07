@@ -31,8 +31,10 @@ import { steamAppOsList } from "./steam-library";
 import { allStoresMenuCount, enabledStoreKey, pickShownCopy, storeFilterLabel, storeFilterMenuHtml, storeFilterRowOn } from "./store-filter";
 import { coverSizeMenuHtml, listDensityMenuHtml, syncDensityMenu } from "./library-options";
 import { LIB_FILTERS_ENABLED, libFiltersActiveCount, matchesLibFilters, renderLibFilterPanel, studioOf } from "./library-filters";
-import { renderAlphaRail } from "./library-alpha";
-import { getSortOptions, libraryCollator, seriesSortKeys, titleComparator } from "./library-sort";
+import { registerAlphaJumpHandler, syncLibraryAlphaRail } from "./library-alpha";
+import { buildLibraryGroups, getGroupByOptions, renderGroupedLibraryItems } from "./library-groups";
+import { effectiveReleaseYear, getSortOptions, libraryCollator, seriesSortKeys, titleComparator } from "./library-sort";
+import { customSortNameOf } from "./sort-name";
 
 /**
  * Parses the search box into plain terms plus `key:value` operators:
@@ -148,8 +150,9 @@ export function libraryFilteredList(): EpicSummary[] {
     if (query.dev && !studio.includes(query.dev)) return false;
 
     const title = s.title.toLowerCase();
+    const sortName = customSortNameOf(s.appName, s.title).toLowerCase();
     for (const term of query.terms) {
-      if (!title.includes(term) && !studio.includes(term)) return false;
+      if (!title.includes(term) && !studio.includes(term) && (!sortName || !sortName.includes(term))) return false;
     }
     return true;
   });
@@ -164,8 +167,8 @@ export function epicVisibleSummaries(): EpicSummary[] {
   const collator = libraryCollator();
   const byTitle = titleComparator(collator, list);
   const byRelease = (a: EpicSummary, b: EpicSummary, newestFirst: boolean): number => {
-    const left = a.releaseYear ?? null;
-    const right = b.releaseYear ?? null;
+    const left = effectiveReleaseYear(a);
+    const right = effectiveReleaseYear(b);
     if (left === null && right === null) return byTitle(a, b);
     if (left === null) return 1;
     if (right === null) return -1;
@@ -185,8 +188,11 @@ export function epicVisibleSummaries(): EpicSummary[] {
       result = [...list].sort((a, b) => {
         const prefix = collator.compare(keys.get(a.appName) ?? "", keys.get(b.appName) ?? "");
         if (prefix !== 0) return prefix;
-        const left = a.releaseYear ?? null;
-        const right = b.releaseYear ?? null;
+        const leftCustom = customSortNameOf(a.appName, a.title);
+        const rightCustom = customSortNameOf(b.appName, b.title);
+        if (leftCustom && rightCustom) return byTitle(a, b);
+        const left = effectiveReleaseYear(a);
+        const right = effectiveReleaseYear(b);
         if (left !== null && right !== null && left !== right) return left - right;
         return byTitle(a, b);
       });
@@ -200,7 +206,9 @@ export function epicVisibleSummaries(): EpicSummary[] {
       break;
     case "rating":
       result = [...list].sort(
-        (a, b) => (gameRatingOf(b.appName) ?? -1) - (gameRatingOf(a.appName) ?? -1) || byTitle(a, b),
+        (a, b) =>
+          (gameRatingOf(b.appName, b.title) ?? -1) - (gameRatingOf(a.appName, a.title) ?? -1) ||
+          byTitle(a, b),
       );
       break;
     case "installed":
@@ -630,7 +638,7 @@ function renderLibraryPager(total: number): string {
 
 /** Result-set fingerprint. A change restarts pagination and the card chunk. */
 function libraryResultKey(): string {
-  return [S.query, S.epicFilter, S.epicSort, S.activeCollectionId ?? "", S.libPageSize, S.libPagination, enabledStoreKey(), String(S.libFiltersRev)].join("\x1f");
+  return [S.query, S.epicFilter, S.epicSort, S.libGroupBy, S.activeCollectionId ?? "", S.libPageSize, S.libPagination, enabledStoreKey(), String(S.libFiltersRev)].join("\x1f");
 }
 
 /**
@@ -720,26 +728,59 @@ function renderCollectionBanner(inCollection: boolean): string {
 
 /**
  * Jumps to a title index in the current order. With pagination the page is
- * selected first; otherwise the progressive chunk grows until the target card
- * is in the DOM, then the view scrolls it into place.
+ * selected first; otherwise missing cards up to `target` are appended in place
+ * without rebuilding already-mounted covers, then scrolled into view.
  */
-export function jumpToLibraryLetter(index: number): void {
+export function jumpToLibraryLetter(index: number, instant = false): void {
   if (!Number.isFinite(index)) return;
   const visible = epicVisibleSummaries();
   if (visible.length === 0) return;
   const target = Math.min(Math.max(0, Math.floor(index)), visible.length - 1);
+
   if (S.libPagination) {
-    S.libPage = Math.floor(target / S.libPageSize) + 1;
+    const nextPage = Math.floor(target / S.libPageSize) + 1;
+    if (S.libPage !== nextPage) {
+      S.libPage = nextPage;
+      if (!refreshLibraryResultsInPlace()) return;
+    }
   } else if (S.renderedCardCount <= target) {
-    S.renderedCardCount = Math.min(visible.length, target + INITIAL_CARD_CHUNK);
+    const nextCount = Math.min(visible.length, target + INITIAL_CARD_CHUNK);
+    const container = S.libGroupBy === "none"
+      ? document.querySelector<HTMLElement>("#lib-results > .pgrid, #lib-results > .lib-list")
+      : null;
+    if (container) {
+      const slice = visible.slice(S.renderedCardCount, nextCount);
+      S.renderedCardCount = nextCount;
+      const sentinel = document.getElementById("lib-scroll-sentinel");
+      const html = slice.map(renderItem).join("");
+      if (sentinel && container.contains(sentinel)) {
+        sentinel.insertAdjacentHTML("beforebegin", html);
+        if (S.renderedCardCount >= visible.length) {
+          sentinel.remove();
+          S.libScrollObserver?.disconnect();
+          S.libScrollObserver = null;
+        }
+      } else {
+        container.insertAdjacentHTML("beforeend", html);
+      }
+      prefetchNextCovers(visible, S.renderedCardCount);
+    } else {
+      S.renderedCardCount = nextCount;
+      if (!refreshLibraryResultsInPlace()) return;
+    }
   }
-  if (!refreshLibraryResultsInPlace()) return;
+
   const appName = visible[target].appName;
   requestAnimationFrame(() => {
     const card = document.querySelector<HTMLElement>(`[data-lib-item="${CSS.escape(appName)}"]`);
-    card?.scrollIntoView({ block: "start" });
+    card?.scrollIntoView({
+      behavior: instant || S.reduceEffects ? "auto" : "smooth",
+      block: "start",
+    });
   });
 }
+
+registerAlphaJumpHandler(jumpToLibraryLetter);
 
 /**
  * Renders the library content area. Default All is a cover grid (or list).
@@ -757,6 +798,7 @@ export function renderEpicItems(): string {
     resetCardChunk();
   }
   const visible = epicVisibleSummaries();
+  syncLibraryAlphaRail(visible, S.epicSort);
   if (visible.length > 0) primeGameScene();
   const bannerHtml = inCollection ? renderCollectionBanner(inCollection) : "";
 
@@ -788,17 +830,31 @@ export function renderEpicItems(): string {
     );
   }
 
+  if (S.libGroupBy !== "none") {
+    const sourceList = S.libPagination ? renderedSlice(visible) : visible;
+    const groups = buildLibraryGroups(sourceList);
+    const maxCards = S.libPagination ? sourceList.length : S.renderedCardCount;
+    const grouped = renderGroupedLibraryItems(
+      groups,
+      maxCards,
+      renderItem,
+      (inner) => renderResults(inner, ""),
+    );
+    const sentinelHtml = !S.libPagination && grouped.hasMore
+      ? `<div id="lib-scroll-sentinel" class="lib-sentinel"></div>`
+      : "";
+    prefetchNextCovers(visible, grouped.mountedCount);
+    return `${bannerHtml}${grouped.html}${sentinelHtml}${renderLibraryPager(visible.length)}`;
+  }
+
   const chunk = renderedSlice(visible);
   const sentinelHtml = !S.libPagination && S.renderedCardCount < visible.length
     ? `<div id="lib-scroll-sentinel" class="lib-sentinel"></div>`
     : "";
   const itemsHtml = chunk.map(renderItem).join("");
-  // The covers of the next chunk are fetched while nothing else is happening:
-  // scrolling into them then shows pictures instead of empty boxes. The WebView
-  // keeps them in its own disk cache, so this costs one request per cover ever.
   prefetchNextCovers(visible, chunk.length);
 
-  return `${bannerHtml}${renderAlphaRail(visible, S.epicSort)}${renderResults(itemsHtml, sentinelHtml)}${renderLibraryPager(visible.length)}`;
+  return `${bannerHtml}${renderResults(itemsHtml, sentinelHtml)}${renderLibraryPager(visible.length)}`;
 }
 
 /** Covers already asked for while idle, so a repaint does not ask again. */
@@ -859,7 +915,7 @@ function renderedSlice(visible: EpicSummary[]): EpicSummary[] {
  * re-decode every cover. Returns false when the grid needs a full rebuild.
  */
 export function patchLibraryGridInPlace(): boolean {
-  if (S.view !== "library") return false;
+  if (S.view !== "library" || S.libGroupBy !== "none") return false;
   const resultsEl = document.getElementById("lib-results");
   if (!resultsEl) return false;
   // Collection counts and labels live in the header; a change needs the full
@@ -1014,6 +1070,13 @@ export function setupLibScrollObserver(): void {
   S.libScrollObserver = new IntersectionObserver((entries) => {
     if (busy || !entries[0]?.isIntersecting) return;
     const visible = epicVisibleSummaries();
+    if (S.libGroupBy !== "none") {
+      busy = true;
+      S.libScrollObserver?.disconnect();
+      S.renderedCardCount = Math.min(visible.length, S.renderedCardCount + MORE_CARD_CHUNK);
+      refreshLibraryResultsInPlace();
+      return;
+    }
     if (S.renderedCardCount >= visible.length) {
       stop();
       return;
@@ -1136,6 +1199,13 @@ export function syncLibFilterUi(): void {
  */
 export function refreshLibraryForStoreFilter(): boolean {
   if (S.view !== "library") return false;
+  if (S.libGroupBy !== "none") {
+    if (!refreshLibraryResultsInPlace()) return false;
+    viewEl.scrollTop = 0;
+    syncStoreFilterMenu();
+    syncLibFilterUi();
+    return true;
+  }
   const results = document.getElementById("lib-results");
   const grid = results?.querySelector<HTMLElement>(".pgrid, .lib-list");
   if (!results || !grid) return false;
@@ -1194,6 +1264,7 @@ export function refreshLibraryForStoreFilter(): boolean {
   syncLibraryHeadingCount();
   syncStoreFilterMenu();
   syncLibFilterUi();
+  syncLibraryAlphaRail(visible, S.epicSort);
   return true;
 }
 
@@ -1268,6 +1339,11 @@ export function renderEpic(): string {
   }
   const sortOpts = getSortOptions();
   const currentSort = sortOpts.find((o) => o.id === S.epicSort) || sortOpts[0];
+  const groupOpts = getGroupByOptions();
+  const currentGroup = groupOpts.find((g) => g.id === S.libGroupBy) || groupOpts[0];
+  const sortTriggerLabel = S.libGroupBy !== "none"
+    ? `${currentSort.label} · ${currentGroup.label}`
+    : currentSort.label;
 
   const visibleCount = (keys: string[]): number => keys.filter((key) => !S.hiddenGames.has(key)).length;
   const primaryTitles = primaryPurchaseTitles();
@@ -1316,14 +1392,19 @@ export function renderEpic(): string {
     ${sourceDropdown}
     ${filterButton}
     <div class="sort-dropdown-container">
-      <button class="btn ghost lib-sort-btn lib-sort-trigger" data-act="toggle-sort-dropdown" title="${t("lib.sortTip", { label: esc(currentSort.label) })}">
+      <button class="btn ghost lib-sort-btn lib-sort-trigger${S.libGroupBy !== "none" ? " has-group" : ""}" data-act="toggle-sort-dropdown" title="${t("lib.sortTip", { label: esc(sortTriggerLabel) })}">
         <span class="lib-sort-icon">${icon("arrow-down-a-z", 13)}</span>
-        <span class="sort-btn-label">${esc(currentSort.label)}</span>
+        <span class="sort-btn-label">${esc(sortTriggerLabel)}</span>
         ${icon(S.isSortDropdownOpen ? "chevron-up" : "chevron-down", 14)}
       </button>
       <div id="sort-dropdown-menu" class="sort-dropdown-menu ${S.isSortDropdownOpen ? "show" : ""}">
+        <div class="sort-menu-section-label">${esc(t("lib.sortByHeader"))}</div>
         ${sortOpts.map((opt) => `
           <button class="sort-menu-item-btn ${S.epicSort === opt.id ? "selected" : ""}" data-act="select-sort" data-sort="${opt.id}">${esc(opt.label)}</button>`).join("")}
+        <div class="sort-menu-divider" role="separator"></div>
+        <div class="sort-menu-section-label">${esc(t("lib.groupByHeader"))}</div>
+        ${groupOpts.map((opt) => `
+          <button class="sort-menu-item-btn ${S.libGroupBy === opt.id ? "selected" : ""}" data-act="select-group-by" data-group-by="${opt.id}">${esc(opt.label)}</button>`).join("")}
       </div>
     </div>
     <div class="lib-view-group cover-size-container">
@@ -1403,12 +1484,21 @@ export function updateLibraryFilterInPlace(): boolean {
   // dropdown lives in `.lib-tools`, not in the tab strip.
   const sortOpts = getSortOptions();
   const current = sortOpts.find((o) => o.id === S.epicSort) ?? sortOpts[0];
+  const groupOpts = getGroupByOptions();
+  const currentGroup = groupOpts.find((g) => g.id === S.libGroupBy) ?? groupOpts[0];
+  const triggerLabel = S.libGroupBy !== "none" ? `${current.label} · ${currentGroup.label}` : current.label;
   const labelEl = document.querySelector<HTMLElement>(".lib-tools .sort-dropdown-container .sort-btn-label");
-  if (labelEl) labelEl.textContent = current.label;
+  if (labelEl) labelEl.textContent = triggerLabel;
   const sortBtn = document.querySelector<HTMLElement>(".lib-tools .sort-dropdown-container .lib-sort-btn");
-  if (sortBtn) sortBtn.title = t("lib.sortTip", { label: current.label });
+  if (sortBtn) {
+    sortBtn.title = t("lib.sortTip", { label: triggerLabel });
+    sortBtn.classList.toggle("has-group", S.libGroupBy !== "none");
+  }
   document.querySelectorAll<HTMLElement>('#sort-dropdown-menu [data-act="select-sort"]').forEach((optEl) => {
     optEl.classList.toggle("selected", optEl.dataset.sort === S.epicSort);
+  });
+  document.querySelectorAll<HTMLElement>('#sort-dropdown-menu [data-act="select-group-by"]').forEach((optEl) => {
+    optEl.classList.toggle("selected", optEl.dataset.groupBy === S.libGroupBy);
   });
   return true;
 }

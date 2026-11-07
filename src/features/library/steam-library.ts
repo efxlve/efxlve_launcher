@@ -53,8 +53,22 @@ const steamMeta = new Map<string, SteamAppMetadata>();
 function setSteamMetadata(map: Record<string, SteamAppMetadata>): void {
   steamMeta.clear();
   for (const [appId, meta] of Object.entries(map)) {
-    if (meta && (meta.developer || (meta.genres && meta.genres.length) || meta.releaseYear || meta.oslist)) {
+    if (
+      meta &&
+      (meta.developer ||
+        (meta.genres && meta.genres.length) ||
+        meta.releaseYear ||
+        meta.oslist ||
+        meta.metacriticScore)
+    ) {
       steamMeta.set(appId, meta);
+      if (typeof meta.metacriticScore === "number" && meta.metacriticScore > 0) {
+        const key = `steam::${appId}`;
+        const prev = S.gameRatings.get(key) ?? 0;
+        if (meta.metacriticScore > prev) {
+          S.gameRatings.set(key, Math.round(meta.metacriticScore));
+        }
+      }
     }
   }
 }

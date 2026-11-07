@@ -2,20 +2,28 @@
  * Advanced library filters: status, playtime, size, genre, release year,
  * review score and developer facets, rendered as a slide-over panel from the
  * library header.
- *
- * Facets only list values the fold actually has: genres come from Amazon's and
- * Steam's own metadata plus Epic's store tags once a game page fetched them,
- * and the release year needs a store that publishes one.
  */
 
-import { gameRatingOf, ratingBucket as scoreBucket } from "../../core/game-ratings";
+import {
+  cachedDeveloperOf,
+  cachedGenresOf,
+  gameRatingOf,
+  ratingBucket as scoreBucket,
+} from "../../core/game-ratings";
 import { icon } from "../../core/icons";
-import { rawOf, sourceOfKey } from "../../core/selectors";
+import { libraryPlaytime, rawOf, sourceOfKey, storeKeysForTitle } from "../../core/selectors";
 import { S } from "../../core/state";
-import type { LibFilters, LibPlaytimeBucket, LibRatingBucket, LibSizeBucket, LibYearBucket } from "../../core/types";
+import type {
+  LibFilters,
+  LibPlaytimeBucket,
+  LibRatingBucket,
+  LibSizeBucket,
+  LibYearBucket,
+} from "../../core/types";
 import { esc } from "../../core/utils";
 import type { EpicSummary } from "../../epic";
 import { t } from "../../i18n";
+import { effectiveReleaseYear } from "./library-sort";
 
 /** Advanced facets (status, playtime, size, genre, year, rating, studio). */
 export const LIB_FILTERS_ENABLED = true;
@@ -25,31 +33,50 @@ export function studioOf(s: EpicSummary): string {
   if (s.appName.startsWith("gog::")) {
     const rawId = s.appName.slice(5);
     const item = S.gogSummariesMap.get(rawId) || S.allGamesMap.get(s.appName);
-    return item?.developer || "";
+    if (item?.developer) return item.developer;
   }
   if (s.appName.startsWith("steam::")) {
-    // The client's app cache fills the summary; an opened game page can fill the gap.
     const item = S.steamSummariesMap.get(s.appName);
     if (item?.developer) return item.developer;
     const details = S.steamDetails.get(s.appName);
-    return details?.developers[0] || details?.publishers[0] || "";
+    if (details?.developers[0] || details?.publishers[0]) {
+      return details.developers[0] || details.publishers[0] || "";
+    }
   }
   const g = rawOf(s.appName);
   const d = g?.metadata?.developer;
   if (typeof d === "string" && d.trim()) return d.trim();
-  // Companion stores (EA, Ubisoft, Xbox, Battle.net, Riot) keep the studio on
-  // the unified item, filled by the store-page resolver.
-  return S.allGamesMap.get(s.appName)?.developer || "";
+  const unified = S.allGamesMap.get(s.appName)?.developer;
+  if (unified) return unified;
+  const cached = cachedDeveloperOf(s.appName, s.title);
+  if (cached) return cached;
+  if (!S.separateCopies) {
+    for (const key of storeKeysForTitle(s.title)) {
+      const sibling = S.allGamesMap.get(key)?.developer;
+      if (sibling) return sibling;
+    }
+  }
+  return "";
 }
 
-/** Genre labels for one game, wherever the fold knows them. */
-function genresOf(s: EpicSummary): string[] {
+/** Genre labels for one game, across store metadata, IGDB cache and sibling copies. */
+export function genresOf(s: EpicSummary): string[] {
   if (s.genres && s.genres.length > 0) return s.genres;
   if (s.appName.startsWith("steam::")) {
-    return S.steamDetails.get(s.appName)?.genres ?? [];
+    const steamGenres = S.steamDetails.get(s.appName)?.genres;
+    if (steamGenres && steamGenres.length > 0) return steamGenres;
   }
   if (sourceOfKey(s.appName) === "epic") {
-    return S.loadedRequirements.get(s.appName)?.tags ?? [];
+    const tags = S.loadedRequirements.get(s.appName)?.tags;
+    if (tags && tags.length > 0) return tags;
+  }
+  const cached = cachedGenresOf(s.appName, s.title);
+  if (cached.length > 0) return [...cached];
+  if (!S.separateCopies) {
+    for (const key of storeKeysForTitle(s.title)) {
+      const siblingGenres = S.allGamesMap.get(key)?.genres;
+      if (siblingGenres && siblingGenres.length > 0) return siblingGenres;
+    }
   }
   return [];
 }
@@ -73,10 +100,17 @@ export function sizeBucket(bytes: number): LibSizeBucket | null {
 }
 
 export function yearBucket(year: number): LibYearBucket {
-  if (year < 2000) return "pre2000";
-  if (year < 2010) return "2000s";
-  if (year < 2020) return "2010s";
-  return "2020s";
+  if (year >= 2026) return "2026";
+  if (year === 2025) return "2025";
+  if (year === 2024) return "2024";
+  if (year === 2023) return "2023";
+  if (year === 2022) return "2022";
+  if (year === 2021) return "2021";
+  if (year === 2020) return "2020";
+  if (year >= 2010) return "2010s";
+  if (year >= 2000) return "2000s";
+  if (year >= 1990) return "1990s";
+  return "pre1990";
 }
 
 /** Total number of checked facet values (the header badge). */
@@ -130,7 +164,7 @@ export function matchesLibFilters(s: EpicSummary): boolean {
     if (!ok) return false;
   }
   if (f.playtime.size > 0) {
-    const seconds = S.playtimeMap.get(s.appName)?.total_seconds ?? 0;
+    const seconds = libraryPlaytime(s).seconds;
     if (!f.playtime.has(playtimeBucket(seconds))) return false;
   }
   if (f.size.size > 0) {
@@ -138,11 +172,11 @@ export function matchesLibFilters(s: EpicSummary): boolean {
     if (!bucket || !f.size.has(bucket)) return false;
   }
   if (f.years.size > 0) {
-    const year = s.releaseYear ?? null;
+    const year = effectiveReleaseYear(s);
     if (!year || !f.years.has(yearBucket(year))) return false;
   }
   if (f.ratings.size > 0) {
-    if (!f.ratings.has(scoreBucket(gameRatingOf(s.appName)))) return false;
+    if (!f.ratings.has(scoreBucket(gameRatingOf(s.appName, s.title)))) return false;
   }
   if (f.genres.size > 0) {
     const genres = genresOf(s);
@@ -179,9 +213,27 @@ function facetEntries(map: Map<string, number>): FacetEntry[] {
 /** Counts for every facet, computed from the list before facet filtering. */
 export function libFacets(base: EpicSummary[]): LibFacets {
   const status = { installed: 0, notInstalled: 0, update: 0 };
-  const playtime: Record<LibPlaytimeBucket, number> = { never: 0, under1: 0, "1to10": 0, "10to50": 0, over50: 0 };
+  const playtime: Record<LibPlaytimeBucket, number> = {
+    never: 0,
+    under1: 0,
+    "1to10": 0,
+    "10to50": 0,
+    over50: 0,
+  };
   const size: Record<LibSizeBucket, number> = { under1: 0, "1to10": 0, "10to50": 0, over50: 0 };
-  const years: Record<LibYearBucket, number> = { pre2000: 0, "2000s": 0, "2010s": 0, "2020s": 0 };
+  const years: Record<LibYearBucket, number> = {
+    "2026": 0,
+    "2025": 0,
+    "2024": 0,
+    "2023": 0,
+    "2022": 0,
+    "2021": 0,
+    "2020": 0,
+    "2010s": 0,
+    "2000s": 0,
+    "1990s": 0,
+    pre1990: 0,
+  };
   const ratings: Record<LibRatingBucket, number> = {
     "90": 0,
     "80": 0,
@@ -197,12 +249,12 @@ export function libFacets(base: EpicSummary[]): LibFacets {
     if (s.installed) status.installed++;
     else status.notInstalled++;
     if (s.updateAvailable || S.availableUpdates.has(s.appName)) status.update++;
-    playtime[playtimeBucket(S.playtimeMap.get(s.appName)?.total_seconds ?? 0)]++;
+    playtime[playtimeBucket(libraryPlaytime(s).seconds)]++;
     const sb = sizeBucket(s.installSize);
     if (sb) size[sb]++;
-    const year = s.releaseYear ?? null;
+    const year = effectiveReleaseYear(s);
     if (year) years[yearBucket(year)]++;
-    ratings[scoreBucket(gameRatingOf(s.appName))]++;
+    ratings[scoreBucket(gameRatingOf(s.appName, s.title))]++;
     for (const genre of new Set(genresOf(s))) {
       genreMap.set(genre, (genreMap.get(genre) ?? 0) + 1);
     }
@@ -254,6 +306,20 @@ function facetList(entries: FacetEntry[], group: keyof LibFilters, on: (value: s
   return `${search}${rows}`;
 }
 
+const YEAR_FACET_ORDER: { id: LibYearBucket; label: () => string }[] = [
+  { id: "2026", label: () => "2026" },
+  { id: "2025", label: () => "2025" },
+  { id: "2024", label: () => "2024" },
+  { id: "2023", label: () => "2023" },
+  { id: "2022", label: () => "2022" },
+  { id: "2021", label: () => "2021" },
+  { id: "2020", label: () => "2020" },
+  { id: "2010s", label: () => t("lib.yr2010s") },
+  { id: "2000s", label: () => t("lib.yr2000s") },
+  { id: "1990s", label: () => t("lib.yr1990s") },
+  { id: "pre1990", label: () => t("lib.yrPre1990") },
+];
+
 /**
  * Slide-over panel markup. `base` is the library list before facet filtering,
  * so the counts never collapse while a filter is selected.
@@ -291,18 +357,15 @@ export function renderLibFilterPanel(base: EpicSummary[], resultCount: number): 
   const genreBody = facetList(facets.genres, "genres", (value) => f.genres.has(value));
   const genre = genreBody ? facetSection(t("lib.filterGenre"), genreBody, t("lib.filterMetaHint")) : "";
 
-  const year = facetSection(
-    t("lib.filterYear"),
-    facetButton("years", "pre2000", t("lib.yrPre2000"), facets.years.pre2000, f.years.has("pre2000")) +
-      facetButton("years", "2000s", t("lib.yr2000s"), facets.years["2000s"], f.years.has("2000s")) +
-      facetButton("years", "2010s", t("lib.yr2010s"), facets.years["2010s"], f.years.has("2010s")) +
-      facetButton("years", "2020s", t("lib.yr2020s"), facets.years["2020s"], f.years.has("2020s")),
-    t("lib.filterMetaHint"),
-  );
+  const yearRows = YEAR_FACET_ORDER
+    .filter((entry) => facets.years[entry.id] > 0 || f.years.has(entry.id))
+    .map((entry) => facetButton("years", entry.id, entry.label(), facets.years[entry.id], f.years.has(entry.id)))
+    .join("");
+  const year = yearRows ? facetSection(t("lib.filterYear"), yearRows, t("lib.filterMetaHint")) : "";
 
   const rating = facetSection(
     t("lib.filterRating"),
-    facetButton("ratings", "90", "90–100", facets.ratings["90"], f.ratings.has("90")) +
+    facetButton("ratings", "90", "90+", facets.ratings["90"], f.ratings.has("90")) +
       facetButton("ratings", "80", "80–89", facets.ratings["80"], f.ratings.has("80")) +
       facetButton("ratings", "70", "70–79", facets.ratings["70"], f.ratings.has("70")) +
       facetButton("ratings", "60", "60–69", facets.ratings["60"], f.ratings.has("60")) +

@@ -107,6 +107,7 @@ export interface SteamAppMetadata {
   genres: string[];
   releaseYear?: number;
   oslist?: string;
+  metacriticScore?: number;
 }
 
 /** App id → client-cached studio, genres and release year. */
@@ -202,6 +203,7 @@ export interface SteamLibraryArt {
   cover: string;
   hero: string;
   header: string;
+  logo?: string;
 }
 
 /** Current library portraits and heroes for app ids whose flat CDN capsule 404s. */

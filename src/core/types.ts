@@ -38,8 +38,32 @@ export type EpicSort =
 /** Library layout mode: cover grid or dense list. */
 export type EpicViewMode = "grid" | "list";
 
+/** Library grouping dimension ("none" keeps one flat grid/list). */
+export type LibGroupBy = "none" | "status" | "rating" | "year" | "store" | "playtime" | "genre";
+
 /** Size of a custom transparent logo on the game page. */
 export type CustomLogoSize = "small" | "medium" | "large";
+
+/** Preset or freeform position of a transparent logo inside `.gp-hero`. */
+export type LogoAnchor =
+  | "bottom-left"
+  | "bottom-center"
+  | "bottom-right"
+  | "center"
+  | "top-left"
+  | "top-center"
+  | "custom";
+
+/** Saved placement and scale of a custom game logo on the hero banner. */
+export interface CustomLogoLayout {
+  anchor: LogoAnchor;
+  /** Horizontal anchor coordinate (`0..100` percent of hero width). */
+  x: number;
+  /** Vertical anchor coordinate (`0..100` percent of hero height). */
+  y: number;
+  /** Scale percentage relative to default hero logo bounds (`40..180`). */
+  scale: number;
+}
 
 /** Category selected in the settings page left rail. */
 export type SettingsSection = "account" | "downloads" | "stores" | "cloud" | "integrations" | "social" | "launchers" | "compat" | "collections" | "cases" | "controller" | "appearance" | "screenshots" | "achievements" | "notes" | "system" | "tasks" | "hidden" | "about";
@@ -164,7 +188,18 @@ export interface EpicCopyOverride {
 
 export type LibPlaytimeBucket = "never" | "under1" | "1to10" | "10to50" | "over50";
 export type LibSizeBucket = "under1" | "1to10" | "10to50" | "over50";
-export type LibYearBucket = "pre2000" | "2000s" | "2010s" | "2020s";
+export type LibYearBucket =
+  | "2026"
+  | "2025"
+  | "2024"
+  | "2023"
+  | "2022"
+  | "2021"
+  | "2020"
+  | "2010s"
+  | "2000s"
+  | "1990s"
+  | "pre1990";
 export type LibRatingBucket = "90" | "80" | "70" | "60" | "50" | "under50" | "unrated";
 
 /**

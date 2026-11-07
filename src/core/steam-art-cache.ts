@@ -10,11 +10,14 @@ import { scheduleRender } from "./render";
 
 const STORAGE_KEY = "efx.steamArt.v2";
 const HERO_KEY = "efx.steamHero.v1";
+const LOGO_KEY = "efx.steamLogo.v1";
 
 const memory = new Map<string, string>();
 const disk = loadDisk(STORAGE_KEY);
 const heroMemory = new Map<string, string>();
 const heroDisk = loadDisk(HERO_KEY);
+const logoMemory = new Map<string, string>();
+const logoDisk = loadDisk(LOGO_KEY);
 
 function loadDisk(key: string): Map<string, string> {
   const map = new Map<string, string>();
@@ -85,6 +88,7 @@ function flushDiskSaves(): void {
   saveTimer = 0;
   if (dirtyKeys.has(STORAGE_KEY)) saveDisk(STORAGE_KEY, disk);
   if (dirtyKeys.has(HERO_KEY)) saveDisk(HERO_KEY, heroDisk);
+  if (dirtyKeys.has(LOGO_KEY)) saveDisk(LOGO_KEY, logoDisk);
   dirtyKeys.clear();
 }
 
@@ -141,6 +145,23 @@ export function rememberSteamHero(appId: string, url: string): void {
   scheduleDiskSave(HERO_KEY);
 }
 
+/** `undefined` when unknown, `""` when this session confirmed there is no logo. */
+export function cachedSteamLogo(appId: string): string | undefined {
+  if (logoMemory.has(appId)) return logoMemory.get(appId);
+  return logoDisk.get(appId);
+}
+
+export function rememberSteamLogo(appId: string, url: string): void {
+  logoMemory.set(appId, url);
+  if (!url) {
+    if (logoDisk.delete(appId)) scheduleDiskSave(LOGO_KEY);
+    return;
+  }
+  if (logoDisk.get(appId) === url) return;
+  logoDisk.set(appId, url);
+  scheduleDiskSave(LOGO_KEY);
+}
+
 export function steamCdnPortrait(appId: string): string {
   return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/library_600x900_2x.jpg`;
 }
@@ -165,6 +186,12 @@ window.addEventListener("online", () => {
   for (const [id, url] of heroMemory) {
     if (url === "") {
       heroMemory.delete(id);
+      dropped = true;
+    }
+  }
+  for (const [id, url] of logoMemory) {
+    if (url === "") {
+      logoMemory.delete(id);
       dropped = true;
     }
   }

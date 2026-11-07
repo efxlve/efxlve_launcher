@@ -171,6 +171,7 @@ import { handleScreenshotsPageAction } from "./handlers/screenshots-page-handler
 import { handleScreenshotEditorAction } from "../screenshots/screenshot-editor";
 import { handleSteamAction } from "./handlers/steam-handlers";
 import { handleCustomGamesAction } from "./handlers/custom-games-handlers";
+import { handleLibraryFeatureAction } from "./handlers/library-handlers";
 
 type StoreExtensionState = Record<string, { id: string; name: string; version: string; installed: boolean; enabled: boolean; sizeBytes: number }>;
 
@@ -381,6 +382,7 @@ document.addEventListener("click", (e) => {
 
   // Delegate to domain action handlers
   if (handleLibraryOptionAction(act, t)) return;
+  if (handleLibraryFeatureAction(act, t, id, targetEl)) return;
   if (handleSettingsAction(act, t, targetEl)) return;
   if (handleNotesAction(act, t)) return;
   if (handleDrawerNotesAction(act, t)) return;

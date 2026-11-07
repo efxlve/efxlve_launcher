@@ -79,6 +79,20 @@ export interface IgdbProxyProbe {
   reachable: boolean;
 }
 
+/** Slim metadata read from `<app_data>/igdb/` on boot with zero network calls. */
+export interface IgdbCachedSummary {
+  id: number;
+  name: string;
+  normalizedTitle: string;
+  lookupKeys: string[];
+  externalKeys: string[];
+  rating: number | null;
+  releaseYear: number | null;
+  developer: string;
+  genres: string[];
+  franchises: string[];
+}
+
 export const igdbStatus = () => invoke<IgdbStatus>("igdb_status");
 
 /** Whether the shared proxy answers with JSON (i.e. the function is deployed). */
@@ -114,6 +128,9 @@ export const igdbEnrich = (
     externalCategory: external?.category ?? null,
     externalUid: external?.uid ?? null,
   });
+
+export const igdbCachedLibrary = () =>
+  invoke<IgdbCachedSummary[]>("igdb_cached_library");
 
 /**
  * The exact external id IGDB knows a library key by. Steam/GOG/Amazon keys

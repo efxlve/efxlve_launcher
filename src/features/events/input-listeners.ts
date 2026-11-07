@@ -49,6 +49,8 @@ import {
   renderCustomCoverModalContent,
   searchAndLoadSteamGrid,
 } from "../cover/cover-view";
+import { setLogoScale, stopLogoHeroAdjust } from "../cover/logo-layout";
+import { closeSortNameModal } from "../library/sort-name";
 import {
   enrichAchievementsData,
   renderDrawerDlcs,
@@ -302,6 +304,14 @@ document.addEventListener("keydown", (e) => {
     const changelogRoot = document.getElementById("changelog-root");
     if (changelogRoot && changelogRoot.innerHTML.trim()) {
       closeChangelogModal();
+      return;
+    }
+    if (S.sortNameModalAppName) {
+      closeSortNameModal();
+      return;
+    }
+    if (S.isAdjustingLogo) {
+      stopLogoHeroAdjust();
       return;
     }
     const coverRoot = document.getElementById("cover-modal-root");
@@ -795,6 +805,16 @@ document.addEventListener("input", (e) => {
       }
     }
     updateMoveSpaceBadgeInPlace();
+    return;
+  }
+  if (t.dataset.act === "logo-scale-input") {
+    const appName = t.dataset.id || S.activeCustomCoverAppName || S.currentModalAppName || "";
+    const pct = Number((t as HTMLInputElement).value);
+    if (appName && Number.isFinite(pct)) {
+      const next = setLogoScale(appName, pct / 100);
+      const modalPct = document.getElementById("cover-logo-scale-pct");
+      if (modalPct) modalPct.textContent = `${Math.round(next.scale * 100)}%`;
+    }
     return;
   }
 });

@@ -59,6 +59,12 @@ pub fn header_url_from_assets(assets: &serde_json::Value) -> Option<String> {
     asset_file_url(assets, &["header_2x", "header"])
 }
 
+/// Transparent PNG title logo (`library_logo_2x` / `library_logo`) when Steam
+/// publishes one for the game hero.
+pub fn logo_url_from_assets(assets: &serde_json::Value) -> Option<String> {
+    asset_file_url(assets, &["library_logo_2x", "library_logo"])
+}
+
 /// GetItems ignores the request unless a store context is present. Without it the
 /// response is an empty object, so preloaded games never receive their capsule.
 pub fn store_items_query(ids: &[u64]) -> serde_json::Value {
@@ -77,6 +83,8 @@ pub struct SteamLibraryArt {
     pub hero: String,
     #[serde(default)]
     pub header: String,
+    #[serde(default)]
+    pub logo: String,
 }
 
 /// The `assets` object of one `GetItems` call per app id. Missing or hidden
@@ -154,12 +162,18 @@ pub async fn steam_library_art(
         let cover = cover_url_from_assets(&assets).unwrap_or_default();
         let hero = hero_url_from_assets(&assets).unwrap_or_default();
         let header = header_url_from_assets(&assets).unwrap_or_default();
-        if cover.is_empty() && hero.is_empty() && header.is_empty() {
+        let logo = logo_url_from_assets(&assets).unwrap_or_default();
+        if cover.is_empty() && hero.is_empty() && header.is_empty() && logo.is_empty() {
             continue;
         }
         out.insert(
             app_id.to_string(),
-            SteamLibraryArt { cover, hero, header },
+            SteamLibraryArt {
+                cover,
+                hero,
+                header,
+                logo,
+            },
         );
     }
     Ok(out)
@@ -230,5 +244,19 @@ mod tests {
         });
         let url = cover_url_from_assets(&assets).unwrap();
         assert!(url.ends_with("/steam/apps/10/header.jpg"));
+    }
+
+    #[test]
+    fn logo_url_uses_hashed_library_logo() {
+        let assets = serde_json::json!({
+            "asset_url_format": "steam/apps/1091500/${FILENAME}?t=1700000000",
+            "library_logo": "abc/logo.png",
+            "library_logo_2x": "def/logo_2x.png"
+        });
+        let url = logo_url_from_assets(&assets).unwrap();
+        assert_eq!(
+            url,
+            "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1091500/def/logo_2x.png?t=1700000000"
+        );
     }
 }

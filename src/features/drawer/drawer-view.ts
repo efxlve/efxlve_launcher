@@ -28,17 +28,18 @@ import { emptyPanel, emptyState, epicPlatinumIcon, filledTrophy, icon, loadingSt
 import { updateNavHistoryUi } from "../../core/nav";
 import { cachedImage, warmImages, IMAGE_COVER_WIDTH, IMAGE_HERO_WIDTH, IMAGE_SHOT_WIDTH } from "../../core/picture-cache";
 import { recordSessionSummary, sessionSummaryFor, sessionWhen } from "../../core/session-summary";
-import { cachedSteamCover, cachedSteamHero, isFlatSteamArt, rememberSteamCover, rememberSteamHero } from "../../core/steam-art-cache";
+import { cachedSteamCover, cachedSteamHero, cachedSteamLogo, isFlatSteamArt, rememberSteamCover, rememberSteamHero, rememberSteamLogo } from "../../core/steam-art-cache";
 import { steamLibraryArt, steamNews, steamSetAchievementNotifications, steamWatchRunning, type SteamLibraryArt, type SteamNewsItem } from "../../steam";
 import { presenceSync, scheduleRender, updateGamepadHud } from "../../core/render";
 import { gameStatusOf, gameStatusOptions, statusMenuHtml, type GameStatus } from "../library/game-status";
 import { collectionHasGame } from "../../core/game-collections";
-import { canonicalGameTitle, clearWideArtCache, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, libraryPlaytime, rawOf, sharedOwnerOf, sourceOfKey, summaryOf } from "../../core/selectors";
+import { canonicalGameTitle, clearWideArtCache, epicWideArt, gameVersionsOf, isCompanionKey, isCompanionSource, libraryPlaytime, rawOf, sharedOwnerOf, sourceOfKey, storeKeysForTitle, summaryOf } from "../../core/selectors";
 import { storeVersionLabel } from "./external-versions";
 import { sideCard, sortDrawerCards, type DrawerCardId } from "./side-widgets";
 import { storeLogo } from "../store/store-logos";
 import { holdStoreForCover } from "../store/store-view";
-import { logoSizeOf } from "../cover/cover-view";
+import { customLogoOf, getLogoLayout, initLogoHeroDrag, logoStyleVars, LOGO_ANCHOR_ORDER } from "../cover/logo-layout";
+import { recordLiveCritic, recordLiveSteamDetails } from "../../core/game-ratings";
 import { setGameSceneArt } from "../../core/game-scene";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -1113,6 +1114,7 @@ function ensureOverviewData(s: EpicSummary): void {
       .then((data) => {
         const merged = mergeSteamCritic(data, appName);
         S.loadedCritic.set(appName, merged);
+        recordLiveCritic(appName, lookupTitle, merged);
         if (S.currentModalAppName === appName) updateCriticUI(appName, merged);
       })
       .catch(() => {})
@@ -1244,6 +1246,120 @@ function ensureIgdbTransport(onReady: () => void): void {
     });
 }
 
+initLogoHeroDrag();
+
+function shortAnchorLabel(anchor: (typeof LOGO_ANCHOR_ORDER)[number]): string {
+  switch (anchor) {
+    case "top-left":
+      return t("cover.anchorTopLeft");
+    case "top-center":
+      return t("cover.anchorTopCenter");
+    case "center":
+      return t("cover.anchorCenter");
+    case "bottom-left":
+      return t("cover.anchorBottomLeft");
+    case "bottom-center":
+      return t("cover.anchorBottomCenter");
+    case "bottom-right":
+      return t("cover.anchorBottomRight");
+  }
+}
+
+function renderGameHeroInnerHtml(
+  s: EpicSummary,
+  partner: ThirdPartyLauncherInfo | null,
+  antiCheat: string | null,
+): string {
+  const appName = s.appName;
+  const g = rawOf(appName);
+  const art = epicWideArt(s) || s.cover || (g ? epicPortrait(g) : null);
+  const customLogo = customLogoOf(appName, s.title);
+  const logoLayout = getLogoLayout(appName, s.title);
+  const logoScalePct = Math.round(logoLayout.scale * 100);
+  const adjusting = S.isAdjustingLogo && Boolean(customLogo);
+  const meta = gameMetaHtml(s, partner, antiCheat);
+
+  warmImages([art], IMAGE_HERO_WIDTH);
+
+  return `
+          ${
+            art
+              ? `<div class="gp-hero-backdrop" data-img-url="${esc(art)}" data-img-width="${IMAGE_HERO_WIDTH}" style="background-image:url('${esc(cachedImage(art, IMAGE_HERO_WIDTH))}');"></div>
+          <img class="gp-hero-img" src="${esc(cachedImage(art, IMAGE_HERO_WIDTH))}" data-img-url="${esc(art)}" data-img-width="${IMAGE_HERO_WIDTH}" alt="" decoding="async" onload="this.classList.remove('is-broken');this.classList.toggle('is-portrait', this.naturalWidth/this.naturalHeight < 1.3)" onerror="this.classList.add('is-broken')" />`
+              : ""
+          }
+          <div class="gp-hero-scrim"></div>
+          ${
+            customLogo
+              ? `<div class="gp-hero-logo-layer" style="${logoStyleVars(logoLayout)}">
+                  <img class="gp-hero-logo-img" src="${esc(customLogo)}" alt="" draggable="false" onerror="this.closest('.gp-hero')?.classList.remove('has-custom-logo');this.parentElement?.remove()" />
+                </div>`
+              : ""
+          }
+          <div class="gp-hero-top">
+            <div class="gp-hero-nav">
+              <button class="icon-btn gp-hero-tool" id="gp-nav-back" data-act="page-back" data-i18n-title="nav.historyBack" title="${t("nav.historyBack")}">${icon("arrow-left", 16)}</button>
+            </div>
+            <div class="gp-hero-actions">
+              ${
+                customLogo
+                  ? `<button class="icon-btn gp-hero-tool${adjusting ? " active" : ""}" data-act="${adjusting ? "finish-logo-hero-adjust" : "start-logo-hero-adjust"}" data-id="${esc(appName)}" title="${esc(t("cover.logoAdjustOnHero"))}">${icon("crosshair", 16)}</button>`
+                  : ""
+              }
+              <button class="icon-btn gp-hero-tool" data-act="open-custom-cover" data-target="logo" data-id="${appName}" title="${t("cover.customizeLogo")}">${icon("sparkles", 16)}</button>
+              <button class="icon-btn gp-hero-tool" data-act="open-custom-cover" data-target="hero" data-id="${appName}" title="${t("drawer.customizeCover")}">${icon("image", 16)}</button>
+            </div>
+          </div>
+          ${
+            adjusting
+              ? `<div class="gp-logo-adjust-bar" role="toolbar" aria-label="${esc(t("cover.logoAdjustOnHero"))}">
+                  <span class="gp-logo-adjust-hint">${icon("crosshair", 13)} <span>${esc(t("cover.logoAdjustHint"))}</span></span>
+                  <div class="gp-logo-adjust-presets">
+                    ${LOGO_ANCHOR_ORDER.map(
+                      (anchor) =>
+                        `<button type="button" class="gp-logo-preset-btn${logoLayout.anchor === anchor ? " active" : ""}" data-act="set-logo-anchor" data-anchor="${anchor}" data-logo-anchor-btn data-id="${esc(appName)}">${esc(shortAnchorLabel(anchor))}</button>`,
+                    ).join("")}
+                  </div>
+                  <div class="gp-logo-adjust-scale-group">
+                    <input id="gp-logo-adjust-scale" type="range" min="40" max="180" step="5" value="${logoScalePct}" data-act="logo-scale-input" data-id="${esc(appName)}" aria-label="${esc(t("cover.logoScale"))}" />
+                    <span id="gp-logo-adjust-pct" class="tabular-nums">${logoScalePct}%</span>
+                  </div>
+                  <button type="button" class="btn ghost small" data-act="reset-logo-layout" data-id="${esc(appName)}">${icon("refresh", 12)} <span>${esc(t("common.reset"))}</span></button>
+                  <button type="button" class="btn primary small" data-act="finish-logo-hero-adjust" data-id="${esc(appName)}">${icon("check", 12)} <span>${esc(t("cover.logoDone"))}</span></button>
+                </div>`
+              : ""
+          }
+          <div class="gp-hero-bottom">
+            <h1 class="gp-title${customLogo ? " has-logo" : ""}"${customLogo ? ` aria-label="${esc(s.title)}"` : ""}>
+              <span class="gp-title-text">${esc(s.title)}</span>
+            </h1>
+            <div class="gp-meta" id="gp-meta">${meta}</div>
+          </div>`;
+}
+
+/** Repaints `.gp-hero` and `#game-scene` in place when cover/hero/logo changes. */
+export function repaintGameHero(appName: string): void {
+  const openApp = S.currentModalAppName;
+  if (!openApp) return;
+  if (openApp !== appName) {
+    if (S.separateCopies) return;
+    const sCheck = summaryOf(openApp);
+    if (!sCheck || !storeKeysForTitle(sCheck.title).includes(appName)) return;
+  }
+  const s = summaryOf(openApp);
+  const heroEl = modalRoot.querySelector<HTMLElement>(".gp-hero");
+  if (!s || !heroEl) return;
+  setGameSceneArt(epicWideArt(s) || s.cover);
+  const g = rawOf(openApp);
+  const partner = gamePartner(s, g);
+  const antiCheat = gameAntiCheat(s, g);
+  const customLogo = customLogoOf(openApp, s.title);
+  heroEl.classList.toggle("has-custom-logo", Boolean(customLogo));
+  heroEl.classList.toggle("is-adjusting-logo", Boolean(S.isAdjustingLogo && customLogo));
+  heroEl.innerHTML = renderGameHeroInnerHtml(s, partner, antiCheat);
+  updateNavHistoryUi();
+}
+
 export function openEpicModal(appName: string, isInitialOpen = true, _animateTabContent = true): void {
   // EA App is the delegated backend for a title owned on a primary store: open
   // the primary copy so the library never presents the EA install as a second
@@ -1255,12 +1371,14 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   }
   const s = summaryOf(appName);
   if (!s) return;
+  document.body.classList.add("game-hub-open");
   // The acrylic backdrop follows the page the player just opened.
   setGameSceneArt(epicWideArt(s) || s.cover);
   // The game page lives in the main webview; the storefront is a native child
   // webview that ignores z-index. Park it while the page covers the store.
   holdStoreForCover();
   const isSameApp = S.currentModalAppName === appName;
+  if (isInitialOpen || !isSameApp) S.isAdjustingLogo = false;
   // A freshly opened game page celebrates a platinum once: the cup's shine
   // sweep replays only when the page is opened again, not on every re-render.
   if (isInitialOpen) platShineDone = false;
@@ -1367,6 +1485,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     paintGameHeaderMeta(s, partner);
     paintGameMeta(s);
     paintGameCloud(s);
+    repaintGameHero(appName);
     if (S.activeDrawerTab === "specs") {
       void hydrateGameCompatCard(appName);
       void hydrateDeckChip(appName);
@@ -1378,16 +1497,10 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
 
   const isGog = appName.startsWith("gog::");
   const isSteam = appName.startsWith("steam::");
-  const art = epicWideArt(s) || s.cover || (g ? epicPortrait(g) : null);
-  const customLogo = S.customLogos[appName] || "";
-  const customLogoSize = logoSizeOf(appName);
-  // The hero is the one picture the page waits for: ask for it as soon as the
-  // page opens, and paint from the cached copy the moment it arrives.
-  warmImages([art], IMAGE_HERO_WIDTH);
+  const customLogo = customLogoOf(appName, s.title);
   // A Steam title's wide art only exists under the store's hashed path; resolve
   // it before the hero settles on a low-resolution fallback.
   if (isSteam) void ensureSteamHeroArt(appName);
-  const meta = gameMetaHtml(s, partner, antiCheat);
 
   const tabs = `${tabButton("overview", t("drawer.overview"))}
        ${tabButton("achievements", t("drawer.achievements"), isPlat ? "plat" : "", isPlat ? filledTrophy(14) : "")}
@@ -1399,30 +1512,8 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   modalRoot.innerHTML = `
     <div class="overlay">
       <div class="game-hub">
-        <div class="gp-hero">
-          ${
-            art
-              ? `<div class="gp-hero-backdrop" data-img-url="${esc(art)}" data-img-width="${IMAGE_HERO_WIDTH}" style="background-image:url('${esc(cachedImage(art, IMAGE_HERO_WIDTH))}');"></div>
-          <img class="gp-hero-img" src="${esc(cachedImage(art, IMAGE_HERO_WIDTH))}" data-img-url="${esc(art)}" data-img-width="${IMAGE_HERO_WIDTH}" alt="" decoding="async" onload="this.classList.remove('is-broken');this.classList.toggle('is-portrait', this.naturalWidth/this.naturalHeight < 1.3)" onerror="this.classList.add('is-broken')" />`
-              : ""
-          }
-          <div class="gp-hero-scrim"></div>
-          <div class="gp-hero-top">
-            <div class="gp-hero-nav">
-              <button class="icon-btn gp-hero-tool" id="gp-nav-back" data-act="page-back" data-i18n-title="nav.historyBack" title="${t("nav.historyBack")}">${icon("arrow-left", 16)}</button>
-            </div>
-            <div class="gp-hero-actions">
-              <button class="icon-btn gp-hero-tool" data-act="open-custom-cover" data-target="logo" data-id="${appName}" title="${t("cover.customizeLogo")}">${icon("sparkles", 16)}</button>
-              <button class="icon-btn gp-hero-tool" data-act="open-custom-cover" data-target="hero" data-id="${appName}" title="${t("drawer.customizeCover")}">${icon("image", 16)}</button>
-            </div>
-          </div>
-          <div class="gp-hero-bottom">
-            <h1 class="gp-title${customLogo ? " has-logo" : ""}"${customLogo ? ` aria-label="${esc(s.title)}"` : ""}>
-              ${customLogo ? `<img class="gp-title-logo gp-title-logo-${customLogoSize}" src="${esc(customLogo)}" alt="" onerror="this.remove();this.closest('.gp-title')?.classList.remove('has-logo')" />` : ""}
-              <span class="gp-title-text">${esc(s.title)}</span>
-            </h1>
-            <div class="gp-meta" id="gp-meta">${meta}</div>
-          </div>
+        <div class="gp-hero${customLogo ? " has-custom-logo" : ""}${S.isAdjustingLogo && customLogo ? " is-adjusting-logo" : ""}">
+          ${renderGameHeroInnerHtml(s, partner, antiCheat)}
         </div>
 
         <div class="gp-bar">
@@ -3893,6 +3984,7 @@ async function loadCompanionStoreDetails(appName: string, title: string, force =
     }
     const details = await steamGetGameDetails(hitApp, language, force);
     S.steamDetails.set(appName, details);
+    recordLiveSteamDetails(appName, s.title, details);
     S.loadedRequirements.set(appName, buildSteamRequirements(appName, details));
     const item = S.allGamesMap.get(appName);
     if (item) item.dlcCount = details.dlc.length;
@@ -3944,7 +4036,7 @@ function ensureSteamHeroArt(appName: string): Promise<void> {
     const appId = appName.slice("steam::".length);
     if (!/^\d+$/.test(appId)) return;
     const known = cachedSteamHero(appId);
-    if (known !== undefined && !isFlatSteamArt(known)) return;
+    if (known !== undefined && !isFlatSteamArt(known) && cachedSteamLogo(appId) !== undefined) return;
     let art: SteamLibraryArt | undefined;
     try {
       art = (await steamLibraryArt([appId]))[appId];
@@ -3954,13 +4046,17 @@ function ensureSteamHeroArt(appName: string): Promise<void> {
     if (!art) return;
     rememberSteamCover(appId, art.cover);
     rememberSteamHero(appId, art.hero);
+    rememberSteamLogo(appId, art.logo || "");
     clearWideArtCache(appName);
     const item = S.steamSummariesMap.get(appName);
     if (item && art.hero) item.heroUrl = art.hero;
+    // Do not overwrite a user's custom hero banner.
+    if (S.customHeroes[appName]) return;
     // A store with no wide art still has its portrait capsule, which the hero
     // renders contained instead of stretching.
     const url = art.hero || art.cover;
     if (!url || S.currentModalAppName !== appName) return;
+    setGameSceneArt(url);
     const heroEl = modalRoot.querySelector<HTMLImageElement>(".gp-hero-img");
     if (heroEl) {
       heroEl.dataset.imgUrl = url;
@@ -3991,6 +4087,7 @@ async function loadSteamDetails(appName: string, force = false): Promise<void> {
   try {
     const details = await steamGetGameDetails(appName.slice(7), steamLanguage(S.appLanguage), force);
     S.steamDetails.set(appName, details);
+    recordLiveSteamDetails(appName, s.title, details);
     S.loadedRequirements.set(appName, buildSteamRequirements(appName, details));
     // Family-shared games have no local appinfo, so their release year only
     // arrives here: redo the lookups that ran without one, or they keep the
@@ -4084,7 +4181,11 @@ export async function prefetchGamePage(appName: string): Promise<void> {
   if (!S.loadedCritic.has(appName)) {
     jobs.push(
       epicGetCritic(lookupTitle, appName, false, year)
-        .then((data) => { S.loadedCritic.set(appName, mergeSteamCritic(data, appName)); })
+        .then((data) => {
+          const merged = mergeSteamCritic(data, appName);
+          S.loadedCritic.set(appName, merged);
+          recordLiveCritic(appName, lookupTitle, merged);
+        })
         .catch(() => undefined),
     );
   }

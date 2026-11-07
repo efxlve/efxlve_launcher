@@ -51,14 +51,24 @@
   .lib-tools .sort-dropdown-container .lib-sort-kicker { display: none; }
 }
 .sort-dropdown-menu {
-  position: absolute; top: calc(100% + 6px); right: 0; z-index: 60; min-width: 196px; padding: 6px;
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 60; min-width: 212px; max-height: min(76vh, 540px); overflow-y: auto; padding: 6px;
   background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px;
   box-shadow: var(--shadow-pop); display: none;
 }
 .sort-dropdown-menu.show { display: block; }
+.lib-sort-btn.has-group .lib-sort-icon { color: var(--accent); }
+.lib-sort-btn .sort-btn-label { max-width: 210px; }
+.sort-menu-section-label {
+  padding: 5px 10px 3px; font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3);
+  user-select: none;
+}
+.sort-menu-divider {
+  height: 1px; margin: 5px 6px; background: var(--line);
+}
 .sort-menu-item-btn {
-  display: block; width: 100%; height: 34px; padding: 0 10px; border: 0; border-radius: 4px;
-  background: transparent; color: var(--text-2); font: inherit; font-size: 14px; text-align: left; cursor: pointer;
+  display: block; width: 100%; height: 32px; padding: 0 10px; border: 0; border-radius: 4px;
+  background: transparent; color: var(--text-2); font: inherit; font-size: 13.5px; text-align: left; cursor: pointer;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .sort-menu-item-btn:hover { background: rgba(255, 255, 255, 0.06); color: var(--text); }
@@ -1917,6 +1927,90 @@ html.win-compact .lrow-ach-track { display: none; }
 
 /* Collection tabs live in the filter row. The folder gallery is gone. */
 
+/* --- Collapsible group shelves --- */
+.lib-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.lib-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.lib-group.is-collapsed {
+  gap: 0;
+}
+.lib-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 6px;
+  margin: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color var(--ease), color var(--ease);
+}
+.lib-group-head:hover {
+  background: color-mix(in srgb, var(--surface-2) 68%, transparent);
+}
+.lib-group-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--text-3);
+  flex-shrink: 0;
+  transition: color var(--ease), transform var(--ease);
+}
+.lib-group-head:hover .lib-group-chevron {
+  color: var(--text);
+}
+.lib-group-title {
+  font-size: 14.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lib-group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.lib-group-rule {
+  flex: 1;
+  height: 1px;
+  margin-left: 6px;
+  background: var(--line);
+  min-width: 16px;
+}
+.lib-group-body {
+  min-width: 0;
+}
+
 /* --- Optional pagination bar (Settings > Appearance) --- */
 .lib-pager { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 18px; margin-bottom: 16px; flex-wrap: wrap; }
 .lib-pager-range { font-size: 13px; color: var(--text-3); font-variant-numeric: tabular-nums; }
@@ -1926,48 +2020,74 @@ html.win-compact .lrow-ach-track { display: none; }
 .lib-pager-size { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-3); }
 .lib-pager-size .settings-select { min-width: 76px; }
 
-/* --- Alphabet rail --- */
+/* --- Alphabet rail (mounted in #content beside #view) --- */
+#lib-alpha[hidden],
+body.game-hub-open #lib-alpha {
+  display: none !important;
+}
 .lib-alpha {
-  position: fixed;
-  right: 16px;
+  position: absolute;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  max-height: calc(100vh - var(--winbar-h) - 40px);
-  z-index: 40;
+  max-height: calc(100% - 20px);
+  z-index: 18;
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
   gap: 1px;
-  opacity: 0.55;
-  transition: opacity 140ms ease;
+  padding: 5px 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-1) 74%, transparent);
+  border: 1px solid var(--line);
+  opacity: 0.72;
+  user-select: none;
+  touch-action: none;
+  transition: opacity 150ms ease, border-color 150ms ease, background-color 150ms ease;
 }
-.lib-alpha:hover { opacity: 1; }
+.lib-alpha:hover {
+  opacity: 1;
+  border-color: var(--line-strong);
+  background: color-mix(in srgb, var(--surface-2) 88%, transparent);
+}
 .lib-alpha-btn {
-  width: 18px;
-  height: 15px;
+  width: 20px;
+  height: 16px;
   padding: 0;
   border: 0;
-  border-radius: 3px;
+  border-radius: 999px;
   background: transparent;
-  color: var(--text-3);
+  color: var(--text-2);
   font-family: inherit;
-  font-size: 9px;
+  font-size: 9.5px;
   font-weight: 700;
-  line-height: 15px;
+  font-variant-numeric: tabular-nums;
+  line-height: 16px;
   text-align: center;
   cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease, transform 100ms ease;
 }
 .lib-alpha-btn:hover:not(:disabled) {
-  background: var(--surface-2);
-  color: var(--accent);
+  background: var(--surface-3);
+  color: var(--text);
+}
+.lib-alpha-btn.is-current {
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .lib-alpha-btn:disabled {
-  opacity: 0.22;
+  opacity: 0.24;
   cursor: default;
 }
-html[dir="rtl"] .lib-alpha { right: auto; left: 16px; }
+html[dir="rtl"] .lib-alpha { right: auto; left: 12px; }
+html[dir="rtl"] #content.has-lib-alpha > #view { padding-right: 28px; padding-left: 46px; }
+@media (max-height: 760px) {
+  .lib-alpha { padding: 3px 2px; gap: 0; }
+  .lib-alpha-btn { width: 18px; height: 13px; line-height: 13px; font-size: 8.5px; }
+}
 @media (max-width: 900px) {
-  .lib-alpha { display: none; }
+  .lib-alpha { display: none !important; }
 }
 
 /* --- Advanced filters slide-over --- */

@@ -13,6 +13,7 @@ import { esc } from "../../core/utils";
 import { currentLanguage, localizeMessage, t } from "../../i18n";
 import { igdbEnrich, igdbExternalId, igdbImage, type IgdbGame } from "../../igdb";
 import { cachedImage, warmImages, IMAGE_COVER_WIDTH, IMAGE_SHOT_WIDTH } from "../../core/picture-cache";
+import { recordLiveIgdbGame } from "../../core/game-ratings";
 import { canonicalGameTitle, storeKeysForTitle } from "../../core/selectors";
 import { sharedSummaries } from "../library/shared-library";
 
@@ -34,6 +35,7 @@ export function ensureIgdbOverview(target: IgdbTarget, year: number | null, onAr
   void igdbEnrich(target.title, year, igdbExternalId(target.appName))
     .then((game) => {
       cache.set(target.appName, game ?? null);
+      if (game) recordLiveIgdbGame(target.appName, target.title, game);
       errors.delete(target.appName);
     })
     .catch((raw: unknown) => {

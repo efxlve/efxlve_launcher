@@ -1839,6 +1839,98 @@ pub async fn igdb_enrich(
     Ok(Some(fetch_game(&app, id).await?))
 }
 
+/// Slim summary of an already-cached IGDB entry on disk, used to hydrate
+/// library ratings, release years, genres, developers and franchise series
+/// ordering at startup with zero network traffic.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct IgdbCachedSummary {
+    pub id: i64,
+    pub name: String,
+    pub normalized_title: String,
+    pub lookup_keys: Vec<String>,
+    pub external_keys: Vec<String>,
+    pub rating: Option<u32>,
+    pub release_year: Option<i64>,
+    pub developer: String,
+    pub genres: Vec<String>,
+    pub franchises: Vec<String>,
+}
+
+fn read_cached_library_dir(dir: &Path) -> Vec<IgdbCachedSummary> {
+    use std::collections::HashMap;
+
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return Vec::new();
+    };
+    let mut lookups: HashMap<i64, Vec<String>> = HashMap::new();
+    for (k, v) in read_map(Some(dir.join("lookup.json"))) {
+        if let Some(id) = v.as_i64().filter(|id| *id > 0) {
+            lookups.entry(id).or_default().push(k);
+        }
+    }
+    let mut externals: HashMap<i64, Vec<String>> = HashMap::new();
+    for (k, v) in read_map(Some(dir.join("external.json"))) {
+        if let Some(id) = v.as_i64().filter(|id| *id > 0) {
+            externals.entry(id).or_default().push(k);
+        }
+    }
+
+    let mut out = Vec::new();
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+            continue;
+        };
+        if !name.starts_with("game-") || !name.ends_with(".json") {
+            continue;
+        }
+        let Ok(data) = std::fs::read_to_string(&path) else {
+            continue;
+        };
+        let Ok(cached) = serde_json::from_str::<CachedGame>(&data) else {
+            continue;
+        };
+        if cached.schema != CACHE_SCHEMA {
+            continue;
+        }
+        let game = cached.game;
+        let rating = game
+            .rating
+            .map(|r| (r.round() as i64).clamp(0, 100) as u32)
+            .filter(|r| *r > 0);
+        let release_year = game.pc_release_year.or(game.release_year);
+        let normalized_title = normalize_title(&game.name);
+        out.push(IgdbCachedSummary {
+            id: game.id,
+            name: game.name,
+            normalized_title,
+            lookup_keys: lookups.remove(&game.id).unwrap_or_default(),
+            external_keys: externals.remove(&game.id).unwrap_or_default(),
+            rating,
+            release_year,
+            developer: game.developer,
+            genres: game.genres,
+            franchises: game.franchises,
+        });
+    }
+    out.sort_by_key(|item| item.id);
+    out
+}
+
+/// Reads every enriched IGDB entry already cached on disk without touching the
+/// network, so library sorting/filtering by rating, release year, genre and
+/// series works immediately on boot.
+#[tauri::command]
+pub async fn igdb_cached_library(app: AppHandle) -> Vec<IgdbCachedSummary> {
+    let Some(dir) = igdb_dir(&app) else {
+        return Vec::new();
+    };
+    tokio::task::spawn_blocking(move || read_cached_library_dir(&dir))
+        .await
+        .unwrap_or_default()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2333,5 +2425,49 @@ mod tests {
         let hit = IgdbSearchHit::best_match(&hits, "Halo 3", Some(2007)).expect("match");
         assert_eq!(hit.name, "Halo 3");
         assert_eq!(hit.id, 2);
+    }
+
+    #[test]
+    fn cached_library_reads_ratings_years_and_franchises_from_disk() {
+        let dir = std::env::temp_dir().join(format!("efxlve_igdb_cache_test_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let mut lookup = serde_json::Map::new();
+        lookup.insert("cyberpunk2077".into(), serde_json::Value::from(1877));
+        write_map(Some(dir.join("lookup.json")), &lookup);
+
+        let mut external = serde_json::Map::new();
+        external.insert("1:1091500".into(), serde_json::Value::from(1877));
+        write_map(Some(dir.join("external.json")), &external);
+
+        let sample = serde_json::json!({
+            "id": 1877,
+            "name": "Cyberpunk 2077",
+            "first_release_date": 1_607_558_400_i64,
+            "rating": 86.4,
+            "genres": [{ "name": "Role-playing (RPG)" }],
+            "franchises": [{ "name": "Cyberpunk" }],
+            "involved_companies": [{ "developer": true, "company": { "name": "CD Projekt RED" } }]
+        });
+        let cached = CachedGame {
+            schema: CACHE_SCHEMA,
+            game: map_game(&sample, &AgeTables::default()),
+        };
+        std::fs::write(
+            dir.join("game-1877.json"),
+            serde_json::to_string(&cached).unwrap(),
+        )
+        .unwrap();
+
+        let items = read_cached_library_dir(&dir);
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].rating, Some(86));
+        assert_eq!(items[0].release_year, Some(2020));
+        assert_eq!(items[0].external_keys, vec!["1:1091500"]);
+        assert_eq!(items[0].lookup_keys, vec!["cyberpunk2077"]);
+        assert_eq!(items[0].franchises, vec!["Cyberpunk"]);
+        assert_eq!(items[0].developer, "CD Projekt RED");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

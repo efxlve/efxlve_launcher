@@ -8,7 +8,7 @@ import { t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import { icon } from "../../../core/icons";
 import { esc } from "../../../core/utils";
-import { render } from "../../../core/render";
+import { openEpicModal, render } from "../../../core/render";
 import { epicSetSteamGridKey, epicTestSteamGridKey } from "../../../epic";
 import {
   closeCustomCoverModal,
@@ -26,7 +26,14 @@ import {
   searchAndLoadSteamGrid,
   setCustomLogoSize,
 } from "../../cover/cover-view";
-import type { CustomLogoSize } from "../../../core/types";
+import {
+  customLogoOf,
+  resetLogoLayout,
+  setLogoAnchor,
+  startLogoHeroAdjust,
+  stopLogoHeroAdjust,
+} from "../../cover/logo-layout";
+import type { CustomLogoSize, LogoAnchor } from "../../../core/types";
 
 export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: string, targetEl?: HTMLElement): boolean {
   if (!act) return false;
@@ -107,6 +114,18 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
       if (url && S.activeCustomCoverAppName) {
         S.sgdbSelectedCoverUrl = url;
         renderCustomCoverModalContent(S.activeCustomCoverAppName);
+        const previewImg = document.getElementById("cover-preview-img") as HTMLImageElement | null;
+        const previewWrapper = document.querySelector(".cover-preview-card") as HTMLElement | null;
+        if (previewImg && previewImg.tagName === "IMG") {
+          previewImg.src = url;
+        } else if (previewWrapper) {
+          previewWrapper.innerHTML = `
+            <img id="cover-preview-img" src="${esc(url)}" alt="${i18nT("cover.previewAlt")}" />
+            <div class="cover-preview-badge">${i18nT("cover.selectedPreview")}</div>
+          `;
+        }
+        const badge = previewWrapper?.querySelector(".cover-preview-badge");
+        if (badge) badge.textContent = i18nT("cover.selectedPreview");
       }
       return true;
     }
@@ -315,6 +334,47 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
       if (id && t.dataset.size) {
         setCustomLogoSize(id, t.dataset.size as CustomLogoSize);
       }
+      return true;
+
+    case "set-logo-anchor":
+      if (id && t.dataset.anchor) {
+        setLogoAnchor(id, t.dataset.anchor as Exclude<LogoAnchor, "custom">);
+        document.querySelector(".cover-anchor-custom-pill")?.remove();
+      }
+      return true;
+
+    case "reset-logo-layout":
+      if (id) {
+        resetLogoLayout(id);
+        if (document.getElementById("cover-modal-root")?.innerHTML.trim()) {
+          renderCustomCoverModalFrame(id);
+          renderCustomCoverModalContent(id);
+        }
+      }
+      return true;
+
+    case "start-logo-hero-adjust":
+      if (id) {
+        const urlInput = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
+        const pendingUrl = S.sgdbSelectedCoverUrl || urlInput?.value.trim() || "";
+        if (pendingUrl && S.activeCoverTarget === "logo") {
+          saveCustomLogo(id, pendingUrl);
+          S.sgdbSelectedCoverUrl = "";
+        }
+        if (!customLogoOf(id)) {
+          toast(i18nT("cover.pickFirst"), "err");
+          return true;
+        }
+        closeCustomCoverModal();
+        if (S.currentModalAppName !== id) {
+          openEpicModal(id, true);
+        }
+        startLogoHeroAdjust(id);
+      }
+      return true;
+
+    case "finish-logo-hero-adjust":
+      stopLogoHeroAdjust(id);
       return true;
 
     case "reset-all-art":

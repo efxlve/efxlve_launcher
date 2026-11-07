@@ -277,6 +277,14 @@ export const CUSTOM_HEROES_KEY = "efxlve-custom-heroes";
 export const CUSTOM_LOGOS_KEY = "efxlve-custom-logos";
 /** Game-page logo size per app name (`small`, `medium`, `large`). */
 export const CUSTOM_LOGO_SIZES_KEY = "efxlve-custom-logo-sizes";
+/** Game-page logo placement and scale per app name (`CustomLogoLayout`). */
+export const CUSTOM_LOGO_LAYOUTS_KEY = "efxlve-custom-logo-layouts";
+/** Custom per-game sorting titles ("Sort As") keyed by app name. */
+export const CUSTOM_SORT_NAMES_KEY = "efxlve-custom-sort-names";
+/** Library group-by mode ("none" | "status" | "rating" | "year" | "store" | "playtime" | "genre"). */
+export const LIB_GROUP_BY_KEY = "efxlve-lib-group-by";
+/** Collapsed library group headers (`<groupBy>:<groupId>`). */
+export const LIB_COLLAPSED_GROUPS_KEY = "efxlve-lib-collapsed-groups";
 /** Blurred game-art backdrop behind the launcher shell. */
 export const GAME_SCENE_KEY = "efxlve-game-scene";
 /** Custom profile avatars keyed by Epic account ID. */

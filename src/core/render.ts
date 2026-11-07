@@ -92,6 +92,18 @@ export function closeAllModals(): void {
   closeAllModalsImpl();
 }
 
+let repaintGameHeroImpl: (appName: string) => void = () => {};
+
+/** Called once by main.ts to wire in-place hero/logo repaints on open game pages. */
+export function registerRepaintGameHero(fn: (appName: string) => void): void {
+  repaintGameHeroImpl = fn;
+}
+
+/** Repaint `.gp-hero` artwork, transparent logo and scene backdrop for `appName` if open. */
+export function repaintGameHero(appName: string): void {
+  repaintGameHeroImpl(appName);
+}
+
 /** Request a synchronous full re-render of the active view. */
 export function render(): void {
   renderImpl();
