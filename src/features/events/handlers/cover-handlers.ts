@@ -18,11 +18,15 @@ import {
   renderCustomCoverModalFrame,
   resetCustomCover,
   resetCustomHero,
+  resetCustomLogo,
   runIgdbCoverSearch,
   saveCustomCover,
   saveCustomHero,
+  saveCustomLogo,
   searchAndLoadSteamGrid,
+  setCustomLogoSize,
 } from "../../cover/cover-view";
+import type { CustomLogoSize } from "../../../core/types";
 
 export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: string, targetEl?: HTMLElement): boolean {
   if (!act) return false;
@@ -30,17 +34,20 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
   switch (act) {
     case "open-custom-cover":
       if (id) {
-        const target = (t.dataset.target as "cover" | "hero") || "cover";
+        const target = (t.dataset.target as "cover" | "hero" | "logo") || "cover";
         openCustomCoverModal(id, target);
       }
       return true;
 
     case "set-cover-target":
       if (id) {
-        const target = (t.dataset.target as "cover" | "hero") || "cover";
+        const target = (t.dataset.target as "cover" | "hero" | "logo") || "cover";
         if (target !== S.activeCoverTarget) {
           S.activeCoverTarget = target;
-          S.sgdbAssetType = target === "hero" ? "heroes" : "grids";
+          S.sgdbAssetType = target === "hero" ? "heroes" : target === "logo" ? "logos" : "grids";
+          if (target === "logo" && S.customCoverActiveTab === "igdb") {
+            S.customCoverActiveTab = S.steamGridApiKey ? "steamgrid" : "url";
+          }
           S.sgdbSelectedCoverUrl = "";
           renderCustomCoverModalFrame(id);
           renderCustomCoverModalContent(id);
@@ -124,9 +131,9 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
 
     case "sgdb-set-asset-type":
       if (id && t.dataset.type) {
-        const type = t.dataset.type as "grids" | "heroes";
+        const type = t.dataset.type as "grids" | "heroes" | "logos";
         S.sgdbAssetType = type;
-        const target = type === "heroes" ? "hero" : "cover";
+        const target = type === "heroes" ? "hero" : type === "logos" ? "logo" : "cover";
         if (target !== S.activeCoverTarget) {
           S.activeCoverTarget = target;
           S.sgdbSelectedCoverUrl = "";
@@ -272,6 +279,9 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
           if (S.activeCoverTarget === "hero") {
             saveCustomHero(id, val);
             toast(i18nT("cover.heroSaved"), "ok");
+          } else if (S.activeCoverTarget === "logo") {
+            saveCustomLogo(id, val);
+            toast(i18nT("cover.logoSaved"), "ok");
           } else {
             saveCustomCover(id, val);
             toast(i18nT("cover.portraitSaved"), "ok");
@@ -288,6 +298,9 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
         if (S.activeCoverTarget === "hero") {
           resetCustomHero(id);
           toast(i18nT("cover.heroReset"), "ok");
+        } else if (S.activeCoverTarget === "logo") {
+          resetCustomLogo(id);
+          toast(i18nT("cover.logoReset"), "ok");
         } else {
           resetCustomCover(id);
           toast(i18nT("cover.portraitReset"), "ok");
@@ -298,10 +311,17 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
       }
       return true;
 
+    case "set-logo-size":
+      if (id && t.dataset.size) {
+        setCustomLogoSize(id, t.dataset.size as CustomLogoSize);
+      }
+      return true;
+
     case "reset-all-art":
       if (id) {
         resetCustomCover(id);
         resetCustomHero(id);
+        resetCustomLogo(id);
         S.sgdbSelectedCoverUrl = "";
         toast(i18nT("cover.allReset"), "ok");
         renderCustomCoverModalFrame(id);

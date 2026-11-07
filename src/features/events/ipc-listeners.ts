@@ -136,6 +136,7 @@ import { initOfflineMode } from "../../core/offline";
 import { pushClipSettings } from "../screenshots/ss-settings";
 import { notifyBackgrounded } from "../../core/system-notify";
 import { prefetchRecentPicturesWhenIdle } from "../../core/picture-cache";
+import { ensureGameRatingsLoaded } from "../../core/game-ratings";
 import { initHoverPrefetch, prefetchGamePagesWhenIdle, prefetchVisibleAchievements } from "../drawer/game-prefetch";
 import { feedbackRecoveryPending } from "../../feedback";
 import { openFeedback } from "../feedback/feedback-view";
@@ -299,6 +300,9 @@ export async function initApp(hooks: {
   // never blank on startup.
   hooks.render();
   perfMark("paint:shell");
+  // The rating sort reads the game page's disk cache; the scan is local and
+  // never starts a network lookup for an unopened game.
+  ensureGameRatingsLoaded();
 
   // Kick off the library load immediately: it must not wait for listener
   // registration, settings fetches or window-chrome IPC.

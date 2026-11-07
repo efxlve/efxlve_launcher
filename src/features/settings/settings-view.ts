@@ -1490,6 +1490,7 @@ function renderAppearance(): string {
     theme.renderThemeSection() +
     group(
       renderCustomCssRow() +
+      row(t("settings.gameSceneTitle"), t("settings.gameSceneDesc"), toggle("toggle-game-scene", S.gameScene)) +
       row(t("settings.appIconTitle"), t("settings.appIconDesc"), renderAppIconPicker()) +
       row(t("settings.uiScaleTitle"), t("settings.uiScaleDesc"), uiScaleSelect()) +
       row(t("settings.reduceEffectsTitle"), t("settings.reduceEffectsDesc"), toggle("toggle-reduce-effects", S.reduceEffects)) +

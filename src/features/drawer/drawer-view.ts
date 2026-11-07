@@ -38,6 +38,8 @@ import { storeVersionLabel } from "./external-versions";
 import { sideCard, sortDrawerCards, type DrawerCardId } from "./side-widgets";
 import { storeLogo } from "../store/store-logos";
 import { holdStoreForCover } from "../store/store-view";
+import { logoSizeOf } from "../cover/cover-view";
+import { setGameSceneArt } from "../../core/game-scene";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtAchDate, fmtBytes, fmtDecimal1, fmtHours, fmtPlaytime } from "../../core/utils";
@@ -1253,6 +1255,8 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   }
   const s = summaryOf(appName);
   if (!s) return;
+  // The acrylic backdrop follows the page the player just opened.
+  setGameSceneArt(epicWideArt(s) || s.cover);
   // The game page lives in the main webview; the storefront is a native child
   // webview that ignores z-index. Park it while the page covers the store.
   holdStoreForCover();
@@ -1375,6 +1379,8 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const isGog = appName.startsWith("gog::");
   const isSteam = appName.startsWith("steam::");
   const art = epicWideArt(s) || s.cover || (g ? epicPortrait(g) : null);
+  const customLogo = S.customLogos[appName] || "";
+  const customLogoSize = logoSizeOf(appName);
   // The hero is the one picture the page waits for: ask for it as soon as the
   // page opens, and paint from the cached copy the moment it arrives.
   warmImages([art], IMAGE_HERO_WIDTH);
@@ -1406,11 +1412,15 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
               <button class="icon-btn gp-hero-tool" id="gp-nav-back" data-act="page-back" data-i18n-title="nav.historyBack" title="${t("nav.historyBack")}">${icon("arrow-left", 16)}</button>
             </div>
             <div class="gp-hero-actions">
+              <button class="icon-btn gp-hero-tool" data-act="open-custom-cover" data-target="logo" data-id="${appName}" title="${t("cover.customizeLogo")}">${icon("sparkles", 16)}</button>
               <button class="icon-btn gp-hero-tool" data-act="open-custom-cover" data-target="hero" data-id="${appName}" title="${t("drawer.customizeCover")}">${icon("image", 16)}</button>
             </div>
           </div>
           <div class="gp-hero-bottom">
-            <h1 class="gp-title">${esc(s.title)}</h1>
+            <h1 class="gp-title${customLogo ? " has-logo" : ""}"${customLogo ? ` aria-label="${esc(s.title)}"` : ""}>
+              ${customLogo ? `<img class="gp-title-logo gp-title-logo-${customLogoSize}" src="${esc(customLogo)}" alt="" onerror="this.remove();this.closest('.gp-title')?.classList.remove('has-logo')" />` : ""}
+              <span class="gp-title-text">${esc(s.title)}</span>
+            </h1>
             <div class="gp-meta" id="gp-meta">${meta}</div>
           </div>
         </div>

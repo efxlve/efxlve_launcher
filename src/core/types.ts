@@ -24,9 +24,22 @@ export type DrawerTab = "overview" | "achievements" | "dlcs" | "screenshots" | "
 export type StartupTab = "all" | "installed" | "fav" | "recent" | "platinum" | "uncategorized" | (string & {});
 export type EpicFilter = "all" | "installed" | "fav" | "updates" | "platinum" | "collections";
 /** Library sort modes. */
-export type EpicSort = "alpha" | "alphaDesc" | "recent" | "played" | "achievements" | "installed";
+export type EpicSort =
+  | "alpha"
+  | "alphaDesc"
+  | "series"
+  | "yearNew"
+  | "yearOld"
+  | "rating"
+  | "recent"
+  | "played"
+  | "achievements"
+  | "installed";
 /** Library layout mode: cover grid or dense list. */
 export type EpicViewMode = "grid" | "list";
+
+/** Size of a custom transparent logo on the game page. */
+export type CustomLogoSize = "small" | "medium" | "large";
 
 /** Category selected in the settings page left rail. */
 export type SettingsSection = "account" | "downloads" | "stores" | "cloud" | "integrations" | "social" | "launchers" | "compat" | "collections" | "cases" | "controller" | "appearance" | "screenshots" | "achievements" | "notes" | "system" | "tasks" | "hidden" | "about";
@@ -152,6 +165,7 @@ export interface EpicCopyOverride {
 export type LibPlaytimeBucket = "never" | "under1" | "1to10" | "10to50" | "over50";
 export type LibSizeBucket = "under1" | "1to10" | "10to50" | "over50";
 export type LibYearBucket = "pre2000" | "2000s" | "2010s" | "2020s";
+export type LibRatingBucket = "90" | "80" | "70" | "60" | "50" | "under50" | "unrated";
 
 /**
  * Advanced library filter state. An empty set means "no constraint"; values
@@ -163,6 +177,7 @@ export interface LibFilters {
   size: Set<LibSizeBucket>;
   genres: Set<string>;
   years: Set<LibYearBucket>;
+  ratings: Set<LibRatingBucket>;
   developers: Set<string>;
 }
 

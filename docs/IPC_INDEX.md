@@ -162,6 +162,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_add_screenshot_root` | `epicAddScreenshotRoot({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_anticheat_status` | `epicAnticheatStatus({ ... })` | `src-tauri/src/steam/awacy.rs` |
 | `epic_backup_save` | `epicBackupSave({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
+| `epic_cached_critic_scores` | `epicCachedCriticScores({ ... })` | `src-tauri/src/legendary/commands/metadata.rs` |
 | `epic_cached_library` | `epicCachedLibrary({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_cancel_download` | `epicCancelDownload({ ... })` | `src-tauri/src/legendary/transfers/queue.rs` |
 | `epic_cancel_move_game` | `epicCancelMoveGame({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |

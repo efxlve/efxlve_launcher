@@ -762,6 +762,16 @@ export const epicGetCritic = (
   year: number | null = null,
 ) => invoke<CriticData>("epic_get_critic", { title, appName, forceRefresh, year });
 
+/** One row per game whose score is already stored on disk. No network call. */
+export interface CachedCriticScore {
+  app_name: string;
+  title: string;
+  score: number;
+}
+
+export const epicCachedCriticScores = () =>
+  invoke<CachedCriticScore[]>("epic_cached_critic_scores");
+
 /** Wikipedia fallback text; `supported: false` means "checked, nothing found". */
 export interface WikiAbout {
   supported: boolean;
@@ -817,7 +827,7 @@ export const epicSearchSteamGrid = (term: string, steamAppId?: string | null) =>
 
 export const epicGetSteamGridCovers = (
   gameId: number,
-  assetType?: "grids" | "heroes",
+  assetType?: "grids" | "heroes" | "logos",
   styles?: string,
   dimensions?: string,
 ) =>

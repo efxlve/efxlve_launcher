@@ -406,6 +406,61 @@ pub async fn get_heroes(
     }
 }
 
+/// Transparent game logos. The picker shows them on a checkerboard, and the
+/// game page uses the chosen one in place of the title text.
+pub async fn get_logos(
+    api_key: &str,
+    game_id: u64,
+    styles: Option<String>,
+) -> Result<Vec<SteamGridImage>, String> {
+    let wanted = styles.clone();
+    let st = style_for_api(styles.as_deref()).to_string();
+    let cache_dir = steamgrid_cache_dir();
+    let cache_file = cache_dir.join(format!(
+        "logos_{}_{}.json",
+        game_id,
+        sanitize_filename(&st)
+    ));
+
+    if cache_file.exists() {
+        if let Ok(content) = tokio::fs::read_to_string(&cache_file).await {
+            if let Ok(images) = serde_json::from_str::<Vec<SteamGridImage>>(&content) {
+                return Ok(apply_style_filter(images, wanted.as_deref()));
+            }
+        }
+    }
+
+    let mut pairs = vec![("types", "static"), ("nsfw", "false")];
+    if !st.trim().is_empty() {
+        pairs.push(("styles", st.trim()));
+    }
+    let bare = format!("https://www.steamgriddb.com/api/v2/logos/game/{game_id}");
+    let url = sgdb_url(&format!("logos/game/{game_id}"), &pairs);
+    let (status, text) = sgdb_fetch(api_key, &url, &bare).await?;
+    if status == reqwest::StatusCode::UNAUTHORIZED {
+        return Err("@t:cover.invalidKey".to_string());
+    }
+    if !status.is_success() {
+        return Err(format!("@t:cover.logosFailed\u{1f}{}", status.as_u16()));
+    }
+    let parsed: SteamGridResponse<SteamGridImage> =
+        serde_json::from_str(&text).map_err(|e| format!("@t:cover.formatFailed\u{1f}{}", e))?;
+
+    if parsed.success {
+        let _ = tokio::fs::create_dir_all(&cache_dir).await;
+        if let Ok(serialized) = serde_json::to_string_pretty(&parsed.data) {
+            let _ = tokio::fs::write(&cache_file, serialized).await;
+        }
+        Ok(apply_style_filter(parsed.data, wanted.as_deref()))
+    } else {
+        let err_msg = parsed
+            .errors
+            .and_then(|e| e.first().cloned())
+            .unwrap_or_else(|| "@t:cover.logosLoadFailed".to_string());
+        Err(err_msg)
+    }
+}
+
 // ---------------- TAURI COMMANDS ----------------
 
 #[tauri::command]
@@ -522,6 +577,8 @@ pub async fn epic_get_steamgrid_covers(
     let at = asset_type.as_deref().unwrap_or("grids");
     if at == "heroes" {
         get_heroes(&key, game_id, styles).await
+    } else if at == "logos" {
+        get_logos(&key, game_id, styles).await
     } else {
         get_grids(&key, game_id, dimensions, styles, None).await
     }

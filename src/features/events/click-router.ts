@@ -79,6 +79,7 @@ import { handleAchievementGameAction } from "./handlers/ach-game-handlers";
 import { saveCustomCss } from "../../core/custom-css";
 import { applySurface } from "../../core/themes";
 import { applyReduceEffects } from "../../core/effects";
+import { setGameSceneEnabled } from "../../core/game-scene";
 import type { EpicSort, EpicViewMode, View } from "../../core/types";
 import { refreshEosStatus, startEosInstall, declineEosOverlay } from "../eos/eos-install";
 import { openEpicLauncherDownload } from "../epic-launcher/epic-launcher-notice";
@@ -108,6 +109,7 @@ import {
   consumeCollectionDragClick,
   positionColDropdownMenu,
   libraryFilteredList,
+  jumpToLibraryLetter,
   refreshLibraryForStoreFilter,
   refreshLibraryResultsInPlace,
   resetCardChunk,
@@ -635,6 +637,8 @@ document.addEventListener("click", (e) => {
     toggleReleaseWatchlist();
   } else if (act === "release-follow" && id) {
     toggleReleaseFollow(Number(id));
+  } else if (act === "lib-alpha-jump") {
+    jumpToLibraryLetter(Number(t.dataset.index));
   } else if (act === "toggle-lib-filters") {
     S.isFilterPanelOpen = !S.isFilterPanelOpen;
     S.isStoreDropdownOpen = false;
@@ -1443,6 +1447,8 @@ document.addEventListener("click", (e) => {
     localStorage.setItem(REDUCE_EFFECTS_KEY, String(S.reduceEffects));
     applyReduceEffects(S.reduceEffects);
     render();
+  } else if (act === "toggle-game-scene") {
+    setGameSceneEnabled(!S.gameScene);
   } else if (act === "overlay-restore-disabled") {
     // The overlay can block itself away from a context; this is the way back.
     localStorage.removeItem(OVERLAY_DISABLED_KEY);

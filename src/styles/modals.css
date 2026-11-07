@@ -1476,7 +1476,20 @@
 .cover-preview-card { position: relative; flex-shrink: 0; border-radius: var(--r-sm); overflow: hidden; background: var(--surface-2); }
 .cover-preview-card.portrait { width: 120px; aspect-ratio: 2 / 3; }
 .cover-preview-card.wide { width: 260px; aspect-ratio: 16 / 9; }
+.cover-preview-card.logo {
+  width: 260px;
+  aspect-ratio: 16 / 9;
+  background-color: #202126;
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.08) 75%),
+    linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.08) 75%);
+  background-position: 0 0, 8px 8px;
+  background-size: 16px 16px;
+}
 .cover-preview-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cover-preview-card.logo img { object-fit: contain; padding: 16px; }
+.cover-logo-size { display: flex; align-items: center; gap: 8px; }
+.cover-meta-label { font-size: 11px; color: var(--text-3); }
 .cover-preview-empty { width: 100%; height: 100%; display: grid; place-items: center; color: var(--text-3); }
 .cover-preview-badge { position: absolute; left: 6px; bottom: 6px; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(14, 15, 18, 0.85); }
 .cover-preview-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -1517,10 +1530,21 @@
 .sgdb-gallery { min-height: 200px; }
 .sgdb-grid-vertical { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
 .sgdb-grid-horizontal { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.sgdb-grid-logo { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
 .sgdb-card { position: relative; border-radius: var(--r-sm); overflow: hidden; cursor: pointer; background: var(--surface-2); outline: 2px solid transparent; outline-offset: -2px; }
 .sgdb-grid-vertical .sgdb-card { aspect-ratio: 2 / 3; }
 .sgdb-grid-horizontal .sgdb-card { aspect-ratio: 96 / 31; }
+.sgdb-grid-logo .sgdb-card {
+  aspect-ratio: 3 / 1;
+  background-color: #202126;
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.08) 75%),
+    linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.08) 75%);
+  background-position: 0 0, 8px 8px;
+  background-size: 16px 16px;
+}
 .sgdb-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sgdb-card.is-logo img { object-fit: contain; padding: 18px; }
 .sgdb-card:hover { outline-color: var(--line-strong); }
 .sgdb-card.selected { outline-color: var(--accent); }
 .sgdb-card-badges { position: absolute; top: 4px; left: 4px; right: 4px; display: flex; justify-content: space-between; }

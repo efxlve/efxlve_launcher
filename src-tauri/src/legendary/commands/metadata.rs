@@ -180,6 +180,15 @@ pub async fn epic_get_critic(
     Ok(crate::legendary::critic::get_critic_data(&title, &app_name, force, year).await)
 }
 
+/// Scores already cached by earlier game-page visits, so the library can sort
+/// and filter by rating without firing one network lookup per game.
+#[tauri::command]
+pub async fn epic_cached_critic_scores() -> Vec<crate::legendary::critic::CachedCriticScore> {
+    tauri::async_runtime::spawn_blocking(crate::legendary::critic::cached_scores)
+        .await
+        .unwrap_or_default()
+}
+
 /// Bump when `GameRequirementsResponse` gains a field.
 const SPECS_SCHEMA: u32 = 1;
 

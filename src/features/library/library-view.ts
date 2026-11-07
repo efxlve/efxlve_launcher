@@ -14,6 +14,8 @@ import { emptyState, icon } from "../../core/icons";
 import { collectionGames, collectionMatch, matchCollectionGame, type CollectionMatch } from "../../core/game-collections";
 import { allStoreSummaries, canonicalGameTitle, compareLibraryRecent, libraryItemToSummary, libraryPlaytime, rawOf, sourceOfKey, storeKeysForTitle, summaryOf, totalLibraryGamesCount } from "../../core/selectors";
 import { collectionMarker } from "../../core/collection-icons";
+import { gameRatingOf } from "../../core/game-ratings";
+import { primeGameScene } from "../../core/game-scene";
 import { isSmartCollection, smartCollection } from "./smart-collections";
 import { storeLogo } from "../store/store-logos";
 import { STORE_LABELS } from "../store/store-view";
@@ -22,24 +24,15 @@ import { toast } from "../../core/toast";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 
 import { epicReorderCollections, type EpicSummary } from "../../epic";
-import type { EpicSort, GameSource } from "../../core/types";
+import type { GameSource } from "../../core/types";
 import { t } from "../../i18n";
 import { sharedSummaries } from "./shared-library";
 import { steamAppOsList } from "./steam-library";
 import { allStoresMenuCount, enabledStoreKey, pickShownCopy, storeFilterLabel, storeFilterMenuHtml, storeFilterRowOn } from "./store-filter";
 import { coverSizeMenuHtml, listDensityMenuHtml, syncDensityMenu } from "./library-options";
 import { LIB_FILTERS_ENABLED, libFiltersActiveCount, matchesLibFilters, renderLibFilterPanel, studioOf } from "./library-filters";
-/** Sort options shown in the library sort dropdown, in the menu order. */
-export function getSortOptions(): { id: EpicSort; label: string }[] {
-  return [
-    { id: "alpha", label: t("lib.sortAlpha") },
-    { id: "recent", label: t("lib.sortRecent") },
-    { id: "played", label: t("lib.sortPlayed") },
-    { id: "achievements", label: t("lib.sortAchievements") },
-    { id: "installed", label: t("lib.sortInstalled") },
-    { id: "alphaDesc", label: t("lib.sortAlphaDesc") },
-  ];
-}
+import { renderAlphaRail } from "./library-alpha";
+import { getSortOptions, libraryCollator, seriesSortKeys, titleComparator } from "./library-sort";
 
 /**
  * Parses the search box into plain terms plus `key:value` operators:
@@ -67,22 +60,6 @@ function parseQuery(q: string): {
     else out.terms.push(tk);
   }
   return out;
-}
-
-let cachedCollatorLang = "";
-let cachedCollator: Intl.Collator | null = null;
-
-function getCollator(): Intl.Collator {
-  const lang = S.appLanguage || "en";
-  if (cachedCollator && cachedCollatorLang === lang) return cachedCollator;
-  try {
-    cachedCollator = new Intl.Collator(lang, { sensitivity: "base", numeric: true });
-  } catch {
-    cachedCollator = new Intl.Collator("en", { sensitivity: "base", numeric: true });
-  }
-  cachedCollatorLang = lang;
-  S.trCollator = cachedCollator;
-  return cachedCollator;
 }
 
 /** Higher means more of the achievement set is unlocked. Games without data stay at the bottom. */
@@ -184,8 +161,16 @@ export function epicVisibleSummaries(): EpicSummary[] {
   if (visibleCache && visibleCacheSig === sig) return visibleCache;
 
   const list = libraryFilteredList().filter(matchesLibFilters);
-  const collator = getCollator();
-  const byTitle = (a: EpicSummary, b: EpicSummary) => collator.compare(a.title, b.title);
+  const collator = libraryCollator();
+  const byTitle = titleComparator(collator, list);
+  const byRelease = (a: EpicSummary, b: EpicSummary, newestFirst: boolean): number => {
+    const left = a.releaseYear ?? null;
+    const right = b.releaseYear ?? null;
+    if (left === null && right === null) return byTitle(a, b);
+    if (left === null) return 1;
+    if (right === null) return -1;
+    return (newestFirst ? right - left : left - right) || byTitle(a, b);
+  };
 
   let result: EpicSummary[];
   switch (S.epicSort) {
@@ -194,6 +179,29 @@ export function epicVisibleSummaries(): EpicSummary[] {
       break;
     case "alphaDesc":
       result = [...list].sort((a, b) => byTitle(b, a));
+      break;
+    case "series": {
+      const keys = seriesSortKeys(list);
+      result = [...list].sort((a, b) => {
+        const prefix = collator.compare(keys.get(a.appName) ?? "", keys.get(b.appName) ?? "");
+        if (prefix !== 0) return prefix;
+        const left = a.releaseYear ?? null;
+        const right = b.releaseYear ?? null;
+        if (left !== null && right !== null && left !== right) return left - right;
+        return byTitle(a, b);
+      });
+      break;
+    }
+    case "yearNew":
+      result = [...list].sort((a, b) => byRelease(a, b, true));
+      break;
+    case "yearOld":
+      result = [...list].sort((a, b) => byRelease(a, b, false));
+      break;
+    case "rating":
+      result = [...list].sort(
+        (a, b) => (gameRatingOf(b.appName) ?? -1) - (gameRatingOf(a.appName) ?? -1) || byTitle(a, b),
+      );
       break;
     case "installed":
       result = [...list].sort((a, b) => Number(b.installed) - Number(a.installed) || byTitle(a, b));
@@ -711,6 +719,29 @@ function renderCollectionBanner(inCollection: boolean): string {
 }
 
 /**
+ * Jumps to a title index in the current order. With pagination the page is
+ * selected first; otherwise the progressive chunk grows until the target card
+ * is in the DOM, then the view scrolls it into place.
+ */
+export function jumpToLibraryLetter(index: number): void {
+  if (!Number.isFinite(index)) return;
+  const visible = epicVisibleSummaries();
+  if (visible.length === 0) return;
+  const target = Math.min(Math.max(0, Math.floor(index)), visible.length - 1);
+  if (S.libPagination) {
+    S.libPage = Math.floor(target / S.libPageSize) + 1;
+  } else if (S.renderedCardCount <= target) {
+    S.renderedCardCount = Math.min(visible.length, target + INITIAL_CARD_CHUNK);
+  }
+  if (!refreshLibraryResultsInPlace()) return;
+  const appName = visible[target].appName;
+  requestAnimationFrame(() => {
+    const card = document.querySelector<HTMLElement>(`[data-lib-item="${CSS.escape(appName)}"]`);
+    card?.scrollIntoView({ block: "start" });
+  });
+}
+
+/**
  * Renders the library content area. Default All is a cover grid (or list).
  * Collections are a separate filter mode.
  */
@@ -726,6 +757,7 @@ export function renderEpicItems(): string {
     resetCardChunk();
   }
   const visible = epicVisibleSummaries();
+  if (visible.length > 0) primeGameScene();
   const bannerHtml = inCollection ? renderCollectionBanner(inCollection) : "";
 
   if (visible.length === 0) {
@@ -766,7 +798,7 @@ export function renderEpicItems(): string {
   // keeps them in its own disk cache, so this costs one request per cover ever.
   prefetchNextCovers(visible, chunk.length);
 
-  return `${bannerHtml}${renderResults(itemsHtml, sentinelHtml)}${renderLibraryPager(visible.length)}`;
+  return `${bannerHtml}${renderAlphaRail(visible, S.epicSort)}${renderResults(itemsHtml, sentinelHtml)}${renderLibraryPager(visible.length)}`;
 }
 
 /** Covers already asked for while idle, so a repaint does not ask again. */

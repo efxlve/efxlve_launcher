@@ -1,22 +1,24 @@
 /**
- * Advanced library filters: status, playtime, size, genre, release year and
- * developer facets, rendered as a slide-over panel from the library header.
+ * Advanced library filters: status, playtime, size, genre, release year,
+ * review score and developer facets, rendered as a slide-over panel from the
+ * library header.
  *
  * Facets only list values the fold actually has: genres come from Amazon's and
  * Steam's own metadata plus Epic's store tags once a game page fetched them,
  * and the release year needs a store that publishes one.
  */
 
+import { gameRatingOf, ratingBucket as scoreBucket } from "../../core/game-ratings";
 import { icon } from "../../core/icons";
 import { rawOf, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
-import type { LibFilters, LibPlaytimeBucket, LibSizeBucket, LibYearBucket } from "../../core/types";
+import type { LibFilters, LibPlaytimeBucket, LibRatingBucket, LibSizeBucket, LibYearBucket } from "../../core/types";
 import { esc } from "../../core/utils";
 import type { EpicSummary } from "../../epic";
 import { t } from "../../i18n";
 
-/** The advanced facets ship hidden for now; flip this to re-enable the panel. */
-export const LIB_FILTERS_ENABLED = false;
+/** Advanced facets (status, playtime, size, genre, year, rating, studio). */
+export const LIB_FILTERS_ENABLED = true;
 
 /** Studio/publisher name for a game (empty when unknown). */
 export function studioOf(s: EpicSummary): string {
@@ -80,7 +82,15 @@ export function yearBucket(year: number): LibYearBucket {
 /** Total number of checked facet values (the header badge). */
 export function libFiltersActiveCount(): number {
   const f = S.libFilters;
-  return f.status.size + f.playtime.size + f.size.size + f.genres.size + f.years.size + f.developers.size;
+  return (
+    f.status.size +
+    f.playtime.size +
+    f.size.size +
+    f.genres.size +
+    f.years.size +
+    f.ratings.size +
+    f.developers.size
+  );
 }
 
 /** Drops every facet selection and invalidates the visible-library cache. */
@@ -91,6 +101,7 @@ export function clearLibFilters(): void {
   f.size.clear();
   f.genres.clear();
   f.years.clear();
+  f.ratings.clear();
   f.developers.clear();
   S.libFiltersRev++;
   S.libraryDataRev++;
@@ -130,6 +141,9 @@ export function matchesLibFilters(s: EpicSummary): boolean {
     const year = s.releaseYear ?? null;
     if (!year || !f.years.has(yearBucket(year))) return false;
   }
+  if (f.ratings.size > 0) {
+    if (!f.ratings.has(scoreBucket(gameRatingOf(s.appName)))) return false;
+  }
   if (f.genres.size > 0) {
     const genres = genresOf(s);
     if (!genres.some((g) => f.genres.has(g))) return false;
@@ -151,6 +165,7 @@ export interface LibFacets {
   playtime: Record<LibPlaytimeBucket, number>;
   size: Record<LibSizeBucket, number>;
   years: Record<LibYearBucket, number>;
+  ratings: Record<LibRatingBucket, number>;
   genres: FacetEntry[];
   developers: FacetEntry[];
 }
@@ -167,6 +182,15 @@ export function libFacets(base: EpicSummary[]): LibFacets {
   const playtime: Record<LibPlaytimeBucket, number> = { never: 0, under1: 0, "1to10": 0, "10to50": 0, over50: 0 };
   const size: Record<LibSizeBucket, number> = { under1: 0, "1to10": 0, "10to50": 0, over50: 0 };
   const years: Record<LibYearBucket, number> = { pre2000: 0, "2000s": 0, "2010s": 0, "2020s": 0 };
+  const ratings: Record<LibRatingBucket, number> = {
+    "90": 0,
+    "80": 0,
+    "70": 0,
+    "60": 0,
+    "50": 0,
+    under50: 0,
+    unrated: 0,
+  };
   const genreMap = new Map<string, number>();
   const devMap = new Map<string, number>();
   for (const s of base) {
@@ -178,6 +202,7 @@ export function libFacets(base: EpicSummary[]): LibFacets {
     if (sb) size[sb]++;
     const year = s.releaseYear ?? null;
     if (year) years[yearBucket(year)]++;
+    ratings[scoreBucket(gameRatingOf(s.appName))]++;
     for (const genre of new Set(genresOf(s))) {
       genreMap.set(genre, (genreMap.get(genre) ?? 0) + 1);
     }
@@ -189,6 +214,7 @@ export function libFacets(base: EpicSummary[]): LibFacets {
     playtime,
     size,
     years,
+    ratings,
     genres: facetEntries(genreMap),
     developers: facetEntries(devMap),
   };
@@ -274,6 +300,17 @@ export function renderLibFilterPanel(base: EpicSummary[], resultCount: number): 
     t("lib.filterMetaHint"),
   );
 
+  const rating = facetSection(
+    t("lib.filterRating"),
+    facetButton("ratings", "90", "90–100", facets.ratings["90"], f.ratings.has("90")) +
+      facetButton("ratings", "80", "80–89", facets.ratings["80"], f.ratings.has("80")) +
+      facetButton("ratings", "70", "70–79", facets.ratings["70"], f.ratings.has("70")) +
+      facetButton("ratings", "60", "60–69", facets.ratings["60"], f.ratings.has("60")) +
+      facetButton("ratings", "50", "50–59", facets.ratings["50"], f.ratings.has("50")) +
+      facetButton("ratings", "under50", "< 50", facets.ratings.under50, f.ratings.has("under50")) +
+      facetButton("ratings", "unrated", t("lib.ratingUnrated"), facets.ratings.unrated, f.ratings.has("unrated")),
+  );
+
   const devBody = facetList(facets.developers, "developers", (value) => f.developers.has(value));
   const developer = devBody ? facetSection(t("lib.filterDeveloper"), devBody) : "";
 
@@ -293,6 +330,7 @@ export function renderLibFilterPanel(base: EpicSummary[], resultCount: number): 
         ${size}
         ${genre}
         ${year}
+        ${rating}
         ${developer}
       </div>
       <div class="lib-filter-foot">

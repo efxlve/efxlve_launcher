@@ -92,6 +92,8 @@ Defined once, reused everywhere:
 - **Settings details** `.settings-details` - a native `<details>` styled as a settings row: the summary shows the row title and a status chip, the body holds the fields. Used for keys that are set once (Integrations: Steam Web API key, SteamGridDB).
 - **Card** `.card` — surface-1, `--line` border, `--r-md`, 16px padding.
 - **List row** `.row` — 48–56px, hover surface-2; the only list pattern (downloads, queue, updates, settings rows).
+- **Alphabet rail** `.lib-alpha` — a fixed 9px A–Z column on title sorts. Present buckets are buttons, empty ones stay disabled; it is not shown for year, rating or playtime sorts.
+- **Game-art backdrop** `#game-scene` — opt-in fixed layer holding the selected game's blurred wide art. With it on, the title bar and sidebar become 58% translucent with a 22px blur, and the game page loses its opaque layer; a theme's own scene yields to it. Off by default.
 - **Modal** `.modal-backdrop > .modal` — surface-1, `--r-md`, 1 shadow level.
 - **Empty state** `.empty` — 36px muted icon, one title, one sentence, one button. Inside a panel or tab card the same content uses `.empty-panel`: the icon sits in a 44px `--surface-2` tile so the block reads as a state, not as a dashed placeholder, in every theme.
 - **In-game notification** (`src/features/achievement-card/ach-card.ts`) — one card component, rendered by both the Settings stage and the in-game toast webview (`src-tauri/src/overlay/toast.rs`). 520px wide (normal; 440 small, 600 large), 16px corners, the selected theme or rarity palette on a dark plate, a 6px accent bar, a 54px medallion with the achievement art or a trophy, a rarity line, one bold 18px title and one 13px muted line (all single-line with ellipsis), plus god-rays, a dashed orbit ring, a border comet and a 14-particle burst. It takes one of six screen anchors, never takes focus or input, and the Settings preview runs the same markup and keyframes.
@@ -108,7 +110,7 @@ Defined once, reused everywhere:
 ## 6. Forbidden (zero tolerance)
 
 - Gradients on buttons or surfaces, neon/glow `box-shadow`, `background-clip: text`. The single exception is the image scrim under the game page / TV hero title (`.gp-hero-scrim`), which exists only for text legibility over key art.
-- `backdrop-filter` anywhere.
+- `backdrop-filter` outside the opt-in glass theme scene and the game-art backdrop; both are user-selected, never a default surface.
 - Emojis in UI text (use `icon()` SVGs or ISO language codes).
 - Per-screen button styles. If a screen needs a new button look, it does not.
 - Borrowed brand vocabulary in class names (`ps5-`, `apple-`, `xbox-`, `aero-`) for new code.

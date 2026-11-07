@@ -100,7 +100,10 @@ compatibility answer is written to disk, including "nothing found"
 (`src-tauri/src/lookup_cache.rs` owns the envelope). A missing entry is the only
 one that waits for the network; an aged entry is served as it is and refreshed
 behind the page. A stored miss is retried after a month, so a game that reaches
-a store later is picked up without pinning the page to an old answer.
+a store later is picked up without pinning the page to an old answer. The
+library's rating sort and rating facet read the critic files already on disk
+(`epic_cached_critic_scores`, `src/core/game-ratings.ts`) instead of opening a
+page per game.
 
 ---
 

@@ -1926,6 +1926,50 @@ html.win-compact .lrow-ach-track { display: none; }
 .lib-pager-size { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-3); }
 .lib-pager-size .settings-select { min-width: 76px; }
 
+/* --- Alphabet rail --- */
+.lib-alpha {
+  position: fixed;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  max-height: calc(100vh - var(--winbar-h) - 40px);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  opacity: 0.55;
+  transition: opacity 140ms ease;
+}
+.lib-alpha:hover { opacity: 1; }
+.lib-alpha-btn {
+  width: 18px;
+  height: 15px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-3);
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  cursor: pointer;
+}
+.lib-alpha-btn:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--accent);
+}
+.lib-alpha-btn:disabled {
+  opacity: 0.22;
+  cursor: default;
+}
+html[dir="rtl"] .lib-alpha { right: auto; left: 16px; }
+@media (max-width: 900px) {
+  .lib-alpha { display: none; }
+}
+
 /* --- Advanced filters slide-over --- */
 .lib-filter-btn.active { color: var(--accent); }
 .lib-filter-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--accent); color: var(--bg); font-size: 10px; font-weight: 700; }

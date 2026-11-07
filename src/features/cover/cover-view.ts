@@ -1,15 +1,17 @@
 /**
- * Custom cover/hero editor and SteamGridDB asset picker.
+ * Custom cover/hero/logo editor and SteamGridDB asset picker.
  *
- * Lets the user set a custom portrait cover or wide hero image, or pick one
- * from SteamGridDB. State lives in S and is persisted to localStorage.
+ * Lets the user set a custom portrait cover, wide hero image or transparent
+ * game-page logo, or pick one from SteamGridDB. State lives in S and is
+ * persisted to localStorage.
  */
 
-import { CUSTOM_COVERS_KEY, CUSTOM_HEROES_KEY } from "../../core/constants";
+import { CUSTOM_COVERS_KEY, CUSTOM_HEROES_KEY, CUSTOM_LOGOS_KEY, CUSTOM_LOGO_SIZES_KEY } from "../../core/constants";
 import { icon } from "../../core/icons";
 import { openEpicModal, render } from "../../core/render";
 import { epicWideArt, rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
+import type { CustomLogoSize } from "../../core/types";
 
 import { esc } from "../../core/utils";
 import { localizeMessage, t } from "../../i18n";
@@ -56,6 +58,44 @@ export function resetCustomHero(appName: string): void {
   if (S.currentModalAppName === appName) {
     openEpicModal(appName, false);
   }
+}
+
+export function logoSizeOf(appName: string): CustomLogoSize {
+  const size = S.customLogoSizes[appName];
+  return size === "small" || size === "large" ? size : "medium";
+}
+
+/** Saves the transparent logo and repaints the open game page behind the modal. */
+export function saveCustomLogo(appName: string, url: string): void {
+  S.customLogos[appName] = url.trim();
+  localStorage.setItem(CUSTOM_LOGOS_KEY, JSON.stringify(S.customLogos));
+  S.libraryDataRev++;
+  render();
+  if (S.currentModalAppName === appName) {
+    openEpicModal(appName, false);
+  }
+}
+
+export function resetCustomLogo(appName: string): void {
+  delete S.customLogos[appName];
+  delete S.customLogoSizes[appName];
+  localStorage.setItem(CUSTOM_LOGOS_KEY, JSON.stringify(S.customLogos));
+  localStorage.setItem(CUSTOM_LOGO_SIZES_KEY, JSON.stringify(S.customLogoSizes));
+  S.libraryDataRev++;
+  render();
+  if (S.currentModalAppName === appName) {
+    openEpicModal(appName, false);
+  }
+}
+
+/** Stores the logo size; the game page picks it up on its next paint. */
+export function setCustomLogoSize(appName: string, size: CustomLogoSize): void {
+  S.customLogoSizes[appName] = size;
+  localStorage.setItem(CUSTOM_LOGO_SIZES_KEY, JSON.stringify(S.customLogoSizes));
+  if (S.currentModalAppName === appName) {
+    openEpicModal(appName, false);
+  }
+  renderCustomCoverModalFrame(appName);
 }
 
 /* ---------- SteamGridDB state ---------- */
@@ -111,7 +151,14 @@ export function closeCustomCoverModal(): void {
   if (root) root.innerHTML = "";
 }
 
-export function openCustomCoverModal(appName: string, initialTarget: "cover" | "hero" = "cover"): void {
+/** SteamGridDB asset family that matches the edit target. */
+function assetTypeFor(target: "cover" | "hero" | "logo"): "grids" | "heroes" | "logos" {
+  if (target === "hero") return "heroes";
+  if (target === "logo") return "logos";
+  return "grids";
+}
+
+export function openCustomCoverModal(appName: string, initialTarget: "cover" | "hero" | "logo" = "cover"): void {
   let coverRoot = document.getElementById("cover-modal-root");
   if (!coverRoot) {
     coverRoot = document.createElement("div");
@@ -124,10 +171,19 @@ export function openCustomCoverModal(appName: string, initialTarget: "cover" | "
   const title = s?.title || appName;
 
   S.sgdbSearchQuery = cleanSteamGridSearchTerm(title);
-  S.sgdbAssetType = S.activeCoverTarget === "hero" ? "heroes" : "grids";
+  S.sgdbAssetType = assetTypeFor(S.activeCoverTarget);
   S.sgdbActiveStyle = "";
   S.sgdbSelectedCoverUrl = "";
-  S.customCoverActiveTab = S.steamGridApiKey ? "steamgrid" : S.igdbConfigured ? "igdb" : "url";
+  S.customCoverActiveTab =
+    S.activeCoverTarget === "logo"
+      ? S.steamGridApiKey
+        ? "steamgrid"
+        : "url"
+      : S.steamGridApiKey
+        ? "steamgrid"
+        : S.igdbConfigured
+          ? "igdb"
+          : "url";
   // A fresh IGDB search per game: the modal is per game.
   S.igdbCoverQuery = "";
   S.igdbCoverHits = [];
@@ -152,7 +208,8 @@ function steamAppIdOf(appName: string): string {
   return appName.startsWith("steam::") ? appName.slice(7) : "";
 }
 
-function officialSteamUrl(appName: string, target: "cover" | "hero"): string {
+function officialSteamUrl(appName: string, target: "cover" | "hero" | "logo"): string {
+  if (target === "logo") return "";
   const id = steamAppIdOf(appName);
   if (!/^\d+$/.test(id)) return "";
   const url = target === "hero" ? cachedSteamHero(id) : cachedSteamCover(id);
@@ -218,12 +275,28 @@ export function renderCustomCoverModalFrame(appName: string): void {
 
   const hasCustomCover = Boolean(S.customCovers[appName]);
   const hasCustomHero = Boolean(S.customHeroes[appName]);
-  const isCustomForTarget = S.activeCoverTarget === "hero" ? hasCustomHero : hasCustomCover;
+  const hasCustomLogo = Boolean(S.customLogos[appName]);
+  const isCustomForTarget =
+    S.activeCoverTarget === "hero" ? hasCustomHero : S.activeCoverTarget === "logo" ? hasCustomLogo : hasCustomCover;
 
   const currentCoverArt = S.customCovers[appName] || officialSteamUrl(appName, "cover") || s?.cover || "";
   const currentHeroArt = S.customHeroes[appName] || officialSteamUrl(appName, "hero") || (s ? epicWideArt(s) : null) || s?.cover || "";
-  const activeCurrentImg = S.sgdbSelectedCoverUrl || (S.activeCoverTarget === "hero" ? currentHeroArt : currentCoverArt);
-  const hasAnyCustom = hasCustomCover || hasCustomHero;
+  const currentLogoArt = S.customLogos[appName] || "";
+  const activeCurrentImg =
+    S.sgdbSelectedCoverUrl ||
+    (S.activeCoverTarget === "hero" ? currentHeroArt : S.activeCoverTarget === "logo" ? currentLogoArt : currentCoverArt);
+  const hasAnyCustom = hasCustomCover || hasCustomHero || hasCustomLogo;
+  const previewClass = S.activeCoverTarget === "hero" ? "wide" : S.activeCoverTarget === "logo" ? "logo" : "portrait";
+  const targetLabel =
+    S.activeCoverTarget === "cover" ? t("cover.portraitCard") : S.activeCoverTarget === "hero" ? t("cover.heroCard") : t("cover.logoCard");
+  const targetDesc =
+    S.activeCoverTarget === "cover" ? t("cover.portraitDesc") : S.activeCoverTarget === "hero" ? t("cover.heroDesc") : t("cover.logoDesc");
+  const targetReset =
+    S.activeCoverTarget === "cover" ? t("cover.resetPortrait") : S.activeCoverTarget === "hero" ? t("cover.resetHero") : t("cover.resetLogo");
+  const targetSave =
+    S.activeCoverTarget === "cover" ? t("cover.savePortrait") : S.activeCoverTarget === "hero" ? t("cover.saveHero") : t("cover.saveLogo");
+  const logoSize = logoSizeOf(appName);
+  const logoSizes: CustomLogoSize[] = ["small", "medium", "large"];
 
   coverRoot.innerHTML = `
     <div class="cover-overlay" data-act="cover-modal-backdrop">
@@ -250,28 +323,47 @@ export function renderCustomCoverModalFrame(appName: string): void {
               ${icon("rows", 14)}
               <span>${t("cover.heroTab")}</span>
             </button>
+            <button class="target-segment-pill ${S.activeCoverTarget === "logo" ? "active" : ""}" data-act="set-cover-target" data-target="logo" data-id="${appName}">
+              ${icon("sparkles", 14)}
+              <span>${t("cover.logoTab")}</span>
+            </button>
           </div>
 
           <!-- Live preview and target info -->
           <div class="cover-preview-section">
-            <div class="cover-preview-card ${S.activeCoverTarget === "hero" ? "wide" : "portrait"}">
+            <div class="cover-preview-card ${previewClass}">
               ${activeCurrentImg ? `<img id="cover-preview-img" src="${esc(activeCurrentImg)}" alt="${t("cover.previewAlt")}" />` : `<div id="cover-preview-img" class="cover-preview-empty">${icon("image", 36)}</div>`}
               <div class="cover-preview-badge">${S.sgdbSelectedCoverUrl ? t("cover.selectedPreview") : isCustomForTarget ? t("cover.customImage") : t("cover.original")}</div>
             </div>
             <div class="cover-preview-meta">
               <div class="cover-meta-header">
                 <span class="cover-meta-badge ${S.activeCoverTarget}">
-                  ${S.activeCoverTarget === "cover" ? `${icon("image", 12)} ${t("cover.portraitCard")}` : `${icon("rows", 12)} ${t("cover.heroCard")}`}
+                  ${icon(S.activeCoverTarget === "hero" ? "rows" : S.activeCoverTarget === "logo" ? "sparkles" : "image", 12)} ${targetLabel}
                 </span>
                 ${isCustomForTarget ? `<span class="cover-status-tag custom">${icon("sparkles", 11)} ${t("cover.customInUse")}</span>` : `<span class="cover-status-tag">${icon("check", 11)} ${appName.startsWith("steam::") || appName.startsWith("gog::") ? t("cover.original") : t("cover.originalEpic")}</span>`}
               </div>
               <div class="cover-meta-desc">
-                ${S.activeCoverTarget === "cover" ? t("cover.portraitDesc") : t("cover.heroDesc")}
+                ${targetDesc}
               </div>
+              ${
+                S.activeCoverTarget === "logo"
+                  ? `<div class="cover-logo-size">
+                      <span class="cover-meta-label">${esc(t("cover.logoSize"))}</span>
+                      <div class="seg" role="group" aria-label="${esc(t("cover.logoSize"))}">
+                        ${logoSizes
+                          .map(
+                            (size) =>
+                              `<button type="button" class="${logoSize === size ? "active" : ""}" data-act="set-logo-size" data-size="${size}" data-id="${appName}">${esc(t(`cover.logoSize${size[0].toUpperCase()}${size.slice(1)}`))}</button>`,
+                          )
+                          .join("")}
+                      </div>
+                    </div>`
+                  : ""
+              }
               <div class="cover-meta-actions">
                 ${isCustomForTarget ? `
                   <button class="btn ghost small danger" data-act="reset-active-target" data-id="${appName}">
-                    ${icon("refresh", 12)} ${S.activeCoverTarget === "cover" ? t("cover.resetPortrait") : t("cover.resetHero")}
+                    ${icon("refresh", 12)} ${targetReset}
                   </button>
                 ` : ""}
               </div>
@@ -283,9 +375,13 @@ export function renderCustomCoverModalFrame(appName: string): void {
             <button class="cover-tab-btn ${S.customCoverActiveTab === "steamgrid" ? "active" : ""}" data-act="switch-cover-tab" data-tab="steamgrid" data-id="${appName}">
               ${icon("globe", 13)} <span>${t("cover.tabSteamgrid")}</span>
             </button>
-            <button class="cover-tab-btn ${S.customCoverActiveTab === "igdb" ? "active" : ""}" data-act="switch-cover-tab" data-tab="igdb" data-id="${appName}">
+            ${
+              S.activeCoverTarget === "logo"
+                ? ""
+                : `<button class="cover-tab-btn ${S.customCoverActiveTab === "igdb" ? "active" : ""}" data-act="switch-cover-tab" data-tab="igdb" data-id="${appName}">
               ${icon("sparkles", 13)} <span>${t("cover.tabIgdb")}</span>
-            </button>
+            </button>`
+            }
             <button class="cover-tab-btn ${S.customCoverActiveTab === "url" ? "active" : ""}" data-act="switch-cover-tab" data-tab="url" data-id="${appName}">
               ${icon("external", 13)} <span>${t("cover.tabUrl")}</span>
             </button>
@@ -306,7 +402,7 @@ export function renderCustomCoverModalFrame(appName: string): void {
           <div style="flex:1"></div>
           <button class="btn ghost" data-act="close-custom-cover">${t("move.discard")}</button>
           <button class="btn primary" data-act="save-custom-cover" data-id="${appName}">
-            ${icon("check", 14)} ${S.activeCoverTarget === "cover" ? t("cover.savePortrait") : t("cover.saveHero")}
+            ${icon("check", 14)} ${targetSave}
           </button>
         </div>
       </div>
@@ -424,7 +520,14 @@ export function renderCustomCoverModalContent(appName: string): void {
   if (!container) return;
 
   if (S.customCoverActiveTab === "url") {
-    const currentVal = S.sgdbSelectedCoverUrl || (S.activeCoverTarget === "hero" ? S.customHeroes[appName] : S.customCovers[appName]) || "";
+    const currentVal =
+      S.sgdbSelectedCoverUrl ||
+      (S.activeCoverTarget === "hero"
+        ? S.customHeroes[appName]
+        : S.activeCoverTarget === "logo"
+          ? S.customLogos[appName]
+          : S.customCovers[appName]) ||
+      "";
     container.innerHTML = `
       <div class="cover-tab-pane">
         <div class="cover-inputs-section">
@@ -577,6 +680,9 @@ export function renderCustomCoverModalContent(appName: string): void {
             <button class="sgdb-chip ${S.sgdbAssetType === "heroes" ? "active" : ""}" data-act="sgdb-set-asset-type" data-type="heroes" data-id="${appName}">
               ${icon("rows", 11)} ${t("cover.heroShort")}
             </button>
+            <button class="sgdb-chip ${S.sgdbAssetType === "logos" ? "active" : ""}" data-act="sgdb-set-asset-type" data-type="logos" data-id="${appName}">
+              ${icon("sparkles", 11)} ${t("cover.logoShort")}
+            </button>
           </div>
           <div class="sgdb-chip-group">
             <button class="sgdb-chip ${S.sgdbActiveStyle === "" ? "active" : ""}" data-act="sgdb-set-style" data-style="" data-id="${appName}">${t("cover.styleAll")}</button>
@@ -600,7 +706,7 @@ export function renderCustomCoverModalContent(appName: string): void {
               ${t("cover.noResults")}
             </div>
           ` : `
-            <div class="${S.sgdbAssetType === "heroes" ? "sgdb-grid-horizontal" : "sgdb-grid-vertical"}">
+            <div class="${S.sgdbAssetType === "heroes" ? "sgdb-grid-horizontal" : S.sgdbAssetType === "logos" ? "sgdb-grid-logo" : "sgdb-grid-vertical"}">
               ${gallery.map(item => {
                 const isSel = S.sgdbSelectedCoverUrl === item.url;
                 const thumbUrl = item.thumb || item.url;
@@ -608,7 +714,7 @@ export function renderCustomCoverModalContent(appName: string): void {
                 const styleLabel = item.style === "no_logo" ? t("cover.styleNoLogo") : item.style === "alternate" ? t("cover.styleAlternate") : item.style === "official" ? t("cover.styleOfficial") : "";
                 const showScore = item.style !== "official" || item.score > 0;
                 return `
-                <div class="sgdb-card ${isSel ? "selected" : ""}" role="button" tabindex="0" data-act="sgdb-select-card" data-url="${esc(item.url)}" title="${showScore ? t("cover.authorScore", { author: esc(authorName), score: item.score }) : esc(authorName)}">
+                <div class="sgdb-card ${S.sgdbAssetType === "logos" ? "is-logo" : ""} ${isSel ? "selected" : ""}" role="button" tabindex="0" data-act="sgdb-select-card" data-url="${esc(item.url)}" title="${showScore ? t("cover.authorScore", { author: esc(authorName), score: item.score }) : esc(authorName)}">
                   <img src="${esc(thumbUrl)}" loading="lazy" alt="Cover" />
                   <div class="sgdb-card-badges">
                     ${styleLabel ? `<span class="sgdb-style-tag">${esc(styleLabel)}</span>` : "<span></span>"}
@@ -672,6 +778,9 @@ export async function searchAndLoadSteamGrid(appName: string, query?: string): P
 }
 
 export async function loadSteamGridCovers(appName: string, gameId: number): Promise<void> {
+  if (S.activeCoverTarget === "logo" && S.customCoverActiveTab === "igdb") {
+    S.customCoverActiveTab = S.steamGridApiKey ? "steamgrid" : "url";
+  }
   S.sgdbIsSearching = true;
   S.sgdbErrorMsg = "";
   renderCustomCoverModalContent(appName);

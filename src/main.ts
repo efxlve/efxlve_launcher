@@ -55,8 +55,11 @@ import { embeddedStoreHeld, hideStore, paintStoreLoadingScreen } from "./feature
 import { applyWinbarAppIcon } from "./core/app-icon";
 import { applyUiScale } from "./core/game-status";
 import { applyCrosshairConfig, loadCrosshair, setCrosshairVisible } from "./core/crosshair";
+import { applyGameScene, initGameSceneHover } from "./core/game-scene";
 
 applySurface(S.surface, false);
+applyGameScene();
+initGameSceneHover();
 // The native achievement card follows the saved theme mode. The palette needs
 // the hydrated options, so it is pushed again as soon as the backend answers.
 void achievementGetNotificationOptions()

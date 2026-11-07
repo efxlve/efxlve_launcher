@@ -273,6 +273,12 @@ export const AUTO_SHORTCUT_KEY = "efxlve-auto-shortcut";
 export const CUSTOM_COVERS_KEY = "efxlve-custom-covers";
 /** Custom hero/landscape URLs keyed by app name. */
 export const CUSTOM_HEROES_KEY = "efxlve-custom-heroes";
+/** Custom transparent game logos keyed by app name. */
+export const CUSTOM_LOGOS_KEY = "efxlve-custom-logos";
+/** Game-page logo size per app name (`small`, `medium`, `large`). */
+export const CUSTOM_LOGO_SIZES_KEY = "efxlve-custom-logo-sizes";
+/** Blurred game-art backdrop behind the launcher shell. */
+export const GAME_SCENE_KEY = "efxlve-game-scene";
 /** Custom profile avatars keyed by Epic account ID. */
 export const CUSTOM_AVATARS_KEY = "efxlve-custom-avatars";
 /** Custom user profile display name. */

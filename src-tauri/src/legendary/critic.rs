@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -18,6 +19,33 @@ pub struct CriticData {
 }
 
 const CRITIC_PARSER_VERSION: u32 = 7;
+
+/// One score already stored on disk, used by the library's rating sort and
+/// filter. A game can have several cache files (one per release year); the
+/// caller keeps the best row per app name.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct CachedCriticScore {
+    pub app_name: String,
+    pub title: String,
+    pub score: u32,
+}
+
+/// The best score of one answer, normalized to 0–100. PCGamingWiki's IGDB row
+/// is written as a 0–10 value, so it is scaled up before it can compete with
+/// the 0–100 Metacritic and OpenCritic scores.
+pub fn best_critic_score(data: &CriticData) -> Option<u32> {
+    let igdb = data.igdb_score.and_then(|value| {
+        if !value.is_finite() || value <= 0.0 {
+            return None;
+        }
+        let scaled = if value <= 10.0 { value * 10.0 } else { value };
+        Some(scaled.round().clamp(0.0, 100.0) as u32)
+    });
+    [data.opencritic_score, data.metacritic_score, igdb]
+        .into_iter()
+        .flatten()
+        .max()
+}
 
 /// Browser UA: metacritic.com serves the page (with its schema block) to normal
 /// browsers only.
@@ -262,6 +290,57 @@ pub fn cached_answer_usable(data: &CriticData, age: Option<std::time::Duration>)
             || age
                 .map(|age| age.as_secs() < crate::lookup_cache::MISS_TTL_SECS)
                 .unwrap_or(false))
+}
+
+/// Every usable score in the critic cache, one row per app name. This only
+/// reads files that are already there: games the player never opened stay
+/// absent instead of triggering hundreds of network lookups.
+pub fn cached_scores() -> Vec<CachedCriticScore> {
+    let Ok(entries) = std::fs::read_dir(critic_cache_dir()) else {
+        return Vec::new();
+    };
+    let mut by_app: HashMap<String, (u64, CachedCriticScore)> = HashMap::new();
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|ext| ext.to_str()) != Some("json") {
+            continue;
+        }
+        let Ok(content) = std::fs::read_to_string(&path) else {
+            continue;
+        };
+        let Ok(data) = serde_json::from_str::<CriticData>(&content) else {
+            continue;
+        };
+        if data.parser_version < CRITIC_PARSER_VERSION || data.app_name.trim().is_empty() {
+            continue;
+        }
+        let Some(score) = best_critic_score(&data) else {
+            continue;
+        };
+        // The year is part of the cache key, so one game can have two files.
+        // The newest answer is the one its page currently shows.
+        let modified = entry
+            .metadata()
+            .and_then(|meta| meta.modified())
+            .ok()
+            .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|age| age.as_secs())
+            .unwrap_or(0);
+        let row = CachedCriticScore {
+            app_name: data.app_name,
+            title: data.title,
+            score,
+        };
+        match by_app.get(&row.app_name) {
+            Some((seen, existing)) if *seen > modified || (*seen == modified && existing.score >= row.score) => {}
+            _ => {
+                by_app.insert(row.app_name.clone(), (modified, row));
+            }
+        }
+    }
+    let mut rows: Vec<_> = by_app.into_values().map(|(_, row)| row).collect();
+    rows.sort_by(|left, right| left.app_name.cmp(&right.app_name));
+    rows
 }
 
 pub fn calculate_tier(score: u32) -> &'static str {
@@ -777,5 +856,29 @@ mod tests {
             mc_pc_url,
             Some("https://www.metacritic.com/game/counter-strike-2/".to_string())
         );
+    }
+
+    #[test]
+    fn the_best_score_wins_and_a_ten_point_scale_is_normalized() {
+        let mut data = CriticData {
+            app_name: "x".into(),
+            title: "X".into(),
+            supported: true,
+            opencritic_score: Some(78),
+            opencritic_url: None,
+            metacritic_score: Some(83),
+            metacritic_url: None,
+            igdb_score: Some(6.7),
+            tier: None,
+            parser_version: CRITIC_PARSER_VERSION,
+        };
+        assert_eq!(best_critic_score(&data), Some(83));
+        data.opencritic_score = None;
+        data.metacritic_score = None;
+        assert_eq!(best_critic_score(&data), Some(67), "6.7 is 67/100");
+        data.igdb_score = Some(91.0);
+        assert_eq!(best_critic_score(&data), Some(91));
+        data.igdb_score = None;
+        assert_eq!(best_critic_score(&data), None);
     }
 }

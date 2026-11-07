@@ -18,6 +18,9 @@ import {
   CUSTOM_PROFILE_BANNERS_KEY,
   CUSTOM_COVERS_KEY,
   CUSTOM_HEROES_KEY,
+  CUSTOM_LOGOS_KEY,
+  CUSTOM_LOGO_SIZES_KEY,
+  GAME_SCENE_KEY,
   FAV_KEY,
   HIDDEN_ACH_KEY,
   HIDDEN_KEY,
@@ -161,8 +164,21 @@ function migrateAvatarKeys(store: Record<string, string>): Record<string, string
 }
 
 /** Drops retired sort ids (updates, platinum) so a stored value still matches the menu. */
+const EPIC_SORTS: readonly EpicSort[] = [
+  "alpha",
+  "alphaDesc",
+  "series",
+  "yearNew",
+  "yearOld",
+  "rating",
+  "recent",
+  "played",
+  "achievements",
+  "installed",
+];
+
 function normalizeEpicSort(saved: string | null): EpicSort {
-  if (saved === "alpha" || saved === "alphaDesc" || saved === "recent" || saved === "played" || saved === "achievements" || saved === "installed") return saved;
+  if (saved && (EPIC_SORTS as readonly string[]).includes(saved)) return saved as EpicSort;
   if (saved === "platinum") return "achievements";
   return saved ? "alpha" : "recent";
 }
@@ -295,6 +311,7 @@ export const S = {
     size: new Set(),
     genres: new Set(),
     years: new Set(),
+    ratings: new Set(),
     developers: new Set(),
   } as import("./types").LibFilters,
   /** True while the advanced filter slide-over is open. */
@@ -335,6 +352,10 @@ export const S = {
   allGamesMap: (new Map()) as Map<string, LibraryItem>,
   customCovers: loadJsonRecord(CUSTOM_COVERS_KEY),
   customHeroes: loadJsonRecord(CUSTOM_HEROES_KEY),
+  customLogos: loadJsonRecord(CUSTOM_LOGOS_KEY),
+  customLogoSizes: loadJsonRecord(CUSTOM_LOGO_SIZES_KEY) as Record<string, import("./types").CustomLogoSize>,
+  /** Blurred game art behind the shell instead of the flat theme background. */
+  gameScene: localStorage.getItem(GAME_SCENE_KEY) === "true",
   customAvatars: migrateAvatarKeys(loadJsonRecord(CUSTOM_AVATARS_KEY)),
   customProfileName: (localStorage.getItem(CUSTOM_PROFILE_NAME_KEY) || "") as string,
   customProfileBanners: loadJsonRecord(CUSTOM_PROFILE_BANNERS_KEY),
@@ -364,9 +385,9 @@ export const S = {
   igdbCoverLoading: false,
   igdbCoverError: "",
   customCoverActiveTab: ("steamgrid") as "steamgrid" | "igdb" | "url" | "file",
-  activeCoverTarget: ("cover") as "cover" | "hero",
+  activeCoverTarget: ("cover") as "cover" | "hero" | "logo",
   sgdbSearchQuery: "",
-  sgdbAssetType: ("grids") as "grids" | "heroes",
+  sgdbAssetType: ("grids") as "grids" | "heroes" | "logos",
   sgdbActiveStyle: "",
   sgdbIsSearching: false,
   sgdbErrorMsg: "",
@@ -381,6 +402,8 @@ export const S = {
   loadedHltb: (new Map()) as Map<string, HltbData>,
   loadingHltbFor: new Set<string>(),
   loadedCritic: (new Map()) as Map<string, CriticData>,
+  /** Best cached review score per library key, loaded from the disk cache. */
+  gameRatings: (new Map()) as Map<string, number>,
   loadingCriticFor: new Set<string>(),
   loadingAboutFor: new Set<string>(),
   appLanguage: initialLanguage(),
