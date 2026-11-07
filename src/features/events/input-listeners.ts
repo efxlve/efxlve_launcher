@@ -51,6 +51,7 @@ import {
 } from "../cover/cover-view";
 import { setLogoScale, stopLogoHeroAdjust } from "../cover/logo-layout";
 import { closeSortNameModal } from "../library/sort-name";
+import { closeLibFilterPanel } from "../library/library-filters";
 import {
   enrichAchievementsData,
   renderDrawerDlcs,
@@ -351,8 +352,17 @@ document.addEventListener("keydown", (e) => {
       return;
     }
     if (S.isFilterPanelOpen) {
-      S.isFilterPanelOpen = false;
-      render();
+      const activeFacet = document.activeElement instanceof HTMLInputElement && document.activeElement.dataset.facetSearch
+        ? document.activeElement
+        : null;
+      if (activeFacet && activeFacet.value.length > 0) {
+        activeFacet.value = "";
+        activeFacet.closest(".lib-filter-section")?.querySelectorAll<HTMLElement>("[data-facet-name]").forEach((row) => {
+          row.hidden = false;
+        });
+        return;
+      }
+      closeLibFilterPanel();
       return;
     }
     // The library density menu is a light popover; it closes before the page.

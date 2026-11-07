@@ -14,7 +14,7 @@ import { emptyState, icon } from "../../core/icons";
 import { collectionGames, collectionMatch, matchCollectionGame, type CollectionMatch } from "../../core/game-collections";
 import { allStoreSummaries, canonicalGameTitle, compareLibraryRecent, libraryItemToSummary, libraryPlaytime, rawOf, sourceOfKey, storeKeysForTitle, summaryOf, totalLibraryGamesCount } from "../../core/selectors";
 import { collectionMarker } from "../../core/collection-icons";
-import { gameRatingOf } from "../../core/game-ratings";
+import { ensureGameRatingsLoaded, gameRatingOf } from "../../core/game-ratings";
 import { primeGameScene } from "../../core/game-scene";
 import { isSmartCollection, smartCollection } from "./smart-collections";
 import { storeLogo } from "../store/store-logos";
@@ -30,7 +30,7 @@ import { sharedSummaries } from "./shared-library";
 import { steamAppOsList } from "./steam-library";
 import { allStoresMenuCount, enabledStoreKey, pickShownCopy, storeFilterLabel, storeFilterMenuHtml, storeFilterRowOn } from "./store-filter";
 import { coverSizeMenuHtml, listDensityMenuHtml, syncDensityMenu } from "./library-options";
-import { LIB_FILTERS_ENABLED, libFiltersActiveCount, matchesLibFilters, renderLibFilterPanel, studioOf } from "./library-filters";
+import { closeLibFilterPanel, libFiltersActiveCount, matchesLibFilters, mountLibFilterPanel, studioOf, syncLibFilterHeaderBtn } from "./library-filters";
 import { registerAlphaJumpHandler, syncLibraryAlphaRail } from "./library-alpha";
 import { buildLibraryGroups, getGroupByOptions, renderGroupedLibraryItems } from "./library-groups";
 import { effectiveReleaseYear, getSortOptions, libraryCollator, seriesSortKeys, titleComparator } from "./library-sort";
@@ -811,6 +811,14 @@ export function renderEpicItems(): string {
     if (S.query.trim()) {
       return emptyState("search", t("lib.noResults"), t("lib.noResultsHint"), `<button class="btn" data-act="lib-clear-search">${t("lib.clearSearch")}</button>`);
     }
+    if (libFiltersActiveCount() > 0) {
+      return emptyState(
+        "sliders",
+        t("lib.noResults"),
+        "",
+        `<button class="btn primary" data-act="lib-filter-clear">${icon("refresh", 14)} ${esc(t("lib.filterClear"))}</button>`,
+      );
+    }
     // Favorites empty: send the user back to the whole library, not the store.
     if (S.activeCollectionId === "fav") {
       return emptyState(
@@ -936,6 +944,7 @@ export function patchLibraryGridInPlace(): boolean {
     if (id) patchLibraryCardElement(item, id);
   }
   syncLibraryHeadingCount();
+  if (S.isFilterPanelOpen) repaintLibFilterPanel();
   return true;
 }
 
@@ -1166,30 +1175,47 @@ export function positionColDropdownMenu(): void {
   menu.style.top = `${Math.round(rect.bottom + 6)}px`;
 }
 
+/** Repaint the `#lib-filter-root` slide-over panel in place while open. */
+export function repaintLibFilterPanel(): void {
+  if (!S.isFilterPanelOpen) {
+    syncLibFilterHeaderBtn(Math.max(0, S.libraryVisibleCount));
+    return;
+  }
+  const base = libraryFilteredList();
+  const visibleCount = S.libraryVisibleCount >= 0 ? S.libraryVisibleCount : epicVisibleSummaries().length;
+  mountLibFilterPanel(base, Math.max(0, visibleCount));
+}
+
+/** Open the library filter slide-over panel without rebuilding `#view`. */
+export function openLibFilterPanel(): void {
+  if (S.view !== "library" || S.currentModalAppName) return;
+  S.isFilterPanelOpen = true;
+  S.isStoreDropdownOpen = false;
+  S.isSortDropdownOpen = false;
+  S.isColDropdownOpen = false;
+  S.isCoverSizeOpen = false;
+  document.getElementById("store-dropdown-menu")?.classList.remove("show");
+  document.getElementById("sort-dropdown-menu")?.classList.remove("show");
+  document.getElementById("col-dropdown-menu")?.classList.remove("show");
+  document.getElementById("cover-size-menu")?.classList.remove("show");
+  document.querySelector<HTMLElement>('[data-act="toggle-cover-size"]')?.setAttribute("aria-expanded", "false");
+  ensureGameRatingsLoaded();
+  repaintLibFilterPanel();
+}
+
+/** Toggle the `#lib-filter-root` slide-over panel from the `#page-header` button. */
+export function toggleLibFilterPanel(): void {
+  if (S.isFilterPanelOpen) closeLibFilterPanel();
+  else openLibFilterPanel();
+}
+
 /** Filter-button badge, panel result count and the clear button, in place. */
 export function syncLibFilterUi(): void {
-  const btn = document.querySelector<HTMLElement>('[data-act="toggle-lib-filters"]');
-  if (btn) {
-    const count = libFiltersActiveCount();
-    btn.classList.toggle("active", count > 0);
-    let badge = btn.querySelector<HTMLElement>(".lib-filter-badge");
-    if (count > 0) {
-      if (!badge) {
-        badge = document.createElement("span");
-        badge.className = "lib-filter-badge tabular-nums";
-        btn.appendChild(badge);
-      }
-      badge.textContent = String(count);
-    } else if (badge) {
-      badge.remove();
-    }
+  if (S.isFilterPanelOpen) {
+    repaintLibFilterPanel();
+    return;
   }
-  const resultEl = document.querySelector<HTMLElement>(".lib-filter-result");
-  if (resultEl) {
-    resultEl.textContent = t("lib.filterResults", { n: Math.max(0, S.libraryVisibleCount) });
-  }
-  const clearBtn = document.querySelector<HTMLButtonElement>('[data-act="lib-filter-clear"]');
-  if (clearBtn) clearBtn.disabled = libFiltersActiveCount() === 0;
+  syncLibFilterHeaderBtn(Math.max(0, S.libraryVisibleCount));
 }
 
 /**
@@ -1207,18 +1233,24 @@ export function refreshLibraryForStoreFilter(): boolean {
     return true;
   }
   const results = document.getElementById("lib-results");
-  const grid = results?.querySelector<HTMLElement>(".pgrid, .lib-list");
-  if (!results || !grid) return false;
+  if (!results) return false;
+  const grid = results.querySelector<HTMLElement>(".pgrid, .lib-list");
 
   invalidateLibraryVisibleCache();
   resetCardChunk();
   const visible = epicVisibleSummaries();
+  if (!grid || visible.length === 0) {
+    if (!refreshLibraryResultsInPlace()) return false;
+    viewEl.scrollTop = 0;
+    syncStoreFilterMenu();
+    syncLibFilterUi();
+    return true;
+  }
   const heading = document.getElementById("lib-heading-count");
   if (heading) {
     heading.textContent = t("lib.gameCount", { count: visible.length });
     heading.hidden = visible.length === 0;
   }
-  if (visible.length === 0) return false;
 
   lastResultKey = libraryResultKey();
   S.libPage = 1;
@@ -1374,13 +1406,6 @@ export function renderEpic(): string {
     },
   );
 
-  const filterCount = libFiltersActiveCount();
-  const filterButton = LIB_FILTERS_ENABLED
-    ? `<button class="btn ghost lib-sort-btn lib-filter-btn${filterCount > 0 ? " active" : ""}" data-act="toggle-lib-filters" title="${esc(t("lib.filters"))}">
-      <span class="lib-sort-kicker">${icon("sliders", 13)} ${esc(t("lib.filters"))}</span>
-      ${filterCount > 0 ? `<span class="lib-filter-badge tabular-nums">${filterCount}</span>` : ""}
-    </button>`
-    : "";
   const densityLabel = S.epicViewMode === "list" ? t("lib.listDensity") : t("lib.coverSize");
   const tools = `
     <button class="icon-btn lib-create-btn" data-act="open-add-custom-game-modal" title="${esc(t("customGames.addTitle"))}" aria-label="${esc(t("customGames.addTitle"))}">
@@ -1390,7 +1415,6 @@ export function renderEpic(): string {
       ${icon("folder", 17)}
     </button>
     ${sourceDropdown}
-    ${filterButton}
     <div class="sort-dropdown-container">
       <button class="btn ghost lib-sort-btn lib-sort-trigger${S.libGroupBy !== "none" ? " has-group" : ""}" data-act="toggle-sort-dropdown" title="${t("lib.sortTip", { label: esc(sortTriggerLabel) })}">
         <span class="lib-sort-icon">${icon("arrow-down-a-z", 13)}</span>
@@ -1441,12 +1465,15 @@ export function renderEpic(): string {
     colDropdown,
   ].join("");
 
+  if (S.isFilterPanelOpen) {
+    requestAnimationFrame(() => repaintLibFilterPanel());
+  }
+
   return `
     <div class="page lib-page">
       ${libraryHeader(tools, filters)}
       ${S.epicSyncNote ? `<p class="page-sub" id="lib-sync-note">${esc(S.epicSyncNote)}</p>` : ""}
       <div id="lib-results">${renderEpicItems()}</div>
-      ${LIB_FILTERS_ENABLED ? renderLibFilterPanel(S.isFilterPanelOpen ? libraryFilteredList() : [], Math.max(0, S.libraryVisibleCount)) : ""}
     </div>`;
 }
 
@@ -1500,6 +1527,7 @@ export function updateLibraryFilterInPlace(): boolean {
   document.querySelectorAll<HTMLElement>('#sort-dropdown-menu [data-act="select-group-by"]').forEach((optEl) => {
     optEl.classList.toggle("selected", optEl.dataset.groupBy === S.libGroupBy);
   });
+  syncLibFilterUi();
   return true;
 }
 

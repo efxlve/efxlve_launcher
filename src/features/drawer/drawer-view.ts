@@ -25,7 +25,7 @@ import {
   storeSteamAppIdFor,
 } from "../../core/store-achievement-prefs";
 import { emptyPanel, emptyState, epicPlatinumIcon, filledTrophy, icon, loadingState, platinumCup, type IconName } from "../../core/icons";
-import { updateNavHistoryUi } from "../../core/nav";
+import { updateNavHistoryUi, updatePageHeader } from "../../core/nav";
 import { cachedImage, warmImages, IMAGE_COVER_WIDTH, IMAGE_HERO_WIDTH, IMAGE_SHOT_WIDTH } from "../../core/picture-cache";
 import { recordSessionSummary, sessionSummaryFor, sessionWhen } from "../../core/session-summary";
 import { cachedSteamCover, cachedSteamHero, cachedSteamLogo, isFlatSteamArt, rememberSteamCover, rememberSteamHero, rememberSteamLogo } from "../../core/steam-art-cache";
@@ -1551,6 +1551,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
     void hydrateAntiCheatChip(appName);
   }
   syncSidebarGameActive();
+  updatePageHeader();
   updateGamepadHud(S.gamepadPolling);
   presenceSync();
   updateNavHistoryUi();

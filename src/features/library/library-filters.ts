@@ -295,13 +295,13 @@ function facetSection(title: string, body: string, hint = ""): string {
     </section>`;
 }
 
-function facetSearch(placeholder: string): string {
-  return `<input type="search" class="input lib-facet-search" data-facet-search="1" placeholder="${esc(placeholder)}" spellcheck="false" autocomplete="off" />`;
+function facetSearch(placeholder: string, group: keyof LibFilters): string {
+  return `<input type="search" class="input lib-facet-search" data-facet-search="${group}" placeholder="${esc(placeholder)}" spellcheck="false" autocomplete="off" />`;
 }
 
 function facetList(entries: FacetEntry[], group: keyof LibFilters, on: (value: string) => boolean): string {
   if (entries.length === 0) return "";
-  const search = entries.length >= 8 ? facetSearch(t("lib.filterSearch")) : "";
+  const search = entries.length >= 8 ? facetSearch(t("lib.filterSearch"), group) : "";
   const rows = entries.map((entry) => facetButton(group, entry.value, entry.value, entry.count, on(entry.value))).join("");
   return `${search}${rows}`;
 }
@@ -321,14 +321,12 @@ const YEAR_FACET_ORDER: { id: LibYearBucket; label: () => string }[] = [
 ];
 
 /**
- * Slide-over panel markup. `base` is the library list before facet filtering,
- * so the counts never collapse while a filter is selected.
+ * Inner facet sections markup. `base` is the library list before facet
+ * filtering, so counts stay stable while facets are toggled.
  */
-export function renderLibFilterPanel(base: EpicSummary[], resultCount: number): string {
-  if (!LIB_FILTERS_ENABLED || !S.isFilterPanelOpen) return "";
+export function renderLibFilterBody(base: EpicSummary[]): string {
   const facets = libFacets(base);
   const f = S.libFilters;
-  const active = libFiltersActiveCount();
 
   const status = facetSection(
     t("lib.filterStatus"),
@@ -377,6 +375,17 @@ export function renderLibFilterPanel(base: EpicSummary[], resultCount: number): 
   const devBody = facetList(facets.developers, "developers", (value) => f.developers.has(value));
   const developer = devBody ? facetSection(t("lib.filterDeveloper"), devBody) : "";
 
+  return `${status}${playtime}${size}${genre}${year}${rating}${developer}`;
+}
+
+/**
+ * Slide-over panel markup. `base` is the library list before facet filtering,
+ * so the counts never collapse while a filter is selected.
+ */
+export function renderLibFilterPanel(base: EpicSummary[], resultCount: number): string {
+  if (!LIB_FILTERS_ENABLED || !S.isFilterPanelOpen) return "";
+  const active = libFiltersActiveCount();
+
   return `
     <div class="lib-filter-backdrop" data-act="lib-filter-close"></div>
     <aside class="lib-filter-panel" role="dialog" aria-label="${esc(t("lib.filters"))}">
@@ -388,17 +397,109 @@ export function renderLibFilterPanel(base: EpicSummary[], resultCount: number): 
         <button class="icon-btn" data-act="lib-filter-close" title="${esc(t("common.close"))}" aria-label="${esc(t("common.close"))}">${icon("x", 16)}</button>
       </div>
       <div class="lib-filter-body">
-        ${status}
-        ${playtime}
-        ${size}
-        ${genre}
-        ${year}
-        ${rating}
-        ${developer}
+        ${renderLibFilterBody(base)}
       </div>
       <div class="lib-filter-foot">
         <button class="btn ghost small" data-act="lib-filter-clear" ${active > 0 ? "" : "disabled"}>${icon("refresh", 13)} ${esc(t("lib.filterClear"))}</button>
         <button class="btn primary small" data-act="lib-filter-close">${esc(t("common.close"))}</button>
       </div>
     </aside>`;
+}
+
+/** Sync the `#page-header` filter button, active badge, and open drawer counters. */
+export function syncLibFilterHeaderBtn(resultCount = Math.max(0, S.libraryVisibleCount)): void {
+  const count = libFiltersActiveCount();
+  const showOnHeader = LIB_FILTERS_ENABLED && S.view === "library" && !S.currentModalAppName;
+  const btn = document.getElementById("lib-header-filter-btn");
+  if (btn) {
+    btn.hidden = !showOnHeader;
+    btn.classList.toggle("active", count > 0);
+    btn.classList.toggle("is-open", showOnHeader && S.isFilterPanelOpen);
+    btn.setAttribute("aria-expanded", String(showOnHeader && S.isFilterPanelOpen));
+  }
+  const badge = document.getElementById("lib-header-filter-badge");
+  if (badge) {
+    badge.hidden = count === 0;
+    if (count > 0) badge.textContent = String(count);
+  }
+  const root = document.getElementById("lib-filter-root");
+  if (root && S.isFilterPanelOpen) {
+    const resultEl = root.querySelector<HTMLElement>(".lib-filter-result");
+    if (resultEl) {
+      resultEl.textContent = t("lib.filterResults", { n: Math.max(0, resultCount) });
+    }
+    const clearBtn = root.querySelector<HTMLButtonElement>('[data-act="lib-filter-clear"]');
+    if (clearBtn) clearBtn.disabled = count === 0;
+  }
+}
+
+/**
+ * Mounts or patches `#lib-filter-root` in place without touching `#view` or
+ * replaying the drawer entrance animation when already open.
+ */
+export function mountLibFilterPanel(base: EpicSummary[], resultCount: number): void {
+  const root = document.getElementById("lib-filter-root");
+  if (!root) {
+    syncLibFilterHeaderBtn(resultCount);
+    return;
+  }
+  if (!LIB_FILTERS_ENABLED || !S.isFilterPanelOpen || S.view !== "library" || Boolean(S.currentModalAppName)) {
+    S.isFilterPanelOpen = false;
+    if (root.innerHTML) root.innerHTML = "";
+    syncLibFilterHeaderBtn(resultCount);
+    return;
+  }
+  const existingBody = root.querySelector<HTMLElement>(".lib-filter-panel .lib-filter-body");
+  if (existingBody) {
+    const scrollTop = existingBody.scrollTop;
+    const queries = new Map<string, string>();
+    existingBody.querySelectorAll<HTMLInputElement>("input[data-facet-search]").forEach((inp) => {
+      if (inp.dataset.facetSearch && inp.value) {
+        queries.set(inp.dataset.facetSearch, inp.value);
+      }
+    });
+    const activeEl = document.activeElement instanceof HTMLInputElement ? document.activeElement : null;
+    const focusedGroup = activeEl?.dataset.facetSearch || "";
+    const selStart = activeEl?.selectionStart ?? null;
+    const selEnd = activeEl?.selectionEnd ?? null;
+
+    existingBody.innerHTML = renderLibFilterBody(base);
+    existingBody.scrollTop = scrollTop;
+
+    for (const [group, val] of queries) {
+      const inp = existingBody.querySelector<HTMLInputElement>(`input[data-facet-search="${group}"]`);
+      if (!inp) continue;
+      inp.value = val;
+      const q = val.trim().toLowerCase();
+      inp.closest(".lib-filter-section")?.querySelectorAll<HTMLElement>("[data-facet-name]").forEach((row) => {
+        row.hidden = q.length > 0 && !(row.dataset.facetName || "").includes(q);
+      });
+    }
+    if (focusedGroup) {
+      const focusTarget = existingBody.querySelector<HTMLInputElement>(`input[data-facet-search="${focusedGroup}"]`);
+      if (focusTarget) {
+        focusTarget.focus({ preventScroll: true });
+        if (selStart !== null && selEnd !== null) {
+          try {
+            focusTarget.setSelectionRange(selStart, selEnd);
+          } catch {
+            /* type="search" in some engines */
+          }
+        }
+      }
+    }
+    syncLibFilterHeaderBtn(resultCount);
+    return;
+  }
+
+  root.innerHTML = renderLibFilterPanel(base, resultCount);
+  syncLibFilterHeaderBtn(resultCount);
+}
+
+/** Close the library filter slide-over panel without rebuilding the cover grid. */
+export function closeLibFilterPanel(): void {
+  S.isFilterPanelOpen = false;
+  const root = document.getElementById("lib-filter-root");
+  if (root && root.innerHTML) root.innerHTML = "";
+  syncLibFilterHeaderBtn();
 }

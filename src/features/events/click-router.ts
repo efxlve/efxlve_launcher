@@ -112,11 +112,13 @@ import {
   jumpToLibraryLetter,
   refreshLibraryForStoreFilter,
   refreshLibraryResultsInPlace,
+  repaintLibFilterPanel,
   resetCardChunk,
   syncLibFilterUi,
+  toggleLibFilterPanel,
   updateLibraryFilterInPlace,
 } from "../library/library-view";
-import { clearLibFilters, toggleLibFilter } from "../library/library-filters";
+import { clearLibFilters, closeLibFilterPanel, toggleLibFilter } from "../library/library-filters";
 import { clearReleaseCalendarSearch, closeReleaseCalendar, closeReleaseStores, isReleaseStoresOpen, openReleaseCalendar, openReleaseCalendarSearch, openReleaseCalendarWatchlist, openReleaseStores, refreshReleaseCalendar, setReleaseCalendarDay, setReleaseCalendarMonth, stepReleaseCalendarMonth, toggleReleaseFollow, toggleReleaseWatchlist } from "../library/release-calendar";
 import { handleLibraryOptionAction, syncDensityControl, syncDensityMenu } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
@@ -642,26 +644,19 @@ document.addEventListener("click", (e) => {
   } else if (act === "lib-alpha-jump") {
     jumpToLibraryLetter(Number(t.dataset.index));
   } else if (act === "toggle-lib-filters") {
-    S.isFilterPanelOpen = !S.isFilterPanelOpen;
-    S.isStoreDropdownOpen = false;
-    S.isSortDropdownOpen = false;
-    S.isColDropdownOpen = false;
-    render();
+    toggleLibFilterPanel();
   } else if (act === "lib-filter-close") {
-    if (S.isFilterPanelOpen) {
-      S.isFilterPanelOpen = false;
-      render();
-    }
+    closeLibFilterPanel();
   } else if (act === "lib-filter-clear") {
     clearLibFilters();
-    if (!refreshLibraryForStoreFilter()) render();
-    syncLibFilterUi();
+    if (!refreshLibraryForStoreFilter() && !refreshLibraryResultsInPlace()) render();
+    repaintLibFilterPanel();
   } else if (act === "lib-filter-toggle") {
     const group = t.dataset.group as keyof typeof S.libFilters | undefined;
     const value = t.dataset.value;
     if (group && value && toggleLibFilter(group, value)) {
-      if (!refreshLibraryForStoreFilter()) render();
-      syncLibFilterUi();
+      if (!refreshLibraryForStoreFilter() && !refreshLibraryResultsInPlace()) render();
+      repaintLibFilterPanel();
     }
   } else if (act === "toggle-col-dropdown") {
     S.isColDropdownOpen = !S.isColDropdownOpen;

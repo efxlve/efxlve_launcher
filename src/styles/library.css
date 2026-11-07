@@ -2092,9 +2092,21 @@ html[dir="rtl"] #content.has-lib-alpha > #view { padding-right: 28px; padding-le
 
 /* --- Advanced filters slide-over --- */
 .lib-filter-btn.active { color: var(--accent); }
-.lib-filter-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--accent); color: var(--bg); font-size: 10px; font-weight: 700; }
-.lib-filter-backdrop { position: fixed; inset: 0; z-index: 250; background: rgba(0, 0, 0, 0.45); }
-.lib-filter-panel { position: fixed; top: 0; right: 0; bottom: 0; z-index: 251; width: 340px; max-width: 92vw; display: flex; flex-direction: column; background: var(--surface-1); border-left: 1px solid var(--line); box-shadow: -18px 0 40px rgba(0, 0, 0, 0.35); }
+.lib-filter-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--accent); color: var(--on-accent, var(--bg)); font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.lib-filter-badge[hidden] { display: none !important; }
+.lib-filter-backdrop { position: fixed; inset: var(--winbar-h) 0 0 0; z-index: 250; background: rgba(0, 0, 0, 0.45); animation: fade-in 140ms ease-out; }
+.lib-filter-panel { position: fixed; top: var(--winbar-h); right: 0; bottom: 0; z-index: 251; width: 340px; max-width: 92vw; display: flex; flex-direction: column; background: var(--surface-1); border-left: 1px solid var(--line); box-shadow: -18px 0 40px rgba(0, 0, 0, 0.35); animation: lib-filter-slide-in 180ms cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes lib-filter-slide-in {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+html[dir="rtl"] .lib-filter-panel { right: auto; left: 0; border-left: none; border-right: 1px solid var(--line); box-shadow: 18px 0 40px rgba(0, 0, 0, 0.35); }
+html.reduce-effects .lib-filter-backdrop,
+html.reduce-effects .lib-filter-panel { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .lib-filter-backdrop,
+  .lib-filter-panel { animation: none !important; }
+}
 .lib-filter-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 14px 10px; border-bottom: 1px solid var(--line); }
 .lib-filter-head-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .lib-filter-title-main { margin: 0; font-size: 15px; font-weight: 600; }

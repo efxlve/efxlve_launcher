@@ -166,6 +166,33 @@ export function updatePageHeader(): void {
       if (wasHidden) requestAnimationFrame(() => syncStoreTabsPill());
     }
   }
+  const showLibFilters = S.view === "library" && !S.currentModalAppName;
+  if (!showLibFilters && S.isFilterPanelOpen) {
+    S.isFilterPanelOpen = false;
+    const filterRoot = document.getElementById("lib-filter-root");
+    if (filterRoot) filterRoot.innerHTML = "";
+  }
+  const libFilterBtn = document.getElementById("lib-header-filter-btn");
+  if (libFilterBtn) {
+    const f = S.libFilters;
+    const filterCount =
+      f.status.size +
+      f.playtime.size +
+      f.size.size +
+      f.genres.size +
+      f.years.size +
+      f.ratings.size +
+      f.developers.size;
+    libFilterBtn.hidden = !showLibFilters;
+    libFilterBtn.classList.toggle("active", filterCount > 0);
+    libFilterBtn.classList.toggle("is-open", showLibFilters && S.isFilterPanelOpen);
+    libFilterBtn.setAttribute("aria-expanded", String(showLibFilters && S.isFilterPanelOpen));
+    const badge = document.getElementById("lib-header-filter-badge");
+    if (badge) {
+      badge.hidden = filterCount === 0;
+      if (filterCount > 0) badge.textContent = String(filterCount);
+    }
+  }
   const back = document.getElementById("nav-back-btn") as HTMLButtonElement | null;
   if (back) back.disabled = !S.currentModalAppName && !canNavBack();
 }

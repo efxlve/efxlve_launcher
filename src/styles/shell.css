@@ -1010,6 +1010,21 @@ html.sb-narrow .sb-toggle-label {
 .page-calendar-btn:hover { border-color: var(--line-strong); background: var(--surface-2); color: var(--text); }
 html.win-compact .page-calendar-btn { width: 36px; padding: 0; justify-content: center; }
 html.win-compact .page-calendar-btn span { display: none; }
+.page-filter-btn {
+  display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px;
+  border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-1);
+  color: var(--text-2); font-size: 13.5px; font-weight: 500; font-family: inherit;
+  white-space: nowrap; flex-shrink: 0; cursor: pointer;
+  transition: border-color var(--ease), background-color var(--ease), color var(--ease);
+}
+.page-filter-btn[hidden] { display: none !important; }
+.page-filter-btn:hover,
+.page-filter-btn.is-open { border-color: var(--line-strong); background: var(--surface-2); color: var(--text); }
+.page-filter-btn.active { border-color: color-mix(in srgb, var(--accent) 52%, var(--line)); color: var(--accent); }
+.page-filter-btn.active:hover,
+.page-filter-btn.active.is-open { border-color: var(--accent); background: var(--accent-tint); color: var(--accent); }
+html.win-compact .page-filter-btn { min-width: 36px; padding: 0 9px; justify-content: center; }
+html.win-compact .page-filter-btn .page-filter-label { display: none; }
 .page-search {
   display: flex; align-items: center; gap: 8px; width: 260px; height: 36px; padding: 0 12px;
   border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-1);

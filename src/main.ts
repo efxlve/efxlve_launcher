@@ -38,6 +38,7 @@ import { closeHideGamesModal } from "./features/library/hide-games";
 import { closeReleaseCalendar } from "./features/library/release-calendar";
 import { hideLibraryAlphaRail } from "./features/library/library-alpha";
 import { closeSortNameModal } from "./features/library/sort-name";
+import { closeLibFilterPanel } from "./features/library/library-filters";
 import { closeHideAchievementsModal } from "./features/profile/hide-achievements";
 import { patchLibraryGridInPlace, positionColDropdownMenu, renderEpic, setupLibScrollObserver } from "./features/library/library-view";
 import { renderAccounts } from "./features/accounts/accounts-view";
@@ -135,7 +136,10 @@ function render(): void {
   // The Discord child is a full client renderer: it is destroyed on leave, not
   // kept warm. This must also run before the early returns below.
   if (S.view !== "discord") destroyDiscordPage();
-  if (S.view !== "library") hideLibraryAlphaRail();
+  if (S.view !== "library") {
+    hideLibraryAlphaRail();
+    if (S.isFilterPanelOpen) closeLibFilterPanel();
+  }
 
   // Page-enter animation only on a real view change. The class is dropped
   // first: a re-render landing while the previous animation still runs would
@@ -233,6 +237,7 @@ function closeAllModals(): void {
   closeAddCustomGameModal();
   closeManagePopup();
   closeSortNameModal();
+  closeLibFilterPanel();
   closeChangelogModal();
   closeReleaseCalendar();
   if (selectiveRoot) selectiveRoot.innerHTML = "";
