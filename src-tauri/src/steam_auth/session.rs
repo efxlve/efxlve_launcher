@@ -667,9 +667,12 @@ pub async fn steam_owned_games(app: tauri::AppHandle, force: Option<bool>) -> Re
     // Steam's list only changes when the user buys something, and the call takes
     // seconds: a day-long disk cache makes every start after the first instant.
     // The manual refresh passes `force` to bypass it.
+    let previous = read_owned_cache_entry(&app, &steam_id);
     if !force.unwrap_or(false) {
-        if let Some(cached_games) = read_owned_cache(&app, &steam_id) {
-            return Ok(cached_games);
+        if let Some(ref entry) = previous {
+            if cache_is_fresh(entry) {
+                return Ok(entry.games.clone());
+            }
         }
     }
 
@@ -689,23 +692,38 @@ pub async fn steam_owned_games(app: tauri::AppHandle, force: Option<bool>) -> Re
     // The player service omits free licenses the account claimed but never
     // launched. The client's own app list still has them. Merge best-effort,
     // with a sanity cap so a catalog-sized response can never flood the library.
-    if let Ok(extra) = fetch_client_apps(&client, &token).await {
-        let cap = games.games.len().saturating_mul(2).saturating_add(5_000);
-        if extra.len() <= cap {
-            let mut known: std::collections::HashSet<String> =
-                games.games.iter().map(|g| g.app_id.clone()).collect();
-            for game in extra {
-                if known.insert(game.app_id.clone()) {
-                    games.games.push(game);
-                }
+    // When the client is closed, keep the extras discovered by an earlier pass:
+    // a Steam-closed refresh must not drop free licenses from the library.
+    let cap = games.games.len().saturating_mul(2).saturating_add(5_000);
+    let client_list = match fetch_client_apps(&client, &token).await {
+        Ok(extra) if !extra.is_empty() && extra.len() <= cap => Some(extra),
+        _ => None,
+    };
+    let mut client_extras: Vec<SteamOwnedGame> = Vec::new();
+    if let Some(extra) = client_list {
+        let mut known: std::collections::HashSet<String> =
+            games.games.iter().map(|g| g.app_id.clone()).collect();
+        for game in extra {
+            if known.insert(game.app_id.clone()) {
+                client_extras.push(game.clone());
+                games.games.push(game);
             }
-            games
-                .games
-                .sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-            games.game_count = games.games.len() as i64;
+        }
+    } else if let Some(ref entry) = previous {
+        client_extras = entry.client_extras.clone();
+        let mut known: std::collections::HashSet<String> =
+            games.games.iter().map(|g| g.app_id.clone()).collect();
+        for game in &client_extras {
+            if known.insert(game.app_id.clone()) {
+                games.games.push(game.clone());
+            }
         }
     }
-    write_owned_cache(&app, &steam_id, &games);
+    games
+        .games
+        .sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    games.game_count = games.games.len() as i64;
+    write_owned_cache(&app, &steam_id, &games, &client_extras);
     Ok(games)
 }
 
@@ -727,6 +745,10 @@ struct OwnedCache {
     steam_id: String,
     at: u64,
     games: SteamOwnedGames,
+    /// Client-list games missing from the player-service list. They survive a
+    /// refresh performed while the Steam client is closed.
+    #[serde(default)]
+    client_extras: Vec<SteamOwnedGame>,
 }
 
 fn owned_cache_path(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
@@ -736,21 +758,26 @@ fn owned_cache_path(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
         .map(|dir| dir.join("steam").join("owned_games.json"))
 }
 
-fn read_owned_cache(app: &tauri::AppHandle, steam_id: &str) -> Option<SteamOwnedGames> {
+fn read_owned_cache_entry(app: &tauri::AppHandle, steam_id: &str) -> Option<OwnedCache> {
     let path = owned_cache_path(app)?;
     let raw = std::fs::read(path).ok()?;
     let cache: OwnedCache = serde_json::from_slice(&raw).ok()?;
-    if cache.version != OWNED_CACHE_VERSION || cache.steam_id != steam_id {
-        return None;
-    }
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .ok()?
-        .as_secs();
-    (now.saturating_sub(cache.at) < OWNED_CACHE_TTL_SECS).then_some(cache.games)
+    (cache.version == OWNED_CACHE_VERSION && cache.steam_id == steam_id).then_some(cache)
 }
 
-fn write_owned_cache(app: &tauri::AppHandle, steam_id: &str, games: &SteamOwnedGames) {
+fn cache_is_fresh(cache: &OwnedCache) -> bool {
+    let Ok(now) = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH) else {
+        return false;
+    };
+    now.as_secs().saturating_sub(cache.at) < OWNED_CACHE_TTL_SECS
+}
+
+fn write_owned_cache(
+    app: &tauri::AppHandle,
+    steam_id: &str,
+    games: &SteamOwnedGames,
+    client_extras: &[SteamOwnedGame],
+) {
     let Some(path) = owned_cache_path(app) else {
         return;
     };
@@ -766,6 +793,7 @@ fn write_owned_cache(app: &tauri::AppHandle, steam_id: &str, games: &SteamOwnedG
         steam_id: steam_id.to_string(),
         at: now,
         games: games.clone(),
+        client_extras: client_extras.to_vec(),
     };
     if let Ok(raw) = serde_json::to_vec(&cache) {
         let _ = std::fs::write(path, raw);
