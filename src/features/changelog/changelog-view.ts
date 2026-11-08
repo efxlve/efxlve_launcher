@@ -30,6 +30,36 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.49",
+    date: "2026-11-08",
+    added: [
+      {
+        en: "Five hand-drawn themes — Quarantine Protocol, Synthetic Soul, Ashen Sanctum, Resonance Core and Autumn Homestead — each with its own vector scene, palette and type treatment.",
+        tr: "Beş el çizimi tema eklendi — Quarantine Protocol, Synthetic Soul, Ashen Sanctum, Resonance Core ve Autumn Homestead; her birinin kendi vektör sahnesi, paleti ve tipografisi var.",
+      },
+      {
+        en: "Downloads settings has a bandwidth limit that caps Epic Games downloads to a chosen Mbit/s; 0 keeps them unlimited.",
+        tr: "İndirmeler ayarlarına bant genişliği sınırı eklendi; Epic Games indirmelerini seçilen Mbit/s değerine sabitliyor, 0 sınırsız bırakıyor.",
+      },
+    ],
+    improved: [
+      {
+        en: "Theme scrollbars stay visible on dark scenes, duplicating a theme keeps its exact tokens, and the scene art no longer carries third-party marks.",
+        tr: "Tema kaydırma çubukları koyu sahnelerde görünür kalıyor, bir temayı kopyalamak birebir tokenlarını koruyor ve sahne görselleri artık üçüncü taraf işaretleri taşımıyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "A game that is already installed now counts as meeting its disk-space requirement instead of asking for the same space again.",
+        tr: "Zaten kurulu bir oyun, aynı alanı yeniden istemek yerine disk alanı gereksinimini karşılamış sayılıyor.",
+      },
+      {
+        en: "Custom cover, hero and logo images are downscaled and re-encoded before saving, so a large photo no longer fills the storage quota and silently stops the save.",
+        tr: "Özel kapak, hero ve logo görselleri kaydedilmeden önce küçültülüp yeniden kodlanıyor; büyük bir fotoğraf artık depolama kotasını doldurup kaydı sessizce durdurmuyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.48",
     date: "2026-11-08",
     added: [
