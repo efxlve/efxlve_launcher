@@ -563,7 +563,7 @@
   gap: 14px;
   overflow-x: auto;
   padding-bottom: 8px;
-  scrollbar-width: thin;
+  /* WebKit scrollbar active */
   animation: profile-fade-slide 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 

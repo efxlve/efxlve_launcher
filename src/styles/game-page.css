@@ -8,19 +8,29 @@
   position: fixed; top: var(--winbar-h); left: var(--sidebar-w); right: 0; bottom: 0; z-index: 50;
   background: var(--bg); overflow-y: auto; overflow-x: hidden;
   scrollbar-gutter: stable;
-  /* The global `scrollbar-width: thin` makes WebView2 use auto-hiding overlay
-     scrollbars; the game page needs a visible right-edge track. */
-  scrollbar-width: auto;
-  scrollbar-color: var(--scrollbar-thumb) transparent;
   transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
+@supports not selector(::-webkit-scrollbar) {
+  .overlay {
+    scrollbar-width: auto;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+}
 .overlay::-webkit-scrollbar { width: 10px; }
-.overlay::-webkit-scrollbar-track { background: transparent; }
+.overlay::-webkit-scrollbar-track {
+  background: var(--scrollbar-track, rgba(0, 0, 0, 0.22));
+}
 .overlay::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
-  border-radius: 5px;
+  border-radius: var(--r-sm, 5px);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
-.overlay::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+.overlay::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
 
 /* The game page is an opaque fixed layer over the library. Hide the library
    while it is open so a sidebar resize repaint cannot flash it through. */
@@ -3691,7 +3701,7 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   top: 16px;
   max-height: calc(100vh - 148px);
   overflow-y: auto;
-  scrollbar-width: thin;
+  /* Fallback for non-WebKit browsers */
   scrollbar-color: var(--line-strong) transparent;
 }
 

@@ -28,8 +28,8 @@
   --err: #b91c1c;
   --err-tint: rgba(185, 28, 28, 0.1);
   --shadow-pop: 0 12px 32px rgba(15, 23, 42, 0.14);
-  --scrollbar-thumb: rgba(15, 23, 42, 0.22);
-  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.36);
+  --scrollbar-thumb: rgba(15, 23, 42, 0.32);
+  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.55);
 }
 
 :root[data-surface="white"] body { background: var(--bg); }
@@ -271,6 +271,10 @@
 :root[data-surface="white"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
   background: var(--surface-2);
   border-color: var(--line-strong);
+}
+:root[data-surface="white"] .overlay::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.05);
+  border-left: 1px solid rgba(15, 23, 42, 0.08);
 }
 :root[data-surface="white"] .store-tabs {
   background: var(--surface-2);
@@ -591,8 +595,8 @@
   --aero-gloss-blue-hover: linear-gradient(180deg, #c4ecff 0%, #74caf7 48%, #2ba0ec 50%, #1a88d8 100%);
   --aero-gloss-white: linear-gradient(180deg, #ffffff 0%, #f4f9fd 48%, #e2eef8 50%, #eef6fc 100%);
   --aero-gloss-hover: linear-gradient(180deg, #f6fcff 0%, #e2f4fe 48%, #c8e9fc 50%, #e1f4fe 100%);
-  --scrollbar-thumb: rgba(13, 47, 79, 0.24);
-  --scrollbar-thumb-hover: rgba(13, 47, 79, 0.4);
+  --scrollbar-thumb: rgba(13, 47, 79, 0.38);
+  --scrollbar-thumb-hover: rgba(13, 47, 79, 0.65);
 }
 
 /* Backdrop. The SVG is drawn at viewport size, so every layer that repaints
@@ -617,7 +621,11 @@
   transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
 
-:root[data-surface="gloss"] * { scrollbar-color: var(--scrollbar-thumb) transparent; }
+/* Gloss theme scrollbar */
+:root[data-surface="gloss"] .overlay::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.35);
+  border-left: 1px solid rgba(16, 78, 130, 0.12);
+}
 
 /* Window bar: Aero caption glass with the sheen line across its middle. */
 :root[data-surface="gloss"] #winbar {
@@ -1621,8 +1629,8 @@
   --r-sm: 5px;
   --r-md: 9px;
   --shadow-pop: 0 18px 44px rgba(0, 12, 4, 0.6);
-  --scrollbar-thumb: rgba(155, 212, 74, 0.24);
-  --scrollbar-thumb-hover: rgba(155, 212, 74, 0.42);
+  --scrollbar-thumb: rgba(155, 212, 74, 0.45);
+  --scrollbar-thumb-hover: rgba(155, 212, 74, 0.85);
   --x360-gloss: linear-gradient(180deg, #d8f7a0 0%, #a6dc52 46%, #7fbd2e 50%, #6ca726 100%);
   --x360-gloss-hover: linear-gradient(180deg, #e6ffb8 0%, #b7ea63 46%, #8ecb37 50%, #79b52b 100%);
   --x360-glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -1647,7 +1655,11 @@
   transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
 
-:root[data-surface="blades"] * { scrollbar-color: var(--scrollbar-thumb) transparent; }
+/* Blades theme scrollbar */
+:root[data-surface="blades"] .overlay::-webkit-scrollbar-track {
+  background: rgba(7, 24, 13, 0.55);
+  border-left: 1px solid rgba(155, 212, 74, 0.16);
+}
 
 /* Window bar: 360 header blade with specular highlight and glossy beta pill */
 :root[data-surface="blades"] #winbar {
@@ -2005,8 +2017,8 @@
   --r-md: 3px;
   --r-lg: 4px;
   --shadow-pop: 0 18px 44px rgba(0, 0, 0, 0.85);
-  --scrollbar-thumb: rgba(252, 238, 10, 0.22);
-  --scrollbar-thumb-hover: rgba(252, 238, 10, 0.42);
+  --scrollbar-thumb: rgba(252, 238, 10, 0.55);
+  --scrollbar-thumb-hover: #fcee0a;
 }
 
 :root[data-surface="neongrid"] body {
@@ -2028,7 +2040,30 @@
   transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
 
-:root[data-surface="neongrid"] * { scrollbar-color: var(--scrollbar-thumb) transparent; }
+/* Neon Grid (Cyberpunk) Custom Visible High-Tech Scrollbars */
+:root[data-surface="neongrid"] ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 2px;
+  box-shadow: 0 0 6px rgba(252, 238, 10, 0.25);
+}
+:root[data-surface="neongrid"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 10px rgba(252, 238, 10, 0.6);
+}
+:root[data-surface="neongrid"] .overlay::-webkit-scrollbar-track {
+  background: rgba(7, 8, 10, 0.7);
+  border-left: 1px solid rgba(252, 238, 10, 0.15);
+}
+:root[data-surface="neongrid"] .overlay::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 2px;
+  border: 1px solid rgba(252, 238, 10, 0.35);
+  box-shadow: 0 0 8px rgba(252, 238, 10, 0.35);
+}
+:root[data-surface="neongrid"] .overlay::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 14px rgba(252, 238, 10, 0.75);
+}
 
 /* Neon Grid Window Bar */
 :root[data-surface="neongrid"] #winbar {
@@ -2415,4 +2450,115 @@ html[data-surface="gloss"][data-game-scene="on"] .lib-filter-panel {
 html[data-surface="white"][data-game-scene="on"] #game-scene,
 html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   filter: blur(52px) saturate(1.1) brightness(1.06);
+}
+
+
+/* ==========================================================================
+   Game-Inspired Themes: Component & Scrollbar Refinements
+   ========================================================================== */
+
+/* ---------- Biohazard (Resident Evil Inspired) ---------- */
+:root[data-surface="biohazard"] .overlay::-webkit-scrollbar-track {
+  background: rgba(8, 10, 12, 0.7);
+  border-left: 1px solid rgba(220, 38, 38, 0.16);
+}
+:root[data-surface="biohazard"] .overlay::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 2px;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  box-shadow: 0 0 6px rgba(220, 38, 38, 0.25);
+}
+:root[data-surface="biohazard"] .overlay::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.65);
+}
+:root[data-surface="biohazard"] :is(.btn.primary, .btn.play) {
+  box-shadow: 0 0 14px rgba(220, 38, 38, 0.35);
+}
+:root[data-surface="biohazard"] :is(.btn.primary, .btn.play):hover {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+}
+
+/* ---------- Cyberlife (Detroit: Become Human Inspired) ---------- */
+:root[data-surface="cyberlife"] .overlay::-webkit-scrollbar-track {
+  background: rgba(8, 12, 20, 0.7);
+  border-left: 1px solid rgba(0, 162, 255, 0.16);
+}
+:root[data-surface="cyberlife"] .overlay::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+  border: 1px solid rgba(0, 162, 255, 0.3);
+  box-shadow: 0 0 6px rgba(0, 162, 255, 0.25);
+}
+:root[data-surface="cyberlife"] .overlay::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.7);
+}
+:root[data-surface="cyberlife"] :is(.btn.primary, .btn.play) {
+  box-shadow: 0 0 14px rgba(0, 162, 255, 0.35);
+}
+:root[data-surface="cyberlife"] :is(.btn.primary, .btn.play):hover {
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.65);
+}
+
+/* ---------- Outlaw Frontier (Red Dead Redemption Inspired) ---------- */
+:root[data-surface="redemption"] .overlay::-webkit-scrollbar-track {
+  background: rgba(15, 12, 10, 0.7);
+  border-left: 1px solid rgba(217, 56, 41, 0.18);
+}
+:root[data-surface="redemption"] .overlay::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+  border: 1px solid rgba(217, 56, 41, 0.3);
+}
+:root[data-surface="redemption"] .overlay::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 10px rgba(230, 81, 64, 0.6);
+}
+:root[data-surface="redemption"] :is(.btn.primary, .btn.play) {
+  box-shadow: 0 0 12px rgba(217, 56, 41, 0.3);
+}
+
+/* ---------- Tarnished Grace (Elden Ring Inspired) ---------- */
+:root[data-surface="tarnished"] .overlay::-webkit-scrollbar-track {
+  background: rgba(11, 10, 8, 0.7);
+  border-left: 1px solid rgba(229, 169, 60, 0.16);
+}
+:root[data-surface="tarnished"] .overlay::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+  border: 1px solid rgba(229, 169, 60, 0.3);
+  box-shadow: 0 0 6px rgba(229, 169, 60, 0.25);
+}
+:root[data-surface="tarnished"] .overlay::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 14px rgba(245, 190, 87, 0.7);
+}
+:root[data-surface="tarnished"] :is(.btn.primary, .btn.play) {
+  box-shadow: 0 0 14px rgba(229, 169, 60, 0.35);
+}
+:root[data-surface="tarnished"] :is(.btn.primary, .btn.play):hover {
+  box-shadow: 0 0 20px rgba(245, 190, 87, 0.65);
+}
+
+/* ---------- Hazard Team (Half-Life Inspired) ---------- */
+:root[data-surface="hazard"] .overlay::-webkit-scrollbar-track {
+  background: rgba(11, 12, 14, 0.7);
+  border-left: 1px solid rgba(249, 115, 22, 0.18);
+}
+:root[data-surface="hazard"] .overlay::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 2px;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  box-shadow: 0 0 6px rgba(249, 115, 22, 0.25);
+}
+:root[data-surface="hazard"] .overlay::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 14px rgba(251, 146, 60, 0.7);
+}
+:root[data-surface="hazard"] :is(.btn.primary, .btn.play) {
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.35);
+}
+:root[data-surface="hazard"] :is(.btn.primary, .btn.play):hover {
+  box-shadow: 0 0 20px rgba(251, 146, 60, 0.65);
 }

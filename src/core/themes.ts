@@ -273,6 +273,11 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
   { id: "sunset", name: "Sunset Amber", bg: "#100d0a", surface: "#231c15", accent: "#f59e0b", light: false },
   { id: "nord", name: "Nordic Slate", bg: "#242933", surface: "#3b4252", accent: "#88c0d0", light: false },
   { id: "oledcyan", name: "Abyss Cyan", bg: "#000000", surface: "#0e151c", accent: "#00f0ff", light: false },
+  { id: "biohazard", name: "Biohazard", bg: "#080a0c", surface: "#171b22", accent: "#dc2626", light: false },
+  { id: "cyberlife", name: "Cyberlife", bg: "#080c14", surface: "#151e2e", accent: "#00a2ff", light: false },
+  { id: "redemption", name: "Outlaw Frontier", bg: "#0f0c0a", surface: "#241b16", accent: "#d93829", light: false },
+  { id: "tarnished", name: "Tarnished Grace", bg: "#0b0a08", surface: "#1f1c17", accent: "#e5a93c", light: false },
+  { id: "hazard", name: "Hazard Team", bg: "#0b0c0e", surface: "#1a1f26", accent: "#f97316", light: false },
   { id: "white", name: "Pure White", bg: "#f3f4f6", surface: "#ffffff", accent: "#111318", light: true },
 ];
 
@@ -312,8 +317,8 @@ const NEON_GRID: ThemeDef = {
     "--err": "#ff003c",
     "--err-tint": "rgba(255, 0, 60, 0.18)",
     "--shadow-pop": "0 18px 44px rgba(0, 0, 0, 0.8)",
-    "--scrollbar-thumb": "rgba(252, 238, 10, 0.22)",
-    "--scrollbar-thumb-hover": "rgba(252, 238, 10, 0.42)",
+    "--scrollbar-thumb": "rgba(252, 238, 10, 0.55)",
+    "--scrollbar-thumb-hover": "#fcee0a",
   },
 };
 
@@ -349,8 +354,8 @@ const TOKYO_NIGHT: ThemeDef = {
     "--err": "#f7768e",
     "--err-tint": "rgba(247, 118, 142, 0.14)",
     "--shadow-pop": "0 12px 32px rgba(6, 8, 14, 0.65)",
-    "--scrollbar-thumb": "rgba(122, 162, 247, 0.18)",
-    "--scrollbar-thumb-hover": "rgba(122, 162, 247, 0.32)",
+    "--scrollbar-thumb": "rgba(122, 162, 247, 0.38)",
+    "--scrollbar-thumb-hover": "rgba(122, 162, 247, 0.75)",
   },
 };
 
@@ -386,8 +391,8 @@ const CRIMSON: ThemeDef = {
     "--err": "#e11d48",
     "--err-tint": "rgba(225, 29, 72, 0.18)",
     "--shadow-pop": "0 12px 32px rgba(0, 0, 0, 0.7)",
-    "--scrollbar-thumb": "rgba(225, 29, 72, 0.18)",
-    "--scrollbar-thumb-hover": "rgba(225, 29, 72, 0.3)",
+    "--scrollbar-thumb": "rgba(225, 29, 72, 0.45)",
+    "--scrollbar-thumb-hover": "rgba(225, 29, 72, 0.85)",
   },
 };
 
@@ -423,8 +428,8 @@ const NORD: ThemeDef = {
     "--err": "#bf616a",
     "--err-tint": "rgba(191, 97, 106, 0.16)",
     "--shadow-pop": "0 12px 32px rgba(10, 14, 20, 0.55)",
-    "--scrollbar-thumb": "rgba(216, 222, 233, 0.16)",
-    "--scrollbar-thumb-hover": "rgba(216, 222, 233, 0.28)",
+    "--scrollbar-thumb": "rgba(136, 192, 208, 0.38)",
+    "--scrollbar-thumb-hover": "rgba(136, 192, 208, 0.75)",
   },
 };
 
@@ -460,8 +465,8 @@ const SUNSET: ThemeDef = {
     "--err": "#e5484d",
     "--err-tint": "rgba(229, 72, 77, 0.14)",
     "--shadow-pop": "0 12px 32px rgba(0, 0, 0, 0.65)",
-    "--scrollbar-thumb": "rgba(245, 158, 11, 0.18)",
-    "--scrollbar-thumb-hover": "rgba(245, 158, 11, 0.3)",
+    "--scrollbar-thumb": "rgba(245, 158, 11, 0.45)",
+    "--scrollbar-thumb-hover": "rgba(245, 158, 11, 0.85)",
   },
 };
 
@@ -497,8 +502,8 @@ const MIDNIGHT: ThemeDef = {
     "--err": "#e5484d",
     "--err-tint": "rgba(229, 72, 77, 0.14)",
     "--shadow-pop": "0 12px 32px rgba(0, 0, 0, 0.55)",
-    "--scrollbar-thumb": "rgba(120, 170, 255, 0.15)",
-    "--scrollbar-thumb-hover": "rgba(120, 170, 255, 0.28)",
+    "--scrollbar-thumb": "rgba(76, 194, 255, 0.38)",
+    "--scrollbar-thumb-hover": "rgba(76, 194, 255, 0.75)",
   },
 };
 
@@ -531,8 +536,8 @@ const VIOLET: ThemeDef = {
     "--err": "#e5484d",
     "--err-tint": "rgba(229, 72, 77, 0.14)",
     "--shadow-pop": "0 12px 32px rgba(0, 0, 0, 0.6)",
-    "--scrollbar-thumb": "rgba(190, 160, 255, 0.15)",
-    "--scrollbar-thumb-hover": "rgba(190, 160, 255, 0.28)",
+    "--scrollbar-thumb": "rgba(124, 58, 237, 0.45)",
+    "--scrollbar-thumb-hover": "rgba(124, 58, 237, 0.85)",
   },
 };
 
@@ -565,8 +570,8 @@ const BLURPLE: ThemeDef = {
     "--err": "#f23f43",
     "--err-tint": "rgba(242, 63, 67, 0.14)",
     "--shadow-pop": "0 12px 32px rgba(0, 0, 0, 0.55)",
-    "--scrollbar-thumb": "rgba(255, 255, 255, 0.14)",
-    "--scrollbar-thumb-hover": "rgba(255, 255, 255, 0.24)",
+    "--scrollbar-thumb": "rgba(88, 101, 242, 0.42)",
+    "--scrollbar-thumb-hover": "rgba(88, 101, 242, 0.8)",
   },
 };
 
@@ -602,8 +607,8 @@ const DRACULA: ThemeDef = {
     "--err": "#ff5555",
     "--err-tint": "rgba(255, 85, 85, 0.18)",
     "--shadow-pop": "0 14px 36px rgba(0, 0, 0, 0.65)",
-    "--scrollbar-thumb": "rgba(189, 147, 249, 0.2)",
-    "--scrollbar-thumb-hover": "rgba(189, 147, 249, 0.35)",
+    "--scrollbar-thumb": "rgba(189, 147, 249, 0.42)",
+    "--scrollbar-thumb-hover": "rgba(189, 147, 249, 0.8)",
   },
 };
 
@@ -639,8 +644,8 @@ const CATPPUCCIN: ThemeDef = {
     "--err": "#f38ba8",
     "--err-tint": "rgba(243, 139, 168, 0.16)",
     "--shadow-pop": "0 12px 32px rgba(17, 17, 27, 0.7)",
-    "--scrollbar-thumb": "rgba(203, 166, 247, 0.2)",
-    "--scrollbar-thumb-hover": "rgba(203, 166, 247, 0.35)",
+    "--scrollbar-thumb": "rgba(203, 166, 247, 0.42)",
+    "--scrollbar-thumb-hover": "rgba(203, 166, 247, 0.8)",
   },
 };
 
@@ -676,8 +681,8 @@ const CYBER_EMERALD: ThemeDef = {
     "--err": "#f43f5e",
     "--err-tint": "rgba(244, 63, 94, 0.16)",
     "--shadow-pop": "0 14px 36px rgba(0, 0, 0, 0.75)",
-    "--scrollbar-thumb": "rgba(16, 185, 129, 0.22)",
-    "--scrollbar-thumb-hover": "rgba(16, 185, 129, 0.4)",
+    "--scrollbar-thumb": "rgba(16, 185, 129, 0.45)",
+    "--scrollbar-thumb-hover": "rgba(16, 185, 129, 0.85)",
   },
 };
 
@@ -713,8 +718,8 @@ const ROSE_PINE: ThemeDef = {
     "--err": "#eb6f92",
     "--err-tint": "rgba(235, 111, 146, 0.18)",
     "--shadow-pop": "0 12px 32px rgba(15, 13, 20, 0.65)",
-    "--scrollbar-thumb": "rgba(235, 111, 146, 0.2)",
-    "--scrollbar-thumb-hover": "rgba(235, 111, 146, 0.35)",
+    "--scrollbar-thumb": "rgba(235, 111, 146, 0.42)",
+    "--scrollbar-thumb-hover": "rgba(235, 111, 146, 0.8)",
   },
 };
 
@@ -750,8 +755,8 @@ const SYNTHWAVE: ThemeDef = {
     "--err": "#fe4450",
     "--err-tint": "rgba(254, 68, 80, 0.18)",
     "--shadow-pop": "0 14px 40px rgba(0, 0, 0, 0.75)",
-    "--scrollbar-thumb": "rgba(255, 42, 133, 0.24)",
-    "--scrollbar-thumb-hover": "rgba(5, 217, 232, 0.4)",
+    "--scrollbar-thumb": "rgba(255, 42, 133, 0.45)",
+    "--scrollbar-thumb-hover": "rgba(5, 217, 232, 0.85)",
   },
 };
 
@@ -787,8 +792,199 @@ const OLED_CYAN: ThemeDef = {
     "--err": "#ff3366",
     "--err-tint": "rgba(255, 51, 102, 0.16)",
     "--shadow-pop": "0 14px 38px rgba(0, 0, 0, 0.8)",
-    "--scrollbar-thumb": "rgba(0, 240, 255, 0.22)",
-    "--scrollbar-thumb-hover": "rgba(0, 240, 255, 0.38)",
+    "--scrollbar-thumb": "rgba(0, 240, 255, 0.45)",
+    "--scrollbar-thumb-hover": "rgba(0, 240, 255, 0.85)",
+  },
+};
+
+
+/**
+ * Biohazard: inspired by survival horror, dark quarantine laboratories,
+ * sterile facility concrete and surgical blood crimson accents.
+ */
+const BIOHAZARD: ThemeDef = {
+  id: "biohazard",
+  labelKey: "settings.surfaceBiohazard",
+  bg: "#080a0c",
+  surface: "#171b22",
+  accent: "#dc2626",
+  scheme: "dark",
+  tokens: {
+    "--bg": "#080a0c",
+    "--surface-1": "#101317",
+    "--surface-2": "#171b22",
+    "--surface-3": "#20252f",
+    "--line": "rgba(220, 38, 38, 0.16)",
+    "--line-strong": "rgba(220, 38, 38, 0.36)",
+    "--text": "#f1f5f9",
+    "--text-2": "#94a3b8",
+    "--text-3": "#64748b",
+    "--accent": "#dc2626",
+    "--accent-hover": "#ef4444",
+    "--accent-tint": "rgba(220, 38, 38, 0.16)",
+    "--on-accent": "#ffffff",
+    "--ok": "#22c55e",
+    "--ok-hover": "#4ade80",
+    "--ok-tint": "rgba(34, 197, 94, 0.15)",
+    "--warn": "#eab308",
+    "--warn-tint": "rgba(234, 179, 8, 0.15)",
+    "--err": "#dc2626",
+    "--err-tint": "rgba(220, 38, 38, 0.18)",
+    "--shadow-pop": "0 14px 40px rgba(0, 0, 0, 0.8)",
+    "--scrollbar-thumb": "rgba(220, 38, 38, 0.45)",
+    "--scrollbar-thumb-hover": "rgba(239, 68, 68, 0.85)",
+  },
+};
+
+/**
+ * Cyberlife: inspired by futuristic android narratives, sleek composite
+ * slate and the cybernetic cyan-blue LED status light.
+ */
+const CYBERLIFE: ThemeDef = {
+  id: "cyberlife",
+  labelKey: "settings.surfaceCyberlife",
+  bg: "#080c14",
+  surface: "#151e2e",
+  accent: "#00a2ff",
+  scheme: "dark",
+  tokens: {
+    "--bg": "#080c14",
+    "--surface-1": "#0e1420",
+    "--surface-2": "#151e2e",
+    "--surface-3": "#1d283c",
+    "--line": "rgba(0, 162, 255, 0.16)",
+    "--line-strong": "rgba(0, 162, 255, 0.36)",
+    "--text": "#f0f6fc",
+    "--text-2": "#93a4be",
+    "--text-3": "#556885",
+    "--accent": "#00a2ff",
+    "--accent-hover": "#38bdf8",
+    "--accent-tint": "rgba(0, 162, 255, 0.16)",
+    "--on-accent": "#03101d",
+    "--ok": "#00a2ff",
+    "--ok-hover": "#38bdf8",
+    "--ok-tint": "rgba(0, 162, 255, 0.16)",
+    "--warn": "#f59e0b",
+    "--warn-tint": "rgba(245, 158, 11, 0.15)",
+    "--err": "#ef4444",
+    "--err-tint": "rgba(239, 68, 68, 0.18)",
+    "--shadow-pop": "0 14px 40px rgba(0, 0, 0, 0.75)",
+    "--scrollbar-thumb": "rgba(0, 162, 255, 0.45)",
+    "--scrollbar-thumb-hover": "rgba(56, 189, 248, 0.85)",
+  },
+};
+
+/**
+ * Outlaw Frontier: inspired by the rugged 1899 western frontier,
+ * weathered saddle leather, evening campfires and sunset crimson.
+ */
+const REDEMPTION: ThemeDef = {
+  id: "redemption",
+  labelKey: "settings.surfaceRedemption",
+  bg: "#0f0c0a",
+  surface: "#241b16",
+  accent: "#d93829",
+  scheme: "dark",
+  tokens: {
+    "--bg": "#0f0c0a",
+    "--surface-1": "#181310",
+    "--surface-2": "#241b16",
+    "--surface-3": "#30241e",
+    "--line": "rgba(217, 56, 41, 0.18)",
+    "--line-strong": "rgba(217, 56, 41, 0.38)",
+    "--text": "#fbf5ee",
+    "--text-2": "#cbb6a4",
+    "--text-3": "#867364",
+    "--accent": "#d93829",
+    "--accent-hover": "#e65140",
+    "--accent-tint": "rgba(217, 56, 41, 0.16)",
+    "--on-accent": "#ffffff",
+    "--ok": "#4ade80",
+    "--ok-hover": "#6ee7b7",
+    "--ok-tint": "rgba(74, 222, 128, 0.15)",
+    "--warn": "#f59e0b",
+    "--warn-tint": "rgba(245, 158, 11, 0.15)",
+    "--err": "#d93829",
+    "--err-tint": "rgba(217, 56, 41, 0.18)",
+    "--shadow-pop": "0 14px 38px rgba(0, 0, 0, 0.75)",
+    "--scrollbar-thumb": "rgba(217, 56, 41, 0.45)",
+    "--scrollbar-thumb-hover": "rgba(230, 81, 64, 0.85)",
+  },
+};
+
+/**
+ * Tarnished Grace: inspired by dark fantasy epics, ancient ashen stone ruins
+ * and the guiding golden light of the Erdtree.
+ */
+const TARNISHED: ThemeDef = {
+  id: "tarnished",
+  labelKey: "settings.surfaceTarnished",
+  bg: "#0b0a08",
+  surface: "#1f1c17",
+  accent: "#e5a93c",
+  scheme: "dark",
+  tokens: {
+    "--bg": "#0b0a08",
+    "--surface-1": "#151310",
+    "--surface-2": "#1f1c17",
+    "--surface-3": "#2b2720",
+    "--line": "rgba(229, 169, 60, 0.16)",
+    "--line-strong": "rgba(229, 169, 60, 0.36)",
+    "--text": "#f9f6ed",
+    "--text-2": "#c7bc9f",
+    "--text-3": "#78705c",
+    "--accent": "#e5a93c",
+    "--accent-hover": "#f5be57",
+    "--accent-tint": "rgba(229, 169, 60, 0.16)",
+    "--on-accent": "#120d04",
+    "--ok": "#34d399",
+    "--ok-hover": "#6ee7b7",
+    "--ok-tint": "rgba(52, 211, 153, 0.15)",
+    "--warn": "#e5a93c",
+    "--warn-tint": "rgba(229, 169, 60, 0.15)",
+    "--err": "#ef4444",
+    "--err-tint": "rgba(239, 68, 68, 0.18)",
+    "--shadow-pop": "0 14px 40px rgba(0, 0, 0, 0.8)",
+    "--scrollbar-thumb": "rgba(229, 169, 60, 0.45)",
+    "--scrollbar-thumb-hover": "rgba(245, 190, 87, 0.85)",
+  },
+};
+
+/**
+ * Hazard Team: inspired by legendary facility survival, industrial bunker
+ * steel and the high-visibility Lambda hazard orange suit.
+ */
+const HAZARD: ThemeDef = {
+  id: "hazard",
+  labelKey: "settings.surfaceHazard",
+  bg: "#0b0c0e",
+  surface: "#1a1f26",
+  accent: "#f97316",
+  scheme: "dark",
+  tokens: {
+    "--bg": "#0b0c0e",
+    "--surface-1": "#13161a",
+    "--surface-2": "#1a1f26",
+    "--surface-3": "#242a34",
+    "--line": "rgba(249, 115, 22, 0.18)",
+    "--line-strong": "rgba(249, 115, 22, 0.38)",
+    "--text": "#f8fafc",
+    "--text-2": "#94a3b8",
+    "--text-3": "#5b6a7e",
+    "--accent": "#f97316",
+    "--accent-hover": "#fb923c",
+    "--accent-tint": "rgba(249, 115, 22, 0.16)",
+    "--on-accent": "#0d0702",
+    "--ok": "#10b981",
+    "--ok-hover": "#34d399",
+    "--ok-tint": "rgba(16, 185, 129, 0.15)",
+    "--warn": "#f97316",
+    "--warn-tint": "rgba(249, 115, 22, 0.15)",
+    "--err": "#ef4444",
+    "--err-tint": "rgba(239, 68, 68, 0.18)",
+    "--shadow-pop": "0 14px 40px rgba(0, 0, 0, 0.8)",
+    "--scrollbar-thumb": "rgba(249, 115, 22, 0.45)",
+    "--scrollbar-thumb-hover": "rgba(251, 146, 60, 0.85)",
   },
 };
 
@@ -824,6 +1020,11 @@ const BUILTIN_THEMES: readonly ThemeDef[] = [
   SYNTHWAVE,
   ROSE_PINE,
   OLED_CYAN,
+  BIOHAZARD,
+  CYBERLIFE,
+  REDEMPTION,
+  TARNISHED,
+  HAZARD,
   {
     id: "white",
     labelKey: "settings.surfaceWhite",
@@ -976,8 +1177,8 @@ export function customTokens(input: CustomThemeInput): Record<string, string> {
       "--err": "#b91c1c",
       "--err-tint": "rgba(185, 28, 28, 0.1)",
       "--shadow-pop": "0 12px 32px rgba(15, 23, 42, 0.16)",
-      "--scrollbar-thumb": "rgba(15, 23, 42, 0.24)",
-      "--scrollbar-thumb-hover": "rgba(15, 23, 42, 0.4)",
+      "--scrollbar-thumb": "rgba(15, 23, 42, 0.32)",
+      "--scrollbar-thumb-hover": "rgba(15, 23, 42, 0.55)",
       "--r-sm": rSm,
       "--r-md": rMd,
     };
@@ -1012,8 +1213,8 @@ export function customTokens(input: CustomThemeInput): Record<string, string> {
     "--err": "#e5484d",
     "--err-tint": "rgba(229, 72, 77, 0.14)",
     "--shadow-pop": "0 14px 36px rgba(0, 0, 0, 0.65)",
-    "--scrollbar-thumb": "rgba(255, 255, 255, 0.14)",
-    "--scrollbar-thumb-hover": "rgba(255, 255, 255, 0.26)",
+    "--scrollbar-thumb": "rgba(255, 255, 255, 0.28)",
+    "--scrollbar-thumb-hover": "rgba(255, 255, 255, 0.55)",
     "--r-sm": rSm,
     "--r-md": rMd,
   };

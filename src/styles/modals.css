@@ -2039,7 +2039,7 @@
   display: flex;
   gap: 6px;
   overflow-x: auto;
-  scrollbar-width: thin;
+  /* WebKit scrollbar active */
   padding: 2px 0;
 }
 .sgdb-game-chip {
