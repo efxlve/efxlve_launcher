@@ -297,15 +297,14 @@ function topbar(): string {
       </nav>
     </div>
     <div class="stage-topbar-right">
-      <button type="button" class="stage-search-pill" data-stage-act="open-search" data-gp-item data-gp-key="top:search" aria-label="${esc(t("stage.search"))}" title="${esc(t("stage.search"))}">
-        ${icon("search", 15)}
-        <span class="stage-search-hint-key">${selectGlyph}</span>
+      <button type="button" class="stage-icon-pill" data-stage-act="open-search" data-gp-item data-gp-key="top:search" aria-label="${esc(t("stage.search"))}" title="${esc(t("stage.search"))}">
+        ${icon("search", 16)}
       </button>
       ${dl ? `<button type="button" class="stage-top-download" data-stage-act="go" data-route="downloads" data-gp-item data-gp-key="top:downloads">${icon("download", 15)}<span class="tabular-nums">${Math.round(dl.percent)}%</span><i style="width:${Math.max(2, Math.min(100, dl.percent))}%"></i></button>` : ""}
       <span class="stage-net ${online ? "is-online" : "is-offline"}"><span class="stage-net-dot"></span><span class="stage-net-label">${esc(online ? t("nav.online") : t("nav.offline"))}</span></span>
       ${pad ? `<span class="stage-pad-status" title="${esc(S.stage.controllerName)}">${icon("gamepad-2", 15)}${battery ? `<span class="tabular-nums">${esc(battery)}</span>` : ""}</span>` : ""}
       <span class="stage-clock tabular-nums"></span>
-      <button type="button" class="stage-icon-btn stage-menu-btn" data-stage-act="open-menu" data-gp-item data-gp-key="top:menu" aria-label="${esc(t("stage.quickMenu"))}" title="${esc(t("stage.quickMenu"))}">${icon("dots", 18)}</button>
+      <button type="button" class="stage-icon-pill" data-stage-act="open-menu" data-gp-item data-gp-key="top:menu" aria-label="${esc(t("stage.quickMenu"))}" title="${esc(t("stage.quickMenu"))}">${icon("dots", 18)}</button>
     </div>
   </header>`;
 }
@@ -619,7 +618,18 @@ function bindGlobalFocus(): void {
     if (key) S.stage.focusKey = key;
     if (changed && !pointerFocus) stageFeedback("move");
     if (S.stage.route === "library" && key.startsWith("lib:")) stageLibraryFocus(key);
-    if (S.stage.route === "home" && key.startsWith("game:")) stageHomeFocus(key);
+    if (S.stage.route === "home") {
+      if (key.startsWith("game:")) stageHomeFocus(key);
+      if (key.startsWith("act:")) {
+        const hub = document.getElementById("stage-home-activities");
+        if (hub) hub.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else if (key.startsWith("game:") || key.startsWith("hero:") || key === "home:all-games") {
+        const main = document.querySelector(".stage-main");
+        if (main && main.scrollTop > 80) {
+          main.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }
+    }
   });
   window.addEventListener("stage-mode", (event) => {
     const active = Boolean((event as CustomEvent<{ active?: boolean }>).detail?.active);
@@ -759,6 +769,11 @@ function bindStageEvents(root: HTMLElement): void {
       case "controls": stageToggleControls(); break;
       case "show-controls": stageShowControls(); break;
       case "close-controls": stageFeedback("back"); stageCloseControls(); break;
+      case "scroll-to-hub": {
+        const hub = document.getElementById("stage-home-activities");
+        if (hub) hub.scrollIntoView({ behavior: "smooth", block: "start" });
+        break;
+      }
       case "desktop": stageOpenDesktop(); break;
       case "desktop-settings": stageOpenDesktopSettings(); break;
       case "desktop-game": stageOpenDesktopGame(key); break;
