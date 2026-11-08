@@ -701,31 +701,31 @@ body:has(.lib-pager) #totop {
 }
 
 /* --- Context menu (game cards) --- */
-.ps5-context-menu {
+.ctx-menu {
   position: fixed; z-index: 10000; min-width: 230px; max-width: 320px; max-height: 72vh;
   overflow-y: auto; padding: 4px; background: var(--surface-1);
   border: 1px solid var(--line-strong); border-radius: var(--r-md);
   box-shadow: var(--shadow-pop);
 }
-.ps5-context-head {
+.ctx-head {
   padding: 8px 10px 6px; font-size: 11px; font-weight: 600; color: var(--text-3);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.ps5-context-item {
+.ctx-item {
   display: flex; align-items: center; gap: 9px; width: 100%; min-height: 32px; padding: 6px 10px;
   border: 0; border-radius: 6px; background: transparent; color: var(--text-2);
   font: inherit; font-size: 12.5px; text-align: left; cursor: pointer;
 }
-.ps5-context-item svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--text-3); }
-.ps5-context-item:hover, .ps5-context-item:focus-visible { background: var(--surface-2); color: var(--text); }
-.ps5-context-item:hover svg, .ps5-context-item:focus-visible svg { color: var(--text); }
-.ps5-context-item.is-current { background: var(--surface-2); color: var(--text); }
-.ps5-context-item.danger, .ps5-context-item.danger svg { color: var(--err); }
-.ps5-context-sep { height: 1px; margin: 4px 6px; background: var(--line); }
-.ps5-context-item .ctx-check { margin-left: auto; display: inline-flex; color: var(--accent); }
+.ctx-item svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--text-3); }
+.ctx-item:hover, .ctx-item:focus-visible { background: var(--surface-2); color: var(--text); }
+.ctx-item:hover svg, .ctx-item:focus-visible svg { color: var(--text); }
+.ctx-item.is-current { background: var(--surface-2); color: var(--text); }
+.ctx-item.danger, .ctx-item.danger svg { color: var(--err); }
+.ctx-sep { height: 1px; margin: 4px 6px; background: var(--line); }
+.ctx-item .ctx-check { margin-left: auto; display: inline-flex; color: var(--accent); }
 
 /* --- Context submenu (e.g. Durum flyout) --- */
-.ps5-context-submenu {
+.ctx-submenu {
   min-width: 170px;
   max-width: 220px;
   max-height: none;
@@ -764,8 +764,8 @@ body:has(.lib-pager) #totop {
   width: 12px;
   height: 12px;
 }
-.ps5-context-item:hover .ctx-sub-badge,
-.ps5-context-item:hover .ctx-chevron,
+.ctx-item:hover .ctx-sub-badge,
+.ctx-item:hover .ctx-chevron,
 .ctx-submenu-trigger[aria-expanded="true"] .ctx-sub-badge,
 .ctx-submenu-trigger[aria-expanded="true"] .ctx-chevron {
   color: var(--text);

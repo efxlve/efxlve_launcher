@@ -679,19 +679,19 @@ function moreMenuHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): s
           : "drawer.storeTitle",
   );
   const clientItem = companion
-    ? `<button type="button" class="ps5-context-item" role="menuitem" data-act="companion-open" data-id="${esc(sourceOfKey(s.appName))}">${icon("gamepad-2", 15)} <span>${t("accounts.openClient")}</span></button>`
+    ? `<button type="button" class="ctx-item" role="menuitem" data-act="companion-open" data-id="${esc(sourceOfKey(s.appName))}">${icon("gamepad-2", 15)} <span>${t("accounts.openClient")}</span></button>`
     : "";
   return `
     <div class="gp-more-wrap">
       <button class="btn ghost lg icon-only gp-more-btn${open ? " active" : ""}" data-act="game-more-menu" data-id="${esc(s.appName)}" title="${esc(t("drawer.moreActions"))}" aria-haspopup="menu" aria-expanded="${open ? "true" : "false"}">${icon("dots", 16)}</button>
       <div id="game-more-menu" class="gp-more-menu${open ? " show" : ""}" role="menu">
-        <button type="button" class="ps5-context-item" role="menuitem" data-act="manage-game-collections" data-id="${esc(s.appName)}">${icon("layers", 15)} <span>${t("drawer.collection")}</span></button>
+        <button type="button" class="ctx-item" role="menuitem" data-act="manage-game-collections" data-id="${esc(s.appName)}">${icon("layers", 15)} <span>${t("drawer.collection")}</span></button>
         ${statusMenuHtml(s.appName)}
         <div class="gp-more-sep"></div>
-        <button type="button" class="ps5-context-item" role="menuitem" data-act="epic-store-page" data-id="${esc(s.appName)}">${icon("external", 15)} <span>${storeTitle}</span></button>
+        <button type="button" class="ctx-item" role="menuitem" data-act="epic-store-page" data-id="${esc(s.appName)}">${icon("external", 15)} <span>${storeTitle}</span></button>
         ${clientItem}
         <div class="gp-more-sep"></div>
-        <button type="button" class="ps5-context-item" role="menuitem" data-act="open-custom-cover" data-target="cover" data-id="${esc(s.appName)}">${icon("image", 15)} <span>${t("manage.coverChange")}</span></button>
+        <button type="button" class="ctx-item" role="menuitem" data-act="open-custom-cover" data-target="cover" data-id="${esc(s.appName)}">${icon("image", 15)} <span>${t("manage.coverChange")}</span></button>
       </div>
     </div>`;
 }
@@ -702,7 +702,7 @@ export function wireDrawerSubmenu(menuEl: HTMLElement): void {
   if (!wrap || wrap.dataset.wired === "true") return;
   wrap.dataset.wired = "true";
 
-  const sub = wrap.querySelector<HTMLElement>(".ps5-context-submenu");
+  const sub = wrap.querySelector<HTMLElement>(".ctx-submenu");
   const trigger = wrap.querySelector<HTMLElement>(".ctx-submenu-trigger");
   if (!sub || !trigger) return;
 
@@ -740,7 +740,7 @@ export function wireDrawerSubmenu(menuEl: HTMLElement): void {
     }
   });
 
-  menuEl.querySelectorAll(".ps5-context-item:not(.ctx-submenu-trigger)").forEach((item) => {
+  menuEl.querySelectorAll(".ctx-item:not(.ctx-submenu-trigger)").forEach((item) => {
     item.addEventListener("mouseenter", () => {
       cancel();
       wrap.classList.remove("open");

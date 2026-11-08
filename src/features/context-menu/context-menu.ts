@@ -71,10 +71,10 @@ export function showContextMenu(x: number, y: number, appName: string): void {
     iconName: Parameters<typeof icon>[0],
     danger = false,
   ): string =>
-    `<button class="ps5-context-item${danger ? " danger" : ""}" role="menuitem" data-act="${act}" data-id="${esc(appName)}">${icon(iconName, 15)}<span>${label}</span></button>`;
+    `<button class="ctx-item${danger ? " danger" : ""}" role="menuitem" data-act="${act}" data-id="${esc(appName)}">${icon(iconName, 15)}<span>${label}</span></button>`;
 
   const menu = document.createElement("div");
-  menu.className = "ps5-context-menu";
+  menu.className = "ctx-menu";
   menu.setAttribute("role", "menu");
   // Games from another saved account: no install/manage, only the switch.
   const shared = sharedOwnerOf(appName);
@@ -89,27 +89,27 @@ export function showContextMenu(x: number, y: number, appName: string): void {
 /** Riot games have no web storefront: the client owns its shop. */
 const isRiot = source === "riot";
   const companionItem = (act: string, label: string, iconName: Parameters<typeof icon>[0], danger = false): string =>
-    `<button class="ps5-context-item${danger ? " danger" : ""}" role="menuitem" data-act="${act}" data-id="${esc(appName)}" data-store="${source}">${icon(iconName, 15)}<span>${label}</span></button>`;
+    `<button class="ctx-item${danger ? " danger" : ""}" role="menuitem" data-act="${act}" data-id="${esc(appName)}" data-store="${source}">${icon(iconName, 15)}<span>${label}</span></button>`;
   // Amazon items carry the bare product id the Nile commands take.
   const amazonItem = (act: string, label: string, iconName: Parameters<typeof icon>[0], danger = false): string =>
-    `<button class="ps5-context-item${danger ? " danger" : ""}" role="menuitem" data-act="${act}" data-id="${esc(appName.slice(8))}">${icon(iconName, 15)}<span>${label}</span></button>`;
+    `<button class="ctx-item${danger ? " danger" : ""}" role="menuitem" data-act="${act}" data-id="${esc(appName.slice(8))}">${icon(iconName, 15)}<span>${label}</span></button>`;
   const steamItem = (mode: string, label: string, iconName: Parameters<typeof icon>[0], danger = false): string =>
-    `<button class="ps5-context-item${danger ? " danger" : ""}" role="menuitem" data-act="steam-action" data-id="${esc(appName.slice(7))}" data-mode="${mode}">${icon(iconName, 15)}<span>${label}</span></button>`;
+    `<button class="ctx-item${danger ? " danger" : ""}" role="menuitem" data-act="steam-action" data-id="${esc(appName.slice(7))}" data-mode="${mode}">${icon(iconName, 15)}<span>${label}</span></button>`;
   const versions = gameVersionsOf(appName);
   const versionBlock = versions.length < 2
     ? ""
     : `${versions.map((version) => {
         const active = version.appName === appName;
-        return `<button class="ps5-context-item${active ? " is-current" : ""}" role="menuitemradio" aria-checked="${active}" data-act="prefer-version" data-id="${esc(version.appName)}">${storeLogo(version.source, 15)}<span>${esc(storeVersionLabel(version.source))}</span><span class="ctx-check">${active ? icon("check", 14) : ""}</span></button>`;
-      }).join("")}<div class="ps5-context-sep"></div>`;
+        return `<button class="ctx-item${active ? " is-current" : ""}" role="menuitemradio" aria-checked="${active}" data-act="prefer-version" data-id="${esc(version.appName)}">${storeLogo(version.source, 15)}<span>${esc(storeVersionLabel(version.source))}</span><span class="ctx-check">${active ? icon("check", 14) : ""}</span></button>`;
+      }).join("")}<div class="ctx-sep"></div>`;
 
   const { triggerHtml, submenuHtml } = statusSubmenuHtml(appName);
 
   menu.innerHTML = `
-    <div class="ps5-context-head" title="${esc(s.title)}">${esc(s.title)}</div>
+    <div class="ctx-head" title="${esc(s.title)}">${esc(s.title)}</div>
     ${versionBlock}
     ${shared
-      ? `<button class="ps5-context-item" role="menuitem" data-act="shared-switch" data-id="${esc(shared.ownerKey)}">${icon("arrow-left-right", 15)}<span>${t("shared.switchTo", { name: esc(shared.ownerName) })}</span></button>`
+      ? `<button class="ctx-item" role="menuitem" data-act="shared-switch" data-id="${esc(shared.ownerKey)}">${icon("arrow-left-right", 15)}<span>${t("shared.switchTo", { name: esc(shared.ownerName) })}</span></button>`
       : isSteam
         ? `${!s.installed ? steamItem("install", t("common.install"), "download") : s.updateAvailable ? steamItem("update", t("common.update"), "download") : steamItem("launch", t("common.play"), "play")}
     ${s.installed ? steamItem("validate", t("steam.validate"), "shield") : ""}
@@ -133,7 +133,7 @@ const isRiot = source === "riot";
     ${!shared && !isSteam && installed && (s.updateAvailable || S.availableUpdates.has(appName))
       ? item("toggle-ignore-update", S.ignoredUpdates.has(appName) ? t("ctx.restoreIndicator") : t("ctx.ignoreIndicator"), S.ignoredUpdates.has(appName) ? "bell" : "bell-off")
       : ""}
-    <div class="ps5-context-sep"></div>
+    <div class="ctx-sep"></div>
     ${!shared && !isSteam && !isCustom && installed && IS_WINDOWS ? item("manage-create-shortcut", t("ctx.shortcut"), "external") : ""}
     ${!shared && installed ? item("epic-open-folder", t("ctx.openFolder"), "folder") : ""}
     ${!shared && !isSteam && !isCustom && installed ? item("manage-create-backup", t("ctx.backup"), "cloud") : ""}
@@ -144,7 +144,7 @@ const isRiot = source === "riot";
     ${item("open-sort-name-modal", t("ctx.sortName"), "arrow-down-a-z")}
     ${item("hide-game", t("ctx.hide"), "eye-off")}
     ${!shared && (installed || isCustom)
-      ? `<div class="ps5-context-sep"></div>${isSteam
+      ? `<div class="ctx-sep"></div>${isSteam
           ? steamItem("uninstall", t("steam.uninstall"), "trash", true)
           : isAmazon
             ? amazonItem("amazon-uninstall", t("common.uninstall"), "trash", true)
@@ -202,7 +202,7 @@ const isRiot = source === "riot";
     submenu.addEventListener("mouseenter", cancelClose);
     submenu.addEventListener("mouseleave", scheduleClose);
 
-    menu.querySelectorAll(".ps5-context-item:not(.ctx-submenu-trigger)").forEach((otherItem) => {
+    menu.querySelectorAll(".ctx-item:not(.ctx-submenu-trigger)").forEach((otherItem) => {
       otherItem.addEventListener("mouseenter", () => {
         cancelClose();
         submenu.style.display = "none";
@@ -217,7 +217,7 @@ const isRiot = source === "riot";
   const py = Math.max(8, Math.min(y, window.innerHeight - rect.height - 8));
   menu.style.left = `${px}px`;
   menu.style.top = `${py}px`;
-  menu.querySelector<HTMLElement>(".ps5-context-item")?.focus({ preventScroll: true });
+  menu.querySelector<HTMLElement>(".ctx-item")?.focus({ preventScroll: true });
 }
 
 /** Right-click a collection tab to edit it. All and Favorites have no menu. */
@@ -226,9 +226,9 @@ function showCollectionTabMenu(x: number, y: number, colId: string): void {
   const col = S.epicCollections.find((c) => c.id === colId);
   if (!col) return;
   const menu = document.createElement("div");
-  menu.className = "ps5-context-menu";
+  menu.className = "ctx-menu";
   menu.setAttribute("role", "menu");
-  menu.innerHTML = `<button class="ps5-context-item" role="menuitem" data-act="edit-collection" data-col-id="${esc(colId)}">${icon("edit", 15)}<span>${t("col.edit")}</span></button>`;
+  menu.innerHTML = `<button class="ctx-item" role="menuitem" data-act="edit-collection" data-col-id="${esc(colId)}">${icon("edit", 15)}<span>${t("col.edit")}</span></button>`;
   const root = ctxRoot || document.body;
   root.appendChild(menu);
   S.ctxMenuEl = menu;
@@ -268,7 +268,7 @@ export function initContextMenu(): void {
     "click",
     (e) => {
       const target = e.target as HTMLElement;
-      if (target.closest(".ps5-context-menu")) {
+      if (target.closest(".ctx-menu")) {
         if (target.closest(".ctx-submenu-trigger")) {
           return;
         }

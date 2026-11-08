@@ -3064,16 +3064,16 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 .gp-more-menu.show { display: block; }
-.gp-more-menu .ps5-context-item {
+.gp-more-menu .ctx-item {
   min-height: 34px; padding: 0 10px; border-radius: 8px; font-size: 13px;
   display: flex; align-items: center; gap: 10px; width: 100%;
   color: var(--text-2); background: transparent; border: none; cursor: pointer; text-align: left;
   transition: background 0.12s ease, color 0.12s ease;
 }
-.gp-more-menu .ps5-context-item span { white-space: nowrap; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.gp-more-menu .ps5-context-item svg { width: 15px; height: 15px; color: var(--text-3); flex-shrink: 0; transition: color 0.12s ease; }
-.gp-more-menu .ps5-context-item:hover { background: var(--surface-2); color: var(--text); }
-.gp-more-menu .ps5-context-item:hover svg { color: var(--text); }
+.gp-more-menu .ctx-item span { white-space: nowrap; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.gp-more-menu .ctx-item svg { width: 15px; height: 15px; color: var(--text-3); flex-shrink: 0; transition: color 0.12s ease; }
+.gp-more-menu .ctx-item:hover { background: var(--surface-2); color: var(--text); }
+.gp-more-menu .ctx-item:hover svg { color: var(--text); }
 .gp-more-sep { height: 1px; margin: 5px 4px; background: var(--line); }
 
 /* Submenu inside Drawer More menu */
@@ -3081,7 +3081,7 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   position: relative;
   width: 100%;
 }
-.gp-more-menu .ctx-submenu-wrap .ps5-context-submenu {
+.gp-more-menu .ctx-submenu-wrap .ctx-submenu {
   position: absolute;
   left: calc(100% + 4px);
   top: -6px;
@@ -3099,7 +3099,7 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   z-index: 100;
 }
 /* Safe hit-test bridge across the 4px horizontal gap between trigger and submenu */
-.gp-more-menu .ctx-submenu-wrap .ps5-context-submenu::before {
+.gp-more-menu .ctx-submenu-wrap .ctx-submenu::before {
   content: "";
   position: absolute;
   top: 0;
@@ -3107,9 +3107,9 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   left: -8px;
   width: 10px;
 }
-.gp-more-menu .ctx-submenu-wrap.open > .ps5-context-submenu,
-.gp-more-menu .ctx-submenu-wrap:hover > .ps5-context-submenu,
-.gp-more-menu .ctx-submenu-wrap:focus-within > .ps5-context-submenu {
+.gp-more-menu .ctx-submenu-wrap.open > .ctx-submenu,
+.gp-more-menu .ctx-submenu-wrap:hover > .ctx-submenu,
+.gp-more-menu .ctx-submenu-wrap:focus-within > .ctx-submenu {
   display: block;
 }
 .gp-more-menu .ctx-submenu-wrap.open > .ctx-submenu-trigger,
@@ -3126,7 +3126,7 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 .gp-more-menu .ctx-submenu-wrap:focus-within .ctx-chevron {
   color: var(--text);
 }
-.gp-more-menu .ps5-context-submenu .ps5-context-item {
+.gp-more-menu .ctx-submenu .ctx-item {
   min-height: 34px;
   padding: 0 10px;
   border-radius: 8px;
@@ -3143,60 +3143,60 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   text-align: left;
   transition: background 0.12s ease, color 0.12s ease;
 }
-.gp-more-menu .ps5-context-submenu .ps5-context-item span {
+.gp-more-menu .ctx-submenu .ctx-item span {
   font-weight: 400;
   white-space: nowrap;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.gp-more-menu .ps5-context-submenu .ps5-context-item svg {
+.gp-more-menu .ctx-submenu .ctx-item svg {
   width: 14px;
   height: 14px;
   color: var(--text-3);
   flex-shrink: 0;
   transition: color 0.12s ease;
 }
-.gp-more-menu .ps5-context-submenu .ps5-context-item:hover {
+.gp-more-menu .ctx-submenu .ctx-item:hover {
   background: var(--surface-2);
   color: var(--text);
 }
-.gp-more-menu .ps5-context-submenu .ps5-context-item:hover svg {
+.gp-more-menu .ctx-submenu .ctx-item:hover svg {
   color: var(--text);
 }
-.gp-more-menu .ps5-context-submenu .ps5-context-item.active,
-.gp-more-menu .ps5-context-submenu .ps5-context-item.is-current {
+.gp-more-menu .ctx-submenu .ctx-item.active,
+.gp-more-menu .ctx-submenu .ctx-item.is-current {
   background: var(--surface-2);
   color: var(--text);
   font-weight: 400;
 }
-.gp-more-menu .ps5-context-submenu .ps5-context-item.active svg,
-.gp-more-menu .ps5-context-submenu .ps5-context-item.is-current svg,
-.gp-more-menu .ps5-context-submenu .ps5-context-item .ctx-check svg {
+.gp-more-menu .ctx-submenu .ctx-item.active svg,
+.gp-more-menu .ctx-submenu .ctx-item.is-current svg,
+.gp-more-menu .ctx-submenu .ctx-item .ctx-check svg {
   color: var(--accent);
 }
-.gp-more-menu .ps5-context-submenu .ps5-context-item.danger,
-.gp-more-menu .ps5-context-submenu .ps5-context-item.danger svg {
+.gp-more-menu .ctx-submenu .ctx-item.danger,
+.gp-more-menu .ctx-submenu .ctx-item.danger svg {
   color: var(--err);
 }
-.gp-more-menu .ps5-context-submenu .ps5-context-item.danger:hover {
+.gp-more-menu .ctx-submenu .ctx-item.danger:hover {
   background: rgba(229, 72, 77, 0.12);
   color: var(--err);
 }
-.gp-more-menu .ps5-context-submenu .ps5-context-item.danger:hover svg {
+.gp-more-menu .ctx-submenu .ctx-item.danger:hover svg {
   color: var(--err);
 }
-.gp-more-menu .ps5-context-submenu .ps5-context-sep {
+.gp-more-menu .ctx-submenu .ctx-sep {
   height: 1px;
   margin: 4px 4px;
   background: var(--line);
 }
 @media (max-width: 768px) {
-  .gp-more-menu .ctx-submenu-wrap .ps5-context-submenu {
+  .gp-more-menu .ctx-submenu-wrap .ctx-submenu {
     left: auto;
     right: calc(100% + 4px);
   }
-  .gp-more-menu .ctx-submenu-wrap .ps5-context-submenu::before {
+  .gp-more-menu .ctx-submenu-wrap .ctx-submenu::before {
     left: auto;
     right: -8px;
   }

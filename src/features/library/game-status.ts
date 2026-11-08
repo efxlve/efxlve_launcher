@@ -41,7 +41,7 @@ export function statusSubmenuHtml(appName: string): { triggerHtml: string; subme
   const currentStatusOpt = currentStatus ? options.find((o) => o.value === currentStatus) : undefined;
 
   const triggerHtml = `
-    <button type="button" class="ps5-context-item ctx-submenu-trigger" role="menuitem" aria-haspopup="menu" aria-expanded="false" data-act="status-submenu-noop">
+    <button type="button" class="ctx-item ctx-submenu-trigger" role="menuitem" aria-haspopup="menu" aria-expanded="false" data-act="status-submenu-noop">
       ${icon(currentStatusOpt ? currentStatusOpt.ic : "check-circle", 15)}
       <span class="ctx-item-name">${esc(t("status.label"))}</span>
       <span class="ctx-sub-tail">
@@ -51,19 +51,19 @@ export function statusSubmenuHtml(appName: string): { triggerHtml: string; subme
     </button>`;
 
   const submenuHtml = `
-    <div class="ps5-context-menu ps5-context-submenu" role="menu">
+    <div class="ctx-menu ctx-submenu" role="menu">
       ${options.map(({ value, label, ic }) => {
         const active = currentStatus === value;
         return `
-        <button type="button" class="ps5-context-item ctx-status-option${active ? " is-current active" : ""}" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="${value}" role="menuitemradio" aria-checked="${active}" title="${esc(label)}">
+        <button type="button" class="ctx-item ctx-status-option${active ? " is-current active" : ""}" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="${value}" role="menuitemradio" aria-checked="${active}" title="${esc(label)}">
           ${icon(ic, 14)}
           <span>${esc(label)}</span>
           <span class="ctx-check">${active ? icon("check", 14) : ""}</span>
         </button>`;
       }).join("")}
       ${currentStatus ? `
-        <div class="ps5-context-sep"></div>
-        <button type="button" class="ps5-context-item danger ctx-status-clear" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="" role="menuitem" title="${esc(t("col.clear"))}">
+        <div class="ctx-sep"></div>
+        <button type="button" class="ctx-item danger ctx-status-clear" data-act="ctx-game-status" data-id="${esc(appName)}" data-status="" role="menuitem" title="${esc(t("col.clear"))}">
           ${icon("x", 14)}
           <span>${esc(t("col.clear"))}</span>
         </button>` : ""}
