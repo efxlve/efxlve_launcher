@@ -1145,6 +1145,8 @@
   "cover.heroSaved": "カスタムのワイドヒーローを保存しました",
   "cover.portraitSaved": "カスタムのポートレートカバー (2:3) を保存しました",
   "cover.pickFirst": "SteamGridDB から画像を選ぶか、URL を入力するか、ファイルをアップロードしてください",
+  "cover.fileUnreadable": "画像を読み込めませんでした。より小さい PNG、JPG、WebP ファイルをお試しください。",
+  "cover.saveFailed": "画像を保存できませんでした。小さい画像をお試しください。",
   "cover.heroReset": "ワイドヒーローを元に戻しました",
   "cover.portraitReset": "ポートレートカバーを元に戻しました",
   "cover.allReset": "すべてのカスタム画像を元に戻しました",

@@ -1217,6 +1217,8 @@
   "cover.heroSaved": "कस्टम वाइड हीरो सहेजा गया",
   "cover.portraitSaved": "कस्टम पोर्ट्रेट कवर (2:3) सहेजा गया",
   "cover.pickFirst": "कृपया SteamGridDB से कोई छवि चुनें, URL दर्ज करें या फ़ाइल अपलोड करें",
+  "cover.fileUnreadable": "यह छवि पढ़ी नहीं जा सकी। छोटी PNG, JPG या WebP फ़ाइल आज़माएँ।",
+  "cover.saveFailed": "यह छवि सहेजी नहीं जा सकी। छोटी छवि आज़माएँ।",
   "cover.heroReset": "वाइड हीरो मूल स्थिति में बहाल किया गया",
   "cover.portraitReset": "पोर्ट्रेट कवर मूल स्थिति में बहाल किया गया",
   "cover.allReset": "सभी कस्टम छवियां मूल स्थिति में बहाल की गईं",

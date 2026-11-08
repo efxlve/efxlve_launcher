@@ -1145,6 +1145,8 @@
   "cover.heroSaved": "Eigenes breites Hero gespeichert",
   "cover.portraitSaved": "Eigenes Hochformat-Cover (2:3) gespeichert",
   "cover.pickFirst": "Wähle ein Bild von SteamGridDB, gib eine URL ein oder lade eine Datei hoch",
+  "cover.fileUnreadable": "Dieses Bild konnte nicht gelesen werden. Versuche eine kleinere PNG-, JPG- oder WebP-Datei.",
+  "cover.saveFailed": "Dieses Bild konnte nicht gespeichert werden. Versuche ein kleineres.",
   "cover.heroReset": "Breites Hero auf das Original zurückgesetzt",
   "cover.portraitReset": "Hochformat-Cover auf das Original zurückgesetzt",
   "cover.allReset": "Alle eigenen Bilder auf das Original zurückgesetzt",

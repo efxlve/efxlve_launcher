@@ -311,13 +311,22 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
 
         if (val) {
           if (S.activeCoverTarget === "hero") {
-            saveCustomHero(id, val);
+            if (!saveCustomHero(id, val)) {
+              toast(i18nT("cover.saveFailed"), "err");
+              return true;
+            }
             toast(i18nT("cover.heroSaved"), "ok");
           } else if (S.activeCoverTarget === "logo") {
-            saveCustomLogo(id, val);
+            if (!saveCustomLogo(id, val)) {
+              toast(i18nT("cover.saveFailed"), "err");
+              return true;
+            }
             toast(i18nT("cover.logoSaved"), "ok");
           } else {
-            saveCustomCover(id, val);
+            if (!saveCustomCover(id, val)) {
+              toast(i18nT("cover.saveFailed"), "err");
+              return true;
+            }
             toast(i18nT("cover.portraitSaved"), "ok");
           }
           closeCustomCoverModal();
@@ -383,7 +392,10 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
         const urlInput = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
         const pendingUrl = S.sgdbSelectedCoverUrl || urlInput?.value.trim() || "";
         if (pendingUrl && S.activeCoverTarget === "logo") {
-          saveCustomLogo(id, pendingUrl);
+          if (!saveCustomLogo(id, pendingUrl)) {
+            toast(i18nT("cover.saveFailed"), "err");
+            return true;
+          }
           S.sgdbSelectedCoverUrl = "";
         }
         if (!customLogoOf(id)) {

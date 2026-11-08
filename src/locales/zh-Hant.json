@@ -1145,6 +1145,8 @@
   "cover.heroSaved": "已儲存自訂寬幅主視覺",
   "cover.portraitSaved": "已儲存自訂直向封面 (2:3)",
   "cover.pickFirst": "請從 SteamGridDB 選擇影像、輸入 URL 或上傳檔案",
+  "cover.fileUnreadable": "無法讀取這張圖片。請嘗試更小的 PNG、JPG 或 WebP 檔案。",
+  "cover.saveFailed": "無法儲存這張圖片。請嘗試更小的圖片。",
   "cover.heroReset": "寬幅主視覺已還原為原始影像",
   "cover.portraitReset": "直向封面已還原為原始影像",
   "cover.allReset": "所有自訂影像已還原為原始影像",

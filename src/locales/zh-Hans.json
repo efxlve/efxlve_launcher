@@ -1145,6 +1145,8 @@
   "cover.heroSaved": "已保存自定义宽幅横幅",
   "cover.portraitSaved": "已保存自定义竖版封面 (2:3)",
   "cover.pickFirst": "请从 SteamGridDB 选择图像、输入 URL 或上传文件",
+  "cover.fileUnreadable": "无法读取该图片。请尝试更小的 PNG、JPG 或 WebP 文件。",
+  "cover.saveFailed": "无法保存该图片。请尝试更小的图片。",
   "cover.heroReset": "宽幅横幅已恢复为原始图像",
   "cover.portraitReset": "竖版封面已恢复为原始图像",
   "cover.allReset": "所有自定义图像已恢复为原始图像",

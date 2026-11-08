@@ -49,6 +49,7 @@ import {
   renderCustomCoverModalContent,
   searchAndLoadSteamGrid,
 } from "../cover/cover-view";
+import { readCoverFile } from "../cover/cover-file";
 import { setLogoScale, stopLogoHeroAdjust } from "../cover/logo-layout";
 import { closeSortNameModal } from "../library/sort-name";
 import { closeLibFilterPanel } from "../library/library-filters";
@@ -441,6 +442,28 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+/**
+ * Reads a picked cover file into the modal preview and leaves the data URL in
+ * `S.sgdbSelectedCoverUrl` for the Save action. Downscaling happens first: a
+ * raw photo overruns the localStorage quota and the save would throw.
+ */
+function applyPickedCoverFile(file: File): void {
+  void readCoverFile(file, S.activeCoverTarget)
+    .then((result) => {
+      S.sgdbSelectedCoverUrl = result;
+      const urlInput = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
+      const previewWrapper = document.querySelector(".cover-preview-card") as HTMLElement | null;
+      if (urlInput) urlInput.value = result;
+      if (previewWrapper) {
+        previewWrapper.innerHTML = `
+          <img id="cover-preview-img" src="${result}" alt="${i18nT("cover.previewAlt")}" />
+          <div class="cover-preview-badge">${i18nT("cover.localFile")}</div>
+        `;
+      }
+    })
+    .catch(() => toast(i18nT("cover.fileUnreadable"), "err"));
+}
+
 document.addEventListener("change", (e) => {
   const target = e.target as HTMLInputElement;
   const caseColorInput = target?.closest?.<HTMLInputElement>('input[data-act="set-case-store-color"]');
@@ -488,21 +511,10 @@ document.addEventListener("change", (e) => {
   }
   if (target && target.id === "custom-cover-file-input" && target.files && target.files[0]) {
     const file = target.files[0];
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      S.sgdbSelectedCoverUrl = result;
-      const urlInput = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
-      const previewWrapper = document.querySelector(".cover-preview-card") as HTMLElement | null;
-      if (urlInput) urlInput.value = result;
-      if (previewWrapper) {
-        previewWrapper.innerHTML = `
-          <img id="cover-preview-img" src="${result}" alt="${i18nT("cover.previewAlt")}" />
-          <div class="cover-preview-badge">${i18nT("cover.localFile")}</div>
-        `;
-      }
-    };
-    reader.readAsDataURL(file);
+    // Clearing the field lets the same file be picked again after a retry.
+    target.value = "";
+    applyPickedCoverFile(file);
+    return;
   }
   if (target && target.id === "studio-filter") {
     return;
@@ -596,21 +608,7 @@ document.addEventListener("drop", (e) => {
     dropzone.classList.remove("is-dragover");
     const file = e.dataTransfer?.files?.[0];
     if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        S.sgdbSelectedCoverUrl = result;
-        const urlInput = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
-        const previewWrapper = document.querySelector(".cover-preview-card") as HTMLElement | null;
-        if (urlInput) urlInput.value = result;
-        if (previewWrapper) {
-          previewWrapper.innerHTML = `
-            <img id="cover-preview-img" src="${result}" alt="${i18nT("cover.previewAlt")}" />
-            <div class="cover-preview-badge">${i18nT("cover.localFile")}</div>
-          `;
-        }
-      };
-      reader.readAsDataURL(file);
+      applyPickedCoverFile(file);
     }
   }
 });

@@ -1145,6 +1145,8 @@
   "cover.heroSaved": "Zapisano własny szeroki baner",
   "cover.portraitSaved": "Zapisano własną okładkę pionową (2:3)",
   "cover.pickFirst": "Wybierz obraz ze SteamGridDB, wpisz adres URL albo wgraj plik",
+  "cover.fileUnreadable": "Nie udało się odczytać tego obrazu. Wybierz mniejszy plik PNG, JPG lub WebP.",
+  "cover.saveFailed": "Nie udało się zapisać tego obrazu. Wybierz mniejszy.",
   "cover.heroReset": "Przywrócono oryginalny szeroki baner",
   "cover.portraitReset": "Przywrócono oryginalną okładkę pionową",
   "cover.allReset": "Przywrócono wszystkie oryginalne obrazy",

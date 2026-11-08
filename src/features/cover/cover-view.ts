@@ -35,13 +35,27 @@ import {
   setLogoScale,
 } from "./logo-layout";
 
-export function saveCustomCover(appName: string, url: string): void {
-  S.customCovers[appName] = url.trim();
-  localStorage.setItem(CUSTOM_COVERS_KEY, JSON.stringify(S.customCovers));
+/** Persists one art record; rolls back when the storage quota rejects it. */
+function persistArt(key: string, appName: string, url: string, record: Record<string, string>): boolean {
+  const previous = record[appName];
+  record[appName] = url.trim();
+  try {
+    localStorage.setItem(key, JSON.stringify(record));
+    return true;
+  } catch {
+    if (previous === undefined) delete record[appName];
+    else record[appName] = previous;
+    return false;
+  }
+}
+
+export function saveCustomCover(appName: string, url: string): boolean {
+  if (!persistArt(CUSTOM_COVERS_KEY, appName, url, S.customCovers)) return false;
   clearWideArtCache(appName);
   S.libraryDataRev++;
   render();
   repaintGameHero(appName);
+  return true;
 }
 
 export function resetCustomCover(appName: string): void {
@@ -53,13 +67,13 @@ export function resetCustomCover(appName: string): void {
   repaintGameHero(appName);
 }
 
-export function saveCustomHero(appName: string, url: string): void {
-  S.customHeroes[appName] = url.trim();
-  localStorage.setItem(CUSTOM_HEROES_KEY, JSON.stringify(S.customHeroes));
+export function saveCustomHero(appName: string, url: string): boolean {
+  if (!persistArt(CUSTOM_HEROES_KEY, appName, url, S.customHeroes)) return false;
   clearWideArtCache(appName);
   S.libraryDataRev++;
   render();
   repaintGameHero(appName);
+  return true;
 }
 
 export function resetCustomHero(appName: string): void {
@@ -79,12 +93,12 @@ export function logoSizeOf(appName: string): CustomLogoSize {
 }
 
 /** Saves the transparent logo and repaints the open game page behind the modal. */
-export function saveCustomLogo(appName: string, url: string): void {
-  S.customLogos[appName] = url.trim();
-  localStorage.setItem(CUSTOM_LOGOS_KEY, JSON.stringify(S.customLogos));
+export function saveCustomLogo(appName: string, url: string): boolean {
+  if (!persistArt(CUSTOM_LOGOS_KEY, appName, url, S.customLogos)) return false;
   S.libraryDataRev++;
   render();
   repaintGameHero(appName);
+  return true;
 }
 
 export function resetCustomLogo(appName: string): void {

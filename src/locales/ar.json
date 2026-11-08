@@ -1145,6 +1145,8 @@
   "cover.heroSaved": "حُفظت اللافتة العريضة المخصصة",
   "cover.portraitSaved": "حُفظ الغلاف العمودي المخصص (2:3)",
   "cover.pickFirst": "يرجى اختيار صورة من SteamGridDB أو إدخال URL أو رفع ملف",
+  "cover.fileUnreadable": "تعذرت قراءة هذه الصورة. جرّب ملف PNG أو JPG أو WebP أصغر.",
+  "cover.saveFailed": "تعذر حفظ هذه الصورة. جرّب صورة أصغر.",
   "cover.heroReset": "أُعيدت اللافتة العريضة إلى الأصل",
   "cover.portraitReset": "أُعيد الغلاف العمودي إلى الأصل",
   "cover.allReset": "أُعيدت كل الصور المخصصة إلى الأصل",

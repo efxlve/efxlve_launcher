@@ -1145,6 +1145,8 @@
   "cover.heroSaved": "Banner largo personalizzato salvato",
   "cover.portraitSaved": "Copertina verticale (2:3) salvata",
   "cover.pickFirst": "Scegli un'immagine da SteamGridDB, inserisci un URL o carica un file",
+  "cover.fileUnreadable": "Impossibile leggere questa immagine. Prova un file PNG, JPG o WebP più piccolo.",
+  "cover.saveFailed": "Impossibile salvare questa immagine. Provane una più piccola.",
   "cover.heroReset": "Banner largo ripristinato all'originale",
   "cover.portraitReset": "Copertina verticale ripristinata all'originale",
   "cover.allReset": "Tutte le immagini personalizzate ripristinate all'originale",

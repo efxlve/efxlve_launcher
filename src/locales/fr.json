@@ -1145,6 +1145,8 @@
   "cover.heroSaved": "Hero large personnalisé enregistré",
   "cover.portraitSaved": "Jaquette portrait personnalisée (2:3) enregistrée",
   "cover.pickFirst": "Choisis une image sur SteamGridDB, saisis une URL ou envoie un fichier",
+  "cover.fileUnreadable": "Cette image n'a pas pu être lue. Essaie un fichier PNG, JPG ou WebP plus petit.",
+  "cover.saveFailed": "Cette image n'a pas pu être enregistrée. Essaie une image plus petite.",
   "cover.heroReset": "Hero large rétabli à l'original",
   "cover.portraitReset": "Jaquette portrait rétablie à l'original",
   "cover.allReset": "Toutes les images personnalisées rétablies à l'original",

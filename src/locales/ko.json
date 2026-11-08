@@ -1145,6 +1145,8 @@
   "cover.heroSaved": "사용자 지정 와이드 히어로를 저장했습니다",
   "cover.portraitSaved": "사용자 지정 세로 커버(2:3)를 저장했습니다",
   "cover.pickFirst": "SteamGridDB에서 이미지를 고르거나 URL을 입력하거나 파일을 업로드하세요",
+  "cover.fileUnreadable": "이미지를 읽을 수 없습니다. 더 작은 PNG, JPG 또는 WebP 파일을 사용해 보세요.",
+  "cover.saveFailed": "이미지를 저장할 수 없습니다. 더 작은 이미지를 사용해 보세요.",
   "cover.heroReset": "와이드 히어로를 원본으로 되돌렸습니다",
   "cover.portraitReset": "세로 커버를 원본으로 되돌렸습니다",
   "cover.allReset": "모든 사용자 지정 이미지를 원본으로 되돌렸습니다",

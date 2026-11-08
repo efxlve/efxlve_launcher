@@ -1217,6 +1217,8 @@
   "cover.heroSaved": "Özel yatay afiş (Hero) kaydedildi",
   "cover.portraitSaved": "Özel dikey kapak (2:3) kaydedildi",
   "cover.pickFirst": "Lütfen SteamGridDB'den bir görsel seçin, URL girin veya dosya yükleyin",
+  "cover.fileUnreadable": "Bu görsel okunamadı. Daha küçük bir PNG, JPG veya WebP dosyası deneyin.",
+  "cover.saveFailed": "Bu görsel kaydedilemedi. Daha küçük bir görsel deneyin.",
   "cover.heroReset": "Yatay afiş orijinal haline döndürüldü",
   "cover.portraitReset": "Dikey kapak orijinal haline döndürüldü",
   "cover.allReset": "Tüm özel görseller orijinal haline döndürüldü",

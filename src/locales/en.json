@@ -1217,6 +1217,8 @@
   "cover.heroSaved": "Custom wide hero saved",
   "cover.portraitSaved": "Custom portrait cover (2:3) saved",
   "cover.pickFirst": "Please pick an image from SteamGridDB, enter a URL or upload a file",
+  "cover.fileUnreadable": "That image could not be read. Try a smaller PNG, JPG or WebP file.",
+  "cover.saveFailed": "That image could not be saved. Try a smaller one.",
   "cover.heroReset": "Wide hero restored to original",
   "cover.portraitReset": "Portrait cover restored to original",
   "cover.allReset": "All custom images restored to original",

@@ -1145,6 +1145,8 @@
   "cover.heroSaved": "Hero ancho personalizado guardado",
   "cover.portraitSaved": "Portada vertical personalizada (2:3) guardada",
   "cover.pickFirst": "Elige una imagen de SteamGridDB, introduce una URL o sube un archivo",
+  "cover.fileUnreadable": "No se pudo leer esa imagen. Prueba con un archivo PNG, JPG o WebP más pequeño.",
+  "cover.saveFailed": "No se pudo guardar esa imagen. Prueba con una más pequeña.",
   "cover.heroReset": "Hero ancho restaurado al original",
   "cover.portraitReset": "Portada vertical restaurada al original",
   "cover.allReset": "Todas las imágenes personalizadas restauradas al original",
