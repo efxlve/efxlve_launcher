@@ -1,391 +1,325 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
   <defs>
-    <!-- Cinematic Big Valley Sunset Sky Gradient -->
-    <linearGradient id="sunsetSky" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#140b17"/>
-      <stop offset="25%" stop-color="#2d121f"/>
-      <stop offset="48%" stop-color="#581619"/>
-      <stop offset="68%" stop-color="#93241b"/>
-      <stop offset="82%" stop-color="#d44b1c"/>
-      <stop offset="92%" stop-color="#f59e0b"/>
-      <stop offset="100%" stop-color="#fde68a"/>
+    <!-- Cinematic Frontier Sunset Gradient -->
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#130a17"/>
+      <stop offset="22%" stop-color="#2a0f1e"/>
+      <stop offset="42%" stop-color="#541421"/>
+      <stop offset="60%" stop-color="#872220"/>
+      <stop offset="76%" stop-color="#c4461c"/>
+      <stop offset="88%" stop-color="#f08819"/>
+      <stop offset="96%" stop-color="#f5af24"/>
+      <stop offset="100%" stop-color="#fde074"/>
     </linearGradient>
 
-    <!-- Low Sunset Sun Radiance -->
-    <radialGradient id="sunGlow" cx="58%" cy="66%" r="45%">
+    <!-- Warm Horizon Sun Bloom -->
+    <radialGradient id="sunBloom" cx="48%" cy="72%" r="42%">
       <stop offset="0%" stop-color="#fff8db" stop-opacity="0.95"/>
-      <stop offset="12%" stop-color="#fde047" stop-opacity="0.75"/>
-      <stop offset="30%" stop-color="#f97316" stop-opacity="0.45"/>
-      <stop offset="65%" stop-color="#b91c1c" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#140b17" stop-opacity="0"/>
+      <stop offset="15%" stop-color="#fde047" stop-opacity="0.6"/>
+      <stop offset="35%" stop-color="#f97316" stop-opacity="0.3"/>
+      <stop offset="70%" stop-color="#991b1b" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#130a17" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- Horizon Atmospheric Dust Haze -->
-    <linearGradient id="canyonHaze" x1="0%" y1="0%" x2="0%" y2="100%">
+    <!-- Canyon Valley Mist & Dust Haze -->
+    <linearGradient id="valleyMist" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#f59e0b" stop-opacity="0"/>
-      <stop offset="45%" stop-color="#ea580c" stop-opacity="0.25"/>
-      <stop offset="85%" stop-color="#581619" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#120806" stop-opacity="0.95"/>
+      <stop offset="50%" stop-color="#ea580c" stop-opacity="0.18"/>
+      <stop offset="85%" stop-color="#3b0f15" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#120608" stop-opacity="0.95"/>
     </linearGradient>
 
-    <!-- Campfire Warm Radial Illumination -->
-    <radialGradient id="fireGlow" cx="24%" cy="86%" r="28%">
-      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.9"/>
-      <stop offset="18%" stop-color="#f97316" stop-opacity="0.65"/>
-      <stop offset="45%" stop-color="#dc2626" stop-opacity="0.3"/>
-      <stop offset="75%" stop-color="#7f1d1d" stop-opacity="0.08"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-    </radialGradient>
-
-    <!-- Sandstone Rock Rimlight Highlight -->
-    <linearGradient id="rimLight" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#fed7aa" stop-opacity="0.75"/>
-      <stop offset="40%" stop-color="#f97316" stop-opacity="0.35"/>
-      <stop offset="100%" stop-color="#45110d" stop-opacity="0"/>
+    <!-- Winding Canyon River Sunset Reflection -->
+    <linearGradient id="riverShimmer" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f97316" stop-opacity="0.3"/>
+      <stop offset="30%" stop-color="#fef08a" stop-opacity="0.85"/>
+      <stop offset="60%" stop-color="#f97316" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#c2410c" stop-opacity="0.4"/>
     </linearGradient>
 
-    <!-- Cloud Backlight Gradient -->
-    <linearGradient id="cloudEdge" x1="0%" y1="100%" x2="0%" y2="0%">
-      <stop offset="0%" stop-color="#fde047" stop-opacity="0.5"/>
-      <stop offset="50%" stop-color="#f97316" stop-opacity="0.25"/>
-      <stop offset="100%" stop-color="#2d121f" stop-opacity="0"/>
+    <!-- Subtle Cloud Illumination -->
+    <linearGradient id="cloudGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#fde047" stop-opacity="0.35"/>
+      <stop offset="40%" stop-color="#ea580c" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#2a0f1e" stop-opacity="0"/>
     </linearGradient>
   </defs>
 
-  <!-- ==================== SKY & SUNSET ==================== -->
-  <rect width="1920" height="1080" fill="url(#sunsetSky)"/>
-  <rect width="1920" height="1080" fill="url(#sunGlow)"/>
+  <!-- ==================== SKY & RADIANCE ==================== -->
+  <rect width="1920" height="1080" fill="url(#skyGrad)"/>
+  <rect width="1920" height="1080" fill="url(#sunBloom)"/>
 
-  <!-- Low Canyon Setting Sun -->
-  <circle cx="1140" cy="650" r="54" fill="#fffbeb" opacity="0.9"/>
-  <circle cx="1140" cy="650" r="85" fill="#fef08a" opacity="0.4" filter="blur(8px)"/>
+  <!-- Low Mountain Sunset Sun -->
+  <circle cx="920" cy="710" r="48" fill="#fffbeb" opacity="0.95"/>
+  <circle cx="920" cy="710" r="95" fill="#fef08a" opacity="0.35"/>
 
-  <!-- Evening Cloud Bands with Gilded Sunset Edges -->
-  <g id="eveningClouds">
-    <!-- Upper High Atmospheric Stratus Cloud -->
-    <path d="M-50,220 C240,210 520,240 840,225 C1180,210 1480,235 1980,215 L1980,270 C1620,285 1240,265 920,280 C580,295 220,275 -50,285 Z" fill="#2d1522" opacity="0.45"/>
-    <path d="M-50,275 C240,265 620,285 960,275 C1320,265 1680,290 1980,275" stroke="url(#cloudEdge)" stroke-width="2.5" fill="none" opacity="0.6"/>
+  <!-- Painterly Evening Cloud Shelves -->
+  <g id="sunsetClouds" opacity="0.55">
+    <path d="M-60,260 C240,245 560,280 920,260 C1300,240 1640,270 2000,250 L2000,315 C1680,335 1320,310 960,325 C580,340 220,315 -60,325 Z" fill="#2d1220"/>
+    <path d="M-60,315 C260,300 680,325 1060,310 C1460,295 1780,325 2000,310" stroke="url(#cloudGrad)" stroke-width="3" fill="none"/>
 
-    <!-- Mid-Sky Dramatic Storm Shelf -->
-    <path d="M-80,380 C180,365 440,395 720,380 C1040,360 1360,390 1720,370 C1860,360 1960,375 2040,365 L2040,435 C1760,455 1420,430 1120,445 C780,460 420,440 120,455 C-20,460 -50,450 -80,445 Z" fill="#4a181e" opacity="0.55"/>
-    <path d="M-80,440 C220,425 580,450 940,435 C1320,420 1660,445 2040,430" stroke="#fba042" stroke-width="3" fill="none" opacity="0.5"/>
+    <path d="M-80,430 C180,410 480,445 840,425 C1220,405 1580,435 2020,415 L2020,485 C1720,505 1360,480 1020,495 C660,510 280,485 -80,495 Z" fill="#4a151e" opacity="0.7"/>
+    <path d="M-80,485 C240,465 680,495 1080,475 C1480,455 1820,485 2020,470" stroke="#fba042" stroke-width="2.5" fill="none" opacity="0.6"/>
 
-    <!-- Low Horizon Glowing Vapour Ribbon -->
-    <path d="M200,560 C520,545 860,570 1240,555 C1580,540 1840,560 2000,550 L2000,580 C1780,590 1480,575 1180,588 C820,600 480,585 200,590 Z" fill="#b9381c" opacity="0.4"/>
+    <path d="M120,595 C460,575 840,605 1260,585 C1620,570 1880,595 2040,580 L2040,620 C1820,635 1520,615 1200,628 C820,640 440,620 120,625 Z" fill="#7c1d22" opacity="0.5"/>
   </g>
 
-  <!-- Soaring Wild Birds (High-Altitude Hawks in V-Formation) -->
-  <g fill="#1f0a10" opacity="0.75">
-    <path d="M980,310 Q990,302 1002,308 Q1014,302 1024,310 Q1012,305 1002,314 Q992,305 980,310 Z"/>
-    <path d="M1035,285 Q1043,278 1053,283 Q1063,278 1071,285 Q1061,281 1053,288 Q1045,281 1035,285 Z" transform="scale(0.85) translate(190, 45)"/>
-    <path d="M930,335 Q939,328 949,333 Q959,328 968,335 Q958,331 949,339 Q940,331 930,335 Z" transform="scale(0.8) translate(240, 75)"/>
-    <path d="M1075,270 Q1082,264 1090,268 Q1098,264 1105,270 Q1097,266 1090,273 Q1083,266 1075,270 Z" transform="scale(0.7) translate(470, 95)"/>
-    <path d="M895,360 Q902,354 911,358 Q920,354 927,360 Q919,357 911,363 Q903,357 895,360 Z" transform="scale(0.65) translate(490, 160)"/>
+  <!-- Soaring Wild Geese / Eagles in High Sky -->
+  <g fill="#1a080f" opacity="0.8">
+    <path d="M780,330 Q792,320 806,328 Q820,320 832,330 Q818,324 806,334 Q794,324 780,330 Z"/>
+    <path d="M840,305 Q850,296 862,303 Q874,296 884,305 Q872,300 862,308 Q852,300 840,305 Z" transform="scale(0.85) translate(140, 40)"/>
+    <path d="M730,355 Q739,348 750,353 Q761,348 770,355 Q760,351 750,359 Q740,351 730,355 Z" transform="scale(0.78) translate(210, 80)"/>
+    <path d="M885,285 Q894,278 903,283 Q912,278 920,285 Q911,281 903,288 Q895,281 885,285 Z" transform="scale(0.7) translate(390, 85)"/>
   </g>
 
-  <!-- ==================== LAYER 1: FAR HORIZON SANDSTONE RIDGES ==================== -->
-  <g id="distantMountains" opacity="0.85">
-    <!-- Far Jagged Rocky Peaks (Purple/Burgundy Haze) -->
-    <path d="M-20,670 L60,650 L140,660 L240,635 L340,655 L460,620 L580,645 L690,615 L780,635 L890,605 L1010,630 L1120,595 L1220,625 L1360,590 L1480,620 L1600,585 L1720,615 L1840,580 L1940,605 L1940,780 L-20,780 Z" fill="#3a131b"/>
-    <!-- Distant Ridge Rim Highlights -->
-    <path d="M-20,670 L60,650 L140,660 L240,635 L340,655 L460,620 L580,645 L690,615 L780,635 L890,605 L1010,630 L1120,595 L1220,625 L1360,590 L1480,620 L1600,585 L1720,615 L1840,580 L1940,605" stroke="#dc4d22" stroke-width="1.5" fill="none" opacity="0.6"/>
+  <!-- ==================== LAYER 1: FAR GRIZZLIES MOUNTAIN CRESTS ==================== -->
+  <g id="distantGrizzlies" opacity="0.85">
+    <!-- Majestic Jagged Peaks Shrouded in Wine-Red Dusk -->
+    <path d="M-50,710 L40,685 L120,695 L220,660 L320,675 L440,640 L560,665 L680,630 L800,655 L910,615 L1020,645 L1140,605 L1260,635 L1380,595 L1500,625 L1620,580 L1740,615 L1860,575 L1980,605 L1980,820 L-50,820 Z" fill="#2d0f19"/>
+    <!-- Distant Rimline Sunset Shimmer -->
+    <path d="M-50,710 L40,685 L120,695 L220,660 L320,675 L440,640 L560,665 L680,630 L800,655 L910,615 L1020,645 L1140,605 L1260,635 L1380,595 L1500,625 L1620,580 L1740,615 L1860,575 L1980,605" stroke="#dc4d22" stroke-width="1.8" fill="none" opacity="0.65"/>
   </g>
 
-  <!-- ==================== LAYER 2: MIDGROUND MONUMENT BUTTES & CANYON WALLS ==================== -->
-  <g id="sandstoneButtes">
-    <!-- Left Iconic Monument Mesa (Layered Horizontal Rock Strata) -->
-    <g>
-      <!-- Base & Talus Scree Slope -->
-      <polygon points="120,780 180,670 460,670 540,780" fill="#240c0d"/>
-      <!-- Sheer Vertical Sandstone Cliffs -->
-      <polygon points="180,670 200,580 440,580 460,670" fill="#1b0809"/>
-      <!-- Upper Stepped Terrace Mesa Top -->
-      <polygon points="220,580 235,530 405,530 420,580" fill="#140607"/>
+  <!-- ==================== LAYER 2: MID-RANGE CANYON BLUFFS & FOREST RIDGES ==================== -->
+  <g id="midRangeRidges">
+    <!-- Natural Layered Canyon Plateau (Organic Rock Formations) -->
+    <!-- Left Canyon Massif -->
+    <path d="M-50,770 C80,745 220,730 380,735 C520,740 640,760 780,750 C860,745 920,755 980,775 L980,890 L-50,890 Z" fill="#220b12"/>
+    <!-- Natural Stepped Strata Bands on Left Massif -->
+    <path d="M-50,770 C80,745 220,730 380,735 C520,740 640,760 780,750" stroke="#f59e0b" stroke-width="1.5" fill="none" opacity="0.7"/>
+    <path d="M60,760 C180,748 320,746 460,755" stroke="#f97316" stroke-width="1.2" fill="none" opacity="0.5"/>
 
-      <!-- Sedimentary Rock Strata Lines on Left Mesa -->
-      <line x1="202" y1="575" x2="438" y2="575" stroke="#d44b1c" stroke-width="2" opacity="0.75"/>
-      <line x1="210" y1="560" x2="430" y2="560" stroke="#f59e0b" stroke-width="1.2" opacity="0.6"/>
-      <line x1="225" y1="545" x2="415" y2="545" stroke="#f97316" stroke-width="1.8" opacity="0.7"/>
-      <line x1="237" y1="532" x2="403" y2="532" stroke="#fef08a" stroke-width="2.5" opacity="0.85"/>
-      <!-- Vertical Erosion Fissures -->
-      <line x1="280" y1="535" x2="275" y2="670" stroke="#0a0304" stroke-width="3" opacity="0.8"/>
-      <line x1="350" y1="540" x2="355" y2="670" stroke="#0a0304" stroke-width="2.5" opacity="0.8"/>
-    </g>
+    <!-- Right Canyon Massif with Eroded Saddle Gap -->
+    <path d="M1060,775 C1180,750 1340,735 1520,740 C1680,745 1840,725 2000,740 L2000,890 L1060,890 Z" fill="#1e0910"/>
+    <path d="M1060,775 C1180,750 1340,735 1520,740 C1680,745 1840,725 2000,740" stroke="#f59e0b" stroke-width="1.8" fill="none" opacity="0.75"/>
+    <path d="M1200,762 C1340,752 1480,754 1640,748" stroke="#f97316" stroke-width="1.2" fill="none" opacity="0.5"/>
 
-    <!-- Center-Right Colossal Plateau Mesa -->
-    <g>
-      <!-- Talus Slope Base -->
-      <polygon points="860,780 940,680 1340,680 1440,780" fill="#220b0c"/>
-      <!-- Sheer Rock Face -->
-      <polygon points="940,680 965,600 1315,600 1340,680" fill="#180708"/>
-      <!-- Flat Tableland Summit -->
-      <polygon points="980,600 995,560 1285,560 1300,600" fill="#120506"/>
+    <!-- Distant Pine Tree Crowns along the Canyon Ridge Crest -->
+    <g fill="#16060c">
+      <!-- Left Ridge Pines -->
+      <polygon points="120,745 125,720 130,745"/>
+      <polygon points="135,744 140,715 145,744"/>
+      <polygon points="152,743 158,710 164,743"/>
+      <polygon points="175,740 180,718 185,740"/>
+      <polygon points="210,735 216,705 222,735"/>
+      <polygon points="245,733 250,712 255,733"/>
+      <polygon points="280,734 286,708 292,734"/>
+      <polygon points="340,736 346,715 352,736"/>
+      <polygon points="410,742 416,722 422,742"/>
+      <polygon points="480,746 485,728 490,746"/>
 
-      <!-- Sedimentary Strata Bands -->
-      <line x1="968" y1="595" x2="1312" y2="595" stroke="#d44b1c" stroke-width="2" opacity="0.7"/>
-      <line x1="978" y1="580" x2="1302" y2="580" stroke="#f59e0b" stroke-width="1.5" opacity="0.65"/>
-      <line x1="997" y1="562" x2="1283" y2="562" stroke="#fde047" stroke-width="2.5" opacity="0.85"/>
-      <!-- Canyon Crevices -->
-      <line x1="1080" y1="565" x2="1085" y2="680" stroke="#090304" stroke-width="3" opacity="0.8"/>
-      <line x1="1200" y1="565" x2="1195" y2="680" stroke="#090304" stroke-width="2.5" opacity="0.8"/>
-    </g>
-
-    <!-- Right Needle Totem Spire (Eroded Sandstone Pillar) -->
-    <g>
-      <polygon points="1490,780 1515,660 1545,660 1570,780" fill="#200a0b"/>
-      <polygon points="1515,660 1522,540 1538,540 1545,660" fill="#150607"/>
-      <!-- Spire Rimlight -->
-      <line x1="1522" y1="540" x2="1522" y2="660" stroke="#f59e0b" stroke-width="2" opacity="0.75"/>
-      <line x1="1523" y1="541" x2="1537" y2="541" stroke="#fef08a" stroke-width="2" opacity="0.9"/>
+      <!-- Right Ridge Pines -->
+      <polygon points="1120,768 1125,742 1130,768"/>
+      <polygon points="1155,762 1161,735 1167,762"/>
+      <polygon points="1220,752 1226,725 1232,752"/>
+      <polygon points="1265,748 1271,722 1277,748"/>
+      <polygon points="1340,744 1346,718 1352,744"/>
+      <polygon points="1420,742 1427,712 1434,742"/>
+      <polygon points="1510,742 1516,720 1522,742"/>
+      <polygon points="1600,743 1606,715 1612,743"/>
+      <polygon points="1720,738 1726,710 1732,738"/>
+      <polygon points="1810,732 1817,705 1824,732"/>
     </g>
   </g>
 
-  <!-- Atmospheric Canyon Dust Fog -->
-  <rect x="0" y="660" width="1920" height="200" fill="url(#canyonHaze)" pointer-events="none"/>
+  <!-- ==================== LAYER 3: CANYON VALLEY FLOOR & WINDING RIVER ==================== -->
+  <g id="canyonValleyAndRiver">
+    <!-- Canyon Valley Floor -->
+    <path d="M-50,840 C280,815 620,830 960,820 C1300,810 1640,825 2000,815 L2000,940 L-50,940 Z" fill="#170609"/>
 
-  <!-- ==================== LAYER 3: ROLLING FOOTHILLS & INFRASTRUCTURE ==================== -->
-  <g id="rollingFoothills">
-    <!-- Undulating Midground Prairie Ridge -->
-    <path d="M-50,790 C220,760 520,785 820,765 C1140,745 1460,775 1780,750 C1880,745 1940,755 2000,750 L2000,920 L-50,920 Z" fill="#190a09"/>
-    <path d="M-50,790 C220,760 520,785 820,765 C1140,745 1460,775 1780,750 C1880,745 1940,755 2000,750" stroke="#c2410c" stroke-width="2" fill="none" opacity="0.6"/>
-
-    <!-- Western Aeromotor Windmill (Firmly Planted on Ridge at x=640, ground y=770) -->
-    <g id="windmillStructure" transform="translate(640, 770)" stroke="#110505" stroke-width="1.5" fill="#110505">
-      <!-- 4-Leg Lattice Steel Tower sinking firmly into ground -->
-      <line x1="-16" y1="0" x2="-4" y2="-90"/>
-      <line x1="16" y1="0" x2="4" y2="-90"/>
-      <!-- Internal X-Bracing Girders -->
-      <line x1="-13" y1="-20" x2="13" y2="-20" stroke-width="1"/>
-      <line x1="-10" y1="-45" x2="10" y2="-45" stroke-width="1"/>
-      <line x1="-7" y1="-70" x2="7" y2="-70" stroke-width="1"/>
-      <line x1="-15" y1="-5" x2="11" y2="-35" stroke-width="0.8"/>
-      <line x1="15" y1="-5" x2="-11" y2="-35" stroke-width="0.8"/>
-      <line x1="-11" y1="-35" x2="8" y2="-65" stroke-width="0.8"/>
-      <line x1="11" y1="-35" x2="-8" y2="-65" stroke-width="0.8"/>
-      <!-- Platform & Rotor Hub -->
-      <rect x="-8" y="-95" width="16" height="5" fill="#110505"/>
-      <circle cx="0" cy="-97" r="28" fill="none" stroke="#110505" stroke-width="1.8"/>
-      <circle cx="0" cy="-97" r="14" fill="none" stroke="#110505" stroke-width="1.2"/>
-      <line x1="-28" y1="-97" x2="28" y2="-97" stroke-width="1.5"/>
-      <line x1="0" y1="-125" x2="0" y2="-69" stroke-width="1.5"/>
-      <line x1="-20" y1="-117" x2="20" y2="-77" stroke-width="1.2"/>
-      <line x1="-20" y1="-77" x2="20" y2="-117" stroke-width="1.2"/>
-      <!-- Wind Vane Tail (Direction Fin) -->
-      <polygon points="4,-97 32,-104 30,-90" fill="#110505"/>
-      <!-- Windmill Rim Highlight -->
-      <circle cx="0" cy="-97" r="28" fill="none" stroke="#f59e0b" stroke-width="0.8" opacity="0.5"/>
-    </g>
-
-    <!-- Historic Western Telegraph Poles & Sagging Catenary Copper Wires -->
-    <g id="telegraphLine" stroke="#120606">
-      <!-- Pole 1 (x=320, ground=775) -->
-      <line x1="320" y1="775" x2="320" y2="705" stroke-width="3"/>
-      <line x1="310" y1="715" x2="330" y2="715" stroke-width="2"/>
-      <!-- Pole 2 (x=460, ground=770) -->
-      <line x1="460" y1="770" x2="460" y2="700" stroke-width="2.8"/>
-      <line x1="450" y1="710" x2="470" y2="710" stroke-width="1.8"/>
-      <!-- Pole 3 (x=820, ground=765) -->
-      <line x1="820" y1="765" x2="820" y2="695" stroke-width="2.8"/>
-      <line x1="810" y1="705" x2="830" y2="705" stroke-width="1.8"/>
-      <!-- Pole 4 (x=980, ground=755) -->
-      <line x1="980" y1="755" x2="980" y2="685" stroke-width="2.5"/>
-      <line x1="970" y1="695" x2="990" y2="695" stroke-width="1.6"/>
-
-      <!-- Sagging Telegraph Wires Connecting Poles -->
-      <path d="M310,715 Q385,735 450,710 Q545,735 640,715" fill="none" stroke="#180807" stroke-width="1.2"/>
-      <path d="M470,710 Q645,745 810,705 Q900,725 970,695" fill="none" stroke="#180807" stroke-width="1.2"/>
-      <!-- Wire Sunset Glimmer -->
-      <path d="M470,710 Q645,745 810,705" fill="none" stroke="#f59e0b" stroke-width="0.6" opacity="0.6"/>
-    </g>
+    <!-- Winding Canyon River (Big Valley / Dakota River Shimmering in Sunset) -->
+    <!-- The river snakes gracefully through the canyon gap, reflecting the molten sunset gold -->
+    <path d="M780,832 C840,828 890,836 940,831 C1000,826 1060,834 1140,828 C1220,822 1290,832 1380,825 L1395,836 C1300,843 1220,832 1140,839 C1060,845 990,837 930,842 C880,847 830,838 775,843 Z" fill="url(#riverShimmer)"/>
+    <!-- Intense River Specular Highlights -->
+    <path d="M820,834 C870,831 920,838 970,833 C1030,828 1090,836 1170,830" stroke="#fffbeb" stroke-width="1.8" fill="none" opacity="0.9"/>
+    <path d="M1010,831 C1070,828 1140,834 1220,827" stroke="#fef08a" stroke-width="2.5" fill="none" opacity="0.8"/>
   </g>
 
-  <!-- ==================== LAYER 4: GRAND FOREGROUND CANYON BLUFF & OVERLOOK ==================== -->
-  <g id="foregroundCanyonBluff">
-    <!-- Left & Center Craggy Sandstone Ledge -->
-    <path d="M-50,870 C160,845 360,865 580,840 C780,820 960,850 1180,830 C1380,815 1580,835 1740,815 C1860,800 1940,810 2000,805 L2000,1080 L-50,1080 Z" fill="#0d0504"/>
-    <!-- Foreground Rimlight Ridge Line -->
-    <path d="M-50,870 C160,845 360,865 580,840 C780,820 960,850 1180,830 C1380,815 1580,835 1740,815 C1860,800 1940,810 2000,805" stroke="#f97316" stroke-width="2.5" fill="none" opacity="0.5"/>
+  <!-- Atmospheric Canyon Dust & Mist Layer -->
+  <rect x="0" y="720" width="1920" height="180" fill="url(#valleyMist)" pointer-events="none"/>
 
-    <!-- Foreground Rock Strata Cracks & Boulder Facets -->
-    <g stroke="#050202" stroke-width="3" fill="none" opacity="0.7">
-      <path d="M120,890 L240,920 L380,905 L520,940"/>
-      <path d="M740,870 L890,900 L1080,885 L1240,915"/>
-      <path d="M1420,855 L1560,890 L1740,870"/>
+  <!-- ==================== LAYER 4: ROLLING PINE HILLS & HISTORIC CABIN GLOW ==================== -->
+  <g id="rollingPineRidge">
+    <!-- Midground Hill Contour (Ground y=850 to 880) -->
+    <path d="M-50,885 C220,855 480,875 780,855 C1080,838 1380,860 1680,845 C1860,838 1940,845 2000,842 L2000,980 L-50,980 Z" fill="#120407"/>
+    <!-- Hill Crest Rimlight -->
+    <path d="M-50,885 C220,855 480,875 780,855 C1080,838 1380,860 1680,845 C1860,838 1940,845 2000,842" stroke="#ea580c" stroke-width="1.6" fill="none" opacity="0.5"/>
+
+    <!-- Clustered Forest Pines along the Hill (Left-Center) -->
+    <g fill="#0c0205">
+      <!-- Cluster 1 (x=380-450) -->
+      <polygon points="380,868 387,830 394,868"/>
+      <polygon points="392,866 400,820 408,866"/>
+      <polygon points="405,865 414,810 423,865"/>
+      <polygon points="420,866 428,825 436,866"/>
+      <polygon points="432,867 439,835 446,867"/>
+
+      <!-- Cluster 2 (x=680-750) -->
+      <polygon points="685,860 692,828 699,860"/>
+      <polygon points="696,858 704,815 712,858"/>
+      <polygon points="709,856 718,802 727,856"/>
+      <polygon points="724,858 732,820 740,858"/>
+
+      <!-- Cluster 3 (x=980-1040) -->
+      <polygon points="985,846 991,818 997,846"/>
+      <polygon points="995,844 1002,805 1009,844"/>
+      <polygon points="1006,845 1013,812 1020,845"/>
     </g>
 
-    <!-- Detailed Desert Flora: Firmly Rooted Giant Saguaro Cacti on the Left Bluff -->
-    <!-- Saguaro 1: Firmly Rooted on Rock Soil at x=140, Ground Level y=865 -->
-    <g id="saguaroLeftMain" fill="#090303">
-      <!-- Root Mound & Base Stones anchoring into the hill -->
-      <ellipse cx="140" cy="866" rx="22" ry="7" fill="#060202"/>
-      <path d="M122,868 Q140,860 158,868 Z" fill="#140605"/>
-      <!-- Main Fluted Trunk (Rising tall from y=865 up to y=695) -->
-      <path d="M133,865 L133,710 C133,700 147,700 147,710 L147,865 Z"/>
-      <!-- Left High Branching Arm -->
-      <path d="M133,780 C112,780 112,760 112,740 L112,722 C112,715 122,715 122,722 L122,742 C122,752 127,766 133,766 Z"/>
-      <!-- Right Lower Branching Arm -->
-      <path d="M147,795 C168,795 168,780 168,760 L168,738 C168,731 178,731 178,738 L178,762 C178,775 162,785 147,785 Z"/>
-      <!-- Cactus Sunset Rimlight (Edge highlight catching the golden sun) -->
-      <path d="M147,712 L147,865" stroke="#f59e0b" stroke-width="1.4" opacity="0.65"/>
-      <path d="M178,739 L178,762 C178,775 165,785 147,785" stroke="#f59e0b" stroke-width="1.2" opacity="0.6" fill="none"/>
-    </g>
-
-    <!-- Saguaro 2: Smaller Companion Cactus, Rooted at x=210, Ground Level y=868 -->
-    <g id="saguaroLeftSecondary" fill="#090303">
-      <!-- Base Anchoring Rocks -->
-      <ellipse cx="210" cy="870" rx="14" ry="5" fill="#060202"/>
-      <!-- Main Trunk (y=868 up to y=755) -->
-      <path d="M205,868 L205,765 C205,758 215,758 215,765 L215,868 Z"/>
-      <!-- Single Left Branch Arm -->
-      <path d="M205,820 C192,820 192,810 192,795 L192,780 C192,775 198,775 198,780 L198,796 C198,804 201,811 205,811 Z"/>
-      <!-- Rimlight -->
-      <path d="M215,766 L215,868" stroke="#f59e0b" stroke-width="1" opacity="0.6"/>
-    </g>
-
-    <!-- Natural Desert Prairie Grass & Prickly Pear Clumps around Cacti -->
-    <g fill="#0b0404">
-      <path d="M105,868 Q112,850 120,866 Q115,852 125,867 Q108,858 105,868 Z"/>
-      <path d="M165,866 Q172,848 180,865 Q176,852 186,866 Z"/>
-      <path d="M230,869 Q238,855 245,868 Q242,856 250,869 Z"/>
-      <!-- Clustered Yucca Spikes -->
-      <path d="M75,874 L82,852 L86,873 L92,856 L94,874 Z"/>
-    </g>
-  </g>
-
-  <!-- ==================== LAYER 5: OUTLAW CAMPSITE (Left-Center, Ground y=850) ==================== -->
-  <g id="frontierCampsite">
-    <!-- Warm Campfire Ground Illumination -->
-    <circle cx="480" cy="855" r="160" fill="url(#fireGlow)"/>
-
-    <!-- Campfire Rock Ring & Sizzling Hearth Pit (Ground y=852) -->
-    <g id="fireHearth">
-      <!-- Circular River Bed Rocks -->
-      <ellipse cx="460" cy="854" rx="7" ry="4" fill="#1f0c08"/>
-      <ellipse cx="475" cy="856" rx="8" ry="4.5" fill="#2d1009"/>
-      <ellipse cx="492" cy="855" rx="8" ry="4" fill="#230d08"/>
-      <ellipse cx="504" cy="853" rx="6" ry="3.5" fill="#1c0a07"/>
-      <ellipse cx="482" cy="851" rx="9" ry="4" fill="#140604"/>
-
-      <!-- Iron Tripod Cooking Stand & Dutch Oven / Coffee Pot -->
-      <g stroke="#090302" stroke-width="2" fill="none">
-        <line x1="465" y1="854" x2="482" y2="812"/>
-        <line x1="499" y1="854" x2="482" y2="812"/>
-        <line x1="482" y1="812" x2="482" y2="824"/>
+    <!-- Distant Rustic Homestead / Cabin with Warm Window Light (x=540, Ground y=862) -->
+    <g id="distantCabin">
+      <!-- Timber Log Cabin Silhouette -->
+      <polygon points="530,864 530,848 546,838 562,848 562,864" fill="#090204"/>
+      <!-- Chimney with faint wood smoke plume -->
+      <rect x="553" y="834" width="4" height="10" fill="#090204"/>
+      <path d="M555,834 C553,822 559,812 556,800 C553,790 558,780 554,770" stroke="#fde047" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.35"/>
+      <!-- Cozy Warm Cabin Window Glow (Hearth fire inside) -->
+      <rect x="538" y="852" width="6" height="6" rx="0.5" fill="#fef08a"/>
+      <circle cx="541" cy="855" r="14" fill="#f59e0b" opacity="0.35"/>
+      <!-- Small Split-Rail Fence Beside Cabin -->
+      <g stroke="#090204" stroke-width="1.5">
+        <line x1="518" y1="865" x2="518" y2="856"/>
+        <line x1="528" y1="865" x2="528" y2="856"/>
+        <line x1="515" y1="859" x2="530" y2="859"/>
+        <line x1="516" y1="863" x2="529" y2="863"/>
       </g>
-      <!-- Hanging Coffee Pot -->
-      <rect x="477" y="824" width="10" height="11" rx="1.5" fill="#090302"/>
-      <path d="M487,826 L491,829 L487,832 Z" fill="#090302"/>
-
-      <!-- Glowing Charcoal Core & Living Campfire Flames -->
-      <ellipse cx="482" cy="853" rx="14" ry="4" fill="#f97316"/>
-      <path d="M472,853 Q476,832 481,818 Q486,834 492,853 Z" fill="#fef08a"/>
-      <path d="M476,853 Q480,838 483,824 Q487,838 490,853 Z" fill="#ffffff"/>
-      <path d="M468,853 Q474,840 478,830 Q481,842 485,853 Z" fill="#f97316" opacity="0.8"/>
-      <path d="M479,853 Q485,842 488,832 Q493,844 496,853 Z" fill="#ea580c" opacity="0.8"/>
-    </g>
-
-    <!-- Campsite Essentials: Saddle on Log, Bedroll, Rifle Scabbard -->
-    <g id="campGear" fill="#090303">
-      <!-- Fallen Cedar Log for Sitting (x=530, ground y=852) -->
-      <rect x="520" y="845" width="55" height="10" rx="3" fill="#150806"/>
-      <rect x="522" y="846" width="51" height="8" rx="2" fill="#0d0504"/>
-      <!-- Arthur's Weathered Saddle Resting on Log -->
-      <path d="M532,846 C532,836 544,834 547,838 C550,834 562,836 562,846 Z" fill="#090303"/>
-      <!-- Rolled Canvas Bedroll beside log -->
-      <ellipse cx="510" cy="853" rx="10" ry="5" fill="#120705"/>
-      <!-- Leaning Winchester Carbine Rifle -->
-      <line x1="562" y1="850" x2="578" y2="822" stroke="#090303" stroke-width="2.5"/>
-    </g>
-
-    <!-- Windblown Campfire Embers (Drifting organically upward and curving right into the night) -->
-    <g fill="#fef08a">
-      <circle cx="482" cy="815" r="2.8"/>
-      <circle cx="486" cy="798" r="2.4"/>
-      <circle cx="481" cy="780" r="2.2"/>
-      <circle cx="489" cy="762" r="2.5" fill="#fde047"/>
-      <circle cx="496" cy="740" r="2.2" fill="#fde047"/>
-      <circle cx="492" cy="720" r="1.8" fill="#fde047"/>
-      <circle cx="504" cy="695" r="2.2" fill="#fb923c"/>
-      <circle cx="512" cy="670" r="1.9" fill="#fb923c"/>
-      <circle cx="508" cy="645" r="1.6" fill="#f97316"/>
-      <circle cx="522" cy="615" r="2.0" fill="#f97316"/>
-      <circle cx="535" cy="580" r="1.7" fill="#ea580c"/>
-      <circle cx="528" cy="550" r="1.4" fill="#ea580c"/>
-      <circle cx="546" cy="515" r="1.5" fill="#dc2626"/>
-      <circle cx="558" cy="475" r="1.2" fill="#dc2626"/>
-      <!-- Stray drifting sparks -->
-      <circle cx="474" cy="790" r="1.8" fill="#fde047"/>
-      <circle cx="502" cy="775" r="1.6" fill="#fde047"/>
-      <circle cx="478" cy="735" r="1.5" fill="#fb923c"/>
-      <circle cx="516" cy="710" r="1.6" fill="#fb923c"/>
-      <circle cx="525" cy="660" r="1.4" fill="#f97316"/>
-      <circle cx="542" cy="630" r="1.3" fill="#ea580c"/>
     </g>
   </g>
 
-  <!-- ==================== LAYER 6: HERO OVERLOOK SILHOUETTE (Lone Cowboy on Horseback, Right Bluff) ==================== -->
-  <!-- Situated majestically on the right-hand promontory overlook at x=1620, ground level y=815 -->
-  <g id="heroCowboyOnHorse" fill="#080302" stroke="#080302">
-    <!-- Rock Pedestal Base directly under hooves -->
-    <polygon points="1520,830 1560,815 1740,815 1780,835 1760,855 1530,855" fill="#0b0403" stroke="#050202" stroke-width="2"/>
-    <path d="M1560,815 L1740,815" stroke="#f59e0b" stroke-width="1.8" opacity="0.65"/>
+  <!-- ==================== LAYER 5: GRAND FOREGROUND CANYON OVERLOOK BLUFF ==================== -->
+  <!-- Solid, grounded, craggy rock ledge sweeping across the bottom of the screen -->
+  <g id="foregroundOverlook">
+    <!-- Massive Sandstone Shelf (Ground level y=880 to 920 across the bottom) -->
+    <path d="M-50,910 C180,885 420,910 680,890 C940,875 1200,905 1460,880 C1660,860 1840,880 2000,870 L2000,1080 L-50,1080 Z" fill="#0a0204"/>
+    <!-- Granite Ledge Sunset Rimlight -->
+    <path d="M-50,910 C180,885 420,910 680,890 C940,875 1200,905 1460,880 C1660,860 1840,880 2000,870" stroke="#f97316" stroke-width="2" fill="none" opacity="0.6"/>
 
-    <!-- THE NOBLE HORSE (Faithful Steed Facing West into the Sunset) -->
-    <!-- Back Left Leg & Hoof firmly on rock (ground y=815) -->
-    <path d="M1585,765 L1580,788 L1576,815 L1583,815 L1588,788 L1595,765 Z" stroke-width="1"/>
-    <!-- Back Right Leg & Hoof -->
-    <path d="M1595,765 L1598,788 L1602,815 L1608,815 L1604,788 L1602,765 Z" stroke-width="1"/>
-    <!-- Front Left Leg & Hoof firmly on rock (ground y=815) -->
-    <path d="M1665,765 L1668,790 L1672,815 L1678,815 L1674,790 L1672,765 Z" stroke-width="1"/>
-    <!-- Front Right Leg (Slightly poised forward) -->
-    <path d="M1675,765 L1682,788 L1688,815 L1694,815 L1689,788 L1682,765 Z" stroke-width="1"/>
+    <!-- Organic Rock Strata Cracks & Boulder Fissures on the Cliff -->
+    <g stroke="#040102" stroke-width="3.5" fill="none" opacity="0.85">
+      <path d="M80,935 L180,960 L320,945 L480,980"/>
+      <path d="M680,915 L820,945 L980,930 L1160,960"/>
+      <path d="M1360,905 L1520,935 L1720,915"/>
+    </g>
 
-    <!-- Powerful Horse Torso & Barrel -->
-    <path d="M1580,750 C1575,725 1600,715 1630,715 C1660,715 1680,725 1675,755 C1670,772 1650,778 1630,775 C1600,775 1585,768 1580,750 Z" stroke-width="1"/>
-    <!-- Flowing Horse Tail -->
-    <path d="M1580,730 C1568,745 1565,775 1570,802 C1573,802 1574,775 1585,750 Z" stroke-width="1"/>
-    <!-- Muscular Arched Neck & Noble Head Facing the Golden Sun -->
-    <path d="M1665,730 C1675,710 1690,690 1698,675 C1702,668 1715,670 1712,682 C1710,692 1698,705 1690,720 C1682,735 1675,745 1665,750 Z" stroke-width="1"/>
-    <!-- Horse Muzzle, Nose & Alert Ears -->
-    <polygon points="1696,676 1715,670 1718,678 1708,685"/>
-    <polygon points="1695,676 1697,665 1702,674"/>
-    <!-- Mane details -->
-    <path d="M1675,715 Q1685,700 1688,685" stroke-width="2"/>
+    <!-- Left Foreground: Alpine Pines & Mountain Flora (Anchored firmly into rock soil) -->
+    <g id="leftForegroundPines" fill="#070103">
+      <!-- Ponderosa Pine 1 (Tall, majestic, rooted at x=140, ground y=905) -->
+      <g>
+        <!-- Trunk rooted firmly into rock crevice -->
+        <path d="M136,910 L136,760 C136,750 144,750 144,760 L144,910 Z"/>
+        <!-- Layered Pine Boughs (Hand-crafted asymmetrical pine branches) -->
+        <polygon points="140,735 120,770 160,770"/>
+        <polygon points="140,755 110,795 170,795"/>
+        <polygon points="140,775 100,825 180,825"/>
+        <polygon points="140,805 92,860 188,860"/>
+        <polygon points="140,835 85,895 195,895"/>
+        <!-- Sunset Rimlight on Pine Tips -->
+        <path d="M160,770 L140,735" stroke="#f59e0b" stroke-width="1.2" opacity="0.6"/>
+        <path d="M170,795 L140,755" stroke="#f59e0b" stroke-width="1.2" opacity="0.6"/>
+        <path d="M180,825 L140,775" stroke="#f59e0b" stroke-width="1.2" opacity="0.6"/>
+        <path d="M188,860 L140,805" stroke="#f59e0b" stroke-width="1.2" opacity="0.6"/>
+      </g>
 
-    <!-- THE OUTLAW COWBOY (Arthur Morgan in the Saddle) -->
-    <!-- Stirrups & Leather Boots (Resting against horse flank) -->
-    <path d="M1622,740 L1625,765 L1634,767 L1634,762 L1628,760 L1627,740 Z" stroke-width="1"/>
-    <!-- Duster Coat Skirt draped over the saddle cantle -->
-    <path d="M1605,730 C1610,745 1618,758 1610,768 C1622,762 1630,750 1632,730 Z" stroke-width="1"/>
-    <!-- Torso in Duster Coat, Bandolier across chest -->
-    <path d="M1615,725 C1612,695 1622,670 1635,665 C1648,670 1652,695 1642,725 Z" stroke-width="1"/>
-    <!-- Left Arm Holding the Leather Reins -->
-    <path d="M1638,675 C1648,685 1658,692 1668,698 L1665,704 C1652,698 1642,690 1634,680 Z" stroke-width="1"/>
-    <!-- Leather Reins connecting hand to horse bit -->
-    <path d="M1666,700 Q1685,705 1705,680" stroke="#080302" stroke-width="1.2" fill="none"/>
-    <!-- Cowboy Head & Iconic Wide-Brim Stetson Hat -->
-    <circle cx="1635" cy="655" r="8"/>
-    <!-- Stetson Hat Crown & Slanted Brim (Silhouetted against sunset amber) -->
-    <ellipse cx="1635" cy="650" rx="18" ry="4" transform="rotate(-6 1635 650)"/>
-    <path d="M1628,650 C1628,640 1642,640 1642,650 Z" stroke-width="1"/>
+      <!-- Smaller Companion Pine (Rooted at x=210, ground y=908) -->
+      <g>
+        <path d="M208,910 L208,810 C208,802 214,802 214,810 L214,910 Z"/>
+        <polygon points="211,795 195,825 227,825"/>
+        <polygon points="211,815 188,850 234,850"/>
+        <polygon points="211,838 180,880 242,880"/>
+      </g>
 
-    <!-- Sunset Rimlight Halo on Cowboy & Steed (Warm edge light from setting sun) -->
-    <path d="M1712,672 C1706,666 1698,674 1696,676" stroke="#fef08a" stroke-width="1.8" fill="none"/>
-    <path d="M1697,665 L1702,674" stroke="#fef08a" stroke-width="1.4" fill="none"/>
-    <path d="M1648,650 Q1653,648 1652,652" stroke="#fef08a" stroke-width="1.5" fill="none"/>
-    <path d="M1644,675 C1652,695 1645,715 1642,725" stroke="#f59e0b" stroke-width="1.2" fill="none"/>
-    <path d="M1678,765 L1688,815" stroke="#f59e0b" stroke-width="1.2" fill="none"/>
+      <!-- Natural Mountain Prairie Grass & Wild Sagebrush Tufts along the Edge -->
+      <path d="M90,912 Q98,892 108,910 Q104,895 115,911 Q100,900 90,912 Z"/>
+      <path d="M170,910 Q178,890 188,908 Q184,894 195,909 Z"/>
+      <path d="M250,911 Q258,894 266,910 Q262,896 272,911 Z"/>
+      <path d="M340,908 Q349,888 358,906 Q354,892 366,908 Z"/>
+    </g>
+
+    <!-- ==================== RIGHT PROMONTORY: MAJESTIC MOUNTAIN STAG OVERLOOK ==================== -->
+    <!-- The iconic, noble buck/stag with antlers standing proudly atop the sandstone promontory -->
+    <!-- Arthur Morgan's high-honor spiritual guardian gazing west into the glowing sunset valley -->
+    <!-- Promontory rock base at x=1680, ground level y=870 -->
+    <g id="nobleStagOverlook" fill="#060102">
+      <!-- Outcrop Granite Boulder Pedestal directly beneath hooves -->
+      <polygon points="1560,885 1610,870 1780,870 1840,892 1810,915 1580,915" fill="#090204"/>
+      <path d="M1610,870 L1780,870" stroke="#f59e0b" stroke-width="1.8" opacity="0.7"/>
+
+      <!-- ANATOMICAL STAG SILHOUETTE (Standing Proud & Alert on the Cliff Edge) -->
+      <!-- Back Left Leg & Hoof firmly on rock (ground y=870) -->
+      <path d="M1648,820 L1644,845 L1640,870 L1646,870 L1650,845 L1656,820 Z"/>
+      <!-- Back Right Leg & Hoof -->
+      <path d="M1658,820 L1660,845 L1663,870 L1668,870 L1666,845 L1664,820 Z"/>
+      <!-- Front Left Leg & Hoof firmly on rock (ground y=870) -->
+      <path d="M1708,820 L1710,845 L1712,870 L1718,870 L1716,845 L1714,820 Z"/>
+      <!-- Front Right Leg (Poised proudly forward on rock edge) -->
+      <path d="M1718,820 L1724,845 L1728,870 L1734,870 L1730,845 L1724,820 Z"/>
+
+      <!-- Muscular Torso, Ribcage & Flank -->
+      <path d="M1640,810 C1635,785 1655,775 1680,775 C1705,775 1722,785 1718,810 C1712,826 1695,832 1680,830 C1655,830 1642,824 1640,810 Z"/>
+      <!-- Small tail -->
+      <path d="M1640,795 C1632,802 1634,812 1638,818 Z"/>
+
+      <!-- Powerful High-Arched Neck rising into the golden glow -->
+      <path d="M1710,790 C1716,770 1722,748 1726,730 C1730,724 1738,726 1735,736 C1732,748 1725,765 1722,780 C1718,795 1715,802 1710,808 Z"/>
+      <!-- Stag Head, Alert Muzzle & Ears (Facing West toward the setting sun) -->
+      <path d="M1726,732 C1724,726 1728,720 1738,722 L1746,725 C1750,727 1748,732 1742,735 L1732,737 Z"/>
+      <!-- Ears in alert backward posture -->
+      <path d="M1727,725 Q1720,714 1726,708 Q1730,715 1728,723 Z"/>
+
+      <!-- MAGNIFICENT ANTLERS (Spread out majestically against the sunset amber sky) -->
+      <!-- Left Antler Beam & Tines (Brow, Bez, Trez & Crown tines) -->
+      <path d="M1729,720 C1726,705 1718,690 1708,675 C1705,670 1708,668 1711,672 C1718,682 1725,695 1730,712 Z"/>
+      <!-- Left Brow Tine (forward pointing) -->
+      <path d="M1728,710 Q1718,705 1712,708 Q1718,711 1727,713 Z"/>
+      <!-- Left Trez Tine (branching upper-left) -->
+      <path d="M1720,690 Q1705,682 1698,685 Q1707,688 1718,692 Z"/>
+      <!-- Left Crown Fork (forked tips) -->
+      <path d="M1710,678 Q1695,668 1690,672 Q1698,674 1708,680 Z"/>
+      <path d="M1708,675 Q1702,660 1705,658 Q1708,665 1710,672 Z"/>
+
+      <!-- Right Antler Beam & Tines (Towering tall into the sky) -->
+      <path d="M1732,720 C1734,702 1740,685 1750,668 C1753,663 1756,666 1753,671 C1745,684 1738,700 1734,714 Z"/>
+      <!-- Right Brow Tine -->
+      <path d="M1733,708 Q1742,702 1748,705 Q1742,709 1734,711 Z"/>
+      <!-- Right Trez Tine -->
+      <path d="M1738,688 Q1752,680 1758,683 Q1750,687 1740,691 Z"/>
+      <!-- Right Crown Fork -->
+      <path d="M1748,672 Q1762,662 1768,665 Q1758,668 1750,674 Z"/>
+      <path d="M1750,668 Q1755,652 1752,650 Q1750,658 1748,666 Z"/>
+
+      <!-- Sunset Golden Rimlight on Stag & Antlers (Catching the brilliant sunset sun) -->
+      <path d="M1746,725 L1738,722 C1728,720 1724,726 1726,732" stroke="#fef08a" stroke-width="1.8" fill="none" opacity="0.9"/>
+      <path d="M1753,671 C1745,684 1738,700 1734,714" stroke="#fef08a" stroke-width="1.4" fill="none" opacity="0.85"/>
+      <path d="M1750,668 Q1762,662 1768,665" stroke="#fef08a" stroke-width="1.2" fill="none" opacity="0.8"/>
+      <path d="M1726,730 C1730,724 1738,726 1735,736 C1732,748 1725,765 1722,780" stroke="#f59e0b" stroke-width="1.5" fill="none" opacity="0.8"/>
+      <path d="M1718,810 C1712,826 1695,832 1680,830" stroke="#f59e0b" stroke-width="1.2" fill="none" opacity="0.6"/>
+      <path d="M1728,870 L1734,870" stroke="#fef08a" stroke-width="1.5" fill="none" opacity="0.8"/>
+    </g>
+
+    <!-- Mountain Cliff Framing Pine on the Far Right Edge (Rooted at x=1860, y=870) -->
+    <g id="rightFramingPine" fill="#060102">
+      <path d="M1855,875 L1855,640 C1855,630 1865,630 1865,640 L1865,875 Z"/>
+      <!-- Spreading alpine pine branches sweeping gracefully into frame -->
+      <polygon points="1860,620 1835,660 1885,660"/>
+      <polygon points="1860,645 1820,695 1900,695"/>
+      <polygon points="1860,675 1805,735 1915,735"/>
+      <polygon points="1860,710 1790,780 1930,780"/>
+      <polygon points="1860,750 1775,830 1945,830"/>
+      <!-- Rimlight on branches -->
+      <path d="M1835,660 L1860,620" stroke="#f59e0b" stroke-width="1.4" opacity="0.65"/>
+      <path d="M1820,695 L1860,645" stroke="#f59e0b" stroke-width="1.4" opacity="0.65"/>
+      <path d="M1805,735 L1860,675" stroke="#f59e0b" stroke-width="1.4" opacity="0.65"/>
+      <path d="M1790,780 L1860,710" stroke="#f59e0b" stroke-width="1.4" opacity="0.65"/>
+    </g>
   </g>
 
-  <!-- Vintage Western Filigree Corner Accents (Subtle Leather Stamping Ornament) -->
-  <g stroke="rgba(245, 158, 11, 0.25)" stroke-width="1.5" fill="none" opacity="0.6">
-    <!-- Top-Right Ambient Scrollwork -->
+  <!-- Vintage Western Filigree Corner Accents -->
+  <g stroke="rgba(245, 158, 11, 0.22)" stroke-width="1.5" fill="none" opacity="0.5">
     <path d="M1880,40 Q1850,40 1850,70"/>
     <path d="M1890,30 Q1840,30 1840,80"/>
-    <circle cx="1850" cy="70" r="2.5" fill="#f59e0b"/>
-    <!-- Bottom-Left Ambient Scrollwork -->
+    <circle cx="1850" cy="70" r="2" fill="#f59e0b"/>
     <path d="M40,1040 Q70,1040 70,1010"/>
     <path d="M30,1050 Q80,1050 80,1000"/>
-    <circle cx="70" cy="1010" r="2.5" fill="#f59e0b"/>
+    <circle cx="70" cy="1010" r="2" fill="#f59e0b"/>
   </g>
 </svg>
