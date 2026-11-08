@@ -342,12 +342,13 @@ function requirementRows(
   showingMinimum: boolean,
   facts: PcFacts | null,
   installPath: string | null | undefined,
+  installed: boolean,
 ): { rows: string; checks: RequirementCheck[] } {
   const checks: RequirementCheck[] = [];
   const rows = items
     .map((item) => {
       const value = showingMinimum ? item.minimum : item.recommended;
-      const check = checkRequirement(item, value, facts, installPath);
+      const check = checkRequirement(item, value, facts, installPath, installed);
       if (check) checks.push(check);
       return `
         <div class="sys-req-row">
@@ -434,7 +435,13 @@ export function renderRequirementPanel(s: EpicSummary): string {
   const showingMinimum = !hasBothTiers ? minimum.length > 0 : S.reqTab !== "rec";
   const activeItems = showingMinimum ? minimum : recommended;
   const facts = getPcFacts();
-  const { rows, checks } = requirementRows(activeItems, showingMinimum, facts, storageTargetFor(s));
+  const { rows, checks } = requirementRows(
+    activeItems,
+    showingMinimum,
+    facts,
+    storageTargetFor(s),
+    s.installed,
+  );
   // A table with only model names has nothing automatic to summarize; showing
   // "cannot compare" above "compare" rows would just repeat itself.
   const hasAutomatic = checks.some(

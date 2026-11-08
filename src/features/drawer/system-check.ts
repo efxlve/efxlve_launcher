@@ -547,24 +547,34 @@ function driveLabel(drive: string): string {
   return /^[A-Za-z]$/.test(drive) ? `${drive.toUpperCase()}:` : drive;
 }
 
-function storageDetected(free: FreeSpace): string {
+function storageDetected(free: FreeSpace, installed = false): string {
   if (free.missing && free.drive) {
     return t("storage.driveMissing", { drive: driveLabel(free.drive) });
   }
-  const parts = [`${fmtBytes(free.bytes)} ${t("storage.free")}`];
-  if (free.drive) parts.push(driveLabel(free.drive));
+  const parts: string[] = [];
+  if (installed) parts.push(t("common.installed"));
+  // Free space and its drive only describe the install when the path resolved
+  // to that volume; an installed copy with no known folder stays just
+  // "Installed" instead of borrowing the largest drive.
+  if (free.bytes > 0 && (!installed || free.exact)) {
+    parts.push(`${fmtBytes(free.bytes)} ${t("storage.free")}`);
+  }
+  if (free.drive && (!installed || free.exact)) parts.push(driveLabel(free.drive));
   if (free.isSsd === true) parts.push("SSD");
   else if (free.isSsd === false) parts.push("HDD");
   return parts.join(" · ");
 }
 
-function checkStorage(required: string, installPath?: string | null): RequirementCheck | null {
+function checkStorage(
+  required: string,
+  installPath?: string | null,
+  installed = false,
+): RequirementCheck | null {
   const free = freeSpace(installPath);
   if (free.missing) {
     return { status: "manual", detected: storageDetected(free) };
   }
-  if (free.bytes <= 0) return null;
-  const detected = storageDetected(free);
+  const detected = storageDetected(free, installed);
   const values = parseSizeValuesGb(required);
   const ssdMentioned = /\bssd\b/i.test(required);
   const ssdRecommended = /recommend|öneril|empfohlen|recommand|recomend/i.test(required);
@@ -579,6 +589,15 @@ function checkStorage(required: string, installPath?: string | null): Requiremen
   if (ssdMentioned && !ssdRecommended && free.isSsd === true && values.length === 0) {
     return { status: "ok", detected };
   }
+  // An installed copy already paid the install size; the free space that is
+  // left cannot be compared against the same figure again.
+  if (installed) {
+    if (ssdMentioned && ssdRecommended && free.isSsd === false) {
+      return { status: "partial", detected };
+    }
+    return { status: "ok", detected };
+  }
+  if (free.bytes <= 0) return null;
   if (values.length === 0 || !free.exact) return { status: "manual", detected };
   const diskPassed = free.bytes / 1024 ** 3 + 0.5 >= values[0];
   if (!diskPassed) return { status: "fail", detected };
@@ -597,6 +616,7 @@ export function checkRequirement(
   required: string,
   facts: PcFacts | null,
   installPath?: string | null,
+  installed = false,
 ): RequirementCheck | null {
   if (!facts || !required) return null;
   switch (item.kind) {
@@ -604,7 +624,7 @@ export function checkRequirement(
     case "cpu": return checkCpu(required, facts);
     case "ram": return checkRam(required, facts);
     case "gpu": return checkGpu(required, facts);
-    case "storage": return checkStorage(required, installPath);
+    case "storage": return checkStorage(required, installPath, installed);
     case "directx": return checkDirectX(required, facts);
     case "feature": return checkGraphicsFeature(item, required, facts);
     default:
