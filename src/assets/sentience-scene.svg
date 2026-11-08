@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
-  <!-- Cyberlife: Detroit Android & Holographic Telemetry Backdrop
-       Inspired by Detroit: Become Human: sleek CyberLife corporate minimalism,
+  <!-- Sentience: Android Android & Holographic Telemetry Backdrop
+       Inspired by Android: Become Human: sleek Synthetic corporate minimalism,
        the iconic temple circular LED halo, probability calculation brackets,
        and futuristic android UI telemetry.
        Built with pure SVG gradients and vectors for crisp, GPU-efficient rendering. -->
@@ -57,7 +57,7 @@
     <path d="M 0 -75 A 75 75 0 0 1 75 0" fill="none" stroke="#ffffff" stroke-width="5" opacity="0.8" stroke-linecap="round"/>
     <!-- Inner pulse ring -->
     <circle cx="0" cy="0" r="62" fill="none" stroke="#00a2ff" stroke-width="1" opacity="0.3" stroke-dasharray="4 6"/>
-    <!-- Center CyberLife Status Triangle -->
+    <!-- Center Synthetic Status Triangle -->
     <polygon points="0,-18 16,14 -16,14" fill="none" stroke="#38bdf8" stroke-width="2" opacity="0.45"/>
     <!-- Telemetry Readout below the ring -->
     <text x="0" y="108" text-anchor="middle" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="10" font-weight="700" letter-spacing="1.5" fill="#38bdf8" opacity="0.6">STATUS: OPERATIONAL</text>
@@ -70,15 +70,15 @@
     <line x1="50" y1="1034" x2="1870" y2="1034" stroke="#00a2ff" stroke-width="1" stroke-dasharray="8 8"/>
   </g>
 
-  <!-- ==================== TOP-LEFT CYBERLIFE TELEMETRY ==================== -->
+  <!-- ==================== TOP-LEFT SYNTHETIC TELEMETRY ==================== -->
   <g transform="translate(60, 50)">
     <use href="#clCornerBracket"/>
-    <text x="48" y="16" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="11" font-weight="700" letter-spacing="1.8" fill="#38bdf8" opacity="0.65">CYBERLIFE // ANDROID ARCHITECTURE v4.2</text>
+    <text x="48" y="16" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="11" font-weight="700" letter-spacing="1.8" fill="#38bdf8" opacity="0.65">SYNTHETIC CORE // ANDROID ARCHITECTURE v4.2</text>
     <text x="48" y="30" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="9" letter-spacing="1.2" fill="#93a4be" opacity="0.4">MODEL: RK800 // SERIAL: #313 248 317 - 51</text>
   </g>
 
   <!-- ==================== PROBABILITY OF SUCCESS / RECONSTRUCTION ENGINE ==================== -->
-  <!-- The signature Detroit reconstruction probability readout -->
+  <!-- The signature Android reconstruction probability readout -->
   <g transform="translate(80, 880)" opacity="0.4">
     <!-- Probability box -->
     <rect x="0" y="0" width="220" height="42" fill="rgba(0, 162, 255, 0.05)" stroke="#00a2ff" stroke-width="1" rx="2"/>
@@ -91,14 +91,14 @@
     <text x="0" y="60" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="9" letter-spacing="1" fill="#38bdf8">SOFTWARE INSTABILITY ^</text>
   </g>
 
-  <!-- ==================== BOTTOM-RIGHT CYBERLIFE LOGO WATERMARK ==================== -->
+  <!-- ==================== BOTTOM-RIGHT SYNTHETIC LOGO WATERMARK ==================== -->
   <g transform="translate(1860, 1030)">
     <use href="#clCornerBracket" transform="rotate(180)"/>
     <g transform="translate(-180, -22)" opacity="0.3">
-      <!-- Minimalist CyberLife stylized C logo -->
+      <!-- Minimalist Synthetic stylized C logo -->
       <path d="M 0 0 A 14 14 0 1 1 0 16" fill="none" stroke="#00a2ff" stroke-width="2.5" stroke-linecap="round"/>
       <circle cx="0" cy="8" r="4" fill="#38bdf8"/>
-      <text x="24" y="12" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="10" font-weight="700" letter-spacing="2" fill="#00a2ff">CYBERLIFE</text>
+      <text x="24" y="12" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="10" font-weight="700" letter-spacing="2" fill="#00a2ff">SYNTHETIC</text>
     </g>
   </g>
 </svg>

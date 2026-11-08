@@ -3324,12 +3324,6 @@
   "settings.surfaceRosePine": "Rosé Pine",
   "settings.surfaceSynthwave": "Synthwave '84",
   "settings.surfaceOledCyan": "एबिस सियान",
-  "settings.surfaceBiohazard": "जैव संकट",
-  "settings.surfaceCyberlife": "साइबरलाइफ",
-  "settings.surfaceRedemption": "आउटलॉ फ्रंटियर",
-  "settings.surfaceTarnished": "टार्निश्ड ग्रेस",
-  "settings.surfaceHazard": "खतरा टीम",
-  "settings.surfaceHarvest": "घाटी की फसल",
   "settings.achPreviewTitle": "लाइव सूचना पूर्वावलोकन",
   "settings.achUnlockedTag": "उपलब्धि अनलॉक हुई",
   "settings.achDefaultChime": "Efxlve सेलेस्टा चाइम (अंतर्निहित)",
@@ -3836,5 +3830,11 @@
   "cover.anchorBottomCenter": "नीचे",
   "cover.anchorBottomRight": "नीचे दाएँ",
   "cover.anchorCustom": "कस्टम",
-  "cover.steamOfficialLogo": "आधिकारिक Steam आर्टवर्क"
+  "cover.steamOfficialLogo": "आधिकारिक Steam आर्टवर्क",
+  "settings.surfaceHomestead": "पतझड़ फार्म",
+  "settings.surfaceQuarantine": "क्वारंटीन प्रोटोकॉल",
+  "settings.surfaceSentience": "सिंथेटिक सोल",
+  "settings.surfaceFrontier": "सीमावर्ती गोधूलि",
+  "settings.surfaceSanctum": "राख गर्भगृह",
+  "settings.surfaceResonance": "अनुनाद कोर"
 }

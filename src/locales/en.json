@@ -3324,12 +3324,6 @@
   "settings.surfaceRosePine": "Rosé Pine",
   "settings.surfaceSynthwave": "Synthwave '84",
   "settings.surfaceOledCyan": "Abyss Cyan",
-  "settings.surfaceBiohazard": "Biohazard",
-  "settings.surfaceCyberlife": "Cyberlife",
-  "settings.surfaceRedemption": "Outlaw Frontier",
-  "settings.surfaceTarnished": "Tarnished Grace",
-  "settings.surfaceHazard": "Hazard Team",
-  "settings.surfaceHarvest": "Valley Harvest",
   "settings.achPreviewTitle": "Live Notification Preview",
   "settings.achUnlockedTag": "ACHIEVEMENT UNLOCKED",
   "settings.achDefaultChime": "Efxlve Celesta Chime (Built-in)",
@@ -3836,5 +3830,11 @@
   "cover.anchorBottomCenter": "Bottom",
   "cover.anchorBottomRight": "Bottom Right",
   "cover.anchorCustom": "Custom",
-  "cover.steamOfficialLogo": "Official Steam Artwork"
+  "cover.steamOfficialLogo": "Official Steam Artwork",
+  "settings.surfaceHomestead": "Autumn Homestead",
+  "settings.surfaceQuarantine": "Quarantine Protocol",
+  "settings.surfaceSentience": "Synthetic Soul",
+  "settings.surfaceFrontier": "Frontier Dusk",
+  "settings.surfaceSanctum": "Ashen Sanctum",
+  "settings.surfaceResonance": "Resonance Core"
 }

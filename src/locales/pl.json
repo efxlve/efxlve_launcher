@@ -3324,12 +3324,6 @@
   "settings.surfaceRosePine": "Rosé Pine",
   "settings.surfaceSynthwave": "Synthwave '84",
   "settings.surfaceOledCyan": "Otchłań cyjanu",
-  "settings.surfaceBiohazard": "Skażenie biologiczne",
-  "settings.surfaceCyberlife": "Cyberlife",
-  "settings.surfaceRedemption": "Pogranicze banitów",
-  "settings.surfaceTarnished": "Zmatowiała łaska",
-  "settings.surfaceHazard": "Zespół zagrożenia",
-  "settings.surfaceHarvest": "Dolina Żniw",
   "settings.achPreviewTitle": "Podgląd powiadomienia na żywo",
   "settings.achUnlockedTag": "ODBLOKOWANO OSIĄGNIĘCIE",
   "settings.achDefaultChime": "Dzwonek Celesta Efxlve (wbudowany)",
@@ -3836,5 +3830,11 @@
   "cover.anchorBottomCenter": "Dół",
   "cover.anchorBottomRight": "Dół prawo",
   "cover.anchorCustom": "Własna",
-  "cover.steamOfficialLogo": "Oficjalna grafika Steam"
+  "cover.steamOfficialLogo": "Oficjalna grafika Steam",
+  "settings.surfaceHomestead": "Jesienne Gospodarstwo",
+  "settings.surfaceQuarantine": "Protokół Kwarantanny",
+  "settings.surfaceSentience": "Syntetyczna Dusza",
+  "settings.surfaceFrontier": "Zmierzch Pogranicza",
+  "settings.surfaceSanctum": "Popielate Sanktuarium",
+  "settings.surfaceResonance": "Rdzeń Rezonansu"
 }

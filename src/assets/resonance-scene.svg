@@ -162,10 +162,10 @@
   </g>
 
   <!-- Technical Telemetry & HEV HUD Readouts (Bottom Left & Center) -->
-  <g id="hevTelemetry" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="11" fill="#f97316" opacity="0.6">
-    <text x="240" y="930" letter-spacing="2">BLACK MESA RESEARCH FACILITY // SECTOR C</text>
-    <text x="240" y="952" fill="#94a3b8" letter-spacing="1">ANOMALOUS MATERIALS LABORATORY // TEST CHAMBER 07</text>
-    <text x="240" y="974" fill="#34d399" letter-spacing="1.5">HEV SUIT STATUS: OPTIMAL [ POWER: 100% ] [ RAD: 0.00 mSv ]</text>
+  <g id="resonanceTelemetry" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="11" fill="#f97316" opacity="0.6">
+    <text x="240" y="930" letter-spacing="2">ANOMALOUS RESEARCH COMPLEX // SECTOR C</text>
+    <text x="240" y="952" fill="#94a3b8" letter-spacing="1">SUBTERRANEAN PHYSICS LAB // TEST CHAMBER 07</text>
+    <text x="240" y="974" fill="#34d399" letter-spacing="1.5">HAZMAT SUIT STATUS: OPTIMAL [ POWER: 100% ] [ RAD: 0.00 mSv ]</text>
     <text x="240" y="996" letter-spacing="2">CASCADE STABILIZATION GRID: ACTIVE // FREQ 104.7 MHz</text>
     
     <!-- Mini Technical Gauge -->

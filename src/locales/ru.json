@@ -3324,12 +3324,6 @@
   "settings.surfaceRosePine": "Rosé Pine",
   "settings.surfaceSynthwave": "Synthwave '84",
   "settings.surfaceOledCyan": "Лазурная бездна",
-  "settings.surfaceBiohazard": "Биоугроза",
-  "settings.surfaceCyberlife": "Киберлайф",
-  "settings.surfaceRedemption": "Дикий фронтир",
-  "settings.surfaceTarnished": "Благодать Погасших",
-  "settings.surfaceHazard": "Группа ликвидации",
-  "settings.surfaceHarvest": "Урожай Долины",
   "settings.achPreviewTitle": "Предпросмотр уведомления",
   "settings.achUnlockedTag": "ДОСТИЖЕНИЕ ПОЛУЧЕНО",
   "settings.achDefaultChime": "Колокольчик Efxlve Celesta (встроенный)",
@@ -3836,5 +3830,11 @@
   "cover.anchorBottomCenter": "Снизу",
   "cover.anchorBottomRight": "Снизу справа",
   "cover.anchorCustom": "Своя",
-  "cover.steamOfficialLogo": "Официальная графика Steam"
+  "cover.steamOfficialLogo": "Официальная графика Steam",
+  "settings.surfaceHomestead": "Осенняя усадьба",
+  "settings.surfaceQuarantine": "Протокол карантина",
+  "settings.surfaceSentience": "Синтетическая душа",
+  "settings.surfaceFrontier": "Сумерки фронтира",
+  "settings.surfaceSanctum": "Пепельное святилище",
+  "settings.surfaceResonance": "Ядро резонанса"
 }

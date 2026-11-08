@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
-  <!-- Biohazard: Subterranean Quarantine Laboratory Backdrop
+  <!-- Quarantine: Subterranean Quarantine Laboratory Backdrop
        Inspired by classic survival horror: sterile containment concrete,
        emergency warning sirens, ECG vital signs pulse, and tactical hazard markings.
        Built with pure SVG gradients and vectors for crisp, GPU-efficient rendering. -->
@@ -40,8 +40,8 @@
       <circle cx="15" cy="15" r="0.8" fill="#dc2626" fill-opacity="0.04"/>
     </pattern>
 
-    <!-- Biohazard Caution Hazard Stripe Pattern -->
-    <pattern id="bioHazardStripe" width="24" height="24" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+    <!-- Quarantine Caution Hazard Stripe Pattern -->
+    <pattern id="quarantineStripe" width="24" height="24" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
       <rect width="12" height="24" fill="#dc2626" fill-opacity="0.2"/>
       <rect x="12" width="12" height="24" fill="#05070a" fill-opacity="0.75"/>
     </pattern>
@@ -71,7 +71,7 @@
     <polygon points="160,-380 380,-160 380,160 160,380 -160,380 -380,160 -380,-160 -160,-380"/>
     <!-- Octagon 2 (Inner) -->
     <polygon points="120,-290 290,-120 290,120 120,290 -120,290 -290,120 -290,-120 -120,-290"/>
-    <!-- Center radiation / biohazard ring -->
+    <!-- Center radiation / quarantine ring -->
     <circle cx="0" cy="0" r="160" stroke-width="2"/>
     <circle cx="0" cy="0" r="80" stroke-width="4"/>
     <!-- Radial spokes -->
@@ -90,7 +90,7 @@
     <!-- Corner Bracket -->
     <path d="M 0 50 L 0 0 L 50 0" fill="none" stroke="#dc2626" stroke-width="2" opacity="0.55"/>
     <rect x="5" y="5" width="4" height="4" fill="#dc2626" opacity="0.75"/>
-    <text x="60" y="16" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="11" font-weight="700" letter-spacing="1.8" fill="#dc2626" opacity="0.6">BIO-HAZARD LEVEL 4 // CONTAINMENT ZONE</text>
+    <text x="60" y="16" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="11" font-weight="700" letter-spacing="1.8" fill="#dc2626" opacity="0.6">QUARANTINE LEVEL 4 // CONTAINMENT SECTOR</text>
     <text x="60" y="30" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="9" letter-spacing="1.2" fill="#94a3b8" opacity="0.4">DECONTAMINATION: COMPLETED // AIRLOCK LOCKED</text>
     <!-- Status Dot -->
     <circle cx="48" cy="12" r="3" fill="#dc2626" opacity="0.75"/>
@@ -101,8 +101,8 @@
     <!-- Corner Bracket -->
     <path d="M 0 50 L 0 0 L -50 0" fill="none" stroke="#dc2626" stroke-width="2" opacity="0.55"/>
     <rect x="-9" y="5" width="4" height="4" fill="#dc2626" opacity="0.75"/>
-    <rect x="-240" y="-14" width="180" height="7" fill="url(#bioHazardStripe)" rx="1"/>
-    <text x="-60" y="16" text-anchor="end" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="11" font-weight="700" letter-spacing="1.8" fill="#dc2626" opacity="0.65">VIRAL OUTBREAK PROTOCOL: ACTIVE</text>
+    <rect x="-240" y="-14" width="180" height="7" fill="url(#quarantineStripe)" rx="1"/>
+    <text x="-60" y="16" text-anchor="end" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="11" font-weight="700" letter-spacing="1.8" fill="#dc2626" opacity="0.65">OUTBREAK PROTOCOL: ACTIVE</text>
     <text x="-60" y="30" text-anchor="end" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="9" letter-spacing="1.2" fill="#10b981" opacity="0.55">AIR PURITY: 99.2% // FACILITY SECURE</text>
   </g>
 
@@ -149,7 +149,7 @@
   <!-- ==================== BOTTOM-LEFT & BOTTOM-RIGHT TACTICAL RETICLES ==================== -->
   <g transform="translate(80, 1010)">
     <use href="#bioCornerReticle"/>
-    <text x="32" y="4" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="9" letter-spacing="1" fill="#dc2626" opacity="0.4">RACCOON SECTOR-07</text>
+    <text x="32" y="4" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="9" letter-spacing="1" fill="#dc2626" opacity="0.4">CONTAINMENT SECTOR-07</text>
   </g>
 
   <g transform="translate(1840, 1010)">

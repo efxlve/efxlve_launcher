@@ -3324,12 +3324,6 @@
   "settings.surfaceRosePine": "Rosé Pine",
   "settings.surfaceSynthwave": "Synthwave '84",
   "settings.surfaceOledCyan": "Abyss Cyan",
-  "settings.surfaceBiohazard": "อันตรายทางชีวภาพ",
-  "settings.surfaceCyberlife": "ไซเบอร์ไลฟ์",
-  "settings.surfaceRedemption": "ชายแดนนอกกฎหมาย",
-  "settings.surfaceTarnished": "เกียรติยศแห่งผู้มัวหมอง",
-  "settings.surfaceHazard": "ทีมรับมือภัยพิบัติ",
-  "settings.surfaceHarvest": "หุบเขาแห่งการเก็บเกี่ยว",
   "settings.achPreviewTitle": "ดูตัวอย่างการแจ้งเตือนสด",
   "settings.achUnlockedTag": "ปลดล็อกความสำเร็จแล้ว",
   "settings.achDefaultChime": "เสียงระฆัง Efxlve Celesta (ในตัว)",
@@ -3836,5 +3830,11 @@
   "cover.anchorBottomCenter": "ด้านล่าง",
   "cover.anchorBottomRight": "ล่างขวา",
   "cover.anchorCustom": "กำหนดเอง",
-  "cover.steamOfficialLogo": "อาร์ตเวิร์กทางการของ Steam"
+  "cover.steamOfficialLogo": "อาร์ตเวิร์กทางการของ Steam",
+  "settings.surfaceHomestead": "ฟาร์มฤดูใบไม้ร่วง",
+  "settings.surfaceQuarantine": "โพรโทคอลกักกัน",
+  "settings.surfaceSentience": "วิญญาณสังเคราะห์",
+  "settings.surfaceFrontier": "พลบค่ำชายแดน",
+  "settings.surfaceSanctum": "วิหารเถ้า",
+  "settings.surfaceResonance": "แกนเรโซแนนซ์"
 }

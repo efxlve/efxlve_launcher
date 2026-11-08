@@ -3324,12 +3324,6 @@
   "settings.surfaceRosePine": "Rosé Pine",
   "settings.surfaceSynthwave": "Synthwave '84",
   "settings.surfaceOledCyan": "어비스 시안",
-  "settings.surfaceBiohazard": "바이오하자드",
-  "settings.surfaceCyberlife": "사이버라이프",
-  "settings.surfaceRedemption": "무법자의 국경",
-  "settings.surfaceTarnished": "빛바랜 자의 축복",
-  "settings.surfaceHazard": "위험 대응팀",
-  "settings.surfaceHarvest": "밸리 하베스트",
   "settings.achPreviewTitle": "실시간 알림 미리보기",
   "settings.achUnlockedTag": "업적 달성",
   "settings.achDefaultChime": "Efxlve Celesta 차임벨 (기본 내장)",
@@ -3836,5 +3830,11 @@
   "cover.anchorBottomCenter": "하단",
   "cover.anchorBottomRight": "우측 하단",
   "cover.anchorCustom": "사용자 지정",
-  "cover.steamOfficialLogo": "Steam 공식 아트워크"
+  "cover.steamOfficialLogo": "Steam 공식 아트워크",
+  "settings.surfaceHomestead": "가을 농원",
+  "settings.surfaceQuarantine": "격리 프로토콜",
+  "settings.surfaceSentience": "신세틱 소울",
+  "settings.surfaceFrontier": "개척지의 황혼",
+  "settings.surfaceSanctum": "잿빛 성소",
+  "settings.surfaceResonance": "공명 코어"
 }

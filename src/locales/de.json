@@ -3324,12 +3324,6 @@
   "settings.surfaceRosePine": "Rosé Pine",
   "settings.surfaceSynthwave": "Synthwave '84",
   "settings.surfaceOledCyan": "Abyss-Türkis",
-  "settings.surfaceBiohazard": "Biolabor",
-  "settings.surfaceCyberlife": "Cyberlife",
-  "settings.surfaceRedemption": "Outlaw-Grenze",
-  "settings.surfaceTarnished": "Befleckte Gnade",
-  "settings.surfaceHazard": "Gefahrenteam",
-  "settings.surfaceHarvest": "Tal-Ernte",
   "settings.achPreviewTitle": "Live-Vorschau der Benachrichtigung",
   "settings.achUnlockedTag": "ERFOLG FREIGESCHALTET",
   "settings.achDefaultChime": "Efxlve Celesta-Klang (Integriert)",
@@ -3836,5 +3830,11 @@
   "cover.anchorBottomCenter": "Unten",
   "cover.anchorBottomRight": "Unten rechts",
   "cover.anchorCustom": "Eigene",
-  "cover.steamOfficialLogo": "Offizielle Steam-Grafik"
+  "cover.steamOfficialLogo": "Offizielle Steam-Grafik",
+  "settings.surfaceHomestead": "Herbstgehöft",
+  "settings.surfaceQuarantine": "Quarantäne-Protokoll",
+  "settings.surfaceSentience": "Synthetische Seele",
+  "settings.surfaceFrontier": "Grenzland-Dämmerung",
+  "settings.surfaceSanctum": "Aschen-Heiligtum",
+  "settings.surfaceResonance": "Resonanzkern"
 }

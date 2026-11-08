@@ -3324,12 +3324,6 @@
   "settings.surfaceRosePine": "Rosé Pine",
   "settings.surfaceSynthwave": "Synthwave '84",
   "settings.surfaceOledCyan": "Cyan abyssal",
-  "settings.surfaceBiohazard": "Risque biologique",
-  "settings.surfaceCyberlife": "Cyberlife",
-  "settings.surfaceRedemption": "Frontière sauvage",
-  "settings.surfaceTarnished": "Grâce des Sans-Éclat",
-  "settings.surfaceHazard": "Équipe de danger",
-  "settings.surfaceHarvest": "Moisson de la Vallée",
   "settings.achPreviewTitle": "Aperçu de notification en direct",
   "settings.achUnlockedTag": "SUCCÈS DÉBLOQUÉ",
   "settings.achDefaultChime": "Sonillon Celesta Efxlve (intégré)",
@@ -3836,5 +3830,11 @@
   "cover.anchorBottomCenter": "Bas",
   "cover.anchorBottomRight": "Bas droite",
   "cover.anchorCustom": "Personnalisé",
-  "cover.steamOfficialLogo": "Illustration officielle Steam"
+  "cover.steamOfficialLogo": "Illustration officielle Steam",
+  "settings.surfaceHomestead": "Ferme d'Automne",
+  "settings.surfaceQuarantine": "Protocole de Quarantaine",
+  "settings.surfaceSentience": "Âme Synthétique",
+  "settings.surfaceFrontier": "Crépuscule Frontalier",
+  "settings.surfaceSanctum": "Sanctuaire de Cendres",
+  "settings.surfaceResonance": "Cœur de Résonance"
 }

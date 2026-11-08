@@ -3324,12 +3324,6 @@
   "settings.surfaceRosePine": "Rosé Pine",
   "settings.surfaceSynthwave": "Synthwave '84",
   "settings.surfaceOledCyan": "深渊青",
-  "settings.surfaceBiohazard": "生化危机",
-  "settings.surfaceCyberlife": "仿生纪元",
-  "settings.surfaceRedemption": "荒野镖客",
-  "settings.surfaceTarnished": "褪色赐福",
-  "settings.surfaceHazard": "危险小组",
-  "settings.surfaceHarvest": "山谷丰收",
   "settings.achPreviewTitle": "通知效果实时预览",
   "settings.achUnlockedTag": "成就已解锁",
   "settings.achDefaultChime": "Efxlve 钢片琴提示音（内置）",
@@ -3836,5 +3830,11 @@
   "cover.anchorBottomCenter": "底部居中",
   "cover.anchorBottomRight": "右下",
   "cover.anchorCustom": "自定义",
-  "cover.steamOfficialLogo": "Steam 官方艺术图"
+  "cover.steamOfficialLogo": "Steam 官方艺术图",
+  "settings.surfaceHomestead": "秋日庄园",
+  "settings.surfaceQuarantine": "隔离协议",
+  "settings.surfaceSentience": "合成之魂",
+  "settings.surfaceFrontier": "边境黄昏",
+  "settings.surfaceSanctum": "灰烬圣所",
+  "settings.surfaceResonance": "共振核心"
 }

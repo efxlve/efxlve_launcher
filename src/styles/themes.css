@@ -2500,12 +2500,12 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
    Game-Inspired Themes: Component & Scrollbar Refinements
    ========================================================================== */
 
-/* ---------- Biohazard (Resident Evil Inspired) ----------
-   Survival horror quarantine: subterranean laboratory backdrop (src/assets/biohazard-scene.svg),
+/* ---------- Quarantine Protocol ----------
+   Survival horror quarantine: subterranean laboratory backdrop (src/assets/quarantine-scene.svg),
    sterile carbon containment bulkhead panels, surgical emergency crimson action buttons,
    and medical vital ECG telemetry. */
 
-:root[data-surface="biohazard"] {
+:root[data-surface="quarantine"] {
   color-scheme: dark;
   --bg: #05070a;
   --surface-1: #0c1017;
@@ -2536,13 +2536,13 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   --scrollbar-thumb-hover: #ef4444;
 }
 
-:root[data-surface="biohazard"] body {
-  background: #05070a url("../assets/biohazard-scene.svg") 0 0 / 100vw 100vh no-repeat;
+:root[data-surface="quarantine"] body {
+  background: #05070a url("../assets/quarantine-scene.svg") 0 0 / 100vw 100vh no-repeat;
 }
-:root[data-surface="biohazard"] #main-col,
-:root[data-surface="biohazard"] #view { background: transparent; }
-:root[data-surface="biohazard"] .overlay { background: transparent; }
-:root[data-surface="biohazard"] .overlay::before {
+:root[data-surface="quarantine"] #main-col,
+:root[data-surface="quarantine"] #view { background: transparent; }
+:root[data-surface="quarantine"] .overlay { background: transparent; }
+:root[data-surface="quarantine"] .overlay::before {
   content: "";
   position: fixed;
   z-index: -1;
@@ -2550,42 +2550,42 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   left: var(--sidebar-w);
   right: 0;
   bottom: 0;
-  background: #05070a url("../assets/biohazard-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
+  background: #05070a url("../assets/quarantine-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
   pointer-events: none;
   transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
 
-/* Biohazard: Custom Visible Tactical Scrollbars */
-:root[data-surface="biohazard"] ::-webkit-scrollbar-thumb {
+/* Quarantine Protocol: Custom Visible Tactical Scrollbars */
+:root[data-surface="quarantine"] ::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 3px;
   box-shadow: 0 0 6px rgba(220, 38, 38, 0.25);
 }
-:root[data-surface="biohazard"] ::-webkit-scrollbar-thumb:hover {
+:root[data-surface="quarantine"] ::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
   box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
 }
-:root[data-surface="biohazard"] .overlay::-webkit-scrollbar-track {
+:root[data-surface="quarantine"] .overlay::-webkit-scrollbar-track {
   background: rgba(5, 7, 10, 0.75);
   border-left: 1px solid rgba(220, 38, 38, 0.16);
 }
-:root[data-surface="biohazard"] .overlay::-webkit-scrollbar-thumb {
+:root[data-surface="quarantine"] .overlay::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 3px;
   border: 1px solid rgba(220, 38, 38, 0.35);
   box-shadow: 0 0 8px rgba(220, 38, 38, 0.35);
 }
-:root[data-surface="biohazard"] .overlay::-webkit-scrollbar-thumb:hover {
+:root[data-surface="quarantine"] .overlay::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
   box-shadow: 0 0 14px rgba(239, 68, 68, 0.75);
 }
 
-/* Biohazard: Window Bar */
-:root[data-surface="biohazard"] #winbar {
+/* Quarantine Protocol: Window Bar */
+:root[data-surface="quarantine"] #winbar {
   background: #07090e;
   border-bottom: 1px solid rgba(220, 38, 38, 0.25);
 }
-:root[data-surface="biohazard"] .winbar-beta-chip {
+:root[data-surface="quarantine"] .winbar-beta-chip {
   background: #dc2626;
   color: #ffffff;
   font-weight: 800;
@@ -2593,36 +2593,36 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
   letter-spacing: 0.5px;
 }
-:root[data-surface="biohazard"] .winbar-btn:hover {
+:root[data-surface="quarantine"] .winbar-btn:hover {
   background: rgba(220, 38, 38, 0.14);
   color: #ef4444;
 }
-:root[data-surface="biohazard"] .win-btn.win-close:hover {
+:root[data-surface="quarantine"] .win-btn.win-close:hover {
   background: #b91c1c;
   color: #ffffff;
   box-shadow: 0 0 14px rgba(220, 38, 38, 0.75);
 }
 
-/* Biohazard: Sidebar Navigation */
-:root[data-surface="biohazard"] #sidebar {
+/* Quarantine Protocol: Sidebar Navigation */
+:root[data-surface="quarantine"] #sidebar {
   background: rgba(8, 11, 16, 0.96);
   border-right: 1px solid rgba(220, 38, 38, 0.2);
   backdrop-filter: blur(8px);
 }
-:root[data-surface="biohazard"] #page-header {
+:root[data-surface="quarantine"] #page-header {
   background: rgba(9, 12, 17, 0.88);
   border-bottom: 1px solid rgba(220, 38, 38, 0.2);
   backdrop-filter: blur(6px);
 }
-:root[data-surface="biohazard"] .sb-item {
+:root[data-surface="quarantine"] .sb-item {
   border-radius: 3px;
   transition: all var(--ease);
 }
-:root[data-surface="biohazard"] .sb-item:hover:not(.active) {
+:root[data-surface="quarantine"] .sb-item:hover:not(.active) {
   color: #fca5a5;
   background: rgba(220, 38, 38, 0.1);
 }
-:root[data-surface="biohazard"] .sb-item.active {
+:root[data-surface="quarantine"] .sb-item.active {
   background: linear-gradient(90deg, rgba(220, 38, 38, 0.22) 0%, rgba(220, 38, 38, 0.04) 100%);
   color: #fca5a5;
   font-weight: 700;
@@ -2630,12 +2630,12 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   border-radius: 0 3px 3px 0;
   box-shadow: inset 2px 0 10px rgba(220, 38, 38, 0.3);
 }
-:root[data-surface="biohazard"] .sb-item.active::before {
+:root[data-surface="quarantine"] .sb-item.active::before {
   display: none;
 }
 
-/* Biohazard: Primary Action Buttons (Quarantine Emergency Override) */
-:root[data-surface="biohazard"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
+/* Quarantine Protocol: Primary Action Buttons (Quarantine Emergency Override) */
+:root[data-surface="quarantine"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
   background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
   color: #ffffff;
   font-weight: 800;
@@ -2646,37 +2646,37 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
   transition: all var(--ease);
 }
-:root[data-surface="biohazard"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
+:root[data-surface="quarantine"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
   background: linear-gradient(180deg, #f87171 0%, #dc2626 100%);
   border-color: #ffffff;
   color: #ffffff;
   box-shadow: inset 0 1px 0 #ffffff, 0 0 20px rgba(220, 38, 38, 0.75);
   transform: translateY(-1px);
 }
-:root[data-surface="biohazard"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
+:root[data-surface="quarantine"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
   background: #991b1b;
   border-color: #991b1b;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
   transform: translateY(0);
 }
 
-/* Biohazard: Secondary Action Buttons */
-:root[data-surface="biohazard"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
+/* Quarantine Protocol: Secondary Action Buttons */
+:root[data-surface="quarantine"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
   background: rgba(15, 19, 26, 0.88);
   border: 1px solid rgba(220, 38, 38, 0.26);
   color: var(--text);
   border-radius: 3px;
 }
-:root[data-surface="biohazard"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
-:root[data-surface="biohazard"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
+:root[data-surface="quarantine"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
+:root[data-surface="quarantine"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
   border-color: #ef4444;
   color: #fca5a5;
   background: rgba(220, 38, 38, 0.12);
   box-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
 }
 
-/* Biohazard: Danger / Terminate Buttons */
-:root[data-surface="biohazard"] .btn.danger {
+/* Quarantine Protocol: Danger / Terminate Buttons */
+:root[data-surface="quarantine"] .btn.danger {
   background: #7f1d1d;
   border: 1px solid #b91c1c;
   color: #fca5a5;
@@ -2684,15 +2684,15 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   border-radius: 3px;
   box-shadow: 0 2px 8px rgba(127, 29, 29, 0.5);
 }
-:root[data-surface="biohazard"] .btn.danger:hover {
+:root[data-surface="quarantine"] .btn.danger:hover {
   background: #991b1b;
   border-color: #ef4444;
   color: #ffffff;
   box-shadow: 0 0 14px rgba(220, 38, 38, 0.7);
 }
 
-/* Biohazard: Headings & Titles */
-:root[data-surface="biohazard"] :is(
+/* Quarantine Protocol: Headings & Titles */
+:root[data-surface="quarantine"] :is(
   .page-header-title, .section-title, .hub-card-title, .hltb-title,
   .gp-section-title, .notif-title, .modal-box h2, .col-modal-title h2
 ) {
@@ -2702,8 +2702,8 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   text-shadow: 0 0 12px rgba(220, 38, 38, 0.4);
 }
 
-/* Biohazard: Cards, Panels & Terminals */
-:root[data-surface="biohazard"] :is(
+/* Quarantine Protocol: Cards, Panels & Terminals */
+:root[data-surface="quarantine"] :is(
   .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item,
   .gp-ac-notice, .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card,
   .gp-side-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
@@ -2719,33 +2719,33 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   backdrop-filter: blur(8px);
 }
 
-/* Biohazard: Library Game Cards */
-:root[data-surface="biohazard"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+/* Quarantine Protocol: Library Game Cards */
+:root[data-surface="quarantine"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(220, 38, 38, 0.2);
   border-radius: 4px;
 }
-:root[data-surface="biohazard"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="quarantine"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
   box-shadow:
     0 0 0 2px #dc2626,
     0 0 22px rgba(220, 38, 38, 0.5),
     0 12px 30px rgba(0, 0, 0, 0.9);
   transform: translateY(-2px);
 }
-:root[data-surface="biohazard"] .pcard-play-btn {
+:root[data-surface="quarantine"] .pcard-play-btn {
   background: rgba(10, 13, 18, 0.9);
   border: 1px solid rgba(220, 38, 38, 0.45);
   color: #ef4444;
   border-radius: 3px;
 }
-:root[data-surface="biohazard"] .pcard-play-btn:hover {
+:root[data-surface="quarantine"] .pcard-play-btn:hover {
   background: #dc2626;
   color: #ffffff;
   border-color: #f87171;
   box-shadow: 0 0 14px rgba(220, 38, 38, 0.75);
 }
 
-/* Biohazard: Inputs, Search & Fields */
-:root[data-surface="biohazard"] :is(
+/* Quarantine Protocol: Inputs, Search & Fields */
+:root[data-surface="quarantine"] :is(
   input:not([type="range"], [type="checkbox"], [type="radio"]),
   select, textarea, .input, .text-input, .search, .page-search,
   .settings-search, .music-input, .music-select, .storage-search-input,
@@ -2756,57 +2756,57 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   color: #f8fafc;
   border-radius: 3px;
 }
-:root[data-surface="biohazard"] :is(
+:root[data-surface="quarantine"] :is(
   input, select, textarea, .input, .text-input, .settings-search,
   .music-input, .music-select, .storage-search-input, .move-path-input,
   .install-path-input
 ):focus,
-:root[data-surface="biohazard"] .search:focus-within,
-:root[data-surface="biohazard"] .install-path-input-wrap:focus-within {
+:root[data-surface="quarantine"] .search:focus-within,
+:root[data-surface="quarantine"] .install-path-input-wrap:focus-within {
   border-color: #ef4444;
   box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.35);
   outline: none;
 }
 
-/* Biohazard: Progress Bar (Vital Signs Health Monitor Meter) */
-:root[data-surface="biohazard"] .progress {
+/* Quarantine Protocol: Progress Bar (Vital Signs Health Monitor Meter) */
+:root[data-surface="quarantine"] .progress {
   background: rgba(7, 9, 13, 0.92);
   border: 1px solid rgba(220, 38, 38, 0.25);
   border-radius: 3px;
   overflow: hidden;
 }
-:root[data-surface="biohazard"] .progress > span,
-:root[data-surface="biohazard"] :is(.gp-progress-fill) {
+:root[data-surface="quarantine"] .progress > span,
+:root[data-surface="quarantine"] :is(.gp-progress-fill) {
   background: linear-gradient(90deg, #10b981 0%, #34d399 50%, #ef4444 100%);
   box-shadow: 0 0 10px rgba(16, 185, 129, 0.45);
 }
 
-/* Biohazard: Switches */
-:root[data-surface="biohazard"] .switch input:checked + .track {
+/* Quarantine Protocol: Switches */
+:root[data-surface="quarantine"] .switch input:checked + .track {
   background: #991b1b;
   border-color: #dc2626;
 }
-:root[data-surface="biohazard"] .switch input:checked + .track::before {
+:root[data-surface="quarantine"] .switch input:checked + .track::before {
   background: #ffffff;
   box-shadow: 0 0 8px rgba(220, 38, 38, 0.7);
 }
 
-/* Biohazard: Store Tabs Active Indicator */
-:root[data-surface="biohazard"] .store-tabs .tab.active,
-:root[data-surface="biohazard"] .tab.active {
+/* Quarantine Protocol: Store Tabs Active Indicator */
+:root[data-surface="quarantine"] .store-tabs .tab.active,
+:root[data-surface="quarantine"] .tab.active {
   color: #fca5a5;
 }
-:root[data-surface="biohazard"] .store-tabs .tab.active::after,
-:root[data-surface="biohazard"] .tab.active::after {
+:root[data-surface="quarantine"] .store-tabs .tab.active::after,
+:root[data-surface="quarantine"] .tab.active::after {
   background: #dc2626;
   box-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
 }
 
-/* ---------- Cyberlife (Detroit: Become Human Inspired) ----------
-   Android architecture: sleek CyberLife minimalist backdrop (src/assets/cyberlife-scene.svg),
+/* ---------- Synthetic Soul ----------
+   Android architecture: sleek CyberLife minimalist backdrop (src/assets/sentience-scene.svg),
    temple LED halo corona, probability telemetry brackets, and holographic cyan interface. */
 
-:root[data-surface="cyberlife"] {
+:root[data-surface="sentience"] {
   color-scheme: dark;
   --bg: #05080e;
   --surface-1: #0b111c;
@@ -2837,13 +2837,13 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   --scrollbar-thumb-hover: #38bdf8;
 }
 
-:root[data-surface="cyberlife"] body {
-  background: #05080e url("../assets/cyberlife-scene.svg") 0 0 / 100vw 100vh no-repeat;
+:root[data-surface="sentience"] body {
+  background: #05080e url("../assets/sentience-scene.svg") 0 0 / 100vw 100vh no-repeat;
 }
-:root[data-surface="cyberlife"] #main-col,
-:root[data-surface="cyberlife"] #view { background: transparent; }
-:root[data-surface="cyberlife"] .overlay { background: transparent; }
-:root[data-surface="cyberlife"] .overlay::before {
+:root[data-surface="sentience"] #main-col,
+:root[data-surface="sentience"] #view { background: transparent; }
+:root[data-surface="sentience"] .overlay { background: transparent; }
+:root[data-surface="sentience"] .overlay::before {
   content: "";
   position: fixed;
   z-index: -1;
@@ -2851,42 +2851,42 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   left: var(--sidebar-w);
   right: 0;
   bottom: 0;
-  background: #05080e url("../assets/cyberlife-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
+  background: #05080e url("../assets/sentience-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
   pointer-events: none;
   transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
 
-/* Cyberlife: Custom Visible Holographic Scrollbars */
-:root[data-surface="cyberlife"] ::-webkit-scrollbar-thumb {
+/* Synthetic Soul: Custom Visible Holographic Scrollbars */
+:root[data-surface="sentience"] ::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 3px;
   box-shadow: 0 0 6px rgba(0, 162, 255, 0.25);
 }
-:root[data-surface="cyberlife"] ::-webkit-scrollbar-thumb:hover {
+:root[data-surface="sentience"] ::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
   box-shadow: 0 0 12px rgba(56, 189, 248, 0.7);
 }
-:root[data-surface="cyberlife"] .overlay::-webkit-scrollbar-track {
+:root[data-surface="sentience"] .overlay::-webkit-scrollbar-track {
   background: rgba(5, 8, 14, 0.75);
   border-left: 1px solid rgba(0, 162, 255, 0.16);
 }
-:root[data-surface="cyberlife"] .overlay::-webkit-scrollbar-thumb {
+:root[data-surface="sentience"] .overlay::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 3px;
   border: 1px solid rgba(0, 162, 255, 0.35);
   box-shadow: 0 0 8px rgba(0, 162, 255, 0.35);
 }
-:root[data-surface="cyberlife"] .overlay::-webkit-scrollbar-thumb:hover {
+:root[data-surface="sentience"] .overlay::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
   box-shadow: 0 0 14px rgba(56, 189, 248, 0.8);
 }
 
-/* Cyberlife: Window Bar */
-:root[data-surface="cyberlife"] #winbar {
+/* Synthetic Soul: Window Bar */
+:root[data-surface="sentience"] #winbar {
   background: #070b13;
   border-bottom: 1px solid rgba(0, 162, 255, 0.22);
 }
-:root[data-surface="cyberlife"] .winbar-beta-chip {
+:root[data-surface="sentience"] .winbar-beta-chip {
   background: #00a2ff;
   color: #03101d;
   font-weight: 800;
@@ -2894,36 +2894,36 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   box-shadow: 0 0 10px rgba(0, 162, 255, 0.5);
   letter-spacing: 0.5px;
 }
-:root[data-surface="cyberlife"] .winbar-btn:hover {
+:root[data-surface="sentience"] .winbar-btn:hover {
   background: rgba(0, 162, 255, 0.12);
   color: #38bdf8;
 }
-:root[data-surface="cyberlife"] .win-btn.win-close:hover {
+:root[data-surface="sentience"] .win-btn.win-close:hover {
   background: #ef4444;
   color: #ffffff;
   box-shadow: 0 0 14px rgba(239, 68, 68, 0.7);
 }
 
-/* Cyberlife: Sidebar Navigation */
-:root[data-surface="cyberlife"] #sidebar {
+/* Synthetic Soul: Sidebar Navigation */
+:root[data-surface="sentience"] #sidebar {
   background: rgba(8, 13, 22, 0.96);
   border-right: 1px solid rgba(0, 162, 255, 0.2);
   backdrop-filter: blur(8px);
 }
-:root[data-surface="cyberlife"] #page-header {
+:root[data-surface="sentience"] #page-header {
   background: rgba(9, 14, 24, 0.88);
   border-bottom: 1px solid rgba(0, 162, 255, 0.2);
   backdrop-filter: blur(6px);
 }
-:root[data-surface="cyberlife"] .sb-item {
+:root[data-surface="sentience"] .sb-item {
   border-radius: 3px;
   transition: all var(--ease);
 }
-:root[data-surface="cyberlife"] .sb-item:hover:not(.active) {
+:root[data-surface="sentience"] .sb-item:hover:not(.active) {
   color: #7dd3fc;
   background: rgba(0, 162, 255, 0.08);
 }
-:root[data-surface="cyberlife"] .sb-item.active {
+:root[data-surface="sentience"] .sb-item.active {
   background: linear-gradient(90deg, rgba(0, 162, 255, 0.22) 0%, rgba(0, 162, 255, 0.04) 100%);
   color: #7dd3fc;
   font-weight: 700;
@@ -2931,12 +2931,12 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   border-radius: 0 3px 3px 0;
   box-shadow: inset 2px 0 10px rgba(0, 162, 255, 0.3);
 }
-:root[data-surface="cyberlife"] .sb-item.active::before {
+:root[data-surface="sentience"] .sb-item.active::before {
   display: none;
 }
 
-/* Cyberlife: Primary Action Buttons (Android LED Status Blue) */
-:root[data-surface="cyberlife"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
+/* Synthetic Soul: Primary Action Buttons (Android LED Status Blue) */
+:root[data-surface="sentience"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
   background: linear-gradient(180deg, #38bdf8 0%, #0088e0 100%);
   color: #03101d;
   font-weight: 800;
@@ -2946,37 +2946,37 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 162, 255, 0.45);
   transition: all var(--ease);
 }
-:root[data-surface="cyberlife"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
+:root[data-surface="sentience"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
   background: #ffffff;
   border-color: #ffffff;
   color: #03101d;
   box-shadow: inset 0 1px 0 #ffffff, 0 0 22px rgba(56, 189, 248, 0.8), 0 0 6px #ffffff;
   transform: translateY(-1px);
 }
-:root[data-surface="cyberlife"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
+:root[data-surface="sentience"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
   background: #0284c7;
   border-color: #0284c7;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
   transform: translateY(0);
 }
 
-/* Cyberlife: Secondary Action Buttons */
-:root[data-surface="cyberlife"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
+/* Synthetic Soul: Secondary Action Buttons */
+:root[data-surface="sentience"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
   background: rgba(14, 21, 33, 0.88);
   border: 1px solid rgba(0, 162, 255, 0.24);
   color: var(--text);
   border-radius: 3px;
 }
-:root[data-surface="cyberlife"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
-:root[data-surface="cyberlife"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
+:root[data-surface="sentience"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
+:root[data-surface="sentience"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
   border-color: #38bdf8;
   color: #7dd3fc;
   background: rgba(0, 162, 255, 0.12);
   box-shadow: 0 0 10px rgba(0, 162, 255, 0.28);
 }
 
-/* Cyberlife: Danger / Deviant Alert Buttons */
-:root[data-surface="cyberlife"] .btn.danger {
+/* Synthetic Soul: Danger / Deviant Alert Buttons */
+:root[data-surface="sentience"] .btn.danger {
   background: #dc2626;
   border: 1px solid #ef4444;
   color: #ffffff;
@@ -2984,14 +2984,14 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   border-radius: 3px;
   box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
 }
-:root[data-surface="cyberlife"] .btn.danger:hover {
+:root[data-surface="sentience"] .btn.danger:hover {
   background: #ef4444;
   border-color: #f87171;
   box-shadow: 0 0 14px rgba(239, 68, 68, 0.7);
 }
 
-/* Cyberlife: Headings & Titles */
-:root[data-surface="cyberlife"] :is(
+/* Synthetic Soul: Headings & Titles */
+:root[data-surface="sentience"] :is(
   .page-header-title, .section-title, .hub-card-title, .hltb-title,
   .gp-section-title, .notif-title, .modal-box h2, .col-modal-title h2
 ) {
@@ -3001,8 +3001,8 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   text-shadow: 0 0 12px rgba(0, 162, 255, 0.4);
 }
 
-/* Cyberlife: Cards, Panels & Holographic Terminals */
-:root[data-surface="cyberlife"] :is(
+/* Synthetic Soul: Cards, Panels & Holographic Terminals */
+:root[data-surface="sentience"] :is(
   .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item,
   .gp-ac-notice, .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card,
   .gp-side-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
@@ -3018,33 +3018,33 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   backdrop-filter: blur(8px);
 }
 
-/* Cyberlife: Library Game Cards */
-:root[data-surface="cyberlife"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+/* Synthetic Soul: Library Game Cards */
+:root[data-surface="sentience"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(0, 162, 255, 0.2);
   border-radius: 4px;
 }
-:root[data-surface="cyberlife"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="sentience"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
   box-shadow:
     0 0 0 2px #00a2ff,
     0 0 22px rgba(0, 162, 255, 0.5),
     0 12px 30px rgba(0, 0, 0, 0.9);
   transform: translateY(-2px);
 }
-:root[data-surface="cyberlife"] .pcard-play-btn {
+:root[data-surface="sentience"] .pcard-play-btn {
   background: rgba(9, 14, 24, 0.9);
   border: 1px solid rgba(0, 162, 255, 0.45);
   color: #38bdf8;
   border-radius: 3px;
 }
-:root[data-surface="cyberlife"] .pcard-play-btn:hover {
+:root[data-surface="sentience"] .pcard-play-btn:hover {
   background: #00a2ff;
   color: #03101d;
   border-color: #7dd3fc;
   box-shadow: 0 0 14px rgba(0, 162, 255, 0.75);
 }
 
-/* Cyberlife: Inputs, Search & Fields */
-:root[data-surface="cyberlife"] :is(
+/* Synthetic Soul: Inputs, Search & Fields */
+:root[data-surface="sentience"] :is(
   input:not([type="range"], [type="checkbox"], [type="radio"]),
   select, textarea, .input, .text-input, .search, .page-search,
   .settings-search, .music-input, .music-select, .storage-search-input,
@@ -3055,58 +3055,58 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   color: #f0f6fc;
   border-radius: 3px;
 }
-:root[data-surface="cyberlife"] :is(
+:root[data-surface="sentience"] :is(
   input, select, textarea, .input, .text-input, .settings-search,
   .music-input, .music-select, .storage-search-input, .move-path-input,
   .install-path-input
 ):focus,
-:root[data-surface="cyberlife"] .search:focus-within,
-:root[data-surface="cyberlife"] .install-path-input-wrap:focus-within {
+:root[data-surface="sentience"] .search:focus-within,
+:root[data-surface="sentience"] .install-path-input-wrap:focus-within {
   border-color: #38bdf8;
   box-shadow: 0 0 0 2px rgba(0, 162, 255, 0.35);
   outline: none;
 }
 
-/* Cyberlife: Progress Bar (Android Probability Meter) */
-:root[data-surface="cyberlife"] .progress {
+/* Synthetic Soul: Progress Bar (Android Probability Meter) */
+:root[data-surface="sentience"] .progress {
   background: rgba(6, 9, 15, 0.92);
   border: 1px solid rgba(0, 162, 255, 0.25);
   border-radius: 3px;
   overflow: hidden;
 }
-:root[data-surface="cyberlife"] .progress > span,
-:root[data-surface="cyberlife"] :is(.gp-progress-fill) {
+:root[data-surface="sentience"] .progress > span,
+:root[data-surface="sentience"] :is(.gp-progress-fill) {
   background: linear-gradient(90deg, #0284c7 0%, #00a2ff 60%, #38bdf8 100%);
   box-shadow: 0 0 10px rgba(0, 162, 255, 0.55);
 }
 
-/* Cyberlife: Switches */
-:root[data-surface="cyberlife"] .switch input:checked + .track {
+/* Synthetic Soul: Switches */
+:root[data-surface="sentience"] .switch input:checked + .track {
   background: #0284c7;
   border-color: #38bdf8;
 }
-:root[data-surface="cyberlife"] .switch input:checked + .track::before {
+:root[data-surface="sentience"] .switch input:checked + .track::before {
   background: #ffffff;
   box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
 }
 
-/* Cyberlife: Store Tabs Active Indicator */
-:root[data-surface="cyberlife"] .store-tabs .tab.active,
-:root[data-surface="cyberlife"] .tab.active {
+/* Synthetic Soul: Store Tabs Active Indicator */
+:root[data-surface="sentience"] .store-tabs .tab.active,
+:root[data-surface="sentience"] .tab.active {
   color: #7dd3fc;
 }
-:root[data-surface="cyberlife"] .store-tabs .tab.active::after,
-:root[data-surface="cyberlife"] .tab.active::after {
+:root[data-surface="sentience"] .store-tabs .tab.active::after,
+:root[data-surface="sentience"] .tab.active::after {
   background: #00a2ff;
   box-shadow: 0 0 8px rgba(0, 162, 255, 0.7);
 }
 
-/* ---------- Outlaw Frontier (Red Dead Redemption Inspired) ----------
-   1899 American frontier: dramatic mesa canyon sunset backdrop (src/assets/redemption-scene.svg),
+/* ---------- Frontier Dusk ----------
+   1899 American frontier: dramatic mesa canyon sunset backdrop (src/assets/frontier-scene.svg),
    weathered saddle leather & saloon timber panels, outlaw crimson action buttons,
    and campfire ember glow. */
 
-:root[data-surface="redemption"] {
+:root[data-surface="frontier"] {
   color-scheme: dark;
   --bg: #0c0907;
   --surface-1: #16100c;
@@ -3137,13 +3137,13 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   --scrollbar-thumb-hover: #e65140;
 }
 
-:root[data-surface="redemption"] body {
-  background: #0c0907 url("../assets/redemption-scene.svg") 0 0 / 100vw 100vh no-repeat;
+:root[data-surface="frontier"] body {
+  background: #0c0907 url("../assets/frontier-scene.svg") 0 0 / 100vw 100vh no-repeat;
 }
-:root[data-surface="redemption"] #main-col,
-:root[data-surface="redemption"] #view { background: transparent; }
-:root[data-surface="redemption"] .overlay { background: transparent; }
-:root[data-surface="redemption"] .overlay::before {
+:root[data-surface="frontier"] #main-col,
+:root[data-surface="frontier"] #view { background: transparent; }
+:root[data-surface="frontier"] .overlay { background: transparent; }
+:root[data-surface="frontier"] .overlay::before {
   content: "";
   position: fixed;
   z-index: -1;
@@ -3151,42 +3151,42 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   left: var(--sidebar-w);
   right: 0;
   bottom: 0;
-  background: #0c0907 url("../assets/redemption-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
+  background: #0c0907 url("../assets/frontier-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
   pointer-events: none;
   transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
 
-/* Outlaw Frontier: Custom Visible Saddle Leather Scrollbars */
-:root[data-surface="redemption"] ::-webkit-scrollbar-thumb {
+/* Frontier Dusk: Custom Visible Saddle Leather Scrollbars */
+:root[data-surface="frontier"] ::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 4px;
   box-shadow: 0 0 6px rgba(217, 56, 41, 0.25);
 }
-:root[data-surface="redemption"] ::-webkit-scrollbar-thumb:hover {
+:root[data-surface="frontier"] ::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
   box-shadow: 0 0 12px rgba(230, 81, 64, 0.7);
 }
-:root[data-surface="redemption"] .overlay::-webkit-scrollbar-track {
+:root[data-surface="frontier"] .overlay::-webkit-scrollbar-track {
   background: rgba(12, 9, 7, 0.75);
   border-left: 1px solid rgba(217, 56, 41, 0.18);
 }
-:root[data-surface="redemption"] .overlay::-webkit-scrollbar-thumb {
+:root[data-surface="frontier"] .overlay::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 4px;
   border: 1px solid rgba(217, 56, 41, 0.35);
   box-shadow: 0 0 8px rgba(217, 56, 41, 0.35);
 }
-:root[data-surface="redemption"] .overlay::-webkit-scrollbar-thumb:hover {
+:root[data-surface="frontier"] .overlay::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
   box-shadow: 0 0 14px rgba(230, 81, 64, 0.8);
 }
 
-/* Outlaw Frontier: Window Bar */
-:root[data-surface="redemption"] #winbar {
+/* Frontier Dusk: Window Bar */
+:root[data-surface="frontier"] #winbar {
   background: #100b08;
   border-bottom: 1px solid rgba(217, 56, 41, 0.25);
 }
-:root[data-surface="redemption"] .winbar-beta-chip {
+:root[data-surface="frontier"] .winbar-beta-chip {
   background: #d93829;
   color: #ffffff;
   font-weight: 800;
@@ -3194,36 +3194,36 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   box-shadow: 0 0 10px rgba(217, 56, 41, 0.5);
   letter-spacing: 0.5px;
 }
-:root[data-surface="redemption"] .winbar-btn:hover {
+:root[data-surface="frontier"] .winbar-btn:hover {
   background: rgba(217, 56, 41, 0.14);
   color: #f87171;
 }
-:root[data-surface="redemption"] .win-btn.win-close:hover {
+:root[data-surface="frontier"] .win-btn.win-close:hover {
   background: #b91c1c;
   color: #ffffff;
   box-shadow: 0 0 14px rgba(220, 38, 38, 0.75);
 }
 
-/* Outlaw Frontier: Sidebar Navigation */
-:root[data-surface="redemption"] #sidebar {
+/* Frontier Dusk: Sidebar Navigation */
+:root[data-surface="frontier"] #sidebar {
   background: rgba(14, 10, 8, 0.96);
   border-right: 1px solid rgba(217, 56, 41, 0.22);
   backdrop-filter: blur(8px);
 }
-:root[data-surface="redemption"] #page-header {
+:root[data-surface="frontier"] #page-header {
   background: rgba(15, 10, 8, 0.88);
   border-bottom: 1px solid rgba(217, 56, 41, 0.22);
   backdrop-filter: blur(6px);
 }
-:root[data-surface="redemption"] .sb-item {
+:root[data-surface="frontier"] .sb-item {
   border-radius: 4px;
   transition: all var(--ease);
 }
-:root[data-surface="redemption"] .sb-item:hover:not(.active) {
+:root[data-surface="frontier"] .sb-item:hover:not(.active) {
   color: #fecdd3;
   background: rgba(217, 56, 41, 0.1);
 }
-:root[data-surface="redemption"] .sb-item.active {
+:root[data-surface="frontier"] .sb-item.active {
   background: linear-gradient(90deg, rgba(217, 56, 41, 0.22) 0%, rgba(217, 56, 41, 0.04) 100%);
   color: #fecdd3;
   font-weight: 700;
@@ -3231,11 +3231,11 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   border-radius: 0 4px 4px 0;
   box-shadow: inset 2px 0 10px rgba(217, 56, 41, 0.3);
 }
-:root[data-surface="redemption"] .sb-item.active::before {
+:root[data-surface="frontier"] .sb-item.active::before {
   display: none;
 }
-:root[data-surface="redemption"] .sb-badge,
-:root[data-surface="redemption"] .nav-badge {
+:root[data-surface="frontier"] .sb-badge,
+:root[data-surface="frontier"] .nav-badge {
   background: #d93829;
   color: #ffffff;
   font-weight: 800;
@@ -3243,8 +3243,8 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   border: 1px solid rgba(248, 113, 113, 0.4);
 }
 
-/* Outlaw Frontier: Primary Action Buttons (Embossed Crimson Leather Badge) */
-:root[data-surface="redemption"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
+/* Frontier Dusk: Primary Action Buttons (Embossed Crimson Leather Badge) */
+:root[data-surface="frontier"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
   background: linear-gradient(180deg, #d93829 0%, #8e1810 100%);
   color: #ffffff;
   font-family: "Georgia", "Cambria", serif;
@@ -3258,22 +3258,22 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
   transition: all var(--ease);
 }
-:root[data-surface="redemption"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
+:root[data-surface="frontier"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
   background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
   border-color: #ffffff;
   color: #ffffff;
   box-shadow: inset 0 1px 0 #ffffff, 0 0 20px rgba(239, 68, 68, 0.75), 0 0 6px #f59e0b;
   transform: translateY(-1px);
 }
-:root[data-surface="redemption"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
+:root[data-surface="frontier"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
   background: #7a140d;
   border-color: #7a140d;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
   transform: translateY(0);
 }
 
-/* Outlaw Frontier: Secondary Action Buttons (Antique Brass & Timber) */
-:root[data-surface="redemption"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
+/* Frontier Dusk: Secondary Action Buttons (Antique Brass & Timber) */
+:root[data-surface="frontier"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
   background: rgba(28, 19, 15, 0.9);
   border: 1px solid rgba(245, 158, 11, 0.3);
   color: #fef3c7;
@@ -3281,16 +3281,16 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   font-weight: 600;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 6px rgba(0, 0, 0, 0.5);
 }
-:root[data-surface="redemption"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
-:root[data-surface="redemption"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
+:root[data-surface="frontier"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
+:root[data-surface="frontier"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
   border-color: #f59e0b;
   color: #ffffff;
   background: rgba(217, 56, 41, 0.2);
   box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
 }
 
-/* Outlaw Frontier: Danger Buttons */
-:root[data-surface="redemption"] .btn.danger {
+/* Frontier Dusk: Danger Buttons */
+:root[data-surface="frontier"] .btn.danger {
   background: #7f1d1d;
   border: 1px solid #b91c1c;
   color: #fecdd3;
@@ -3298,15 +3298,15 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(127, 29, 29, 0.5);
 }
-:root[data-surface="redemption"] .btn.danger:hover {
+:root[data-surface="frontier"] .btn.danger:hover {
   background: #991b1b;
   border-color: #ef4444;
   color: #ffffff;
   box-shadow: 0 0 14px rgba(220, 38, 38, 0.7);
 }
 
-/* Outlaw Frontier: Western Serif Headings & Group Titles */
-:root[data-surface="redemption"] :is(
+/* Frontier Dusk: Western Serif Headings & Group Titles */
+:root[data-surface="frontier"] :is(
   .page-header-title, .section-title, .hub-card-title, .hltb-title,
   .gp-section-title, .notif-title, .modal-box h2, .col-modal-title h2,
   .dl-group-title, .settings-group-title, .dl-sec-title
@@ -3318,8 +3318,8 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8), 0 0 10px rgba(217, 56, 41, 0.35);
 }
 
-/* Outlaw Frontier: Cards, Panels, Saloon Boards & Download Rows */
-:root[data-surface="redemption"] :is(
+/* Frontier Dusk: Cards, Panels, Saloon Boards & Download Rows */
+:root[data-surface="frontier"] :is(
   .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item,
   .gp-ac-notice, .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card,
   .gp-side-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
@@ -3334,39 +3334,39 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   box-shadow: inset 0 1px 0 rgba(245, 158, 11, 0.18), inset 0 0 0 1px rgba(0, 0, 0, 0.6), 0 8px 26px rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(8px);
 }
-:root[data-surface="redemption"] .lrow:hover {
+:root[data-surface="frontier"] .lrow:hover {
   border-color: #d93829;
   box-shadow: inset 0 1px 0 rgba(254, 240, 138, 0.25), 0 0 16px rgba(217, 56, 41, 0.35);
   background: linear-gradient(180deg, rgba(38, 25, 20, 0.96) 0%, rgba(24, 16, 12, 0.94) 100%);
 }
 
-/* Outlaw Frontier: Library Game Cards */
-:root[data-surface="redemption"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+/* Frontier Dusk: Library Game Cards */
+:root[data-surface="frontier"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(217, 56, 41, 0.24);
   border-radius: 4px;
 }
-:root[data-surface="redemption"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="frontier"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
   box-shadow:
     0 0 0 2px #d93829,
     0 0 22px rgba(217, 56, 41, 0.5),
     0 12px 30px rgba(0, 0, 0, 0.9);
   transform: translateY(-2px);
 }
-:root[data-surface="redemption"] .pcard-play-btn {
+:root[data-surface="frontier"] .pcard-play-btn {
   background: rgba(18, 12, 9, 0.9);
   border: 1px solid rgba(217, 56, 41, 0.45);
   color: #fecdd3;
   border-radius: 3px;
 }
-:root[data-surface="redemption"] .pcard-play-btn:hover {
+:root[data-surface="frontier"] .pcard-play-btn:hover {
   background: #d93829;
   color: #ffffff;
   border-color: #f87171;
   box-shadow: 0 0 14px rgba(217, 56, 41, 0.75);
 }
 
-/* Outlaw Frontier: Inputs, Search & Fields */
-:root[data-surface="redemption"] :is(
+/* Frontier Dusk: Inputs, Search & Fields */
+:root[data-surface="frontier"] :is(
   input:not([type="range"], [type="checkbox"], [type="radio"]),
   select, textarea, .input, .text-input, .search, .page-search,
   .settings-search, .music-input, .music-select, .storage-search-input,
@@ -3377,58 +3377,58 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   color: #fbf5ee;
   border-radius: 4px;
 }
-:root[data-surface="redemption"] :is(
+:root[data-surface="frontier"] :is(
   input, select, textarea, .input, .text-input, .settings-search,
   .music-input, .music-select, .storage-search-input, .move-path-input,
   .install-path-input
 ):focus,
-:root[data-surface="redemption"] .search:focus-within,
-:root[data-surface="redemption"] .install-path-input-wrap:focus-within {
+:root[data-surface="frontier"] .search:focus-within,
+:root[data-surface="frontier"] .install-path-input-wrap:focus-within {
   border-color: #f87171;
   box-shadow: 0 0 0 2px rgba(217, 56, 41, 0.35);
   outline: none;
 }
 
-/* Outlaw Frontier: Progress Bar (Dead Eye / Stamina Core Meter) */
-:root[data-surface="redemption"] .progress {
+/* Frontier Dusk: Progress Bar (Dead Eye / Stamina Core Meter) */
+:root[data-surface="frontier"] .progress {
   background: rgba(12, 8, 6, 0.92);
   border: 1px solid rgba(217, 56, 41, 0.25);
   border-radius: 4px;
   overflow: hidden;
 }
-:root[data-surface="redemption"] .progress > span,
-:root[data-surface="redemption"] :is(.gp-progress-fill) {
+:root[data-surface="frontier"] .progress > span,
+:root[data-surface="frontier"] :is(.gp-progress-fill) {
   background: linear-gradient(90deg, #f59e0b 0%, #ef4444 60%, #991b1b 100%);
   box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
 }
 
-/* Outlaw Frontier: Switches */
-:root[data-surface="redemption"] .switch input:checked + .track {
+/* Frontier Dusk: Switches */
+:root[data-surface="frontier"] .switch input:checked + .track {
   background: #991b1b;
   border-color: #d93829;
 }
-:root[data-surface="redemption"] .switch input:checked + .track::before {
+:root[data-surface="frontier"] .switch input:checked + .track::before {
   background: #ffffff;
   box-shadow: 0 0 8px rgba(217, 56, 41, 0.7);
 }
 
-/* Outlaw Frontier: Store Tabs Active Indicator */
-:root[data-surface="redemption"] .store-tabs .tab.active,
-:root[data-surface="redemption"] .tab.active {
+/* Frontier Dusk: Store Tabs Active Indicator */
+:root[data-surface="frontier"] .store-tabs .tab.active,
+:root[data-surface="frontier"] .tab.active {
   color: #fecdd3;
 }
-:root[data-surface="redemption"] .store-tabs .tab.active::after,
-:root[data-surface="redemption"] .tab.active::after {
+:root[data-surface="frontier"] .store-tabs .tab.active::after,
+:root[data-surface="frontier"] .tab.active::after {
   background: #d93829;
   box-shadow: 0 0 8px rgba(217, 56, 41, 0.6);
 }
 
-/* ---------- Tarnished Grace (Elden Ring Inspired) ----------
-   Dark fantasy epic: majestic glowing Erdtree & Site of Grace backdrop (src/assets/tarnished-scene.svg),
+/* ---------- Ashen Sanctum ----------
+   Dark fantasy epic: majestic glowing Erdtree & Site of Grace backdrop (src/assets/sanctum-scene.svg),
    weathered ash stone & obsidian sanctuary slabs, ancient golden rune action buttons,
    and guiding grace particle aura. */
 
-:root[data-surface="tarnished"] {
+:root[data-surface="sanctum"] {
   color-scheme: dark;
   --bg: #090807;
   --surface-1: #14120e;
@@ -3459,13 +3459,13 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   --scrollbar-thumb-hover: #f5be57;
 }
 
-:root[data-surface="tarnished"] body {
-  background: #090807 url("../assets/tarnished-scene.svg") 0 0 / 100vw 100vh no-repeat;
+:root[data-surface="sanctum"] body {
+  background: #090807 url("../assets/sanctum-scene.svg") 0 0 / 100vw 100vh no-repeat;
 }
-:root[data-surface="tarnished"] #main-col,
-:root[data-surface="tarnished"] #view { background: transparent; }
-:root[data-surface="tarnished"] .overlay { background: transparent; }
-:root[data-surface="tarnished"] .overlay::before {
+:root[data-surface="sanctum"] #main-col,
+:root[data-surface="sanctum"] #view { background: transparent; }
+:root[data-surface="sanctum"] .overlay { background: transparent; }
+:root[data-surface="sanctum"] .overlay::before {
   content: "";
   position: fixed;
   z-index: -1;
@@ -3473,42 +3473,42 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   left: var(--sidebar-w);
   right: 0;
   bottom: 0;
-  background: #090807 url("../assets/tarnished-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
+  background: #090807 url("../assets/sanctum-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
   pointer-events: none;
   transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
 
-/* Tarnished Grace: Custom Visible Antique Gold Scrollbars */
-:root[data-surface="tarnished"] ::-webkit-scrollbar-thumb {
+/* Ashen Sanctum: Custom Visible Antique Gold Scrollbars */
+:root[data-surface="sanctum"] ::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 4px;
   box-shadow: 0 0 6px rgba(229, 169, 60, 0.25);
 }
-:root[data-surface="tarnished"] ::-webkit-scrollbar-thumb:hover {
+:root[data-surface="sanctum"] ::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
   box-shadow: 0 0 12px rgba(245, 190, 87, 0.7);
 }
-:root[data-surface="tarnished"] .overlay::-webkit-scrollbar-track {
+:root[data-surface="sanctum"] .overlay::-webkit-scrollbar-track {
   background: rgba(9, 8, 7, 0.75);
   border-left: 1px solid rgba(229, 169, 60, 0.18);
 }
-:root[data-surface="tarnished"] .overlay::-webkit-scrollbar-thumb {
+:root[data-surface="sanctum"] .overlay::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 4px;
   border: 1px solid rgba(229, 169, 60, 0.35);
   box-shadow: 0 0 8px rgba(229, 169, 60, 0.35);
 }
-:root[data-surface="tarnished"] .overlay::-webkit-scrollbar-thumb:hover {
+:root[data-surface="sanctum"] .overlay::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
   box-shadow: 0 0 14px rgba(245, 190, 87, 0.8);
 }
 
-/* Tarnished Grace: Window Bar */
-:root[data-surface="tarnished"] #winbar {
+/* Ashen Sanctum: Window Bar */
+:root[data-surface="sanctum"] #winbar {
   background: #0d0b09;
   border-bottom: 1px solid rgba(229, 169, 60, 0.25);
 }
-:root[data-surface="tarnished"] .winbar-beta-chip {
+:root[data-surface="sanctum"] .winbar-beta-chip {
   background: #e5a93c;
   color: #120d04;
   font-weight: 800;
@@ -3516,36 +3516,36 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   box-shadow: 0 0 10px rgba(229, 169, 60, 0.5);
   letter-spacing: 0.5px;
 }
-:root[data-surface="tarnished"] .winbar-btn:hover {
+:root[data-surface="sanctum"] .winbar-btn:hover {
   background: rgba(229, 169, 60, 0.14);
   color: #fde047;
 }
-:root[data-surface="tarnished"] .win-btn.win-close:hover {
+:root[data-surface="sanctum"] .win-btn.win-close:hover {
   background: #991b1b;
   color: #ffffff;
   box-shadow: 0 0 14px rgba(220, 38, 38, 0.75);
 }
 
-/* Tarnished Grace: Sidebar Navigation */
-:root[data-surface="tarnished"] #sidebar {
+/* Ashen Sanctum: Sidebar Navigation */
+:root[data-surface="sanctum"] #sidebar {
   background: rgba(13, 11, 9, 0.96);
   border-right: 1px solid rgba(229, 169, 60, 0.22);
   backdrop-filter: blur(8px);
 }
-:root[data-surface="tarnished"] #page-header {
+:root[data-surface="sanctum"] #page-header {
   background: rgba(14, 12, 9, 0.88);
   border-bottom: 1px solid rgba(229, 169, 60, 0.22);
   backdrop-filter: blur(6px);
 }
-:root[data-surface="tarnished"] .sb-item {
+:root[data-surface="sanctum"] .sb-item {
   border-radius: 4px;
   transition: all var(--ease);
 }
-:root[data-surface="tarnished"] .sb-item:hover:not(.active) {
+:root[data-surface="sanctum"] .sb-item:hover:not(.active) {
   color: #fef08a;
   background: rgba(229, 169, 60, 0.1);
 }
-:root[data-surface="tarnished"] .sb-item.active {
+:root[data-surface="sanctum"] .sb-item.active {
   background: linear-gradient(90deg, rgba(229, 169, 60, 0.22) 0%, rgba(229, 169, 60, 0.04) 100%);
   color: #fef08a;
   font-weight: 700;
@@ -3553,11 +3553,11 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   border-radius: 0 4px 4px 0;
   box-shadow: inset 2px 0 10px rgba(229, 169, 60, 0.3);
 }
-:root[data-surface="tarnished"] .sb-item.active::before {
+:root[data-surface="sanctum"] .sb-item.active::before {
   display: none;
 }
-:root[data-surface="tarnished"] .sb-badge,
-:root[data-surface="tarnished"] .nav-badge {
+:root[data-surface="sanctum"] .sb-badge,
+:root[data-surface="sanctum"] .nav-badge {
   background: #e5a93c;
   color: #120d04;
   font-weight: 800;
@@ -3565,8 +3565,8 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   border: 1px solid rgba(254, 240, 138, 0.5);
 }
 
-/* Tarnished Grace: Primary Action Buttons (Golden Grace Seal) */
-:root[data-surface="tarnished"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
+/* Ashen Sanctum: Primary Action Buttons (Golden Grace Seal) */
+:root[data-surface="sanctum"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
   background: linear-gradient(180deg, #f5be57 0%, #b47818 100%);
   color: #120d04;
   font-family: "Cinzel", "Georgia", "Cambria", serif;
@@ -3580,22 +3580,22 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
   transition: all var(--ease);
 }
-:root[data-surface="tarnished"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
+:root[data-surface="sanctum"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
   background: linear-gradient(180deg, #fff0aa 0%, #d4901a 100%);
   border-color: #ffffff;
   color: #000000;
   box-shadow: inset 0 1px 0 #ffffff, 0 0 22px rgba(245, 190, 87, 0.8), 0 0 8px #ffffff;
   transform: translateY(-1px);
 }
-:root[data-surface="tarnished"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
+:root[data-surface="sanctum"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
   background: #9a6712;
   border-color: #9a6712;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
   transform: translateY(0);
 }
 
-/* Tarnished Grace: Secondary Action Buttons (Carved Ash Stone & Antique Gold) */
-:root[data-surface="tarnished"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
+/* Ashen Sanctum: Secondary Action Buttons (Carved Ash Stone & Antique Gold) */
+:root[data-surface="sanctum"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
   background: rgba(26, 22, 17, 0.92);
   border: 1px solid rgba(229, 169, 60, 0.32);
   color: #f9f6ed;
@@ -3603,16 +3603,16 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   font-weight: 600;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 6px rgba(0, 0, 0, 0.5);
 }
-:root[data-surface="tarnished"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
-:root[data-surface="tarnished"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
+:root[data-surface="sanctum"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
+:root[data-surface="sanctum"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
   border-color: #f5be57;
   color: #fff9db;
   background: rgba(229, 169, 60, 0.2);
   box-shadow: 0 0 12px rgba(229, 169, 60, 0.4);
 }
 
-/* Tarnished Grace: Danger Buttons (Dark Crimson Blood-Rune) */
-:root[data-surface="tarnished"] .btn.danger {
+/* Ashen Sanctum: Danger Buttons (Dark Crimson Blood-Rune) */
+:root[data-surface="sanctum"] .btn.danger {
   background: #5f1515;
   border: 1px solid #991b1b;
   color: #fecdd3;
@@ -3620,15 +3620,15 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(95, 21, 21, 0.5);
 }
-:root[data-surface="tarnished"] .btn.danger:hover {
+:root[data-surface="sanctum"] .btn.danger:hover {
   background: #7f1d1d;
   border-color: #ef4444;
   color: #ffffff;
   box-shadow: 0 0 14px rgba(220, 38, 38, 0.7);
 }
 
-/* Tarnished Grace: Regal Dark Fantasy Serif Headings & Group Titles */
-:root[data-surface="tarnished"] :is(
+/* Ashen Sanctum: Regal Dark Fantasy Serif Headings & Group Titles */
+:root[data-surface="sanctum"] :is(
   .page-header-title, .section-title, .hub-card-title, .hltb-title,
   .gp-section-title, .notif-title, .modal-box h2, .col-modal-title h2,
   .dl-group-title, .settings-group-title, .dl-sec-title
@@ -3640,8 +3640,8 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 12px rgba(229, 169, 60, 0.4);
 }
 
-/* Tarnished Grace: Cards, Panels, Ash Stone Slabs & Sanctuary Boards */
-:root[data-surface="tarnished"] :is(
+/* Ashen Sanctum: Cards, Panels, Ash Stone Slabs & Sanctuary Boards */
+:root[data-surface="sanctum"] :is(
   .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item,
   .gp-ac-notice, .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card,
   .gp-side-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
@@ -3656,39 +3656,39 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   box-shadow: inset 0 1px 0 rgba(255, 234, 138, 0.16), inset 0 0 0 1px rgba(0, 0, 0, 0.6), 0 8px 26px rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(8px);
 }
-:root[data-surface="tarnished"] .lrow:hover {
+:root[data-surface="sanctum"] .lrow:hover {
   border-color: #f5be57;
   box-shadow: inset 0 1px 0 rgba(255, 234, 138, 0.25), 0 0 16px rgba(229, 169, 60, 0.35);
   background: linear-gradient(180deg, rgba(35, 29, 23, 0.96) 0%, rgba(22, 18, 14, 0.94) 100%);
 }
 
-/* Tarnished Grace: Library Game Cards */
-:root[data-surface="tarnished"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+/* Ashen Sanctum: Library Game Cards */
+:root[data-surface="sanctum"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(229, 169, 60, 0.22);
   border-radius: 4px;
 }
-:root[data-surface="tarnished"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="sanctum"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
   box-shadow:
     0 0 0 2px #e5a93c,
     0 0 22px rgba(229, 169, 60, 0.5),
     0 12px 30px rgba(0, 0, 0, 0.9);
   transform: translateY(-2px);
 }
-:root[data-surface="tarnished"] .pcard-play-btn {
+:root[data-surface="sanctum"] .pcard-play-btn {
   background: rgba(18, 15, 11, 0.9);
   border: 1px solid rgba(229, 169, 60, 0.45);
   color: #fef08a;
   border-radius: 3px;
 }
-:root[data-surface="tarnished"] .pcard-play-btn:hover {
+:root[data-surface="sanctum"] .pcard-play-btn:hover {
   background: #e5a93c;
   color: #120d04;
   border-color: #ffea8a;
   box-shadow: 0 0 14px rgba(229, 169, 60, 0.75);
 }
 
-/* Tarnished Grace: Inputs, Search & Fields */
-:root[data-surface="tarnished"] :is(
+/* Ashen Sanctum: Inputs, Search & Fields */
+:root[data-surface="sanctum"] :is(
   input:not([type="range"], [type="checkbox"], [type="radio"]),
   select, textarea, .input, .text-input, .search, .page-search,
   .settings-search, .music-input, .music-select, .storage-search-input,
@@ -3699,58 +3699,58 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   color: #f9f6ed;
   border-radius: 4px;
 }
-:root[data-surface="tarnished"] :is(
+:root[data-surface="sanctum"] :is(
   input, select, textarea, .input, .text-input, .settings-search,
   .music-input, .music-select, .storage-search-input, .move-path-input,
   .install-path-input
 ):focus,
-:root[data-surface="tarnished"] .search:focus-within,
-:root[data-surface="tarnished"] .install-path-input-wrap:focus-within {
+:root[data-surface="sanctum"] .search:focus-within,
+:root[data-surface="sanctum"] .install-path-input-wrap:focus-within {
   border-color: #f5be57;
   box-shadow: 0 0 0 2px rgba(229, 169, 60, 0.35);
   outline: none;
 }
 
-/* Tarnished Grace: Progress Bar (Great Rune Arc / Molten Gold Meter) */
-:root[data-surface="tarnished"] .progress {
+/* Ashen Sanctum: Progress Bar (Great Rune Arc / Molten Gold Meter) */
+:root[data-surface="sanctum"] .progress {
   background: rgba(12, 10, 8, 0.92);
   border: 1px solid rgba(229, 169, 60, 0.25);
   border-radius: 4px;
   overflow: hidden;
 }
-:root[data-surface="tarnished"] .progress > span,
-:root[data-surface="tarnished"] :is(.gp-progress-fill) {
+:root[data-surface="sanctum"] .progress > span,
+:root[data-surface="sanctum"] :is(.gp-progress-fill) {
   background: linear-gradient(90deg, #b47818 0%, #e5a93c 50%, #fef08a 100%);
   box-shadow: 0 0 10px rgba(229, 169, 60, 0.5);
 }
 
-/* Tarnished Grace: Switches */
-:root[data-surface="tarnished"] .switch input:checked + .track {
+/* Ashen Sanctum: Switches */
+:root[data-surface="sanctum"] .switch input:checked + .track {
   background: #9a6712;
   border-color: #e5a93c;
 }
-:root[data-surface="tarnished"] .switch input:checked + .track::before {
+:root[data-surface="sanctum"] .switch input:checked + .track::before {
   background: #ffffff;
   box-shadow: 0 0 8px rgba(229, 169, 60, 0.7);
 }
 
-/* Tarnished Grace: Store Tabs Active Indicator */
-:root[data-surface="tarnished"] .store-tabs .tab.active,
-:root[data-surface="tarnished"] .tab.active {
+/* Ashen Sanctum: Store Tabs Active Indicator */
+:root[data-surface="sanctum"] .store-tabs .tab.active,
+:root[data-surface="sanctum"] .tab.active {
   color: #fef08a;
 }
-:root[data-surface="tarnished"] .store-tabs .tab.active::after,
-:root[data-surface="tarnished"] .tab.active::after {
+:root[data-surface="sanctum"] .store-tabs .tab.active::after,
+:root[data-surface="sanctum"] .tab.active::after {
   background: #e5a93c;
   box-shadow: 0 0 8px rgba(229, 169, 60, 0.6);
 }
 
-/* ---------- Hazard Team (Half-Life Inspired) ----------
-   Black Mesa facility: high-energy spectrometer chamber & Lambda reactor backdrop (src/assets/hazard-scene.svg),
+/* ---------- Resonance Core ----------
+   Black Mesa facility: high-energy spectrometer chamber & Lambda reactor backdrop (src/assets/resonance-scene.svg),
    reinforced titanium lab consoles, high-visibility HEV hazard orange action buttons,
    and radiation telemetry aura. */
 
-:root[data-surface="hazard"] {
+:root[data-surface="resonance"] {
   color-scheme: dark;
   --bg: #080a0d;
   --surface-1: #10151c;
@@ -3781,13 +3781,13 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   --scrollbar-thumb-hover: #fb923c;
 }
 
-:root[data-surface="hazard"] body {
-  background: #080a0d url("../assets/hazard-scene.svg") 0 0 / 100vw 100vh no-repeat;
+:root[data-surface="resonance"] body {
+  background: #080a0d url("../assets/resonance-scene.svg") 0 0 / 100vw 100vh no-repeat;
 }
-:root[data-surface="hazard"] #main-col,
-:root[data-surface="hazard"] #view { background: transparent; }
-:root[data-surface="hazard"] .overlay { background: transparent; }
-:root[data-surface="hazard"] .overlay::before {
+:root[data-surface="resonance"] #main-col,
+:root[data-surface="resonance"] #view { background: transparent; }
+:root[data-surface="resonance"] .overlay { background: transparent; }
+:root[data-surface="resonance"] .overlay::before {
   content: "";
   position: fixed;
   z-index: -1;
@@ -3795,42 +3795,42 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   left: var(--sidebar-w);
   right: 0;
   bottom: 0;
-  background: #080a0d url("../assets/hazard-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
+  background: #080a0d url("../assets/resonance-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
   pointer-events: none;
   transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
 
-/* Hazard Team: Custom Visible Tactical High-Vis Scrollbars */
-:root[data-surface="hazard"] ::-webkit-scrollbar-thumb {
+/* Resonance Core: Custom Visible Tactical High-Vis Scrollbars */
+:root[data-surface="resonance"] ::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 4px;
   box-shadow: 0 0 6px rgba(249, 115, 22, 0.25);
 }
-:root[data-surface="hazard"] ::-webkit-scrollbar-thumb:hover {
+:root[data-surface="resonance"] ::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
   box-shadow: 0 0 12px rgba(251, 146, 60, 0.7);
 }
-:root[data-surface="hazard"] .overlay::-webkit-scrollbar-track {
+:root[data-surface="resonance"] .overlay::-webkit-scrollbar-track {
   background: rgba(8, 10, 13, 0.75);
   border-left: 1px solid rgba(249, 115, 22, 0.18);
 }
-:root[data-surface="hazard"] .overlay::-webkit-scrollbar-thumb {
+:root[data-surface="resonance"] .overlay::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 4px;
   border: 1px solid rgba(249, 115, 22, 0.35);
   box-shadow: 0 0 8px rgba(249, 115, 22, 0.35);
 }
-:root[data-surface="hazard"] .overlay::-webkit-scrollbar-thumb:hover {
+:root[data-surface="resonance"] .overlay::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
   box-shadow: 0 0 14px rgba(251, 146, 60, 0.8);
 }
 
-/* Hazard Team: Window Bar */
-:root[data-surface="hazard"] #winbar {
+/* Resonance Core: Window Bar */
+:root[data-surface="resonance"] #winbar {
   background: #0b0e13;
   border-bottom: 1px solid rgba(249, 115, 22, 0.25);
 }
-:root[data-surface="hazard"] .winbar-beta-chip {
+:root[data-surface="resonance"] .winbar-beta-chip {
   background: #f97316;
   color: #080a0d;
   font-weight: 800;
@@ -3838,36 +3838,36 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
   letter-spacing: 0.5px;
 }
-:root[data-surface="hazard"] .winbar-btn:hover {
+:root[data-surface="resonance"] .winbar-btn:hover {
   background: rgba(249, 115, 22, 0.14);
   color: #fed7aa;
 }
-:root[data-surface="hazard"] .win-btn.win-close:hover {
+:root[data-surface="resonance"] .win-btn.win-close:hover {
   background: #991b1b;
   color: #ffffff;
   box-shadow: 0 0 14px rgba(220, 38, 38, 0.75);
 }
 
-/* Hazard Team: Sidebar Navigation */
-:root[data-surface="hazard"] #sidebar {
+/* Resonance Core: Sidebar Navigation */
+:root[data-surface="resonance"] #sidebar {
   background: rgba(11, 14, 19, 0.96);
   border-right: 1px solid rgba(249, 115, 22, 0.22);
   backdrop-filter: blur(8px);
 }
-:root[data-surface="hazard"] #page-header {
+:root[data-surface="resonance"] #page-header {
   background: rgba(12, 16, 22, 0.88);
   border-bottom: 1px solid rgba(249, 115, 22, 0.22);
   backdrop-filter: blur(6px);
 }
-:root[data-surface="hazard"] .sb-item {
+:root[data-surface="resonance"] .sb-item {
   border-radius: 4px;
   transition: all var(--ease);
 }
-:root[data-surface="hazard"] .sb-item:hover:not(.active) {
+:root[data-surface="resonance"] .sb-item:hover:not(.active) {
   color: #fed7aa;
   background: rgba(249, 115, 22, 0.1);
 }
-:root[data-surface="hazard"] .sb-item.active {
+:root[data-surface="resonance"] .sb-item.active {
   background: linear-gradient(90deg, rgba(249, 115, 22, 0.22) 0%, rgba(249, 115, 22, 0.04) 100%);
   color: #fed7aa;
   font-weight: 700;
@@ -3875,11 +3875,11 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   border-radius: 0 4px 4px 0;
   box-shadow: inset 2px 0 10px rgba(249, 115, 22, 0.3);
 }
-:root[data-surface="hazard"] .sb-item.active::before {
+:root[data-surface="resonance"] .sb-item.active::before {
   display: none;
 }
-:root[data-surface="hazard"] .sb-badge,
-:root[data-surface="hazard"] .nav-badge {
+:root[data-surface="resonance"] .sb-badge,
+:root[data-surface="resonance"] .nav-badge {
   background: #f97316;
   color: #080a0d;
   font-weight: 800;
@@ -3887,8 +3887,8 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   border: 1px solid rgba(254, 215, 170, 0.5);
 }
 
-/* Hazard Team: Primary Action Buttons (HEV Suit Power Core) */
-:root[data-surface="hazard"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
+/* Resonance Core: Primary Action Buttons (HEV Suit Power Core) */
+:root[data-surface="resonance"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
   background: linear-gradient(180deg, #fb923c 0%, #c2410c 100%);
   color: #ffffff;
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -3902,22 +3902,22 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
   transition: all var(--ease);
 }
-:root[data-surface="hazard"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
+:root[data-surface="resonance"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
   background: linear-gradient(180deg, #fed7aa 0%, #ea580c 100%);
   border-color: #ffffff;
   color: #080a0d;
   box-shadow: inset 0 1px 0 #ffffff, 0 0 22px rgba(249, 115, 22, 0.8), 0 0 8px #fde047;
   transform: translateY(-1px);
 }
-:root[data-surface="hazard"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
+:root[data-surface="resonance"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
   background: #9a3412;
   border-color: #9a3412;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
   transform: translateY(0);
 }
 
-/* Hazard Team: Secondary Action Buttons (Industrial Titanium Plates) */
-:root[data-surface="hazard"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
+/* Resonance Core: Secondary Action Buttons (Industrial Titanium Plates) */
+:root[data-surface="resonance"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
   background: rgba(22, 28, 38, 0.92);
   border: 1px solid rgba(249, 115, 22, 0.32);
   color: #f8fafc;
@@ -3925,16 +3925,16 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   font-weight: 600;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 6px rgba(0, 0, 0, 0.5);
 }
-:root[data-surface="hazard"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
-:root[data-surface="hazard"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
+:root[data-surface="resonance"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
+:root[data-surface="resonance"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
   border-color: #fb923c;
   color: #ffffff;
   background: rgba(249, 115, 22, 0.2);
   box-shadow: 0 0 12px rgba(249, 115, 22, 0.4);
 }
 
-/* Hazard Team: Danger Buttons (Radiation Containment Override) */
-:root[data-surface="hazard"] .btn.danger {
+/* Resonance Core: Danger Buttons (Radiation Containment Override) */
+:root[data-surface="resonance"] .btn.danger {
   background: #7f1d1d;
   border: 1px solid #b91c1c;
   color: #fecdd3;
@@ -3942,15 +3942,15 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(127, 29, 29, 0.5);
 }
-:root[data-surface="hazard"] .btn.danger:hover {
+:root[data-surface="resonance"] .btn.danger:hover {
   background: #991b1b;
   border-color: #ef4444;
   color: #ffffff;
   box-shadow: 0 0 14px rgba(220, 38, 38, 0.7);
 }
 
-/* Hazard Team: Tactical Technical Headings & Group Titles */
-:root[data-surface="hazard"] :is(
+/* Resonance Core: Tactical Technical Headings & Group Titles */
+:root[data-surface="resonance"] :is(
   .page-header-title, .section-title, .hub-card-title, .hltb-title,
   .gp-section-title, .notif-title, .modal-box h2, .col-modal-title h2,
   .dl-group-title, .settings-group-title, .dl-sec-title
@@ -3962,8 +3962,8 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 10px rgba(249, 115, 22, 0.35);
 }
 
-/* Hazard Team: Cards, Panels, Lab Consoles & Facility Boards */
-:root[data-surface="hazard"] :is(
+/* Resonance Core: Cards, Panels, Lab Consoles & Facility Boards */
+:root[data-surface="resonance"] :is(
   .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item,
   .gp-ac-notice, .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card,
   .gp-side-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
@@ -3978,39 +3978,39 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   box-shadow: inset 0 1px 0 rgba(253, 186, 116, 0.16), inset 0 0 0 1px rgba(0, 0, 0, 0.6), 0 8px 26px rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(8px);
 }
-:root[data-surface="hazard"] .lrow:hover {
+:root[data-surface="resonance"] .lrow:hover {
   border-color: #f97316;
   box-shadow: inset 0 1px 0 rgba(253, 186, 116, 0.25), 0 0 16px rgba(249, 115, 22, 0.35);
   background: linear-gradient(180deg, rgba(30, 39, 53, 0.96) 0%, rgba(18, 23, 33, 0.94) 100%);
 }
 
-/* Hazard Team: Library Game Cards */
-:root[data-surface="hazard"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+/* Resonance Core: Library Game Cards */
+:root[data-surface="resonance"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(249, 115, 22, 0.22);
   border-radius: 4px;
 }
-:root[data-surface="hazard"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="resonance"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
   box-shadow:
     0 0 0 2px #f97316,
     0 0 22px rgba(249, 115, 22, 0.5),
     0 12px 30px rgba(0, 0, 0, 0.9);
   transform: translateY(-2px);
 }
-:root[data-surface="hazard"] .pcard-play-btn {
+:root[data-surface="resonance"] .pcard-play-btn {
   background: rgba(14, 18, 25, 0.9);
   border: 1px solid rgba(249, 115, 22, 0.45);
   color: #fed7aa;
   border-radius: 3px;
 }
-:root[data-surface="hazard"] .pcard-play-btn:hover {
+:root[data-surface="resonance"] .pcard-play-btn:hover {
   background: #f97316;
   color: #080a0d;
   border-color: #fdba74;
   box-shadow: 0 0 14px rgba(249, 115, 22, 0.75);
 }
 
-/* Hazard Team: Inputs, Search & Fields */
-:root[data-surface="hazard"] :is(
+/* Resonance Core: Inputs, Search & Fields */
+:root[data-surface="resonance"] :is(
   input:not([type="range"], [type="checkbox"], [type="radio"]),
   select, textarea, .input, .text-input, .search, .page-search,
   .settings-search, .music-input, .music-select, .storage-search-input,
@@ -4021,58 +4021,58 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   color: #f8fafc;
   border-radius: 4px;
 }
-:root[data-surface="hazard"] :is(
+:root[data-surface="resonance"] :is(
   input, select, textarea, .input, .text-input, .settings-search,
   .music-input, .music-select, .storage-search-input, .move-path-input,
   .install-path-input
 ):focus,
-:root[data-surface="hazard"] .search:focus-within,
-:root[data-surface="hazard"] .install-path-input-wrap:focus-within {
+:root[data-surface="resonance"] .search:focus-within,
+:root[data-surface="resonance"] .install-path-input-wrap:focus-within {
   border-color: #fb923c;
   box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.35);
   outline: none;
 }
 
-/* Hazard Team: Progress Bar (HEV Suit Aux Power / Health Meter) */
-:root[data-surface="hazard"] .progress {
+/* Resonance Core: Progress Bar (HEV Suit Aux Power / Health Meter) */
+:root[data-surface="resonance"] .progress {
   background: rgba(10, 13, 18, 0.92);
   border: 1px solid rgba(249, 115, 22, 0.25);
   border-radius: 4px;
   overflow: hidden;
 }
-:root[data-surface="hazard"] .progress > span,
-:root[data-surface="hazard"] :is(.gp-progress-fill) {
+:root[data-surface="resonance"] .progress > span,
+:root[data-surface="resonance"] :is(.gp-progress-fill) {
   background: linear-gradient(90deg, #ea580c 0%, #f97316 60%, #fde047 100%);
   box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
 }
 
-/* Hazard Team: Switches */
-:root[data-surface="hazard"] .switch input:checked + .track {
+/* Resonance Core: Switches */
+:root[data-surface="resonance"] .switch input:checked + .track {
   background: #c2410c;
   border-color: #f97316;
 }
-:root[data-surface="hazard"] .switch input:checked + .track::before {
+:root[data-surface="resonance"] .switch input:checked + .track::before {
   background: #ffffff;
   box-shadow: 0 0 8px rgba(249, 115, 22, 0.7);
 }
 
-/* Hazard Team: Store Tabs Active Indicator */
-:root[data-surface="hazard"] .store-tabs .tab.active,
-:root[data-surface="hazard"] .tab.active {
+/* Resonance Core: Store Tabs Active Indicator */
+:root[data-surface="resonance"] .store-tabs .tab.active,
+:root[data-surface="resonance"] .tab.active {
   color: #fed7aa;
 }
-:root[data-surface="hazard"] .store-tabs .tab.active::after,
-:root[data-surface="hazard"] .tab.active::after {
+:root[data-surface="resonance"] .store-tabs .tab.active::after,
+:root[data-surface="resonance"] .tab.active::after {
   background: #f97316;
   box-shadow: 0 0 8px rgba(249, 115, 22, 0.6);
 }
 
-/* ---------- Valley Harvest (Stardew Valley Inspired) ----------
-   Pastoral farmstead: rolling twilight mountain backdrop (src/assets/harvest-scene.svg),
+/* ---------- Autumn Homestead ----------
+   Pastoral farmstead: rolling twilight mountain backdrop (src/assets/homestead-scene.svg),
    warm timber dialogue box panels with beveled golden edges, honey amber buttons,
    and cozy lantern firefly glows. */
 
-:root[data-surface="harvest"] {
+:root[data-surface="homestead"] {
   color-scheme: dark;
   --bg: #08100a;
   --surface-1: #101c13;
@@ -4103,13 +4103,13 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   --scrollbar-thumb-hover: #facc15;
 }
 
-:root[data-surface="harvest"] body {
-  background: #08100a url("../assets/harvest-scene.svg") 0 0 / 100vw 100vh no-repeat;
+:root[data-surface="homestead"] body {
+  background: #08100a url("../assets/homestead-scene.svg") 0 0 / 100vw 100vh no-repeat;
 }
-:root[data-surface="harvest"] #main-col,
-:root[data-surface="harvest"] #view { background: transparent; }
-:root[data-surface="harvest"] .overlay { background: transparent; }
-:root[data-surface="harvest"] .overlay::before {
+:root[data-surface="homestead"] #main-col,
+:root[data-surface="homestead"] #view { background: transparent; }
+:root[data-surface="homestead"] .overlay { background: transparent; }
+:root[data-surface="homestead"] .overlay::before {
   content: "";
   position: fixed;
   z-index: -1;
@@ -4117,42 +4117,42 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   left: var(--sidebar-w);
   right: 0;
   bottom: 0;
-  background: #08100a url("../assets/harvest-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
+  background: #08100a url("../assets/homestead-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
   pointer-events: none;
   transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
 }
 
-/* Valley Harvest: Scrollbars */
-:root[data-surface="harvest"] ::-webkit-scrollbar-thumb {
+/* Autumn Homestead: Scrollbars */
+:root[data-surface="homestead"] ::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 4px;
   box-shadow: 0 0 6px rgba(234, 179, 8, 0.25);
 }
-:root[data-surface="harvest"] ::-webkit-scrollbar-thumb:hover {
+:root[data-surface="homestead"] ::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
   box-shadow: 0 0 10px rgba(250, 204, 21, 0.6);
 }
-:root[data-surface="harvest"] .overlay::-webkit-scrollbar-track {
+:root[data-surface="homestead"] .overlay::-webkit-scrollbar-track {
   background: rgba(8, 16, 10, 0.7);
   border-left: 1px solid rgba(234, 179, 8, 0.16);
 }
-:root[data-surface="harvest"] .overlay::-webkit-scrollbar-thumb {
+:root[data-surface="homestead"] .overlay::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 4px;
   border: 1px solid rgba(234, 179, 8, 0.35);
   box-shadow: 0 0 8px rgba(234, 179, 8, 0.35);
 }
-:root[data-surface="harvest"] .overlay::-webkit-scrollbar-thumb:hover {
+:root[data-surface="homestead"] .overlay::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
   box-shadow: 0 0 14px rgba(250, 204, 21, 0.75);
 }
 
-/* Valley Harvest: Window Bar */
-:root[data-surface="harvest"] #winbar {
+/* Autumn Homestead: Window Bar */
+:root[data-surface="homestead"] #winbar {
   background: linear-gradient(180deg, #152419 0%, #0d1a11 100%);
   border-bottom: 1px solid rgba(234, 179, 8, 0.24);
 }
-:root[data-surface="harvest"] .winbar-beta-chip {
+:root[data-surface="homestead"] .winbar-beta-chip {
   background: linear-gradient(180deg, #fde047 0%, #d97706 100%);
   color: #1a0f02;
   font-weight: 800;
@@ -4160,36 +4160,36 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   box-shadow: 0 0 8px rgba(234, 179, 8, 0.4);
   border-radius: 4px;
 }
-:root[data-surface="harvest"] .winbar-btn:hover {
+:root[data-surface="homestead"] .winbar-btn:hover {
   background: rgba(234, 179, 8, 0.14);
   color: #facc15;
 }
-:root[data-surface="harvest"] .win-btn.win-close:hover {
+:root[data-surface="homestead"] .win-btn.win-close:hover {
   background: #dc2626;
   color: #ffffff;
   box-shadow: 0 0 12px rgba(220, 38, 38, 0.6);
 }
 
-/* Valley Harvest: Sidebar Navigation */
-:root[data-surface="harvest"] #sidebar {
+/* Autumn Homestead: Sidebar Navigation */
+:root[data-surface="homestead"] #sidebar {
   background: rgba(12, 22, 14, 0.95);
   border-right: 1px solid rgba(234, 179, 8, 0.2);
   backdrop-filter: blur(8px);
 }
-:root[data-surface="harvest"] #page-header {
+:root[data-surface="homestead"] #page-header {
   background: rgba(11, 20, 13, 0.88);
   border-bottom: 1px solid rgba(234, 179, 8, 0.2);
   backdrop-filter: blur(6px);
 }
-:root[data-surface="harvest"] .sb-item {
+:root[data-surface="homestead"] .sb-item {
   border-radius: 5px;
   transition: all var(--ease);
 }
-:root[data-surface="harvest"] .sb-item:hover:not(.active) {
+:root[data-surface="homestead"] .sb-item:hover:not(.active) {
   color: #fef08a;
   background: rgba(234, 179, 8, 0.1);
 }
-:root[data-surface="harvest"] .sb-item.active {
+:root[data-surface="homestead"] .sb-item.active {
   background: linear-gradient(90deg, rgba(234, 179, 8, 0.22) 0%, rgba(234, 179, 8, 0.04) 100%);
   color: #fef08a;
   font-weight: 700;
@@ -4197,12 +4197,12 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   border-radius: 0 5px 5px 0;
   box-shadow: inset 2px 0 10px rgba(234, 179, 8, 0.25);
 }
-:root[data-surface="harvest"] .sb-item.active::before {
+:root[data-surface="homestead"] .sb-item.active::before {
   display: none;
 }
 
-/* Valley Harvest: Primary Action Buttons (Handcrafted Honey Wood & Amber) */
-:root[data-surface="harvest"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
+/* Autumn Homestead: Primary Action Buttons (Handcrafted Honey Wood & Amber) */
+:root[data-surface="homestead"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
   background: linear-gradient(180deg, #facc15 0%, #d97706 100%);
   color: #1a0f02;
   font-weight: 800;
@@ -4213,37 +4213,37 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
   transition: all var(--ease);
 }
-:root[data-surface="harvest"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
+:root[data-surface="homestead"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
   background: linear-gradient(180deg, #fef08a 0%, #eab308 100%);
   border-color: #ffffff;
   color: #1a0f02;
   box-shadow: inset 0 1px 0 #ffffff, 0 0 16px rgba(250, 204, 21, 0.7);
   transform: translateY(-1px);
 }
-:root[data-surface="harvest"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
+:root[data-surface="homestead"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
   background: #ca8a04;
   border-color: #ca8a04;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
   transform: translateY(0);
 }
 
-/* Valley Harvest: Secondary Action Buttons */
-:root[data-surface="harvest"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
+/* Autumn Homestead: Secondary Action Buttons */
+:root[data-surface="homestead"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
   background: rgba(18, 30, 20, 0.88);
   border: 1px solid rgba(234, 179, 8, 0.25);
   color: var(--text);
   border-radius: 5px;
 }
-:root[data-surface="harvest"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
-:root[data-surface="harvest"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
+:root[data-surface="homestead"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
+:root[data-surface="homestead"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
   border-color: #facc15;
   color: #fef08a;
   background: rgba(234, 179, 8, 0.12);
   box-shadow: 0 0 10px rgba(234, 179, 8, 0.25);
 }
 
-/* Valley Harvest: Danger / Remove Buttons */
-:root[data-surface="harvest"] .btn.danger {
+/* Autumn Homestead: Danger / Remove Buttons */
+:root[data-surface="homestead"] .btn.danger {
   background: #dc2626;
   border: 1px solid #ef4444;
   color: #ffffff;
@@ -4251,14 +4251,14 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   border-radius: 5px;
   box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
 }
-:root[data-surface="harvest"] .btn.danger:hover {
+:root[data-surface="homestead"] .btn.danger:hover {
   background: #b91c1c;
   border-color: #f87171;
   box-shadow: 0 0 14px rgba(220, 38, 38, 0.6);
 }
 
-/* Valley Harvest: Headings & Titles */
-:root[data-surface="harvest"] :is(
+/* Autumn Homestead: Headings & Titles */
+:root[data-surface="homestead"] :is(
   .page-header-title, .section-title, .hub-card-title, .hltb-title,
   .gp-section-title, .notif-title, .modal-box h2, .col-modal-title h2
 ) {
@@ -4268,8 +4268,8 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6), 0 0 10px rgba(234, 179, 8, 0.25);
 }
 
-/* Valley Harvest: Cards, Panels & Dialogue Boxes */
-:root[data-surface="harvest"] :is(
+/* Autumn Homestead: Cards, Panels & Dialogue Boxes */
+:root[data-surface="homestead"] :is(
   .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item,
   .gp-ac-notice, .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card,
   .gp-side-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
@@ -4285,33 +4285,33 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   backdrop-filter: blur(8px);
 }
 
-/* Valley Harvest: Library Game Cards */
-:root[data-surface="harvest"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+/* Autumn Homestead: Library Game Cards */
+:root[data-surface="homestead"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(234, 179, 8, 0.2);
   border-radius: 5px;
 }
-:root[data-surface="harvest"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="homestead"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
   box-shadow:
     0 0 0 2px #eab308,
     0 0 22px rgba(234, 179, 8, 0.45),
     0 12px 30px rgba(0, 0, 0, 0.9);
   transform: translateY(-2px);
 }
-:root[data-surface="harvest"] .pcard-play-btn {
+:root[data-surface="homestead"] .pcard-play-btn {
   background: rgba(14, 23, 16, 0.88);
   border: 1px solid rgba(234, 179, 8, 0.45);
   color: #facc15;
   border-radius: 4px;
 }
-:root[data-surface="harvest"] .pcard-play-btn:hover {
+:root[data-surface="homestead"] .pcard-play-btn:hover {
   background: #eab308;
   color: #1a0f02;
   border-color: #fde047;
   box-shadow: 0 0 14px rgba(234, 179, 8, 0.7);
 }
 
-/* Valley Harvest: Inputs, Search & Fields */
-:root[data-surface="harvest"] :is(
+/* Autumn Homestead: Inputs, Search & Fields */
+:root[data-surface="homestead"] :is(
   input:not([type="range"], [type="checkbox"], [type="radio"]),
   select, textarea, .input, .text-input, .search, .page-search,
   .settings-search, .music-input, .music-select, .storage-search-input,
@@ -4322,48 +4322,48 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   color: #fdfbf7;
   border-radius: 5px;
 }
-:root[data-surface="harvest"] :is(
+:root[data-surface="homestead"] :is(
   input, select, textarea, .input, .text-input, .settings-search,
   .music-input, .music-select, .storage-search-input, .move-path-input,
   .install-path-input
 ):focus,
-:root[data-surface="harvest"] .search:focus-within,
-:root[data-surface="harvest"] .install-path-input-wrap:focus-within {
+:root[data-surface="homestead"] .search:focus-within,
+:root[data-surface="homestead"] .install-path-input-wrap:focus-within {
   border-color: #facc15;
   box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.35);
   outline: none;
 }
 
-/* Valley Harvest: Progress Bar (Energy / Experience Meter Style) */
-:root[data-surface="harvest"] .progress {
+/* Autumn Homestead: Progress Bar (Energy / Experience Meter Style) */
+:root[data-surface="homestead"] .progress {
   background: rgba(8, 15, 10, 0.9);
   border: 1px solid rgba(234, 179, 8, 0.25);
   border-radius: 4px;
   overflow: hidden;
 }
-:root[data-surface="harvest"] .progress > span,
-:root[data-surface="harvest"] :is(.gp-progress-fill) {
+:root[data-surface="homestead"] .progress > span,
+:root[data-surface="homestead"] :is(.gp-progress-fill) {
   background: linear-gradient(90deg, #22c55e 0%, #4ade80 60%, #eab308 100%);
   box-shadow: 0 0 8px rgba(74, 222, 128, 0.45);
 }
 
-/* Valley Harvest: Switches */
-:root[data-surface="harvest"] .switch input:checked + .track {
+/* Autumn Homestead: Switches */
+:root[data-surface="homestead"] .switch input:checked + .track {
   background: #15803d;
   border-color: #22c55e;
 }
-:root[data-surface="harvest"] .switch input:checked + .track::before {
+:root[data-surface="homestead"] .switch input:checked + .track::before {
   background: #ffffff;
   box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
 }
 
-/* Valley Harvest: Store Tabs Active Indicator */
-:root[data-surface="harvest"] .store-tabs .tab.active,
-:root[data-surface="harvest"] .tab.active {
+/* Autumn Homestead: Store Tabs Active Indicator */
+:root[data-surface="homestead"] .store-tabs .tab.active,
+:root[data-surface="homestead"] .tab.active {
   color: #fef08a;
 }
-:root[data-surface="harvest"] .store-tabs .tab.active::after,
-:root[data-surface="harvest"] .tab.active::after {
+:root[data-surface="homestead"] .store-tabs .tab.active::after,
+:root[data-surface="homestead"] .tab.active::after {
   background: #eab308;
   box-shadow: 0 0 8px rgba(234, 179, 8, 0.6);
 }

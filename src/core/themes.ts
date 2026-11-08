@@ -274,12 +274,12 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
   { id: "sunset", name: "Sunset Amber", bg: "#100d0a", surface: "#231c15", accent: "#f59e0b", light: false },
   { id: "nord", name: "Nordic Slate", bg: "#242933", surface: "#3b4252", accent: "#88c0d0", light: false },
   { id: "oledcyan", name: "Abyss Cyan", bg: "#000000", surface: "#0e151c", accent: "#00f0ff", light: false },
-  { id: "biohazard", name: "Biohazard", bg: "#080a0c", surface: "#171b22", accent: "#dc2626", light: false },
-  { id: "cyberlife", name: "Cyberlife", bg: "#080c14", surface: "#151e2e", accent: "#00a2ff", light: false },
-  { id: "redemption", name: "Outlaw Frontier", bg: "#0f0c0a", surface: "#241b16", accent: "#d93829", light: false },
-  { id: "tarnished", name: "Tarnished Grace", bg: "#0b0a08", surface: "#1f1c17", accent: "#e5a93c", light: false },
-  { id: "hazard", name: "Hazard Team", bg: "#0b0c0e", surface: "#1a1f26", accent: "#f97316", light: false },
-  { id: "harvest", name: "Valley Harvest", bg: "#0c140d", surface: "#18261b", accent: "#eab308", light: false },
+  { id: "quarantine", name: "Quarantine Protocol", bg: "#080a0c", surface: "#171b22", accent: "#dc2626", light: false },
+  { id: "sentience", name: "Synthetic Soul", bg: "#080c14", surface: "#151e2e", accent: "#00a2ff", light: false },
+  { id: "frontier", name: "Frontier Dusk", bg: "#0f0c0a", surface: "#241b16", accent: "#d93829", light: false },
+  { id: "sanctum", name: "Ashen Sanctum", bg: "#0b0a08", surface: "#1f1c17", accent: "#e5a93c", light: false },
+  { id: "resonance", name: "Resonance Core", bg: "#0b0c0e", surface: "#1a1f26", accent: "#f97316", light: false },
+  { id: "homestead", name: "Autumn Homestead", bg: "#0c140d", surface: "#18261b", accent: "#eab308", light: false },
   { id: "white", name: "Pure White", bg: "#f3f4f6", surface: "#ffffff", accent: "#111318", light: true },
 ];
 
@@ -801,12 +801,12 @@ const OLED_CYAN: ThemeDef = {
 
 
 /**
- * Biohazard: inspired by survival horror, dark quarantine laboratories,
- * sterile facility concrete and surgical blood crimson accents.
+ * Quarantine Protocol: dark containment laboratories, emergency isolation
+ * telemetry and sterile crimson override indicators.
  */
-const BIOHAZARD: ThemeDef = {
-  id: "biohazard",
-  labelKey: "settings.surfaceBiohazard",
+const QUARANTINE: ThemeDef = {
+  id: "quarantine",
+  labelKey: "settings.surfaceQuarantine",
   bg: "#080a0c",
   surface: "#171b22",
   accent: "#dc2626",
@@ -839,12 +839,12 @@ const BIOHAZARD: ThemeDef = {
 };
 
 /**
- * Cyberlife: inspired by futuristic android narratives, sleek composite
- * slate and the cybernetic cyan-blue LED status light.
+ * Synthetic Soul: android temple LED halos, sleek holographic telemetry,
+ * and high-contrast cerulean cybernetic precision.
  */
-const CYBERLIFE: ThemeDef = {
-  id: "cyberlife",
-  labelKey: "settings.surfaceCyberlife",
+const SENTIENCE: ThemeDef = {
+  id: "sentience",
+  labelKey: "settings.surfaceSentience",
   bg: "#080c14",
   surface: "#151e2e",
   accent: "#00a2ff",
@@ -877,12 +877,12 @@ const CYBERLIFE: ThemeDef = {
 };
 
 /**
- * Outlaw Frontier: inspired by the rugged 1899 western frontier,
- * weathered saddle leather, evening campfires and sunset crimson.
+ * Frontier Dusk: 1899 canyon sunsets, weathered saddle leather, saloon timber,
+ * and warm campfire embers.
  */
-const REDEMPTION: ThemeDef = {
-  id: "redemption",
-  labelKey: "settings.surfaceRedemption",
+const FRONTIER: ThemeDef = {
+  id: "frontier",
+  labelKey: "settings.surfaceFrontier",
   bg: "#0f0c0a",
   surface: "#241b16",
   accent: "#d93829",
@@ -915,12 +915,12 @@ const REDEMPTION: ThemeDef = {
 };
 
 /**
- * Tarnished Grace: inspired by dark fantasy epics, ancient ashen stone ruins
- * and the guiding golden light of the Erdtree.
+ * Ashen Sanctum: ancient stone sanctuaries, celestial golden tree canopy,
+ * and lost grace particle light.
  */
-const TARNISHED: ThemeDef = {
-  id: "tarnished",
-  labelKey: "settings.surfaceTarnished",
+const SANCTUM: ThemeDef = {
+  id: "sanctum",
+  labelKey: "settings.surfaceSanctum",
   bg: "#0b0a08",
   surface: "#1f1c17",
   accent: "#e5a93c",
@@ -953,12 +953,12 @@ const TARNISHED: ThemeDef = {
 };
 
 /**
- * Hazard Team: inspired by legendary facility survival, industrial bunker
- * steel and the high-visibility Lambda hazard orange suit.
+ * Resonance Core: subterranean physics research facility, anomalous energy
+ * chamber and high-visibility hazard orange styling.
  */
-const HAZARD: ThemeDef = {
-  id: "hazard",
-  labelKey: "settings.surfaceHazard",
+const RESONANCE: ThemeDef = {
+  id: "resonance",
+  labelKey: "settings.surfaceResonance",
   bg: "#0b0c0e",
   surface: "#1a1f26",
   accent: "#f97316",
@@ -991,12 +991,12 @@ const HAZARD: ThemeDef = {
 };
 
 /**
- * Valley Harvest: inspired by cozy pastoral farm life, fertile loam soil,
- * rustic timber barns, and golden autumn crops.
+ * Autumn Homestead: twilight mountain pastures, warm timber dialogue boxes,
+ * and cozy lantern glows.
  */
-const HARVEST: ThemeDef = {
-  id: "harvest",
-  labelKey: "settings.surfaceHarvest",
+const HOMESTEAD: ThemeDef = {
+  id: "homestead",
+  labelKey: "settings.surfaceHomestead",
   bg: "#0c140d",
   surface: "#18261b",
   accent: "#eab308",
@@ -1060,12 +1060,7 @@ const BUILTIN_THEMES: readonly ThemeDef[] = [
   SYNTHWAVE,
   ROSE_PINE,
   OLED_CYAN,
-  BIOHAZARD,
-  HARVEST,
-  CYBERLIFE,
-  REDEMPTION,
-  TARNISHED,
-  HAZARD,
+  QUARANTINE, HOMESTEAD, SENTIENCE, FRONTIER, SANCTUM, RESONANCE,
   {
     id: "white",
     labelKey: "settings.surfaceWhite",
@@ -1099,6 +1094,13 @@ const LEGACY_SURFACE_IDS: Record<string, string> = {
   epic: "violet",
   discord: "blurple",
   aero: "gloss",
+  // Game theme legacy aliases
+  harvest: "homestead",
+  biohazard: "quarantine",
+  cyberlife: "sentience",
+  redemption: "frontier",
+  tarnished: "sanctum",
+  hazard: "resonance",
 };
 
 const CUSTOM_KEY = "efxlve-custom-themes";

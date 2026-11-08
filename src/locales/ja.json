@@ -3324,12 +3324,6 @@
   "settings.surfaceRosePine": "Rosé Pine",
   "settings.surfaceSynthwave": "Synthwave '84",
   "settings.surfaceOledCyan": "アビスシアン",
-  "settings.surfaceBiohazard": "バイオハザード",
-  "settings.surfaceCyberlife": "サイバーライフ",
-  "settings.surfaceRedemption": "アウトロー・フロンティア",
-  "settings.surfaceTarnished": "褪せ人の祝福",
-  "settings.surfaceHazard": "ハザード・チーム",
-  "settings.surfaceHarvest": "バレー・ハーベスト",
   "settings.achPreviewTitle": "通知ライブプレビュー",
   "settings.achUnlockedTag": "実績解除",
   "settings.achDefaultChime": "Efxlve Celesta チャイム (内蔵)",
@@ -3836,5 +3830,11 @@
   "cover.anchorBottomCenter": "下中央",
   "cover.anchorBottomRight": "右下",
   "cover.anchorCustom": "カスタム",
-  "cover.steamOfficialLogo": "Steam 公式アートワーク"
+  "cover.steamOfficialLogo": "Steam 公式アートワーク",
+  "settings.surfaceHomestead": "秋の農場",
+  "settings.surfaceQuarantine": "隔離プロトコル",
+  "settings.surfaceSentience": "シンセティック・ソウル",
+  "settings.surfaceFrontier": "フロンティアの黄昏",
+  "settings.surfaceSanctum": "灰の聖所",
+  "settings.surfaceResonance": "レゾナンス・コア"
 }

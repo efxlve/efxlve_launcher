@@ -3324,12 +3324,6 @@
   "settings.surfaceRosePine": "Rosé Pine",
   "settings.surfaceSynthwave": "Synthwave '84",
   "settings.surfaceOledCyan": "Ciano Abissal",
-  "settings.surfaceBiohazard": "Risco Biológico",
-  "settings.surfaceCyberlife": "Cyberlife",
-  "settings.surfaceRedemption": "Fronteira Fora da Lei",
-  "settings.surfaceTarnished": "Graça dos Maculados",
-  "settings.surfaceHazard": "Equipe de Risco",
-  "settings.surfaceHarvest": "Colheita do Vale",
   "settings.achPreviewTitle": "Pré-visualização de notificação ao vivo",
   "settings.achUnlockedTag": "CONQUISTA DESBLOQUEADA",
   "settings.achDefaultChime": "Som Celesta Efxlve (Integrado)",
@@ -3836,5 +3830,11 @@
   "cover.anchorBottomCenter": "Base",
   "cover.anchorBottomRight": "Inf. direito",
   "cover.anchorCustom": "Personalizado",
-  "cover.steamOfficialLogo": "Arte oficial da Steam"
+  "cover.steamOfficialLogo": "Arte oficial da Steam",
+  "settings.surfaceHomestead": "Sítio de Outono",
+  "settings.surfaceQuarantine": "Protocolo de Quarentena",
+  "settings.surfaceSentience": "Alma Sintética",
+  "settings.surfaceFrontier": "Crepúsculo da Fronteira",
+  "settings.surfaceSanctum": "Santuário das Cinzas",
+  "settings.surfaceResonance": "Núcleo de Ressonância"
 }

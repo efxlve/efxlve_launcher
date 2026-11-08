@@ -3324,12 +3324,6 @@
   "settings.surfaceRosePine": "Rosé Pine",
   "settings.surfaceSynthwave": "Synthwave '84",
   "settings.surfaceOledCyan": "Derin Camgöbeği",
-  "settings.surfaceBiohazard": "Biyotehlike",
-  "settings.surfaceCyberlife": "Cyberlife",
-  "settings.surfaceRedemption": "Vahşi Sınır",
-  "settings.surfaceTarnished": "Solgun Lütuf",
-  "settings.surfaceHazard": "Tehlike Timi",
-  "settings.surfaceHarvest": "Vadi Hasadı",
   "settings.achPreviewTitle": "Canlı Bildirim Önizlemesi",
   "settings.achUnlockedTag": "BAŞARIM KAZANILDI",
   "settings.achDefaultChime": "Efxlve Celesta Tınısı (Yerleşik)",
@@ -3836,5 +3830,11 @@
   "cover.anchorBottomCenter": "Alt",
   "cover.anchorBottomRight": "Sağ Alt",
   "cover.anchorCustom": "Özel",
-  "cover.steamOfficialLogo": "Resmi Steam Görseli"
+  "cover.steamOfficialLogo": "Resmi Steam Görseli",
+  "settings.surfaceHomestead": "Sonbahar Çiftliği",
+  "settings.surfaceQuarantine": "Karantina Protokolü",
+  "settings.surfaceSentience": "Sentetik Ruh",
+  "settings.surfaceFrontier": "Alacakaranlık Sınırı",
+  "settings.surfaceSanctum": "Kül Mabedi",
+  "settings.surfaceResonance": "Rezonans Çekirdeği"
 }
