@@ -25,16 +25,35 @@ const headers = {
 };
 if (token) headers.Authorization = `Bearer ${token}`;
 
+// The tag endpoint does not return draft releases for every token, and the
+// release is still a draft while this script runs. Fall back to the list.
 const response = await fetch(
   `https://api.github.com/repos/${repo}/releases/tags/v${version}`,
   { headers },
 );
-if (!response.ok) {
-  throw new Error(`release v${version} lookup failed: ${response.status} ${response.statusText}`);
+let release = null;
+if (response.ok) {
+  release = await response.json();
+} else {
+  const listResponse = await fetch(
+    `https://api.github.com/repos/${repo}/releases?per_page=100`,
+    { headers },
+  );
+  if (!listResponse.ok) {
+    throw new Error(`release v${version} lookup failed: ${listResponse.status} ${listResponse.statusText}`);
+  }
+  const releases = await listResponse.json();
+  release = releases.find((entry) => entry.tag_name === `v${version}`) ?? null;
+  if (!release) {
+    throw new Error(`release v${version} lookup failed: ${response.status} ${response.statusText}`);
+  }
 }
-const release = await response.json();
+// Draft releases report `browser_download_url` with an `untagged-...` path that
+// changes when the draft is published. The tag path is stable, so build it from
+// the tag and the asset name.
+const downloadBase = `https://github.com/${repo}/releases/download/v${version}`;
 const byId = new Map(
-  (release.assets ?? []).map((asset) => [asset.id, asset.browser_download_url]),
+  (release.assets ?? []).map((asset) => [asset.id, `${downloadBase}/${encodeURIComponent(asset.name)}`]),
 );
 
 const feed = JSON.parse(await readFile(file, "utf8"));
