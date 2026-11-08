@@ -28,6 +28,8 @@ const LIBRARY_CHUNK = 96;
 
 let renderedLimit = LIBRARY_CHUNK;
 let renderedSignature = "";
+/** The list the current wall was built from; focus previews reuse it. */
+let renderedList: EpicSummary[] = [];
 
 function librarySignature(): string {
   return [
@@ -164,6 +166,7 @@ function sidePanel(s: EpicSummary | undefined): string {
 export function renderStageLibrary(): string {
   ensureRenderedLimit();
   const list = stageLibraryList();
+  renderedList = list;
   const visible = list.slice(0, renderedLimit);
   const focusKey = S.stage.focusKey;
   const focused = focusKey.startsWith("lib:") ? stageGameByKey(focusKey.slice(4)) : undefined;
@@ -221,7 +224,9 @@ export function stageLibraryFocus(key: string): void {
   side.outerHTML = sidePanel(summary);
   const next = stageGameByKey(key.slice(4));
   if (next) {
-    const all = stageLibraryList();
+    // The wall was just rendered from this exact list: sorting and filtering
+    // 600 games again for every D-pad step is wasted work.
+    const all = renderedList.length > 0 ? renderedList : stageLibraryList();
     const index = all.findIndex((s) => s.appName === next.appName);
     stagePrefetch(
       [all[index - 1], all[index + 1], all[index + 2]].map((s) => (s ? stageWideArt(s) : null)),

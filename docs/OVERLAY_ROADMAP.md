@@ -322,8 +322,8 @@ Left rail with Steam-like sections; content on the right; footer with hotkey hin
 
 ### M6 — Polish
 
-- Per-game overlay profiles, opacity/scale, gamepad navigation (reuse TV-mode focus
-  patterns), 16-locale strings, docs, blocklist curation, HDR/color notes.
+- Per-game overlay profiles, opacity/scale, gamepad navigation (reuse the launcher's
+  focus patterns), 16-locale strings, docs, blocklist curation, HDR/color notes.
 
 ### M7 — In-game browser (built, hidden)
 

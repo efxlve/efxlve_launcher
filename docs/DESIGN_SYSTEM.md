@@ -9,7 +9,7 @@
 
 The closed beta verdict was unanimous: "it smells like AI". The cause was not any single color — it was the absence of a decision. Each screen imitated a different product (console profile, Apple frosted top bar, App Store downloads, Xbox achievements), buttons changed color five times, and 30 stylesheets redefined the same components. The fix is consistency, not more decoration.
 
-Direction: **Hydra / Heroic desktop layout** — fixed left sidebar, quiet cover grid, a strong game page, one accent color. The gamepad / couch experience lives in a separate **TV Mode** (Playnite and Steam Big Picture model) so the desktop UI can stay dense and mouse/keyboard-first.
+Direction: **Hydra / Heroic desktop layout** - fixed left sidebar, quiet cover grid, a strong game page, one accent color. The gamepad / couch experience lives in a separate **Stage Mode** (experimental; see section 8) while **Full Screen Mode** keeps the classic scaled desktop for mouse and keyboard users, so the desktop UI can stay dense and pointer-first.
 
 ---
 
@@ -70,7 +70,7 @@ Direction: **Hydra / Heroic desktop layout** — fixed left sidebar, quiet cover
   `efxlve-custom-css`, injected as `#efxlve-custom-css` before the first paint,
   capped at 20000 characters. It layers over any built-in theme, so the curated
   palettes stay untouched.
-- Radius: `--r-sm: 6px` (buttons, inputs, chips) and `--r-md: 10px` (cards, modals, covers). Nothing else. No `999px` pills except 50% avatars and status dots. TV Mode uses its own pill scale.
+- Radius: `--r-sm: 6px` (buttons, inputs, chips) and `--r-md: 10px` (cards, modals, covers). Nothing else. No `999px` pills except 50% avatars and status dots. Stage Mode keeps the same quiet radius scale; it does not invent a pill language.
 - Spacing: multiples of 4px.
 - Type: system UI font (`Segoe UI Variable`, `Segoe UI`, system-ui). Sizes: 12 / 13 / 14 / 18 / 26. Weights: 400, 500, 600 (700 only for the game title).
 - Numbers that change (speed, percent, playtime, counters) always use `font-variant-numeric: tabular-nums`.

@@ -4,7 +4,7 @@
  */
 
 import { icon } from "../../core/icons";
-import { sourceOfKey } from "../../core/selectors";
+import { libraryItemOf, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import type { StageProgramTab } from "../../core/types";
 import { esc, fmtAchDate, fmtBytes } from "../../core/utils";
@@ -145,7 +145,9 @@ function achievementsTab(game: EpicSummary): string {
 }
 
 function extrasTab(game: EpicSummary): string {
-  const cloud = Boolean(S.allGamesMap.get(game.appName)?.cloudSavesSupported);
+  const cloud = Boolean(
+    libraryItemOf(game.appName, sourceOfKey(game.appName))?.cloudSavesSupported,
+  );
   const shots = S.loadedScreenshots.get(game.appName) || [];
   const loadingShots = S.loadingScreenshotsFor.has(game.appName);
   const stills = shots.slice(0, 12);

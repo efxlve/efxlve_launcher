@@ -31,7 +31,7 @@ const LETTER_ROWS: StageKey[][] = [
 ];
 
 /** Digits matter for titles like "Cyberpunk 2077" or "Battlefield 2042". */
-const NUMBER_ROW: StageKey[] = [..."1234567890-"].map((value) => ({ label: value, value }));
+const NUMBER_ROW: StageKey[] = [..."1234567890-'"].map((value) => ({ label: value, value }));
 
 /**
  * Letters the Latin rows do not carry. Without them, a Turkish player cannot

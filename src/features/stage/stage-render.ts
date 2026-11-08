@@ -83,6 +83,7 @@ let wasControls = false;
 let wasSearch = false;
 let wasLaunch = false;
 let wasError = false;
+let wasSettingsTab = "";
 let lastStageSignature = "";
 let pointerFocus = false;
 
@@ -166,6 +167,11 @@ function stageLiveSignature(): string {
     S.gogDlPaused ? "1" : "0",
     S.dlQueueStatus.active ?? "",
     S.dlQueueStatus.queue.join(","),
+    S.activeDlMetrics?.speed ?? "",
+    S.activeDlMetrics?.eta ?? "",
+    String(S.activeDlMetrics?.downloadedBytes ?? -1),
+    String(S.activeDlMetrics?.totalBytes ?? -1),
+    S.stage.gameKey ? String(S.playtimeMap.get(S.stage.gameKey)?.total_seconds ?? -1) : "",
     downloadProgress,
     stageLibraryRenderToken(),
   ].join("\u001f");
@@ -524,6 +530,8 @@ export function renderStage(): void {
   const searchEntered = S.stage.searchOpen && !wasSearch;
   const launchEntered = Boolean(S.stage.launch) && !wasLaunch;
   const errorEntered = Boolean(S.stage.launchError) && !wasError;
+  const settingsTabChanged = S.stage.settingsTab !== wasSettingsTab;
+  wasSettingsTab = S.stage.settingsTab;
   let search = S.stage.searchOpen ? renderStageSearch() : "";
   if (search && searchEntered) {
     search = search.replace('class="stage-search"', 'class="stage-search stage-overlay-enter"');
@@ -539,7 +547,7 @@ export function renderStage(): void {
   wasLaunch = Boolean(S.stage.launch);
   wasError = Boolean(S.stage.launchError);
 
-  root.className = `stage-root stage-route-${S.stage.route}${S.stage.route === "program" ? " is-program" : ""}${S.stage.quickMenu ? " is-menu-open" : ""}${S.stage.searchOpen ? " is-search-open" : ""}${S.stage.stillIndex !== null ? " is-still-open" : ""}`;
+  root.className = `stage-root stage-route-${S.stage.route}${S.stage.route === "program" ? " is-program" : ""}${S.stage.quickMenu ? " is-menu-open" : ""}${S.stage.searchOpen ? " is-search-open" : ""}${S.stage.stillIndex !== null ? " is-still-open" : ""}${S.stage.route === "settings" && settingsTabChanged ? " stage-settings-tab-enter" : ""}`;
   root.dataset.route = S.stage.route;
   root.style.setProperty("--stage-safe", `${S.stage.safeArea * 1.5}vmin`);
   root.innerHTML = `<div class="stage-shell">

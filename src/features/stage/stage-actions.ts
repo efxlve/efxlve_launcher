@@ -303,8 +303,18 @@ export function stageSetFilter(filter: StageLibraryFilter): void {
   scheduleRender();
 }
 
+function stagePreviewKey(): string {
+  return S.stage.route === "library" ? S.stage.previewKey || "" : "";
+}
+
 export function stageToggleFavorite(key?: string): void {
-  const target = key || stageFocusedKey() || S.stage.gameKey || (S.stage.route === "home" ? stageHeroSummary()?.appName : "") || "";
+  const target =
+    key ||
+    stageFocusedKey() ||
+    stagePreviewKey() ||
+    S.stage.gameKey ||
+    (S.stage.route === "home" ? stageHeroSummary()?.appName : "") ||
+    "";
   if (!target) return;
   stageFeedback("select");
   toggleFav(target);
@@ -314,7 +324,13 @@ export function stageToggleFavorite(key?: string): void {
 }
 
 export function stageQuickPlay(key?: string): void {
-  const target = key || stageFocusedKey() || S.stage.gameKey || stageHeroSummary()?.appName || "";
+  const target =
+    key ||
+    stageFocusedKey() ||
+    stagePreviewKey() ||
+    S.stage.gameKey ||
+    stageHeroSummary()?.appName ||
+    "";
   if (!target) return;
   stageLaunchGame(target);
 }

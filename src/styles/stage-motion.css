@@ -90,8 +90,9 @@
 .stage-page-enter .stage-program-head {
   animation: stage-copy-in 420ms 40ms var(--stage-ease) both;
 }
-.stage-page-enter .stage-settings-panel {
-  animation: stage-copy-in 220ms var(--stage-ease) both;
+.stage-page-enter .stage-settings-panel,
+.stage-settings-tab-enter .stage-settings-panel {
+  animation: stage-copy-in 200ms var(--stage-ease) both;
 }
 .stage-overlay-enter.stage-quick-menu,
 .stage-overlay-enter.stage-controls,

@@ -10,9 +10,10 @@
 
 .stage-settings-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
+  gap: 16px 24px;
   padding-block-end: 14px;
   border-block-end: 1px solid var(--stage-line);
 }
@@ -29,6 +30,12 @@
   color: var(--stage-ink-3);
   font-size: 12.5px;
   line-height: 1.5;
+}
+.stage-settings-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .stage-settings-tabs {

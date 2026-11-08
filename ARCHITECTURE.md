@@ -14,7 +14,7 @@ graph TD
         UI["Hydra Console Dark UI (#000000)"]
         Router["View Router (Library / Stores / Downloads / Profile / Settings)"]
         PChunk["Progressive Chunk Renderer & Virtual Sentinel"]
-        GamepadMgr["10-ft TV Mode & Gamepad Navigation (DualSense / Xbox)"]
+        GamepadMgr["Stage Mode (Experimental) & Full Screen Mode (DualSense / Xbox)"]
         State["O(1) In-Memory Reactive State (rawOf, summaryOf)"]
     end
 
@@ -117,11 +117,13 @@ page per game.
   - A native `IntersectionObserver` detects when the user scrolls near the end and seamlessly appends chunks of **36 cards** via `sentinel.insertAdjacentHTML("beforebegin", ...)`.
   - Search keystrokes are protected by a **120ms debounce**, guaranteeing snappy input feedback.
 
-### 3.2 10-Foot TV Mode & Gamepad Navigation
-- Supports Xbox, DualSense (PS5), and generic DirectInput controllers via the standard Web Gamepad API.
-- Dedicated TV Mode (`src/features/gamepad/tv-mode.ts`, `src/styles/tv-mode.css`) optimized for couch gaming.
-- Polling runs at requestAnimationFrame cadence with deadzone handling (axes: ±0.55).
-- Spatial navigation calculates candidate directional vectors with zero forced layout thrashing using `el.offsetParent !== null` rather than expensive `getComputedStyle()`.
+### 3.2 Stage Mode, Full Screen Mode & Gamepad Navigation
+- Two controller surfaces share one gamepad poller: **Stage** (`src/features/stage/`) is the experimental controller-first shell, and **Full Screen Mode** (`src/features/gamepad/fullscreen-mode.ts`) remains the classic scaled-desktop option. Both stay available; Stage is labelled BETA wherever it is offered.
+- Stage is a **mode, not a `View`**: `S.stage.active` switches the render branch, the desktop DOM stays alive underneath, and exit restores the page and scroll position. Its screens (Home, Library, Downloads, Settings, Programme) live in `S.stage.route`, so desktop navigation history never sees them.
+- The Stage shell is a lazy chunk (`stage-boot.ts` imports `stage-render.ts` once); the desktop bundle keeps only the mode state, the boot frame and the gamepad bridge (`stage-bridge.ts`).
+- Focus is `[data-gp-item]` inside `#stage-root`; the renderer marks only the top overlay, and focus changes patch the side stage or reveal a caption instead of rebuilding the screen. Spatial navigation calculates candidate vectors with `getClientRects()` rather than repeated `getComputedStyle()` calls.
+- Polling runs at requestAnimationFrame cadence with deadzone handling (axes: ±0.55) and falls back to a 40 ms idle timer for a connected but untouched pad.
+- Supports Xbox, DualSense (PS5), Switch and generic DirectInput controllers through the standard Web Gamepad API; the glyphs follow the detected family, and haptics use `vibrationActuator` when the browser exposes it.
 
 ### 3.3 Embedded Child Webviews (Multi-Storefront)
 - 8 embedded store views: Epic Games, GOG.COM, Steam, Xbox (PC-filtered), Battle.net, Ubisoft, EA, and Amazon Games (Luna claims).

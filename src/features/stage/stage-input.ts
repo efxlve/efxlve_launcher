@@ -8,6 +8,7 @@ import { S } from "../../core/state";
 import { registerStageBridge, type StagePadButton } from "../gamepad/stage-bridge";
 import {
   stageBack,
+  stageCloseControls,
   stageCloseStill,
   stageCycleSection,
   stageStillStep,
@@ -39,7 +40,13 @@ export function stageButton(button: StagePadButton): void {
     if (button === "rb" || button === "rt") stageStillStep(true);
     return;
   }
-  const overlay = S.stage.quickMenu || S.stage.searchOpen || S.stage.controlsOpen;
+  if (S.stage.controlsOpen) {
+    // A standalone sheet from Settings closes with the same buttons that
+    // opened it; the quick-menu toggle must not run behind it.
+    if (button === "start" || button === "select") stageCloseControls();
+    return;
+  }
+  const overlay = S.stage.quickMenu || S.stage.searchOpen;
   if (overlay && button !== "start" && button !== "select") return;
   if (S.stage.route === "downloads" && (button === "x" || button === "y" || button === "lt" || button === "rt")) return;
 

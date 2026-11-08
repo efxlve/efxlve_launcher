@@ -201,8 +201,8 @@
 }
 .stage-still-close {
   position: absolute;
-  inset-block-start: clamp(16px, 2.4vh, 28px);
-  inset-inline-end: clamp(18px, 2.4vw, 36px);
+  inset-block-start: calc(clamp(16px, 2.4vh, 28px) + var(--stage-safe, 0px));
+  inset-inline-end: calc(clamp(18px, 2.4vw, 36px) + var(--stage-safe, 0px));
   z-index: 2;
 }
 .stage-still-nav {
@@ -226,14 +226,14 @@
   color: var(--stage-ink);
 }
 .stage-still-nav.is-prev {
-  inset-inline-start: clamp(12px, 2vw, 30px);
+  inset-inline-start: calc(clamp(12px, 2vw, 30px) + var(--stage-safe, 0px));
 }
 .stage-still-nav.is-next {
-  inset-inline-end: clamp(12px, 2vw, 30px);
+  inset-inline-end: calc(clamp(12px, 2vw, 30px) + var(--stage-safe, 0px));
 }
 .stage-still-count {
   position: absolute;
-  inset-block-start: clamp(18px, 2.6vh, 30px);
+  inset-block-start: calc(clamp(18px, 2.6vh, 30px) + var(--stage-safe, 0px));
   inset-inline-start: 50%;
   transform: translateX(-50%);
   color: var(--stage-ink-4);
