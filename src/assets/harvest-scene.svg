@@ -1,0 +1,182 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <!-- Valley Harvest: Pastoral Farmstead & Night Valley Backdrop
+       Inspired by cozy indie farming life: rolling ridge silhouettes,
+       starlit twilight, rustic pine ridges, and warm campfire/lantern amber glows.
+       Built with pure SVG gradients and vectors for crisp, GPU-efficient rendering. -->
+  <defs>
+    <!-- Deep night valley gradient -->
+    <linearGradient id="vhSky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#040906"/>
+      <stop offset="35%" stop-color="#07130b"/>
+      <stop offset="70%" stop-color="#0d1f14"/>
+      <stop offset="100%" stop-color="#14291a"/>
+    </linearGradient>
+
+    <!-- Warm lantern & farmhouse cabin ambient glow -->
+    <radialGradient id="vhCabinGlow" cx="420" cy="880" r="750" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.18"/>
+      <stop offset="35%" stop-color="#eab308" stop-opacity="0.08"/>
+      <stop offset="65%" stop-color="#ca8a04" stop-opacity="0.02"/>
+      <stop offset="100%" stop-color="#040906" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Distant Harvest Moon aura -->
+    <radialGradient id="vhMoonGlow" cx="1600" cy="180" r="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.12"/>
+      <stop offset="30%" stop-color="#fde047" stop-opacity="0.05"/>
+      <stop offset="60%" stop-color="#ca8a04" stop-opacity="0.015"/>
+      <stop offset="100%" stop-color="#040906" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Firefly ambient radial glow -->
+    <radialGradient id="vhFirefly" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.9"/>
+      <stop offset="30%" stop-color="#eab308" stop-opacity="0.5"/>
+      <stop offset="70%" stop-color="#84cc16" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#040906" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Star cross symbol -->
+    <g id="vhStarCross">
+      <line x1="-5" y1="0" x2="5" y2="0" stroke="#fef9c3" stroke-width="1.2" opacity="0.8"/>
+      <line x1="0" y1="-5" x2="0" y2="5" stroke="#fef9c3" stroke-width="1.2" opacity="0.8"/>
+      <circle cx="0" cy="0" r="1.5" fill="#ffffff"/>
+    </g>
+
+    <!-- Stylized pine tree group -->
+    <g id="vhPine">
+      <polygon points="0,-36 8,-20 5,-20 10,-8 6,-8 13,8 -13,8 -6,-8 -10,-8 -5,-20 -8,-20" fill="#09140c"/>
+      <rect x="-2" y="8" width="4" height="6" fill="#060c07"/>
+    </g>
+    <g id="vhPineTall">
+      <polygon points="0,-48 10,-28 6,-28 12,-12 8,-12 16,10 -16,10 -8,-12 -12,-12 -6,-28 -10,-28" fill="#07100a"/>
+      <rect x="-2.5" y="10" width="5" height="8" fill="#050a06"/>
+    </g>
+  </defs>
+
+  <!-- Sky Base & Ambient Lighting -->
+  <rect width="1920" height="1080" fill="url(#vhSky)"/>
+  <rect width="1920" height="1080" fill="url(#vhMoonGlow)"/>
+  <rect width="1920" height="1080" fill="url(#vhCabinGlow)"/>
+
+  <!-- ==================== STARFIELD & CONSTELLATIONS ==================== -->
+  <g opacity="0.65">
+    <!-- Crescent Moon Silhouette (soft golden harvest crescent) -->
+    <path d="M 1600 130 A 42 42 0 1 0 1642 172 A 34 34 0 1 1 1600 130 Z" fill="#fef08a" opacity="0.45"/>
+    <circle cx="1606" cy="152" r="32" fill="#fef08a" opacity="0.08" filter="blur(8px)"/>
+
+    <!-- Bright Stars -->
+    <use href="#vhStarCross" x="240" y="120" opacity="0.85"/>
+    <use href="#vhStarCross" x="510" y="80" opacity="0.7"/>
+    <use href="#vhStarCross" x="880" y="140" opacity="0.9"/>
+    <use href="#vhStarCross" x="1220" y="90" opacity="0.65"/>
+    <use href="#vhStarCross" x="1410" y="210" opacity="0.8"/>
+    <use href="#vhStarCross" x="1780" y="110" opacity="0.75"/>
+    <use href="#vhStarCross" x="380" y="260" opacity="0.6"/>
+    <use href="#vhStarCross" x="720" y="220" opacity="0.85"/>
+    <use href="#vhStarCross" x="1080" y="270" opacity="0.7"/>
+
+    <!-- Small Star Dots -->
+    <circle cx="160" cy="70" r="1.2" fill="#fef9c3" opacity="0.6"/>
+    <circle cx="320" cy="180" r="1" fill="#fef9c3" opacity="0.5"/>
+    <circle cx="440" cy="140" r="1.4" fill="#ffffff" opacity="0.75"/>
+    <circle cx="620" cy="110" r="1" fill="#fef9c3" opacity="0.5"/>
+    <circle cx="790" cy="60" r="1.5" fill="#fef08a" opacity="0.8"/>
+    <circle cx="970" cy="190" r="1.2" fill="#ffffff" opacity="0.65"/>
+    <circle cx="1140" cy="130" r="1.6" fill="#fef9c3" opacity="0.85"/>
+    <circle cx="1310" cy="75" r="1" fill="#fef9c3" opacity="0.55"/>
+    <circle cx="1520" cy="160" r="1.3" fill="#ffffff" opacity="0.7"/>
+    <circle cx="1680" cy="85" r="1.1" fill="#fef9c3" opacity="0.6"/>
+    <circle cx="1840" cy="190" r="1.4" fill="#fef08a" opacity="0.75"/>
+    <circle cx="190" cy="310" r="1" fill="#fef9c3" opacity="0.45"/>
+    <circle cx="650" cy="290" r="1.2" fill="#ffffff" opacity="0.6"/>
+    <circle cx="850" cy="340" r="1" fill="#fef9c3" opacity="0.5"/>
+    <circle cx="1270" cy="280" r="1.3" fill="#fef9c3" opacity="0.7"/>
+    <circle cx="1490" cy="320" r="1.1" fill="#ffffff" opacity="0.55"/>
+    <circle cx="1730" cy="270" r="1.4" fill="#fef08a" opacity="0.7"/>
+  </g>
+
+  <!-- ==================== DISTANT MOUNTAIN RANGE (Layer 1) ==================== -->
+  <path d="M 0 760 
+           L 180 710 L 340 735 L 520 660 L 680 715 L 890 620 L 1080 705 L 1260 635 L 1480 690 L 1680 610 L 1820 665 L 1920 630
+           L 1920 1080 L 0 1080 Z" 
+        fill="#0b1a10" opacity="0.7"/>
+  <path d="M 0 760 
+           L 180 710 L 340 735 L 520 660 L 680 715 L 890 620 L 1080 705 L 1260 635 L 1480 690 L 1680 610 L 1820 665 L 1920 630"
+        fill="none" stroke="#345e3f" stroke-width="1.5" opacity="0.3"/>
+
+  <!-- ==================== MID-GROUND PINE HILLS (Layer 2) ==================== -->
+  <path d="M 0 840
+           Q 280 770 600 810
+           Q 980 850 1340 780
+           Q 1660 730 1920 780
+           L 1920 1080 L 0 1080 Z"
+        fill="#08140c" opacity="0.85"/>
+  <g opacity="0.8">
+    <use href="#vhPine" x="140" y="805"/>
+    <use href="#vhPineTall" x="175" y="800"/>
+    <use href="#vhPine" x="210" y="805"/>
+    <use href="#vhPine" x="380" y="785"/>
+    <use href="#vhPineTall" x="420" y="780"/>
+    <use href="#vhPine" x="460" y="785"/>
+    <use href="#vhPineTall" x="780" y="825"/>
+    <use href="#vhPine" x="820" y="830"/>
+    <use href="#vhPineTall" x="1240" y="795"/>
+    <use href="#vhPine" x="1280" y="800"/>
+    <use href="#vhPineTall" x="1560" y="745"/>
+    <use href="#vhPine" x="1600" y="750"/>
+    <use href="#vhPineTall" x="1635" y="742"/>
+    <use href="#vhPine" x="1780" y="760"/>
+  </g>
+
+  <!-- ==================== FOREGROUND MEADOW & FARMSTEAD (Layer 3) ==================== -->
+  <path d="M 0 940
+           Q 360 880 840 920
+           Q 1320 960 1920 890
+           L 1920 1080 L 0 1080 Z"
+        fill="#050d07"/>
+
+  <!-- Charming Split-Rail Fence & Cabin Silhouettes -->
+  <g opacity="0.55" stroke="#1c1209" stroke-linecap="round">
+    <line x1="280" y1="910" x2="280" y2="932" stroke-width="4"/>
+    <line x1="330" y1="906" x2="330" y2="928" stroke-width="4"/>
+    <line x1="380" y1="903" x2="380" y2="925" stroke-width="4"/>
+    <line x1="430" y1="902" x2="430" y2="924" stroke-width="4"/>
+    <line x1="275" y1="916" x2="435" y2="908" stroke-width="2.5"/>
+    <line x1="275" y1="924" x2="435" y2="916" stroke-width="2.5"/>
+    <rect x="235" y="890" width="28" height="20" rx="2" fill="#120c06" stroke="#2a1a0d" stroke-width="2"/>
+    <polygon points="230,890 249,874 268,890" fill="#181008"/>
+    <path d="M 260 872 Q 256 860 262 850 Q 268 840 260 830" fill="none" stroke="#ca8a04" stroke-width="1.5" opacity="0.3" stroke-dasharray="3 3"/>
+    <rect x="242" y="897" width="14" height="10" rx="1" fill="#f59e0b" opacity="0.6"/>
+    <line x1="249" y1="897" x2="249" y2="907" stroke="#120c06" stroke-width="1"/>
+    <line x1="242" y1="902" x2="256" y2="902" stroke="#120c06" stroke-width="1"/>
+  </g>
+
+  <!-- ==================== DRIFTING FIREFLIES ==================== -->
+  <g>
+    <circle cx="340" cy="850" r="16" fill="url(#vhFirefly)"/>
+    <circle cx="490" cy="810" r="22" fill="url(#vhFirefly)"/>
+    <circle cx="680" cy="860" r="14" fill="url(#vhFirefly)"/>
+    <circle cx="920" cy="830" r="20" fill="url(#vhFirefly)"/>
+    <circle cx="1180" cy="870" r="15" fill="url(#vhFirefly)"/>
+    <circle cx="1420" cy="820" r="18" fill="url(#vhFirefly)"/>
+    <circle cx="1680" cy="840" r="16" fill="url(#vhFirefly)"/>
+  </g>
+
+  <!-- ==================== BOTTOM HUD HARVEST FILIGREE ==================== -->
+  <g opacity="0.35" stroke="#eab308" stroke-width="1.2" fill="none">
+    <path d="M 40 1040 L 40 1000 Q 40 980 60 980 L 100 980"/>
+    <circle cx="40" cy="1040" r="3" fill="#eab308"/>
+    <circle cx="100" cy="980" r="3" fill="#eab308"/>
+    <path d="M 52 1018 Q 62 1005 60 992"/>
+    <path d="M 56 1004 Q 68 1002 72 996"/>
+    <path d="M 58 1012 Q 70 1014 74 1008"/>
+
+    <path d="M 1880 1040 L 1880 1000 Q 1880 980 1860 980 L 1820 980"/>
+    <circle cx="1880" cy="1040" r="3" fill="#eab308"/>
+    <circle cx="1820" cy="980" r="3" fill="#eab308"/>
+    <path d="M 1868 1018 Q 1858 1005 1860 992"/>
+    <path d="M 1864 1004 Q 1852 1002 1848 996"/>
+    <path d="M 1862 1012 Q 1850 1014 1846 1008"/>
+  </g>
+</svg>
