@@ -30,6 +30,60 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.48",
+    date: "2026-11-08",
+    added: [
+      {
+        en: "The library has a discovery layout: transparent game logos, a blurred game-art backdrop behind the shell, an A–Z rail, and sorting by natural name, franchise, release year or review score.",
+        tr: "Kütüphaneye keşif düzeni geldi: şeffaf oyun logoları, kabuğun arkasında bulanık oyun görseli, A–Z rayı ve doğal ad, seri, çıkış yılı ya da inceleme puanına göre sıralama.",
+      },
+      {
+        en: "Genre filters and grouping use canonical IGDB and store genres, so the same game lands in the same group across every store.",
+        tr: "Tür filtreleri ve gruplama kanonik IGDB ve mağaza türlerini kullanıyor; aynı oyun tüm mağazalarda aynı grupta yer alıyor.",
+      },
+      {
+        en: "A verified upscaler DLL manager on the Manage panel: scan a game's DLSS, FSR and XeSS files, swap in a signed catalog build or a local DLL, update every outdated file at once, and restore the original `.dlsss` backup.",
+        tr: "Manage panelinde doğrulanmış upscaler DLL yöneticisi: oyunun DLSS, FSR ve XeSS dosyalarını tarayın, imzalı katalog sürümü ya da yerel bir DLL ile değiştirin, eski dosyaların tümünü tek seferde güncelleyin ve orijinal `.dlsss` yedeğini geri yükleyin.",
+      },
+      {
+        en: "Full Screen Mode has a master switch in Settings; when it is off, no controller, shortcut or title-bar button can enter it.",
+        tr: "Tam Ekran Modu'nun Ayarlar'da ana anahtarı var; kapalıyken hiçbir gamepad, kısayol ya da başlık çubuğu butonu moda giremiyor.",
+      },
+    ],
+    improved: [
+      {
+        en: "Library filters moved into the page header next to the custom-game buttons, and the filter panel opens at the root so it is never clipped.",
+        tr: "Kütüphane filtreleri sayfa başlığına, özel oyun butonlarının yanına taşındı; filtre paneli kökte açılıyor ve artık kırpılmıyor.",
+      },
+      {
+        en: "The customize images modal is cleaner: logo, cover and hero controls are grouped, and the preview keeps its proportions.",
+        tr: "Görselleri özelleştir modalı sadeleşti: logo, kapak ve hero kontrolleri gruplandı ve önizleme oranını koruyor.",
+      },
+      {
+        en: "The compact library list has its own density menu, and store names stay visible in it.",
+        tr: "Kompakt kütüphane listesinin kendi yoğunluk menüsü var ve mağaza adları görünür kalıyor.",
+      },
+      {
+        en: "The Epic store chrome uses one dark surface, and store and sort filter buttons pick up theme-aware backgrounds.",
+        tr: "Epic mağaza kabuğu tek koyu yüzey kullanıyor; mağaza ve sıralama filtre butonları temaya uyumlu arka plan alıyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Launcher updates retry after a failed download, and the release workflow publishes only after every asset and `latest.json` exists.",
+        tr: "Launcher güncellemeleri başarısız indirmeden sonra yeniden deniyor; sürüm iş akışı ancak tüm dosyalar ve `latest.json` hazır olduğunda yayınlıyor.",
+      },
+      {
+        en: "Steam client-list games stay in the library when the Steam client is closed, and the app field the client list returns is read correctly.",
+        tr: "Steam istemcisi kapalıyken istemci listesindeki oyunlar kütüphanede kalıyor ve istemci listesinin döndürdüğü app alanı doğru okunuyor.",
+      },
+      {
+        en: "A saved logo layout now applies to every store copy of a game, and saving an existing logo with an adjusted layout no longer fails.",
+        tr: "Kaydedilen logo düzeni oyunun tüm mağaza kopyalarına uygulanıyor; mevcut bir logoyu ayarlanmış düzenle kaydetmek artık hata vermiyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.47",
     date: "2026-11-07",
     added: [
