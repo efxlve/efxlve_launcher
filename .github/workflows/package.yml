@@ -63,8 +63,34 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      # The bundler caches the AppImage launcher with mode 0770, which is not
+      # executable for anyone outside the build group. Seed a world-executable
+      # copy first; the bundler only downloads its own when this is missing.
+      - name: Prepare the AppImage launcher
+        run: |
+          mkdir -p "$HOME/.cache/tauri"
+          curl -fsSL \
+            https://github.com/tauri-apps/binary-releases/releases/download/apprun-old/AppRun-x86_64 \
+            -o "$HOME/.cache/tauri/AppRun-x86_64"
+          chmod 755 "$HOME/.cache/tauri/AppRun-x86_64"
+
       - name: Build installers
         run: npm run tauri build -- --config src-tauri/tauri.package.conf.json
+
+      - name: Verify the AppImage launcher permissions
+        run: |
+          set -e
+          appimage=$(find src-tauri/target/release/bundle/appimage -maxdepth 1 -name '*.AppImage' | head -1)
+          test -n "$appimage"
+          chmod +x "$appimage"
+          work=$(mktemp -d)
+          (cd "$work" && "$GITHUB_WORKSPACE/$appimage" --appimage-extract >/dev/null)
+          bad=$(find "$work/squashfs-root" -type f -perm /111 ! -perm -o+x)
+          if [ -n "$bad" ]; then
+            echo "not executable for other users:" >&2
+            echo "$bad" >&2
+            exit 1
+          fi
 
       - name: Upload installers
         uses: actions/upload-artifact@v4
