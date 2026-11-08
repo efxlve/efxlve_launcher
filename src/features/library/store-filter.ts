@@ -162,7 +162,7 @@ export function storeFilterMenuHtml(counts: StoreFilterCounts): string {
     .join("");
   return `
     <div class="store-dropdown-container">
-      <button class="btn ghost lib-sort-btn lib-store-btn" data-act="toggle-store-dropdown" title="${esc(t("filter.source"))}">
+      <button class="btn lib-sort-btn lib-store-btn" data-act="toggle-store-dropdown" title="${esc(t("filter.source"))}">
         <span class="sort-btn-label">${esc(storeFilterLabel())}</span>
         ${icon(S.isStoreDropdownOpen ? "chevron-up" : "chevron-down", 14)}
       </button>

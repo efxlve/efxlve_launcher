@@ -1462,7 +1462,7 @@ export function renderEpic(): string {
   const tools = `
     ${sourceDropdown}
     <div class="sort-dropdown-container">
-      <button class="btn ghost lib-sort-btn lib-sort-trigger${S.libGroupBy !== "none" ? " has-group" : ""}" data-act="toggle-sort-dropdown" title="${t("lib.sortTip", { label: esc(sortTriggerLabel) })}">
+      <button class="btn lib-sort-btn lib-sort-trigger${S.libGroupBy !== "none" ? " has-group" : ""}" data-act="toggle-sort-dropdown" title="${t("lib.sortTip", { label: esc(sortTriggerLabel) })}">
         <span class="lib-sort-icon">${icon("arrow-down-a-z", 13)}</span>
         <span class="sort-btn-label">${esc(sortTriggerLabel)}</span>
         ${icon(S.isSortDropdownOpen ? "chevron-up" : "chevron-down", 14)}

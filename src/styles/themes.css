@@ -262,6 +262,16 @@
 :root[data-surface="white"] button.gp-source svg {
   color: var(--text-2);
 }
+:root[data-surface="white"] .lib-sort-btn {
+  background: var(--surface-1);
+  border-color: var(--line-strong);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+:root[data-surface="white"] .lib-sort-btn:hover,
+:root[data-surface="white"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
 :root[data-surface="white"] .store-tabs {
   background: var(--surface-2);
   border-color: var(--line);
@@ -740,7 +750,8 @@
 }
 :root[data-surface="gloss"] :is(.btn:not(.primary, .install, .play, .update, .running, .danger), button.gp-source):hover,
 :root[data-surface="gloss"] button.gp-source[aria-expanded="true"],
-:root[data-surface="gloss"] .btn.ghost.active {
+:root[data-surface="gloss"] .btn.ghost.active,
+:root[data-surface="gloss"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
   background: var(--aero-gloss-hover);
   border-color: #4aa6e6;
 }
@@ -1712,8 +1723,10 @@
   border-color: var(--line);
   color: var(--text-2);
 }
+:root[data-surface="blades"] .lib-sort-btn { color: var(--text); }
 :root[data-surface="blades"] :is(.btn:not(.primary, .install, .play, .update, .danger), .icon-btn, .winbar-btn, button.gp-source):hover,
-:root[data-surface="blades"] button.gp-source[aria-expanded="true"] {
+:root[data-surface="blades"] button.gp-source[aria-expanded="true"],
+:root[data-surface="blades"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
   background: rgba(26, 60, 34, 0.92);
   color: var(--text);
   border-color: var(--line-strong);
@@ -2039,7 +2052,8 @@
   color: var(--text);
   border-radius: 2px;
 }
-:root[data-surface="neongrid"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover {
+:root[data-surface="neongrid"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
+:root[data-surface="neongrid"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
   border-color: #fcee0a;
   color: #fcee0a;
   background: rgba(252, 238, 10, 0.1);

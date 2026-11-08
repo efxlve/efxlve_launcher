@@ -37,7 +37,14 @@
 
 /* --- Sort & Store menus --- */
 .sort-dropdown-container, .store-dropdown-container { position: relative; }
-.lib-sort-btn { gap: 8px; padding: 0 10px 0 12px; }
+.lib-sort-btn {
+  gap: 8px; padding: 0 10px 0 12px;
+  background: var(--surface-2); border-color: var(--line); color: var(--text);
+}
+.lib-sort-btn:hover,
+:where(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
+  background: var(--surface-3); border-color: var(--line-strong);
+}
 .lib-sort-kicker { color: var(--text-3); font-weight: 400; }
 .lib-sort-btn .sort-btn-label { max-width: 160px; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
 @media (max-width: 1220px) {
