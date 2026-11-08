@@ -9,9 +9,16 @@
  */
 
 import { epicCachedCriticScores, type CriticData } from "../epic";
-import { igdbCachedLibrary, type IgdbGame } from "../igdb";
+import {
+  igdbCachedLibrary,
+  igdbEnrich,
+  igdbEnrichExternalBatch,
+  type IgdbCachedSummary,
+  type IgdbGame,
+} from "../igdb";
 import type { SteamGameDetails } from "../steam";
 import { isTauri } from "./constants";
+import { mergeIgdbGenresAndThemes, normalizeGenreList } from "./genres";
 import { scheduleRender } from "./render";
 import { canonicalGameTitle, storeKeysForTitle, summaryOf } from "./selectors";
 import { S } from "./state";
@@ -104,13 +111,23 @@ export function cachedReleaseYearOf(appName: string, title?: string): number | n
   return null;
 }
 
-/** Cached genre list from IGDB or Steam store details, when known. */
+/** Cached genre list from IGDB or Steam store details, merged across matching keys. */
 export function cachedGenresOf(appName: string, title?: string): readonly string[] {
+  let firstHit: string[] | null = null;
+  let merged: string[] | null = null;
   for (const key of candidateKeys(appName, title)) {
     const genres = S.cachedGenres.get(key);
-    if (genres && genres.length > 0) return genres;
+    if (!genres || genres.length === 0) continue;
+    if (!firstHit) {
+      firstHit = genres;
+    } else {
+      if (!merged) merged = [...firstHit];
+      for (const g of genres) {
+        if (!merged.includes(g)) merged.push(g);
+      }
+    }
   }
-  return EMPTY_GENRES;
+  return merged ?? firstHit ?? EMPTY_GENRES;
 }
 
 /** Cached developer/studio name from IGDB or Steam store details, when known. */
@@ -160,8 +177,9 @@ export function recordLiveIgdbGame(appName: string, title: string, game: IgdbGam
   if (typeof year === "number" && year >= 1970 && year <= 2100) {
     for (const k of keys) S.cachedReleaseYears.set(k, year);
   }
-  if (game.genres?.length) {
-    for (const k of keys) S.cachedGenres.set(k, game.genres);
+  const mergedGenres = mergeIgdbGenresAndThemes(game.genres, game.themes);
+  if (mergedGenres.length > 0) {
+    for (const k of keys) S.cachedGenres.set(k, mergedGenres);
   }
   if (game.developer?.trim()) {
     const dev = game.developer.trim();
@@ -192,9 +210,16 @@ export function recordLiveSteamDetails(appName: string, title: string, details: 
       if (!S.cachedReleaseYears.has(k)) S.cachedReleaseYears.set(k, year);
     }
   }
-  if (details.genres?.length) {
+  const normGenres = normalizeGenreList(details.genres ?? []);
+  if (normGenres.length > 0) {
     for (const k of keys) {
-      if (!S.cachedGenres.has(k)) S.cachedGenres.set(k, details.genres);
+      const existing = S.cachedGenres.get(k);
+      if (!existing || existing.length === 0) {
+        S.cachedGenres.set(k, normGenres);
+      } else {
+        const union = normalizeGenreList([...existing, ...normGenres]);
+        if (union.length > existing.length) S.cachedGenres.set(k, union);
+      }
     }
   }
   const dev = details.developers?.find((d) => d && d.trim())?.trim();
@@ -217,10 +242,193 @@ export function ratingBucket(score: number | null): LibRatingBucket {
   return "under50";
 }
 
+function applyIgdbSummaries(rows: IgdbCachedSummary[]): boolean {
+  let changed = false;
+  for (const row of rows) {
+    const keys: string[] = [];
+    if (row.normalizedTitle) keys.push(`meta:${row.normalizedTitle}`);
+    for (const lk of row.lookupKeys) {
+      if (lk) keys.push(`meta:${lk}`);
+    }
+    const canon = canonicalGameTitle(row.name);
+    if (canon) keys.push(`canon:${canon}`);
+    for (const ext of row.externalKeys) {
+      const appName = externalKeyToAppName(ext);
+      if (appName) keys.push(appName);
+    }
+
+    if (typeof row.rating === "number" && row.rating > 0) {
+      for (const k of keys) putScore(k, row.rating);
+      changed = true;
+    }
+    if (typeof row.releaseYear === "number" && row.releaseYear >= 1970 && row.releaseYear <= 2100) {
+      for (const k of keys) S.cachedReleaseYears.set(k, row.releaseYear);
+      changed = true;
+    }
+    const mergedGenres = mergeIgdbGenresAndThemes(row.genres, row.themes);
+    if (mergedGenres.length > 0) {
+      for (const k of keys) S.cachedGenres.set(k, mergedGenres);
+      changed = true;
+    }
+    if (row.developer?.trim()) {
+      const dev = row.developer.trim();
+      for (const k of keys) S.cachedDevelopers.set(k, dev);
+      changed = true;
+    }
+    const primaryFranchise = row.franchises?.find((f) => f && f.trim())?.trim();
+    if (primaryFranchise) {
+      for (const k of keys) S.gameFranchises.set(k, primaryFranchise);
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 let ratingsLoaded = false;
+let batchSyncRunning = false;
+const attemptedExternalUids = new Set<string>();
+const attemptedTitleApps = new Set<string>();
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function genreUiVisible(): boolean {
+  return (
+    S.isFilterPanelOpen ||
+    S.libGroupBy === "genre" ||
+    S.libGroupBy === "rating" ||
+    S.libGroupBy === "year" ||
+    S.epicSort === "genre" ||
+    S.epicSort === "rating" ||
+    S.epicSort === "yearNew" ||
+    S.epicSort === "yearOld" ||
+    S.epicSort === "series"
+  );
+}
 
 /**
- * Loads the critic and IGDB disk caches once at boot with zero network calls.
+ * Quiet background pass that enriches uncached library entries from IGDB in
+ * rate-limited batches so genre, rating, year and franchise facets cover the
+ * whole library rather than only previously opened game pages.
+ */
+export async function syncUncachedLibraryIgdb(initialDelayMs = 3500): Promise<void> {
+  if (batchSyncRunning || !isTauri) return;
+  batchSyncRunning = true;
+
+  try {
+    if (initialDelayMs > 0) await sleep(initialDelayMs);
+    for (let i = 0; i < 30; i++) {
+      if (!S.epicSyncing && !S.gogSyncing && !S.steamLibrarySyncing) break;
+      await sleep(1000);
+    }
+    if (!S.igdbConfigured || S.offlineMode) return;
+
+    const byCat = new Map<number, string[]>([
+      [1, []],
+      [5, []],
+      [20, []],
+    ]);
+
+    const pushExternal = (cat: number, key: string, uid: string, title: string, installed: boolean): void => {
+      if (!uid || S.hiddenGames.has(key)) return;
+      const attemptKey = `${cat}:${uid.toLowerCase()}`;
+      if (attemptedExternalUids.has(attemptKey)) return;
+      if (S.cachedGenres.has(key)) return;
+      const meta = normalizeMetaKey(title);
+      if (meta && S.cachedGenres.has(`meta:${meta}`)) return;
+      const bucket = byCat.get(cat);
+      if (!bucket) return;
+      if (installed) bucket.unshift(uid);
+      else bucket.push(uid);
+    };
+
+    for (const g of S.steamSummaries) pushExternal(1, g.key, g.id, g.title, g.installed);
+    for (const g of S.gogSummaries) pushExternal(5, g.key, g.id, g.title, g.installed);
+    for (const g of S.amazonSummaries) pushExternal(20, g.key, g.id, g.title, g.installed);
+
+    let batchesRun = 0;
+    let unrenderedChanges = false;
+    const MAX_BATCHES = 30;
+    const CHUNK = 25;
+
+    for (const [cat, uids] of byCat) {
+      for (let offset = 0; offset < uids.length && batchesRun < MAX_BATCHES; offset += CHUNK) {
+        if (!S.igdbConfigured || S.offlineMode) return;
+        while (S.currentModalAppName) {
+          await sleep(1500);
+          if (S.offlineMode) return;
+        }
+        const slice = uids.slice(offset, offset + CHUNK);
+        for (const u of slice) attemptedExternalUids.add(`${cat}:${u.toLowerCase()}`);
+        try {
+          const rows = await igdbEnrichExternalBatch(cat, slice);
+          if (rows.length > 0 && applyIgdbSummaries(rows)) {
+            S.libraryDataRev++;
+            unrenderedChanges = true;
+            if (genreUiVisible() || batchesRun % 4 === 3) {
+              unrenderedChanges = false;
+              scheduleRender();
+            }
+          }
+        } catch {
+          if (unrenderedChanges) scheduleRender();
+          return;
+        }
+        batchesRun++;
+        await sleep(850);
+      }
+    }
+
+    // Enrich a small budget of uncached Epic / Custom titles that lack genres.
+    const titleCandidates: { appName: string; title: string; year: number | null }[] = [];
+    for (const s of S.epicSummaries) {
+      if (S.hiddenGames.has(s.appName) || attemptedTitleApps.has(s.appName)) continue;
+      if (s.genres?.length || cachedGenresOf(s.appName, s.title).length > 0) continue;
+      titleCandidates.push({ appName: s.appName, title: s.title, year: s.releaseYear ?? null });
+      if (titleCandidates.length >= 16) break;
+    }
+    for (const g of S.customSummaries) {
+      if (titleCandidates.length >= 20) break;
+      if (S.hiddenGames.has(g.key) || attemptedTitleApps.has(g.key)) continue;
+      if (g.genres?.length || cachedGenresOf(g.key, g.title).length > 0) continue;
+      titleCandidates.push({ appName: g.key, title: g.title, year: g.releaseYear ?? null });
+    }
+
+    for (const cand of titleCandidates) {
+      if (!S.igdbConfigured || S.offlineMode) break;
+      while (S.currentModalAppName) {
+        await sleep(1500);
+        if (S.offlineMode) break;
+      }
+      attemptedTitleApps.add(cand.appName);
+      try {
+        const game = await igdbEnrich(cand.title, cand.year, null);
+        if (game) {
+          recordLiveIgdbGame(cand.appName, cand.title, game);
+          unrenderedChanges = true;
+          if (genreUiVisible()) {
+            unrenderedChanges = false;
+            scheduleRender();
+          }
+        }
+      } catch {
+        break;
+      }
+      await sleep(1100);
+    }
+
+    if (unrenderedChanges) {
+      scheduleRender();
+    }
+  } finally {
+    batchSyncRunning = false;
+  }
+}
+
+/**
+ * Loads the critic and IGDB disk caches once at boot with zero network calls,
+ * then schedules a polite background pass for uncached library titles.
  */
 export function ensureGameRatingsLoaded(): void {
   if (ratingsLoaded || !isTauri) return;
@@ -243,46 +451,12 @@ export function ensureGameRatingsLoaded(): void {
       }
     }
     if (igdbRes.status === "fulfilled" && igdbRes.value.length > 0) {
-      for (const row of igdbRes.value) {
-        const keys: string[] = [];
-        if (row.normalizedTitle) keys.push(`meta:${row.normalizedTitle}`);
-        for (const lk of row.lookupKeys) {
-          if (lk) keys.push(`meta:${lk}`);
-        }
-        const canon = canonicalGameTitle(row.name);
-        if (canon) keys.push(`canon:${canon}`);
-        for (const ext of row.externalKeys) {
-          const appName = externalKeyToAppName(ext);
-          if (appName) keys.push(appName);
-        }
-
-        if (typeof row.rating === "number" && row.rating > 0) {
-          for (const k of keys) putScore(k, row.rating);
-          changed = true;
-        }
-        if (typeof row.releaseYear === "number" && row.releaseYear >= 1970 && row.releaseYear <= 2100) {
-          for (const k of keys) S.cachedReleaseYears.set(k, row.releaseYear);
-          changed = true;
-        }
-        if (row.genres?.length) {
-          for (const k of keys) S.cachedGenres.set(k, row.genres);
-          changed = true;
-        }
-        if (row.developer?.trim()) {
-          const dev = row.developer.trim();
-          for (const k of keys) S.cachedDevelopers.set(k, dev);
-          changed = true;
-        }
-        const primaryFranchise = row.franchises?.find((f) => f && f.trim())?.trim();
-        if (primaryFranchise) {
-          for (const k of keys) S.gameFranchises.set(k, primaryFranchise);
-          changed = true;
-        }
-      }
+      if (applyIgdbSummaries(igdbRes.value)) changed = true;
     }
     if (changed) {
       S.libraryDataRev++;
       scheduleRender();
     }
+    void syncUncachedLibraryIgdb();
   });
 }

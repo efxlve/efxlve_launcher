@@ -17,6 +17,7 @@ import { setSteamSummaries } from "../../core/selectors";
 import { notify, openEpicModal, scheduleRender } from "../../core/render";
 import { updateBadge } from "../../core/nav";
 import { patchLibraryCardDom } from "../../core/game-view";
+import { syncUncachedLibraryIgdb } from "../../core/game-ratings";
 import { S } from "../../core/state";
 import { watchSteamAchievements } from "../../core/steam-watch";
 import type { LibraryItem } from "../../core/types";
@@ -309,6 +310,7 @@ async function loadSteamLibraryOnce(force = false): Promise<string | null> {
     S.steamLibrarySyncing = false;
   }
   scheduleRender();
+  void syncUncachedLibraryIgdb(1200);
   checkAndPollSteamDownloads();
   return error;
 }

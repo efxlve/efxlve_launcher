@@ -90,6 +90,7 @@ export interface IgdbCachedSummary {
   releaseYear: number | null;
   developer: string;
   genres: string[];
+  themes?: string[];
   franchises: string[];
 }
 
@@ -131,6 +132,9 @@ export const igdbEnrich = (
 
 export const igdbCachedLibrary = () =>
   invoke<IgdbCachedSummary[]>("igdb_cached_library");
+
+export const igdbEnrichExternalBatch = (category: number, uids: string[]) =>
+  invoke<IgdbCachedSummary[]>("igdb_enrich_external_batch", { category, uids });
 
 /**
  * The exact external id IGDB knows a library key by. Steam/GOG/Amazon keys

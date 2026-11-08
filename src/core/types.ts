@@ -28,6 +28,7 @@ export type EpicSort =
   | "alpha"
   | "alphaDesc"
   | "series"
+  | "genre"
   | "yearNew"
   | "yearOld"
   | "rating"

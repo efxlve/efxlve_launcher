@@ -383,6 +383,32 @@ fn external_query(category: i64, uid: &str) -> String {
     )
 }
 
+/// Batch external-id query (up to 25 store IDs per request) so large libraries
+/// can hydrate full IGDB entries, genres, themes, ratings and franchises within
+/// the 4 requests/second budget while warming the per-game disk cache.
+fn external_batch_query(category: i64, uids: &[String]) -> String {
+    let quoted = uids
+        .iter()
+        .map(|u| format!("\"{}\"", sanitize_query_text(u)))
+        .collect::<Vec<_>>()
+        .join(",");
+    format!(
+        "fields name, summary, url, first_release_date, rating, rating_count, aggregated_rating, \
+         genres.name, themes.name, game_modes.name, player_perspectives.name, \
+         involved_companies.company.name, involved_companies.developer, involved_companies.publisher, \
+         franchises.name, collection.name, cover.image_id, screenshots.image_id, \
+         similar_games.name, similar_games.first_release_date, similar_games.cover.image_id, \
+         similar_games.slug, \
+         dlcs.name, dlcs.first_release_date, dlcs.cover.image_id, dlcs.slug, \
+         expansions.name, expansions.first_release_date, expansions.cover.image_id, expansions.slug, \
+         websites.category, websites.url, age_ratings.organization, age_ratings.rating_category, \
+         release_dates.platform, release_dates.date, \
+         external_games.category, external_games.uid; \
+         where external_games.category = {category} & external_games.uid = ({quoted}); \
+         limit 40;"
+    )
+}
+
 /// The cover picker's search: covers and key art in one request.
 fn covers_query(query: &str, limit: usize) -> String {
     format!(
@@ -1854,7 +1880,35 @@ pub struct IgdbCachedSummary {
     pub release_year: Option<i64>,
     pub developer: String,
     pub genres: Vec<String>,
+    #[serde(default)]
+    pub themes: Vec<String>,
     pub franchises: Vec<String>,
+}
+
+fn summary_from_game(
+    game: IgdbGame,
+    lookup_keys: Vec<String>,
+    external_keys: Vec<String>,
+) -> IgdbCachedSummary {
+    let rating = game
+        .rating
+        .map(|r| (r.round() as i64).clamp(0, 100) as u32)
+        .filter(|r| *r > 0);
+    let release_year = game.pc_release_year.or(game.release_year);
+    let normalized_title = normalize_title(&game.name);
+    IgdbCachedSummary {
+        id: game.id,
+        name: game.name,
+        normalized_title,
+        lookup_keys,
+        external_keys,
+        rating,
+        release_year,
+        developer: game.developer,
+        genres: game.genres,
+        themes: game.themes,
+        franchises: game.franchises,
+    }
 }
 
 fn read_cached_library_dir(dir: &Path) -> Vec<IgdbCachedSummary> {
@@ -1894,25 +1948,12 @@ fn read_cached_library_dir(dir: &Path) -> Vec<IgdbCachedSummary> {
         if cached.schema != CACHE_SCHEMA {
             continue;
         }
-        let game = cached.game;
-        let rating = game
-            .rating
-            .map(|r| (r.round() as i64).clamp(0, 100) as u32)
-            .filter(|r| *r > 0);
-        let release_year = game.pc_release_year.or(game.release_year);
-        let normalized_title = normalize_title(&game.name);
-        out.push(IgdbCachedSummary {
-            id: game.id,
-            name: game.name,
-            normalized_title,
-            lookup_keys: lookups.remove(&game.id).unwrap_or_default(),
-            external_keys: externals.remove(&game.id).unwrap_or_default(),
-            rating,
-            release_year,
-            developer: game.developer,
-            genres: game.genres,
-            franchises: game.franchises,
-        });
+        let id = cached.game.id;
+        out.push(summary_from_game(
+            cached.game,
+            lookups.remove(&id).unwrap_or_default(),
+            externals.remove(&id).unwrap_or_default(),
+        ));
     }
     out.sort_by_key(|item| item.id);
     out
@@ -1929,6 +1970,153 @@ pub async fn igdb_cached_library(app: AppHandle) -> Vec<IgdbCachedSummary> {
     tokio::task::spawn_blocking(move || read_cached_library_dir(&dir))
         .await
         .unwrap_or_default()
+}
+
+/// Enriches up to 25 external store IDs (`1` Steam, `5` GOG, `20` Amazon) in a
+/// single IGDB query, persisting each matched game to disk so subsequent boots
+/// and game-page opens are instant and offline.
+#[tauri::command]
+pub async fn igdb_enrich_external_batch(
+    app: AppHandle,
+    category: i64,
+    uids: Vec<String>,
+) -> Result<Vec<IgdbCachedSummary>, String> {
+    if !matches!(category, 1 | 5 | 20) || uids.is_empty() || matches!(transport(&app), Transport::Off) {
+        return Ok(Vec::new());
+    }
+
+    let mut seen = HashSet::new();
+    let mut clean_uids = Vec::new();
+    for raw in uids {
+        let u = raw.trim();
+        if u.is_empty()
+            || u.len() > 64
+            || !u.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+        {
+            continue;
+        }
+        if seen.insert(u.to_ascii_lowercase()) {
+            clean_uids.push(u.to_string());
+            if clean_uids.len() >= 25 {
+                break;
+            }
+        }
+    }
+    if clean_uids.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut external = read_external(&app);
+    let mut lookup = read_lookup(&app);
+    let mut misses = read_misses(&app);
+    let mut out = Vec::new();
+    let mut pending = Vec::new();
+
+    for uid in clean_uids {
+        let ext_key = format!("{category}:{uid}");
+        if let Some(id) = external
+            .get(&ext_key)
+            .and_then(serde_json::Value::as_i64)
+            .filter(|id| *id > 0)
+        {
+            if let Some(cached) = read_cached_game(&app, id) {
+                out.push(summary_from_game(cached, Vec::new(), vec![ext_key]));
+                continue;
+            }
+        }
+        let miss_key = format!("ext:{category}:{}", uid.to_ascii_lowercase());
+        if let Some(at) = misses.get(&miss_key).and_then(serde_json::Value::as_u64) {
+            if crate::lookup_cache::fresh(at, crate::lookup_cache::MISS_TTL_SECS) {
+                continue;
+            }
+        }
+        pending.push(uid);
+    }
+
+    if pending.is_empty() {
+        return Ok(out);
+    }
+    pending.sort();
+
+    let value = api_post(&app, "games", &external_batch_query(category, &pending)).await?;
+    let tables = if has_age_ratings(&value) {
+        ensure_age_tables(&app).await
+    } else {
+        AgeTables::default()
+    };
+
+    let mut matched_lower = HashSet::new();
+    let mut external_dirty = false;
+    let mut lookup_dirty = false;
+    let mut misses_dirty = false;
+
+    if let Some(items) = value.as_array() {
+        for item in items {
+            let game = map_game(item, &tables);
+            if game.id <= 0 {
+                continue;
+            }
+            write_cached_game(&app, &game);
+
+            let mut ext_keys = Vec::new();
+            if let Some(exts) = item.get("external_games").and_then(serde_json::Value::as_array) {
+                for ext in exts {
+                    let ext_cat = ext.get("category").and_then(serde_json::Value::as_i64);
+                    let Some(ext_uid) = ext.get("uid").and_then(serde_json::Value::as_str) else {
+                        continue;
+                    };
+                    if ext_cat != Some(category) {
+                        continue;
+                    }
+                    if let Some(orig) = pending.iter().find(|p| p.eq_ignore_ascii_case(ext_uid)) {
+                        matched_lower.insert(orig.to_ascii_lowercase());
+                        let key = format!("{category}:{orig}");
+                        if external.get(&key).and_then(serde_json::Value::as_i64) != Some(game.id) {
+                            external.insert(key.clone(), serde_json::Value::from(game.id));
+                            external_dirty = true;
+                        }
+                        let miss_key = format!("ext:{category}:{}", orig.to_ascii_lowercase());
+                        if misses.remove(&miss_key).is_some() {
+                            misses_dirty = true;
+                        }
+                        ext_keys.push(key);
+                    }
+                }
+            }
+
+            let norm = normalize_title(&game.name);
+            let mut lookup_keys = Vec::new();
+            if !norm.is_empty() {
+                if lookup.get(&norm).and_then(serde_json::Value::as_i64) != Some(game.id) {
+                    lookup.insert(norm.clone(), serde_json::Value::from(game.id));
+                    lookup_dirty = true;
+                }
+                lookup_keys.push(norm);
+            }
+            out.push(summary_from_game(game, lookup_keys, ext_keys));
+        }
+    }
+
+    let now = crate::lookup_cache::now_secs();
+    for uid in &pending {
+        let lower = uid.to_ascii_lowercase();
+        if !matched_lower.contains(&lower) {
+            misses.insert(format!("ext:{category}:{lower}"), serde_json::Value::from(now));
+            misses_dirty = true;
+        }
+    }
+
+    if external_dirty {
+        write_external(&app, &external);
+    }
+    if lookup_dirty {
+        write_lookup(&app, &lookup);
+    }
+    if misses_dirty {
+        write_misses(&app, &misses);
+    }
+
+    Ok(out)
 }
 
 #[cfg(test)]
@@ -2447,6 +2635,7 @@ mod tests {
             "first_release_date": 1_607_558_400_i64,
             "rating": 86.4,
             "genres": [{ "name": "Role-playing (RPG)" }],
+            "themes": [{ "name": "Action" }, { "name": "Science fiction" }],
             "franchises": [{ "name": "Cyberpunk" }],
             "involved_companies": [{ "developer": true, "company": { "name": "CD Projekt RED" } }]
         });
@@ -2466,8 +2655,12 @@ mod tests {
         assert_eq!(items[0].release_year, Some(2020));
         assert_eq!(items[0].external_keys, vec!["1:1091500"]);
         assert_eq!(items[0].lookup_keys, vec!["cyberpunk2077"]);
+        assert_eq!(items[0].themes, vec!["Action", "Science fiction"]);
         assert_eq!(items[0].franchises, vec!["Cyberpunk"]);
         assert_eq!(items[0].developer, "CD Projekt RED");
+        let batch_q = external_batch_query(1, &["730".to_string(), "1091500".to_string()]);
+        assert!(batch_q.contains("external_games.category = 1"));
+        assert!(batch_q.contains("external_games.uid = (\"730\",\"1091500\")"));
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

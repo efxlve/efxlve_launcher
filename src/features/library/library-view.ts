@@ -8,7 +8,8 @@
 
 import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, PREFETCH_COVERS, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
-import { measuredSize } from "../../core/folder-size";
+import { measureFolders, measuredSize } from "../../core/folder-size";
+import { formatGenreLabel, genreSearchTokens } from "../../core/genres";
 import { achSummaryOf, epicActionButtons, epicArt, epicArtUrl, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardElement } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
 import { collectionGames, collectionMatch, matchCollectionGame, type CollectionMatch } from "../../core/game-collections";
@@ -30,35 +31,45 @@ import { sharedSummaries } from "./shared-library";
 import { steamAppOsList } from "./steam-library";
 import { allStoresMenuCount, enabledStoreKey, pickShownCopy, storeFilterLabel, storeFilterMenuHtml, storeFilterRowOn } from "./store-filter";
 import { coverSizeMenuHtml, listDensityMenuHtml, syncDensityMenu } from "./library-options";
-import { closeLibFilterPanel, libFiltersActiveCount, matchesLibFilters, mountLibFilterPanel, studioOf, syncLibFilterHeaderBtn } from "./library-filters";
+import { closeLibFilterPanel, effectiveInstallSize, genresOf, libFiltersActiveCount, matchesLibFilters, mountLibFilterPanel, primaryGenreOf, renderActiveFilterChips, studioOf, syncLibFilterHeaderBtn } from "./library-filters";
 import { registerAlphaJumpHandler, syncLibraryAlphaRail } from "./library-alpha";
-import { buildLibraryGroups, getGroupByOptions, renderGroupedLibraryItems } from "./library-groups";
+import { buildLibraryGroups, effectiveLibGroupBy, getGroupByOptions, renderGroupedLibraryItems } from "./library-groups";
 import { effectiveReleaseYear, getSortOptions, libraryCollator, seriesSortKeys, titleComparator } from "./library-sort";
 import { customSortNameOf } from "./sort-name";
 
 /**
  * Parses the search box into plain terms plus `key:value` operators:
- * `dev:<studio>`, `is:installed|notinstalled|fav|update|epic|gog`.
+ * `dev:<studio>`, `genre:<tag>`, `is:installed|notinstalled|fav|update|<store>`.
  */
 function parseQuery(q: string): {
   terms: string[];
   dev: string;
+  genre: string;
   installed: boolean;
   notInstalled: boolean;
   fav: boolean;
   update: boolean;
   source: string;
 } {
-  const out = { terms: [] as string[], dev: "", installed: false, notInstalled: false, fav: false, update: false, source: "" };
+  const out = { terms: [] as string[], dev: "", genre: "", installed: false, notInstalled: false, fav: false, update: false, source: "" };
   for (const tk of q.split(/\s+/)) {
     if (!tk) continue;
     if (tk.startsWith("dev:") || tk.startsWith("studio:")) out.dev = tk.slice(tk.indexOf(":") + 1).toLowerCase();
+    else if (tk.startsWith("genre:") || tk.startsWith("tag:")) out.genre = tk.slice(tk.indexOf(":") + 1).toLowerCase();
     else if (tk === "is:installed") out.installed = true;
     else if (tk === "is:notinstalled") out.notInstalled = true;
     else if (tk === "is:fav" || tk === "is:favorite") out.fav = true;
     else if (tk === "is:update" || tk === "is:updates") out.update = true;
     else if (tk === "is:epic") out.source = "epic";
     else if (tk === "is:gog") out.source = "gog";
+    else if (tk === "is:steam") out.source = "steam";
+    else if (tk === "is:amazon") out.source = "amazon";
+    else if (tk === "is:xbox") out.source = "xbox";
+    else if (tk === "is:ea") out.source = "ea";
+    else if (tk === "is:ubisoft") out.source = "ubisoft";
+    else if (tk === "is:battlenet" || tk === "is:bnet") out.source = "battlenet";
+    else if (tk === "is:riot") out.source = "riot";
+    else if (tk === "is:custom") out.source = "custom";
     else out.terms.push(tk);
   }
   return out;
@@ -84,6 +95,7 @@ function visibleSignature(): string {
     enabledStoreKey(),
     S.activeCollectionId ?? "",
     String(S.libraryDataRev),
+    String(S.libFiltersRev),
     S.appLanguage,
     S.epicRecent.join(","),
     S.separateCopies ? "split" : "merged",
@@ -122,10 +134,7 @@ export function libraryFilteredList(): EpicSummary[] {
   const baseItems = libraryBaseItems();
 
   const list = baseItems.filter((s) => {
-    if (query.source === "epic" && s.appName.startsWith("gog::")) return false;
-    if (query.source === "epic" && s.appName.startsWith("steam::")) return false;
-    if (query.source === "gog" && !s.appName.startsWith("gog::")) return false;
-    if (query.source === "steam" && !s.appName.startsWith("steam::")) return false;
+    if (query.source && sourceOfKey(s.appName) !== query.source) return false;
 
     if (S.hiddenGames.has(s.appName)) return false;
     if (smartTest && !smartTest(s)) return false;
@@ -148,6 +157,10 @@ export function libraryFilteredList(): EpicSummary[] {
     if (query.fav && !S.epicFav.has(s.appName)) return false;
     if (query.update && !s.updateAvailable && !S.availableUpdates.has(s.appName)) return false;
     if (query.dev && !studio.includes(query.dev)) return false;
+    if (query.genre) {
+      const matchedGenre = genresOf(s).some((g) => genreSearchTokens(g).includes(query.genre));
+      if (!matchedGenre) return false;
+    }
 
     const title = s.title.toLowerCase();
     const sortName = customSortNameOf(s.appName, s.title).toLowerCase();
@@ -195,6 +208,22 @@ export function epicVisibleSummaries(): EpicSummary[] {
         const right = effectiveReleaseYear(b);
         if (left !== null && right !== null && left !== right) return left - right;
         return byTitle(a, b);
+      });
+      break;
+    }
+    case "genre": {
+      const labels = new Map<string, string>();
+      for (const item of list) {
+        const g = primaryGenreOf(item);
+        labels.set(item.appName, g ? formatGenreLabel(g) : "");
+      }
+      result = [...list].sort((a, b) => {
+        const left = labels.get(a.appName) ?? "";
+        const right = labels.get(b.appName) ?? "";
+        if (!left && !right) return byTitle(a, b);
+        if (!left) return 1;
+        if (!right) return -1;
+        return collator.compare(left, right) || byTitle(a, b);
       });
       break;
     }
@@ -511,7 +540,7 @@ export function epicCardPortrait(s: EpicSummary): string {
 function epicListRow(s: EpicSummary): string {
   const title = esc(s.title);
   const secs = libraryPlaytime(s).seconds;
-  const sizeBytes = measuredSize(s.appName) ?? s.installSize;
+  const sizeBytes = measuredSize(s.appName) ?? effectiveInstallSize(s);
   const source = sourceOfKey(s.appName);
   const studio = esc(studioOf(s));
   const metaText = studio;
@@ -745,7 +774,7 @@ export function jumpToLibraryLetter(index: number, instant = false): void {
     }
   } else if (S.renderedCardCount <= target) {
     const nextCount = Math.min(visible.length, target + INITIAL_CARD_CHUNK);
-    const container = S.libGroupBy === "none"
+    const container = effectiveLibGroupBy() === "none"
       ? document.querySelector<HTMLElement>("#lib-results > .pgrid, #lib-results > .lib-list")
       : null;
     if (container) {
@@ -801,23 +830,27 @@ export function renderEpicItems(): string {
   syncLibraryAlphaRail(visible, S.epicSort);
   if (visible.length > 0) primeGameScene();
   const bannerHtml = inCollection ? renderCollectionBanner(inCollection) : "";
+  const activeChipsHtml = renderActiveFilterChips();
 
   if (visible.length === 0) {
     if (inCollection) {
       const activeCol = S.epicCollections.find((c) => c.id === S.activeCollectionId);
       const action = activeCol ? `<button class="btn primary" data-act="edit-collection" data-col-id="${esc(activeCol.id)}">${t("col.edit")}</button>` : "";
-      return `${bannerHtml}${emptyState("folder", t("col.noMatch"), "", action)}`;
+      return `${bannerHtml}${activeChipsHtml}${emptyState("folder", t("col.noMatch"), "", action)}`;
     }
     if (S.query.trim()) {
-      return emptyState("search", t("lib.noResults"), t("lib.noResultsHint"), `<button class="btn" data-act="lib-clear-search">${t("lib.clearSearch")}</button>`);
+      const clearFiltersBtn = libFiltersActiveCount() > 0
+        ? ` <button class="btn primary" data-act="lib-filter-clear">${icon("refresh", 14)} ${esc(t("lib.filterClear"))}</button>`
+        : "";
+      return `${activeChipsHtml}${emptyState("search", t("lib.noResults"), t("lib.noResultsHint"), `<button class="btn" data-act="lib-clear-search">${t("lib.clearSearch")}</button>${clearFiltersBtn}`)}`;
     }
     if (libFiltersActiveCount() > 0) {
-      return emptyState(
+      return `${activeChipsHtml}${emptyState(
         "sliders",
         t("lib.noResults"),
         "",
         `<button class="btn primary" data-act="lib-filter-clear">${icon("refresh", 14)} ${esc(t("lib.filterClear"))}</button>`,
-      );
+      )}`;
     }
     // Favorites empty: send the user back to the whole library, not the store.
     if (S.activeCollectionId === "fav") {
@@ -838,7 +871,7 @@ export function renderEpicItems(): string {
     );
   }
 
-  if (S.libGroupBy !== "none") {
+  if (effectiveLibGroupBy() !== "none") {
     const sourceList = S.libPagination ? renderedSlice(visible) : visible;
     const groups = buildLibraryGroups(sourceList);
     const maxCards = S.libPagination ? sourceList.length : S.renderedCardCount;
@@ -852,7 +885,7 @@ export function renderEpicItems(): string {
       ? `<div id="lib-scroll-sentinel" class="lib-sentinel"></div>`
       : "";
     prefetchNextCovers(visible, grouped.mountedCount);
-    return `${bannerHtml}${grouped.html}${sentinelHtml}${renderLibraryPager(visible.length)}`;
+    return `${bannerHtml}${activeChipsHtml}${grouped.html}${sentinelHtml}${renderLibraryPager(visible.length)}`;
   }
 
   const chunk = renderedSlice(visible);
@@ -862,7 +895,7 @@ export function renderEpicItems(): string {
   const itemsHtml = chunk.map(renderItem).join("");
   prefetchNextCovers(visible, chunk.length);
 
-  return `${bannerHtml}${renderResults(itemsHtml, sentinelHtml)}${renderLibraryPager(visible.length)}`;
+  return `${bannerHtml}${activeChipsHtml}${renderResults(itemsHtml, sentinelHtml)}${renderLibraryPager(visible.length)}`;
 }
 
 /** Covers already asked for while idle, so a repaint does not ask again. */
@@ -923,7 +956,7 @@ function renderedSlice(visible: EpicSummary[]): EpicSummary[] {
  * re-decode every cover. Returns false when the grid needs a full rebuild.
  */
 export function patchLibraryGridInPlace(): boolean {
-  if (S.view !== "library" || S.libGroupBy !== "none") return false;
+  if (S.view !== "library" || effectiveLibGroupBy() !== "none") return false;
   const resultsEl = document.getElementById("lib-results");
   if (!resultsEl) return false;
   // Collection counts and labels live in the header; a change needs the full
@@ -1079,7 +1112,7 @@ export function setupLibScrollObserver(): void {
   S.libScrollObserver = new IntersectionObserver((entries) => {
     if (busy || !entries[0]?.isIntersecting) return;
     const visible = epicVisibleSummaries();
-    if (S.libGroupBy !== "none") {
+    if (effectiveLibGroupBy() !== "none") {
       busy = true;
       S.libScrollObserver?.disconnect();
       S.renderedCardCount = Math.min(visible.length, S.renderedCardCount + MORE_CARD_CHUNK);
@@ -1201,6 +1234,20 @@ export function openLibFilterPanel(): void {
   document.querySelector<HTMLElement>('[data-act="toggle-cover-size"]')?.setAttribute("aria-expanded", "false");
   ensureGameRatingsLoaded();
   repaintLibFilterPanel();
+  const unmeasured = libraryBaseItems()
+    .filter((s) => s.installed && effectiveInstallSize(s) <= 0 && Boolean(s.installPath))
+    .map((s) => ({ key: s.appName, path: s.installPath }));
+  if (unmeasured.length > 0) {
+    void measureFolders(
+      unmeasured,
+      () => {
+        S.libraryDataRev++;
+        invalidateLibraryVisibleCache();
+        if (S.isFilterPanelOpen) repaintLibFilterPanel();
+      },
+      () => !S.isFilterPanelOpen,
+    );
+  }
 }
 
 /** Toggle the `#lib-filter-root` slide-over panel from the `#page-header` button. */
@@ -1225,7 +1272,7 @@ export function syncLibFilterUi(): void {
  */
 export function refreshLibraryForStoreFilter(): boolean {
   if (S.view !== "library") return false;
-  if (S.libGroupBy !== "none") {
+  if (effectiveLibGroupBy() !== "none") {
     if (!refreshLibraryResultsInPlace()) return false;
     viewEl.scrollTop = 0;
     syncStoreFilterMenu();
@@ -1245,6 +1292,11 @@ export function refreshLibraryForStoreFilter(): boolean {
     syncStoreFilterMenu();
     syncLibFilterUi();
     return true;
+  }
+  results.querySelector(".lib-active-filters")?.remove();
+  const chipsHtml = renderActiveFilterChips();
+  if (chipsHtml) {
+    grid.insertAdjacentHTML("beforebegin", chipsHtml);
   }
   const heading = document.getElementById("lib-heading-count");
   if (heading) {
@@ -1527,6 +1579,7 @@ export function updateLibraryFilterInPlace(): boolean {
   document.querySelectorAll<HTMLElement>('#sort-dropdown-menu [data-act="select-group-by"]').forEach((optEl) => {
     optEl.classList.toggle("selected", optEl.dataset.groupBy === S.libGroupBy);
   });
+  syncLibraryHeadingCount();
   syncLibFilterUi();
   return true;
 }

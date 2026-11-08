@@ -2649,6 +2649,7 @@ fn main() {
             igdb::igdb_covers,
             igdb::igdb_enrich,
             igdb::igdb_cached_library,
+            igdb::igdb_enrich_external_batch,
         ])
         .build(tauri::generate_context!())
         .expect("Tauri application failed to build");

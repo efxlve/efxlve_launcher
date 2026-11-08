@@ -163,36 +163,8 @@ impl AppInfoReader<'_> {
         }
     }
 
-    /// Every string value inside the object stored under `wanted`.
-    fn find_list(&mut self, wanted: &str) -> Option<Vec<String>> {
-        loop {
-            let tag = *self.data.get(self.pos)?;
-            self.pos += 1;
-            if tag == 8 {
-                return None;
-            }
-            let key = self.read_key()?;
-            match tag {
-                0 => {
-                    if key == wanted {
-                        let mut out = Vec::new();
-                        self.collect_strings(&mut out)?;
-                        return Some(out);
-                    }
-                    if let Some(found) = self.find_list(wanted) {
-                        return Some(found);
-                    }
-                }
-                1 => {
-                    self.read_cstring()?;
-                }
-                _ => self.skip_simple(tag)?,
-            }
-        }
-    }
-
-    /// All string values in the current object (genres nest numeric keys over
-    /// `description` strings, so every value counts).
+    /// All string or integer values in the current object (`genres` nests numeric
+    /// keys over string descriptions or PICS integer genre IDs).
     fn collect_strings(&mut self, out: &mut Vec<String>) -> Option<()> {
         loop {
             let tag = *self.data.get(self.pos)?;
@@ -210,10 +182,216 @@ impl AppInfoReader<'_> {
                         out.push(value.to_string());
                     }
                 }
+                2 => {
+                    let value = read_u32_at(self.data, self.pos)?;
+                    self.pos += 4;
+                    out.push(value.to_string());
+                }
                 _ => self.skip_simple(tag)?,
             }
         }
     }
+
+    /// Walks an appinfo KV blob once to gather studio, genres, release year,
+    /// OS support and Metacritic score from both string and binary `u32` tags.
+    fn collect_metadata(&mut self, acc: &mut RawAppMetadata) -> Option<()> {
+        loop {
+            let tag = *self.data.get(self.pos)?;
+            self.pos += 1;
+            if tag == 8 {
+                return Some(());
+            }
+            let key = self.read_key()?;
+            match tag {
+                0 => {
+                    if key == "genres" && acc.raw_genres.is_empty() {
+                        self.collect_strings(&mut acc.raw_genres)?;
+                    } else if key == "associations" && acc.assoc_developer.is_none() {
+                        self.collect_associations(&mut acc.assoc_developer)?;
+                    } else {
+                        self.collect_metadata(acc)?;
+                    }
+                }
+                1 => {
+                    let value = self.read_cstring()?;
+                    let trimmed = value.trim();
+                    if trimmed.is_empty() {
+                        continue;
+                    }
+                    match key.as_str() {
+                        "developer" if acc.developer.is_none() => {
+                            acc.developer = Some(trimmed.to_string());
+                        }
+                        "primary_genre" if acc.primary_genre.is_none() => {
+                            acc.primary_genre = normalize_steam_genre(trimmed);
+                        }
+                        "original_release_date" if acc.original_release_year.is_none() => {
+                            acc.original_release_year = year_from_epoch_or_text(trimmed);
+                        }
+                        "steam_release_date" if acc.steam_release_year.is_none() => {
+                            acc.steam_release_year = year_from_epoch_or_text(trimmed);
+                        }
+                        "release_date" if acc.text_release_year.is_none() => {
+                            acc.text_release_year = year_from_text(trimmed);
+                        }
+                        "oslist" if acc.oslist.is_none() => {
+                            acc.oslist = Some(trimmed.to_ascii_lowercase());
+                        }
+                        "metacritic_score" if acc.metacritic_score.is_none() => {
+                            acc.metacritic_score = trimmed
+                                .parse::<u32>()
+                                .ok()
+                                .filter(|s| (1..=100).contains(s));
+                        }
+                        _ => {}
+                    }
+                }
+                2 => {
+                    let value = read_u32_at(self.data, self.pos)?;
+                    self.pos += 4;
+                    match key.as_str() {
+                        "primary_genre" if acc.primary_genre.is_none() => {
+                            acc.primary_genre = normalize_steam_genre(&value.to_string());
+                        }
+                        "original_release_date" if acc.original_release_year.is_none() => {
+                            acc.original_release_year = year_from_epoch(u64::from(value));
+                        }
+                        "steam_release_date" if acc.steam_release_year.is_none() => {
+                            acc.steam_release_year = year_from_epoch(u64::from(value));
+                        }
+                        "metacritic_score" if acc.metacritic_score.is_none() => {
+                            if (1..=100).contains(&value) {
+                                acc.metacritic_score = Some(value);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                _ => self.skip_simple(tag)?,
+            }
+        }
+    }
+
+    /// Reads `common.associations` (`{ "0": { "type": "developer", "name": "..." } }`).
+    fn collect_associations(&mut self, developer: &mut Option<String>) -> Option<()> {
+        loop {
+            let tag = *self.data.get(self.pos)?;
+            self.pos += 1;
+            if tag == 8 {
+                return Some(());
+            }
+            let _key = self.read_key()?;
+            match tag {
+                0 => {
+                    let mut kind = String::new();
+                    let mut name = String::new();
+                    loop {
+                        let inner_tag = *self.data.get(self.pos)?;
+                        self.pos += 1;
+                        if inner_tag == 8 {
+                            break;
+                        }
+                        let inner_key = self.read_key()?;
+                        match inner_tag {
+                            0 => self.collect_associations(developer)?,
+                            1 => {
+                                let v = self.read_cstring()?;
+                                if inner_key == "type" {
+                                    kind = v;
+                                } else if inner_key == "name" {
+                                    name = v;
+                                }
+                            }
+                            _ => self.skip_simple(inner_tag)?,
+                        }
+                    }
+                    if developer.is_none()
+                        && kind.trim().eq_ignore_ascii_case("developer")
+                        && !name.trim().is_empty()
+                    {
+                        *developer = Some(name.trim().to_string());
+                    }
+                }
+                1 => {
+                    self.read_cstring()?;
+                }
+                _ => self.skip_simple(tag)?,
+            }
+        }
+    }
+}
+
+#[derive(Default)]
+struct RawAppMetadata {
+    developer: Option<String>,
+    assoc_developer: Option<String>,
+    primary_genre: Option<String>,
+    raw_genres: Vec<String>,
+    original_release_year: Option<u32>,
+    steam_release_year: Option<u32>,
+    text_release_year: Option<u32>,
+    oslist: Option<String>,
+    metacritic_score: Option<u32>,
+}
+
+/// Maps Steam PICS numeric genre IDs (`1` → `"Action"`, `28` → `"Simulation"`, …)
+/// while passing descriptive names through and dropping non-genre content IDs.
+fn normalize_steam_genre(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    if trimmed.bytes().all(|b| b.is_ascii_digit()) {
+        let mapped = match trimmed {
+            "1" => "Action",
+            "2" => "Strategy",
+            "3" => "RPG",
+            "4" => "Casual",
+            "9" => "Racing",
+            "18" => "Sports",
+            "23" => "Indie",
+            "25" => "Adventure",
+            "28" => "Simulation",
+            "29" => "Massively Multiplayer",
+            "37" => "Free to Play",
+            "70" => "Early Access",
+            _ => return None,
+        };
+        return Some(mapped.to_string());
+    }
+    Some(trimmed.to_string())
+}
+
+/// Civil release year from a Unix epoch timestamp (`0` / pre-1972 means unset in PICS).
+fn year_from_epoch(secs: u64) -> Option<u32> {
+    if secs < 63_072_000 {
+        return None;
+    }
+    let mut days = secs / 86_400;
+    let mut year = 1970u32;
+    loop {
+        let leap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
+        let len = if leap { 366 } else { 365 };
+        if days < len {
+            break;
+        }
+        days -= len;
+        year += 1;
+        if year > 2100 {
+            return None;
+        }
+    }
+    (1972..=2100).contains(&year).then_some(year)
+}
+
+fn year_from_epoch_or_text(text: &str) -> Option<u32> {
+    let trimmed = text.trim();
+    if trimmed.len() >= 8 && trimmed.bytes().all(|b| b.is_ascii_digit()) {
+        if let Ok(secs) = trimmed.parse::<u64>() {
+            return year_from_epoch(secs);
+        }
+    }
+    year_from_text(trimmed)
 }
 
 /// Walks one appinfo KV blob and returns the first string value stored under
@@ -231,18 +409,42 @@ pub(super) fn appinfo_find_string(
     reader.find(wanted)
 }
 
-/// Every string value stored under `wanted` (a nested table such as `genres`).
-pub(super) fn appinfo_find_string_list(
+pub(super) fn appinfo_extract_metadata(
     data: &[u8],
     table: &Option<Vec<String>>,
-    wanted: &str,
-) -> Vec<String> {
+) -> SteamAppMetadata {
     let mut reader = AppInfoReader {
         data,
         pos: 0,
         table,
     };
-    reader.find_list(wanted).unwrap_or_default()
+    let mut raw = RawAppMetadata::default();
+    let _ = reader.collect_metadata(&mut raw);
+
+    let mut genres = Vec::new();
+    if let Some(primary) = raw.primary_genre {
+        genres.push(primary);
+    }
+    for item in raw.raw_genres {
+        for part in item.split(',') {
+            if let Some(mapped) = normalize_steam_genre(part) {
+                if !genres.iter().any(|g: &String| g.eq_ignore_ascii_case(&mapped)) {
+                    genres.push(mapped);
+                }
+            }
+        }
+    }
+
+    SteamAppMetadata {
+        developer: raw.developer.or(raw.assoc_developer),
+        genres,
+        release_year: raw
+            .original_release_year
+            .or(raw.steam_release_year)
+            .or(raw.text_release_year),
+        oslist: raw.oslist,
+        metacritic_score: raw.metacritic_score,
+    }
 }
 
 /// First four-digit year in a release-date text ("13 Sep, 2020" → 2020).
@@ -379,35 +581,14 @@ pub fn parse_appinfo_metadata(data: &[u8]) -> std::collections::HashMap<String, 
             break;
         }
         let blob = &data[pos + 68..pos + 8 + size];
-        let developer = appinfo_find_string(blob, &table, "developer")
-            .map(|value| value.trim().to_string())
-            .filter(|value| !value.is_empty());
-        let genres = appinfo_find_string_list(blob, &table, "genres")
-            .into_iter()
-            .flat_map(|value| {
-                value
-                    .split(',')
-                    .map(|part| part.trim().to_string())
-                    .collect::<Vec<_>>()
-            })
-            .filter(|value| !value.is_empty())
-            .collect::<Vec<_>>();
-        let release_year = appinfo_find_string(blob, &table, "release_date")
-            .and_then(|text| year_from_text(&text));
-        let oslist = appinfo_find_string(blob, &table, "oslist")
-            .map(|value| value.trim().to_ascii_lowercase())
-            .filter(|value| !value.is_empty());
-        if developer.is_some() || !genres.is_empty() || release_year.is_some() || oslist.is_some() {
-            out.insert(
-                entry_id.to_string(),
-                SteamAppMetadata {
-                    developer,
-                    genres,
-                    release_year,
-                    oslist,
-                    metacritic_score: None,
-                },
-            );
+        let meta = appinfo_extract_metadata(blob, &table);
+        if meta.developer.is_some()
+            || !meta.genres.is_empty()
+            || meta.release_year.is_some()
+            || meta.oslist.is_some()
+            || meta.metacritic_score.is_some()
+        {
+            out.insert(entry_id.to_string(), meta);
         }
         pos += 8 + size;
     }
@@ -497,7 +678,7 @@ pub fn read_client_dlc_ids(steam: &Path, app_id: &str) -> Vec<String> {
 }
 
 /// Bump when `SteamAppMetadata` or the cache shape changes.
-const METADATA_CACHE_SCHEMA: u32 = 1;
+const METADATA_CACHE_SCHEMA: u32 = 2;
 
 #[derive(Serialize, Deserialize)]
 struct MetadataCacheFile {
@@ -1431,6 +1612,75 @@ mod tests {
         assert_eq!(meta.developer.as_deref(), Some("Valve"));
         assert_eq!(meta.genres, vec!["Action", "Adventure"]);
         assert_eq!(meta.release_year, Some(2020));
+    }
+    #[test]
+    fn appinfo_metadata_decodes_binary_pics_genre_ids_epoch_and_metacritic() {
+        let key = |i: u32| i.to_le_bytes();
+        let mut vdf = Vec::new();
+        vdf.push(0);
+        vdf.extend_from_slice(&key(0)); // appinfo
+        vdf.push(0);
+        vdf.extend_from_slice(&key(1)); // common
+        vdf.push(2);
+        vdf.extend_from_slice(&key(2)); // primary_genre = 9 (Racing)
+        vdf.extend_from_slice(&9u32.to_le_bytes());
+        vdf.push(0);
+        vdf.extend_from_slice(&key(3)); // genres
+        vdf.push(2);
+        vdf.extend_from_slice(&key(4)); // "0" = 1 (Action)
+        vdf.extend_from_slice(&1u32.to_le_bytes());
+        vdf.push(2);
+        vdf.extend_from_slice(&key(5)); // "1" = 28 (Simulation)
+        vdf.extend_from_slice(&28u32.to_le_bytes());
+        vdf.push(2);
+        vdf.extend_from_slice(&key(6)); // "2" = 73 (non-genre descriptor)
+        vdf.extend_from_slice(&73u32.to_le_bytes());
+        vdf.push(8); // end genres
+        vdf.push(2);
+        vdf.extend_from_slice(&key(7)); // original_release_date = 0 (unset)
+        vdf.extend_from_slice(&0u32.to_le_bytes());
+        vdf.push(2);
+        vdf.extend_from_slice(&key(8)); // steam_release_date = 1_636_416_000 (2021)
+        vdf.extend_from_slice(&1_636_416_000u32.to_le_bytes());
+        vdf.push(2);
+        vdf.extend_from_slice(&key(9)); // metacritic_score = 92
+        vdf.extend_from_slice(&92u32.to_le_bytes());
+        vdf.push(0);
+        vdf.extend_from_slice(&key(10)); // associations
+        vdf.push(0);
+        vdf.extend_from_slice(&key(4)); // "0"
+        vdf.push(1);
+        vdf.extend_from_slice(&key(11)); // type
+        vdf.extend_from_slice(b"developer\0");
+        vdf.push(1);
+        vdf.extend_from_slice(&key(12)); // name
+        vdf.extend_from_slice(b"Playground Games\0");
+        vdf.push(8); // end "0"
+        vdf.push(8); // end associations
+        vdf.push(8); // end common
+        vdf.push(8); // end appinfo
+
+        let entry_size = 60 + vdf.len();
+        let table_offset = 16 + 8 + entry_size;
+        let mut data = Vec::new();
+        data.extend_from_slice(&APPINFO_MAGIC_V41.to_le_bytes());
+        data.extend_from_slice(&1u32.to_le_bytes());
+        data.extend_from_slice(&(table_offset as u64).to_le_bytes());
+        data.extend_from_slice(&1551360u32.to_le_bytes());
+        data.extend_from_slice(&(entry_size as u32).to_le_bytes());
+        data.extend_from_slice(&[0u8; 60]);
+        data.extend_from_slice(&vdf);
+        data.extend_from_slice(&13u32.to_le_bytes());
+        data.extend_from_slice(
+            b"appinfo\0common\0primary_genre\0genres\00\01\02\0original_release_date\0steam_release_date\0metacritic_score\0associations\0type\0name\0",
+        );
+
+        let map = parse_appinfo_metadata(&data);
+        let meta = map.get("1551360").expect("metadata");
+        assert_eq!(meta.developer.as_deref(), Some("Playground Games"));
+        assert_eq!(meta.genres, vec!["Racing", "Action", "Simulation"]);
+        assert_eq!(meta.release_year, Some(2021));
+        assert_eq!(meta.metacritic_score, Some(92));
     }
     #[test]
     fn label_only_requirement_lines_join_with_their_values() {

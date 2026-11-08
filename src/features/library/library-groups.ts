@@ -8,6 +8,7 @@
 
 import { LIB_COLLAPSED_GROUPS_KEY, LIB_GROUP_BY_KEY, saveStrSet } from "../../core/constants";
 import { gameRatingOf, ratingBucket } from "../../core/game-ratings";
+import { formatGenreLabel } from "../../core/genres";
 import { icon } from "../../core/icons";
 import { libraryPlaytime, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -15,8 +16,8 @@ import type { GameSource, LibGroupBy, LibPlaytimeBucket, LibRatingBucket } from 
 import { esc } from "../../core/utils";
 import type { EpicSummary } from "../../epic";
 import { t } from "../../i18n";
-import { genresOf, playtimeBucket } from "./library-filters";
-import { effectiveReleaseYear } from "./library-sort";
+import { playtimeBucket, primaryGenreOf } from "./library-filters";
+import { effectiveReleaseYear, libraryCollator } from "./library-sort";
 
 export interface LibGroupSection {
   id: string;
@@ -129,9 +130,20 @@ function buildOrderedGroups<K extends string>(
   return out;
 }
 
-/** Partitions `visible` into collapsible sections for the active `S.libGroupBy`. */
+/**
+ * Effective library grouping mode. Picking `Sort by: Genre` while `Group by`
+ * is `none` automatically renders alphabetical Genre shelves so players see
+ * clear section boundaries (`Action`, `Racing`, `Simulation`, `Strategy`, …).
+ */
+export function effectiveLibGroupBy(): LibGroupBy {
+  if (S.libGroupBy !== "none") return S.libGroupBy;
+  if (S.epicSort === "genre") return "genre";
+  return "none";
+}
+
+/** Partitions `visible` into collapsible sections for the active grouping mode. */
 export function buildLibraryGroups(visible: EpicSummary[]): LibGroupSection[] {
-  const mode = S.libGroupBy;
+  const mode = effectiveLibGroupBy();
   if (mode === "none" || visible.length === 0) return [];
 
   if (mode === "status") {
@@ -221,7 +233,7 @@ export function buildLibraryGroups(visible: EpicSummary[]): LibGroupSection[] {
     const buckets = new Map<string, EpicSummary[]>();
     const uncategorized: EpicSummary[] = [];
     for (const s of visible) {
-      const primary = genresOf(s)[0]?.trim();
+      const primary = primaryGenreOf(s);
       if (!primary) {
         uncategorized.push(s);
         continue;
@@ -233,15 +245,21 @@ export function buildLibraryGroups(visible: EpicSummary[]): LibGroupSection[] {
       }
       list.push(s);
     }
-    const sortedGenres = [...buckets.entries()].sort(
-      (a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]),
-    );
+    const collator = libraryCollator();
+    const sortedGenres = [...buckets.entries()].sort((a, b) => {
+      const leftLabel = formatGenreLabel(a[0]);
+      const rightLabel = formatGenreLabel(b[0]);
+      if (S.epicSort === "genre") {
+        return collator.compare(leftLabel, rightLabel);
+      }
+      return b[1].length - a[1].length || collator.compare(leftLabel, rightLabel);
+    });
     const out: LibGroupSection[] = sortedGenres.map(([genre, items]) => {
       const collapseKey = `genre:${genre}`;
       return {
         id: genre,
         collapseKey,
-        label: genre,
+        label: formatGenreLabel(genre),
         items,
         collapsed: S.collapsedLibGroups.has(collapseKey),
       };

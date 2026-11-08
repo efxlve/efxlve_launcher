@@ -22,6 +22,7 @@ export function getSortOptions(): { id: EpicSort; label: string }[] {
   return [
     { id: "alpha", label: t("lib.sortAlpha") },
     { id: "series", label: t("lib.sortSeries") },
+    { id: "genre", label: t("lib.groupGenre") },
     { id: "yearNew", label: t("lib.sortYearNew") },
     { id: "yearOld", label: t("lib.sortYearOld") },
     { id: "rating", label: t("lib.sortRating") },

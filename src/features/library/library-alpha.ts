@@ -12,6 +12,7 @@ import type { EpicSort } from "../../core/types";
 import { esc } from "../../core/utils";
 import type { EpicSummary } from "../../epic";
 import { t } from "../../i18n";
+import { effectiveLibGroupBy } from "./library-groups";
 import { seriesSortKeys, titleSortKey } from "./library-sort";
 import { effectiveSortTitle } from "./sort-name";
 
@@ -143,7 +144,7 @@ export function syncLibraryAlphaRail(visible: EpicSummary[], sort: EpicSort = S.
   const eligible =
     S.view === "library" &&
     !S.currentModalAppName &&
-    S.libGroupBy === "none" &&
+    effectiveLibGroupBy() === "none" &&
     (sort === "alpha" || sort === "alphaDesc" || sort === "series") &&
     visible.length >= 12;
 

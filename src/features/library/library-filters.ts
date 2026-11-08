@@ -1,7 +1,7 @@
 /**
  * Advanced library filters: status, playtime, size, genre, release year,
- * review score and developer facets, rendered as a slide-over panel from the
- * library header.
+ * review score and developer facets, rendered as a slide-over panel below
+ * `#page-header` plus removable active-filter chips above the library grid.
  */
 
 import {
@@ -10,6 +10,12 @@ import {
   gameRatingOf,
   ratingBucket as scoreBucket,
 } from "../../core/game-ratings";
+import {
+  choosePrimaryGenre,
+  formatGenreLabel,
+  genreSearchTokens,
+  normalizeGenreList,
+} from "../../core/genres";
 import { icon } from "../../core/icons";
 import { libraryPlaytime, rawOf, sourceOfKey, storeKeysForTitle } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -27,6 +33,16 @@ import { effectiveReleaseYear } from "./library-sort";
 
 /** Advanced facets (status, playtime, size, genre, year, rating, studio). */
 export const LIB_FILTERS_ENABLED = true;
+
+const FILTER_GROUPS: readonly (keyof LibFilters)[] = [
+  "status",
+  "playtime",
+  "size",
+  "genres",
+  "years",
+  "ratings",
+  "developers",
+];
 
 /** Studio/publisher name for a game (empty when unknown). */
 export function studioOf(s: EpicSummary): string {
@@ -59,26 +75,67 @@ export function studioOf(s: EpicSummary): string {
   return "";
 }
 
-/** Genre labels for one game, across store metadata, IGDB cache and sibling copies. */
+/**
+ * Canonical genre IDs for one game, merging store metadata, IGDB genres +
+ * gameplay themes (`"Action"`, `"Horror"`, `"Survival"`, …) and sibling copies.
+ */
 export function genresOf(s: EpicSummary): string[] {
-  if (s.genres && s.genres.length > 0) return s.genres;
+  const raw: string[] = [];
+  if (s.genres && s.genres.length > 0) {
+    raw.push(...s.genres);
+  }
   if (s.appName.startsWith("steam::")) {
     const steamGenres = S.steamDetails.get(s.appName)?.genres;
-    if (steamGenres && steamGenres.length > 0) return steamGenres;
+    if (steamGenres && steamGenres.length > 0) raw.push(...steamGenres);
   }
   if (sourceOfKey(s.appName) === "epic") {
     const tags = S.loadedRequirements.get(s.appName)?.tags;
-    if (tags && tags.length > 0) return tags;
+    if (tags && tags.length > 0) raw.push(...tags);
   }
   const cached = cachedGenresOf(s.appName, s.title);
-  if (cached.length > 0) return [...cached];
+  if (cached.length > 0) {
+    raw.push(...cached);
+  }
   if (!S.separateCopies) {
     for (const key of storeKeysForTitle(s.title)) {
+      if (key === s.appName) continue;
       const siblingGenres = S.allGamesMap.get(key)?.genres;
-      if (siblingGenres && siblingGenres.length > 0) return siblingGenres;
+      if (siblingGenres && siblingGenres.length > 0) raw.push(...siblingGenres);
     }
   }
-  return [];
+  return normalizeGenreList(raw);
+}
+
+/** Single primary canonical genre for sorting and grouping shelves. */
+export function primaryGenreOf(s: EpicSummary): string {
+  return choosePrimaryGenre(genresOf(s));
+}
+
+/** On-disk byte count of an installed game across measured folders, manifests and merged copies. */
+export function effectiveInstallSize(s: EpicSummary): number {
+  if (!s.installed) return 0;
+  const measured = S.measuredSizes.get(s.appName)?.bytes ?? 0;
+  if (measured > 0) return measured;
+  if (s.installSize > 0) return s.installSize;
+  const backendKey = S.epicBackendLaunch.get(s.appName);
+  if (backendKey) {
+    const backendMeasured = S.measuredSizes.get(backendKey)?.bytes ?? 0;
+    if (backendMeasured > 0) return backendMeasured;
+    const backendSize = S.allGamesMap.get(backendKey)?.installSize ?? 0;
+    if (backendSize > 0) return backendSize;
+  }
+  const unified = S.allGamesMap.get(s.appName)?.installSize ?? 0;
+  if (unified > 0) return unified;
+  if (!S.separateCopies) {
+    for (const key of storeKeysForTitle(s.title)) {
+      if (key === s.appName) continue;
+      const sibMeasured = S.measuredSizes.get(key)?.bytes ?? 0;
+      if (sibMeasured > 0) return sibMeasured;
+      const item = S.allGamesMap.get(key);
+      if (item?.installed && item.installSize > 0) return item.installSize;
+    }
+  }
+  return 0;
 }
 
 export function playtimeBucket(seconds: number): LibPlaytimeBucket {
@@ -89,7 +146,7 @@ export function playtimeBucket(seconds: number): LibPlaytimeBucket {
   return "over50";
 }
 
-/** Size bucket of an installed game; null when nothing is installed. */
+/** Size bucket of an installed game; null when nothing is installed or size is unknown. */
 export function sizeBucket(bytes: number): LibSizeBucket | null {
   if (bytes <= 0) return null;
   const gb = bytes / 1024 ** 3;
@@ -152,45 +209,66 @@ export function toggleLibFilter(group: keyof LibFilters, value: string): boolean
   return true;
 }
 
+function matchesSingleGroup(s: EpicSummary, group: keyof LibFilters): boolean {
+  const f = S.libFilters;
+  switch (group) {
+    case "status":
+      if (f.status.size === 0) return true;
+      return (
+        (f.status.has("installed") && s.installed) ||
+        (f.status.has("notInstalled") && !s.installed) ||
+        (f.status.has("update") && (s.updateAvailable || S.availableUpdates.has(s.appName)))
+      );
+    case "playtime":
+      if (f.playtime.size === 0) return true;
+      return f.playtime.has(playtimeBucket(libraryPlaytime(s).seconds));
+    case "size": {
+      if (f.size.size === 0) return true;
+      const bucket = sizeBucket(effectiveInstallSize(s));
+      return Boolean(bucket && f.size.has(bucket));
+    }
+    case "years": {
+      if (f.years.size === 0) return true;
+      const year = effectiveReleaseYear(s);
+      return Boolean(year && f.years.has(yearBucket(year)));
+    }
+    case "ratings":
+      if (f.ratings.size === 0) return true;
+      return f.ratings.has(scoreBucket(gameRatingOf(s.appName, s.title)));
+    case "genres": {
+      if (f.genres.size === 0) return true;
+      const genres = genresOf(s);
+      return genres.some((g) => f.genres.has(g));
+    }
+    case "developers": {
+      if (f.developers.size === 0) return true;
+      const dev = studioOf(s);
+      return Boolean(dev && f.developers.has(dev));
+    }
+  }
+}
+
+function passesOtherGroups(s: EpicSummary, excluded: keyof LibFilters): boolean {
+  for (const g of FILTER_GROUPS) {
+    if (g === excluded) continue;
+    if (!matchesSingleGroup(s, g)) return false;
+  }
+  return true;
+}
+
 /** Whether one game passes every active facet (groups AND-ed, values OR-ed). */
 export function matchesLibFilters(s: EpicSummary): boolean {
   if (!LIB_FILTERS_ENABLED) return true;
-  const f = S.libFilters;
-  if (f.status.size > 0) {
-    const ok =
-      (f.status.has("installed") && s.installed) ||
-      (f.status.has("notInstalled") && !s.installed) ||
-      (f.status.has("update") && (s.updateAvailable || S.availableUpdates.has(s.appName)));
-    if (!ok) return false;
-  }
-  if (f.playtime.size > 0) {
-    const seconds = libraryPlaytime(s).seconds;
-    if (!f.playtime.has(playtimeBucket(seconds))) return false;
-  }
-  if (f.size.size > 0) {
-    const bucket = sizeBucket(s.installSize);
-    if (!bucket || !f.size.has(bucket)) return false;
-  }
-  if (f.years.size > 0) {
-    const year = effectiveReleaseYear(s);
-    if (!year || !f.years.has(yearBucket(year))) return false;
-  }
-  if (f.ratings.size > 0) {
-    if (!f.ratings.has(scoreBucket(gameRatingOf(s.appName, s.title)))) return false;
-  }
-  if (f.genres.size > 0) {
-    const genres = genresOf(s);
-    if (!genres.some((g) => f.genres.has(g))) return false;
-  }
-  if (f.developers.size > 0) {
-    const dev = studioOf(s);
-    if (!dev || !f.developers.has(dev)) return false;
+  for (const g of FILTER_GROUPS) {
+    if (!matchesSingleGroup(s, g)) return false;
   }
   return true;
 }
 
 export interface FacetEntry {
   value: string;
+  label: string;
+  searchTokens: string;
   count: number;
 }
 
@@ -204,13 +282,49 @@ export interface LibFacets {
   developers: FacetEntry[];
 }
 
-function facetEntries(map: Map<string, number>): FacetEntry[] {
+function buildGenreFacetEntries(map: Map<string, number>, selected: Set<string>): FacetEntry[] {
+  for (const sel of selected) {
+    if (!map.has(sel)) map.set(sel, 0);
+  }
   return [...map.entries()]
-    .map(([value, count]) => ({ value, count }))
-    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
+    .map(([value, count]) => ({
+      value,
+      label: formatGenreLabel(value),
+      searchTokens: genreSearchTokens(value),
+      count,
+    }))
+    .sort(
+      (a, b) =>
+        Number(selected.has(b.value)) - Number(selected.has(a.value)) ||
+        b.count - a.count ||
+        a.label.localeCompare(b.label),
+    );
 }
 
-/** Counts for every facet, computed from the list before facet filtering. */
+function buildDevFacetEntries(map: Map<string, number>, selected: Set<string>): FacetEntry[] {
+  for (const sel of selected) {
+    if (!map.has(sel)) map.set(sel, 0);
+  }
+  return [...map.entries()]
+    .map(([value, count]) => ({
+      value,
+      label: value,
+      searchTokens: value.toLowerCase(),
+      count,
+    }))
+    .sort(
+      (a, b) =>
+        Number(selected.has(b.value)) - Number(selected.has(a.value)) ||
+        b.count - a.count ||
+        a.label.localeCompare(b.label),
+    );
+}
+
+/**
+ * Cross-group disjunctive facet counts: each group reflects games in `base`
+ * passing all *other* active filter groups, while keeping options inside the
+ * same group OR-selectable.
+ */
 export function libFacets(base: EpicSummary[]): LibFacets {
   const status = { installed: 0, notInstalled: 0, update: 0 };
   const playtime: Record<LibPlaytimeBucket, number> = {
@@ -245,30 +359,47 @@ export function libFacets(base: EpicSummary[]): LibFacets {
   };
   const genreMap = new Map<string, number>();
   const devMap = new Map<string, number>();
+  const anyActive = libFiltersActiveCount() > 0;
+
   for (const s of base) {
-    if (s.installed) status.installed++;
-    else status.notInstalled++;
-    if (s.updateAvailable || S.availableUpdates.has(s.appName)) status.update++;
-    playtime[playtimeBucket(libraryPlaytime(s).seconds)]++;
-    const sb = sizeBucket(s.installSize);
-    if (sb) size[sb]++;
-    const year = effectiveReleaseYear(s);
-    if (year) years[yearBucket(year)]++;
-    ratings[scoreBucket(gameRatingOf(s.appName, s.title))]++;
-    for (const genre of new Set(genresOf(s))) {
-      genreMap.set(genre, (genreMap.get(genre) ?? 0) + 1);
+    if (!anyActive || passesOtherGroups(s, "status")) {
+      if (s.installed) status.installed++;
+      else status.notInstalled++;
+      if (s.updateAvailable || S.availableUpdates.has(s.appName)) status.update++;
     }
-    const dev = studioOf(s);
-    if (dev) devMap.set(dev, (devMap.get(dev) ?? 0) + 1);
+    if (!anyActive || passesOtherGroups(s, "playtime")) {
+      playtime[playtimeBucket(libraryPlaytime(s).seconds)]++;
+    }
+    if (!anyActive || passesOtherGroups(s, "size")) {
+      const sb = sizeBucket(effectiveInstallSize(s));
+      if (sb) size[sb]++;
+    }
+    if (!anyActive || passesOtherGroups(s, "years")) {
+      const year = effectiveReleaseYear(s);
+      if (year) years[yearBucket(year)]++;
+    }
+    if (!anyActive || passesOtherGroups(s, "ratings")) {
+      ratings[scoreBucket(gameRatingOf(s.appName, s.title))]++;
+    }
+    if (!anyActive || passesOtherGroups(s, "genres")) {
+      for (const genre of genresOf(s)) {
+        genreMap.set(genre, (genreMap.get(genre) ?? 0) + 1);
+      }
+    }
+    if (!anyActive || passesOtherGroups(s, "developers")) {
+      const dev = studioOf(s);
+      if (dev) devMap.set(dev, (devMap.get(dev) ?? 0) + 1);
+    }
   }
+
   return {
     status,
     playtime,
     size,
     years,
     ratings,
-    genres: facetEntries(genreMap),
-    developers: facetEntries(devMap),
+    genres: buildGenreFacetEntries(genreMap, S.libFilters.genres),
+    developers: buildDevFacetEntries(devMap, S.libFilters.developers),
   };
 }
 
@@ -278,18 +409,27 @@ function facetButton(
   label: string,
   count: number,
   on: boolean,
+  searchTokens = label.toLowerCase(),
 ): string {
-  return `<button type="button" class="lib-facet-row${on ? " is-on" : ""}" data-act="lib-filter-toggle" data-group="${group}" data-value="${esc(value)}" data-facet-name="${esc(label.toLowerCase())}" role="menuitemcheckbox" aria-checked="${on}">
-    <span class="lib-facet-mark">${on ? icon("check", 13) : ""}</span>
+  const zeroCls = count === 0 && !on ? " is-zero" : "";
+  return `<button type="button" class="lib-facet-row${on ? " is-on" : ""}${zeroCls}" data-act="lib-filter-toggle" data-group="${group}" data-value="${esc(value)}" data-facet-name="${esc(searchTokens)}" role="menuitemcheckbox" aria-checked="${on}">
+    <span class="lib-facet-mark" aria-hidden="true">${on ? icon("check", 11) : ""}</span>
     <span class="lib-facet-label">${esc(label)}</span>
     <span class="lib-facet-count tabular-nums">${count}</span>
   </button>`;
 }
 
-function facetSection(title: string, body: string, hint = ""): string {
+function facetSection(title: string, body: string, activeInSection = 0, hint = ""): string {
+  const badge =
+    activeInSection > 0
+      ? `<span class="lib-filter-sec-count tabular-nums">${activeInSection}</span>`
+      : "";
   return `
     <section class="lib-filter-section">
-      <h4 class="lib-filter-title">${esc(title)}</h4>
+      <div class="lib-filter-title-row">
+        <h4 class="lib-filter-title">${esc(title)}</h4>
+        ${badge}
+      </div>
       ${hint ? `<p class="lib-filter-hint">${esc(hint)}</p>` : ""}
       ${body}
     </section>`;
@@ -299,11 +439,23 @@ function facetSearch(placeholder: string, group: keyof LibFilters): string {
   return `<input type="search" class="input lib-facet-search" data-facet-search="${group}" placeholder="${esc(placeholder)}" spellcheck="false" autocomplete="off" />`;
 }
 
-function facetList(entries: FacetEntry[], group: keyof LibFilters, on: (value: string) => boolean): string {
+function facetList(
+  entries: FacetEntry[],
+  group: keyof LibFilters,
+  on: (value: string) => boolean,
+): string {
   if (entries.length === 0) return "";
   const search = entries.length >= 8 ? facetSearch(t("lib.filterSearch"), group) : "";
-  const rows = entries.map((entry) => facetButton(group, entry.value, entry.value, entry.count, on(entry.value))).join("");
-  return `${search}${rows}`;
+  const rows = entries
+    .map((entry) =>
+      facetButton(group, entry.value, entry.label, entry.count, on(entry.value), entry.searchTokens),
+    )
+    .join("");
+  const wrapped =
+    entries.length >= 8
+      ? `<div class="lib-facet-scroll" data-facet-scroll="${group}">${rows}</div>`
+      : rows;
+  return `${search}${wrapped}`;
 }
 
 const YEAR_FACET_ORDER: { id: LibYearBucket; label: () => string }[] = [
@@ -320,9 +472,70 @@ const YEAR_FACET_ORDER: { id: LibYearBucket; label: () => string }[] = [
   { id: "pre1990", label: () => t("lib.yrPre1990") },
 ];
 
+function chipLabelFor(group: keyof LibFilters, value: string): string {
+  switch (group) {
+    case "status":
+      if (value === "installed") return t("library.installed");
+      if (value === "notInstalled") return t("lib.filterNotInstalled");
+      if (value === "update") return t("drawer.updateAvailable");
+      return value;
+    case "playtime":
+      if (value === "never") return t("lib.ptNever");
+      if (value === "under1") return t("lib.ptUnder1");
+      if (value === "1to10") return t("lib.pt1to10");
+      if (value === "10to50") return t("lib.pt10to50");
+      if (value === "over50") return t("lib.ptOver50");
+      return value;
+    case "size":
+      if (value === "under1") return t("lib.sizeUnder1");
+      if (value === "1to10") return t("lib.size1to10");
+      if (value === "10to50") return t("lib.size10to50");
+      if (value === "over50") return t("lib.sizeOver50");
+      return value;
+    case "genres":
+      return formatGenreLabel(value);
+    case "years": {
+      const yr = YEAR_FACET_ORDER.find((entry) => entry.id === value);
+      return yr ? yr.label() : value;
+    }
+    case "ratings":
+      if (value === "90") return `${t("lib.filterRating")}: 90+`;
+      if (value === "80") return `${t("lib.filterRating")}: 80–89`;
+      if (value === "70") return `${t("lib.filterRating")}: 70–79`;
+      if (value === "60") return `${t("lib.filterRating")}: 60–69`;
+      if (value === "50") return `${t("lib.filterRating")}: 50–59`;
+      if (value === "under50") return `${t("lib.filterRating")}: < 50`;
+      if (value === "unrated") return t("lib.ratingUnrated");
+      return value;
+    case "developers":
+      return value;
+  }
+}
+
+/** Removable active-filter pill strip shown above library results when filters are active. */
+export function renderActiveFilterChips(): string {
+  if (!LIB_FILTERS_ENABLED || libFiltersActiveCount() === 0) return "";
+  const chips: string[] = [];
+  for (const group of FILTER_GROUPS) {
+    const set = S.libFilters[group] as Set<string>;
+    for (const value of set) {
+      const label = chipLabelFor(group, value);
+      chips.push(
+        `<button type="button" class="lib-active-chip" data-act="lib-filter-toggle" data-group="${group}" data-value="${esc(value)}" title="${esc(label)}">
+          <span>${esc(label)}</span>
+          ${icon("x", 12)}
+        </button>`,
+      );
+    }
+  }
+  return `<div class="lib-active-filters">
+    <div class="lib-active-chips">${chips.join("")}</div>
+    <button type="button" class="btn ghost small lib-active-clear" data-act="lib-filter-clear">${icon("refresh", 12)} <span>${esc(t("lib.filterClear"))}</span></button>
+  </div>`;
+}
+
 /**
- * Inner facet sections markup. `base` is the library list before facet
- * filtering, so counts stay stable while facets are toggled.
+ * Inner facet sections markup.
  */
 export function renderLibFilterBody(base: EpicSummary[]): string {
   const facets = libFacets(base);
@@ -333,6 +546,7 @@ export function renderLibFilterBody(base: EpicSummary[]): string {
     facetButton("status", "installed", t("library.installed"), facets.status.installed, f.status.has("installed")) +
       facetButton("status", "notInstalled", t("lib.filterNotInstalled"), facets.status.notInstalled, f.status.has("notInstalled")) +
       facetButton("status", "update", t("drawer.updateAvailable"), facets.status.update, f.status.has("update")),
+    f.status.size,
   );
 
   const playtime = facetSection(
@@ -342,6 +556,7 @@ export function renderLibFilterBody(base: EpicSummary[]): string {
       facetButton("playtime", "1to10", t("lib.pt1to10"), facets.playtime["1to10"], f.playtime.has("1to10")) +
       facetButton("playtime", "10to50", t("lib.pt10to50"), facets.playtime["10to50"], f.playtime.has("10to50")) +
       facetButton("playtime", "over50", t("lib.ptOver50"), facets.playtime.over50, f.playtime.has("over50")),
+    f.playtime.size,
   );
 
   const size = facetSection(
@@ -350,16 +565,21 @@ export function renderLibFilterBody(base: EpicSummary[]): string {
       facetButton("size", "1to10", t("lib.size1to10"), facets.size["1to10"], f.size.has("1to10")) +
       facetButton("size", "10to50", t("lib.size10to50"), facets.size["10to50"], f.size.has("10to50")) +
       facetButton("size", "over50", t("lib.sizeOver50"), facets.size.over50, f.size.has("over50")),
+    f.size.size,
   );
 
   const genreBody = facetList(facets.genres, "genres", (value) => f.genres.has(value));
-  const genre = genreBody ? facetSection(t("lib.filterGenre"), genreBody, t("lib.filterMetaHint")) : "";
+  const genre = genreBody
+    ? facetSection(t("lib.filterGenre"), genreBody, f.genres.size, t("lib.filterMetaHint"))
+    : "";
 
   const yearRows = YEAR_FACET_ORDER
     .filter((entry) => facets.years[entry.id] > 0 || f.years.has(entry.id))
     .map((entry) => facetButton("years", entry.id, entry.label(), facets.years[entry.id], f.years.has(entry.id)))
     .join("");
-  const year = yearRows ? facetSection(t("lib.filterYear"), yearRows, t("lib.filterMetaHint")) : "";
+  const year = yearRows
+    ? facetSection(t("lib.filterYear"), yearRows, f.years.size, t("lib.filterMetaHint"))
+    : "";
 
   const rating = facetSection(
     t("lib.filterRating"),
@@ -370,17 +590,19 @@ export function renderLibFilterBody(base: EpicSummary[]): string {
       facetButton("ratings", "50", "50–59", facets.ratings["50"], f.ratings.has("50")) +
       facetButton("ratings", "under50", "< 50", facets.ratings.under50, f.ratings.has("under50")) +
       facetButton("ratings", "unrated", t("lib.ratingUnrated"), facets.ratings.unrated, f.ratings.has("unrated")),
+    f.ratings.size,
   );
 
   const devBody = facetList(facets.developers, "developers", (value) => f.developers.has(value));
-  const developer = devBody ? facetSection(t("lib.filterDeveloper"), devBody) : "";
+  const developer = devBody
+    ? facetSection(t("lib.filterDeveloper"), devBody, f.developers.size)
+    : "";
 
   return `${status}${playtime}${size}${genre}${year}${rating}${developer}`;
 }
 
 /**
- * Slide-over panel markup. `base` is the library list before facet filtering,
- * so the counts never collapse while a filter is selected.
+ * Slide-over panel markup.
  */
 export function renderLibFilterPanel(base: EpicSummary[], resultCount: number): string {
   if (!LIB_FILTERS_ENABLED || !S.isFilterPanelOpen) return "";
@@ -452,6 +674,12 @@ export function mountLibFilterPanel(base: EpicSummary[], resultCount: number): v
   const existingBody = root.querySelector<HTMLElement>(".lib-filter-panel .lib-filter-body");
   if (existingBody) {
     const scrollTop = existingBody.scrollTop;
+    const innerScrolls = new Map<string, number>();
+    existingBody.querySelectorAll<HTMLElement>("[data-facet-scroll]").forEach((el) => {
+      if (el.dataset.facetScroll && el.scrollTop > 0) {
+        innerScrolls.set(el.dataset.facetScroll, el.scrollTop);
+      }
+    });
     const queries = new Map<string, string>();
     existingBody.querySelectorAll<HTMLInputElement>("input[data-facet-search]").forEach((inp) => {
       if (inp.dataset.facetSearch && inp.value) {
@@ -465,6 +693,11 @@ export function mountLibFilterPanel(base: EpicSummary[], resultCount: number): v
 
     existingBody.innerHTML = renderLibFilterBody(base);
     existingBody.scrollTop = scrollTop;
+
+    for (const [group, top] of innerScrolls) {
+      const scroller = existingBody.querySelector<HTMLElement>(`[data-facet-scroll="${group}"]`);
+      if (scroller) scroller.scrollTop = top;
+    }
 
     for (const [group, val] of queries) {
       const inp = existingBody.querySelector<HTMLInputElement>(`input[data-facet-search="${group}"]`);
