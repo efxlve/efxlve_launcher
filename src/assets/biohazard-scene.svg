@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <!-- Biohazard: Subterranean Quarantine Laboratory Backdrop
+       Inspired by classic survival horror: sterile containment concrete,
+       emergency warning sirens, ECG vital signs pulse, and tactical hazard markings.
+       Built with pure SVG gradients and vectors for crisp, GPU-efficient rendering. -->
+  <defs>
+    <!-- Deep bunker slate gradient -->
+    <linearGradient id="bioBase" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#05070a"/>
+      <stop offset="45%" stop-color="#090d13"/>
+      <stop offset="100%" stop-color="#040608"/>
+    </linearGradient>
+
+    <!-- Top-left emergency beacon crimson aura -->
+    <radialGradient id="bioRedGlow" cx="240" cy="120" r="850" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#dc2626" stop-opacity="0.16"/>
+      <stop offset="35%" stop-color="#b91c1c" stop-opacity="0.06"/>
+      <stop offset="70%" stop-color="#7f1d1d" stop-opacity="0.015"/>
+      <stop offset="100%" stop-color="#05070a" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Bottom-right sterile green herb / vital monitor glow -->
+    <radialGradient id="bioGreenGlow" cx="1680" cy="940" r="750" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.08"/>
+      <stop offset="40%" stop-color="#059669" stop-opacity="0.025"/>
+      <stop offset="80%" stop-color="#047857" stop-opacity="0.005"/>
+      <stop offset="100%" stop-color="#05070a" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Central sterile cold cyan wash -->
+    <radialGradient id="bioCyanGlow" cx="960" cy="540" r="700" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.025"/>
+      <stop offset="60%" stop-color="#0891b2" stop-opacity="0.005"/>
+      <stop offset="100%" stop-color="#05070a" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Medical Oscilloscope ECG Micro-Grid -->
+    <pattern id="bioEcgGrid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#10b981" stroke-width="0.5" stroke-opacity="0.035"/>
+      <circle cx="15" cy="15" r="0.8" fill="#dc2626" fill-opacity="0.04"/>
+    </pattern>
+
+    <!-- Biohazard Caution Hazard Stripe Pattern -->
+    <pattern id="bioHazardStripe" width="24" height="24" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <rect width="12" height="24" fill="#dc2626" fill-opacity="0.2"/>
+      <rect x="12" width="12" height="24" fill="#05070a" fill-opacity="0.75"/>
+    </pattern>
+
+    <!-- Tactical corner reticle marker -->
+    <g id="bioCornerReticle">
+      <circle cx="0" cy="0" r="14" fill="none" stroke="#dc2626" stroke-width="1" opacity="0.4"/>
+      <circle cx="0" cy="0" r="3" fill="#dc2626" opacity="0.6"/>
+      <line x1="-20" y1="0" x2="-8" y2="0" stroke="#dc2626" stroke-width="1" opacity="0.5"/>
+      <line x1="8" y1="0" x2="20" y2="0" stroke="#dc2626" stroke-width="1" opacity="0.5"/>
+      <line x1="0" y1="-20" x2="0" y2="-8" stroke="#dc2626" stroke-width="1" opacity="0.5"/>
+      <line x1="0" y1="8" x2="0" y2="20" stroke="#dc2626" stroke-width="1" opacity="0.5"/>
+    </g>
+  </defs>
+
+  <!-- Base Bunker Slate & Ambient Lighting -->
+  <rect width="1920" height="1080" fill="url(#bioBase)"/>
+  <rect width="1920" height="1080" fill="url(#bioEcgGrid)"/>
+  <rect width="1920" height="1080" fill="url(#bioRedGlow)"/>
+  <rect width="1920" height="1080" fill="url(#bioGreenGlow)"/>
+  <rect width="1920" height="1080" fill="url(#bioCyanGlow)"/>
+
+  <!-- ==================== UNDERGROUND AIRLOCK / CONTAINMENT WATERMARK ==================== -->
+  <!-- Stylized octagonal isolation seal chamber silhouette in the center -->
+  <g transform="translate(960, 540)" opacity="0.04" stroke="#dc2626" stroke-width="3" fill="none">
+    <!-- Octagon 1 -->
+    <polygon points="160,-380 380,-160 380,160 160,380 -160,380 -380,160 -380,-160 -160,-380"/>
+    <!-- Octagon 2 (Inner) -->
+    <polygon points="120,-290 290,-120 290,120 120,290 -120,290 -290,120 -290,-120 -120,-290"/>
+    <!-- Center radiation / biohazard ring -->
+    <circle cx="0" cy="0" r="160" stroke-width="2"/>
+    <circle cx="0" cy="0" r="80" stroke-width="4"/>
+    <!-- Radial spokes -->
+    <line x1="-380" y1="0" x2="380" y2="0" stroke-width="1.5"/>
+    <line x1="0" y1="-380" x2="0" y2="380" stroke-width="1.5"/>
+  </g>
+
+  <!-- ==================== HORIZONTAL FACILITY GUIDES ==================== -->
+  <g opacity="0.18">
+    <line x1="60" y1="46" x2="1860" y2="46" stroke="#dc2626" stroke-width="1" stroke-dasharray="10 5 2 5"/>
+    <line x1="60" y1="1034" x2="1860" y2="1034" stroke="#dc2626" stroke-width="1" stroke-dasharray="6 6"/>
+  </g>
+
+  <!-- ==================== TOP-LEFT QUARANTINE TELEMETRY ==================== -->
+  <g transform="translate(60, 50)">
+    <!-- Corner Bracket -->
+    <path d="M 0 50 L 0 0 L 50 0" fill="none" stroke="#dc2626" stroke-width="2" opacity="0.55"/>
+    <rect x="5" y="5" width="4" height="4" fill="#dc2626" opacity="0.75"/>
+    <text x="60" y="16" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="11" font-weight="700" letter-spacing="1.8" fill="#dc2626" opacity="0.6">BIO-HAZARD LEVEL 4 // CONTAINMENT ZONE</text>
+    <text x="60" y="30" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="9" letter-spacing="1.2" fill="#94a3b8" opacity="0.4">DECONTAMINATION: COMPLETED // AIRLOCK LOCKED</text>
+    <!-- Status Dot -->
+    <circle cx="48" cy="12" r="3" fill="#dc2626" opacity="0.75"/>
+  </g>
+
+  <!-- ==================== TOP-RIGHT HAZARD STRIPES & WARNING ==================== -->
+  <g transform="translate(1860, 50)">
+    <!-- Corner Bracket -->
+    <path d="M 0 50 L 0 0 L -50 0" fill="none" stroke="#dc2626" stroke-width="2" opacity="0.55"/>
+    <rect x="-9" y="5" width="4" height="4" fill="#dc2626" opacity="0.75"/>
+    <rect x="-240" y="-14" width="180" height="7" fill="url(#bioHazardStripe)" rx="1"/>
+    <text x="-60" y="16" text-anchor="end" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="11" font-weight="700" letter-spacing="1.8" fill="#dc2626" opacity="0.65">VIRAL OUTBREAK PROTOCOL: ACTIVE</text>
+    <text x="-60" y="30" text-anchor="end" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="9" letter-spacing="1.2" fill="#10b981" opacity="0.55">AIR PURITY: 99.2% // FACILITY SECURE</text>
+  </g>
+
+  <!-- ==================== VITAL SIGNS ECG MONITOR (SURVIVAL HORROR HEALTH METER) ==================== -->
+  <!-- The legendary heart rate monitor wave spanning along the lower-third -->
+  <g transform="translate(0, 920)" opacity="0.32">
+    <!-- Heart rate line -->
+    <path d="M 0 0 
+             L 240 0 
+             L 260 -10 L 270 12 L 285 -60 L 305 45 L 320 -15 L 330 0
+             L 580 0
+             L 600 -12 L 610 14 L 625 -70 L 645 50 L 660 -18 L 670 0
+             L 940 0
+             L 960 -10 L 970 12 L 985 -60 L 1005 45 L 1020 -15 L 1030 0
+             L 1300 0
+             L 1320 -12 L 1330 14 L 1345 -70 L 1365 50 L 1380 -18 L 1390 0
+             L 1660 0
+             L 1680 -10 L 1690 12 L 1705 -60 L 1725 45 L 1740 -15 L 1750 0
+             L 1920 0" 
+          fill="none" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Secondary faint red pulse shadow -->
+    <path d="M 0 0 
+             L 240 0 
+             L 260 -10 L 270 12 L 285 -60 L 305 45 L 320 -15 L 330 0
+             L 580 0
+             L 600 -12 L 610 14 L 625 -70 L 645 50 L 660 -18 L 670 0
+             L 940 0
+             L 960 -10 L 970 12 L 985 -60 L 1005 45 L 1020 -15 L 1030 0
+             L 1300 0
+             L 1320 -12 L 1330 14 L 1345 -70 L 1365 50 L 1380 -18 L 1390 0
+             L 1660 0
+             L 1680 -10 L 1690 12 L 1705 -60 L 1725 45 L 1740 -15 L 1750 0
+             L 1920 0" 
+          fill="none" stroke="#dc2626" stroke-width="0.8" opacity="0.4" stroke-dasharray="4 6"/>
+  </g>
+
+  <!-- ECG Telemetry Text Status Stamp -->
+  <g transform="translate(1420, 890)" opacity="0.4">
+    <text x="0" y="0" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="10" font-weight="700" letter-spacing="1.5" fill="#10b981">VITALS: FINE // ECG: 72 BPM</text>
+    <rect x="-14" y="-9" width="7" height="7" fill="#10b981"/>
+  </g>
+
+  <!-- ==================== BOTTOM-LEFT & BOTTOM-RIGHT TACTICAL RETICLES ==================== -->
+  <g transform="translate(80, 1010)">
+    <use href="#bioCornerReticle"/>
+    <text x="32" y="4" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="9" letter-spacing="1" fill="#dc2626" opacity="0.4">RACCOON SECTOR-07</text>
+  </g>
+
+  <g transform="translate(1840, 1010)">
+    <use href="#bioCornerReticle"/>
+    <text x="-32" y="4" text-anchor="end" font-family="'Consolas', 'JetBrains Mono', monospace" font-size="9" letter-spacing="1" fill="#dc2626" opacity="0.4">ISOLATION-ID // 498-02</text>
+  </g>
+</svg>
