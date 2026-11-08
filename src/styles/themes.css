@@ -572,9 +572,9 @@
   --surface-3: rgba(255, 255, 255, 0.44);
   --line: rgba(16, 78, 130, 0.14);
   --line-strong: rgba(16, 78, 130, 0.26);
-  --text: #0d2f4f;
-  --text-2: #31536f;
-  --text-3: #4f718d;
+  --text: #07223b;
+  --text-2: #164267;
+  --text-3: #326084;
   --accent: #0a78c8;
   --accent-hover: #0866ab;
   --accent-tint: rgba(10, 120, 200, 0.12);
@@ -589,7 +589,7 @@
   --r-sm: 7px;
   --r-md: 12px;
   --shadow-pop: 0 18px 44px rgba(8, 60, 110, 0.28);
-  --aero-heading: #0c4a8c;
+  --aero-heading: #062a50;
   --aero-glass-edge: 0 0 0 1px rgba(16, 78, 130, 0.14);
   --aero-gloss-blue: linear-gradient(180deg, #a8e2ff 0%, #5cbdf3 48%, #1d91e0 50%, #1479c9 100%);
   --aero-gloss-blue-hover: linear-gradient(180deg, #c4ecff 0%, #74caf7 48%, #2ba0ec 50%, #1a88d8 100%);
@@ -686,16 +686,46 @@
 }
 /* The badge sits on the theme's blue accent; black text disappeared into it. */
 :root[data-surface="gloss"] #page-header {
-  background: var(--bg);
-  border-bottom: 1px solid var(--line-strong);
-  box-shadow: 0 1px 0 rgba(16, 78, 130, 0.1);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(228, 245, 255, 0.8) 100%);
+  border-bottom: 1px solid rgba(16, 78, 130, 0.22);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 6px rgba(8, 62, 110, 0.08);
 }
-/* Windows 7 page titles: light weight, deep blue. */
+/* Windows 7 page titles: crisp semi-bold, deep Aero blue with glass glow. */
 :root[data-surface="gloss"] .page-header-title {
   color: var(--aero-heading);
   font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
   font-size: 21px;
-  font-weight: 400;
+  font-weight: 600;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.95), 0 0 12px rgba(255, 255, 255, 0.6);
+}
+
+/* Settings masthead: frosted glass banner to ensure crystal-clear title contrast */
+:root[data-surface="gloss"] .settings-panel-head {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 249, 255, 0.82) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid rgba(16, 78, 130, 0.2);
+  box-shadow: var(--aero-glass-edge), 0 4px 16px rgba(8, 62, 110, 0.08), inset 0 1px 0 #ffffff;
+  border-radius: var(--r-md);
+  padding: 14px 18px;
+  margin-bottom: 22px;
+}
+:root[data-surface="gloss"] .settings-panel-crumb {
+  color: #0b457a;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+:root[data-surface="gloss"] .settings-panel-title {
+  color: var(--aero-heading);
+  font-weight: 700;
+  font-size: 20px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+:root[data-surface="gloss"] .settings-panel-icon {
+  background: linear-gradient(180deg, #ffffff 0%, #e2f2fd 100%);
+  border: 1px solid rgba(16, 78, 130, 0.22);
+  box-shadow: inset 0 1px 0 #ffffff, 0 1px 3px rgba(8, 62, 110, 0.12);
+  color: #0a70bb;
 }
 
 /* Panels: frosted white with a bright top edge and a thin blue outer rim. */
@@ -732,9 +762,22 @@
   .notif-title, .lib-filter-title-main, .storage-overview-title,
   .modal-box h2, .col-modal-title h2, .playtime-header h2,
   .selective-header h2, .cover-dialog-header h2, .changelog-head-text h2,
-  .custom-game-title
+  .custom-game-title, .theme-section-titles .section-title,
+  .settings-section-head .section-title, .settings-search-head
 ) {
   color: var(--aero-heading);
+  font-weight: 600;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+:root[data-surface="gloss"] :is(.theme-section-titles .page-sub, .page-sub, .settings-row-desc) {
+  color: #143d63;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+:root[data-surface="gloss"] .theme-active-indicator {
+  color: #0e375e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 /* Gloss: Customize Images Dialog */
@@ -2561,4 +2604,26 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
 }
 :root[data-surface="hazard"] :is(.btn.primary, .btn.play):hover {
   box-shadow: 0 0 20px rgba(251, 146, 60, 0.65);
+}
+
+/* ---------- Valley Harvest (Stardew Valley Inspired) ---------- */
+:root[data-surface="harvest"] .overlay::-webkit-scrollbar-track {
+  background: rgba(12, 20, 13, 0.7);
+  border-left: 1px solid rgba(234, 179, 8, 0.18);
+}
+:root[data-surface="harvest"] .overlay::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  box-shadow: 0 0 6px rgba(234, 179, 8, 0.25);
+}
+:root[data-surface="harvest"] .overlay::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 14px rgba(250, 204, 21, 0.7);
+}
+:root[data-surface="harvest"] :is(.btn.primary, .btn.play) {
+  box-shadow: 0 0 14px rgba(234, 179, 8, 0.35);
+}
+:root[data-surface="harvest"] :is(.btn.primary, .btn.play):hover {
+  box-shadow: 0 0 20px rgba(250, 204, 21, 0.65);
 }

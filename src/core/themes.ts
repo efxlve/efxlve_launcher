@@ -279,6 +279,7 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
   { id: "redemption", name: "Outlaw Frontier", bg: "#0f0c0a", surface: "#241b16", accent: "#d93829", light: false },
   { id: "tarnished", name: "Tarnished Grace", bg: "#0b0a08", surface: "#1f1c17", accent: "#e5a93c", light: false },
   { id: "hazard", name: "Hazard Team", bg: "#0b0c0e", surface: "#1a1f26", accent: "#f97316", light: false },
+  { id: "harvest", name: "Valley Harvest", bg: "#0c140d", surface: "#18261b", accent: "#eab308", light: false },
   { id: "white", name: "Pure White", bg: "#f3f4f6", surface: "#ffffff", accent: "#111318", light: true },
 ];
 
@@ -989,6 +990,44 @@ const HAZARD: ThemeDef = {
   },
 };
 
+/**
+ * Valley Harvest: inspired by cozy pastoral farm life, fertile loam soil,
+ * rustic timber barns, and golden autumn crops.
+ */
+const HARVEST: ThemeDef = {
+  id: "harvest",
+  labelKey: "settings.surfaceHarvest",
+  bg: "#0c140d",
+  surface: "#18261b",
+  accent: "#eab308",
+  scheme: "dark",
+  tokens: {
+    "--bg": "#0c140d",
+    "--surface-1": "#121c14",
+    "--surface-2": "#18261b",
+    "--surface-3": "#223526",
+    "--line": "rgba(234, 179, 8, 0.16)",
+    "--line-strong": "rgba(234, 179, 8, 0.36)",
+    "--text": "#f6fcf7",
+    "--text-2": "#a7c4ae",
+    "--text-3": "#6e8e75",
+    "--accent": "#eab308",
+    "--accent-hover": "#facc15",
+    "--accent-tint": "rgba(234, 179, 8, 0.16)",
+    "--on-accent": "#140e02",
+    "--ok": "#22c55e",
+    "--ok-hover": "#4ade80",
+    "--ok-tint": "rgba(34, 197, 94, 0.15)",
+    "--warn": "#f97316",
+    "--warn-tint": "rgba(249, 115, 22, 0.15)",
+    "--err": "#ef4444",
+    "--err-tint": "rgba(239, 68, 68, 0.18)",
+    "--shadow-pop": "0 14px 40px rgba(0, 0, 0, 0.8)",
+    "--scrollbar-thumb": "rgba(234, 179, 8, 0.45)",
+    "--scrollbar-thumb-hover": "rgba(250, 204, 21, 0.85)",
+  },
+};
+
 /** Built-in themes. User themes are appended by [`themes`]. */
 const BUILTIN_THEMES: readonly ThemeDef[] = [
   {
@@ -1022,6 +1061,7 @@ const BUILTIN_THEMES: readonly ThemeDef[] = [
   ROSE_PINE,
   OLED_CYAN,
   BIOHAZARD,
+  HARVEST,
   CYBERLIFE,
   REDEMPTION,
   TARNISHED,
