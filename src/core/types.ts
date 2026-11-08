@@ -62,7 +62,7 @@ export interface CustomLogoLayout {
   x: number;
   /** Vertical anchor coordinate (`0..100` percent of hero height). */
   y: number;
-  /** Scale percentage relative to default hero logo bounds (`40..180`). */
+  /** Scale multiplier relative to default hero logo bounds (`0.4..1.8`). */
   scale: number;
 }
 

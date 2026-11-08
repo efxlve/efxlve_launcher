@@ -120,18 +120,35 @@ export function logoStyleVars(layout: CustomLogoLayout): string {
   return `--logo-x:${x};--logo-y:${y};--logo-scale:${scale};`;
 }
 
-function applyLogoVarsInPlace(appName: string, layout: CustomLogoLayout): void {
-  if (S.currentModalAppName !== appName) return;
-  const layer = document.querySelector<HTMLElement>(".gp-hero-logo-layer");
-  if (layer) {
-    layer.style.setProperty("--logo-x", String(round1(layout.x)));
-    layer.style.setProperty("--logo-y", String(round1(layout.y)));
-    layer.style.setProperty("--logo-scale", String(round2(layout.scale)));
+function syncLayoutToSiblingKeys(appName: string, layout: CustomLogoLayout): void {
+  if (S.separateCopies) return;
+  const title = summaryOf(appName)?.title;
+  if (!title) return;
+  for (const key of storeKeysForTitle(title)) {
+    S.customLogoLayouts[key] = layout;
   }
-  const hudScale = document.getElementById("gp-logo-adjust-scale") as HTMLInputElement | null;
-  if (hudScale) hudScale.value = String(Math.round(layout.scale * 100));
-  const hudPct = document.getElementById("gp-logo-adjust-pct");
-  if (hudPct) hudPct.textContent = `${Math.round(layout.scale * 100)}%`;
+}
+
+function applyLogoVarsInPlace(appName: string, layout: CustomLogoLayout): void {
+  const openApp = S.currentModalAppName;
+  const isMatch =
+    openApp === appName ||
+    (!S.separateCopies &&
+      Boolean(openApp) &&
+      Boolean(summaryOf(openApp!)) &&
+      storeKeysForTitle(summaryOf(openApp!)!.title).includes(appName));
+  if (isMatch) {
+    const layer = document.querySelector<HTMLElement>(".gp-hero-logo-layer");
+    if (layer) {
+      layer.style.setProperty("--logo-x", String(round1(layout.x)));
+      layer.style.setProperty("--logo-y", String(round1(layout.y)));
+      layer.style.setProperty("--logo-scale", String(round2(layout.scale)));
+    }
+    const hudScale = document.getElementById("gp-logo-adjust-scale") as HTMLInputElement | null;
+    if (hudScale) hudScale.value = String(Math.round(layout.scale * 100));
+    const hudPct = document.getElementById("gp-logo-adjust-pct");
+    if (hudPct) hudPct.textContent = `${Math.round(layout.scale * 100)}%`;
+  }
   document.querySelectorAll<HTMLElement>("[data-logo-anchor-btn]").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.anchor === layout.anchor);
   });
@@ -147,6 +164,7 @@ export function setLogoAnchor(appName: string, anchor: Exclude<LogoAnchor, "cust
     scale: prev.scale,
   };
   S.customLogoLayouts[appName] = next;
+  syncLayoutToSiblingKeys(appName, next);
   persistLogoLayouts();
   applyLogoVarsInPlace(appName, next);
   return next;
@@ -159,6 +177,7 @@ export function setLogoScale(appName: string, scale: number): CustomLogoLayout {
     scale: round2(clamp(scale, LOGO_SCALE_MIN, LOGO_SCALE_MAX)),
   };
   S.customLogoLayouts[appName] = next;
+  syncLayoutToSiblingKeys(appName, next);
   persistLogoLayouts();
   applyLogoVarsInPlace(appName, next);
   return next;
@@ -173,6 +192,7 @@ export function setLogoCustomPosition(appName: string, x: number, y: number): Cu
     scale: prev.scale,
   };
   S.customLogoLayouts[appName] = next;
+  syncLayoutToSiblingKeys(appName, next);
   persistLogoLayouts();
   applyLogoVarsInPlace(appName, next);
   return next;
@@ -181,6 +201,15 @@ export function setLogoCustomPosition(appName: string, x: number, y: number): Cu
 export function resetLogoLayout(appName: string): void {
   delete S.customLogoLayouts[appName];
   delete S.customLogoSizes[appName];
+  if (!S.separateCopies) {
+    const title = summaryOf(appName)?.title;
+    if (title) {
+      for (const key of storeKeysForTitle(title)) {
+        delete S.customLogoLayouts[key];
+        delete S.customLogoSizes[key];
+      }
+    }
+  }
   persistLogoLayouts();
   try {
     localStorage.setItem(CUSTOM_LOGO_SIZES_KEY, JSON.stringify(S.customLogoSizes));

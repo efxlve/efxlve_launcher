@@ -66,12 +66,16 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
       return true;
 
     case "cover-modal-backdrop":
-      if (targetEl === t) closeCustomCoverModal();
+      if (targetEl === t) {
+        closeCustomCoverModal();
+        if (S.activeCustomCoverAppName) repaintGameHero(S.activeCustomCoverAppName);
+      }
       return true;
 
     case "close-custom-cover":
       if (t.classList.contains("cover-overlay") && targetEl !== t) return true;
       closeCustomCoverModal();
+      if (S.activeCustomCoverAppName) repaintGameHero(S.activeCustomCoverAppName);
       return true;
 
     case "toggle-sgdb-modal-info":

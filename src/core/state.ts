@@ -182,11 +182,10 @@ function loadCustomLogoLayouts(legacySizes: Record<string, CustomLogoSize>): Rec
       const anchor: LogoAnchor = (LOGO_ANCHORS as readonly string[]).includes(anchorRaw)
         ? (anchorRaw as LogoAnchor)
         : "bottom-left";
-      const x = typeof obj.x === "number" && Number.isFinite(obj.x) ? Math.max(0, Math.min(100, obj.x)) : 4;
-      const y = typeof obj.y === "number" && Number.isFinite(obj.y) ? Math.max(0, Math.min(100, obj.y)) : 88;
-      const scale = typeof obj.scale === "number" && Number.isFinite(obj.scale)
-        ? Math.round(Math.max(40, Math.min(180, obj.scale)))
-        : 100;
+      const x = typeof obj.x === "number" && Number.isFinite(obj.x) ? Math.max(0, Math.min(100, obj.x)) : 3.5;
+      const y = typeof obj.y === "number" && Number.isFinite(obj.y) ? Math.max(0, Math.min(100, obj.y)) : 72;
+      const rawScale = typeof obj.scale === "number" && Number.isFinite(obj.scale) ? obj.scale : 1;
+      const scale = rawScale > 2 ? Math.min(1.8, Math.max(0.4, rawScale / 100)) : Math.min(1.8, Math.max(0.4, rawScale));
       out[appName] = { anchor, x, y, scale };
     }
   } catch {
@@ -194,9 +193,9 @@ function loadCustomLogoLayouts(legacySizes: Record<string, CustomLogoSize>): Rec
   }
   for (const [appName, size] of Object.entries(legacySizes)) {
     if (out[appName]) continue;
-    const scale = size === "small" ? 72 : size === "large" ? 135 : 100;
-    if (scale !== 100) {
-      out[appName] = { anchor: "bottom-left", x: 4, y: 88, scale };
+    const scale = size === "small" ? 0.75 : size === "large" ? 1.3 : 1;
+    if (scale !== 1) {
+      out[appName] = { anchor: "bottom-left", x: 3.5, y: 72, scale };
     }
   }
   return out;
