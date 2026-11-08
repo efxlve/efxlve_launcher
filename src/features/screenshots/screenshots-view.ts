@@ -9,6 +9,7 @@ import { summaryOf } from "../../core/selectors";
 
 import { modalRoot } from "../../core/dom";
 import { emptyPanel, icon } from "../../core/icons";
+import { scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, formatScreenshotDate } from "../../core/utils";
@@ -325,10 +326,12 @@ export function fetchAndRenderScreenshots(appName: string, title: string, force 
       // consumer closed is dropped instead of holding the gallery in memory.
       if (!S.loadingScreenshotsFor.has(appName)) return;
       S.loadingScreenshotsFor.delete(appName);
-      const consumerOpen = S.currentModalAppName === appName;
-      if (!consumerOpen) return;
+      const desktopOpen = S.currentModalAppName === appName;
+      const stageOpen = S.stage.active && S.stage.stillApp === appName;
+      const programOpen = S.stage.active && S.stage.gameKey === appName;
+      if (!desktopOpen && !stageOpen && !programOpen) return;
       S.loadedScreenshots.set(appName, items);
-      if (S.currentModalAppName === appName) {
+      if (desktopOpen) {
         const badgeEl = modalRoot.querySelector('.drawer-tab[data-tab="screenshots"] .drawer-tab-badge');
         if (badgeEl) badgeEl.remove();
 
@@ -342,12 +345,15 @@ export function fetchAndRenderScreenshots(appName: string, title: string, force 
           const moments = document.getElementById("gp-moments");
           if (moments) moments.outerHTML = renderMomentsStrip(appName);
         }
+      } else if (stageOpen || programOpen) {
+        scheduleRender();
       }
     })
     .catch(() => {
       // Only the request that owns the marker clears it: a failure for another
       // game must not drop the response of the game still loading.
       if (S.loadingScreenshotsFor.has(appName)) S.loadingScreenshotsFor.delete(appName);
+      if (S.stage.active && S.stage.gameKey === appName) scheduleRender();
     });
 }
 

@@ -10,37 +10,70 @@ import { currentLanguage, t } from "../../i18n";
 import { icon } from "../../core/icons";
 import { scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
-import type { StageLibraryFilter, StageProgramTab, StageRoute } from "../../core/types";
+import type {
+  SettingsSection,
+  StageAchievementFilter,
+  StageLibraryFilter,
+  StageProgramTab,
+  StageRoute,
+  StageSettingsTab,
+} from "../../core/types";
 import { esc } from "../../core/utils";
 import { activateGamepadFocus, moveGamepadFocus, setGamepadFocus } from "../gamepad/gamepad";
 import {
   stageBack,
-  stageCloseSearch,
+  stageCancelSearch,
+  stageClearCollection,
+  stageCloseControls,
+  stageCloseStill,
+  stageCloudBackup,
+  stageCycleSettingsTab,
   stageCycleSort,
   stageCycleStore,
   stageGo,
+  stageOpenCollection,
   stageOpenDesktop,
   stageOpenDesktopGame,
   stageOpenDesktopSettings,
+  stageOpenDesktopSettingsSection,
   stageOpenProgram,
   stageOpenQuickMenu,
   stageOpenSearch,
+  stageOpenStill,
+  stageRefreshAchievements,
   stageResetFilters,
   stageSearchInput,
   stageSearchKey,
   stageSearchSubmit,
+  stageSetAchievementFilter,
   stageSetFilter,
+  stageSetSettingsTab,
   stageSetTab,
+  stageShowControls,
+  stageStillStep,
   stageToggleControls,
   stageToggleFavorite,
   stageToggleView,
 } from "./stage-actions";
+import {
+  setStageHaptics,
+  setStageSafeArea,
+  setStageSound,
+  setStageSoundVolume,
+  setStageTextScale,
+} from "./stage-state";
 import { stageLaunchGame } from "./stage-launch";
 import { renderStageDownloads } from "./stage-downloads";
 import { renderStageHome } from "./stage-home";
 import { renderStageLibrary, stageLibraryFocus, stageLibraryMore, stageLibraryRenderToken } from "./stage-library";
+import { stageGameByKey } from "./stage-model";
 import { renderStageProgram } from "./stage-program";
 import { renderStageSearch } from "./stage-search";
+import { renderStageSettings } from "./stage-settings";
+import { fullShotSrc } from "../screenshots/screenshots-view";
+// Side effect: register the button/back contract with the gamepad loop.
+import "./stage-input";
+import { previewStageSound, stageFeedback } from "./stage-sound";
 import { stageActiveDownload, stageBatteryLabel, stageBumperGlyphs, stageFaceGlyph, stageHint, stageHintBar } from "./stage-ui";
 
 let clockTimer = 0;
@@ -51,6 +84,7 @@ let wasSearch = false;
 let wasLaunch = false;
 let wasError = false;
 let lastStageSignature = "";
+let pointerFocus = false;
 
 /**
  * The shell should repaint when the screen changes, not when a download ticks.
@@ -67,6 +101,19 @@ function stageLiveSignature(): string {
     S.stage.route,
     S.stage.gameKey ?? "",
     S.stage.programTab,
+    S.stage.settingsTab,
+    S.stage.achievementFilter,
+    S.stage.collectionId ?? "",
+    String(S.stage.stillIndex ?? -1),
+    S.stage.stillApp ?? "",
+    String(S.stage.textScale),
+    String(S.stage.safeArea),
+    S.stage.sound ? "1" : "0",
+    String(S.stage.soundVolume),
+    S.stage.haptics ? "1" : "0",
+    S.stage.autoEnter ? "1" : "0",
+    S.stage.openAtLaunch ? "1" : "0",
+    S.reduceEffects ? "1" : "0",
     S.stage.libraryFilter,
     S.stage.libraryStore,
     S.stage.librarySort,
@@ -77,6 +124,19 @@ function stageLiveSignature(): string {
     S.stage.controlsOpen ? "1" : "0",
     S.stage.launch?.key ?? "",
     S.stage.launchError,
+    String(S.loadedAchievements.size),
+    String(S.loadingAchFor.size),
+    S.stage.gameKey
+      ? [
+          S.loadedAchievements.get(S.stage.gameKey)?.user_unlocked ?? -1,
+          S.loadedAchievements.get(S.stage.gameKey)?.total_achievements ?? -1,
+          S.loadedAchievements.get(S.stage.gameKey)?.achievements.length ?? -1,
+        ].join("/")
+      : "",
+    String(S.loadedScreenshots.size),
+    String(S.loadingScreenshotsFor.size),
+    String(S.screenshotFullSrc.size),
+    S.stage.gameKey ? (S.loadedScreenshots.get(S.stage.gameKey)?.[0]?.file_path ?? "") : "",
     S.stage.controllerConnected ? "1" : "0",
     String(Math.round((S.stage.controllerBattery ?? -1) * 100)),
     S.offlineMode ? "1" : "0",
@@ -95,6 +155,7 @@ function stageLiveSignature(): string {
     String(S.ignoredUpdates.size),
     String(S.playtimeMap.size),
     String(S.customGames.length),
+    String(S.epicCollections.length),
     Array.from(S.runningGames).sort().join(","),
     String(S.availableUpdates.size),
     String(S.gogUpdates.size),
@@ -104,6 +165,7 @@ function stageLiveSignature(): string {
     S.dlQueueStatus.isPaused ? "1" : "0",
     S.gogDlPaused ? "1" : "0",
     S.dlQueueStatus.active ?? "",
+    S.dlQueueStatus.queue.join(","),
     downloadProgress,
     stageLibraryRenderToken(),
   ].join("\u001f");
@@ -215,7 +277,7 @@ function topbar(): string {
 }
 
 function spine(): string {
-  const item = (route: StageRoute, iconName: "home" | "layout-grid" | "download", label: string): string => {
+  const item = (route: StageRoute, iconName: "home" | "layout-grid" | "download" | "sliders", label: string): string => {
     const active = S.stage.route === route;
     return `<button type="button" class="stage-spine-item${active ? " active" : ""}" data-stage-act="go" data-route="${route}" data-gp-item data-gp-key="nav:${route}">
       <span class="stage-spine-icon">${icon(iconName, 20)}</span>
@@ -227,6 +289,7 @@ function spine(): string {
     ${item("home", "home", t("stage.navHome"))}
     ${item("library", "layout-grid", t("stage.navLibrary"))}
     ${item("downloads", "download", t("stage.navDownloads"))}
+    ${item("settings", "sliders", t("stage.navSettings"))}
     <button type="button" class="stage-spine-item${S.stage.quickMenu ? " active" : ""}" data-stage-act="open-menu" data-gp-item data-gp-key="nav:menu">
       <span class="stage-spine-icon">${icon("dots", 20)}</span>
       <span class="stage-spine-label">${esc(t("stage.navMenu"))}</span>
@@ -278,6 +341,14 @@ function hints(): string {
       stageHint("Menu", t("stage.quickMenu")),
     ]);
   }
+  if (S.stage.route === "settings") {
+    return stageHintBar([
+      stageHint(face("a"), t("gamepad.select")),
+      stageHint(bumpers, t("gamepad.tabs")),
+      stageHint(face("b"), t("common.back")),
+      stageHint("Menu", t("stage.quickMenu")),
+    ]);
+  }
   return stageHintBar([
     stageHint(face("a"), t("stage.open")),
     stageHint(face("x"), t("stage.quickPlay")),
@@ -320,6 +391,7 @@ function quickMenu(entered: boolean): string {
         </button>
       </div>
       <div class="stage-sheet-foot">
+        <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="go" data-route="settings" data-gp-item data-gp-key="menu:stage-settings">${icon("sliders", 16)}<span>${esc(t("stage.navSettings"))}</span></button>
         <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="desktop-settings" data-gp-item data-gp-key="menu:settings">${icon("settings", 16)}<span>${esc(t("stage.openDesktopSettings"))}</span></button>
         <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="desktop" data-gp-item data-gp-key="menu:desktop">${icon("monitor", 16)}<span>${esc(t("stage.openDesktop"))}</span></button>
         <span class="stage-sheet-note">${esc(t("stage.betaHint"))}</span>
@@ -343,7 +415,7 @@ function controlsSheet(entered: boolean): string {
     <div class="stage-sheet stage-sheet-narrow" role="dialog" aria-modal="true" aria-label="${esc(t("stage.controls"))}">
       <div class="stage-sheet-head">
         <div><span class="stage-kicker">${esc(t("stage.controller"))}</span><h2>${esc(S.stage.controllerName || t("stage.controls"))}</h2></div>
-        <button type="button" class="stage-icon-btn" data-stage-act="controls" data-gp-item data-gp-key="controls:close" aria-label="${esc(t("common.close"))}">${icon("x", 20)}</button>
+        <button type="button" class="stage-icon-btn" data-stage-act="close-controls" data-gp-item data-gp-key="controls:close" aria-label="${esc(t("common.close"))}">${icon("x", 20)}</button>
       </div>
       <div class="stage-controls-grid">
         ${rows.map(([glyph, label]) => `<div class="stage-controls-row"><span class="stage-controls-glyph">${glyph}</span><span>${esc(label)}</span></div>`).join("")}
@@ -358,9 +430,8 @@ function controlsSheet(entered: boolean): string {
 function curtain(entered: boolean): string {
   const launch = S.stage.launch;
   if (!launch) return "";
-  const art = launch.art ? ` style="background-image:url('${esc(launch.art)}')"` : "";
   return `<div class="stage-overlay stage-curtain${entered ? " stage-overlay-enter" : ""}" aria-live="polite">
-    <div class="stage-curtain-art"${art}></div>
+    <div class="stage-curtain-art">${launch.art ? `<img src="${esc(launch.art)}" alt="" />` : ""}</div>
     <div class="stage-curtain-shade"></div>
     <div class="stage-curtain-line"></div>
     <div class="stage-curtain-copy">
@@ -387,11 +458,36 @@ function launchError(entered: boolean): string {
   </div>`;
 }
 
+function stillViewer(): string {
+  const index = S.stage.stillIndex;
+  const app = S.stage.stillApp;
+  if (index === null || !app) return "";
+  const items = S.loadedScreenshots.get(app) || [];
+  const item = items[index];
+  if (!item) return "";
+  const title = stageGameByKey(app)?.title || app;
+  const total = items.length;
+  return `<div class="stage-overlay stage-still-viewer">
+    <div class="stage-still-frame">
+      <img src="${esc(fullShotSrc(item))}" alt="${esc(item.file_name)}" />
+      <div class="stage-still-caption">
+        <strong>${esc(title)}</strong>
+        <span>${esc(item.file_name)}</span>
+      </div>
+      <button type="button" class="stage-icon-btn stage-still-close" data-stage-act="close-still" data-gp-item data-gp-key="still:close" aria-label="${esc(t("common.close"))}">${icon("x", 22)}</button>
+      ${total > 1 ? `<button type="button" class="stage-still-nav is-prev" data-stage-act="still-prev" data-gp-item data-gp-key="still:prev" aria-label="${esc(t("stage.stillsPrev"))}">${icon("chevron-left", 30)}</button>
+      <button type="button" class="stage-still-nav is-next" data-stage-act="still-next" data-gp-item data-gp-key="still:next" aria-label="${esc(t("stage.stillsNext"))}">${icon("chevron-right", 30)}</button>` : ""}
+      <span class="stage-still-count tabular-nums">${index + 1} / ${total}</span>
+    </div>
+  </div>`;
+}
+
 function contentForRoute(): string {
   switch (S.stage.route) {
     case "library": return renderStageLibrary();
     case "program": return renderStageProgram();
     case "downloads": return renderStageDownloads();
+    case "settings": return renderStageSettings();
     default: return renderStageHome();
   }
 }
@@ -434,6 +530,7 @@ export function renderStage(): void {
   }
   const quick = S.stage.quickMenu ? quickMenu(quickEntered) : "";
   const controls = S.stage.controlsOpen ? controlsSheet(controlsEntered) : "";
+  const still = S.stage.stillIndex !== null ? stillViewer() : "";
   const cover = S.stage.launch ? curtain(launchEntered) : "";
   const error = launchError(errorEntered);
   wasQuickMenu = S.stage.quickMenu;
@@ -442,8 +539,9 @@ export function renderStage(): void {
   wasLaunch = Boolean(S.stage.launch);
   wasError = Boolean(S.stage.launchError);
 
-  root.className = `stage-root stage-route-${S.stage.route}${S.stage.route === "program" ? " is-program" : ""}${S.stage.quickMenu ? " is-menu-open" : ""}${S.stage.searchOpen ? " is-search-open" : ""}`;
+  root.className = `stage-root stage-route-${S.stage.route}${S.stage.route === "program" ? " is-program" : ""}${S.stage.quickMenu ? " is-menu-open" : ""}${S.stage.searchOpen ? " is-search-open" : ""}${S.stage.stillIndex !== null ? " is-still-open" : ""}`;
   root.dataset.route = S.stage.route;
+  root.style.setProperty("--stage-safe", `${S.stage.safeArea * 1.5}vmin`);
   root.innerHTML = `<div class="stage-shell">
     ${topbar()}
     ${S.stage.route === "program" ? "" : spine()}
@@ -455,6 +553,7 @@ export function renderStage(): void {
   ${quick}
   ${controls}
   ${search}
+  ${still}
   ${cover}
   ${error}`;
 
@@ -465,13 +564,15 @@ export function renderStage(): void {
     ? ".stage-error"
     : cover
       ? ".stage-curtain"
-      : controls
-        ? ".stage-controls"
-        : quick
-          ? ".stage-quick-menu"
-          : search
-            ? ".stage-search"
-            : '[data-stage-layer="main"]';
+      : still
+        ? ".stage-still-viewer"
+        : controls
+          ? ".stage-controls"
+          : quick
+            ? ".stage-quick-menu"
+            : search
+              ? ".stage-search"
+              : '[data-stage-layer="main"]';
   const layer = root.querySelector<HTMLElement>(layerSelector);
   markFocusables(layer);
   // An install/manage dialog owns the focus while it is open. The Stage shell
@@ -490,7 +591,9 @@ function bindGlobalFocus(): void {
     if (!S.stage.active) return;
     const detail = (event as CustomEvent<{ key?: string }>).detail;
     const key = detail?.key || "";
+    const changed = Boolean(key) && key !== S.stage.focusKey;
     if (key) S.stage.focusKey = key;
+    if (changed && !pointerFocus) stageFeedback("move");
     if (S.stage.route === "library" && key.startsWith("lib:")) stageLibraryFocus(key);
   });
   window.addEventListener("stage-mode", (event) => {
@@ -551,6 +654,13 @@ function onStageKeydown(event: KeyboardEvent): void {
     stageSearchKey("backspace");
     return;
   }
+  if (S.stage.stillIndex !== null && (key === "ArrowLeft" || key === "ArrowRight")) {
+    // A viewer steps through stills; the focus ring stays on the nav buttons.
+    event.preventDefault();
+    event.stopPropagation();
+    stageStillStep(key === "ArrowRight");
+    return;
+  }
   if (key === "ArrowUp" || key === "ArrowDown" || key === "ArrowLeft" || key === "ArrowRight") {
     event.preventDefault();
     event.stopPropagation();
@@ -595,6 +705,11 @@ function bindStageEvents(root: HTMLElement): void {
     const route = actionEl.dataset.route as StageRoute | undefined;
     const filter = actionEl.dataset.filter as StageLibraryFilter | undefined;
     const tab = actionEl.dataset.tab as StageProgramTab | undefined;
+    const settingsTab = actionEl.dataset.tab as StageSettingsTab | undefined;
+    const achFilter = actionEl.dataset.filter as StageAchievementFilter | undefined;
+    const section = actionEl.dataset.section as SettingsSection | undefined;
+    const value = Number(actionEl.dataset.value);
+    const index = Number(actionEl.dataset.index);
     switch (action) {
       case "go": if (route) stageGo(route); break;
       case "open-program": stageOpenProgram(key); break;
@@ -606,17 +721,37 @@ function bindStageEvents(root: HTMLElement): void {
       case "cycle-sort": stageCycleSort(); break;
       case "toggle-view": stageToggleView(); break;
       case "open-search": stageOpenSearch(); break;
-      case "search-close": stageCloseSearch(); break;
+      case "search-close": stageFeedback("back"); stageCancelSearch(); break;
       case "search-key": stageSearchKey(actionEl.dataset.key || ""); break;
       case "search-submit": stageSearchSubmit(); break;
       case "open-menu": stageOpenQuickMenu("menu:resume"); break;
       case "close-menu": S.stage.quickMenu = false; S.stage.controlsOpen = false; S.stage.focusKey = ""; scheduleRender(); break;
       case "controls": stageToggleControls(); break;
+      case "show-controls": stageShowControls(); break;
+      case "close-controls": stageFeedback("back"); stageCloseControls(); break;
       case "desktop": stageOpenDesktop(); break;
       case "desktop-settings": stageOpenDesktopSettings(); break;
       case "desktop-game": stageOpenDesktopGame(key); break;
       case "reset-filters": stageResetFilters(); break;
       case "clear-query": S.stage.query = ""; S.stage.focusKey = "tool:search"; scheduleRender(); break;
+      case "open-collection": stageOpenCollection(actionEl.dataset.id || ""); break;
+      case "clear-collection": stageClearCollection(); break;
+      case "set-settings-tab": if (settingsTab) stageSetSettingsTab(settingsTab); break;
+      case "cycle-settings-tab": stageCycleSettingsTab(true); break;
+      case "set-ach-filter": if (achFilter) stageSetAchievementFilter(achFilter); break;
+      case "refresh-achievements": stageRefreshAchievements(key); break;
+      case "open-still": stageOpenStill(index); break;
+      case "close-still": stageCloseStill(); break;
+      case "still-prev": stageStillStep(false); break;
+      case "still-next": stageStillStep(true); break;
+      case "cloud-backup": stageCloudBackup(key); break;
+      case "desktop-settings-section": if (section) stageOpenDesktopSettingsSection(section); break;
+      case "set-stage-text": if (Number.isFinite(value)) setStageTextScale(value); break;
+      case "set-stage-safe": if (Number.isFinite(value)) setStageSafeArea(value); break;
+      case "set-stage-volume": if (Number.isFinite(value)) setStageSoundVolume(value); break;
+      case "toggle-stage-sound": setStageSound(!S.stage.sound); break;
+      case "toggle-stage-haptics": setStageHaptics(!S.stage.haptics); break;
+      case "test-stage-sound": previewStageSound(); break;
       case "retry": S.stage.launchError = ""; stageLaunchGame(S.stage.gameKey || ""); break;
       case "close-error": S.stage.launchError = ""; scheduleRender(); break;
       default: break;
@@ -626,7 +761,11 @@ function bindStageEvents(root: HTMLElement): void {
   root.addEventListener("pointerover", (event) => {
     if (!S.stage.active || modalOpen()) return;
     const target = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-gp-item]") : null;
-    if (target) setGamepadFocus(target);
+    if (!target) return;
+    // Pointer movement moves the ring but must not chirp like a D-pad.
+    pointerFocus = true;
+    setGamepadFocus(target);
+    pointerFocus = false;
   });
 
   // Stage is a controller surface, not a desktop page: the library context

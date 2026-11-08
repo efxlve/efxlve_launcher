@@ -88,10 +88,17 @@ function filterTabs(): string {
 }
 
 function tools(): string {
+  const collection = S.stage.collectionId
+    ? S.epicCollections.find((item) => item.id === S.stage.collectionId)
+    : undefined;
+  const collectionChip = collection
+    ? `<button type="button" class="stage-tool stage-query-chip" data-stage-act="clear-collection" data-gp-item data-gp-key="tool:collection">${icon("layers", 14)}<span>${esc(collection.name)}</span>${icon("x", 14)}</button>`
+    : "";
   const queryChip = S.stage.query
     ? `<button type="button" class="stage-tool stage-query-chip" data-stage-act="clear-query" data-gp-item data-gp-key="tool:query">${icon("search", 14)}<span>${esc(S.stage.query)}</span>${icon("x", 14)}</button>`
     : "";
   return `<div class="stage-library-tools">
+    ${collectionChip}
     ${queryChip}
     <button type="button" class="stage-tool" data-stage-act="cycle-store" data-gp-item data-gp-key="tool:store">${icon("layers", 16)}<span>${esc(stageStoreFilterLabel())}</span></button>
     <button type="button" class="stage-tool" data-stage-act="cycle-sort" data-gp-item data-gp-key="tool:sort">${icon("arrow-down-a-z", 16)}<span>${esc(sortLabel(S.stage.librarySort))}</span></button>
@@ -160,7 +167,14 @@ export function renderStageLibrary(): string {
   const visible = list.slice(0, renderedLimit);
   const focusKey = S.stage.focusKey;
   const focused = focusKey.startsWith("lib:") ? stageGameByKey(focusKey.slice(4)) : undefined;
-  const selected = visible.some((s) => s.appName === focused?.appName) ? focused : visible[0];
+  // The side stage keeps the last previewed game when the focus moves up to the
+  // filters or the tools; it must not snap back to the first cover.
+  const previewed = S.stage.previewKey
+    ? visible.find((s) => s.appName === S.stage.previewKey)
+    : undefined;
+  const selected = previewed
+    ?? (visible.some((s) => s.appName === focused?.appName) ? focused : visible[0]);
+  if (selected) S.stage.previewKey = selected.appName;
   // The wall owns the default focus; the filter row stays reachable with Up.
   if (!S.stage.focusKey && selected) S.stage.focusKey = `lib:${selected.appName}`;
   if (selected) {
@@ -203,6 +217,7 @@ export function stageLibraryFocus(key: string): void {
   const summary = stageGameByKey(key.slice(4));
   const side = document.getElementById("stage-library-side");
   if (!summary || !side) return;
+  S.stage.previewKey = summary.appName;
   side.outerHTML = sidePanel(summary);
   const next = stageGameByKey(key.slice(4));
   if (next) {

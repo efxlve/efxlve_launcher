@@ -132,8 +132,8 @@ import { switchAccount } from "../auth/account-switcher";
 import { switchGogAccount } from "../auth/gog-account-switcher";
 import { openPalette } from "../palette/palette";
 import { setFullscreenMode, toggleFullscreenMode, updateFullscreenUi } from "../gamepad/fullscreen-mode";
-import { stageGo } from "../stage/stage-actions";
-import { setStageAutoEnter, setStageEnabled, setStageOpenAtLaunch, toggleStage } from "../stage/stage-state";
+import { stageBridge } from "../gamepad/stage-bridge";
+import { enterStage, setStageAutoEnter, setStageEnabled, setStageOpenAtLaunch, toggleStage } from "../stage/stage-state";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { closeStorageMenus } from "../storage/storage-view";
@@ -290,7 +290,7 @@ document.addEventListener("click", (e) => {
     if (S.stage.active) {
       const view = t.dataset.view;
       if (view === "downloads" || view === "library") {
-        stageGo(view);
+        stageBridge()?.go(view);
         return;
       }
     }
@@ -763,6 +763,8 @@ document.addEventListener("click", (e) => {
     void toggleFullscreenMode();
   } else if (act === "toggle-stage") {
     void toggleStage();
+  } else if (act === "open-stage-settings") {
+    void enterStage({ route: "settings" });
   } else if (act === "toggle-stage-enabled") {
     setStageEnabled(!S.stage.enabled);
   } else if (act === "toggle-stage-auto") {

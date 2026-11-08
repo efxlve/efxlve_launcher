@@ -13,6 +13,7 @@ import { toast } from "../../core/toast";
 import { t } from "../../i18n";
 import { stageWideArt } from "./stage-art";
 import { stageGameByKey } from "./stage-model";
+import { stageFeedback } from "./stage-sound";
 
 let launchToken = 0;
 
@@ -33,6 +34,7 @@ export function stageLaunchGame(key: string): void {
   }
   if (S.stage.launch) return;
 
+  stageFeedback("launch");
   const token = ++launchToken;
   S.stage.launch = {
     key: summary.appName,
@@ -63,6 +65,7 @@ export function stageLaunchGame(key: string): void {
 /** A failed launch is reported in place; the curtain never hides the error. */
 export function stageLaunchFailed(message: string): void {
   launchToken++;
+  stageFeedback("error");
   S.stage.launch = null;
   S.stage.launchError = message;
   scheduleRender();

@@ -7,11 +7,13 @@
  */
 
 import { achSummaryOf, epicActionButtons } from "../../core/game-view";
+import { collectionGames, collectionMatch, matchCollectionGame } from "../../core/game-collections";
 import { canonicalGameTitle, compareLibraryRecent, libraryItemToSummary, libraryPlaytime, sourceOfKey, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import type { GameSource } from "../../core/types";
 import { t } from "../../i18n";
-import type { EpicSummary } from "../../epic";
+import type { EpicSummary, GameCollection } from "../../epic";
+import { isSmartCollection, smartCollection } from "../library/smart-collections";
 import { sharedSummaries } from "../library/shared-library";
 import { pickShownCopy } from "../library/store-filter";
 import { stageStoreName } from "./stage-ui";
@@ -184,11 +186,19 @@ export function stageStoreFilterLabel(): string {
 /** The visible shelf after Stage's own filter, store, query and sort. */
 export function stageLibraryList(): EpicSummary[] {
   const query = S.stage.query.trim().toLowerCase();
+  const collectionId = S.stage.collectionId;
+  const smart = collectionId && isSmartCollection(collectionId) ? smartCollection(collectionId) : null;
+  const manual = collectionId && !smart
+    ? S.epicCollections.find((collection) => collection.id === collectionId) ?? null
+    : null;
+  const match = manual ? collectionMatch(manual) : null;
   let list = stageBaseSummaries(S.stage.libraryStore).filter((s) => {
     if (S.stage.libraryStore !== "all" && sourceOfKey(s.appName) !== S.stage.libraryStore) return false;
     if (S.stage.libraryFilter === "installed" && !s.installed) return false;
     if (S.stage.libraryFilter === "favorites" && !S.epicFav.has(s.appName)) return false;
     if (S.stage.libraryFilter === "updates" && !hasUpdate(s)) return false;
+    if (smart && !smart.test(s)) return false;
+    if (match && !matchCollectionGame(match, s)) return false;
     if (!query) return true;
     const haystack = `${s.title} ${s.description} ${(s.genres ?? []).join(" ")}`.toLowerCase();
     return query.split(/\s+/).every((part) => haystack.includes(part));
@@ -215,6 +225,40 @@ export function stageLibraryList(): EpicSummary[] {
       break;
   }
   return list;
+}
+
+/** User-made collections that have at least one loaded game. */
+export function stageUserCollections(limit = 8): GameCollection[] {
+  return S.epicCollections
+    .filter((collection) => collection.app_names.length > 0)
+    .slice(0, limit);
+}
+
+/** First four representative keys for a collection's cover mosaic. */
+export function stageCollectionCoverKeys(collection: GameCollection): string[] {
+  return collectionGames(collection).slice(0, 4);
+}
+
+/**
+ * Search spans the whole library, not the active shelf filter: a player who
+ * typed a title expects to find it even when the library is showing only
+ * installed games or one collection. The shelf filter is applied again when
+ * the search closes, so the result is never a confusing empty wall.
+ */
+export function stageSearchMatches(query: string, limit = 24): EpicSummary[] {
+  const text = query.trim().toLowerCase();
+  const base = stageBaseSummaries();
+  if (!text) return base.slice(0, limit);
+  const parts = text.split(/\s+/).filter(Boolean);
+  const out: EpicSummary[] = [];
+  for (const summary of base) {
+    const haystack = `${summary.title} ${summary.description} ${(summary.genres ?? []).join(" ")}`.toLowerCase();
+    if (parts.every((part) => haystack.includes(part))) {
+      out.push(summary);
+      if (out.length >= limit) break;
+    }
+  }
+  return out;
 }
 
 /** Resolve a key that may come from a card, the recent list or a stale route. */

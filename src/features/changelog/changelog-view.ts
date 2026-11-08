@@ -31,7 +31,7 @@ export interface ChangelogRelease {
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
     version: "0.1.50",
-    date: "2026-11-08",
+    date: "2026-11-09",
     added: [
       {
         en: "Stage Mode (experimental): a controller-first full-screen shell with a cinematic home, a cover shelf that previews the focused game, a programme page for each title, a bottom quick menu and an on-screen keyboard. Both Stage and the classic Full Screen Mode remain available, and Stage is labelled BETA in the title bar and in Settings.",
@@ -41,11 +41,27 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "Stage's launch curtain, white spotlight focus, in-place game preview and staged page transitions; the animations respect reduced motion.",
         tr: "Sahne'nin başlatma perdesi, beyaz spot odak efekti, yerinde oyun önizlemesi ve sahneli sayfa geçişleri; animasyonlar hareketi azalt ayarına uyar.",
       },
+      {
+        en: "Stage has its own settings screen: text size, TV safe area, optional synthesised feedback sounds and controller haptics, controller status, launch preferences and the beta notes.",
+        tr: "Sahne'nin kendi ayar ekranı var: yazı boyutu, TV güvenli alanı, isteğe bağlı sentez geri bildirim sesleri ve kumanda titreşimi, kumanda durumu, açılış tercihleri ve beta notları.",
+      },
+      {
+        en: "The Stage game page has a full achievement browser with all/unlocked/locked filters, hidden-achievement handling, rarity, XP and unlock dates. Collections appear on Home and as a library filter, Extras shows a stills viewer, and cloud-save backup is one button away.",
+        tr: "Sahne oyun sayfasında tümü/açılan/kilitli filtreleri, gizli başarım davranışı, nadirlik, XP ve açılma tarihleriyle tam bir başarım tarayıcısı var. Koleksiyonlar ana ekranda ve kütüphane filtresinde görünüyor, Ekstralar kare görüntüleyicisini gösteriyor ve bulut kayıt yedeği tek tuş uzaklıkta.",
+      },
+      {
+        en: "Downloads can reorder the queue from the couch, and Stage loads as its own lazy chunk instead of riding in the desktop bundle.",
+        tr: "İndirmeler kuyruğu koltuktan yeniden sıralanabiliyor ve Sahne masaüstü paketinde taşınmak yerine kendi tembel parçası olarak yükleniyor.",
+      },
     ],
     improved: [
       {
         en: "The install dialog now takes controller focus immediately and starts on its install button.",
         tr: "Kurulum penceresi artık kumanda odağını hemen alıyor ve kurulum butonunda başlıyor.",
+      },
+      {
+        en: "The Stage shell is a separate lazy chunk: the desktop bundle no longer parses the controller screens, and the first Stage entry pays one short import.",
+        tr: "Sahne kabuğu ayrı bir tembel parça: masaüstü paketi kumanda ekranlarını artık ayrıştırmıyor ve ilk Sahne girişi kısa bir içe aktarma bedeli ödüyor.",
       },
     ],
   },

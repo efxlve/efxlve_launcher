@@ -90,6 +90,9 @@
 .stage-page-enter .stage-program-head {
   animation: stage-copy-in 420ms 40ms var(--stage-ease) both;
 }
+.stage-page-enter .stage-settings-panel {
+  animation: stage-copy-in 220ms var(--stage-ease) both;
+}
 .stage-overlay-enter.stage-quick-menu,
 .stage-overlay-enter.stage-controls,
 .stage-overlay-enter.stage-error {
@@ -440,6 +443,24 @@ body.stage-mode .selective-overlay .gp-focused {
   .stage-extra-row strong {
     font-size: 17px;
   }
+  .stage-ach-copy strong {
+    font-size: 17px;
+  }
+  .stage-ach-copy span {
+    font-size: 14px;
+  }
+  .stage-ach-meta {
+    font-size: 13px;
+  }
+  .stage-ach-filter {
+    height: 40px;
+    font-size: 14px;
+  }
+  .stage-ach-icon {
+    flex-basis: 60px;
+    width: 60px;
+    height: 60px;
+  }
   .stage-download-head strong {
     font-size: 18px;
   }
@@ -484,6 +505,40 @@ body.stage-mode .selective-overlay .gp-focused {
   }
   .stage-controls-row {
     font-size: 16px;
+  }
+  .stage-settings-tab {
+    height: 54px;
+    font-size: 17px;
+  }
+  .stage-setting-row {
+    min-height: 76px;
+    padding: 16px 19px;
+  }
+  .stage-setting-copy strong {
+    font-size: 18px;
+  }
+  .stage-setting-copy small {
+    font-size: 14px;
+  }
+  .stage-choice {
+    height: 40px;
+    font-size: 15px;
+  }
+  .stage-settings-head p,
+  .stage-settings-note {
+    font-size: 15px;
+  }
+  .stage-controller-copy strong {
+    font-size: 20px;
+  }
+  .stage-controller-copy small {
+    font-size: 14px;
+  }
+  .stage-about-card p {
+    font-size: 15px;
+  }
+  .stage-about-card small {
+    font-size: 13px;
   }
   .stage-brand-name,
   .stage-brand-mode {

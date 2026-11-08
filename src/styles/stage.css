@@ -96,8 +96,32 @@ body.stage-mode #game-scene {
 
 .stage-shell {
   position: absolute;
-  inset: 0;
+  inset: var(--stage-safe, 0px);
   overflow: hidden;
+}
+
+/* Shown only while the lazy Stage chunk loads; the normal entry waits for the
+   chunk before it becomes active, so this is a safety frame. */
+.stage-boot {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--stage-bg);
+  color: var(--stage-ink);
+}
+.stage-boot .stage-brand-name,
+.stage-boot .stage-brand-mode {
+  font-size: 12px;
+}
+.stage-boot-line {
+  width: 76px;
+  height: 2px;
+  margin-inline-start: 8px;
+  background: var(--stage-ink);
+  animation: stage-line 900ms var(--stage-ease) both;
 }
 
 .stage-topbar {
@@ -373,7 +397,7 @@ body.stage-mode #game-scene {
 }
 
 .stage-hints {
-  position: fixed;
+  position: absolute;
   inset-block-end: 16px;
   inset-inline-start: calc(var(--stage-spine) + var(--stage-pad));
   inset-inline-end: var(--stage-pad);

@@ -5,19 +5,21 @@
  */
 
 import { S } from "../../core/state";
+import { registerStageBridge, type StagePadButton } from "../gamepad/stage-bridge";
 import {
   stageBack,
+  stageCloseStill,
   stageCycleSection,
+  stageStillStep,
   stageCycleStore,
   stageCycleTab,
+  stageGo,
   stageOpenSearch,
   stageQuickPlay,
   stageToggleFavorite,
   stageToggleQuickMenu,
   stageToggleView,
 } from "./stage-actions";
-
-export type StagePadButton = "x" | "y" | "lb" | "rb" | "lt" | "rt" | "start" | "select";
 
 export function stageIsActive(): boolean {
   return S.stage.active;
@@ -29,6 +31,12 @@ export function stageButton(button: StagePadButton): void {
   // A dialog owns the pad while it is open. A/B reach its focus ring through
   // the generic path; the contextual buttons must not fire behind it.
   if (document.querySelector(".modal:not(.hidden), .selective-overlay, .confirm-dialog:not(.hidden), .palette-backdrop, #modal-root > div, #install-root > div")) {
+    return;
+  }
+  if (S.stage.stillIndex !== null) {
+    if (button === "start" || button === "select") stageCloseStill();
+    if (button === "lb" || button === "lt") stageStillStep(false);
+    if (button === "rb" || button === "rt") stageStillStep(true);
     return;
   }
   const overlay = S.stage.quickMenu || S.stage.searchOpen || S.stage.controlsOpen;
@@ -67,3 +75,11 @@ export function stageButton(button: StagePadButton): void {
       return;
   }
 }
+
+// The Stage chunk registers its input contract with the always-loaded polling
+// loop; the loop never imports this file directly.
+registerStageBridge({
+  button: stageButton,
+  back: stageBack,
+  go: (view) => stageGo(view),
+});

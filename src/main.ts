@@ -34,7 +34,7 @@ import "./features/events/input-listeners";
 import { initApp } from "./features/events/ipc-listeners";
 import { updateGamepadHud } from "./features/gamepad/gamepad";
 import { updateFullscreenUi } from "./features/gamepad/fullscreen-mode";
-import { renderStage } from "./features/stage/stage-render";
+import { renderStageBoot } from "./features/stage/stage-boot";
 import { enterStage, updateStageUi } from "./features/stage/stage-state";
 import { closeHideGamesModal } from "./features/library/hide-games";
 import { closeReleaseCalendar } from "./features/library/release-calendar";
@@ -131,7 +131,7 @@ function render(): void {
     closeNotifPanel();
     // The desktop controller bar sits above Stage's layer; hide it here.
     updateGamepadHud(S.gamepadPolling);
-    renderStage();
+    renderStageBoot();
     renderNotificationPanel();
     presenceSync();
     return;

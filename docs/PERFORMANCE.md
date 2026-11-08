@@ -84,7 +84,9 @@ the window is hidden.
 | Stage render guard | Stage hashes the route, filters, library revision, running set and download lifecycle; a progress-only tick patches the top download chip and clock instead of rebuilding the screen | A controller shell with a 600-title shelf would otherwise re-decode every visible cover on every transfer update |
 | Stage shelf | The wall renders in 96-card chunks and appends the next chunk at the fold; focus moves patch only the side stage, never the wall | One focus move cannot rebuild 96 covers or lose the scroll anchor |
 | Stage motion | Page and overlay entry animations are scoped to `stage-page-enter` and `stage-overlay-enter`; data repaints do not replay them | A sheet or hero that re-animates on every download tick reads as a stutter, not polish |
-| Stage presentation | Stage sets the webview zoom to 100% on entry and restores the saved UI scale on exit; the clock timer exists only while the mode is open and the quick menu uses solid surfaces, not blur | The 10-foot layout uses its own clamp scale, an idle desktop timer would be wasted heat, and full-screen blur is expensive on the reference GPU |
+| Stage presentation | Stage applies the saved Stage text scale on entry and restores the desktop UI scale on exit; the clock timer exists only while the mode is open and the quick menu uses solid surfaces, not blur | The 10-foot layout uses its own clamp scale, an idle desktop timer would be wasted heat, and full-screen blur is expensive on the reference GPU |
+| Stage lazy chunk | `stage-boot` dynamically imports `stage-render`; the built shell is ~76 kB minified / ~18 kB gzip and the main entry dropped from ~499 kB to ~445 kB | The desktop session no longer parses the controller screens just because a pad might connect |
+| Stage data on demand | Achievements are fetched only when the Achievements tab opens, stills only when Extras opens, and the full still only for the selected shot; the screenshot caches are cleared on exit | A programme page does not pay for an achievement or screenshot listing the player never asked for |
 
 ## Remaining opportunities
 
@@ -98,10 +100,7 @@ the window is hidden.
   are separate chunks loaded when their section opens. The outer Settings page
   still ships in the main chunk because its action handlers import the library
   graph; splitting that surface is the next step.
-- **Stage chunk.** Stage currently ships in the main chunk. Once the mode leaves
-  beta, split the shell and its three heavy screens into a lazy chunk with a
-  small black boot frame; the first entry then pays one short import instead of
-  every desktop session parsing a controller UI it may never open.
+
 - **Custom cover renditions.** The game page and its panels ask the picture cache
   for sized renditions, but the library grid still paints the source URL
   directly. Very large user-chosen covers would benefit from the same cache.

@@ -1,0 +1,321 @@
+/* Stage — settings screen. Large switches and choice rows, never a desktop
+   form. Imported after the programme screen and before the overlays. */
+
+.stage-settings {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2.2vh, 26px);
+  max-width: 1180px;
+}
+
+.stage-settings-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding-block-end: 14px;
+  border-block-end: 1px solid var(--stage-line);
+}
+.stage-settings-head h1 {
+  margin: 6px 0 0;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: clamp(28px, 3vw, 64px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+.stage-settings-head p {
+  max-width: 620px;
+  margin: 6px 0 0;
+  color: var(--stage-ink-3);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.stage-settings-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  border-block-end: 1px solid var(--stage-line);
+  scrollbar-width: none;
+}
+.stage-settings-tabs::-webkit-scrollbar {
+  display: none;
+}
+.stage-settings-tab {
+  position: relative;
+  height: 45px;
+  padding: 0 14px;
+  border: none;
+  background: transparent;
+  color: var(--stage-ink-3);
+  font-size: 13.5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 140ms var(--stage-ease);
+}
+.stage-settings-tab:hover {
+  color: var(--stage-ink-2);
+}
+.stage-settings-tab.active {
+  color: var(--stage-ink);
+}
+.stage-settings-tab.active::after {
+  content: "";
+  position: absolute;
+  inset-block-end: -1px;
+  inset-inline: 9px;
+  height: 2px;
+  background: var(--stage-ink);
+  animation: stage-underline 220ms var(--stage-ease) both;
+}
+
+.stage-settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  max-width: 980px;
+  padding-block-end: 24px;
+}
+
+.stage-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 64px;
+  padding: 13px 16px;
+  border: 1px solid var(--stage-line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.028);
+  color: var(--stage-ink);
+  text-align: start;
+}
+.stage-setting-row.is-button {
+  width: 100%;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 140ms var(--stage-ease), border-color 140ms var(--stage-ease);
+}
+.stage-setting-row.is-button:hover {
+  background: rgba(255, 255, 255, 0.065);
+  border-color: var(--stage-line-strong);
+}
+.stage-setting-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.stage-setting-copy strong {
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.25;
+}
+.stage-setting-copy small {
+  color: var(--stage-ink-3);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.stage-setting-control {
+  flex-shrink: 0;
+}
+
+.stage-switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 26px;
+  border: 1px solid var(--stage-line-strong);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 160ms var(--stage-ease), border-color 160ms var(--stage-ease);
+}
+.stage-switch span {
+  position: absolute;
+  inset-block-start: 3px;
+  inset-inline-start: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7);
+  transition: transform 160ms var(--stage-ease), background 160ms var(--stage-ease);
+}
+.stage-switch.is-on {
+  background: var(--stage-ink);
+  border-color: var(--stage-ink);
+}
+.stage-switch.is-on span {
+  background: #000;
+  transform: translateX(20px);
+}
+[dir="rtl"] .stage-switch.is-on span {
+  transform: translateX(-20px);
+}
+
+.stage-choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: flex-end;
+}
+.stage-choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--stage-line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--stage-ink-3);
+  font-family: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 140ms var(--stage-ease), background 140ms var(--stage-ease), border-color 140ms var(--stage-ease);
+}
+.stage-choice:hover {
+  color: var(--stage-ink);
+  background: rgba(255, 255, 255, 0.09);
+}
+.stage-choice.active {
+  background: var(--stage-ink);
+  border-color: var(--stage-ink);
+  color: #000;
+  font-weight: 600;
+}
+
+.stage-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block-start: 2px;
+}
+.stage-settings-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--stage-line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.022);
+  color: var(--stage-ink-3);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.stage-settings-note svg {
+  flex-shrink: 0;
+  margin-block-start: 1px;
+  opacity: 0.7;
+}
+
+.stage-controller-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 18px;
+  border: 1px solid var(--stage-line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.stage-controller-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 62px;
+  width: 62px;
+  height: 62px;
+  border: 1px solid var(--stage-line);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--stage-ink-2);
+}
+.stage-controller-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.stage-controller-copy strong {
+  font-size: 17px;
+  font-weight: 600;
+}
+.stage-controller-copy small {
+  color: var(--stage-ink-3);
+  font-size: 11.5px;
+}
+.stage-controller-card .stage-btn {
+  margin-inline-start: auto;
+  flex-shrink: 0;
+}
+
+.stage-about-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid var(--stage-line);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.stage-about-mark {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 72px;
+  width: 72px;
+  height: 72px;
+  border: 1px solid var(--stage-line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--stage-ink-2);
+}
+.stage-about-card h2 {
+  margin: 4px 0 0;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: clamp(22px, 2.2vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.stage-about-card p {
+  max-width: 680px;
+  margin: 7px 0 0;
+  color: var(--stage-ink-2);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.stage-about-card small {
+  display: block;
+  margin-block-start: 10px;
+  color: var(--stage-ink-4);
+  font-size: 11px;
+}
+
+#stage-root .stage-setting-row.is-button.gp-focused,
+#stage-root .stage-choice.gp-focused,
+#stage-root .stage-settings-tab.gp-focused {
+  outline: 1px solid rgba(255, 255, 255, 0.85) !important;
+  outline-offset: 1px !important;
+  box-shadow: none !important;
+}
+#stage-root .stage-setting-row.gp-focused {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 720px) {
+  .stage-setting-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .stage-choice-row {
+    justify-content: flex-start;
+  }
+  .stage-controller-card {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .stage-controller-card .stage-btn {
+    margin-inline-start: 0;
+  }
+}

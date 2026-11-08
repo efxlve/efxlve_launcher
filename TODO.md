@@ -67,15 +67,18 @@ Open work only. Delete the item when it lands.
 
 ## Stage Mode (experimental)
 
-- Stage downloads currently shows active transfers and pause/cancel; queue
-  reordering and the full download history stay in desktop mode.
-- A controller-native store spotlight (launcher-managed catalogues only) is the
-  next store step. Do not route third-party store webviews through a virtual
-  cursor; a purchase-capable page needs its own reviewed flow.
-- Full achievements browser, collections, cloud-save status, screenshots and
-  friends shelves are still desktop-only.
-- Optional Stage sounds and haptics, a safe-area slider and a text-size setting.
-- Split Stage out of the main JavaScript chunk (see `docs/PERFORMANCE.md`).
+- The store remains desktop-only by decision. A controller-native Spotlight
+  needs a catalogue/deals data source; do not route third-party store webviews
+  through a virtual cursor, because a purchase-capable page needs its own
+  reviewed flow.
+- Friends: the launcher has no friends data source yet. A Stage shelf waits for
+  one rather than inventing presence rows.
+- Cloud restore, full profile management and advanced game management stay in
+  desktop mode; Stage offers a cloud back-up action and a direct escape hatch.
+- Full download history and queue reordering for client-owned stores stay
+  desktop; the Epic queue is reorderable from Stage.
+- Stage strings in non-English, non-Turkish locales currently fall back to
+  English until the translation pass.
 
 ## Linux/macOS: packaging and validation
 

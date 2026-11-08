@@ -19,8 +19,7 @@ import { closeAllModals } from "../../core/render";
 import { toggleFav } from "../../core/game-view";
 import { openPalette } from "../palette/palette";
 import { setView } from "../store/store-view";
-import { stageBack } from "../stage/stage-actions";
-import { stageButton } from "../stage/stage-input";
+import { stageBridge } from "./stage-bridge";
 import { stageControllerBattery, stageControllerConnected, stageControllerDisconnected } from "../stage/stage-state";
 
 const STICK_DEADZONE = 0.42;
@@ -335,7 +334,7 @@ function backAction(): void {
   }
 
   if (S.stage.active) {
-    stageBack();
+    stageBridge()?.back();
     return;
   }
 
@@ -474,14 +473,15 @@ function gamepadLoop(): void {
     backAction();
   }
   if (S.stage.active) {
-    if (justPressed(mask, BTN_X)) stageButton("x");
-    if (justPressed(mask, BTN_Y)) stageButton("y");
-    if (justPressed(mask, BTN_LB)) stageButton("lb");
-    if (justPressed(mask, BTN_RB)) stageButton("rb");
-    if (justPressed(mask, BTN_LT)) stageButton("lt");
-    if (justPressed(mask, BTN_RT)) stageButton("rt");
-    if (justPressed(mask, BTN_START)) stageButton("start");
-    if (justPressed(mask, BTN_SELECT)) stageButton("select");
+    const bridge = stageBridge();
+    if (justPressed(mask, BTN_X)) bridge?.button("x");
+    if (justPressed(mask, BTN_Y)) bridge?.button("y");
+    if (justPressed(mask, BTN_LB)) bridge?.button("lb");
+    if (justPressed(mask, BTN_RB)) bridge?.button("rb");
+    if (justPressed(mask, BTN_LT)) bridge?.button("lt");
+    if (justPressed(mask, BTN_RT)) bridge?.button("rt");
+    if (justPressed(mask, BTN_START)) bridge?.button("start");
+    if (justPressed(mask, BTN_SELECT)) bridge?.button("select");
     prevButtons = mask;
     if (mask === 0) window.setTimeout(gamepadLoop, IDLE_PAD_POLL_MS);
     else requestAnimationFrame(gamepadLoop);

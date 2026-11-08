@@ -9,9 +9,14 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   STAGE_AUTO_KEY,
   STAGE_ENABLED_KEY,
+  STAGE_HAPTICS_KEY,
   STAGE_LIBRARY_SORT_KEY,
   STAGE_LIBRARY_VIEW_KEY,
   STAGE_OPEN_AT_LAUNCH_KEY,
+  STAGE_SAFE_AREA_KEY,
+  STAGE_SOUND_KEY,
+  STAGE_TEXT_SCALE_KEY,
+  STAGE_VOLUME_KEY,
   isTauri,
 } from "../../core/constants";
 import { applyUiScale } from "../../core/game-status";
@@ -23,6 +28,7 @@ import { t } from "../../i18n";
 import { destroyDiscordPage } from "../discord/discord-view";
 import { hideSpotifyPlayer } from "../music/music-view";
 import { hideStore } from "../store/store-view";
+import { ensureStageChunk, isStageChunkReady } from "./stage-boot";
 
 let pendingDesktopScroll = -1;
 
@@ -68,10 +74,29 @@ export async function enterStage(opts: { route?: StageRoute; gameKey?: string } 
     return false;
   }
 
+  const ready = await ensureStageChunk();
+  if (!S.stage.enabled) return false;
+  if (!ready || !isStageChunkReady()) {
+    toast(t("stage.loadFailed"), "err");
+    return false;
+  }
+  if (hasOpenDialog()) {
+    toast(t("stage.closeDialogFirst"), "");
+    return false;
+  }
+  // A second click while the chunk was loading must not reset the session.
+  if (S.stage.active) return true;
+
   S.stage.active = true;
   S.stage.route = opts.route ?? "home";
   S.stage.gameKey = opts.gameKey ?? null;
+  S.stage.previewKey = null;
   S.stage.programTab = "overview";
+  S.stage.settingsTab = "general";
+  S.stage.achievementFilter = "all";
+  S.stage.collectionId = null;
+  S.stage.stillIndex = null;
+  S.stage.stillApp = null;
   S.stage.focusKey = "";
   S.stage.stack = [];
   S.stage.query = "";
@@ -80,8 +105,6 @@ export async function enterStage(opts: { route?: StageRoute; gameKey?: string } 
   S.stage.controlsOpen = false;
   S.stage.launch = null;
   S.stage.launchError = "";
-  S.stage.welcome = null;
-  S.stage.enteredAt = Date.now();
   S.stage.returnView = S.view;
   S.stage.wasFullscreen = S.isFullscreen;
   const view = document.getElementById("view");
@@ -93,7 +116,7 @@ export async function enterStage(opts: { route?: StageRoute; gameKey?: string } 
   hideStore();
   hideSpotifyPlayer();
   destroyDiscordPage();
-  void applyUiScale(100);
+  void applyUiScale(S.stage.textScale);
   void setStageFullscreen(true);
   window.dispatchEvent(new CustomEvent("stage-mode", { detail: { active: true } }));
   updateStageUi();
@@ -118,6 +141,15 @@ export function exitStage(): void {
   S.stage.focusKey = "";
   S.stage.stack = [];
   S.stage.gameKey = null;
+  S.stage.previewKey = null;
+  S.stage.collectionId = null;
+  S.stage.stillIndex = null;
+  S.stage.stillApp = null;
+  // Stage may have loaded a screenshot listing; the desktop gallery owns the
+  // cache, so release it when the mode that asked for it goes away.
+  S.loadedScreenshots.clear();
+  S.screenshotFullSrc.clear();
+  S.screenshotPreviewSrc.clear();
 
   document.body.classList.remove("stage-mode");
   document.getElementById("stage-root")?.remove();
@@ -202,6 +234,59 @@ export function setStageLibrarySort(sort: StageLibrarySort): void {
   } catch {
     /* ignore */
   }
+}
+
+export function setStageTextScale(scale: number): void {
+  if (![100, 110, 120].includes(scale)) return;
+  S.stage.textScale = scale;
+  try {
+    localStorage.setItem(STAGE_TEXT_SCALE_KEY, String(scale));
+  } catch {
+    /* ignore */
+  }
+  void applyUiScale(scale);
+  scheduleRender();
+}
+
+export function setStageSafeArea(level: number): void {
+  if (![0, 1, 2, 3].includes(level)) return;
+  S.stage.safeArea = level;
+  try {
+    localStorage.setItem(STAGE_SAFE_AREA_KEY, String(level));
+  } catch {
+    /* ignore */
+  }
+  scheduleRender();
+}
+
+export function setStageSound(on: boolean): void {
+  S.stage.sound = on;
+  try {
+    localStorage.setItem(STAGE_SOUND_KEY, String(on));
+  } catch {
+    /* ignore */
+  }
+  scheduleRender();
+}
+
+export function setStageSoundVolume(volume: number): void {
+  S.stage.soundVolume = Math.max(0, Math.min(100, Math.round(volume)));
+  try {
+    localStorage.setItem(STAGE_VOLUME_KEY, String(S.stage.soundVolume));
+  } catch {
+    /* ignore */
+  }
+  scheduleRender();
+}
+
+export function setStageHaptics(on: boolean): void {
+  S.stage.haptics = on;
+  try {
+    localStorage.setItem(STAGE_HAPTICS_KEY, String(on));
+  } catch {
+    /* ignore */
+  }
+  scheduleRender();
 }
 
 function safeToAutoEnter(): boolean {

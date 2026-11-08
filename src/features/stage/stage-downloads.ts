@@ -7,6 +7,7 @@ import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc, fmtBytes, fmtSpeed } from "../../core/utils";
 import { t } from "../../i18n";
+import { stageGameByKey } from "./stage-model";
 import { stageProgress } from "./stage-ui";
 
 function downloadRow(id: string, title: string, progress: number): string {
@@ -43,15 +44,40 @@ function downloadRow(id: string, title: string, progress: number): string {
   </div>`;
 }
 
+function queueRow(id: string, index: number, total: number): string {
+  const summary = stageGameByKey(id);
+  return `<div class="stage-queue-row">
+    <span class="stage-queue-index tabular-nums">${index + 1}</span>
+    <span class="stage-queue-copy">
+      <strong>${esc(summary?.title || id)}</strong>
+      <small>${esc(t("stage.queueWaiting"))}</small>
+    </span>
+    <span class="stage-queue-actions">
+      <button type="button" class="stage-icon-btn" data-act="dl-reorder-up" data-id="${esc(id)}" ${index === 0 ? "disabled" : ""} aria-label="${esc(t("dl.moveUp"))}" title="${esc(t("dl.moveUp"))}">${icon("chevron-up", 16)}</button>
+      <button type="button" class="stage-icon-btn" data-act="dl-reorder-down" data-id="${esc(id)}" ${index === total - 1 ? "disabled" : ""} aria-label="${esc(t("dl.moveDown"))}" title="${esc(t("dl.moveDown"))}">${icon("chevron-down", 16)}</button>
+      <button type="button" class="stage-btn stage-btn-ghost" data-act="dl-reorder-now" data-id="${esc(id)}">${icon("play", 14)}<span>${esc(t("dl.downloadNow"))}</span></button>
+      <button type="button" class="stage-icon-btn stage-icon-danger" data-act="dl-reorder-remove" data-id="${esc(id)}" aria-label="${esc(t("dl.removeFromQueue"))}" title="${esc(t("dl.removeFromQueue"))}">${icon("x", 16)}</button>
+    </span>
+  </div>`;
+}
+
 export function renderStageDownloads(): string {
   const rows: string[] = [];
+  const queue = S.dlQueueStatus.queue.filter((id) => id !== S.dlQueueStatus.active);
+  const queueSet = new Set(queue);
   for (const [id, item] of S.downloads) {
-    if (item.done) continue;
+    if (item.done || queueSet.has(id)) continue;
     rows.push(downloadRow(id, item.title || id, item.progress));
   }
   if (rows.length === 0 && S.activeDlMetrics && !S.activeDlMetrics.done) {
     rows.push(downloadRow(S.activeDlMetrics.id, S.activeDlMetrics.title, S.activeDlMetrics.progress));
   }
+  const queueHtml = queue.length > 0
+    ? `<section class="stage-queue-section">
+        <div class="stage-extra-section-head"><span class="stage-kicker">${esc(t("stage.queue"))}</span><span class="stage-extra-count tabular-nums">${queue.length}</span></div>
+        <div class="stage-queue-list">${queue.map((id, index) => queueRow(id, index, queue.length)).join("")}</div>
+      </section>`
+    : "";
   return `<div class="stage-downloads">
     <header class="stage-downloads-head">
       <div>
@@ -68,5 +94,6 @@ export function renderStageDownloads(): string {
           <p>${esc(t("stage.downloadsEmptyHint"))}</p>
           <button type="button" class="stage-btn stage-btn-primary" data-stage-act="go" data-route="library" data-gp-item data-gp-key="dl:library">${esc(t("stage.navLibrary"))}</button>
         </div>`}
+    ${queueHtml}
   </div>`;
 }

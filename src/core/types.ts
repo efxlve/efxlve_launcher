@@ -11,9 +11,11 @@ export type View = "library" | "downloads" | "settings" | "profile" | "store" | 
 /* ---------- Stage Mode (experimental controller shell) ---------- */
 
 /** Screen inside Stage. Stage is a mode, not a desktop view. */
-export type StageRoute = "home" | "library" | "program" | "downloads";
+export type StageRoute = "home" | "library" | "program" | "downloads" | "settings";
 export type StageProgramTab = "overview" | "achievements" | "extras";
+export type StageSettingsTab = "general" | "controller" | "appearance" | "about";
 export type StageLibraryFilter = "all" | "installed" | "favorites" | "updates";
+export type StageAchievementFilter = "all" | "unlocked" | "locked";
 export type StageLibrarySort = "recent" | "alpha" | "playtime" | "installed";
 export type StageLibraryView = "grid" | "list";
 

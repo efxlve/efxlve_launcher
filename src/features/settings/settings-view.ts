@@ -844,7 +844,7 @@ function renderController(): string {
         row(
           t("stage.settingsOpenNow"),
           t("stage.settingsOpenNowDesc"),
-          `<button class="btn ghost small" data-act="toggle-stage">${icon("clapperboard", 14)} ${t("stage.enter")}</button>`,
+          `<div class="settings-inline-control"><button class="btn ghost small" data-act="toggle-stage">${icon("clapperboard", 14)} ${t("stage.enter")}</button><button class="btn ghost small" data-act="open-stage-settings">${icon("sliders", 14)} ${t("stage.navSettings")}</button></div>`,
         )
       : "") +
     infoBox("stage.settingsBetaNote");

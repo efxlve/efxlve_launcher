@@ -3,18 +3,22 @@
  * "up next" shelf. No store promotion, no carousel that moves by itself.
  */
 
+import { collectionGameCount } from "../../core/game-collections";
 import { icon } from "../../core/icons";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
-import type { EpicSummary } from "../../epic";
-import { stageHeroMarkup } from "./stage-art";
+import type { EpicSummary, GameCollection } from "../../epic";
+import { stageCoverMarkup, stageHeroMarkup } from "./stage-art";
 import {
+  stageCollectionCoverKeys,
+  stageGameByKey,
   stageHeroSummary,
   stagePrimaryAction,
   stageReadyShelf,
   stageRecentSummaries,
   stageTitleKey,
   stageUpNext,
+  stageUserCollections,
 } from "./stage-model";
 import { stageMetaLine, stageSectionLabel, stageStatus } from "./stage-ui";
 
@@ -43,6 +47,31 @@ function row(title: string, games: EpicSummary[], card: (s: EpicSummary) => stri
   return `<section class="stage-row-section">
     ${stageSectionLabel(title, `<span class="stage-row-count">${games.length}</span>`)}
     <div class="stage-card-row" data-gp-row>${games.map(card).join("")}</div>
+  </section>`;
+}
+
+function collectionCard(collection: GameCollection): string {
+  const summaries = stageCollectionCoverKeys(collection)
+    .map((key) => stageGameByKey(key))
+    .filter((summary): summary is EpicSummary => Boolean(summary));
+  const covers = summaries
+    .map((summary) => `<span class="stage-collection-cover">${stageCoverMarkup(summary)}</span>`)
+    .join("");
+  return `<button type="button" class="stage-collection-card" data-stage-act="open-collection" data-id="${esc(collection.id)}" data-gp-item data-gp-key="collection:${esc(collection.id)}">
+    <span class="stage-collection-mosaic stage-collection-mosaic-${Math.max(1, summaries.length)}">${covers || `<span class="stage-collection-empty">${icon("layers", 24)}</span>`}</span>
+    <span class="stage-collection-copy">
+      <strong>${esc(collection.name)}</strong>
+      <small>${esc(t("stage.collectionCount", { n: collectionGameCount(collection) }))}</small>
+    </span>
+  </button>`;
+}
+
+function collectionsRow(): string {
+  const collections = stageUserCollections();
+  if (collections.length === 0) return "";
+  return `<section class="stage-row-section">
+    ${stageSectionLabel(t("stage.collections"), `<span class="stage-row-count">${collections.length}</span>`)}
+    <div class="stage-card-row stage-collection-row" data-gp-row>${collections.map(collectionCard).join("")}</div>
   </section>`;
 }
 
@@ -90,6 +119,7 @@ export function renderStageHome(): string {
     ${row(t("stage.continue"), recent, reelCard)}
     ${row(t("stage.upNext"), upNext, portraitCard)}
     ${row(t("stage.ready"), ready, portraitCard)}
+    ${collectionsRow()}
 
     <section class="stage-row-section stage-row-section-end">
       <button type="button" class="stage-library-jump" data-stage-act="go" data-route="library" data-gp-item data-gp-key="home:library">

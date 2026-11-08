@@ -210,6 +210,12 @@ export const STAGE_OPEN_AT_LAUNCH_KEY = "efxlve-stage-open-at-launch";
 /** Stage library layout and sort, remembered between sessions. */
 export const STAGE_LIBRARY_VIEW_KEY = "efxlve-stage-library-view";
 export const STAGE_LIBRARY_SORT_KEY = "efxlve-stage-library-sort";
+/** Stage sound, haptics, text size and safe area. */
+export const STAGE_SOUND_KEY = "efxlve-stage-sound";
+export const STAGE_VOLUME_KEY = "efxlve-stage-volume";
+export const STAGE_HAPTICS_KEY = "efxlve-stage-haptics";
+export const STAGE_TEXT_SCALE_KEY = "efxlve-stage-text-scale";
+export const STAGE_SAFE_AREA_KEY = "efxlve-stage-safe-area";
 
 /** Spotify / Discord pages: missing = visible. The overlay follows these. */
 export const SHOW_SPOTIFY_KEY = "efxlve-show-spotify";

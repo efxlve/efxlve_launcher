@@ -90,6 +90,11 @@ import {
   STAGE_OPEN_AT_LAUNCH_KEY,
   STAGE_LIBRARY_VIEW_KEY,
   STAGE_LIBRARY_SORT_KEY,
+  STAGE_SOUND_KEY,
+  STAGE_VOLUME_KEY,
+  STAGE_HAPTICS_KEY,
+  STAGE_TEXT_SCALE_KEY,
+  STAGE_SAFE_AREA_KEY,
   isSteamDeckDevice,
   INSTALLED_ICON_KEY,
   HIGHLIGHT_INSTALLED_KEY,
@@ -112,7 +117,7 @@ import { initialReduceEffects } from "./effects";
 import { loadGameStatus, loadUiScale } from "./game-status";
 import { readCustomCss } from "./custom-css";
 import { normalizeSurface } from "./themes";
-import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, CustomLogoLayout, CustomLogoSize, DlMetrics, DownloadFinishAction, DrawerTab, EpicCopyOverride, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibGroupBy, LibraryItem, LogoAnchor, NotifTab, SavedAccount, SettingsSection, StageLibraryFilter, StageLibrarySort, StageLibraryView, StageProgramTab, StageRoute, StageRouteSnapshot, View } from "./types";
+import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, CustomLogoLayout, CustomLogoSize, DlMetrics, DownloadFinishAction, DrawerTab, EpicCopyOverride, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibGroupBy, LibraryItem, LogoAnchor, NotifTab, SavedAccount, SettingsSection, StageAchievementFilter, StageLibraryFilter, StageLibrarySort, StageLibraryView, StageProgramTab, StageRoute, StageRouteSnapshot, StageSettingsTab, View } from "./types";
 import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
 
 
@@ -922,7 +927,14 @@ export const S = {
     active: false,
     route: ("home") as StageRoute,
     gameKey: (null) as string | null,
+    /** Last game the library wall previewed, kept while the focus is on a tool. */
+    previewKey: (null) as string | null,
     programTab: ("overview") as StageProgramTab,
+    settingsTab: ("general") as StageSettingsTab,
+    achievementFilter: ("all") as StageAchievementFilter,
+    collectionId: (null) as string | null,
+    stillIndex: (null) as number | null,
+    stillApp: (null) as string | null,
     focusKey: "",
     libraryFilter: ("all") as StageLibraryFilter,
     libraryStore: ("all") as GameSource | "all",
@@ -944,13 +956,53 @@ export const S = {
       }
       return "grid";
     })() as StageLibraryView,
+    textScale: (() => {
+      try {
+        const stored = Number(localStorage.getItem(STAGE_TEXT_SCALE_KEY));
+        if ([100, 110, 120].includes(stored)) return stored;
+      } catch {
+        /* ignore */
+      }
+      return 100;
+    })() as number,
+    safeArea: (() => {
+      try {
+        const stored = Number(localStorage.getItem(STAGE_SAFE_AREA_KEY));
+        if ([0, 1, 2, 3].includes(stored)) return stored;
+      } catch {
+        /* ignore */
+      }
+      return 0;
+    })() as number,
+    sound: (() => {
+      try {
+        return localStorage.getItem(STAGE_SOUND_KEY) !== "false";
+      } catch {
+        return true;
+      }
+    })() as boolean,
+    soundVolume: (() => {
+      try {
+        const stored = Number(localStorage.getItem(STAGE_VOLUME_KEY));
+        if (Number.isFinite(stored) && stored >= 0 && stored <= 100) return stored;
+      } catch {
+        /* ignore */
+      }
+      return 35;
+    })() as number,
+    haptics: (() => {
+      try {
+        return localStorage.getItem(STAGE_HAPTICS_KEY) !== "false";
+      } catch {
+        return true;
+      }
+    })() as boolean,
     query: "",
     searchOpen: false,
     quickMenu: false,
     controlsOpen: false,
     launch: (null) as { key: string; title: string; art: string | null } | null,
     launchError: "",
-    welcome: (null) as { title: string; seconds: number } | null,
     returnView: ("library") as View,
     returnScroll: 0,
     wasFullscreen: false,
@@ -969,9 +1021,10 @@ export const S = {
       } catch {
         /* ignore */
       }
-      // A connected pad is a clear signal. `safeToAutoEnter` keeps the switch
-      // from firing while a dialog is open or the user is typing.
-      return true;
+      // A handheld is a couch device by definition; a desktop may have a pad
+      // for one game and still want the normal shell. The title bar and F10
+      // stay one press away either way.
+      return isSteamDeckDevice();
     })() as boolean,
     openAtLaunch: (() => {
       try {
@@ -984,7 +1037,6 @@ export const S = {
     controllerName: "",
     controllerBattery: (null) as number | null,
     stack: ([] as StageRouteSnapshot[]),
-    enteredAt: 0,
   },
   gamepadPolling: false,
   lastGamepadActionTime: 0,
