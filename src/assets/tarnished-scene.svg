@@ -1,0 +1,188 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Sky & Atmosphere Gradients -->
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#040305"/>
+      <stop offset="45%" stop-color="#09080b"/>
+      <stop offset="75%" stop-color="#140f0a"/>
+      <stop offset="100%" stop-color="#0a0806"/>
+    </linearGradient>
+
+    <!-- Erdtree Majestic Golden Glow -->
+    <radialGradient id="erdtreeAura" cx="72%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#ffd866" stop-opacity="0.32"/>
+      <stop offset="25%" stop-color="#e5a93c" stop-opacity="0.2"/>
+      <stop offset="55%" stop-color="#b47818" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#040305" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="erdtreeCore" cx="72%" cy="30%" r="22%">
+      <stop offset="0%" stop-color="#fff8db" stop-opacity="0.6"/>
+      <stop offset="35%" stop-color="#ffd56b" stop-opacity="0.35"/>
+      <stop offset="80%" stop-color="#d4901a" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#b47818" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Grace Site Radiant Core -->
+    <radialGradient id="graceAura" cx="24%" cy="86%" r="22%">
+      <stop offset="0%" stop-color="#fffbe8" stop-opacity="0.95"/>
+      <stop offset="15%" stop-color="#ffd966" stop-opacity="0.7"/>
+      <stop offset="40%" stop-color="#e5a93c" stop-opacity="0.35"/>
+      <stop offset="70%" stop-color="#9a6712" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Mist & Cloud Haze -->
+    <linearGradient id="mistGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#d4901a" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#cda043" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#070605" stop-opacity="0.9"/>
+    </linearGradient>
+
+    <!-- Runic Gold Stroke -->
+    <linearGradient id="runeGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff0aa" stop-opacity="0.5"/>
+      <stop offset="50%" stop-color="#e5a93c" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#845914" stop-opacity="0.1"/>
+    </linearGradient>
+
+    <!-- Branch Shimmer -->
+    <linearGradient id="branchGold" x1="50%" y1="100%" x2="50%" y2="0%">
+      <stop offset="0%" stop-color="#ffd56b" stop-opacity="0.15"/>
+      <stop offset="50%" stop-color="#fff1b8" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#ffd56b" stop-opacity="0.05"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Base Dark Sky Canvas -->
+  <rect width="1920" height="1080" fill="url(#skyGrad)"/>
+
+  <!-- Distant Golden Erdtree Atmosphere Aura -->
+  <rect width="1920" height="1080" fill="url(#erdtreeAura)"/>
+  <circle cx="1380" cy="380" r="420" fill="url(#erdtreeCore)"/>
+
+  <!-- Starry Canopy & Floating Golden Embers -->
+  <g fill="#ffeeba" opacity="0.45">
+    <circle cx="120" cy="95" r="1"/>
+    <circle cx="280" cy="140" r="1.2"/>
+    <circle cx="440" cy="80" r="0.8"/>
+    <circle cx="560" cy="180" r="1.4"/>
+    <circle cx="700" cy="90" r="0.9"/>
+    <circle cx="890" cy="150" r="1.1"/>
+    <circle cx="1020" cy="75" r="1.3"/>
+    <circle cx="1180" cy="110" r="1"/>
+    <circle cx="1680" cy="85" r="1.2"/>
+    <circle cx="1820" cy="160" r="1.5"/>
+    <circle cx="1740" cy="240" r="0.8"/>
+    <circle cx="340" cy="270" r="1.2"/>
+    <circle cx="210" cy="340" r="0.9"/>
+  </g>
+
+  <!-- Luminous Erdtree Trunk & Sprawling Celestial Canopy -->
+  <g id="erdtreeCanopy" opacity="0.65">
+    <!-- Giant luminous trunk rising from the eastern horizon -->
+    <path d="M1320,1080 C1330,850 1340,650 1360,520 C1370,440 1375,340 1380,240 C1385,340 1395,440 1410,530 C1430,660 1445,860 1460,1080 Z" fill="url(#branchGold)" opacity="0.5"/>
+    <path d="M1355,1080 C1360,780 1370,550 1380,360 C1390,550 1400,780 1415,1080 Z" fill="#fff5cc" opacity="0.35"/>
+
+    <!-- Primary Great Branches Arching into the Celestial Void -->
+    <!-- Far Left Sweeping Branch -->
+    <path d="M1365,480 C1280,440 1140,410 1020,430 C900,450 780,510 650,590 C640,580 770,500 890,440 C1010,380 1160,370 1360,430 Z" fill="url(#branchGold)" opacity="0.6"/>
+    <path d="M1040,420 C960,360 840,320 710,310 C600,300 480,320 380,370 C470,330 590,315 700,325 C820,335 940,370 1020,430 Z" fill="#ffeaa7" opacity="0.45"/>
+    
+    <!-- High Celestial Crown Arch Branches -->
+    <path d="M1375,340 C1320,260 1220,180 1090,140 C950,100 780,105 620,160 C760,120 930,115 1070,150 C1200,185 1300,260 1365,350 Z" fill="url(#branchGold)" opacity="0.7"/>
+    <path d="M1380,250 C1340,160 1260,90 1140,50 C1020,15 880,20 740,65 C870,30 1000,25 1120,60 C1230,95 1320,165 1370,260 Z" fill="#fff6d1" opacity="0.5"/>
+
+    <!-- Far Right Grace Canopy Branches -->
+    <path d="M1395,460 C1480,420 1600,400 1710,430 C1790,450 1860,490 1920,540 C1850,495 1780,460 1700,445 C1590,420 1480,440 1405,490 Z" fill="url(#branchGold)" opacity="0.55"/>
+    <path d="M1390,320 C1460,240 1570,180 1700,150 C1790,130 1870,140 1920,165 C1860,145 1780,140 1690,160 C1560,190 1450,250 1385,340 Z" fill="url(#branchGold)" opacity="0.6"/>
+
+    <!-- Radiant Filament Leaves / Wisps -->
+    <path d="M1080,145 Q1010,90 920,95 Q1000,110 1060,155 Z" fill="#fffbe8" opacity="0.6"/>
+    <path d="M890,440 Q800,400 720,430 Q790,420 870,455 Z" fill="#fffbe8" opacity="0.5"/>
+    <path d="M1580,180 Q1670,140 1750,155 Q1670,160 1600,195 Z" fill="#fffbe8" opacity="0.6"/>
+  </g>
+
+  <!-- Distant Crumbling Lands Silhouette (Mountain Ridges) -->
+  <path d="M0,740 Q240,710 460,735 T920,705 T1380,720 T1920,690 L1920,1080 L0,1080 Z" fill="#090807" opacity="0.9"/>
+  <path d="M0,780 C180,760 340,750 520,775 C700,800 880,760 1060,770 C1240,780 1440,740 1640,770 C1780,790 1860,780 1920,775 L1920,1080 L0,1080 Z" fill="#0d0b09"/>
+
+  <!-- Ancient Crumbling Gothic Ruin Sanctuary (Center-Right Promontory) -->
+  <g id="gothicRuins" fill="#0b0a08">
+    <!-- Broken Cathedral Arch 1 -->
+    <path d="M1080,740 L1080,610 Q1120,560 1160,610 L1160,740 L1148,740 L1148,620 Q1120,585 1092,620 L1092,740 Z"/>
+    <!-- Broken Cathedral Arch 2 (Half collapsed) -->
+    <path d="M1175,740 L1175,640 Q1205,595 1235,630 L1230,650 Q1205,620 1187,650 L1187,740 Z"/>
+    <!-- Weathered Stone Pillars & Flying Buttresses -->
+    <rect x="1055" y="650" width="14" height="90" rx="1"/>
+    <rect x="1245" y="670" width="12" height="70" rx="1"/>
+    <polygon points="1060,650 1020,720 1030,720 1065,660"/>
+    <!-- Crumbled masonry blocks on cliff ledge -->
+    <rect x="1010" y="730" width="22" height="12" rx="1" transform="rotate(-6 1010 730)"/>
+    <rect x="1270" y="734" width="26" height="14" rx="1" transform="rotate(8 1270 734)"/>
+    <rect x="1195" y="732" width="18" height="10" rx="1"/>
+  </g>
+
+  <!-- Foreground Cliff Promontory with Lost Site of Grace (Left Side) -->
+  <path d="M0,860 C120,850 260,840 380,870 C480,895 560,940 680,970 C760,990 840,995 920,1080 L0,1080 Z" fill="#13100c"/>
+  <path d="M0,890 C140,880 280,875 390,910 C480,940 560,1000 640,1080 L0,1080 Z" fill="#0d0b08"/>
+
+  <!-- Site of Grace Altar & Floating Golden Wisps -->
+  <g id="siteOfGrace">
+    <!-- Stone Dais Base -->
+    <ellipse cx="280" cy="890" rx="90" ry="24" fill="#1c1712" stroke="rgba(229,169,60,0.3)" stroke-width="1.5"/>
+    <ellipse cx="280" cy="887" rx="72" ry="18" fill="#15120e" stroke="rgba(229,169,60,0.5)" stroke-width="1"/>
+    
+    <!-- Concentric Grace Light Ring Ripple on Ground -->
+    <ellipse cx="280" cy="887" rx="110" ry="28" fill="none" stroke="url(#runeGold)" stroke-width="1.5" opacity="0.6"/>
+    <ellipse cx="280" cy="887" rx="140" ry="36" fill="none" stroke="url(#runeGold)" stroke-width="0.8" opacity="0.35"/>
+
+    <!-- Radiant Grace Aura Bulb -->
+    <circle cx="280" cy="840" r="120" fill="url(#graceAura)"/>
+
+    <!-- Intertwining Grace Wisps (Golden Beams Spiraling Upward) -->
+    <path d="M276,885 C270,840 285,810 278,770 C272,735 284,705 280,660" fill="none" stroke="#fff5cc" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+    <path d="M284,885 C292,845 274,815 285,775 C294,740 276,700 282,650" fill="none" stroke="#fed867" stroke-width="2.2" stroke-linecap="round" opacity="0.85"/>
+    <path d="M272,875 C255,830 295,800 288,750 C282,710 292,670 286,630" fill="none" stroke="#e5a93c" stroke-width="1.6" stroke-linecap="round" opacity="0.75"/>
+    
+    <!-- Grace Spores Floating & Drifting from the Grace Site -->
+    <circle cx="280" cy="840" r="4.5" fill="#ffffff" opacity="0.95"/>
+    <circle cx="278" cy="800" r="3.2" fill="#fff9db" opacity="0.9"/>
+    <circle cx="285" cy="760" r="2.8" fill="#ffea8a" opacity="0.85"/>
+    <circle cx="272" cy="720" r="2.4" fill="#ffd966" opacity="0.8"/>
+    <circle cx="290" cy="670" r="2" fill="#ffd966" opacity="0.75"/>
+    <circle cx="280" cy="630" r="1.8" fill="#ffd966" opacity="0.7"/>
+    <circle cx="295" cy="590" r="1.5" fill="#ffd966" opacity="0.6"/>
+    <circle cx="265" cy="650" r="1.6" fill="#ffe599" opacity="0.65"/>
+    <circle cx="310" cy="710" r="1.8" fill="#ffe599" opacity="0.7"/>
+    <circle cx="250" cy="760" r="2" fill="#ffe599" opacity="0.75"/>
+    <circle cx="325" cy="790" r="2.2" fill="#ffd966" opacity="0.7"/>
+    <circle cx="240" cy="820" r="2.5" fill="#fed867" opacity="0.75"/>
+    <circle cx="330" cy="850" r="2" fill="#fed867" opacity="0.7"/>
+
+    <!-- Guiding Grace Ray of Light (Subtle golden arrow/vector guiding the player forward) -->
+    <path d="M280,840 C360,820 460,810 600,815 C740,820 880,845 1060,870" fill="none" stroke="url(#runeGold)" stroke-width="2.5" stroke-dasharray="12 8" opacity="0.45"/>
+    <path d="M280,840 C360,820 460,810 600,815 C740,820 880,845 1060,870" fill="none" stroke="#fff0aa" stroke-width="0.8" opacity="0.6"/>
+  </g>
+
+  <!-- Elden Ring Inspired Celestial Ring Filigree (Bottom Right Ambient Ornament) -->
+  <g id="celestialRingArc" transform="translate(1720, 920)" opacity="0.28">
+    <!-- Great Arc Ring 1 -->
+    <circle cx="0" cy="0" r="180" fill="none" stroke="url(#runeGold)" stroke-width="2"/>
+    <circle cx="0" cy="0" r="172" fill="none" stroke="rgba(229,169,60,0.4)" stroke-width="0.8" stroke-dasharray="3 6"/>
+    <!-- Intersecting Arc Rings -->
+    <circle cx="-60" cy="-60" r="140" fill="none" stroke="url(#runeGold)" stroke-width="1.4"/>
+    <circle cx="60" cy="-60" r="140" fill="none" stroke="url(#runeGold)" stroke-width="1.4"/>
+    <!-- Central Rune Cross-Stave -->
+    <line x1="0" y1="-220" x2="0" y2="120" stroke="url(#runeGold)" stroke-width="2"/>
+    <line x1="-160" y1="-50" x2="160" y2="-50" stroke="url(#runeGold)" stroke-width="1.5"/>
+    <!-- Small Runic Nodes -->
+    <circle cx="0" cy="-50" r="6" fill="#ffd966"/>
+    <circle cx="0" cy="-180" r="4" fill="#ffd966"/>
+    <circle cx="-140" cy="-50" r="3.5" fill="#ffd966"/>
+    <circle cx="140" cy="-50" r="3.5" fill="#ffd966"/>
+  </g>
+
+  <!-- Atmospheric Night Fog Ground Layer -->
+  <rect x="0" y="800" width="1920" height="280" fill="url(#mistGrad)" pointer-events="none"/>
+</svg>

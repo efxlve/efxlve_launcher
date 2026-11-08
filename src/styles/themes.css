@@ -3423,26 +3423,326 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   box-shadow: 0 0 8px rgba(217, 56, 41, 0.6);
 }
 
-/* ---------- Tarnished Grace (Elden Ring Inspired) ---------- */
+/* ---------- Tarnished Grace (Elden Ring Inspired) ----------
+   Dark fantasy epic: majestic glowing Erdtree & Site of Grace backdrop (src/assets/tarnished-scene.svg),
+   weathered ash stone & obsidian sanctuary slabs, ancient golden rune action buttons,
+   and guiding grace particle aura. */
+
+:root[data-surface="tarnished"] {
+  color-scheme: dark;
+  --bg: #090807;
+  --surface-1: #14120e;
+  --surface-2: #1e1a14;
+  --surface-3: #2a241b;
+  --line: rgba(229, 169, 60, 0.22);
+  --line-strong: rgba(229, 169, 60, 0.45);
+  --text: #f9f6ed;
+  --text-2: #c7bc9f;
+  --text-3: #78705c;
+  --accent: #e5a93c;
+  --accent-hover: #f5be57;
+  --accent-tint: rgba(229, 169, 60, 0.16);
+  --on-accent: #120d04;
+  --ok: #34d399;
+  --ok-hover: #6ee7b7;
+  --ok-tint: rgba(52, 211, 153, 0.15);
+  --warn: #e5a93c;
+  --warn-tint: rgba(229, 169, 60, 0.15);
+  --err: #ef4444;
+  --err-tint: rgba(239, 68, 68, 0.18);
+  --r-xs: 2px;
+  --r-sm: 4px;
+  --r-md: 5px;
+  --r-lg: 7px;
+  --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.9);
+  --scrollbar-thumb: rgba(229, 169, 60, 0.48);
+  --scrollbar-thumb-hover: #f5be57;
+}
+
+:root[data-surface="tarnished"] body {
+  background: #090807 url("../assets/tarnished-scene.svg") 0 0 / 100vw 100vh no-repeat;
+}
+:root[data-surface="tarnished"] #main-col,
+:root[data-surface="tarnished"] #view { background: transparent; }
+:root[data-surface="tarnished"] .overlay { background: transparent; }
+:root[data-surface="tarnished"] .overlay::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  top: var(--winbar-h);
+  left: var(--sidebar-w);
+  right: 0;
+  bottom: 0;
+  background: #090807 url("../assets/tarnished-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
+  pointer-events: none;
+  transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
+}
+
+/* Tarnished Grace: Custom Visible Antique Gold Scrollbars */
+:root[data-surface="tarnished"] ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+  box-shadow: 0 0 6px rgba(229, 169, 60, 0.25);
+}
+:root[data-surface="tarnished"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 12px rgba(245, 190, 87, 0.7);
+}
 :root[data-surface="tarnished"] .overlay::-webkit-scrollbar-track {
-  background: rgba(11, 10, 8, 0.7);
-  border-left: 1px solid rgba(229, 169, 60, 0.16);
+  background: rgba(9, 8, 7, 0.75);
+  border-left: 1px solid rgba(229, 169, 60, 0.18);
 }
 :root[data-surface="tarnished"] .overlay::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
-  border-radius: 3px;
-  border: 1px solid rgba(229, 169, 60, 0.3);
-  box-shadow: 0 0 6px rgba(229, 169, 60, 0.25);
+  border-radius: 4px;
+  border: 1px solid rgba(229, 169, 60, 0.35);
+  box-shadow: 0 0 8px rgba(229, 169, 60, 0.35);
 }
 :root[data-surface="tarnished"] .overlay::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
-  box-shadow: 0 0 14px rgba(245, 190, 87, 0.7);
+  box-shadow: 0 0 14px rgba(245, 190, 87, 0.8);
 }
-:root[data-surface="tarnished"] :is(.btn.primary, .btn.play) {
-  box-shadow: 0 0 14px rgba(229, 169, 60, 0.35);
+
+/* Tarnished Grace: Window Bar */
+:root[data-surface="tarnished"] #winbar {
+  background: #0d0b09;
+  border-bottom: 1px solid rgba(229, 169, 60, 0.25);
 }
-:root[data-surface="tarnished"] :is(.btn.primary, .btn.play):hover {
-  box-shadow: 0 0 20px rgba(245, 190, 87, 0.65);
+:root[data-surface="tarnished"] .winbar-beta-chip {
+  background: #e5a93c;
+  color: #120d04;
+  font-weight: 800;
+  border-radius: 3px;
+  box-shadow: 0 0 10px rgba(229, 169, 60, 0.5);
+  letter-spacing: 0.5px;
+}
+:root[data-surface="tarnished"] .winbar-btn:hover {
+  background: rgba(229, 169, 60, 0.14);
+  color: #fde047;
+}
+:root[data-surface="tarnished"] .win-btn.win-close:hover {
+  background: #991b1b;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(220, 38, 38, 0.75);
+}
+
+/* Tarnished Grace: Sidebar Navigation */
+:root[data-surface="tarnished"] #sidebar {
+  background: rgba(13, 11, 9, 0.96);
+  border-right: 1px solid rgba(229, 169, 60, 0.22);
+  backdrop-filter: blur(8px);
+}
+:root[data-surface="tarnished"] #page-header {
+  background: rgba(14, 12, 9, 0.88);
+  border-bottom: 1px solid rgba(229, 169, 60, 0.22);
+  backdrop-filter: blur(6px);
+}
+:root[data-surface="tarnished"] .sb-item {
+  border-radius: 4px;
+  transition: all var(--ease);
+}
+:root[data-surface="tarnished"] .sb-item:hover:not(.active) {
+  color: #fef08a;
+  background: rgba(229, 169, 60, 0.1);
+}
+:root[data-surface="tarnished"] .sb-item.active {
+  background: linear-gradient(90deg, rgba(229, 169, 60, 0.22) 0%, rgba(229, 169, 60, 0.04) 100%);
+  color: #fef08a;
+  font-weight: 700;
+  border-left: 3px solid #e5a93c;
+  border-radius: 0 4px 4px 0;
+  box-shadow: inset 2px 0 10px rgba(229, 169, 60, 0.3);
+}
+:root[data-surface="tarnished"] .sb-item.active::before {
+  display: none;
+}
+:root[data-surface="tarnished"] .sb-badge,
+:root[data-surface="tarnished"] .nav-badge {
+  background: #e5a93c;
+  color: #120d04;
+  font-weight: 800;
+  box-shadow: 0 0 8px rgba(229, 169, 60, 0.6);
+  border: 1px solid rgba(254, 240, 138, 0.5);
+}
+
+/* Tarnished Grace: Primary Action Buttons (Golden Grace Seal) */
+:root[data-surface="tarnished"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
+  background: linear-gradient(180deg, #f5be57 0%, #b47818 100%);
+  color: #120d04;
+  font-family: "Cinzel", "Georgia", "Cambria", serif;
+  font-weight: 800;
+  border: 1px solid #ffea8a;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 8px rgba(0, 0, 0, 0.7), 0 0 14px rgba(229, 169, 60, 0.45);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: all var(--ease);
+}
+:root[data-surface="tarnished"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
+  background: linear-gradient(180deg, #fff0aa 0%, #d4901a 100%);
+  border-color: #ffffff;
+  color: #000000;
+  box-shadow: inset 0 1px 0 #ffffff, 0 0 22px rgba(245, 190, 87, 0.8), 0 0 8px #ffffff;
+  transform: translateY(-1px);
+}
+:root[data-surface="tarnished"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
+  background: #9a6712;
+  border-color: #9a6712;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+  transform: translateY(0);
+}
+
+/* Tarnished Grace: Secondary Action Buttons (Carved Ash Stone & Antique Gold) */
+:root[data-surface="tarnished"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
+  background: rgba(26, 22, 17, 0.92);
+  border: 1px solid rgba(229, 169, 60, 0.32);
+  color: #f9f6ed;
+  border-radius: 4px;
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+:root[data-surface="tarnished"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
+:root[data-surface="tarnished"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
+  border-color: #f5be57;
+  color: #fff9db;
+  background: rgba(229, 169, 60, 0.2);
+  box-shadow: 0 0 12px rgba(229, 169, 60, 0.4);
+}
+
+/* Tarnished Grace: Danger Buttons (Dark Crimson Blood-Rune) */
+:root[data-surface="tarnished"] .btn.danger {
+  background: #5f1515;
+  border: 1px solid #991b1b;
+  color: #fecdd3;
+  font-weight: 700;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(95, 21, 21, 0.5);
+}
+:root[data-surface="tarnished"] .btn.danger:hover {
+  background: #7f1d1d;
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(220, 38, 38, 0.7);
+}
+
+/* Tarnished Grace: Regal Dark Fantasy Serif Headings & Group Titles */
+:root[data-surface="tarnished"] :is(
+  .page-header-title, .section-title, .hub-card-title, .hltb-title,
+  .gp-section-title, .notif-title, .modal-box h2, .col-modal-title h2,
+  .dl-group-title, .settings-group-title, .dl-sec-title
+) {
+  font-family: "Cinzel", "Georgia", "Cambria", "Times New Roman", serif;
+  color: #f5be57;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 12px rgba(229, 169, 60, 0.4);
+}
+
+/* Tarnished Grace: Cards, Panels, Ash Stone Slabs & Sanctuary Boards */
+:root[data-surface="tarnished"] :is(
+  .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item,
+  .gp-ac-notice, .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card,
+  .gp-side-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
+  .news-card, .storage-overview-card, .storage-stat-pill, .notes-card,
+  .selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card,
+  .ss-share-card, .modal-box, .manage-dialog, .storage-dialog, .hide-list-dialog,
+  .changelog-dialog, .lib-filter-panel, .custom-game-modal
+) {
+  background: linear-gradient(180deg, rgba(27, 23, 18, 0.94) 0%, rgba(16, 13, 10, 0.92) 100%);
+  border: 1px solid rgba(229, 169, 60, 0.35);
+  border-radius: 5px;
+  box-shadow: inset 0 1px 0 rgba(255, 234, 138, 0.16), inset 0 0 0 1px rgba(0, 0, 0, 0.6), 0 8px 26px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+}
+:root[data-surface="tarnished"] .lrow:hover {
+  border-color: #f5be57;
+  box-shadow: inset 0 1px 0 rgba(255, 234, 138, 0.25), 0 0 16px rgba(229, 169, 60, 0.35);
+  background: linear-gradient(180deg, rgba(35, 29, 23, 0.96) 0%, rgba(22, 18, 14, 0.94) 100%);
+}
+
+/* Tarnished Grace: Library Game Cards */
+:root[data-surface="tarnished"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(229, 169, 60, 0.22);
+  border-radius: 4px;
+}
+:root[data-surface="tarnished"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+  box-shadow:
+    0 0 0 2px #e5a93c,
+    0 0 22px rgba(229, 169, 60, 0.5),
+    0 12px 30px rgba(0, 0, 0, 0.9);
+  transform: translateY(-2px);
+}
+:root[data-surface="tarnished"] .pcard-play-btn {
+  background: rgba(18, 15, 11, 0.9);
+  border: 1px solid rgba(229, 169, 60, 0.45);
+  color: #fef08a;
+  border-radius: 3px;
+}
+:root[data-surface="tarnished"] .pcard-play-btn:hover {
+  background: #e5a93c;
+  color: #120d04;
+  border-color: #ffea8a;
+  box-shadow: 0 0 14px rgba(229, 169, 60, 0.75);
+}
+
+/* Tarnished Grace: Inputs, Search & Fields */
+:root[data-surface="tarnished"] :is(
+  input:not([type="range"], [type="checkbox"], [type="radio"]),
+  select, textarea, .input, .text-input, .search, .page-search,
+  .settings-search, .music-input, .music-select, .storage-search-input,
+  .move-path-input, .install-path-input
+) {
+  background: #080706;
+  border: 1px solid rgba(229, 169, 60, 0.26);
+  color: #f9f6ed;
+  border-radius: 4px;
+}
+:root[data-surface="tarnished"] :is(
+  input, select, textarea, .input, .text-input, .settings-search,
+  .music-input, .music-select, .storage-search-input, .move-path-input,
+  .install-path-input
+):focus,
+:root[data-surface="tarnished"] .search:focus-within,
+:root[data-surface="tarnished"] .install-path-input-wrap:focus-within {
+  border-color: #f5be57;
+  box-shadow: 0 0 0 2px rgba(229, 169, 60, 0.35);
+  outline: none;
+}
+
+/* Tarnished Grace: Progress Bar (Great Rune Arc / Molten Gold Meter) */
+:root[data-surface="tarnished"] .progress {
+  background: rgba(12, 10, 8, 0.92);
+  border: 1px solid rgba(229, 169, 60, 0.25);
+  border-radius: 4px;
+  overflow: hidden;
+}
+:root[data-surface="tarnished"] .progress > span,
+:root[data-surface="tarnished"] :is(.gp-progress-fill) {
+  background: linear-gradient(90deg, #b47818 0%, #e5a93c 50%, #fef08a 100%);
+  box-shadow: 0 0 10px rgba(229, 169, 60, 0.5);
+}
+
+/* Tarnished Grace: Switches */
+:root[data-surface="tarnished"] .switch input:checked + .track {
+  background: #9a6712;
+  border-color: #e5a93c;
+}
+:root[data-surface="tarnished"] .switch input:checked + .track::before {
+  background: #ffffff;
+  box-shadow: 0 0 8px rgba(229, 169, 60, 0.7);
+}
+
+/* Tarnished Grace: Store Tabs Active Indicator */
+:root[data-surface="tarnished"] .store-tabs .tab.active,
+:root[data-surface="tarnished"] .tab.active {
+  color: #fef08a;
+}
+:root[data-surface="tarnished"] .store-tabs .tab.active::after,
+:root[data-surface="tarnished"] .tab.active::after {
+  background: #e5a93c;
+  box-shadow: 0 0 8px rgba(229, 169, 60, 0.6);
 }
 
 /* ---------- Hazard Team (Half-Life Inspired) ---------- */
