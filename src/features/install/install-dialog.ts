@@ -437,7 +437,7 @@ export function renderInstallDialog(): void {
           ${clientInstall}
           <span style="flex:1"></span>
           <button type="button" class="install-cancel-btn" data-act="install-cancel">${t("common.cancel")}</button>
-          <button type="button" class="install-confirm-btn" data-act="install-confirm" data-id="${esc(appName)}" ${loading ? "disabled" : ""}>
+          <button type="button" class="install-confirm-btn" data-act="install-confirm" data-id="${esc(appName)}" data-gp-default ${loading ? "disabled" : ""}>
             ${icon("download", 14)} ${t("common.install")}
           </button>
         </div>

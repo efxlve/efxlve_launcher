@@ -836,7 +836,20 @@ function renderController(): string {
   const virtualNote = IS_WINDOWS && status?.bridgeRunning
     ? infoBox("controller.bridgeVirtualNote")
     : "";
-  return group(padRows, t("controller.padsTitle")) + virtualNote + group(fullscreenMaster + fullscreenAuto, t("fullscreen.mode")) + deckNote + (IS_WINDOWS ? group(bridge, t("settings.secController")) : "");
+  const stageRows =
+    row(t("stage.settingsEnable"), t("stage.settingsEnableDesc"), toggle("toggle-stage-enabled", S.stage.enabled)) +
+    (S.stage.enabled
+      ? row(t("stage.settingsAuto"), t("stage.settingsAutoDesc"), toggle("toggle-stage-auto", S.stage.autoEnter)) +
+        row(t("stage.settingsOpenAtLaunch"), t("stage.settingsOpenAtLaunchDesc"), toggle("toggle-stage-open-launch", S.stage.openAtLaunch)) +
+        row(
+          t("stage.settingsOpenNow"),
+          t("stage.settingsOpenNowDesc"),
+          `<button class="btn ghost small" data-act="toggle-stage">${icon("clapperboard", 14)} ${t("stage.enter")}</button>`,
+        )
+      : "") +
+    infoBox("stage.settingsBetaNote");
+  const stageGroup = group(stageRows, t("stage.settingsTitle"));
+  return group(padRows, t("controller.padsTitle")) + virtualNote + group(fullscreenMaster + fullscreenAuto, t("fullscreen.mode")) + stageGroup + deckNote + (IS_WINDOWS ? group(bridge, t("settings.secController")) : "");
 }
 
 /** Steam card: the optional Web API key. Behavior toggles live in After playing. */

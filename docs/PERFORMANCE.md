@@ -81,6 +81,10 @@ the window is hidden.
 | Picture renditions | The cache resizes wide pictures to the width the page paints (hero 1600, screenshot 640, cover 480, thumbnail 240) and stores that JPEG variant | Full-size covers and screenshots were decoded and carried over IPC even when painted at a fraction of their size |
 | Main webview | The shell renderer stays awake; its memory target drops while hidden or minimized, and the child store, Spotify, Discord and overlay pages suspend individually | Suspending the main controller with child webviews made WebView2 recover the renderer, which reloaded the page and reset the view |
 | Store webviews | Parked storefronts are suspended with the hidden or minimized window and resumed when the store returns; prewarmed pages that never painted are left alone | The three warm storefronts kept their timers and renderers alive behind the library, and the active store stayed visible to WebView2 when the window was minimized |
+| Stage render guard | Stage hashes the route, filters, library revision, running set and download lifecycle; a progress-only tick patches the top download chip and clock instead of rebuilding the screen | A controller shell with a 600-title shelf would otherwise re-decode every visible cover on every transfer update |
+| Stage shelf | The wall renders in 96-card chunks and appends the next chunk at the fold; focus moves patch only the side stage, never the wall | One focus move cannot rebuild 96 covers or lose the scroll anchor |
+| Stage motion | Page and overlay entry animations are scoped to `stage-page-enter` and `stage-overlay-enter`; data repaints do not replay them | A sheet or hero that re-animates on every download tick reads as a stutter, not polish |
+| Stage presentation | Stage sets the webview zoom to 100% on entry and restores the saved UI scale on exit; the clock timer exists only while the mode is open and the quick menu uses solid surfaces, not blur | The 10-foot layout uses its own clamp scale, an idle desktop timer would be wasted heat, and full-screen blur is expensive on the reference GPU |
 
 ## Remaining opportunities
 
@@ -94,6 +98,10 @@ the window is hidden.
   are separate chunks loaded when their section opens. The outer Settings page
   still ships in the main chunk because its action handlers import the library
   graph; splitting that surface is the next step.
+- **Stage chunk.** Stage currently ships in the main chunk. Once the mode leaves
+  beta, split the shell and its three heavy screens into a lazy chunk with a
+  small black boot frame; the first entry then pays one short import instead of
+  every desktop session parsing a controller UI it may never open.
 - **Custom cover renditions.** The game page and its panels ask the picture cache
   for sized renditions, but the library grid still paints the source URL
   directly. Very large user-chosen covers would benefit from the same cache.

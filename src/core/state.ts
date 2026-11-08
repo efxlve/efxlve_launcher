@@ -85,6 +85,11 @@ import {
   FULLSCREEN_AUTO_KEY,
   FULLSCREEN_DISABLED_KEY,
   FULLSCREEN_MODE_KEY,
+  STAGE_ENABLED_KEY,
+  STAGE_AUTO_KEY,
+  STAGE_OPEN_AT_LAUNCH_KEY,
+  STAGE_LIBRARY_VIEW_KEY,
+  STAGE_LIBRARY_SORT_KEY,
   isSteamDeckDevice,
   INSTALLED_ICON_KEY,
   HIGHLIGHT_INSTALLED_KEY,
@@ -107,7 +112,7 @@ import { initialReduceEffects } from "./effects";
 import { loadGameStatus, loadUiScale } from "./game-status";
 import { readCustomCss } from "./custom-css";
 import { normalizeSurface } from "./themes";
-import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, CustomLogoLayout, CustomLogoSize, DlMetrics, DownloadFinishAction, DrawerTab, EpicCopyOverride, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibGroupBy, LibraryItem, LogoAnchor, NotifTab, SavedAccount, SettingsSection, View } from "./types";
+import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, CustomLogoLayout, CustomLogoSize, DlMetrics, DownloadFinishAction, DrawerTab, EpicCopyOverride, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibGroupBy, LibraryItem, LogoAnchor, NotifTab, SavedAccount, SettingsSection, StageLibraryFilter, StageLibrarySort, StageLibraryView, StageProgramTab, StageRoute, StageRouteSnapshot, View } from "./types";
 import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
 
 
@@ -909,6 +914,78 @@ export const S = {
   gameColModalAppName: (null) as string | null,
   gameColModalSelectedCols: (new Set()) as Set<string>,
   resizeRaf: (null) as number | null,
+  /**
+   * Experimental Stage shell. It is a mode rather than a `View`, so the desktop
+   * navigation history, sidebar and child webviews stay untouched.
+   */
+  stage: {
+    active: false,
+    route: ("home") as StageRoute,
+    gameKey: (null) as string | null,
+    programTab: ("overview") as StageProgramTab,
+    focusKey: "",
+    libraryFilter: ("all") as StageLibraryFilter,
+    libraryStore: ("all") as GameSource | "all",
+    librarySort: (() => {
+      try {
+        const stored = localStorage.getItem(STAGE_LIBRARY_SORT_KEY);
+        if (stored === "recent" || stored === "alpha" || stored === "playtime" || stored === "installed") return stored;
+      } catch {
+        /* ignore */
+      }
+      return "recent";
+    })() as StageLibrarySort,
+    libraryView: (() => {
+      try {
+        const stored = localStorage.getItem(STAGE_LIBRARY_VIEW_KEY);
+        if (stored === "grid" || stored === "list") return stored;
+      } catch {
+        /* ignore */
+      }
+      return "grid";
+    })() as StageLibraryView,
+    query: "",
+    searchOpen: false,
+    quickMenu: false,
+    controlsOpen: false,
+    launch: (null) as { key: string; title: string; art: string | null } | null,
+    launchError: "",
+    welcome: (null) as { title: string; seconds: number } | null,
+    returnView: ("library") as View,
+    returnScroll: 0,
+    wasFullscreen: false,
+    enabled: (() => {
+      try {
+        return localStorage.getItem(STAGE_ENABLED_KEY) !== "false";
+      } catch {
+        return true;
+      }
+    })() as boolean,
+    autoEnter: (() => {
+      try {
+        const stored = localStorage.getItem(STAGE_AUTO_KEY);
+        if (stored === "true") return true;
+        if (stored === "false") return false;
+      } catch {
+        /* ignore */
+      }
+      // A connected pad is a clear signal. `safeToAutoEnter` keeps the switch
+      // from firing while a dialog is open or the user is typing.
+      return true;
+    })() as boolean,
+    openAtLaunch: (() => {
+      try {
+        return localStorage.getItem(STAGE_OPEN_AT_LAUNCH_KEY) === "true";
+      } catch {
+        return false;
+      }
+    })() as boolean,
+    controllerConnected: false,
+    controllerName: "",
+    controllerBattery: (null) as number | null,
+    stack: ([] as StageRouteSnapshot[]),
+    enteredAt: 0,
+  },
   gamepadPolling: false,
   lastGamepadActionTime: 0,
   gamepadHudEl: (null) as HTMLElement | null,
@@ -973,7 +1050,7 @@ export const S = {
   steamLibrarySyncing: false,
   /** Saved Steam accounts in the sealed vault (switcher rows). */
   steamSavedAccounts: ([]) as import("../steam").SteamSavedAccount[],
-  appVersion: "0.1.49",
+  appVersion: "0.1.50",
   appUpdateStatus: ("idle") as AppUpdateStatus,
   appUpdateVersion: "",
   appUpdateNotes: "",

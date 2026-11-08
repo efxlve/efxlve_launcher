@@ -30,6 +30,26 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.50",
+    date: "2026-11-08",
+    added: [
+      {
+        en: "Stage Mode (experimental): a controller-first full-screen shell with a cinematic home, a cover shelf that previews the focused game, a programme page for each title, a bottom quick menu and an on-screen keyboard. Both Stage and the classic Full Screen Mode remain available, and Stage is labelled BETA in the title bar and in Settings.",
+        tr: "Sahne Modu (deneysel): sinematik bir ana ekran, odaktaki oyunu önizleyen kapak rafı, her oyun için bir program sayfası, alttan açılan hızlı menü ve ekran klavyesi olan kumanda odaklı tam ekran bir kabuk. Hem Sahne hem de klasik Tam Ekran Modu kullanılabilir; Sahne, başlık çubuğunda ve Ayarlar'da BETA olarak işaretlenir.",
+      },
+      {
+        en: "Stage's launch curtain, white spotlight focus, in-place game preview and staged page transitions; the animations respect reduced motion.",
+        tr: "Sahne'nin başlatma perdesi, beyaz spot odak efekti, yerinde oyun önizlemesi ve sahneli sayfa geçişleri; animasyonlar hareketi azalt ayarına uyar.",
+      },
+    ],
+    improved: [
+      {
+        en: "The install dialog now takes controller focus immediately and starts on its install button.",
+        tr: "Kurulum penceresi artık kumanda odağını hemen alıyor ve kurulum butonunda başlıyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.49",
     date: "2026-11-08",
     added: [

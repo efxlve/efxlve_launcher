@@ -8,6 +8,23 @@
 /** Top-level application view/route. */
 export type View = "library" | "downloads" | "settings" | "profile" | "store" | "accounts" | "music" | "discord" | "notes" | "screenshots";
 
+/* ---------- Stage Mode (experimental controller shell) ---------- */
+
+/** Screen inside Stage. Stage is a mode, not a desktop view. */
+export type StageRoute = "home" | "library" | "program" | "downloads";
+export type StageProgramTab = "overview" | "achievements" | "extras";
+export type StageLibraryFilter = "all" | "installed" | "favorites" | "updates";
+export type StageLibrarySort = "recent" | "alpha" | "playtime" | "installed";
+export type StageLibraryView = "grid" | "list";
+
+/** One entry of Stage's back stack. */
+export interface StageRouteSnapshot {
+  route: StageRoute;
+  gameKey: string | null;
+  focusKey: string;
+  scroll: number;
+}
+
 /** Store or catalog provider source for a game. */
 export type GameSource = "epic" | "gog" | "steam" | "ea" | "ubisoft" | "xbox" | "battlenet" | "riot" | "amazon" | "custom";
 

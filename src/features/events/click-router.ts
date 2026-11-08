@@ -132,6 +132,8 @@ import { switchAccount } from "../auth/account-switcher";
 import { switchGogAccount } from "../auth/gog-account-switcher";
 import { openPalette } from "../palette/palette";
 import { setFullscreenMode, toggleFullscreenMode, updateFullscreenUi } from "../gamepad/fullscreen-mode";
+import { stageGo } from "../stage/stage-actions";
+import { setStageAutoEnter, setStageEnabled, setStageOpenAtLaunch, toggleStage } from "../stage/stage-state";
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { closeStorageMenus } from "../storage/storage-view";
@@ -283,6 +285,15 @@ document.addEventListener("click", (e) => {
   if (!t) return;
 
   if (t.dataset.view) {
+    // The shared primary-action markup can point at the desktop downloads page.
+    // Inside Stage that means the Stage downloads screen, not a hidden view swap.
+    if (S.stage.active) {
+      const view = t.dataset.view;
+      if (view === "downloads" || view === "library") {
+        stageGo(view);
+        return;
+      }
+    }
     closeAllModals();
     const targetView = t.dataset.view as View;
     // Re-clicking Library while the grid is already on screen must not rebuild
@@ -750,6 +761,14 @@ document.addEventListener("click", (e) => {
     openPalette();
   } else if (act === "toggle-fullscreen-mode") {
     void toggleFullscreenMode();
+  } else if (act === "toggle-stage") {
+    void toggleStage();
+  } else if (act === "toggle-stage-enabled") {
+    setStageEnabled(!S.stage.enabled);
+  } else if (act === "toggle-stage-auto") {
+    setStageAutoEnter(!S.stage.autoEnter);
+  } else if (act === "toggle-stage-open-launch") {
+    setStageOpenAtLaunch(!S.stage.openAtLaunch);
   } else if (act === "open-overlay") {
     void invoke("overlay_show");
   } else if (act === "lib-clear-search") {

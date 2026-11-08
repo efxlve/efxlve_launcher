@@ -201,6 +201,16 @@ export const FULLSCREEN_DISABLED_KEY = "efxlve-fullscreen-disabled";
 /** Saved full screen state. */
 export const FULLSCREEN_MODE_KEY = "efxlve-fullscreen-mode";
 
+/** Stage is the experimental controller-first shell; this is its master switch. */
+export const STAGE_ENABLED_KEY = "efxlve-stage-enabled";
+/** Enter Stage when a controller connects. */
+export const STAGE_AUTO_KEY = "efxlve-stage-auto";
+/** Start the launcher in Stage on this device. */
+export const STAGE_OPEN_AT_LAUNCH_KEY = "efxlve-stage-open-at-launch";
+/** Stage library layout and sort, remembered between sessions. */
+export const STAGE_LIBRARY_VIEW_KEY = "efxlve-stage-library-view";
+export const STAGE_LIBRARY_SORT_KEY = "efxlve-stage-library-sort";
+
 /** Spotify / Discord pages: missing = visible. The overlay follows these. */
 export const SHOW_SPOTIFY_KEY = "efxlve-show-spotify";
 export const SHOW_MINI_PLAYER_KEY = "efxlve-show-mini-player";

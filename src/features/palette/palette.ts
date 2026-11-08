@@ -86,6 +86,9 @@ function commands(): Command[] {
   if (S.fullscreenModeEnabled) {
     list.push({ label: t("fullscreen.mode"), iconName: "maximize-2", attrs: `data-act="toggle-fullscreen-mode"`, keywords: "tam ekran fullscreen controller gamepad" });
   }
+  if (S.stage.enabled) {
+    list.push({ label: t("stage.enter"), iconName: "clapperboard", attrs: `data-act="toggle-stage"`, keywords: "stage sahne controller gamepad couch beta" });
+  }
   list.push(
     { label: t("notif.title"), iconName: "bell", attrs: `data-act="toggle-notifications"`, keywords: "notifications bildirim" },
     { label: t("settings.viewChangelog"), iconName: "clock", attrs: `data-act="open-changelog"`, keywords: "changelog whats new surum notlari" },

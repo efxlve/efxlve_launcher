@@ -924,7 +924,7 @@ export async function initApp(hooks: {
           }
           // Opt-in: get the launcher out of the way when a game starts. Full
           // Screen Mode is a couch UI and stays where it is.
-          if (S.minimizeOnGame && !S.isFullscreen) {
+          if (S.minimizeOnGame && (!S.isFullscreen || S.stage.active)) {
             void appMinimize().catch(() => {});
           }
         }

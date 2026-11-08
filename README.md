@@ -12,7 +12,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-222" alt="Windows, Linux and macOS" />
-  <img src="https://img.shields.io/badge/version-0.1.49-222" alt="Version 0.1.49" />
+  <img src="https://img.shields.io/badge/version-0.1.50-222" alt="Version 0.1.50" />
   <img src="https://img.shields.io/badge/license-GPL--3.0-222" alt="GPL-3.0" />
 </p>
 
@@ -29,7 +29,7 @@ Efxlve Launcher eliminates the need to keep multiple heavy launchers running in 
 - **Achievements:** Every connected store keeps its own achievement set, with rarity tiers, unlock dates, guides, notes and a platinum state. A launcher-only editor can mark an achievement earned or clear an unlock for one game when a store misses it or when a delisted title deserves a fresh run; the store account is never touched, each edit is labelled in the list, and one click re-syncs the store's own progress. Unlocks from every store land in one local history — recent unlocks, a monthly count, a streak and your rarest find — and a burst of unlocks shares one notification card instead of burying the rest. Three pinned achievements form a profile showcase, and an unlock can save a screenshot of the moment to the game's gallery. A user-added game can pull its set and progress from RetroAchievements through the official web API.
 - **Embedded Stores:** Browse Epic Games, GOG, Steam, Xbox, Battle.net, Ubisoft, EA and Amazon Games inside native child webviews.
 - **Console Dark Aesthetic (Hydra):** Pure black surfaces (`#000000`), subtle 1px hairline borders, single pure white accent (`--accent #ffffff`), and tabular numbers with zero layout jitter. Three more surfaces are available in Settings → Appearance: Carbon Dark, **Pure White** and **Gloss** (sky/water glass with a blue accent), plus an optional game-art backdrop that blurs the selected title behind translucent shell surfaces.
-- **Dedicated 10-ft TV Mode:** Full controller navigation (`A: Select`, `B: Back`, `LB/RB: categories`) with a compact command bar, cinematic stage, labelled shelf and card titles, designed for TV and couch gaming.
+- **Stage Mode (Experimental):** A controller-first full-screen shell with a cinematic home, cover shelf, game programmes, quick menu and on-screen keyboard. The game art supplies the colour, the focus is a white spotlight, and the full desktop stays one button away. **Full Screen Mode** remains the classic scaled-desktop option for mouse and keyboard users.
 - **Multi-Account Vault:** Connect multiple Epic, GOG, Steam and Amazon accounts. Fast 1-click account switching without re-entering credentials.
 - **Downloads & Transfers:** Real-time bandwidth and disk write metrics, one bandwidth cap in Mbit/s shared by Epic, GOG, Amazon, EA and Ubisoft direct downloads (a loopback proxy for the store CLIs, a shared token bucket for the in-process installers), a reorderable download queue with pause/resume, and when the queue ends, a notification, sleep or shutdown with a cancellable 60-second countdown that a new download, pause or failure cancels.
 - **Cloud & Local Save Backups:** One-click local and cloud backups. The **Folder** provider works with OneDrive, Dropbox, a NAS or any folder your sync client already handles — no OAuth and no API keys. Google Drive, WebDAV, **rclone** (S3, Backblaze B2, Dropbox, OneDrive, Mega and 70+ more) and auto-sync on game exit are available too; a bundled Ludusavi index finds the save folder for more than 11,000 titles, an unchanged save tree skips the next upload, and every restore shows the archive contents first, refuses while the game is running or the local saves changed, and snapshots them so a wrong restore can be undone. **Launcher data** (custom games, collections, playtime, achievements, notes, themes and settings) can be exported to a `.efxprofile` file or synced through the same provider; exports can be protected with an AES-256-GCM password. New to this? Start with the [Folder guide](docs/CLOUD_FOLDER_GUIDE.md), or pick [Google Drive](docs/GOOGLE_DRIVE_SETUP_GUIDE.md), [WebDAV](docs/CLOUD_WEBDAV_GUIDE.md) or [rclone](docs/CLOUD_RCLONE_GUIDE.md).
@@ -50,20 +50,20 @@ Efxlve Launcher eliminates the need to keep multiple heavy launchers running in 
 
 ## Download & Install
 
-The current release is **v0.1.49**:
-[github.com/efxlve/efxlve_launcher/releases/tag/v0.1.49](https://github.com/efxlve/efxlve_launcher/releases/tag/v0.1.49)
+The current release is **v0.1.50**:
+[github.com/efxlve/efxlve_launcher/releases/tag/v0.1.50](https://github.com/efxlve/efxlve_launcher/releases/tag/v0.1.50)
 
 ### Which file should I download?
 
 | Your system | Download this | Notes |
 |---|---|---|
-| **Windows 10/11 (64-bit)** | `Efxlve.Launcher_0.1.49_x64-setup.exe` | Recommended. Normal installer with Start-menu and uninstall entries. |
+| **Windows 10/11 (64-bit)** | `Efxlve.Launcher_0.1.50_x64-setup.exe` | Recommended. Normal installer with Start-menu and uninstall entries. |
 | Windows, no installer wanted | `efxlve-launcher-portable.zip` | Extract anywhere and run `efxlve-launcher.exe`. Launcher data stays in `portable-data` beside it. |
-| Windows, managed deployment | `Efxlve.Launcher_0.1.49_x64_en-US.msi` | For shops, labs or scripted installs. |
-| **Linux (x86_64)** | `Efxlve.Launcher_0.1.49_amd64.AppImage` | Portable single file: `chmod +x` and run. |
-| Linux, Debian/Ubuntu | `Efxlve.Launcher_0.1.49_amd64.deb` | Install with your software centre or `sudo apt install ./file.deb`. |
-| Linux, Fedora/RHEL | `Efxlve.Launcher-0.1.49-1.x86_64.rpm` | Install with your software centre or `sudo rpm -i file.rpm`. |
-| **macOS (Apple Silicon)** | `Efxlve.Launcher_0.1.49_aarch64.dmg` | Open the DMG and drag the app to Applications. Unsigned preview: right-click → Open the first time. |
+| Windows, managed deployment | `Efxlve.Launcher_0.1.50_x64_en-US.msi` | For shops, labs or scripted installs. |
+| **Linux (x86_64)** | `Efxlve.Launcher_0.1.50_amd64.AppImage` | Portable single file: `chmod +x` and run. |
+| Linux, Debian/Ubuntu | `Efxlve.Launcher_0.1.50_amd64.deb` | Install with your software centre or `sudo apt install ./file.deb`. |
+| Linux, Fedora/RHEL | `Efxlve.Launcher-0.1.50-1.x86_64.rpm` | Install with your software centre or `sudo rpm -i file.rpm`. |
+| **macOS (Apple Silicon)** | `Efxlve.Launcher_0.1.50_aarch64.dmg` | Open the DMG and drag the app to Applications. Unsigned preview: right-click → Open the first time. |
 
 The `.sig` files and `latest.json` are **updater metadata**, not installers. The app downloads them itself; you never need to open them.
 
@@ -177,9 +177,9 @@ Special thanks to [legendary](https://github.com/legendary-gl/legendary), [Heroi
 
 - [Hydra Launcher](https://github.com/hydralauncher/hydra) — the console-dark direction this UI follows: true-black surfaces, hairline borders, a single white accent, the quiet cover grid and the game-page layout.
 - [Heroic Games Launcher](https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher) — the cache-first principle (paint the library from local disk before any network call) and the legendary/gogdl wrapper approach.
-- [Playnite](https://github.com/JosefNemec/Playnite) — the 10-ft TV Mode model, and the reference for reading Xbox title history and achievement progress.
+- [Playnite](https://github.com/JosefNemec/Playnite) — the 10-ft launcher model, and the reference for reading Xbox title history and achievement progress.
 - [steam-case-covers](https://github.com/diegobergonsi/steam-case-covers) — the physical retail game box framing and header strip design for library covers.
-- Steam Big Picture and the console system UI — controller navigation patterns in TV Mode.
+- Controller-first console and media-centre navigation patterns — the Stage focus model, shelf browsing and quick menu.
 
 ### Store backends
 

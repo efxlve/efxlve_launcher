@@ -1,0 +1,718 @@
+/* ==========================================================================
+   Stage Mode (experimental controller shell).
+
+   This is a deliberate second visual language: a dark theatre where the game
+   art supplies the colour and the focus supplies the light. The desktop shell
+   keeps its own tokens; every rule here is scoped to #stage-root or
+   body.stage-mode so the two languages cannot leak into each other.
+   ========================================================================== */
+
+body.stage-mode {
+  background: #050505;
+  overflow: hidden;
+}
+
+body.stage-mode #app,
+body.stage-mode #game-scene {
+  display: none !important;
+}
+
+#stage-root {
+  --stage-bg: #050505;
+  --stage-surface: #0a0a0a;
+  --stage-surface-2: #111112;
+  --stage-line: rgba(255, 255, 255, 0.08);
+  --stage-line-strong: rgba(255, 255, 255, 0.16);
+  --stage-ink: #ffffff;
+  --stage-ink-2: rgba(255, 255, 255, 0.66);
+  --stage-ink-3: rgba(255, 255, 255, 0.42);
+  --stage-ink-4: rgba(255, 255, 255, 0.26);
+  --stage-ease: cubic-bezier(0.2, 0, 0, 1);
+  --stage-pad: clamp(20px, 2.4vw, 72px);
+  --stage-spine: clamp(66px, 5.2vw, 120px);
+  --stage-top: 58px;
+  --stage-radius: 14px;
+
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  overflow: hidden;
+  color: var(--stage-ink);
+  background:
+    radial-gradient(1200px 760px at 72% -12%, rgba(255, 255, 255, 0.055), transparent 64%),
+    var(--stage-bg);
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+#stage-root::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(900px 520px at 18% 108%, rgba(255, 255, 255, 0.035), transparent 70%);
+}
+
+#stage-root *,
+#stage-root *::before,
+#stage-root *::after {
+  box-sizing: border-box;
+}
+
+#stage-root button,
+#stage-root input {
+  font-family: inherit;
+}
+
+#stage-root button {
+  color: inherit;
+}
+
+#stage-root :focus,
+#stage-root :focus-visible {
+  outline: none;
+}
+
+#stage-root ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+#stage-root ::-webkit-scrollbar-track,
+#stage-root ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+#stage-root ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 4px;
+}
+#stage-root ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.42);
+}
+
+/* ---------- Shell ---------- */
+
+.stage-shell {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.stage-topbar {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: var(--stage-top);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding-inline: clamp(18px, 2.8vw, 46px) clamp(18px, 2.4vw, 40px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+  background: linear-gradient(to bottom, rgba(5, 5, 5, 0.94), rgba(5, 5, 5, 0.58) 58%, transparent);
+  pointer-events: none;
+}
+
+.stage-topbar > * {
+  pointer-events: auto;
+}
+
+.stage-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.stage-brand-name {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  color: var(--stage-ink-3);
+}
+
+.stage-brand-mode {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.36em;
+  color: var(--stage-ink);
+}
+
+.stage-beta-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 17px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--stage-ink);
+  color: #000;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1;
+}
+
+.stage-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1.4vw, 20px);
+  min-width: 0;
+}
+
+.stage-top-download {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 11px;
+  overflow: hidden;
+  border: 1px solid var(--stage-line);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--stage-ink-2);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: color 140ms var(--stage-ease), background 140ms var(--stage-ease);
+}
+.stage-top-download:hover,
+.stage-top-download.gp-focused {
+  color: var(--stage-ink);
+  background: rgba(255, 255, 255, 0.11);
+}
+.stage-top-download i {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-start: 0;
+  height: 2px;
+  background: var(--stage-ink);
+  transition: width 320ms var(--stage-ease);
+}
+
+.stage-net {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--stage-ink-3);
+  white-space: nowrap;
+}
+.stage-net-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--stage-ink-4);
+}
+.stage-net.is-online .stage-net-dot {
+  background: var(--ok);
+}
+.stage-net.is-offline .stage-net-dot {
+  background: var(--warn);
+}
+
+.stage-pad-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--stage-ink-3);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.stage-clock {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--stage-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.stage-menu-btn {
+  width: 34px;
+  height: 34px;
+}
+
+.stage-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--stage-line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--stage-ink-2);
+  cursor: pointer;
+  transition: color 140ms var(--stage-ease), background 140ms var(--stage-ease), border-color 140ms var(--stage-ease);
+}
+.stage-icon-btn:hover {
+  color: var(--stage-ink);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--stage-line-strong);
+}
+.stage-icon-danger {
+  color: #ffb4b6;
+  border-color: rgba(229, 72, 77, 0.34);
+  background: rgba(229, 72, 77, 0.08);
+}
+
+/* ---------- Chapter spine ---------- */
+
+.stage-spine {
+  position: absolute;
+  inset-block: var(--stage-top) 0;
+  inset-inline-start: 0;
+  width: var(--stage-spine);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-block-start: clamp(18px, 3vh, 34px);
+  background: linear-gradient(to right, rgba(5, 5, 5, 0.88), rgba(5, 5, 5, 0));
+  pointer-events: none;
+}
+
+.stage-spine-item {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--stage-ink-4);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: color 160ms var(--stage-ease), background 160ms var(--stage-ease), border-color 160ms var(--stage-ease);
+}
+.stage-spine-item:hover {
+  color: var(--stage-ink-2);
+  background: rgba(255, 255, 255, 0.045);
+}
+.stage-spine-item.active {
+  color: var(--stage-ink);
+  background: rgba(255, 255, 255, 0.075);
+  border-color: var(--stage-line);
+}
+
+.stage-spine-icon {
+  display: inline-flex;
+}
+
+.stage-spine-label {
+  position: absolute;
+  inset-inline-start: 58px;
+  top: 50%;
+  transform: translate(-4px, -50%);
+  padding: 4px 8px;
+  border: 1px solid var(--stage-line);
+  border-radius: 5px;
+  background: rgba(8, 8, 8, 0.94);
+  color: var(--stage-ink-2);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms var(--stage-ease), transform 140ms var(--stage-ease);
+}
+.stage-spine-item:hover .stage-spine-label,
+.stage-spine-item.gp-focused .stage-spine-label {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+
+.stage-spine-mark {
+  position: absolute;
+  inset-inline-start: -10px;
+  top: 50%;
+  width: 2px;
+  height: 0;
+  transform: translateY(-50%);
+  background: var(--stage-ink);
+  transition: height 180ms var(--stage-ease);
+}
+.stage-spine-item.active .stage-spine-mark {
+  height: 22px;
+}
+
+/* ---------- Main scroll ---------- */
+
+.stage-main {
+  position: absolute;
+  inset-block: var(--stage-top) 0;
+  inset-inline-start: var(--stage-spine);
+  inset-inline-end: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: var(--stage-pad);
+  padding-block-end: 118px;
+  scroll-behavior: smooth;
+}
+
+.stage-route-program .stage-main {
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  padding: 0 0 112px;
+}
+
+.stage-layer {
+  min-height: 100%;
+}
+
+.stage-page-enter {
+  animation: stage-page-in 300ms var(--stage-ease) both;
+}
+
+.stage-hints {
+  position: fixed;
+  inset-block-end: 16px;
+  inset-inline-start: calc(var(--stage-spine) + var(--stage-pad));
+  inset-inline-end: var(--stage-pad);
+  z-index: 26;
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1.6vw, 22px);
+  min-height: 42px;
+  padding: 8px 15px;
+  border: 1px solid var(--stage-line);
+  border-radius: 9px;
+  background: rgba(8, 8, 8, 0.82);
+  color: var(--stage-ink-3);
+  font-size: 11.5px;
+  pointer-events: none;
+}
+.stage-route-program .stage-hints {
+  inset-inline-start: var(--stage-pad);
+}
+
+.stage-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.stage-hint-glyph {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.stage-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--stage-ink);
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+}
+.stage-glyph-bumper {
+  font-size: 9px;
+  padding: 0 4px;
+}
+.stage-glyph svg {
+  width: 11px;
+  height: 11px;
+}
+
+/* ---------- Shared buttons ---------- */
+
+.stage-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  height: 46px;
+  padding: 0 19px;
+  border: 1px solid var(--stage-line);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--stage-ink);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 140ms var(--stage-ease), border-color 140ms var(--stage-ease), transform 140ms var(--stage-ease);
+}
+.stage-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--stage-line-strong);
+}
+.stage-btn-primary {
+  background: var(--stage-ink) !important;
+  border-color: var(--stage-ink) !important;
+  color: #000 !important;
+  font-weight: 650;
+}
+.stage-btn-primary:hover {
+  background: #fff !important;
+  color: #000 !important;
+}
+.stage-btn-ghost {
+  background: rgba(0, 0, 0, 0.22);
+}
+#stage-root .stage-btn.faved,
+#stage-root .stage-icon-btn.faved {
+  color: #ffb4b6;
+  border-color: rgba(229, 72, 77, 0.35);
+}
+#stage-root .stage-btn.faved svg,
+#stage-root .stage-icon-btn.faved svg {
+  fill: currentColor;
+}
+
+.stage-primary-action .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 56px;
+  padding: 0 28px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--stage-ink) !important;
+  color: #000 !important;
+  font-size: 16px;
+  font-weight: 650;
+  cursor: pointer;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.34);
+  transition: background 140ms var(--stage-ease), transform 140ms var(--stage-ease), box-shadow 140ms var(--stage-ease);
+}
+.stage-primary-action .btn:hover {
+  background: #fff !important;
+  transform: translateY(-1px);
+}
+.stage-primary-action .btn.update {
+  background: #f2bf55 !important;
+  color: #1b1200 !important;
+}
+.stage-primary-action .btn.stop,
+.stage-primary-action .btn.danger {
+  background: rgba(229, 72, 77, 0.15) !important;
+  border-color: rgba(229, 72, 77, 0.4) !important;
+  color: #ffb4b6 !important;
+  box-shadow: none;
+}
+.stage-primary-action .btn.install {
+  background: var(--stage-ink) !important;
+  color: #000 !important;
+}
+.stage-primary-action .btn svg {
+  width: 18px;
+  height: 18px;
+}
+.stage-hero-actions .stage-primary-action .btn,
+.stage-program-actions .stage-primary-action .btn {
+  min-width: clamp(152px, 13vw, 238px);
+}
+
+.stage-kicker {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--stage-ink-3);
+}
+
+.stage-dot {
+  display: inline-block;
+  margin-inline: 5px;
+  color: var(--stage-ink-4);
+}
+
+/* ---------- Status / progress ---------- */
+
+.stage-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 24px;
+  padding: 3px 9px;
+  border: 1px solid var(--stage-line);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.34);
+  color: var(--stage-ink-2);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.stage-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--stage-ink-4);
+}
+.stage-status.is-running {
+  color: #8fe0b2;
+  border-color: rgba(47, 179, 109, 0.34);
+}
+.stage-status.is-running .stage-status-dot {
+  background: var(--ok);
+}
+.stage-status.is-updating {
+  color: #f0c778;
+  border-color: rgba(224, 163, 46, 0.34);
+}
+.stage-status.is-updating .stage-status-dot {
+  background: var(--warn);
+}
+.stage-status.is-installed .stage-status-dot {
+  background: var(--stage-ink-3);
+}
+.stage-status.is-muted {
+  color: var(--stage-ink-3);
+}
+
+.stage-progress {
+  display: block;
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.11);
+}
+.stage-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--stage-ink);
+  transition: width 280ms var(--stage-ease), background 280ms var(--stage-ease);
+}
+.stage-progress-thin {
+  height: 3px;
+}
+.stage-progress-large {
+  height: 8px;
+}
+.stage-progress-paused > span {
+  background: var(--warn);
+}
+
+/* ---------- Typographic poster fallback ---------- */
+
+.stage-poster {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  padding: clamp(14px, 2vw, 26px);
+  background: #0b0b0c;
+  color: var(--stage-ink);
+}
+.stage-poster::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.055), transparent 46%),
+    radial-gradient(500px 360px at 82% 12%, rgba(255, 255, 255, 0.08), transparent 66%);
+  pointer-events: none;
+}
+.stage-poster::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 3px;
+  background: var(--stage-ink);
+  opacity: 0.72;
+}
+.stage-poster-mono {
+  position: absolute;
+  inset-block-start: 2%;
+  inset-inline-end: 2%;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: clamp(72px, 12vw, 190px);
+  font-weight: 700;
+  line-height: 0.8;
+  letter-spacing: -0.09em;
+  color: rgba(255, 255, 255, 0.075);
+  pointer-events: none;
+}
+.stage-poster-rule {
+  width: 42px;
+  height: 2px;
+  margin-block-end: 11px;
+  background: var(--stage-ink);
+  opacity: 0.62;
+}
+.stage-poster-title {
+  position: relative;
+  z-index: 1;
+  max-width: 92%;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: clamp(17px, 2.2vw, 28px);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.stage-poster-sub {
+  position: relative;
+  z-index: 1;
+  margin-block-start: 6px;
+  font-size: 11px;
+  color: var(--stage-ink-3);
+}
+.stage-poster-1 {
+  justify-content: flex-start;
+  padding-block-start: clamp(20px, 3vw, 36px);
+}
+.stage-poster-1 .stage-poster-mono {
+  inset-block-start: auto;
+  inset-block-end: 0;
+  inset-inline-start: 0;
+  inset-inline-end: auto;
+  transform: translate(-6%, 12%);
+}
+.stage-poster-2 {
+  align-items: center;
+  text-align: center;
+}
+.stage-poster-2::after {
+  inset-block: auto 0;
+  inset-inline: 0;
+  width: auto;
+  height: 3px;
+}
+.stage-poster-2 .stage-poster-mono {
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  inset-inline-end: auto;
+  transform: translate(-50%, -50%);
+  font-size: clamp(90px, 15vw, 230px);
+}
+.stage-poster-3 {
+  justify-content: center;
+}
+.stage-poster-3 .stage-poster-title {
+  font-size: clamp(20px, 2.7vw, 36px);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.stage-poster-3 .stage-poster-mono {
+  opacity: 0.5;
+}
+
+/* The rest of the shell is split by job:
+   stage-home.css, stage-library.css, stage-program.css, stage-overlays.css and
+   stage-motion.css. They are imported after this file so the focus and
+   responsive overrides stay last. */

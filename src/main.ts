@@ -34,6 +34,8 @@ import "./features/events/input-listeners";
 import { initApp } from "./features/events/ipc-listeners";
 import { updateGamepadHud } from "./features/gamepad/gamepad";
 import { updateFullscreenUi } from "./features/gamepad/fullscreen-mode";
+import { renderStage } from "./features/stage/stage-render";
+import { enterStage, updateStageUi } from "./features/stage/stage-state";
 import { closeHideGamesModal } from "./features/library/hide-games";
 import { closeReleaseCalendar } from "./features/library/release-calendar";
 import { hideLibraryAlphaRail } from "./features/library/library-alpha";
@@ -76,6 +78,7 @@ if (S.uiScale !== 100) void applyUiScale(S.uiScale);
 applyCustomCss(S.customCss);
 // The master switch hides the title-bar Full Screen button before first paint.
 updateFullscreenUi();
+updateStageUi();
 document.documentElement.classList.add("ready");
 applyWinbarAppIcon();
 perfMark("main:module");
@@ -119,6 +122,21 @@ function scheduleRender(): void {
 
 /** Render the active view and refresh the surrounding chrome. */
 function render(): void {
+  // Stage is a separate shell. It must paint before the desktop chrome so the
+  // hidden store, music and Discord children never peek through it.
+  if (S.stage.active) {
+    if (S.storeShown) hideStore();
+    hideSpotifyPlayer();
+    destroyDiscordPage();
+    closeNotifPanel();
+    // The desktop controller bar sits above Stage's layer; hide it here.
+    updateGamepadHud(S.gamepadPolling);
+    renderStage();
+    renderNotificationPanel();
+    presenceSync();
+    return;
+  }
+
   // TV Mode is a full-screen shell state; a single place toggles its body class.
     // The Spotify page is an embedded web player: it owns the whole content area.
   document.body.classList.toggle("spotify-page", S.view === "music");
@@ -244,7 +262,14 @@ function closeAllModals(): void {
   if (playtimeRoot) playtimeRoot.innerHTML = "";
 }
 
-void initApp({ render, scheduleRender, closeAllModals });
+// Stage-at-launch must be active before the first desktop paint, otherwise the
+// user sees the library flash for a second and then the controller shell.
+if (S.stage.enabled && S.stage.openAtLaunch) void enterStage();
+
+void initApp({ render, scheduleRender, closeAllModals }).then(() => {
+  updateStageUi();
+});
+
 
 // The crosshair lives in a native window and outlives the overlay page: push
 // the saved settings once at launcher boot so the hotkey works before the panel

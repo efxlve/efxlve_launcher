@@ -1,0 +1,351 @@
+/* Stage — home, shelves and empty states. Imported after stage.css. */
+/* ---------- Home ---------- */
+
+.stage-home {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(22px, 3.4vh, 42px);
+}
+
+.stage-hero {
+  position: relative;
+  min-height: clamp(340px, 51vh, 900px);
+  overflow: hidden;
+  border: 1px solid var(--stage-line);
+  border-radius: 16px;
+  background: var(--stage-surface);
+  isolation: isolate;
+}
+
+.stage-hero-media,
+.stage-hero-media > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.stage-hero-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stage-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top, rgba(5, 5, 5, 0.96) 0%, rgba(5, 5, 5, 0.6) 34%, transparent 68%),
+    linear-gradient(to right, rgba(5, 5, 5, 0.78) 0%, rgba(5, 5, 5, 0.18) 54%, transparent 78%);
+  pointer-events: none;
+}
+
+.stage-hero-body {
+  position: absolute;
+  inset-block-end: clamp(24px, 4.2vh, 58px);
+  inset-inline-start: clamp(24px, 4vw, 64px);
+  inset-inline-end: 34%;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  max-width: 860px;
+}
+
+.stage-hero-kicker {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--stage-ink-2);
+}
+
+.stage-hero-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  margin: 0;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: clamp(40px, 4.5vw, 148px);
+  font-weight: 650;
+  line-height: 0.94;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+  text-shadow: 0 2px 36px rgba(0, 0, 0, 0.5);
+}
+
+.stage-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  font-size: clamp(13px, 1vw, 22px);
+  color: var(--stage-ink-2);
+}
+
+.stage-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-block-start: 7px;
+}
+
+.stage-hero-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-block-start: 3px;
+  font-size: 11px;
+  color: var(--stage-ink-3);
+}
+.stage-hero-beta {
+  margin-inline-start: auto;
+  opacity: 0.6;
+}
+
+.stage-row-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stage-row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding-inline: 3px;
+}
+
+.stage-row-title {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--stage-ink-3);
+}
+
+.stage-row-count {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 7px;
+  border: 1px solid var(--stage-line);
+  border-radius: 5px;
+  color: var(--stage-ink-4);
+  font-size: 10px;
+}
+
+.stage-card-row {
+  display: flex;
+  gap: clamp(12px, 1.4vw, 20px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Room for the focused card's lift and ring; the row clips only the far
+     scroll edges, never the spotlight. */
+  padding: 12px 4px 24px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+.stage-card-row::-webkit-scrollbar {
+  display: none;
+}
+
+.stage-reel-card {
+  position: relative;
+  flex: 0 0 clamp(250px, 20vw, 560px);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--stage-line);
+  border-radius: 12px;
+  background: var(--stage-surface);
+  text-align: start;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: transform 180ms var(--stage-ease), border-color 180ms var(--stage-ease), box-shadow 180ms var(--stage-ease);
+}
+.stage-reel-art,
+.stage-reel-art > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.stage-reel-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 320ms var(--stage-ease);
+}
+.stage-reel-card:hover .stage-reel-image {
+  transform: scale(1.025);
+}
+.stage-reel-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.16) 58%, transparent);
+}
+.stage-reel-copy {
+  position: absolute;
+  inset-block-end: 13px;
+  inset-inline: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.stage-reel-title {
+  overflow: hidden;
+  color: var(--stage-ink);
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stage-reel-meta {
+  overflow: hidden;
+  color: var(--stage-ink-3);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stage-reel-card > .stage-status {
+  position: absolute;
+  inset-block-start: 10px;
+  inset-inline-end: 10px;
+  min-height: 21px;
+  padding: 2px 7px;
+  background: rgba(0, 0, 0, 0.6);
+  font-size: 9.5px;
+}
+
+.stage-mini-card {
+  flex: 0 0 clamp(138px, 10vw, 260px);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: start;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: transform 180ms var(--stage-ease);
+}
+.stage-mini-art {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border: 1px solid var(--stage-line);
+  border-radius: 10px;
+  background: var(--stage-surface);
+}
+.stage-mini-art > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.stage-mini-title {
+  overflow: hidden;
+  color: var(--stage-ink-2);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stage-mini-meta {
+  color: var(--stage-ink-4);
+  font-size: 10px;
+}
+
+.stage-library-jump {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  padding: 15px 19px;
+  border: 1px solid var(--stage-line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--stage-ink);
+  text-align: start;
+  cursor: pointer;
+  transition: background 140ms var(--stage-ease), border-color 140ms var(--stage-ease);
+}
+.stage-library-jump:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--stage-line-strong);
+}
+.stage-library-jump > svg {
+  margin-inline-start: auto;
+  color: var(--stage-ink-4);
+}
+.stage-library-jump span:not(.stage-library-jump-icon) {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stage-library-jump strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.stage-library-jump small {
+  color: var(--stage-ink-3);
+  font-size: 10.5px;
+}
+.stage-library-jump-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--stage-line);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--stage-ink-2);
+}
+
+.stage-empty {
+  min-height: 58vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px;
+  text-align: center;
+  animation: stage-copy-in 320ms var(--stage-ease) both;
+}
+.stage-empty-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 86px;
+  height: 86px;
+  margin-block-end: 6px;
+  border: 1px solid var(--stage-line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--stage-ink-3);
+}
+.stage-empty h1,
+.stage-empty h2 {
+  margin: 0;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: clamp(26px, 3vw, 42px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.stage-empty p {
+  max-width: 520px;
+  margin: 0;
+  color: var(--stage-ink-3);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.stage-empty-actions {
+  display: flex;
+  gap: 10px;
+  margin-block-start: 8px;
+}

@@ -19,6 +19,9 @@ import { closeAllModals } from "../../core/render";
 import { toggleFav } from "../../core/game-view";
 import { openPalette } from "../palette/palette";
 import { setView } from "../store/store-view";
+import { stageBack } from "../stage/stage-actions";
+import { stageButton } from "../stage/stage-input";
+import { stageControllerBattery, stageControllerConnected, stageControllerDisconnected } from "../stage/stage-state";
 
 const STICK_DEADZONE = 0.42;
 const REPEAT_FIRST_MS = 260;
@@ -120,7 +123,7 @@ let lastHudKey = "";
 
 export function updateGamepadHud(active = true): void {
   const hud = ensureGamepadHud();
-  if (!active || !S.gamepadPolling) {
+  if (!active || !S.gamepadPolling || S.stage.active) {
     hud.classList.add("hidden");
     return;
   }
@@ -156,20 +159,35 @@ let currentFocusedEl: HTMLElement | null = null;
 
 export function initGamepadFocus(): void {
   const candidates = getNavigableElements();
-  if (candidates.length > 0) {
-    setFocus(candidates[0]);
-  }
+  if (candidates.length === 0) return;
+  const preferred = candidates.find((el) => el.hasAttribute("data-gp-default")) ?? candidates[0];
+  setFocus(preferred);
 }
 
 function getNavigableElements(): HTMLElement[] {
   // 1. Modals or popups take absolute priority
-  const modal = document.querySelector<HTMLElement>(".modal:not(.hidden), .confirm-dialog:not(.hidden), #modal-root > div");
-  if (modal && modal.offsetParent !== null) {
+  const modal = document.querySelector<HTMLElement>(
+    ".modal:not(.hidden), .confirm-dialog:not(.hidden), #modal-root > div, .selective-overlay, #install-root > div",
+  );
+  // `offsetParent` is null for a fixed-position overlay in Chromium; the
+  // install dialog uses exactly that shape, so visibility is measured by its
+  // client rects instead.
+  if (modal && modal.getClientRects().length > 0) {
     return Array.from(modal.querySelectorAll<HTMLElement>("button:not([disabled]), [role='button'], input:not([disabled]), a[href]"))
-      .filter((el) => el.offsetParent !== null);
+      .filter((el) => el.getClientRects().length > 0);
   }
 
-  // 2. Game drawer if visible
+  // 2. Stage owns its own focus scope. This must run before the library-card
+  // branch: the desktop view stays in the DOM (hidden) while Stage is open.
+  if (S.stage.active) {
+    const stageRoot = document.getElementById("stage-root");
+    if (stageRoot) {
+      return Array.from(stageRoot.querySelectorAll<HTMLElement>("[data-gp-item]"))
+        .filter((el) => el.getClientRects().length > 0 && !el.classList.contains("hidden"));
+    }
+  }
+
+  // 3. Game drawer if visible
   const drawer = document.querySelector<HTMLElement>(".game-drawer:not(.hidden), #game-detail-drawer:not(.hidden)");
   if (drawer && drawer.offsetParent !== null) {
     return Array.from(drawer.querySelectorAll<HTMLElement>(".nav-back-btn, #btn-play, #btn-install, [data-act], button:not([disabled]), [role='button']"))
@@ -192,15 +210,48 @@ function setFocus(el: HTMLElement | null): void {
   if (currentFocusedEl === el) return;
   if (currentFocusedEl) {
     currentFocusedEl.classList.remove("gp-focused");
+    if (S.stage.active) currentFocusedEl.blur();
   }
   currentFocusedEl = el;
   if (currentFocusedEl) {
+    const reduceMotion =
+      document.documentElement.classList.contains("reduce-effects") ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const scrollBehavior: ScrollBehavior = reduceMotion ? "auto" : "smooth";
     currentFocusedEl.classList.add("gp-focused");
-    currentFocusedEl.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+    if (S.stage.active) {
+      // Keep real DOM focus in sync so screen readers and the inspect tools
+      // follow the same element. The visual ring is still ours.
+      try {
+        currentFocusedEl.focus({ preventScroll: true });
+      } catch {
+        /* A detached node can reject focus; the next render replaces it. */
+      }
+      window.dispatchEvent(
+        new CustomEvent("stage:focus", { detail: { key: currentFocusedEl.dataset.gpKey || "" } }),
+      );
+      currentFocusedEl.scrollIntoView({
+        block: "nearest",
+        inline: currentFocusedEl.closest("[data-gp-row]") ? "center" : "nearest",
+        behavior: scrollBehavior,
+      });
+    } else {
+      currentFocusedEl.scrollIntoView({ block: "nearest", inline: "nearest", behavior: scrollBehavior });
+    }
   }
 }
 
-function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
+/** Public entry used by Stage's renderer and pointer hover. */
+export function setGamepadFocus(el: HTMLElement | null): void {
+  setFocus(el);
+}
+
+/** Re-run the default focus pass after a screen changed. */
+export function refreshGamepadFocus(): void {
+  initGamepadFocus();
+}
+
+export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
   const candidates = getNavigableElements();
   if (candidates.length === 0) return;
 
@@ -268,11 +319,23 @@ function activateFocused(): void {
   currentFocusedEl.click();
 }
 
+/** Public keyboard/Stage entry: activate whatever currently owns the ring. */
+export function activateGamepadFocus(): void {
+  activateFocused();
+}
+
 function backAction(): void {
   // 1. Close modal if open
-  const modal = document.querySelector<HTMLElement>(".modal:not(.hidden), .confirm-dialog:not(.hidden)");
+  const modal = document.querySelector<HTMLElement>(
+    ".modal:not(.hidden), .confirm-dialog:not(.hidden), .selective-overlay, #install-root > div",
+  );
   if (modal) {
     closeAllModals();
+    return;
+  }
+
+  if (S.stage.active) {
+    stageBack();
     return;
   }
 
@@ -410,6 +473,20 @@ function gamepadLoop(): void {
   if (justPressed(mask, BTN_B)) {
     backAction();
   }
+  if (S.stage.active) {
+    if (justPressed(mask, BTN_X)) stageButton("x");
+    if (justPressed(mask, BTN_Y)) stageButton("y");
+    if (justPressed(mask, BTN_LB)) stageButton("lb");
+    if (justPressed(mask, BTN_RB)) stageButton("rb");
+    if (justPressed(mask, BTN_LT)) stageButton("lt");
+    if (justPressed(mask, BTN_RT)) stageButton("rt");
+    if (justPressed(mask, BTN_START)) stageButton("start");
+    if (justPressed(mask, BTN_SELECT)) stageButton("select");
+    prevButtons = mask;
+    if (mask === 0) window.setTimeout(gamepadLoop, IDLE_PAD_POLL_MS);
+    else requestAnimationFrame(gamepadLoop);
+    return;
+  }
   if (justPressed(mask, BTN_X)) {
     quickFavoriteAction();
   }
@@ -446,6 +523,10 @@ function bindPad(gp: Gamepad): void {
   S.gamepadName = name;
   S.gamepadKind = controllerKind(gp.id);
   if (S.gamepadKind === "steamdeck") document.documentElement.classList.add("is-steam-deck");
+  const batteryState = (gp as Gamepad & { battery?: { level?: number } }).battery;
+  const battery = batteryState && Number.isFinite(batteryState.level) ? (batteryState.level ?? null) : null;
+  stageControllerBattery(battery);
+  stageControllerConnected(name, S.gamepadKind, battery);
 }
 
 export function initGamepadSupport(): void {
@@ -455,8 +536,9 @@ export function initGamepadSupport(): void {
     void notifyPlaystationBridge();
     lastHudKey = "";
 
-    // Auto-enter Fullscreen Mode if enabled
-    if (S.fullscreenAutoEnter && S.fullscreenModeEnabled) {
+    // Auto-enter the classic full screen mode only when Stage did not already
+    // take over the window.
+    if (!S.stage.active && S.fullscreenAutoEnter && S.fullscreenModeEnabled) {
       void setFullscreenMode(true);
     }
 
@@ -472,15 +554,64 @@ export function initGamepadSupport(): void {
     const hasAny = Array.from(gamepads).some((g) => g !== null && g.connected);
     if (!hasAny) {
       S.gamepadPolling = false;
+      stageControllerDisconnected();
+      if (S.stage.active) toast(t("stage.controllerDisconnected"), "");
       updateGamepadHud(false);
       setFocus(null);
     }
   });
 
-  // Mouse movement hides focus outline and hud temporarily
+  // A dialog that opens over Stage must take the ring immediately, not after
+  // the next D-pad press. Only the open/close transition moves focus; progress
+  // text inside the dialog must not steal it while the user navigates.
+  const modalPresent = (): boolean =>
+    Boolean(document.querySelector(
+      ".modal:not(.hidden), .selective-overlay, .confirm-dialog:not(.hidden), #install-root > div",
+    ));
+  let modalWasPresent = modalPresent();
+  const onModalRootChange = (): void => {
+    if (!S.stage.active) {
+      modalWasPresent = modalPresent();
+      return;
+    }
+    const present = modalPresent();
+    if (present === modalWasPresent) return;
+    modalWasPresent = present;
+    window.requestAnimationFrame(() => initGamepadFocus());
+  };
+  for (const id of ["modal-root", "selective-root", "confirm-root", "install-root"]) {
+    const root = document.getElementById(id);
+    if (root) new MutationObserver(onModalRootChange).observe(root, { childList: true });
+  }
+
+  // A pad that was already connected when the window opened does not always
+  // emit `gamepadconnected` until its first button press. Probe once so the
+  // HUD and Stage auto-entry see it.
+  const existing = (navigator.getGamepads ? navigator.getGamepads() : [])
+    .find((pad): pad is Gamepad => Boolean(pad && pad.connected));
+  if (existing) {
+    bindPad(existing);
+    if (!S.gamepadPolling) {
+      S.gamepadPolling = true;
+      updateGamepadHud(true);
+      requestAnimationFrame(gamepadLoop);
+    }
+  }
+
+  // Mouse movement hides focus outline and hud temporarily. Stage keeps its
+  // ring: pointer hover moves the ring instead of clearing it.
   window.addEventListener("mousemove", () => {
+    if (S.stage.active) return;
     if (currentFocusedEl) {
       setFocus(null);
     }
+  });
+
+  // A mode change invalidates the held-button mask; otherwise the first press
+  // inside Stage can look like a release.
+  window.addEventListener("stage-mode", () => {
+    prevButtons = 0;
+    repeatDir = null;
+    setFocus(null);
   });
 }

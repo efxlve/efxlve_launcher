@@ -65,6 +65,18 @@ Open work only. Delete the item when it lands.
   removed directly. Program Files uninstallers may still need an elevated
   launcher.
 
+## Stage Mode (experimental)
+
+- Stage downloads currently shows active transfers and pause/cancel; queue
+  reordering and the full download history stay in desktop mode.
+- A controller-native store spotlight (launcher-managed catalogues only) is the
+  next store step. Do not route third-party store webviews through a virtual
+  cursor; a purchase-capable page needs its own reviewed flow.
+- Full achievements browser, collections, cloud-save status, screenshots and
+  friends shelves are still desktop-only.
+- Optional Stage sounds and haptics, a safe-area slider and a text-size setting.
+- Split Stage out of the main JavaScript chunk (see `docs/PERFORMANCE.md`).
+
 ## Linux/macOS: packaging and validation
 
 - Tagged releases still publish Windows only. The manual **Package** workflow

@@ -1,0 +1,258 @@
+/* Stage — quick menu, controls sheet, launch curtain and error sheet. */
+/* ---------- Quick menu / controls ---------- */
+
+.stage-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+}
+
+.stage-quick-menu {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.56);
+}
+
+.stage-sheet {
+  width: min(1280px, 90vw);
+  max-height: 86vh;
+  overflow-y: auto;
+  padding: 23px clamp(20px, 3vw, 40px) 28px;
+  border: 1px solid var(--stage-line-strong);
+  border-block-end: none;
+  border-radius: 17px 17px 0 0;
+  background: #080809;
+  box-shadow: 0 -28px 100px rgba(0, 0, 0, 0.62);
+}
+.stage-sheet-narrow {
+  width: min(720px, 92vw);
+  border-radius: 17px;
+  border-block-end: 1px solid var(--stage-line-strong);
+}
+.stage-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-block-end: 17px;
+}
+.stage-sheet-head h2 {
+  margin: 2px 0 0;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.stage-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.stage-sheet-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  min-height: 116px;
+  padding: 15px;
+  border: 1px solid var(--stage-line);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.04);
+  text-align: start;
+  cursor: pointer;
+  transition: background 140ms var(--stage-ease), border-color 140ms var(--stage-ease), transform 140ms var(--stage-ease);
+}
+.stage-sheet-tile:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--stage-line-strong);
+}
+.stage-sheet-tile-quiet {
+  background: rgba(255, 255, 255, 0.018);
+}
+.stage-sheet-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-block-end: 3px;
+  border: 1px solid var(--stage-line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--stage-ink-2);
+}
+.stage-sheet-tile strong {
+  font-size: 14px;
+  font-weight: 550;
+}
+.stage-sheet-tile small {
+  overflow: hidden;
+  max-width: 100%;
+  color: var(--stage-ink-3);
+  font-size: 10.5px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+}
+.stage-sheet-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-block-start: 16px;
+}
+.stage-sheet-foot .stage-btn {
+  height: 38px;
+  padding: 0 12px;
+  font-size: 11.5px;
+}
+.stage-sheet-note {
+  margin-inline-start: auto;
+  max-width: 420px;
+  color: var(--stage-ink-4);
+  font-size: 10px;
+  line-height: 1.4;
+  text-align: end;
+}
+
+.stage-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.66);
+}
+.stage-controls-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 26px;
+}
+.stage-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-block-end: 1px solid var(--stage-line);
+  color: var(--stage-ink-3);
+  font-size: 12px;
+}
+.stage-controls-glyph {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 86px;
+}
+
+/* ---------- Launch curtain ---------- */
+
+.stage-curtain {
+  z-index: 90;
+  overflow: hidden;
+  background: #000;
+}
+.stage-curtain-art {
+  position: absolute;
+  inset: 0;
+  background-color: #050505;
+  background-position: center;
+  background-size: cover;
+  opacity: 0.34;
+  filter: saturate(0.85);
+}
+.stage-curtain-shade {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 46%, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.93) 72%);
+}
+.stage-curtain-line {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.55);
+  transform-origin: center;
+}
+.stage-curtain-copy {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  padding: 30px;
+  text-align: center;
+}
+.stage-curtain-copy h1 {
+  margin: 0;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: clamp(40px, 6vw, 94px);
+  font-weight: 650;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+  text-shadow: 0 2px 40px rgba(0, 0, 0, 0.6);
+}
+.stage-curtain-dots {
+  display: inline-flex;
+  gap: 5px;
+  margin-block-start: 4px;
+}
+.stage-curtain-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--stage-ink);
+  opacity: 0.25;
+  animation: stage-dot-pulse 1s ease-in-out infinite;
+}
+.stage-curtain-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.stage-curtain-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+/* ---------- Error ---------- */
+
+.stage-error {
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.76);
+  animation: stage-fade-in 170ms var(--stage-ease) both;
+}
+.stage-error-card {
+  width: min(620px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 26px;
+  border: 1px solid var(--stage-line-strong);
+  border-radius: 15px;
+  background: var(--stage-surface);
+  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.7);
+}
+.stage-error-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid rgba(229, 72, 77, 0.36);
+  border-radius: 11px;
+  background: rgba(229, 72, 77, 0.1);
+  color: #ffb4b6;
+}
+.stage-error-card h2 {
+  margin: 0;
+  color: var(--stage-ink);
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.45;
+  word-break: break-word;
+}
+.stage-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block-start: 6px;
+}

@@ -1,0 +1,417 @@
+/* Stage — programme page and downloads. */
+/* ---------- Program ---------- */
+
+.stage-program {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2.2vh, 26px);
+}
+
+.stage-program-hero {
+  position: relative;
+  min-height: clamp(340px, 48vh, 850px);
+  overflow: hidden;
+  border-block-end: 1px solid var(--stage-line);
+  background: var(--stage-surface);
+}
+.stage-program-media,
+.stage-program-media > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.stage-program-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.stage-program-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top, rgba(5, 5, 5, 0.97) 0%, rgba(5, 5, 5, 0.58) 34%, rgba(5, 5, 5, 0.12) 68%, rgba(5, 5, 5, 0.48) 100%),
+    linear-gradient(to right, rgba(5, 5, 5, 0.82), rgba(5, 5, 5, 0.18) 52%, transparent 74%);
+  pointer-events: none;
+}
+.stage-program-head {
+  position: absolute;
+  inset-block-end: clamp(48px, 6vh, 84px);
+  inset-inline: var(--stage-pad);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 11px;
+  max-width: 980px;
+}
+.stage-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--stage-line);
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.34);
+  color: var(--stage-ink-2);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: color 140ms var(--stage-ease), background 140ms var(--stage-ease);
+}
+.stage-back:hover {
+  color: var(--stage-ink);
+  background: rgba(255, 255, 255, 0.08);
+}
+.stage-program-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+.stage-program-kicker {
+  color: var(--stage-ink-2);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+.stage-program-titles h1 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  margin: 0;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: clamp(38px, 4.2vw, 132px);
+  font-weight: 650;
+  line-height: 0.94;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+  text-shadow: 0 2px 34px rgba(0, 0, 0, 0.5);
+}
+.stage-program-meta {
+  color: var(--stage-ink-2);
+  font-size: clamp(12px, 0.95vw, 20px);
+}
+.stage-program-status {
+  position: absolute;
+  inset-block-start: calc(var(--stage-top) + 10px);
+  inset-inline-end: var(--stage-pad);
+}
+.stage-program-actions {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  margin-block-start: -30px;
+  padding-inline: var(--stage-pad);
+}
+.stage-program-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline: var(--stage-pad);
+  border-block-end: 1px solid var(--stage-line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.stage-program-tabs::-webkit-scrollbar {
+  display: none;
+}
+.stage-program-tab {
+  position: relative;
+  height: 43px;
+  padding: 0 13px;
+  border: none;
+  background: transparent;
+  color: var(--stage-ink-3);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 140ms var(--stage-ease);
+}
+.stage-program-tab:hover {
+  color: var(--stage-ink-2);
+}
+.stage-program-tab.active {
+  color: var(--stage-ink);
+}
+.stage-program-tab.active::after {
+  content: "";
+  position: absolute;
+  inset-block-end: -1px;
+  inset-inline: 9px;
+  height: 2px;
+  background: var(--stage-ink);
+  animation: stage-underline 220ms var(--stage-ease) both;
+}
+.stage-program-content {
+  min-height: 190px;
+  padding: 8px var(--stage-pad) 30px;
+  animation: stage-copy-in 220ms var(--stage-ease) both;
+}
+.stage-program-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(250px, 1fr);
+  gap: clamp(22px, 3vw, 44px);
+}
+.stage-program-copy p {
+  margin: 8px 0 0;
+  color: var(--stage-ink-2);
+  font-size: 14px;
+  line-height: 1.62;
+  white-space: pre-line;
+}
+.stage-program-facts {
+  display: flex;
+  flex-direction: column;
+}
+.stage-fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-block-end: 1px solid var(--stage-line);
+  color: var(--stage-ink-3);
+  font-size: 12px;
+}
+.stage-fact strong {
+  min-width: 0;
+  color: var(--stage-ink-2);
+  font-size: 12px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+  text-align: end;
+}
+.stage-program-ach {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 15px;
+  border: 1px solid var(--stage-line);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--stage-ink-3);
+  font-size: 12px;
+}
+.stage-program-ach .stage-progress {
+  flex: 1;
+}
+.stage-program-ach strong {
+  color: var(--stage-ink-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+.stage-achievements-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  max-width: 760px;
+}
+.stage-achievements-head {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.stage-achievements-medal {
+  display: inline-grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 1px solid var(--stage-line);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--stage-ink-2);
+}
+.stage-achievements-head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stage-achievements-head strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.stage-achievements-head span {
+  color: var(--stage-ink-3);
+  font-size: 11px;
+}
+.stage-achievements-pct {
+  margin-inline-start: auto;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.stage-extras {
+  max-width: 860px;
+}
+.stage-extra-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 13px 0;
+  border-block-end: 1px solid var(--stage-line);
+  color: var(--stage-ink-2);
+  font-size: 13px;
+}
+.stage-extra-row > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--stage-ink-3);
+}
+.stage-extra-row strong {
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: end;
+}
+.stage-extra-path {
+  max-width: 55%;
+  color: var(--stage-ink-2);
+  font-size: 11px;
+  word-break: break-all;
+}
+.stage-extra-actions {
+  display: flex;
+  gap: 9px;
+  margin-block-start: 16px;
+}
+.stage-program-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 38px;
+  color: var(--stage-ink-3);
+  text-align: center;
+}
+.stage-program-empty h2 {
+  margin: 0;
+  color: var(--stage-ink);
+  font-size: 20px;
+  font-weight: 600;
+}
+.stage-program-empty p {
+  max-width: 460px;
+  margin: 0;
+  font-size: 12px;
+}
+.stage-program-foot {
+  padding: 0 var(--stage-pad) 8px;
+  color: var(--stage-ink-4);
+  font-size: 10.5px;
+}
+.stage-program-missing {
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+}
+.stage-program-missing h1 {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 38px);
+  font-weight: 600;
+}
+
+/* ---------- Downloads ---------- */
+
+.stage-downloads {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.stage-downloads-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding-block-end: 12px;
+  border-block-end: 1px solid var(--stage-line);
+}
+.stage-downloads-head h1 {
+  margin: 0;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: clamp(28px, 3vw, 44px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+.stage-downloads-head span {
+  color: var(--stage-ink-3);
+  font-size: 11.5px;
+}
+.stage-download-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.stage-download-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 14px 15px;
+  border: 1px solid var(--stage-line);
+  border-radius: 11px;
+  background: var(--stage-surface);
+}
+.stage-download-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 50px;
+  width: 50px;
+  height: 50px;
+  border: 1px solid var(--stage-line);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--stage-ink-3);
+}
+.stage-download-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.stage-download-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.stage-download-head strong {
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stage-download-pct {
+  color: var(--stage-ink-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+.stage-download-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 13px;
+  color: var(--stage-ink-4);
+  font-size: 10.5px;
+}
+.stage-download-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.stage-download-actions .stage-btn {
+  height: 36px;
+  padding: 0 11px;
+  font-size: 11.5px;
+}

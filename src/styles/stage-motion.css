@@ -1,0 +1,547 @@
+/* Stage — focus ring, entry motion, responsive rules, RTL and reduced motion.
+   This file is imported last so its overrides win. */
+/* ---------- Focus ring (overrides the desktop blue ring) ---------- */
+
+#stage-root .gp-focused {
+  outline: 2px solid #fff !important;
+  outline-offset: 3px !important;
+  box-shadow:
+    0 0 0 6px rgba(255, 255, 255, 0.085),
+    0 18px 52px rgba(0, 0, 0, 0.58) !important;
+  transform: none !important;
+  z-index: 28 !important;
+}
+
+#stage-root .stage-primary-action .btn.gp-focused {
+  outline-color: #fff !important;
+  box-shadow:
+    0 0 0 3px var(--stage-bg),
+    0 0 0 6px #fff,
+    0 18px 52px rgba(0, 0, 0, 0.58) !important;
+}
+
+#stage-root .stage-reel-card.gp-focused {
+  transform: translateY(-6px) scale(1.018) !important;
+  border-color: rgba(255, 255, 255, 0.42) !important;
+}
+#stage-root .stage-cover-card.gp-focused {
+  transform: translateY(-5px) !important;
+}
+#stage-root .stage-cover-card.gp-focused .stage-cover-frame {
+  border-color: rgba(255, 255, 255, 0.48);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.56), 0 0 30px rgba(255, 255, 255, 0.07);
+}
+#stage-root .stage-mini-card.gp-focused {
+  transform: translateY(-5px) !important;
+}
+#stage-root .stage-mini-card.gp-focused .stage-mini-art {
+  border-color: rgba(255, 255, 255, 0.48);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.5), 0 0 24px rgba(255, 255, 255, 0.06);
+}
+#stage-root .stage-sheet-tile.gp-focused {
+  transform: translateY(-2px) !important;
+  background: rgba(255, 255, 255, 0.1);
+}
+#stage-root .stage-list-row.gp-focused {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+#stage-root .stage-filter.gp-focused,
+#stage-root .stage-program-tab.gp-focused,
+#stage-root .stage-tool.gp-focused {
+  outline: 1px solid rgba(255, 255, 255, 0.8) !important;
+  outline-offset: 1px !important;
+  box-shadow: none !important;
+}
+#stage-root .stage-key.gp-focused {
+  background: rgba(255, 255, 255, 0.17);
+  border-color: #fff;
+  outline: 1px solid #fff !important;
+  outline-offset: 1px !important;
+  box-shadow: none !important;
+}
+#stage-root .stage-key-accent.gp-focused {
+  background: #fff;
+  color: #000;
+}
+#stage-root .stage-spine-item.gp-focused {
+  outline: 1px solid #fff !important;
+  outline-offset: 2px !important;
+  box-shadow: none !important;
+}
+
+/* ---------- Motion ---------- */
+
+/* Entry animations belong to a transition, not to every data repaint. The
+   shell adds `stage-overlay-enter` only when an overlay opens and
+   `stage-page-enter` only when the route changes. */
+.stage-page-enter .stage-hero {
+  animation: stage-hero-in 560ms var(--stage-ease) both;
+}
+.stage-page-enter .stage-hero-art {
+  animation: stage-art-in 1000ms var(--stage-ease) both;
+}
+.stage-page-enter .stage-hero-body {
+  animation: stage-copy-in 480ms 80ms var(--stage-ease) both;
+}
+.stage-page-enter .stage-program-media img {
+  animation: stage-art-in 1000ms var(--stage-ease) both;
+}
+.stage-page-enter .stage-program-head {
+  animation: stage-copy-in 420ms 40ms var(--stage-ease) both;
+}
+.stage-overlay-enter.stage-quick-menu,
+.stage-overlay-enter.stage-controls,
+.stage-overlay-enter.stage-error {
+  animation: stage-fade-in 160ms var(--stage-ease) both;
+}
+.stage-overlay-enter .stage-sheet {
+  animation: stage-sheet-in 270ms var(--stage-ease) both;
+}
+.stage-overlay-enter.stage-search {
+  animation: stage-fade-in 170ms var(--stage-ease) both;
+}
+.stage-overlay-enter.stage-search .stage-search-panel {
+  animation: stage-panel-in 230ms var(--stage-ease) both;
+}
+.stage-overlay-enter.stage-curtain .stage-curtain-art {
+  animation: stage-curtain-art 1000ms var(--stage-ease) both;
+}
+.stage-overlay-enter.stage-curtain .stage-curtain-line {
+  animation: stage-line 460ms var(--stage-ease) both;
+}
+.stage-overlay-enter.stage-curtain .stage-curtain-copy {
+  animation: stage-curtain-copy 520ms 110ms var(--stage-ease) both;
+}
+.stage-overlay-enter.stage-error .stage-error-card {
+  animation: stage-panel-in 220ms var(--stage-ease) both;
+}
+
+@keyframes stage-page-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes stage-hero-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.988); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes stage-art-in {
+  from { opacity: 0; transform: scale(1.045); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes stage-copy-in {
+  from { opacity: 0; transform: translateY(9px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes stage-side-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes stage-sheet-in {
+  from { opacity: 0; transform: translateY(34px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes stage-panel-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.992); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes stage-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes stage-underline {
+  from { transform: scaleX(0); opacity: 0.2; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+@keyframes stage-curtain-art {
+  from { opacity: 0; transform: scale(1.08); }
+  to { opacity: 0.34; transform: scale(1); }
+}
+@keyframes stage-line {
+  from { transform: scaleX(0); opacity: 0; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+@keyframes stage-curtain-copy {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes stage-dot-pulse {
+  0%, 100% { opacity: 0.22; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-2px); }
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 1180px) {
+  .stage-library-body {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+  .stage-hero-body {
+    inset-inline-end: 24%;
+  }
+  .stage-sheet-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  #stage-root {
+    --stage-spine: 62px;
+    --stage-pad: 20px;
+  }
+  .stage-spine-item {
+    width: 44px;
+    height: 44px;
+  }
+  .stage-spine-label {
+    display: none;
+  }
+  .stage-library-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .stage-library-side {
+    position: static;
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    align-items: stretch;
+  }
+  .stage-side-art {
+    aspect-ratio: auto;
+    min-height: 220px;
+  }
+  .stage-hero-body {
+    inset-inline-end: var(--stage-pad);
+    max-width: 76%;
+  }
+  .stage-program-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .stage-net-label {
+    display: none;
+  }
+  .stage-clock {
+    font-size: 11.5px;
+  }
+  .stage-hints {
+    gap: 10px;
+    font-size: 10.5px;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .stage-brand-name,
+  .stage-net {
+    display: none;
+  }
+  .stage-hero {
+    min-height: 310px;
+  }
+  .stage-hero-body {
+    max-width: 100%;
+  }
+  .stage-hero-title {
+    font-size: clamp(32px, 8vw, 48px);
+  }
+  .stage-program-titles h1 {
+    font-size: clamp(32px, 8vw, 48px);
+  }
+  .stage-program-head {
+    inset-block-end: 38px;
+  }
+  .stage-program-actions {
+    margin-block-start: -22px;
+  }
+  .stage-primary-action .btn {
+    height: 48px;
+    padding: 0 20px;
+    font-size: 14px;
+  }
+  .stage-library-head {
+    align-items: flex-start;
+  }
+  .stage-library-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .stage-side-art {
+    min-height: 170px;
+  }
+  .stage-sheet-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .stage-controls-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .stage-key {
+    min-width: 30px;
+    height: 38px;
+    padding: 0 5px;
+    font-size: 12px;
+  }
+  .stage-key-wide {
+    min-width: 110px;
+  }
+  .stage-keyboard-row {
+    padding-inline-start: 0;
+  }
+  .stage-search-panel {
+    max-height: calc(100vh - 60px);
+  }
+  .stage-download-row {
+    flex-wrap: wrap;
+  }
+  .stage-download-actions {
+    margin-inline-start: auto;
+  }
+}
+
+@media (max-height: 700px) {
+  .stage-hero {
+    min-height: 290px;
+  }
+  .stage-program-hero {
+    min-height: 300px;
+  }
+  .stage-program-head {
+    inset-block-end: 40px;
+  }
+  .stage-hero-body {
+    inset-block-end: 22px;
+  }
+  .stage-sheet-tile {
+    min-height: 92px;
+    padding: 12px;
+  }
+  .stage-sheet-icon {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+/* ---------- RTL ---------- */
+
+[dir="rtl"] .stage-spine {
+  background: linear-gradient(to left, rgba(5, 5, 5, 0.88), rgba(5, 5, 5, 0));
+}
+[dir="rtl"] .stage-spine-label {
+  transform: translate(4px, -50%);
+}
+[dir="rtl"] .stage-spine-item:hover .stage-spine-label,
+[dir="rtl"] .stage-spine-item.gp-focused .stage-spine-label {
+  transform: translate(0, -50%);
+}
+[dir="rtl"] .stage-hero-scrim {
+  background:
+    linear-gradient(to top, rgba(5, 5, 5, 0.96) 0%, rgba(5, 5, 5, 0.6) 34%, transparent 68%),
+    linear-gradient(to left, rgba(5, 5, 5, 0.78) 0%, rgba(5, 5, 5, 0.18) 54%, transparent 78%);
+}
+[dir="rtl"] .stage-program-scrim {
+  background:
+    linear-gradient(to top, rgba(5, 5, 5, 0.97) 0%, rgba(5, 5, 5, 0.58) 34%, rgba(5, 5, 5, 0.12) 68%, rgba(5, 5, 5, 0.48) 100%),
+    linear-gradient(to left, rgba(5, 5, 5, 0.82), rgba(5, 5, 5, 0.18) 52%, transparent 74%);
+}
+[dir="rtl"] .stage-poster::after {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+}
+
+/* ---------- Desktop dialogs opened from Stage ---------- */
+
+body.stage-mode .selective-overlay {
+  background: rgba(0, 0, 0, 0.72);
+  font-size: 15px;
+}
+body.stage-mode .selective-dialog {
+  width: min(760px, 92vw);
+  border-radius: 14px;
+}
+body.stage-mode .install-path-input {
+  height: 44px;
+  font-size: 14px;
+}
+body.stage-mode .install-confirm-btn,
+body.stage-mode .install-cancel-btn,
+body.stage-mode .install-browse-btn {
+  height: 44px;
+  font-size: 13px;
+}
+body.stage-mode .selective-overlay .gp-focused {
+  outline: 2px solid #fff !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ---------- 4K / very large TV pass ---------- */
+
+@media (min-width: 2200px) {
+  #stage-root {
+    --stage-top: 72px;
+  }
+  .stage-reel-title {
+    font-size: 22px;
+  }
+  .stage-reel-meta {
+    font-size: 15px;
+  }
+  .stage-reel-card > .stage-status {
+    font-size: 12px;
+    min-height: 26px;
+    padding: 3px 9px;
+  }
+  .stage-mini-title {
+    font-size: 17px;
+  }
+  .stage-mini-meta {
+    font-size: 14px;
+  }
+  .stage-cover-title {
+    font-size: 16px;
+  }
+  .stage-cover-frame > .stage-status {
+    font-size: 12px;
+    min-height: 24px;
+  }
+  .stage-filter {
+    font-size: 17px;
+  }
+  .stage-filter-count {
+    font-size: 12px;
+  }
+  .stage-tool {
+    font-size: 15px;
+  }
+  .stage-library-titles span {
+    font-size: 14px;
+  }
+  .stage-side-store {
+    font-size: 12px;
+  }
+  .stage-side-meta {
+    font-size: 15px;
+  }
+  .stage-side-ach {
+    font-size: 13px;
+  }
+  .stage-side-note {
+    font-size: 13px;
+  }
+  .stage-program-copy p {
+    font-size: 19px;
+  }
+  .stage-fact,
+  .stage-fact strong {
+    font-size: 16px;
+  }
+  .stage-program-tab {
+    height: 56px;
+    font-size: 18px;
+  }
+  .stage-extra-row,
+  .stage-extra-row strong {
+    font-size: 17px;
+  }
+  .stage-download-head strong {
+    font-size: 18px;
+  }
+  .stage-download-pct {
+    font-size: 16px;
+  }
+  .stage-download-meta,
+  .stage-downloads-head span {
+    font-size: 14px;
+  }
+  .stage-download-actions .stage-btn {
+    height: 44px;
+    font-size: 15px;
+  }
+  .stage-hints {
+    font-size: 15px;
+  }
+  .stage-glyph {
+    min-width: 28px;
+    height: 28px;
+    font-size: 13px;
+  }
+  .stage-sheet-tile strong {
+    font-size: 18px;
+  }
+  .stage-sheet-tile small {
+    font-size: 13px;
+  }
+  .stage-sheet-head h2 {
+    font-size: 30px;
+  }
+  .stage-spine-item {
+    width: 64px;
+    height: 64px;
+  }
+  .stage-spine-icon svg {
+    width: 26px;
+    height: 26px;
+  }
+  .stage-spine-label {
+    font-size: 12px;
+  }
+  .stage-controls-row {
+    font-size: 16px;
+  }
+  .stage-brand-name,
+  .stage-brand-mode {
+    font-size: 14px;
+  }
+  .stage-clock {
+    font-size: 15px;
+  }
+  .stage-net,
+  .stage-pad-status,
+  .stage-top-download {
+    font-size: 13px;
+  }
+  .stage-key {
+    min-width: 54px;
+    height: 54px;
+    font-size: 18px;
+  }
+  .stage-search-input {
+    height: 54px;
+  }
+  .stage-search-title {
+    font-size: 16px;
+  }
+  .stage-search-sub {
+    font-size: 13px;
+  }
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  #stage-root *,
+  #stage-root *::before,
+  #stage-root *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  #stage-root .stage-reel-card.gp-focused,
+  #stage-root .stage-cover-card.gp-focused,
+  #stage-root .stage-mini-card.gp-focused,
+  #stage-root .stage-sheet-tile.gp-focused {
+    transform: none !important;
+  }
+}
+
+html.reduce-effects #stage-root *,
+html.reduce-effects #stage-root *::before,
+html.reduce-effects #stage-root *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+html.reduce-effects #stage-root .stage-reel-card.gp-focused,
+html.reduce-effects #stage-root .stage-cover-card.gp-focused,
+html.reduce-effects #stage-root .stage-mini-card.gp-focused,
+html.reduce-effects #stage-root .stage-sheet-tile.gp-focused {
+  transform: none !important;
+}
