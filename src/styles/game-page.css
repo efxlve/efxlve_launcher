@@ -1994,27 +1994,351 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 /* --- Manage tab --- */
 .manage-tab-content { max-width: 960px; }
 .manage-tab-content .section-title:first-child { margin-top: 0; }
-/* Upscaler DLL panel: one block per detected file, with the catalog and local
-   choices folded away until the reader wants another version. */
-.upscaler-row { gap: 9px; }
-.upscaler-head { display: flex; flex-direction: column; gap: 3px; }
-.upscaler-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.upscaler-path { font-size: 11.5px; color: var(--text-3); }
-.upscaler-more { margin-top: 2px; }
-.upscaler-more summary { cursor: pointer; font-size: 12px; color: var(--text-3); }
-.upscaler-more summary:hover { color: var(--text); }
-.upscaler-more-body { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-.upscaler-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.upscaler-line-label { min-width: 110px; font-size: 12px; color: var(--text-3); }
-.upscaler-line .settings-select { max-width: 420px; }
+/* Upscaler DLL panel: theme-ready cards, clear technical hierarchy and polished controls. */
+.upscaler-section {
+  display: flex;
+  flex-direction: column;
+}
+.upscaler-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.upscaler-intro-card,
+.upscaler-card {
+  position: relative;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  transition: border-color var(--ease), background var(--ease), box-shadow var(--ease);
+}
+.upscaler-intro-card:hover,
+.upscaler-card:hover {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+
+/* Intro Header */
+.upscaler-intro-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.upscaler-intro-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-sm);
+  background: var(--accent-tint);
+  border: 1px solid var(--line);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.upscaler-intro-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.upscaler-main-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.upscaler-main-desc {
+  font-size: 12.5px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+/* Warning Banner */
+.upscaler-warning-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: var(--r-sm);
+  background: var(--warn-tint);
+  border: 1px solid rgba(224, 163, 46, 0.28);
+  color: var(--warn);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.upscaler-warning-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* Top Actions */
+.upscaler-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+/* DLL Card Head */
+.upscaler-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.upscaler-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+.upscaler-kind-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.upscaler-title-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.upscaler-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  flex-wrap: wrap;
+}
+.upscaler-state-chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+}
+.upscaler-state-chip.ok {
+  background: var(--ok-tint);
+  color: var(--ok);
+  border-color: rgba(47, 179, 109, 0.25);
+}
+.upscaler-state-chip.warn {
+  background: var(--warn-tint);
+  color: var(--warn);
+  border-color: rgba(224, 163, 46, 0.25);
+}
+.upscaler-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.upscaler-meta-dot {
+  color: var(--text-3);
+}
+
+/* Path box */
+.upscaler-path-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  min-width: 0;
+}
+.upscaler-path-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+.upscaler-path {
+  font-family: Consolas, ui-monospace, SFMono-Regular, monospace;
+  font-size: 11.5px;
+  color: var(--text-2);
+  word-break: break-all;
+  user-select: text;
+}
+
+/* Description */
+.upscaler-desc {
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.5;
+  margin-top: 0;
+}
+
+/* Actions */
+.upscaler-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+.upscaler-action-btn {
+  font-weight: 500;
+}
+
+/* Backup Status */
+.upscaler-backup-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+.upscaler-backup-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.upscaler-backup-status.no-backup {
+  color: var(--text-3);
+}
+.upscaler-backup-status.no-backup .upscaler-backup-dot {
+  background: var(--text-3);
+  opacity: 0.55;
+}
+.upscaler-backup-status.has-backup {
+  color: var(--text-2);
+}
+.upscaler-backup-status.has-backup .upscaler-backup-dot {
+  background: var(--ok);
+  box-shadow: 0 0 6px var(--ok-tint);
+}
+
+/* More Versions Accordion */
+.upscaler-more {
+  margin-top: 4px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.upscaler-more-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  transition: background-color var(--ease), color var(--ease);
+  user-select: none;
+  list-style: none;
+}
+.upscaler-more-summary::-webkit-details-marker {
+  display: none;
+}
+.upscaler-more-summary:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.upscaler-more-arrow {
+  display: inline-flex;
+  transition: transform var(--ease);
+}
+details.upscaler-more[open] .upscaler-more-arrow {
+  transform: rotate(90deg);
+}
+.upscaler-more-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+.upscaler-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.upscaler-line-label {
+  min-width: 120px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.upscaler-select {
+  flex: 1 1 240px;
+  max-width: 440px;
+  height: 30px;
+  font-size: 12px;
+  background: var(--surface-2);
+  border-color: var(--line);
+  border-radius: var(--r-sm);
+}
+
+/* Empty & Scanning States */
+.upscaler-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 48px 24px;
+  text-align: center;
+  background: var(--surface-2);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-md);
+}
+.upscaler-empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--text-3);
+  display: grid;
+  place-items: center;
+}
+.upscaler-empty-text {
+  font-size: 13px;
+  color: var(--text-2);
+  max-width: 380px;
+  line-height: 1.5;
+}
+.upscaler-scanning-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  color: var(--text-2);
+}
+
+/* Legal text */
 .upscaler-legal {
-  padding: 10px 16px 12px;
+  padding: 12px 16px 14px;
   border-top: 1px solid var(--line);
   color: var(--text-3);
   font-size: 11.5px;
   line-height: 1.55;
+  margin-top: 6px;
 }
-.upscaler-desc { margin-top: 2px; }
 .mg-row { align-items: flex-start; gap: 18px; padding: 15px 16px; }
 .mg-row:hover { background: transparent; }
 /* A form block (launch arguments, wrapper, environment): stacked, and outlined
