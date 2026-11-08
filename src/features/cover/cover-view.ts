@@ -308,6 +308,23 @@ function anchorLabelKey(anchor: Exclude<LogoAnchor, "custom">): string {
   }
 }
 
+function anchorGlyph(anchor: Exclude<LogoAnchor, "custom">): string {
+  switch (anchor) {
+    case "top-left":
+      return "↖";
+    case "top-center":
+      return "↑";
+    case "center":
+      return "•";
+    case "bottom-left":
+      return "↙";
+    case "bottom-center":
+      return "↓";
+    case "bottom-right":
+      return "↘";
+  }
+}
+
 export function renderCustomCoverModalFrame(appName: string): void {
   const coverRoot = document.getElementById("cover-modal-root");
   if (!coverRoot) return;
@@ -341,7 +358,6 @@ export function renderCustomCoverModalFrame(appName: string): void {
     S.activeCoverTarget === "cover" ? t("cover.savePortrait") : S.activeCoverTarget === "hero" ? t("cover.saveHero") : t("cover.saveLogo");
   const logoLayout = getLogoLayout(appName, title);
   const logoScalePct = Math.round(logoLayout.scale * 100);
-  const canAdjustLogoOnHero = hasCustomLogo || Boolean(S.sgdbSelectedCoverUrl);
 
   coverRoot.innerHTML = `
     <div class="cover-overlay" data-act="cover-modal-backdrop">
@@ -361,21 +377,30 @@ export function renderCustomCoverModalFrame(appName: string): void {
           <!-- Edit target segment control -->
           <div class="cover-target-segment">
             <button class="target-segment-pill ${S.activeCoverTarget === "cover" ? "active" : ""}" data-act="set-cover-target" data-target="cover" data-id="${appName}">
-              ${icon("image", 14)}
-              <span>${t("cover.portraitTab")}</span>
+              <div class="target-segment-icon">${icon("image", 15)}</div>
+              <div class="target-segment-text">
+                <span class="target-segment-title">${t("cover.portraitTab")}</span>
+                <span class="target-segment-sub">2:3 • Library</span>
+              </div>
             </button>
             <button class="target-segment-pill ${S.activeCoverTarget === "hero" ? "active" : ""}" data-act="set-cover-target" data-target="hero" data-id="${appName}">
-              ${icon("rows", 14)}
-              <span>${t("cover.heroTab")}</span>
+              <div class="target-segment-icon">${icon("rows", 15)}</div>
+              <div class="target-segment-text">
+                <span class="target-segment-title">${t("cover.heroTab")}</span>
+                <span class="target-segment-sub">16:9 • Banner</span>
+              </div>
             </button>
             <button class="target-segment-pill ${S.activeCoverTarget === "logo" ? "active" : ""}" data-act="set-cover-target" data-target="logo" data-id="${appName}">
-              ${icon("sparkles", 14)}
-              <span>${t("cover.logoTab")}</span>
+              <div class="target-segment-icon">${icon("sparkles", 15)}</div>
+              <div class="target-segment-text">
+                <span class="target-segment-title">${t("cover.logoTab")}</span>
+                <span class="target-segment-sub">PNG • Title</span>
+              </div>
             </button>
           </div>
 
-          <!-- Live preview and target info -->
-          <div class="cover-preview-section">
+          <!-- Inspector card: Live preview & controls -->
+          <div class="cover-inspector-card">
             <div class="cover-preview-card ${previewClass}">
               ${activeCurrentImg ? `<img id="cover-preview-img" src="${esc(activeCurrentImg)}" alt="${t("cover.previewAlt")}" />` : `<div id="cover-preview-img" class="cover-preview-empty">${icon("image", 36)}</div>`}
               <div class="cover-preview-badge">${S.sgdbSelectedCoverUrl ? t("cover.selectedPreview") : isCustomForTarget ? t("cover.customImage") : t("cover.original")}</div>
@@ -386,6 +411,12 @@ export function renderCustomCoverModalFrame(appName: string): void {
                   ${icon(S.activeCoverTarget === "hero" ? "rows" : S.activeCoverTarget === "logo" ? "sparkles" : "image", 12)} ${targetLabel}
                 </span>
                 ${isCustomForTarget ? `<span class="cover-status-tag custom">${icon("sparkles", 11)} ${t("cover.customInUse")}</span>` : `<span class="cover-status-tag">${icon("check", 11)} ${appName.startsWith("steam::") || appName.startsWith("gog::") ? t("cover.original") : t("cover.originalEpic")}</span>`}
+                <div style="flex:1"></div>
+                ${isCustomForTarget ? `
+                  <button class="btn ghost small danger cover-reset-target-btn" data-act="reset-active-target" data-id="${appName}">
+                    ${icon("refresh", 12)} <span>${targetReset}</span>
+                  </button>
+                ` : ""}
               </div>
               <div class="cover-meta-desc">
                 ${targetDesc}
@@ -398,9 +429,12 @@ export function renderCustomCoverModalFrame(appName: string): void {
                         <div class="cover-logo-anchors" role="group" aria-label="${esc(t("cover.logoPosition"))}">
                           ${LOGO_ANCHOR_ORDER.map(
                             (anchor) =>
-                              `<button type="button" class="cover-anchor-btn ${logoLayout.anchor === anchor ? "active" : ""}" data-act="set-logo-anchor" data-anchor="${anchor}" data-logo-anchor-btn data-id="${esc(appName)}">${esc(t(anchorLabelKey(anchor)))}</button>`,
+                              `<button type="button" class="cover-anchor-btn ${logoLayout.anchor === anchor ? "active" : ""}" data-act="set-logo-anchor" data-anchor="${anchor}" data-logo-anchor-btn data-id="${esc(appName)}" title="${esc(t(anchorLabelKey(anchor)))}">
+                                <span class="cover-anchor-glyph">${anchorGlyph(anchor)}</span>
+                                <span class="cover-anchor-name">${esc(t(anchorLabelKey(anchor)))}</span>
+                              </button>`,
                           ).join("")}
-                          ${logoLayout.anchor === "custom" ? `<span class="cover-anchor-custom-pill">${esc(t("cover.anchorCustom"))}</span>` : ""}
+                          ${logoLayout.anchor === "custom" ? `<div class="cover-anchor-custom-pill">${icon("crosshair", 11)} ${esc(t("cover.anchorCustom"))}</div>` : ""}
                         </div>
                       </div>
                       <div class="cover-logo-row">
@@ -419,24 +453,16 @@ export function renderCustomCoverModalFrame(appName: string): void {
                           />
                           <span id="cover-logo-scale-pct" class="cover-logo-scale-val tabular-nums">${logoScalePct}%</span>
                         </div>
+                        <button type="button" class="btn ghost small cover-hero-adjust-btn" data-act="start-logo-hero-adjust" data-id="${esc(appName)}" title="${esc(t("cover.logoAdjustHint"))}">
+                          ${icon("crosshair", 12)} <span>${esc(t("cover.logoAdjustOnHero"))}</span>
+                        </button>
                       </div>
                     </div>`
-                  : ""
+                  : `<div class="cover-aspect-spec-hint">
+                      ${icon("info", 12)}
+                      <span>${S.activeCoverTarget === "hero" ? "16:9 • 1920×1080 px" : "2:3 • 600×900 px"}</span>
+                    </div>`
               }
-              <div class="cover-meta-actions">
-                ${
-                  S.activeCoverTarget === "logo"
-                    ? `<button type="button" class="btn ghost small" data-act="start-logo-hero-adjust" data-id="${esc(appName)}">
-                        ${icon("crosshair", 12)} ${esc(t("cover.logoAdjustOnHero"))}
-                      </button>`
-                    : ""
-                }
-                ${isCustomForTarget ? `
-                  <button class="btn ghost small danger" data-act="reset-active-target" data-id="${appName}">
-                    ${icon("refresh", 12)} ${targetReset}
-                  </button>
-                ` : ""}
-              </div>
             </div>
           </div>
 
@@ -453,10 +479,10 @@ export function renderCustomCoverModalFrame(appName: string): void {
             </button>`
             }
             <button class="cover-tab-btn ${S.customCoverActiveTab === "url" ? "active" : ""}" data-act="switch-cover-tab" data-tab="url" data-id="${appName}">
-              ${icon("external", 13)} <span>${t("cover.tabUrl")}</span>
+              ${icon("link", 13)} <span>${t("cover.tabUrl")}</span>
             </button>
             <button class="cover-tab-btn ${(S.customCoverActiveTab as string) === "file" ? "active" : ""}" data-act="switch-cover-tab" data-tab="file" data-id="${appName}">
-              ${icon("folder", 13)} <span>${t("cover.tabFile")}</span>
+              ${icon("upload", 13)} <span>${t("cover.tabFile")}</span>
             </button>
           </div>
 
@@ -600,14 +626,26 @@ export function renderCustomCoverModalContent(appName: string): void {
       "";
     container.innerHTML = `
       <div class="cover-tab-pane">
-        <div class="cover-inputs-section">
-          <label class="cover-input-label">${t("cover.urlLabel")}</label>
+        <div class="cover-url-card">
+          <div class="cover-url-card-header">
+            <div class="cover-url-card-icon">${icon("link", 18)}</div>
+            <div>
+              <div class="cover-url-card-title">${t("cover.urlLabel")}</div>
+              <div class="cover-url-card-desc">${t("cover.urlHint", { button: `<strong>${t("cover.preview")}</strong>` })}</div>
+            </div>
+          </div>
           <div class="cover-url-row">
             <input id="custom-cover-url-input" class="text-input" placeholder="${t("cover.urlPlaceholder")}" value="${esc(currentVal)}" spellcheck="false" autocomplete="off" />
-            <button class="btn ghost small" data-act="preview-custom-cover-url" title="${t("cover.preview")}">${t("cover.preview")}</button>
+            <button class="btn primary small" data-act="preview-custom-cover-url" title="${t("cover.preview")}">
+              ${icon("eye", 13)} <span>${t("cover.preview")}</span>
+            </button>
           </div>
-          <div class="cover-preview-hint" style="margin-top:4px">
-            ${t("cover.urlHint", { button: `<strong>${t("cover.preview")}</strong>` })}
+          <div class="cover-formats-row">
+            <span class="cover-formats-label">Supported formats:</span>
+            <span class="cover-format-tag">PNG</span>
+            <span class="cover-format-tag">JPG / JPEG</span>
+            <span class="cover-format-tag">WEBP</span>
+            <span class="cover-format-tag">GIF</span>
           </div>
         </div>
       </div>
@@ -615,16 +653,22 @@ export function renderCustomCoverModalContent(appName: string): void {
     return;
   }
 
-  if (S.customCoverActiveTab === "file") {    container.innerHTML = `
+  if (S.customCoverActiveTab === "file") {
+    container.innerHTML = `
       <div class="cover-tab-pane">
-        <div class="cover-inputs-section">
-          <label class="cover-input-label">${t("cover.fileLabel")}</label>
-          <label class="cover-file-upload-btn">
+        <div class="cover-dropzone" id="cover-dropzone" data-act="trigger-file-browse">
+          <input id="custom-cover-file-input" type="file" accept="image/*" style="display:none;" />
+          <div class="cover-dropzone-icon">${icon("upload", 28)}</div>
+          <div class="cover-dropzone-title">${t("cover.fileLabel")}</div>
+          <div class="cover-dropzone-desc">${t("cover.fileHint")}</div>
+          <label class="btn primary small cover-file-browse-btn" for="custom-cover-file-input">
             ${icon("folder", 14)} <span>${t("cover.fileBtn")}</span>
-            <input id="custom-cover-file-input" type="file" accept="image/*" style="display:none;" />
           </label>
-          <div class="cover-preview-hint" style="margin-top:4px">
-            ${t("cover.fileHint")}
+          <div class="cover-formats-row" style="margin-top:6px">
+            <span class="cover-format-tag">PNG</span>
+            <span class="cover-format-tag">JPG</span>
+            <span class="cover-format-tag">WEBP</span>
+            <span class="cover-format-tag">Max 15MB</span>
           </div>
         </div>
       </div>
@@ -759,20 +803,9 @@ export function renderCustomCoverModalContent(appName: string): void {
 
         <div class="sgdb-filter-bar">
           <div class="sgdb-chip-group">
-            <button class="sgdb-chip ${S.sgdbAssetType === "grids" ? "active" : ""}" data-act="sgdb-set-asset-type" data-type="grids" data-id="${appName}">
-              ${icon("image", 11)} ${t("cover.portraitShort")}
-            </button>
-            <button class="sgdb-chip ${S.sgdbAssetType === "heroes" ? "active" : ""}" data-act="sgdb-set-asset-type" data-type="heroes" data-id="${appName}">
-              ${icon("rows", 11)} ${t("cover.heroShort")}
-            </button>
-            <button class="sgdb-chip ${S.sgdbAssetType === "logos" ? "active" : ""}" data-act="sgdb-set-asset-type" data-type="logos" data-id="${appName}">
-              ${icon("sparkles", 11)} ${t("cover.logoShort")}
-            </button>
-          </div>
-          <div class="sgdb-chip-group">
             <button class="sgdb-chip ${S.sgdbActiveStyle === "" ? "active" : ""}" data-act="sgdb-set-style" data-style="" data-id="${appName}">${t("cover.styleAll")}</button>
             <button class="sgdb-chip ${S.sgdbActiveStyle === "official" ? "active" : ""}" data-act="sgdb-set-style" data-style="official" data-id="${appName}">${t("cover.styleOfficial")}</button>
-            <button class="sgdb-chip ${S.sgdbActiveStyle === "no_logo" ? "active" : ""}" data-act="sgdb-set-style" data-style="no_logo" data-id="${appName}">${t("cover.styleNoLogo")}</button>
+            ${S.activeCoverTarget !== "logo" ? `<button class="sgdb-chip ${S.sgdbActiveStyle === "no_logo" ? "active" : ""}" data-act="sgdb-set-style" data-style="no_logo" data-id="${appName}">${t("cover.styleNoLogo")}</button>` : ""}
             <button class="sgdb-chip ${S.sgdbActiveStyle === "alternate" ? "active" : ""}" data-act="sgdb-set-style" data-style="alternate" data-id="${appName}">${t("cover.styleAlternate")}</button>
           </div>
         </div>

@@ -574,6 +574,47 @@ document.addEventListener("change", (e) => {
   }
 });
 
+document.addEventListener("dragover", (e) => {
+  const dropzone = (e.target as HTMLElement | null)?.closest<HTMLElement>(".cover-dropzone");
+  if (dropzone) {
+    e.preventDefault();
+    dropzone.classList.add("is-dragover");
+  }
+});
+
+document.addEventListener("dragleave", (e) => {
+  const dropzone = (e.target as HTMLElement | null)?.closest<HTMLElement>(".cover-dropzone");
+  if (dropzone) {
+    dropzone.classList.remove("is-dragover");
+  }
+});
+
+document.addEventListener("drop", (e) => {
+  const dropzone = (e.target as HTMLElement | null)?.closest<HTMLElement>(".cover-dropzone");
+  if (dropzone) {
+    e.preventDefault();
+    dropzone.classList.remove("is-dragover");
+    const file = e.dataTransfer?.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        S.sgdbSelectedCoverUrl = result;
+        const urlInput = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
+        const previewWrapper = document.querySelector(".cover-preview-card") as HTMLElement | null;
+        if (urlInput) urlInput.value = result;
+        if (previewWrapper) {
+          previewWrapper.innerHTML = `
+            <img id="cover-preview-img" src="${result}" alt="${i18nT("cover.previewAlt")}" />
+            <div class="cover-preview-badge">${i18nT("cover.localFile")}</div>
+          `;
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+});
+
 /** Pending profile-search grid patch. Typing batches into one rebuild. */
 let profileSearchTimer = 0;
 

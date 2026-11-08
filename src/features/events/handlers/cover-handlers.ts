@@ -290,6 +290,13 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
       return true;
     }
 
+    case "trigger-file-browse": {
+      if (targetEl && targetEl.closest(".cover-file-browse-btn")) return true;
+      const input = document.getElementById("custom-cover-file-input") as HTMLInputElement | null;
+      input?.click();
+      return true;
+    }
+
     case "save-custom-cover":
       if (id) {
         const input = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
