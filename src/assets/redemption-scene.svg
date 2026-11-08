@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <!-- Outlaw Frontier: Red Dead 1899 Western Frontier Backdrop
+       Inspired by Red Dead Redemption: rugged mesa plateau silhouettes,
+       dramatic crimson sunset horizon, soaring wild blackbirds,
+       drifting campfire embers, and vintage engraved revolver filigree.
+       Built with pure SVG gradients and vectors for crisp, GPU-efficient rendering. -->
+  <defs>
+    <!-- Deep frontier sky: midnight saddle fading into blazing outlaw crimson -->
+    <linearGradient id="rdSky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#080605"/>
+      <stop offset="35%" stop-color="#120a08"/>
+      <stop offset="68%" stop-color="#2a0d0a"/>
+      <stop offset="85%" stop-color="#7f1d1d"/>
+      <stop offset="100%" stop-color="#d93829"/>
+    </linearGradient>
+
+    <!-- Western setting sun ambient aura -->
+    <radialGradient id="rdSunGlow" cx="960" cy="880" r="850" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.32"/>
+      <stop offset="25%" stop-color="#d93829" stop-opacity="0.18"/>
+      <stop offset="55%" stop-color="#7f1d1d" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#080605" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Campfire embers glow (bottom-left) -->
+    <radialGradient id="rdCampfire" cx="380" cy="980" r="550" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.25"/>
+      <stop offset="35%" stop-color="#dc2626" stop-opacity="0.1"/>
+      <stop offset="70%" stop-color="#120a08" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Single ember particle glow -->
+    <radialGradient id="rdEmber" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.95"/>
+      <stop offset="30%" stop-color="#f59e0b" stop-opacity="0.7"/>
+      <stop offset="70%" stop-color="#dc2626" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#080605" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Soaring blackbird / vulture silhouette -->
+    <g id="rdBird">
+      <path d="M 0 0 Q 6 -5 14 -2 Q 22 -6 28 0 Q 18 -1 14 3 Q 10 -1 0 0 Z" fill="#080605"/>
+    </g>
+    <g id="rdBirdSmall">
+      <path d="M 0 0 Q 4 -3 10 -1 Q 16 -4 20 0 Q 13 -1 10 2 Q 7 -1 0 0 Z" fill="#080605"/>
+    </g>
+  </defs>
+
+  <!-- Sky Base & Setting Sun Aura -->
+  <rect width="1920" height="1080" fill="url(#rdSky)"/>
+  <rect width="1920" height="1080" fill="url(#rdSunGlow)"/>
+  <rect width="1920" height="1080" fill="url(#rdCampfire)"/>
+
+  <!-- ==================== DUSK SOARING BIRDS ==================== -->
+  <g opacity="0.65">
+    <use href="#rdBird" x="1240" y="320"/>
+    <use href="#rdBird" x="1285" y="305" transform="scale(0.85)"/>
+    <use href="#rdBirdSmall" x="1330" y="335"/>
+    <use href="#rdBirdSmall" x="1370" y="315"/>
+    <use href="#rdBirdSmall" x="1420" y="340"/>
+    <use href="#rdBirdSmall" x="620" y="420" transform="scale(0.7)"/>
+    <use href="#rdBird" x="650" y="405" transform="scale(0.75)"/>
+  </g>
+
+  <!-- ==================== DISTANT PLATEAU / MESA RIDGES (Layer 1) ==================== -->
+  <!-- Classic southwestern flat-top mesa silhouette -->
+  <path d="M 0 840 
+           L 120 840 L 160 790 L 380 790 L 420 840 
+           L 620 840 L 680 760 L 980 760 L 1040 840 
+           L 1240 840 L 1280 780 L 1520 780 L 1560 840 
+           L 1720 840 L 1760 800 L 1880 800 L 1920 830
+           L 1920 1080 L 0 1080 Z" 
+        fill="#1a0c09" opacity="0.85"/>
+  <!-- Mesa Crest Sunset Rim -->
+  <path d="M 160 790 L 380 790 M 680 760 L 980 760 M 1280 780 L 1520 780 M 1760 800 L 1880 800" 
+        stroke="#f59e0b" stroke-width="1.8" opacity="0.35" fill="none"/>
+
+  <!-- ==================== MID-GROUND CANYON HILLS (Layer 2) ==================== -->
+  <path d="M 0 910
+           Q 320 860 680 890
+           Q 1140 930 1560 870
+           Q 1780 840 1920 870
+           L 1920 1080 L 0 1080 Z"
+        fill="#120705" opacity="0.95"/>
+
+  <!-- Weathered Telegraph Pole & Wires on Ridge -->
+  <g opacity="0.5" stroke="#080403" stroke-linecap="round">
+    <!-- Pole 1 -->
+    <line x1="720" y1="885" x2="720" y2="820" stroke-width="3"/>
+    <line x1="710" y1="835" x2="730" y2="835" stroke-width="2.5"/>
+    <!-- Pole 2 -->
+    <line x1="880" y1="900" x2="880" y2="840" stroke-width="3"/>
+    <line x1="870" y1="855" x2="890" y2="855" stroke-width="2.5"/>
+    <!-- Wire spanning between poles -->
+    <path d="M 720 835 Q 800 855 880 855" fill="none" stroke-width="1" opacity="0.4"/>
+  </g>
+
+  <!-- ==================== FOREGROUND RUGGED BLUFF (Layer 3) ==================== -->
+  <path d="M 0 970
+           Q 460 930 980 965
+           Q 1480 1000 1920 945
+           L 1920 1080 L 0 1080 Z"
+        fill="#080403"/>
+
+  <!-- Rugged Rocks & Campfire Silhouette on the Bluff -->
+  <g opacity="0.75" fill="#080403">
+    <!-- Boulder cluster on left -->
+    <path d="M 280 955 L 305 935 L 340 942 L 360 965 Z"/>
+    <path d="M 345 960 L 370 945 L 395 955 L 405 970 Z"/>
+    <!-- Campfire wood tripod -->
+    <line x1="375" y1="968" x2="385" y2="950" stroke="#080403" stroke-width="3"/>
+    <line x1="395" y1="968" x2="385" y2="950" stroke="#080403" stroke-width="3"/>
+    <!-- Fire Flame Core -->
+    <path d="M 380 966 Q 385 948 387 942 Q 391 950 390 966 Z" fill="#f59e0b" opacity="0.8"/>
+    <path d="M 382 966 Q 385 954 386 948 Q 388 956 388 966 Z" fill="#fef08a"/>
+  </g>
+
+  <!-- ==================== DRIFTING CAMPFIRE EMBERS ==================== -->
+  <!-- Glowing sparks rising from the evening campfire into the dark sky -->
+  <g>
+    <circle cx="388" cy="932" r="4" fill="url(#rdEmber)"/>
+    <circle cx="395" cy="912" r="5" fill="url(#rdEmber)"/>
+    <circle cx="382" cy="890" r="3.5" fill="url(#rdEmber)"/>
+    <circle cx="405" cy="865" r="4.5" fill="url(#rdEmber)"/>
+    <circle cx="392" cy="835" r="3" fill="url(#rdEmber)"/>
+    <circle cx="415" cy="805" r="4" fill="url(#rdEmber)"/>
+    <circle cx="402" cy="770" r="2.5" fill="url(#rdEmber)"/>
+    <circle cx="425" cy="735" r="3.5" fill="url(#rdEmber)"/>
+    <circle cx="410" cy="690" r="2.5" fill="url(#rdEmber)"/>
+  </g>
+
+  <!-- ==================== ORNAMENTAL WESTERN REVOLVER FILIGREE ==================== -->
+  <!-- Delicate engraved steel scrollwork inspired by classic frontier firearms -->
+  <g opacity="0.32" stroke="#d93829" stroke-width="1.2" fill="none">
+    <!-- Top-left frontier corner curl -->
+    <path d="M 40 40 L 100 40 Q 120 40 120 60 L 120 100"/>
+    <path d="M 40 40 L 40 100 Q 40 120 60 120 L 100 120"/>
+    <circle cx="40" cy="40" r="3.5" fill="#d93829"/>
+    <circle cx="120" cy="100" r="2.5" fill="#d93829"/>
+    <circle cx="100" cy="120" r="2.5" fill="#d93829"/>
+    <!-- Diamond accent -->
+    <polygon points="80,74 86,80 80,86 74,80" fill="#d93829"/>
+
+    <!-- Top-right frontier corner curl -->
+    <path d="M 1880 40 L 1820 40 Q 1800 40 1800 60 L 1800 100"/>
+    <path d="M 1880 40 L 1880 100 Q 1880 120 1860 120 L 1820 120"/>
+    <circle cx="1880" cy="40" r="3.5" fill="#d93829"/>
+    <circle cx="1800" cy="100" r="2.5" fill="#d93829"/>
+    <circle cx="1820" cy="120" r="2.5" fill="#d93829"/>
+    <polygon points="1840,74 1846,80 1840,86 1834,80" fill="#d93829"/>
+
+    <!-- Bottom-left frontier corner curl -->
+    <path d="M 40 1040 L 100 1040 Q 120 1040 120 1020 L 120 980"/>
+    <circle cx="40" cy="1040" r="3.5" fill="#d93829"/>
+    <circle cx="120" cy="980" r="2.5" fill="#d93829"/>
+
+    <!-- Bottom-right frontier corner curl -->
+    <path d="M 1880 1040 L 1820 1040 Q 1800 1040 1800 1020 L 1800 980"/>
+    <circle cx="1880" cy="1040" r="3.5" fill="#d93829"/>
+    <circle cx="1800" cy="980" r="2.5" fill="#d93829"/>
+  </g>
+</svg>

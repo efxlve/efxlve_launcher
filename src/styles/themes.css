@@ -3101,22 +3101,306 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   box-shadow: 0 0 8px rgba(0, 162, 255, 0.7);
 }
 
-/* ---------- Outlaw Frontier (Red Dead Redemption Inspired) ---------- */
+/* ---------- Outlaw Frontier (Red Dead Redemption Inspired) ----------
+   1899 American frontier: dramatic mesa canyon sunset backdrop (src/assets/redemption-scene.svg),
+   weathered saddle leather & saloon timber panels, outlaw crimson action buttons,
+   and campfire ember glow. */
+
+:root[data-surface="redemption"] {
+  color-scheme: dark;
+  --bg: #0c0907;
+  --surface-1: #16100c;
+  --surface-2: #201712;
+  --surface-3: #2d1f18;
+  --line: rgba(217, 56, 41, 0.24);
+  --line-strong: rgba(217, 56, 41, 0.5);
+  --text: #fbf5ee;
+  --text-2: #cbb6a4;
+  --text-3: #867364;
+  --accent: #d93829;
+  --accent-hover: #e65140;
+  --accent-tint: rgba(217, 56, 41, 0.16);
+  --on-accent: #ffffff;
+  --ok: #4ade80;
+  --ok-hover: #6ee7b7;
+  --ok-tint: rgba(74, 222, 128, 0.16);
+  --warn: #f59e0b;
+  --warn-tint: rgba(245, 158, 11, 0.16);
+  --err: #d93829;
+  --err-tint: rgba(217, 56, 41, 0.18);
+  --r-xs: 2px;
+  --r-sm: 4px;
+  --r-md: 5px;
+  --r-lg: 7px;
+  --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.85);
+  --scrollbar-thumb: rgba(217, 56, 41, 0.48);
+  --scrollbar-thumb-hover: #e65140;
+}
+
+:root[data-surface="redemption"] body {
+  background: #0c0907 url("../assets/redemption-scene.svg") 0 0 / 100vw 100vh no-repeat;
+}
+:root[data-surface="redemption"] #main-col,
+:root[data-surface="redemption"] #view { background: transparent; }
+:root[data-surface="redemption"] .overlay { background: transparent; }
+:root[data-surface="redemption"] .overlay::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  top: var(--winbar-h);
+  left: var(--sidebar-w);
+  right: 0;
+  bottom: 0;
+  background: #0c0907 url("../assets/redemption-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
+  pointer-events: none;
+  transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
+}
+
+/* Outlaw Frontier: Custom Visible Saddle Leather Scrollbars */
+:root[data-surface="redemption"] ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+  box-shadow: 0 0 6px rgba(217, 56, 41, 0.25);
+}
+:root[data-surface="redemption"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 12px rgba(230, 81, 64, 0.7);
+}
 :root[data-surface="redemption"] .overlay::-webkit-scrollbar-track {
-  background: rgba(15, 12, 10, 0.7);
+  background: rgba(12, 9, 7, 0.75);
   border-left: 1px solid rgba(217, 56, 41, 0.18);
 }
 :root[data-surface="redemption"] .overlay::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 4px;
-  border: 1px solid rgba(217, 56, 41, 0.3);
+  border: 1px solid rgba(217, 56, 41, 0.35);
+  box-shadow: 0 0 8px rgba(217, 56, 41, 0.35);
 }
 :root[data-surface="redemption"] .overlay::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
-  box-shadow: 0 0 10px rgba(230, 81, 64, 0.6);
+  box-shadow: 0 0 14px rgba(230, 81, 64, 0.8);
 }
-:root[data-surface="redemption"] :is(.btn.primary, .btn.play) {
-  box-shadow: 0 0 12px rgba(217, 56, 41, 0.3);
+
+/* Outlaw Frontier: Window Bar */
+:root[data-surface="redemption"] #winbar {
+  background: #100b08;
+  border-bottom: 1px solid rgba(217, 56, 41, 0.25);
+}
+:root[data-surface="redemption"] .winbar-beta-chip {
+  background: #d93829;
+  color: #ffffff;
+  font-weight: 800;
+  border-radius: 3px;
+  box-shadow: 0 0 10px rgba(217, 56, 41, 0.5);
+  letter-spacing: 0.5px;
+}
+:root[data-surface="redemption"] .winbar-btn:hover {
+  background: rgba(217, 56, 41, 0.14);
+  color: #f87171;
+}
+:root[data-surface="redemption"] .win-btn.win-close:hover {
+  background: #b91c1c;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(220, 38, 38, 0.75);
+}
+
+/* Outlaw Frontier: Sidebar Navigation */
+:root[data-surface="redemption"] #sidebar {
+  background: rgba(14, 10, 8, 0.96);
+  border-right: 1px solid rgba(217, 56, 41, 0.22);
+  backdrop-filter: blur(8px);
+}
+:root[data-surface="redemption"] #page-header {
+  background: rgba(15, 10, 8, 0.88);
+  border-bottom: 1px solid rgba(217, 56, 41, 0.22);
+  backdrop-filter: blur(6px);
+}
+:root[data-surface="redemption"] .sb-item {
+  border-radius: 4px;
+  transition: all var(--ease);
+}
+:root[data-surface="redemption"] .sb-item:hover:not(.active) {
+  color: #fecdd3;
+  background: rgba(217, 56, 41, 0.1);
+}
+:root[data-surface="redemption"] .sb-item.active {
+  background: linear-gradient(90deg, rgba(217, 56, 41, 0.22) 0%, rgba(217, 56, 41, 0.04) 100%);
+  color: #fecdd3;
+  font-weight: 700;
+  border-left: 3px solid #d93829;
+  border-radius: 0 4px 4px 0;
+  box-shadow: inset 2px 0 10px rgba(217, 56, 41, 0.3);
+}
+:root[data-surface="redemption"] .sb-item.active::before {
+  display: none;
+}
+
+/* Outlaw Frontier: Primary Action Buttons (Embossed Crimson Leather) */
+:root[data-surface="redemption"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
+  background: linear-gradient(180deg, #e6392a 0%, #a82015 100%);
+  color: #ffffff;
+  font-weight: 800;
+  border: 1px solid #f87171;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 2px 8px rgba(168, 32, 21, 0.45);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  transition: all var(--ease);
+}
+:root[data-surface="redemption"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
+  background: linear-gradient(180deg, #f87171 0%, #dc2626 100%);
+  border-color: #ffffff;
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 #ffffff, 0 0 20px rgba(217, 56, 41, 0.75);
+  transform: translateY(-1px);
+}
+:root[data-surface="redemption"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
+  background: #8b180f;
+  border-color: #8b180f;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+  transform: translateY(0);
+}
+
+/* Outlaw Frontier: Secondary Action Buttons */
+:root[data-surface="redemption"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
+  background: rgba(24, 16, 12, 0.88);
+  border: 1px solid rgba(217, 56, 41, 0.28);
+  color: var(--text);
+  border-radius: 4px;
+}
+:root[data-surface="redemption"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
+:root[data-surface="redemption"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
+  border-color: #f87171;
+  color: #fecdd3;
+  background: rgba(217, 56, 41, 0.12);
+  box-shadow: 0 0 10px rgba(217, 56, 41, 0.3);
+}
+
+/* Outlaw Frontier: Danger Buttons */
+:root[data-surface="redemption"] .btn.danger {
+  background: #7f1d1d;
+  border: 1px solid #b91c1c;
+  color: #fecdd3;
+  font-weight: 700;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(127, 29, 29, 0.5);
+}
+:root[data-surface="redemption"] .btn.danger:hover {
+  background: #991b1b;
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(220, 38, 38, 0.7);
+}
+
+/* Outlaw Frontier: Headings & Titles */
+:root[data-surface="redemption"] :is(
+  .page-header-title, .section-title, .hub-card-title, .hltb-title,
+  .gp-section-title, .notif-title, .modal-box h2, .col-modal-title h2
+) {
+  color: #f43f5e;
+  letter-spacing: 0.03em;
+  font-weight: 700;
+  text-shadow: 0 0 12px rgba(217, 56, 41, 0.4);
+}
+
+/* Outlaw Frontier: Cards, Panels & Saloon Boards */
+:root[data-surface="redemption"] :is(
+  .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item,
+  .gp-ac-notice, .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card,
+  .gp-side-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
+  .news-card, .storage-overview-card, .storage-stat-pill, .notes-card,
+  .selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card,
+  .ss-share-card, .modal-box, .manage-dialog, .storage-dialog, .hide-list-dialog,
+  .changelog-dialog, .lib-filter-panel, .custom-game-modal
+) {
+  background: rgba(20, 14, 11, 0.92);
+  border: 2px solid rgba(217, 56, 41, 0.35);
+  border-radius: 5px;
+  box-shadow: inset 0 1px 0 rgba(251, 191, 36, 0.12), 0 8px 26px rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(8px);
+}
+
+/* Outlaw Frontier: Library Game Cards */
+:root[data-surface="redemption"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(217, 56, 41, 0.22);
+  border-radius: 4px;
+}
+:root[data-surface="redemption"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+  box-shadow:
+    0 0 0 2px #d93829,
+    0 0 22px rgba(217, 56, 41, 0.5),
+    0 12px 30px rgba(0, 0, 0, 0.9);
+  transform: translateY(-2px);
+}
+:root[data-surface="redemption"] .pcard-play-btn {
+  background: rgba(18, 12, 9, 0.9);
+  border: 1px solid rgba(217, 56, 41, 0.45);
+  color: #fecdd3;
+  border-radius: 3px;
+}
+:root[data-surface="redemption"] .pcard-play-btn:hover {
+  background: #d93829;
+  color: #ffffff;
+  border-color: #f87171;
+  box-shadow: 0 0 14px rgba(217, 56, 41, 0.75);
+}
+
+/* Outlaw Frontier: Inputs, Search & Fields */
+:root[data-surface="redemption"] :is(
+  input:not([type="range"], [type="checkbox"], [type="radio"]),
+  select, textarea, .input, .text-input, .search, .page-search,
+  .settings-search, .music-input, .music-select, .storage-search-input,
+  .move-path-input, .install-path-input
+) {
+  background: #090605;
+  border: 1px solid rgba(217, 56, 41, 0.28);
+  color: #fbf5ee;
+  border-radius: 4px;
+}
+:root[data-surface="redemption"] :is(
+  input, select, textarea, .input, .text-input, .settings-search,
+  .music-input, .music-select, .storage-search-input, .move-path-input,
+  .install-path-input
+):focus,
+:root[data-surface="redemption"] .search:focus-within,
+:root[data-surface="redemption"] .install-path-input-wrap:focus-within {
+  border-color: #f87171;
+  box-shadow: 0 0 0 2px rgba(217, 56, 41, 0.35);
+  outline: none;
+}
+
+/* Outlaw Frontier: Progress Bar (Dead Eye / Stamina Core Meter) */
+:root[data-surface="redemption"] .progress {
+  background: rgba(12, 8, 6, 0.92);
+  border: 1px solid rgba(217, 56, 41, 0.25);
+  border-radius: 4px;
+  overflow: hidden;
+}
+:root[data-surface="redemption"] .progress > span,
+:root[data-surface="redemption"] :is(.gp-progress-fill) {
+  background: linear-gradient(90deg, #f59e0b 0%, #ef4444 60%, #991b1b 100%);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+/* Outlaw Frontier: Switches */
+:root[data-surface="redemption"] .switch input:checked + .track {
+  background: #991b1b;
+  border-color: #d93829;
+}
+:root[data-surface="redemption"] .switch input:checked + .track::before {
+  background: #ffffff;
+  box-shadow: 0 0 8px rgba(217, 56, 41, 0.7);
+}
+
+/* Outlaw Frontier: Store Tabs Active Indicator */
+:root[data-surface="redemption"] .store-tabs .tab.active,
+:root[data-surface="redemption"] .tab.active {
+  color: #fecdd3;
+}
+:root[data-surface="redemption"] .store-tabs .tab.active::after,
+:root[data-surface="redemption"] .tab.active::after {
+  background: #d93829;
+  box-shadow: 0 0 8px rgba(217, 56, 41, 0.6);
 }
 
 /* ---------- Tarnished Grace (Elden Ring Inspired) ---------- */
