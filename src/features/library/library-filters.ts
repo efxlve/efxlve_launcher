@@ -632,6 +632,10 @@ export function renderLibFilterPanel(base: EpicSummary[], resultCount: number): 
 export function syncLibFilterHeaderBtn(resultCount = Math.max(0, S.libraryVisibleCount)): void {
   const count = libFiltersActiveCount();
   const showOnHeader = LIB_FILTERS_ENABLED && S.view === "library" && !S.currentModalAppName;
+  const addBtn = document.getElementById("lib-header-add-btn");
+  if (addBtn) addBtn.hidden = !showOnHeader;
+  const importBtn = document.getElementById("lib-header-import-btn");
+  if (importBtn) importBtn.hidden = !showOnHeader;
   const btn = document.getElementById("lib-header-filter-btn");
   if (btn) {
     btn.hidden = !showOnHeader;

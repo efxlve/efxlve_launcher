@@ -172,6 +172,10 @@ export function updatePageHeader(): void {
     const filterRoot = document.getElementById("lib-filter-root");
     if (filterRoot) filterRoot.innerHTML = "";
   }
+  const libAddBtn = document.getElementById("lib-header-add-btn");
+  if (libAddBtn) libAddBtn.hidden = !showLibFilters;
+  const libImportBtn = document.getElementById("lib-header-import-btn");
+  if (libImportBtn) libImportBtn.hidden = !showLibFilters;
   const libFilterBtn = document.getElementById("lib-header-filter-btn");
   if (libFilterBtn) {
     const f = S.libFilters;

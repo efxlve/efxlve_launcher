@@ -1460,12 +1460,6 @@ export function renderEpic(): string {
 
   const densityLabel = S.epicViewMode === "list" ? t("lib.listDensity") : t("lib.coverSize");
   const tools = `
-    <button class="icon-btn lib-create-btn" data-act="open-add-custom-game-modal" title="${esc(t("customGames.addTitle"))}" aria-label="${esc(t("customGames.addTitle"))}">
-      ${icon("plus", 17)}
-    </button>
-    <button class="icon-btn lib-create-btn" data-act="import-custom-games-folder" title="${esc(t("customGames.importFolderTitle"))}" aria-label="${esc(t("customGames.importFolderTitle"))}">
-      ${icon("folder", 17)}
-    </button>
     ${sourceDropdown}
     <div class="sort-dropdown-container">
       <button class="btn ghost lib-sort-btn lib-sort-trigger${S.libGroupBy !== "none" ? " has-group" : ""}" data-act="toggle-sort-dropdown" title="${t("lib.sortTip", { label: esc(sortTriggerLabel) })}">
