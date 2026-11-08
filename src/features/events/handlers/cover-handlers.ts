@@ -8,7 +8,7 @@ import { t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import { icon } from "../../../core/icons";
 import { esc } from "../../../core/utils";
-import { openEpicModal, render } from "../../../core/render";
+import { openEpicModal, render, repaintGameHero } from "../../../core/render";
 import { epicSetSteamGridKey, epicTestSteamGridKey } from "../../../epic";
 import {
   closeCustomCoverModal,
@@ -301,6 +301,10 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
       if (id) {
         const input = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
         const val = S.sgdbSelectedCoverUrl || input?.value.trim() || "";
+        const hasExistingLogo = Boolean(S.customLogos[id] || customLogoOf(id));
+        const hasExistingHero = Boolean(S.customHeroes[id]);
+        const hasExistingCover = Boolean(S.customCovers[id]);
+
         if (val) {
           if (S.activeCoverTarget === "hero") {
             saveCustomHero(id, val);
@@ -312,6 +316,16 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
             saveCustomCover(id, val);
             toast(i18nT("cover.portraitSaved"), "ok");
           }
+          closeCustomCoverModal();
+        } else if (S.activeCoverTarget === "logo" && (hasExistingLogo || S.customLogoLayouts[id])) {
+          repaintGameHero(id);
+          toast(i18nT("cover.logoSaved"), "ok");
+          closeCustomCoverModal();
+        } else if (S.activeCoverTarget === "hero" && hasExistingHero) {
+          toast(i18nT("cover.heroSaved"), "ok");
+          closeCustomCoverModal();
+        } else if (S.activeCoverTarget === "cover" && hasExistingCover) {
+          toast(i18nT("cover.portraitSaved"), "ok");
           closeCustomCoverModal();
         } else {
           toast(i18nT("cover.pickFirst"), "err");
