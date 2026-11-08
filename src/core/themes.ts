@@ -68,6 +68,7 @@ export interface CustomThemeInput {
   sceneBlur?: number;
   sceneOpacity?: number;
   radius?: "sharp" | "default" | "round";
+  tokens?: Record<string, string>;
   createdAt?: number;
 }
 
@@ -1213,8 +1214,8 @@ export function customTokens(input: CustomThemeInput): Record<string, string> {
     "--err": "#e5484d",
     "--err-tint": "rgba(229, 72, 77, 0.14)",
     "--shadow-pop": "0 14px 36px rgba(0, 0, 0, 0.65)",
-    "--scrollbar-thumb": "rgba(255, 255, 255, 0.28)",
-    "--scrollbar-thumb-hover": "rgba(255, 255, 255, 0.55)",
+    "--scrollbar-thumb": input.borderStyle === "accent" ? rgba(input.accent, 0.45) : "rgba(255, 255, 255, 0.28)",
+    "--scrollbar-thumb-hover": input.borderStyle === "accent" ? (input.accentHover ?? input.accent) : "rgba(255, 255, 255, 0.55)",
     "--r-sm": rSm,
     "--r-md": rMd,
   };
@@ -1267,27 +1268,53 @@ function readCustomInputs(): CustomThemeInput[] {
     return parsed
       .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
       .filter((item) => typeof item.name === "string" && HEX.test(String(item.bg)) && HEX.test(String(item.accent)))
-      .map((item, index) => ({
-        id: typeof item.id === "string" && item.id.length > 0 ? item.id : `${CUSTOM_PREFIX}${index}`,
-        name: String(item.name).slice(0, 32) || "Custom",
-        bg: String(item.bg),
-        surface: typeof item.surface === "string" && HEX.test(item.surface) ? item.surface : undefined,
-        accent: String(item.accent),
-        accentHover: typeof item.accentHover === "string" && HEX.test(item.accentHover) ? item.accentHover : undefined,
-        accent2: typeof item.accent2 === "string" && HEX.test(item.accent2) ? item.accent2 : undefined,
-        glow: item.glow === "subtle" || item.glow === "radiant" || item.glow === "neon" ? item.glow : "none",
-        cardGlass: item.cardGlass === true,
-        borderStyle: item.borderStyle === "contrast" || item.borderStyle === "accent" ? item.borderStyle : "subtle",
-        light: item.light === true,
-        scene:
-          typeof item.scene === "string" && item.scene.startsWith("data:image/") && item.scene.length < 2_000_000
-            ? item.scene
-            : undefined,
-        sceneBlur: typeof item.sceneBlur === "number" ? Math.max(0, Math.min(30, item.sceneBlur)) : 0,
-        sceneOpacity: typeof item.sceneOpacity === "number" ? Math.max(0.05, Math.min(0.95, item.sceneOpacity)) : undefined,
-        radius: item.radius === "sharp" || item.radius === "round" ? item.radius : "default",
-        createdAt: typeof item.createdAt === "number" ? item.createdAt : Date.now(),
-      }));
+      .map((item, index) => {
+        let tokens = typeof item.tokens === "object" && item.tokens ? (item.tokens as Record<string, string>) : undefined;
+        let borderStyle: "subtle" | "contrast" | "accent" = item.borderStyle === "contrast" || item.borderStyle === "accent" ? item.borderStyle : "subtle";
+        let glow: "none" | "subtle" | "radiant" | "neon" = item.glow === "subtle" || item.glow === "radiant" || item.glow === "neon" ? item.glow : "none";
+        let accentHover = typeof item.accentHover === "string" && HEX.test(item.accentHover) ? item.accentHover : undefined;
+        let accent2 = typeof item.accent2 === "string" && HEX.test(item.accent2) ? item.accent2 : undefined;
+        let surface = typeof item.surface === "string" && HEX.test(item.surface) ? item.surface : undefined;
+
+        // If this custom theme was duplicated from a built-in theme and lacks tokens, recover them:
+        if (!tokens && typeof item.name === "string" && item.name.endsWith(" Copy")) {
+          const baseName = item.name.replace(/\s+Copy$/, "").trim().toLowerCase();
+          const matched = BUILTIN_THEMES.find((th) => {
+            const thName = (th.name ?? (th.labelKey ? t(th.labelKey) : th.id)).toLowerCase();
+            return thName === baseName || th.id.toLowerCase() === baseName;
+          });
+          if (matched?.tokens) {
+            tokens = { ...matched.tokens };
+            borderStyle = "accent";
+            glow = "radiant";
+            accentHover = matched.tokens["--accent-hover"] ?? accentHover;
+            surface = matched.tokens["--surface-1"] ?? surface;
+          }
+        }
+
+        return {
+          id: typeof item.id === "string" && item.id.length > 0 ? item.id : `${CUSTOM_PREFIX}${index}`,
+          name: String(item.name).slice(0, 32) || "Custom",
+          bg: String(item.bg),
+          surface,
+          accent: String(item.accent),
+          accentHover,
+          accent2,
+          glow,
+          cardGlass: item.cardGlass === true,
+          borderStyle,
+          light: item.light === true,
+          scene:
+            typeof item.scene === "string" && item.scene.startsWith("data:image/") && item.scene.length < 2_000_000
+              ? item.scene
+              : undefined,
+          sceneBlur: typeof item.sceneBlur === "number" ? Math.max(0, Math.min(30, item.sceneBlur)) : 0,
+          sceneOpacity: typeof item.sceneOpacity === "number" ? Math.max(0.05, Math.min(0.95, item.sceneOpacity)) : undefined,
+          radius: item.radius === "sharp" || item.radius === "round" ? item.radius : "default",
+          tokens,
+          createdAt: typeof item.createdAt === "number" ? item.createdAt : Date.now(),
+        };
+      });
   } catch {
     return [];
   }
@@ -1307,6 +1334,8 @@ function writeCustomInputs(list: CustomThemeInput[]): boolean {
 export function customThemes(): ThemeDef[] {
   return readCustomInputs().map((input, index) => {
     const id = input.id || `${CUSTOM_PREFIX}${index}`;
+    const generated = customTokens(input);
+    const tokens = input.tokens ? { ...generated, ...input.tokens } : generated;
     return {
       id,
       labelKey: "",
@@ -1315,7 +1344,7 @@ export function customThemes(): ThemeDef[] {
       surface: input.surface,
       accent: input.accent,
       scheme: input.light ? "light" : "dark",
-      tokens: customTokens(input),
+      tokens,
       custom: true,
       scene: input.scene,
       sceneBlur: input.sceneBlur,
@@ -1352,6 +1381,7 @@ export function saveCustomTheme(input: CustomThemeInput): string {
     sceneBlur: typeof input.sceneBlur === "number" ? Math.max(0, Math.min(30, input.sceneBlur)) : 0,
     sceneOpacity: typeof input.sceneOpacity === "number" ? Math.max(0.05, Math.min(0.95, input.sceneOpacity)) : undefined,
     radius: input.radius === "sharp" || input.radius === "round" ? input.radius : "default",
+    tokens: input.tokens && typeof input.tokens === "object" ? { ...input.tokens } : undefined,
     createdAt: input.createdAt || Date.now(),
   };
 
@@ -1395,6 +1425,7 @@ export function duplicateTheme(sourceId: string, copySuffix = " Copy"): string {
       ...custom,
       id: undefined,
       name: `${custom.name}${copySuffix}`,
+      tokens: custom.tokens ? { ...custom.tokens } : undefined,
       createdAt: Date.now(),
     });
   }
@@ -1402,15 +1433,21 @@ export function duplicateTheme(sourceId: string, copySuffix = " Copy"): string {
   const def = themeById(sourceId);
   const bg = HEX.test(def.bg) ? def.bg : firstHex(def.bg) ?? "#141418";
   const accent = HEX.test(def.accent) ? def.accent : firstHex(def.accent) ?? "#7c3aed";
-  const surface = def.surface && HEX.test(def.surface) ? def.surface : undefined;
+  const surface = def.tokens?.["--surface-1"] ?? (def.surface && HEX.test(def.surface) ? def.surface : undefined);
+  const hasAccentLine = Boolean(def.tokens?.["--line"] && !def.tokens["--line"].includes("255, 255, 255") && !def.tokens["--line"].includes("15, 23, 42"));
 
   return saveCustomTheme({
     name: `${def.name ?? (def.labelKey ? t(def.labelKey) : def.id)}${copySuffix}`,
     bg,
     surface,
     accent,
+    accentHover: def.tokens?.["--accent-hover"],
+    accent2: def.tokens?.["--accent-2"],
+    borderStyle: hasAccentLine ? "accent" : "subtle",
+    glow: def.tokens?.["--accent-glow"] && def.tokens["--accent-glow"] !== "none" ? "radiant" : "none",
+    tokens: def.tokens ? { ...def.tokens } : undefined,
     light: def.scheme === "light",
-    radius: "default",
+    radius: def.tokens?.["--r-sm"] === "0px" ? "sharp" : def.tokens?.["--r-sm"] === "10px" ? "round" : "default",
   });
 }
 
