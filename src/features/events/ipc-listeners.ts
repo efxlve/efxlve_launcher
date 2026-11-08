@@ -1324,6 +1324,7 @@ export async function initApp(hooks: {
     if (settings) {
       S.epicSettingsCache = settings;
       S.preferredCdn = settings.preferred_cdn ?? "";
+      S.downloadLimitMbps = settings.download_limit_mbps ?? 0;
     }
     if (ra) {
       S.raConfigured = ra.configured;

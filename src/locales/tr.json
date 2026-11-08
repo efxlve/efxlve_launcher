@@ -155,6 +155,8 @@
   "settings.netCardsTitle": "İndirme hızı",
   "settings.netAdvTitle": "Seçenekler",
   "settings.netCacheDesc": "Epic: Geçici indirme ve önbellek dosyalarını temizler.",
+  "settings.bandwidthLimit": "Bant genişliği sınırı",
+  "settings.bandwidthLimitDesc": "Epic Games indirmelerini bu Mbit/s değerine sınırlar. 0 sınırsız demektir.",
   "settings.autoDesktopShortcut": "Otomatik Masaüstü Kısayolu",
   "settings.autoDesktopShortcutDesc": "Epic: Oyun indirildiğinde masaüstüne otomatik olarak başlatma kısayolu oluştur.",
   "settings.secSocial": "Sosyal",

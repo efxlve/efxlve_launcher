@@ -140,6 +140,8 @@
   "settings.netCardsTitle": "다운로드 속도",
   "settings.netAdvTitle": "옵션",
   "settings.netCacheDesc": "Epic: 임시 다운로드 조각과 캐시된 청크를 안전하게 삭제합니다.",
+  "settings.bandwidthLimit": "대역폭 제한",
+  "settings.bandwidthLimitDesc": "Epic Games 다운로드를 이 Mbit/s 값으로 제한합니다. 0은 무제한입니다.",
   "settings.autoDesktopShortcut": "바탕 화면 바로 가기 자동 만들기",
   "settings.autoDesktopShortcutDesc": "Epic: 게임을 다운로드하고 설치하면 바탕 화면 바로 가기를 자동으로 만듭니다.",
   "settings.secSocial": "소셜",

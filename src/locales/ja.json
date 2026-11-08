@@ -140,6 +140,8 @@
   "settings.netCardsTitle": "ダウンロード速度",
   "settings.netAdvTitle": "オプション",
   "settings.netCacheDesc": "Epic: 一時的なダウンロード断片とキャッシュ済みチャンクを安全に削除します。",
+  "settings.bandwidthLimit": "帯域幅の上限",
+  "settings.bandwidthLimitDesc": "Epic Games のダウンロードをこの Mbit/s に制限します。0 は無制限です。",
   "settings.autoDesktopShortcut": "デスクトップショートカットを自動作成",
   "settings.autoDesktopShortcutDesc": "Epic: ゲームのダウンロードとインストールが完了したら、デスクトップショートカットを自動で作成します。",
   "settings.secSocial": "ソーシャル",

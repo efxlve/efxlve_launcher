@@ -155,6 +155,8 @@
   "settings.netCardsTitle": "डाउनलोड गति",
   "settings.netAdvTitle": "विकल्प",
   "settings.netCacheDesc": "Epic: अस्थायी डाउनलोड सेगमेंट और कैश्ड चंक्स को सुरक्षित रूप से साफ़ करता है।",
+  "settings.bandwidthLimit": "बैंडविड्थ सीमा",
+  "settings.bandwidthLimitDesc": "Epic Games डाउनलोड को इस Mbit/s तक सीमित करता है। 0 का अर्थ असीमित है।",
   "settings.autoDesktopShortcut": "स्वचालित डेस्कटॉप शॉर्टकट",
   "settings.autoDesktopShortcutDesc": "Epic: गेम डाउनलोड और इंस्टॉल होने पर स्वचालित रूप से डेस्कटॉप शॉर्टकट बनाएं।",
   "settings.secSocial": "सामाजिक",

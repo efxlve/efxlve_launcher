@@ -583,6 +583,8 @@ export const S = {
   profileUnlockCount: 10,
   offlineMode: false,
   networkProfile: ("balanced") as string,
+  /** Epic download cap in Mbit/s; 0 = unlimited. */
+  downloadLimitMbps: 0,
   gameBackupsMap: (new Map()) as Map<string, SaveBackupInfo[]>,
   isBackingUp: false,
   cloudBackupSettings: (null) as CloudBackupSettings | null,

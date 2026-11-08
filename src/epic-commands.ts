@@ -46,6 +46,8 @@ export interface EpicSettings {
   alt_legendary_bin: string | null;
   install_dir: string | null;
   network_profile?: string | null;
+  /** Epic download cap in Mbit/s; 0 or null means unlimited. */
+  download_limit_mbps?: number | null;
   offline_mode?: boolean | null;
   steamgrid_api_key?: string | null;
   presence_enabled?: boolean | null;
@@ -596,6 +598,10 @@ export const epicGetNetworkProfile = () =>
 
 export const epicSetNetworkProfile = (profile: string) =>
   invoke<void>("epic_set_network_profile", { profile });
+
+/** Caps Epic downloads in Mbit/s; 0 removes the cap. */
+export const epicSetDownloadLimit = (mbps: number) =>
+  invoke<void>("epic_set_download_limit", { mbps });
 
 /* ---------- Offline mode ---------- */
 

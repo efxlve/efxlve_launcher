@@ -13,6 +13,7 @@ import { setCoverSize, setListDensity } from "../library/library-options";
 import { syncCaseCustomStoreColors } from "../library/case-colors";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { cancelFinishCountdown, setDownloadFinishAction } from "../downloads/finish-action";
+import { epicSetDownloadLimit } from "../../epic-commands";
 import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "../../core/dom";
 import { cancelChoice, cancelConfirm } from "../../core/confirm-dialog";
 import { answerPassword, cancelPassword } from "../../core/password-dialog";
@@ -523,6 +524,14 @@ document.addEventListener("change", (e) => {
 
 
 
+  if (target && target.id === "download-limit") {
+    const raw = Number(target.value.replace(",", "."));
+    const mbps = Number.isFinite(raw) ? Math.min(10_000, Math.max(0, raw)) : 0;
+    S.downloadLimitMbps = mbps;
+    target.value = String(mbps);
+    void epicSetDownloadLimit(mbps).catch(() => undefined);
+    return;
+  }
   if (target && target.id === "auto-update-time") {
     const v = target.value.trim();
     // Plain text field: accept "3:00" and "0300" too, but only real times.

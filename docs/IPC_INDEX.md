@@ -244,6 +244,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_select_folder_dialog` | `epicSelectFolderDialog({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_set_auto_desktop_shortcut` | `epicSetAutoDesktopShortcut({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_set_custom_save_path` | `epicSetCustomSavePath({ ... })` | `src-tauri/src/legendary/commands/game_local.rs` |
+| `epic_set_download_limit` | `epicSetDownloadLimit({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_set_game_collections` | `epicSetGameCollections({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_set_gog_comet` | `epicSetGogComet({ ... })` | `src-tauri/src/comet/mod.rs` |
 | `epic_set_install_dir` | `epicSetInstallDir({ ... })` | `src-tauri/src/legendary/transfers/paths.rs` |

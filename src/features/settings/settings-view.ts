@@ -294,6 +294,14 @@ function renderDownloads(): string {
       <button class="${S.networkProfile === "low" ? "active" : ""}" data-act="set-net-profile" data-profile="low">${t("settings.netLow")}</button>
     </div>`);
 
+  // A hard cap, unlike the worker-count profile above. Epic only: legendary is
+  // the one downloader that accepts a proxy without extra plumbing.
+  const limit = row(
+    t("settings.bandwidthLimit"),
+    t("settings.bandwidthLimitDesc"),
+    `<input id="download-limit" class="input settings-limit-input" type="number" min="0" max="10000" step="0.1" inputmode="decimal" value="${S.downloadLimitMbps > 0 ? S.downloadLimitMbps : 0}" aria-label="${esc(t("settings.bandwidthLimit"))}" /> <span class="settings-value">Mbit/s</span>`,
+  );
+
   const cdnHost = S.preferredCdn ? cdnShortLabel(S.preferredCdn) : "";
   const cdn = row(
     t("downloads.cdnLabel"),
@@ -318,7 +326,7 @@ function renderDownloads(): string {
       t("settings.importInstalled"),
       t("settings.importInstalledDesc"),
       `<button type="button" class="btn ghost small" data-act="import-installed-folder">${t("settings.importInstalledBtn")}</button>`,
-    ) + profile + cdn, t("downloads.settingsTitle")) +
+    ) + profile + limit + cdn, t("downloads.settingsTitle")) +
     updates +
     group(
       row(t("downloads.speedBits"), t("downloads.speedBitsDesc"), toggle("toggle-speed-bits", S.speedInBits)) +

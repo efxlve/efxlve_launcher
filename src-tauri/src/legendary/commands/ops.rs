@@ -140,6 +140,21 @@ pub fn epic_set_network_profile(app: AppHandle, profile: String) -> Result<(), S
     Ok(())
 }
 
+/// Saves the Epic download cap in Mbit/s (0 = unlimited) and applies it now.
+#[tauri::command]
+pub fn epic_set_download_limit(app: AppHandle, mbps: f64) -> Result<(), String> {
+    let mbps = if mbps.is_finite() {
+        mbps.clamp(0.0, 10_000.0)
+    } else {
+        0.0
+    };
+    let mut s = crate::load_settings(&app);
+    s.download_limit_mbps = Some(mbps);
+    crate::save_settings(&app, &s);
+    crate::download_limit::set_rate(mbps);
+    Ok(())
+}
+
 /// Returns the offline mode state.
 #[tauri::command]
 pub fn epic_get_offline_mode(app: AppHandle) -> bool {

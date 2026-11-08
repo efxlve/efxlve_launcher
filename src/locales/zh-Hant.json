@@ -140,6 +140,8 @@
   "settings.netCardsTitle": "下載速度",
   "settings.netAdvTitle": "選項",
   "settings.netCacheDesc": "Epic: 安全清除暫存下載片段和快取區塊。",
+  "settings.bandwidthLimit": "頻寬限制",
+  "settings.bandwidthLimitDesc": "將 Epic Games 下載限制為此 Mbit/s 值。0 表示不限速。",
   "settings.autoDesktopShortcut": "自動建立桌面捷徑",
   "settings.autoDesktopShortcutDesc": "Epic: 遊戲下載並安裝完成後，自動建立桌面捷徑。",
   "settings.secSocial": "社交",

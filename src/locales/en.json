@@ -155,6 +155,8 @@
   "settings.netCardsTitle": "Download speed",
   "settings.netAdvTitle": "Options",
   "settings.netCacheDesc": "Epic: Safely purges temporary download segments and cached chunks.",
+  "settings.bandwidthLimit": "Bandwidth limit",
+  "settings.bandwidthLimitDesc": "Caps Epic Games downloads to this many Mbit/s. 0 means unlimited.",
   "settings.autoDesktopShortcut": "Automatic Desktop Shortcut",
   "settings.autoDesktopShortcutDesc": "Epic: Automatically create a desktop shortcut when a game is downloaded and installed.",
   "settings.secSocial": "Social",

@@ -140,6 +140,8 @@
   "settings.netCardsTitle": "Скорость загрузки",
   "settings.netAdvTitle": "Параметры",
   "settings.netCacheDesc": "Epic: Безопасно удаляет временные сегменты загрузки и кэшированные фрагменты.",
+  "settings.bandwidthLimit": "Ограничение скорости",
+  "settings.bandwidthLimitDesc": "Ограничивает загрузки Epic Games указанным значением в Мбит/с. 0 — без ограничений.",
   "settings.autoDesktopShortcut": "Ярлык на рабочем столе",
   "settings.autoDesktopShortcutDesc": "Epic: Автоматически создаёт ярлык на рабочем столе после загрузки и установки игры.",
   "settings.secSocial": "Сообщество",

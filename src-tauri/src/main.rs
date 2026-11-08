@@ -14,6 +14,7 @@ mod webview_power;
 #[cfg_attr(not(debug_assertions), allow(dead_code))]
 mod discord_rpc;
 mod discord_sdk;
+mod download_limit;
 mod eos;
 mod egl_removal;
 mod epic_shim;
@@ -317,6 +318,10 @@ pub struct EpicSettings {
     pub gog_install_dir: Option<String>,
     #[serde(default)]
     pub network_profile: Option<String>,
+    /// Epic download bandwidth cap in Mbit/s; absent or 0 means unlimited.
+    /// Enforced by the loopback proxy in `download_limit`.
+    #[serde(default)]
+    pub download_limit_mbps: Option<f64>,
     #[serde(default)]
     pub offline_mode: Option<bool>,
     #[serde(default)]
@@ -1878,6 +1883,9 @@ fn main() {
                 perf::init(dir);
                 perf::start_session();
             }
+            // Bind the download cap listener once; it stays idle at 0 Mbit/s.
+            let limit_settings = load_settings(app.handle());
+            download_limit::init(limit_settings.download_limit_mbps.unwrap_or(0.0));
             let marker_path = app
                 .path()
                 .app_data_dir()
@@ -2177,6 +2185,7 @@ fn main() {
             legendary::library_playtime::epic_sync_epic_playtimes,
             legendary::commands::epic_get_network_profile,
             legendary::commands::epic_set_network_profile,
+            legendary::commands::epic_set_download_limit,
             legendary::commands::epic_get_offline_mode,
             legendary::commands::epic_set_offline_mode,
             legendary::commands::epic_get_auto_desktop_shortcut,

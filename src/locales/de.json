@@ -140,6 +140,8 @@
   "settings.netCardsTitle": "Downloadgeschwindigkeit",
   "settings.netAdvTitle": "Optionen",
   "settings.netCacheDesc": "Epic: Entfernt temporäre Download-Segmente und zwischengespeicherte Datenblöcke.",
+  "settings.bandwidthLimit": "Bandbreitenlimit",
+  "settings.bandwidthLimitDesc": "Begrenzt Epic-Games-Downloads auf diese Mbit/s. 0 bedeutet unbegrenzt.",
   "settings.autoDesktopShortcut": "Automatische Desktop-Verknüpfung",
   "settings.autoDesktopShortcutDesc": "Epic: Erstellt automatisch eine Desktop-Verknüpfung, wenn ein Spiel heruntergeladen und installiert wurde.",
   "settings.secSocial": "Soziales",

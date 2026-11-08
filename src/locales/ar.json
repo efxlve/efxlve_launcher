@@ -140,6 +140,8 @@
   "settings.netCardsTitle": "سرعة التنزيل",
   "settings.netAdvTitle": "خيارات",
   "settings.netCacheDesc": "Epic: يمسح بأمان مقاطع التنزيل المؤقتة والكتل المخزّنة.",
+  "settings.bandwidthLimit": "حد النطاق الترددي",
+  "settings.bandwidthLimitDesc": "يحدّ من تنزيلات Epic Games إلى هذه القيمة بالميغابت/ثانية. 0 يعني عدم وجود حد.",
   "settings.autoDesktopShortcut": "اختصار سطح المكتب التلقائي",
   "settings.autoDesktopShortcutDesc": "Epic: ينشئ اختصارًا على سطح المكتب تلقائيًا عند تنزيل لعبة وتثبيتها.",
   "settings.secSocial": "اجتماعي",

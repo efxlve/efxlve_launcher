@@ -140,6 +140,8 @@
   "settings.netCardsTitle": "Velocidad de descarga",
   "settings.netAdvTitle": "Opciones",
   "settings.netCacheDesc": "Epic: Elimina con seguridad los segmentos temporales de descarga y los bloques en caché.",
+  "settings.bandwidthLimit": "Límite de ancho de banda",
+  "settings.bandwidthLimitDesc": "Limita las descargas de Epic Games a estos Mbit/s. 0 significa sin límite.",
   "settings.autoDesktopShortcut": "Acceso directo automático en el escritorio",
   "settings.autoDesktopShortcutDesc": "Epic: Crea un acceso directo en el escritorio cuando un juego se descarga e instala.",
   "settings.secSocial": "Social",

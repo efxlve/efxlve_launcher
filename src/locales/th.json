@@ -140,6 +140,8 @@
   "settings.netCardsTitle": "ความเร็วในการดาวน์โหลด",
   "settings.netAdvTitle": "ตัวเลือก",
   "settings.netCacheDesc": "Epic: ล้างส่วนดาวน์โหลดชั่วคราวและชิ้นส่วนแคชอย่างปลอดภัย",
+  "settings.bandwidthLimit": "จำกัดแบนด์วิดท์",
+  "settings.bandwidthLimitDesc": "จำกัดการดาวน์โหลดของ Epic Games ที่ค่านี้ (Mbit/s) โดย 0 หมายถึงไม่จำกัด",
   "settings.autoDesktopShortcut": "สร้างทางลัดบนเดสก์ท็อปอัตโนมัติ",
   "settings.autoDesktopShortcutDesc": "Epic: สร้างทางลัดบนเดสก์ท็อปอัตโนมัติเมื่อดาวน์โหลดและติดตั้งเกมเสร็จ",
   "settings.secSocial": "โซเชียล",
