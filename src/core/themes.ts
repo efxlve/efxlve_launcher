@@ -276,7 +276,6 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
   { id: "oledcyan", name: "Abyss Cyan", bg: "#000000", surface: "#0e151c", accent: "#00f0ff", light: false },
   { id: "quarantine", name: "Quarantine Protocol", bg: "#080a0c", surface: "#171b22", accent: "#dc2626", light: false },
   { id: "sentience", name: "Synthetic Soul", bg: "#080c14", surface: "#151e2e", accent: "#00a2ff", light: false },
-  { id: "frontier", name: "Frontier Dusk", bg: "#0f0c0a", surface: "#241b16", accent: "#d93829", light: false },
   { id: "sanctum", name: "Ashen Sanctum", bg: "#0b0a08", surface: "#1f1c17", accent: "#e5a93c", light: false },
   { id: "resonance", name: "Resonance Core", bg: "#0b0c0e", surface: "#1a1f26", accent: "#f97316", light: false },
   { id: "homestead", name: "Autumn Homestead", bg: "#0c140d", surface: "#18261b", accent: "#eab308", light: false },
@@ -877,44 +876,6 @@ const SENTIENCE: ThemeDef = {
 };
 
 /**
- * Frontier Dusk: 1899 canyon sunsets, weathered saddle leather, saloon timber,
- * and warm campfire embers.
- */
-const FRONTIER: ThemeDef = {
-  id: "frontier",
-  labelKey: "settings.surfaceFrontier",
-  bg: "#0f0c0a",
-  surface: "#241b16",
-  accent: "#d93829",
-  scheme: "dark",
-  tokens: {
-    "--bg": "#0f0c0a",
-    "--surface-1": "#181310",
-    "--surface-2": "#241b16",
-    "--surface-3": "#30241e",
-    "--line": "rgba(217, 56, 41, 0.18)",
-    "--line-strong": "rgba(217, 56, 41, 0.38)",
-    "--text": "#fbf5ee",
-    "--text-2": "#cbb6a4",
-    "--text-3": "#867364",
-    "--accent": "#d93829",
-    "--accent-hover": "#e65140",
-    "--accent-tint": "rgba(217, 56, 41, 0.16)",
-    "--on-accent": "#ffffff",
-    "--ok": "#4ade80",
-    "--ok-hover": "#6ee7b7",
-    "--ok-tint": "rgba(74, 222, 128, 0.15)",
-    "--warn": "#f59e0b",
-    "--warn-tint": "rgba(245, 158, 11, 0.15)",
-    "--err": "#d93829",
-    "--err-tint": "rgba(217, 56, 41, 0.18)",
-    "--shadow-pop": "0 14px 38px rgba(0, 0, 0, 0.75)",
-    "--scrollbar-thumb": "rgba(217, 56, 41, 0.45)",
-    "--scrollbar-thumb-hover": "rgba(230, 81, 64, 0.85)",
-  },
-};
-
-/**
  * Ashen Sanctum: ancient stone sanctuaries, celestial golden tree canopy,
  * and lost grace particle light.
  */
@@ -1060,7 +1021,7 @@ const BUILTIN_THEMES: readonly ThemeDef[] = [
   SYNTHWAVE,
   ROSE_PINE,
   OLED_CYAN,
-  QUARANTINE, HOMESTEAD, SENTIENCE, FRONTIER, SANCTUM, RESONANCE,
+  QUARANTINE, HOMESTEAD, SENTIENCE, SANCTUM, RESONANCE,
   {
     id: "white",
     labelKey: "settings.surfaceWhite",
@@ -1098,7 +1059,8 @@ const LEGACY_SURFACE_IDS: Record<string, string> = {
   harvest: "homestead",
   biohazard: "quarantine",
   cyberlife: "sentience",
-  redemption: "frontier",
+  redemption: "sunset",
+  frontier: "sunset",
   tarnished: "sanctum",
   hazard: "resonance",
 };
