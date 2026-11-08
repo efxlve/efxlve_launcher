@@ -77,8 +77,6 @@ Open work only. Delete the item when it lands.
   desktop mode; Stage offers a cloud back-up action and a direct escape hatch.
 - Full download history and queue reordering for client-owned stores stay
   desktop; the Epic queue is reorderable from Stage.
-- Stage strings in non-English, non-Turkish locales currently fall back to
-  English until the translation pass.
 
 ## Linux/macOS: packaging and validation
 
