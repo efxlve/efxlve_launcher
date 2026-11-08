@@ -90,6 +90,8 @@ pub async fn run_streaming(
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
+    // Install, update and verify all download through Nile's requests workers.
+    crate::download_limit::configure_child(&mut cmd);
     let mut child = cmd.spawn().map_err(|e| format!("Nile could not run: {e}"))?;
 
     let stdout = child.stdout.take();

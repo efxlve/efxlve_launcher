@@ -753,6 +753,7 @@ async fn stream_into<W: AsyncWrite + Unpin>(
         if cancelled.is_some_and(|flag| flag.load(Ordering::Relaxed)) {
             return Err("EA content: cancelled".into());
         }
+        crate::download_limit::throttle(chunk.len()).await;
         writer
             .write_all(&chunk)
             .await

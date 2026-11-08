@@ -1,9 +1,11 @@
-//! A real bandwidth cap for Epic downloads.
+//! A real bandwidth cap for every download the launcher runs.
 //!
-//! legendary has no rate-limit flag, but its download workers use `requests`,
-//! which honours `HTTPS_PROXY`. The install child is pointed at this loopback
-//! proxy, and one shared token bucket paces every CONNECT tunnel it opens.
-//! Only the download direction is capped; request bytes are tiny.
+//! legendary, gogdl and nile have no rate-limit flag, but they use `requests`,
+//! which honours `HTTPS_PROXY`. Those children are pointed at this loopback
+//! proxy, and one shared token bucket paces every tunnel and plain HTTP
+//! request they open. EA and Ubisoft direct installs run in this process and
+//! call [`throttle`] from their own download loops, so they feed the same
+//! bucket. Only the download direction is capped; request bytes are tiny.
 //!
 //! The listener is created once at startup and stays idle until a limit is set.
 
@@ -68,6 +70,39 @@ pub fn proxy_url() -> Option<String> {
     (port != 0).then(|| format!("http://127.0.0.1:{port}"))
 }
 
+/// The current cap in Mbit/s; 0 means unlimited.
+pub fn rate_mbps() -> f64 {
+    RATE_BPS.load(Ordering::Relaxed) as f64 / BPS_PER_MBPS
+}
+
+/// Points a store CLI at the loopback proxy when a cap is set.
+///
+/// `HTTP_PROXY` matters too: some CDN URLs are plain HTTP, and the proxy
+/// forwards those as well as CONNECT tunnels.
+pub fn configure_child(cmd: &mut tokio::process::Command) {
+    if let Some(proxy) = proxy_url() {
+        for key in ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"] {
+            cmd.env(key, &proxy);
+        }
+        // A stale NO_PROXY entry would send store traffic around the cap.
+        cmd.env("NO_PROXY", "").env("no_proxy", "");
+    }
+}
+
+/// Waits as long as the shared bucket needs for `bytes`.
+///
+/// Downloaders that run inside this process (EA, Ubisoft direct) call this
+/// while they stream, so their traffic shares one cap with the proxied CLIs.
+pub async fn throttle(bytes: usize) {
+    let wait = BUCKET
+        .lock()
+        .map(|mut bucket| bucket.reserve(bytes))
+        .unwrap_or(Duration::ZERO);
+    if !wait.is_zero() {
+        tokio::time::sleep(wait).await;
+    }
+}
+
 async fn serve(listener: TcpListener) {
     loop {
         match listener.accept().await {
@@ -82,16 +117,24 @@ async fn serve(listener: TcpListener) {
 }
 
 async fn handle(mut client: TcpStream) {
-    let Some((first_line, rest)) = read_head(&mut client).await else {
+    let Some((head, rest)) = read_head(&mut client).await else {
         return;
     };
-    let Some((host, port)) = parse_connect(&first_line) else {
+    let first_line = head.lines().next().unwrap_or("");
+    if let Some((host, port)) = parse_connect(first_line) {
+        tunnel(client, &host, port, &rest).await;
+    } else if let Some((host, port, request_line)) = parse_http_forward(first_line) {
+        forward(client, &head, &rest, &host, port, &request_line).await;
+    } else {
         let _ = client
             .write_all(b"HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\n\r\n")
             .await;
-        return;
-    };
-    let Ok(mut upstream) = TcpStream::connect((host.as_str(), port)).await else {
+    }
+}
+
+/// Relays one CONNECT tunnel.
+async fn tunnel(mut client: TcpStream, host: &str, port: u16, rest: &[u8]) {
+    let Ok(mut upstream) = TcpStream::connect((host, port)).await else {
         let _ = client
             .write_all(b"HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\n\r\n")
             .await;
@@ -105,7 +148,7 @@ async fn handle(mut client: TcpStream) {
         return;
     }
     // A client may pipeline TLS bytes right behind the CONNECT line.
-    if !rest.is_empty() && upstream.write_all(&rest).await.is_err() {
+    if !rest.is_empty() && upstream.write_all(rest).await.is_err() {
         return;
     }
     let (client_read, client_write) = client.into_split();
@@ -116,7 +159,47 @@ async fn handle(mut client: TcpStream) {
     );
 }
 
-/// Reads the request line and any bytes already buffered after the header.
+/// Relays one plain HTTP request. The absolute URI in a proxy request line is
+/// rewritten to origin form before it reaches the server.
+async fn forward(
+    mut client: TcpStream,
+    head: &str,
+    rest: &[u8],
+    host: &str,
+    port: u16,
+    request_line: &str,
+) {
+    let Ok(mut upstream) = TcpStream::connect((host, port)).await else {
+        let _ = client
+            .write_all(b"HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\n\r\n")
+            .await;
+        return;
+    };
+    let headers = head.split_once("\r\n").map(|(_, tail)| tail).unwrap_or("");
+    let mut request = String::with_capacity(head.len() + 2);
+    request.push_str(request_line);
+    request.push_str("\r\n");
+    if headers.is_empty() {
+        request.push_str("\r\n");
+    } else {
+        request.push_str(headers);
+        request.push_str("\r\n\r\n");
+    }
+    if upstream.write_all(request.as_bytes()).await.is_err() {
+        return;
+    }
+    if !rest.is_empty() && upstream.write_all(rest).await.is_err() {
+        return;
+    }
+    let (client_read, client_write) = client.into_split();
+    let (upstream_read, upstream_write) = upstream.into_split();
+    tokio::join!(
+        relay(client_read, upstream_write, false),
+        relay(upstream_read, client_write, true),
+    );
+}
+
+/// Reads the header block and any bytes already buffered after it.
 async fn read_head(stream: &mut TcpStream) -> Option<(String, Vec<u8>)> {
     let mut buf = Vec::with_capacity(1024);
     let mut chunk = [0u8; 1024];
@@ -127,9 +210,8 @@ async fn read_head(stream: &mut TcpStream) -> Option<(String, Vec<u8>)> {
         }
         buf.extend_from_slice(&chunk[..n]);
         if let Some(pos) = find_head_end(&buf) {
-            let head = String::from_utf8_lossy(&buf[..pos]);
-            let first = head.lines().next()?.to_string();
-            return Some((first, buf[pos + 4..].to_vec()));
+            let head = String::from_utf8_lossy(&buf[..pos]).to_string();
+            return Some((head, buf[pos + 4..].to_vec()));
         }
         if buf.len() > MAX_HEAD {
             return None;
@@ -154,6 +236,55 @@ fn parse_connect(line: &str) -> Option<(String, u16)> {
     }
     let host = host.trim_start_matches('[').trim_end_matches(']');
     Some((host.to_string(), port))
+}
+
+/// Parses `GET http://host[:port]/path HTTP/1.1` into a connect target and an
+/// origin-form request line. `None` for CONNECT, HTTPS and origin-form targets.
+fn parse_http_forward(line: &str) -> Option<(String, u16, String)> {
+    let mut parts = line.split_whitespace();
+    let method = parts.next()?;
+    if method.eq_ignore_ascii_case("CONNECT") {
+        return None;
+    }
+    let target = parts.next()?;
+    let version = parts.next().unwrap_or("HTTP/1.1");
+    let rest = target
+        .strip_prefix("http://")
+        .or_else(|| target.strip_prefix("HTTP://"))?;
+    let split = rest.find(['/', '?']).unwrap_or(rest.len());
+    let (authority, path) = rest.split_at(split);
+    let path = if path.starts_with('/') {
+        path.to_string()
+    } else if path.starts_with('?') {
+        format!("/{path}")
+    } else {
+        "/".to_string()
+    };
+    let (host, port) = split_authority(authority, 80)?;
+    Some((host, port, format!("{method} {path} {version}")))
+}
+
+/// Splits `host`, `host:port` or `[v6]:port` into a connect target.
+fn split_authority(authority: &str, default_port: u16) -> Option<(String, u16)> {
+    if let Some(rest) = authority.strip_prefix('[') {
+        let (host, after) = rest.split_once(']')?;
+        let port = match after.strip_prefix(':') {
+            Some(port) => port.parse().ok()?,
+            None => default_port,
+        };
+        return (port != 0 && !host.is_empty()).then(|| (host.to_string(), port));
+    }
+    match authority.rsplit_once(':') {
+        Some((host, port)) if !host.contains(':') => {
+            let port = port.parse().ok()?;
+            (port != 0 && !host.is_empty()).then(|| (host.to_string(), port))
+        }
+        Some(_) => None,
+        None => {
+            (default_port != 0 && !authority.is_empty())
+                .then(|| (authority.to_string(), default_port))
+        }
+    }
 }
 
 /// Copies one direction, pacing the payload when `capped` is set.
@@ -255,6 +386,32 @@ mod tests {
     }
 
     #[test]
+    fn rewrites_an_absolute_http_request() {
+        assert_eq!(
+            parse_http_forward("GET http://example.com/a?b=1 HTTP/1.1"),
+            Some(("example.com".into(), 80, "GET /a?b=1 HTTP/1.1".into()))
+        );
+        assert_eq!(
+            parse_http_forward("GET http://example.com:8080 HTTP/1.0"),
+            Some(("example.com".into(), 8080, "GET / HTTP/1.0".into()))
+        );
+        assert_eq!(
+            parse_http_forward("GET http://example.com?q=1 HTTP/1.1"),
+            Some(("example.com".into(), 80, "GET /?q=1 HTTP/1.1".into()))
+        );
+        assert_eq!(
+            parse_http_forward("GET http://[::1]:8080/x HTTP/1.1"),
+            Some(("::1".into(), 8080, "GET /x HTTP/1.1".into()))
+        );
+        assert_eq!(parse_http_forward("GET https://example.com/ HTTP/1.1"), None);
+        assert_eq!(
+            parse_http_forward("CONNECT example.com:443 HTTP/1.1"),
+            None
+        );
+        assert_eq!(parse_http_forward("GET /rooted HTTP/1.1"), None);
+    }
+
+    #[test]
     fn finds_the_header_end() {
         assert_eq!(find_head_end(b"CONNECT a:1\r\nHost: a\r\n\r\nrest"), Some(20));
         assert_eq!(find_head_end(b"CONNECT a:1\r\nHost: a\r\n"), None);
@@ -326,5 +483,50 @@ mod tests {
         set_rate(0.0);
         proxy_task.abort();
         sink_task.abort();
+    }
+
+    #[tokio::test]
+    async fn forwards_a_plain_http_request() {
+        use tokio::net::TcpListener as TokioListener;
+
+        let server = TokioListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let server_addr = server.local_addr().unwrap();
+        let server_task = tokio::spawn(async move {
+            let (mut stream, _) = server.accept().await.unwrap();
+            let mut request = Vec::new();
+            let mut chunk = [0u8; 1024];
+            while !request.windows(4).any(|window| window == b"\r\n\r\n") {
+                let n = stream.read(&mut chunk).await.unwrap();
+                assert!(n > 0);
+                request.extend_from_slice(&chunk[..n]);
+            }
+            let text = String::from_utf8_lossy(&request);
+            assert!(text.starts_with("GET /hello HTTP/1.1\r\n"), "{text:?}");
+            stream
+                .write_all(
+                    b"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nConnection: close\r\n\r\nhello",
+                )
+                .await
+                .unwrap();
+            let _ = stream.shutdown().await;
+        });
+
+        let proxy = TokioListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let proxy_addr = proxy.local_addr().unwrap();
+        let proxy_task = tokio::spawn(serve(proxy));
+
+        let mut client = TcpStream::connect(proxy_addr).await.unwrap();
+        let request = format!(
+            "GET http://{server_addr}/hello HTTP/1.1\r\nHost: {server_addr}\r\nConnection: close\r\n\r\n"
+        );
+        client.write_all(request.as_bytes()).await.unwrap();
+        let mut response = Vec::new();
+        client.read_to_end(&mut response).await.unwrap();
+        let text = String::from_utf8_lossy(&response);
+        assert!(text.starts_with("HTTP/1.1 200"), "{text:?}");
+        assert!(text.ends_with("hello"), "{text:?}");
+
+        server_task.await.unwrap();
+        proxy_task.abort();
     }
 }

@@ -118,8 +118,12 @@ pub(crate) fn supported() -> bool {
     cfg!(windows)
 }
 
-/// Reads `--ea-content-worker <job> <game> <locale>` before Tauri starts.
-pub(crate) fn worker_args(args: impl Iterator<Item = String>) -> Option<(String, String, String)> {
+/// Reads `--ea-content-worker <job> <game> <locale> <mbps>` before Tauri
+/// starts. The cap travels on the command line because the elevated worker
+/// never builds an `AppHandle` and cannot read the settings file.
+pub(crate) fn worker_args(
+    args: impl Iterator<Item = String>,
+) -> Option<(String, String, String, f64)> {
     let mut args = args.skip_while(|arg| arg != "--ea-content-worker");
     if args.next().is_none() {
         return None;
@@ -127,7 +131,11 @@ pub(crate) fn worker_args(args: impl Iterator<Item = String>) -> Option<(String,
     let job = args.next()?;
     let game = args.next()?;
     let locale = args.next().unwrap_or_else(|| "en_US".into());
-    Some((job, game, locale))
+    let limit = args
+        .next()
+        .and_then(|value| value.parse::<f64>().ok())
+        .unwrap_or(0.0);
+    Some((job, game, locale, limit))
 }
 
 fn clean_game_id(game_id: &str) -> bool {
@@ -396,7 +404,8 @@ fn launch_worker(
     locale: &str,
 ) -> Result<std::sync::mpsc::Receiver<i32>, String> {
     let exe = std::env::current_exe().map_err(|error| format!("EA elevation: {error}"))?;
-    let params = format!("--ea-content-worker {job_id} \"{game_id}\" \"{locale}\"");
+    let limit = crate::download_limit::rate_mbps();
+    let params = format!("--ea-content-worker {job_id} \"{game_id}\" \"{locale}\" {limit:.3}");
     shell_process(&exe, &params, "runas")
 }
 
@@ -490,16 +499,24 @@ mod tests {
     #[test]
     fn the_worker_argument_is_found_in_both_positions() {
         let parsed = worker_args(
-            ["--other", "--ea-content-worker", "0123456789abcdef0123456789abcdef", "game", "tr_TR"]
-                .iter()
-                .map(|arg| arg.to_string()),
+            [
+                "--other",
+                "--ea-content-worker",
+                "0123456789abcdef0123456789abcdef",
+                "game",
+                "tr_TR",
+                "12.500",
+            ]
+            .iter()
+            .map(|arg| arg.to_string()),
         );
         assert_eq!(
             parsed,
             Some((
                 "0123456789abcdef0123456789abcdef".into(),
                 "game".into(),
-                "tr_TR".into()
+                "tr_TR".into(),
+                12.5
             ))
         );
         assert!(worker_args(["--launch", "game"].iter().map(|arg| arg.to_string())).is_none());

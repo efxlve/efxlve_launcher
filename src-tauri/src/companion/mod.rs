@@ -77,7 +77,7 @@ pub(crate) struct FoundGame {
 /// The elevated worker's command-line contract, checked before Tauri boots.
 pub(crate) fn ea_worker_args(
     args: impl Iterator<Item = String>,
-) -> Option<(String, String, String)> {
+) -> Option<(String, String, String, f64)> {
     ea_elevated::worker_args(args)
 }
 

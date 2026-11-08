@@ -596,13 +596,7 @@ pub(super) fn spawn_install_with_tags(
 
     // A configured cap is enforced by the loopback proxy in `download_limit`;
     // legendary's requests workers honour these variables.
-    if let Some(proxy) = crate::download_limit::proxy_url() {
-        for key in ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"] {
-            cmd.env(key, &proxy);
-        }
-        // A stale NO_PROXY entry would send Epic traffic around the cap.
-        cmd.env("NO_PROXY", "").env("no_proxy", "");
-    }
+    crate::download_limit::configure_child(&mut cmd);
 
     if install_tags.is_empty() {
         cmd.arg("--skip-sdl");

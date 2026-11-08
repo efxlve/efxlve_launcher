@@ -312,6 +312,8 @@ pub async fn gog_install_game(
             .arg("windows")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
+        // gogdl uses requests, so the shared cap proxy covers its downloads.
+        crate::download_limit::configure_child(&mut cmd);
         if let Some(workers) = workers {
             cmd.arg("--max-workers").arg(workers);
         }
@@ -735,6 +737,8 @@ pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<(), Stri
             .arg("windows")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
+        // A repair can download missing files, so it shares the same cap.
+        crate::download_limit::configure_child(&mut cmd);
 
         #[cfg(windows)]
         {

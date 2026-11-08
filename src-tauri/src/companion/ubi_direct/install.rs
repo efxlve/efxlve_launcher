@@ -210,9 +210,9 @@ async fn fetch_slice(
     loop {
         match client.get(url).send().await {
             Ok(response) => match response.error_for_status() {
-                Ok(response) => match response.bytes().await {
+                Ok(response) => match read_slice_body(response).await {
                     Ok(bytes) => {
-                        return verify_and_decompress(method, &bytes, slice, file_name, index)
+                        return verify_and_decompress(method, &bytes, slice, file_name, index);
                     }
                     Err(error) => {
                         attempt += 1;
@@ -239,6 +239,21 @@ async fn fetch_slice(
         }
         tokio::time::sleep(Duration::from_millis(400)).await;
     }
+}
+
+/// Reads a slice chunk by chunk so the shared cap paces the network, not just
+/// how fast completed slices are written. Up to 16 slices run concurrently.
+async fn read_slice_body(mut response: reqwest::Response) -> Result<Vec<u8>, String> {
+    let mut body = Vec::new();
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|error| error.to_string())?
+    {
+        crate::download_limit::throttle(chunk.len()).await;
+        body.extend_from_slice(&chunk);
+    }
+    Ok(body)
 }
 
 async fn sign_paths(

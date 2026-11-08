@@ -277,9 +277,9 @@ function renderDownloads(): string {
   );
 
   const ubiSavedDir = S.ubiInstallDir.trim();
-  const ubiShownDir = ubiSavedDir || S.ubiDefaultDir || "-";
+  const ubiShownDir = ubiSavedDir || S.ubiDefaultDir || "—";
   const ubiDir = row(
-    t("manage.installLocation"),
+    t("settings.ubiInstallDirTitle"),
     `${t("settings.ubiInstallDirHint")} <code>${esc(ubiShownDir)}</code>`,
     `<input id="ubi-install-dir" class="input settings-path-input" value="${esc(ubiSavedDir)}" placeholder="${esc(S.ubiDefaultDir || t("downloads.defaultPlaceholder"))}" autocomplete="off" spellcheck="false" />
      <button type="button" class="btn ghost small" data-act="dl-pick-ubi-install-dir">${t("common.browse")}</button>
@@ -294,8 +294,9 @@ function renderDownloads(): string {
       <button class="${S.networkProfile === "low" ? "active" : ""}" data-act="set-net-profile" data-profile="low">${t("settings.netLow")}</button>
     </div>`);
 
-  // A hard cap, unlike the worker-count profile above. Epic only: legendary is
-  // the one downloader that accepts a proxy without extra plumbing.
+  // A hard cap, unlike the worker-count profile above. The CLI stores honour
+  // the loopback proxy; EA and Ubisoft direct installs pay into the same
+  // bucket from their own download loops.
   const limit = row(
     t("settings.bandwidthLimit"),
     t("settings.bandwidthLimitDesc"),
