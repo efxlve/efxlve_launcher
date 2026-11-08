@@ -3745,26 +3745,326 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   box-shadow: 0 0 8px rgba(229, 169, 60, 0.6);
 }
 
-/* ---------- Hazard Team (Half-Life Inspired) ---------- */
+/* ---------- Hazard Team (Half-Life Inspired) ----------
+   Black Mesa facility: high-energy spectrometer chamber & Lambda reactor backdrop (src/assets/hazard-scene.svg),
+   reinforced titanium lab consoles, high-visibility HEV hazard orange action buttons,
+   and radiation telemetry aura. */
+
+:root[data-surface="hazard"] {
+  color-scheme: dark;
+  --bg: #080a0d;
+  --surface-1: #10151c;
+  --surface-2: #171e28;
+  --surface-3: #222b3a;
+  --line: rgba(249, 115, 22, 0.22);
+  --line-strong: rgba(249, 115, 22, 0.45);
+  --text: #f8fafc;
+  --text-2: #94a3b8;
+  --text-3: #64748b;
+  --accent: #f97316;
+  --accent-hover: #fb923c;
+  --accent-tint: rgba(249, 115, 22, 0.16);
+  --on-accent: #0f0701;
+  --ok: #10b981;
+  --ok-hover: #34d399;
+  --ok-tint: rgba(16, 185, 129, 0.15);
+  --warn: #f97316;
+  --warn-tint: rgba(249, 115, 22, 0.15);
+  --err: #ef4444;
+  --err-tint: rgba(239, 68, 68, 0.18);
+  --r-xs: 2px;
+  --r-sm: 4px;
+  --r-md: 5px;
+  --r-lg: 7px;
+  --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.9);
+  --scrollbar-thumb: rgba(249, 115, 22, 0.48);
+  --scrollbar-thumb-hover: #fb923c;
+}
+
+:root[data-surface="hazard"] body {
+  background: #080a0d url("../assets/hazard-scene.svg") 0 0 / 100vw 100vh no-repeat;
+}
+:root[data-surface="hazard"] #main-col,
+:root[data-surface="hazard"] #view { background: transparent; }
+:root[data-surface="hazard"] .overlay { background: transparent; }
+:root[data-surface="hazard"] .overlay::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  top: var(--winbar-h);
+  left: var(--sidebar-w);
+  right: 0;
+  bottom: 0;
+  background: #080a0d url("../assets/hazard-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
+  pointer-events: none;
+  transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
+}
+
+/* Hazard Team: Custom Visible Tactical High-Vis Scrollbars */
+:root[data-surface="hazard"] ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+  box-shadow: 0 0 6px rgba(249, 115, 22, 0.25);
+}
+:root[data-surface="hazard"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 12px rgba(251, 146, 60, 0.7);
+}
 :root[data-surface="hazard"] .overlay::-webkit-scrollbar-track {
-  background: rgba(11, 12, 14, 0.7);
+  background: rgba(8, 10, 13, 0.75);
   border-left: 1px solid rgba(249, 115, 22, 0.18);
 }
 :root[data-surface="hazard"] .overlay::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
-  border-radius: 2px;
-  border: 1px solid rgba(249, 115, 22, 0.3);
-  box-shadow: 0 0 6px rgba(249, 115, 22, 0.25);
+  border-radius: 4px;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.35);
 }
 :root[data-surface="hazard"] .overlay::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
-  box-shadow: 0 0 14px rgba(251, 146, 60, 0.7);
+  box-shadow: 0 0 14px rgba(251, 146, 60, 0.8);
 }
-:root[data-surface="hazard"] :is(.btn.primary, .btn.play) {
-  box-shadow: 0 0 14px rgba(249, 115, 22, 0.35);
+
+/* Hazard Team: Window Bar */
+:root[data-surface="hazard"] #winbar {
+  background: #0b0e13;
+  border-bottom: 1px solid rgba(249, 115, 22, 0.25);
 }
-:root[data-surface="hazard"] :is(.btn.primary, .btn.play):hover {
-  box-shadow: 0 0 20px rgba(251, 146, 60, 0.65);
+:root[data-surface="hazard"] .winbar-beta-chip {
+  background: #f97316;
+  color: #080a0d;
+  font-weight: 800;
+  border-radius: 3px;
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+  letter-spacing: 0.5px;
+}
+:root[data-surface="hazard"] .winbar-btn:hover {
+  background: rgba(249, 115, 22, 0.14);
+  color: #fed7aa;
+}
+:root[data-surface="hazard"] .win-btn.win-close:hover {
+  background: #991b1b;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(220, 38, 38, 0.75);
+}
+
+/* Hazard Team: Sidebar Navigation */
+:root[data-surface="hazard"] #sidebar {
+  background: rgba(11, 14, 19, 0.96);
+  border-right: 1px solid rgba(249, 115, 22, 0.22);
+  backdrop-filter: blur(8px);
+}
+:root[data-surface="hazard"] #page-header {
+  background: rgba(12, 16, 22, 0.88);
+  border-bottom: 1px solid rgba(249, 115, 22, 0.22);
+  backdrop-filter: blur(6px);
+}
+:root[data-surface="hazard"] .sb-item {
+  border-radius: 4px;
+  transition: all var(--ease);
+}
+:root[data-surface="hazard"] .sb-item:hover:not(.active) {
+  color: #fed7aa;
+  background: rgba(249, 115, 22, 0.1);
+}
+:root[data-surface="hazard"] .sb-item.active {
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.22) 0%, rgba(249, 115, 22, 0.04) 100%);
+  color: #fed7aa;
+  font-weight: 700;
+  border-left: 3px solid #f97316;
+  border-radius: 0 4px 4px 0;
+  box-shadow: inset 2px 0 10px rgba(249, 115, 22, 0.3);
+}
+:root[data-surface="hazard"] .sb-item.active::before {
+  display: none;
+}
+:root[data-surface="hazard"] .sb-badge,
+:root[data-surface="hazard"] .nav-badge {
+  background: #f97316;
+  color: #080a0d;
+  font-weight: 800;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.6);
+  border: 1px solid rgba(254, 215, 170, 0.5);
+}
+
+/* Hazard Team: Primary Action Buttons (HEV Suit Power Core) */
+:root[data-surface="hazard"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
+  background: linear-gradient(180deg, #fb923c 0%, #c2410c 100%);
+  color: #ffffff;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-weight: 800;
+  border: 1px solid #fdba74;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 8px rgba(0, 0, 0, 0.7), 0 0 14px rgba(249, 115, 22, 0.45);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
+  transition: all var(--ease);
+}
+:root[data-surface="hazard"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
+  background: linear-gradient(180deg, #fed7aa 0%, #ea580c 100%);
+  border-color: #ffffff;
+  color: #080a0d;
+  box-shadow: inset 0 1px 0 #ffffff, 0 0 22px rgba(249, 115, 22, 0.8), 0 0 8px #fde047;
+  transform: translateY(-1px);
+}
+:root[data-surface="hazard"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
+  background: #9a3412;
+  border-color: #9a3412;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+  transform: translateY(0);
+}
+
+/* Hazard Team: Secondary Action Buttons (Industrial Titanium Plates) */
+:root[data-surface="hazard"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
+  background: rgba(22, 28, 38, 0.92);
+  border: 1px solid rgba(249, 115, 22, 0.32);
+  color: #f8fafc;
+  border-radius: 4px;
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+:root[data-surface="hazard"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
+:root[data-surface="hazard"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
+  border-color: #fb923c;
+  color: #ffffff;
+  background: rgba(249, 115, 22, 0.2);
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.4);
+}
+
+/* Hazard Team: Danger Buttons (Radiation Containment Override) */
+:root[data-surface="hazard"] .btn.danger {
+  background: #7f1d1d;
+  border: 1px solid #b91c1c;
+  color: #fecdd3;
+  font-weight: 700;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(127, 29, 29, 0.5);
+}
+:root[data-surface="hazard"] .btn.danger:hover {
+  background: #991b1b;
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(220, 38, 38, 0.7);
+}
+
+/* Hazard Team: Tactical Technical Headings & Group Titles */
+:root[data-surface="hazard"] :is(
+  .page-header-title, .section-title, .hub-card-title, .hltb-title,
+  .gp-section-title, .notif-title, .modal-box h2, .col-modal-title h2,
+  .dl-group-title, .settings-group-title, .dl-sec-title
+) {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: #fb923c;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 10px rgba(249, 115, 22, 0.35);
+}
+
+/* Hazard Team: Cards, Panels, Lab Consoles & Facility Boards */
+:root[data-surface="hazard"] :is(
+  .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item,
+  .gp-ac-notice, .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card,
+  .gp-side-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
+  .news-card, .storage-overview-card, .storage-stat-pill, .notes-card,
+  .selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card,
+  .ss-share-card, .modal-box, .manage-dialog, .storage-dialog, .hide-list-dialog,
+  .changelog-dialog, .lib-filter-panel, .custom-game-modal
+) {
+  background: linear-gradient(180deg, rgba(23, 30, 41, 0.94) 0%, rgba(13, 17, 24, 0.92) 100%);
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  border-radius: 5px;
+  box-shadow: inset 0 1px 0 rgba(253, 186, 116, 0.16), inset 0 0 0 1px rgba(0, 0, 0, 0.6), 0 8px 26px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+}
+:root[data-surface="hazard"] .lrow:hover {
+  border-color: #f97316;
+  box-shadow: inset 0 1px 0 rgba(253, 186, 116, 0.25), 0 0 16px rgba(249, 115, 22, 0.35);
+  background: linear-gradient(180deg, rgba(30, 39, 53, 0.96) 0%, rgba(18, 23, 33, 0.94) 100%);
+}
+
+/* Hazard Team: Library Game Cards */
+:root[data-surface="hazard"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(249, 115, 22, 0.22);
+  border-radius: 4px;
+}
+:root[data-surface="hazard"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+  box-shadow:
+    0 0 0 2px #f97316,
+    0 0 22px rgba(249, 115, 22, 0.5),
+    0 12px 30px rgba(0, 0, 0, 0.9);
+  transform: translateY(-2px);
+}
+:root[data-surface="hazard"] .pcard-play-btn {
+  background: rgba(14, 18, 25, 0.9);
+  border: 1px solid rgba(249, 115, 22, 0.45);
+  color: #fed7aa;
+  border-radius: 3px;
+}
+:root[data-surface="hazard"] .pcard-play-btn:hover {
+  background: #f97316;
+  color: #080a0d;
+  border-color: #fdba74;
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.75);
+}
+
+/* Hazard Team: Inputs, Search & Fields */
+:root[data-surface="hazard"] :is(
+  input:not([type="range"], [type="checkbox"], [type="radio"]),
+  select, textarea, .input, .text-input, .search, .page-search,
+  .settings-search, .music-input, .music-select, .storage-search-input,
+  .move-path-input, .install-path-input
+) {
+  background: #080b0f;
+  border: 1px solid rgba(249, 115, 22, 0.28);
+  color: #f8fafc;
+  border-radius: 4px;
+}
+:root[data-surface="hazard"] :is(
+  input, select, textarea, .input, .text-input, .settings-search,
+  .music-input, .music-select, .storage-search-input, .move-path-input,
+  .install-path-input
+):focus,
+:root[data-surface="hazard"] .search:focus-within,
+:root[data-surface="hazard"] .install-path-input-wrap:focus-within {
+  border-color: #fb923c;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.35);
+  outline: none;
+}
+
+/* Hazard Team: Progress Bar (HEV Suit Aux Power / Health Meter) */
+:root[data-surface="hazard"] .progress {
+  background: rgba(10, 13, 18, 0.92);
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  border-radius: 4px;
+  overflow: hidden;
+}
+:root[data-surface="hazard"] .progress > span,
+:root[data-surface="hazard"] :is(.gp-progress-fill) {
+  background: linear-gradient(90deg, #ea580c 0%, #f97316 60%, #fde047 100%);
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+}
+
+/* Hazard Team: Switches */
+:root[data-surface="hazard"] .switch input:checked + .track {
+  background: #c2410c;
+  border-color: #f97316;
+}
+:root[data-surface="hazard"] .switch input:checked + .track::before {
+  background: #ffffff;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.7);
+}
+
+/* Hazard Team: Store Tabs Active Indicator */
+:root[data-surface="hazard"] .store-tabs .tab.active,
+:root[data-surface="hazard"] .tab.active {
+  color: #fed7aa;
+}
+:root[data-surface="hazard"] .store-tabs .tab.active::after,
+:root[data-surface="hazard"] .tab.active::after {
+  background: #f97316;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.6);
 }
 
 /* ---------- Valley Harvest (Stardew Valley Inspired) ----------
