@@ -64,19 +64,21 @@ export function playStageSound(kind: StageFeedback): void {
   const volume = (S.stage.soundVolume / 100) * 0.16;
   switch (kind) {
     case "move":
-      tone(context, 760, 640, 0.045, volume * 0.42, "sine");
+      tone(context, 820, 640, 0.035, volume * 0.35, "sine");
       break;
     case "select":
-      tone(context, 520, 860, 0.075, volume * 0.7, "triangle");
+      tone(context, 480, 720, 0.08, volume * 0.65, "triangle");
+      tone(context, 960, 1440, 0.06, volume * 0.25, "sine");
       break;
     case "back":
-      tone(context, 420, 260, 0.08, volume * 0.6, "sine");
+      tone(context, 540, 320, 0.075, volume * 0.5, "sine");
       break;
     case "launch":
-      tone(context, 160, 520, 0.34, volume, "sine");
+      tone(context, 140, 520, 0.36, volume * 0.9, "sine");
+      tone(context, 280, 1040, 0.28, volume * 0.4, "triangle");
       break;
     case "error":
-      tone(context, 220, 130, 0.22, volume * 0.65, "square");
+      tone(context, 240, 160, 0.18, volume * 0.6, "square");
       break;
   }
 }

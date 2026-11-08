@@ -523,8 +523,8 @@ function stillItems(): import("../../epic").GameScreenshotItem[] {
   return app ? (S.loadedScreenshots.get(app) || []) : [];
 }
 
-export function stageOpenStill(index: number): void {
-  const app = S.stage.gameKey;
+export function stageOpenStill(index: number, appName?: string): void {
+  const app = appName || S.stage.gameKey;
   if (!app) return;
   const items = S.loadedScreenshots.get(app) || [];
   if (index < 0 || index >= items.length) return;

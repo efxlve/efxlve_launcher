@@ -34,8 +34,7 @@ body.stage-mode #toasts {
   --stage-ink-4: rgba(255, 255, 255, 0.26);
   --stage-ease: cubic-bezier(0.2, 0, 0, 1);
   --stage-pad: clamp(20px, 2.4vw, 72px);
-  --stage-spine: clamp(66px, 5.2vw, 120px);
-  --stage-top: 58px;
+  --stage-top: 66px;
   --stage-radius: 14px;
 
   position: fixed;
@@ -59,6 +58,50 @@ body.stage-mode #toasts {
   inset: 0;
   pointer-events: none;
   background: radial-gradient(900px 520px at 18% 108%, rgba(255, 255, 255, 0.035), transparent 70%);
+}
+
+/* ---------- Atmospheric Dynamic Backdrop ---------- */
+
+.stage-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.stage-backdrop-canvas {
+  position: absolute;
+  inset: -30px;
+  background-size: cover;
+  background-position: center 25%;
+  opacity: 0;
+  transform: scale(1.06);
+  filter: saturate(1.15) contrast(1.08);
+  transition:
+    opacity 450ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 750ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.stage-backdrop-canvas.is-active {
+  opacity: 0.58;
+  transform: scale(1.0);
+}
+
+.stage-backdrop-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(1200px 750px at 72% 20%, transparent 25%, rgba(5, 5, 5, 0.88) 85%),
+    linear-gradient(to bottom, rgba(5, 5, 5, 0.88) 0%, rgba(5, 5, 5, 0.28) 26%, rgba(5, 5, 5, 0.72) 65%, rgba(5, 5, 5, 0.98) 100%),
+    linear-gradient(to right, rgba(5, 5, 5, 0.96) 0%, rgba(5, 5, 5, 0.65) 45%, rgba(5, 5, 5, 0.15) 85%);
+}
+
+.stage-backdrop-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.04), transparent 60%);
 }
 
 #stage-root *,
@@ -134,19 +177,26 @@ body.stage-mode #toasts {
   inset-block-start: 0;
   inset-inline: 0;
   height: var(--stage-top);
-  z-index: 40;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding-inline: clamp(18px, 2.8vw, 46px) clamp(18px, 2.4vw, 40px);
+  padding-inline: clamp(20px, 3.2vw, 54px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.055);
-  background: linear-gradient(to bottom, rgba(5, 5, 5, 0.94), rgba(5, 5, 5, 0.58) 58%, transparent);
+  background: linear-gradient(to bottom, rgba(5, 5, 5, 0.94) 0%, rgba(5, 5, 5, 0.6) 60%, transparent);
   pointer-events: none;
 }
 
 .stage-topbar > * {
   pointer-events: auto;
+}
+
+.stage-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 2.4vw, 36px);
+  min-width: 0;
 }
 
 .stage-brand {
@@ -170,18 +220,97 @@ body.stage-mode #toasts {
   color: var(--stage-ink);
 }
 
-.stage-beta-chip {
+.stage-top-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stage-bumper-hint {
   display: inline-flex;
   align-items: center;
-  height: 17px;
-  padding: 0 6px;
+  justify-content: center;
+  min-width: 28px;
+  height: 20px;
+  padding: 0 5px;
   border-radius: 4px;
-  background: var(--stage-ink);
-  color: #000;
-  font-size: 8.5px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--stage-ink-3);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   line-height: 1;
+}
+
+.stage-nav-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 clamp(12px, 1.2vw, 20px);
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--stage-ink-2);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 150ms var(--stage-ease), background 150ms var(--stage-ease), transform 150ms var(--stage-ease);
+}
+
+.stage-nav-tab:hover {
+  color: var(--stage-ink);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.stage-nav-tab.active {
+  color: #000 !important;
+  background: #ffffff !important;
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.25);
+  font-weight: 700;
+}
+
+.stage-nav-badge {
+  display: inline-block;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+}
+
+.stage-search-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--stage-line);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--stage-ink-2);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 140ms var(--stage-ease), background 140ms var(--stage-ease), border-color 140ms var(--stage-ease);
+}
+
+.stage-search-pill:hover,
+.stage-search-pill.gp-focused {
+  color: var(--stage-ink);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--stage-line-strong);
+}
+
+.stage-search-hint-key {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--stage-ink-3);
 }
 
 .stage-topbar-right {
@@ -288,108 +417,33 @@ body.stage-mode #toasts {
   background: rgba(229, 72, 77, 0.08);
 }
 
-/* ---------- Chapter spine ---------- */
-
-.stage-spine {
-  position: absolute;
-  inset-block: var(--stage-top) 0;
-  inset-inline-start: 0;
-  width: var(--stage-spine);
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding-block-start: clamp(18px, 3vh, 34px);
-  background: linear-gradient(to right, rgba(5, 5, 5, 0.88), rgba(5, 5, 5, 0));
-  pointer-events: none;
-}
-
-.stage-spine-item {
-  position: relative;
-  width: 50px;
-  height: 50px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 11px;
-  background: transparent;
-  color: var(--stage-ink-4);
-  cursor: pointer;
-  pointer-events: auto;
-  transition: color 160ms var(--stage-ease), background 160ms var(--stage-ease), border-color 160ms var(--stage-ease);
-}
-.stage-spine-item:hover {
-  color: var(--stage-ink-2);
-  background: rgba(255, 255, 255, 0.045);
-}
-.stage-spine-item.active {
-  color: var(--stage-ink);
-  background: rgba(255, 255, 255, 0.075);
-  border-color: var(--stage-line);
-}
-
-.stage-spine-icon {
-  display: inline-flex;
-}
-
-.stage-spine-label {
-  position: absolute;
-  inset-inline-start: 58px;
-  top: 50%;
-  transform: translate(-4px, -50%);
-  padding: 4px 8px;
-  border: 1px solid var(--stage-line);
-  border-radius: 5px;
-  background: rgba(8, 8, 8, 0.94);
-  color: var(--stage-ink-2);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 140ms var(--stage-ease), transform 140ms var(--stage-ease);
-}
-.stage-spine-item:hover .stage-spine-label,
-.stage-spine-item.gp-focused .stage-spine-label {
-  opacity: 1;
-  transform: translate(0, -50%);
-}
-
-.stage-spine-mark {
-  position: absolute;
-  inset-inline-start: -10px;
-  top: 50%;
-  width: 2px;
-  height: 0;
-  transform: translateY(-50%);
-  background: var(--stage-ink);
-  transition: height 180ms var(--stage-ease);
-}
-.stage-spine-item.active .stage-spine-mark {
-  height: 22px;
-}
-
 /* ---------- Main scroll ---------- */
 
 .stage-main {
   position: absolute;
   inset-block: var(--stage-top) 0;
-  inset-inline-start: var(--stage-spine);
-  inset-inline-end: 0;
+  inset-inline: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: var(--stage-pad);
+  padding: 0;
   padding-block-end: 118px;
   scroll-behavior: smooth;
+  z-index: 10;
+}
+
+.stage-route-home .stage-main {
+  padding: 0 0 118px 0;
+}
+
+.stage-route-library .stage-main,
+.stage-route-downloads .stage-main,
+.stage-route-settings .stage-main {
+  padding: var(--stage-pad);
+  padding-block-end: 118px;
 }
 
 .stage-route-program .stage-main {
   inset-block-start: 0;
-  inset-inline-start: 0;
   padding: 0 0 112px;
 }
 

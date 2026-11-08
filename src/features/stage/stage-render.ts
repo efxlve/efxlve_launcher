@@ -64,12 +64,14 @@ import {
 } from "./stage-state";
 import { stageLaunchGame } from "./stage-launch";
 import { renderStageDownloads } from "./stage-downloads";
-import { renderStageHome } from "./stage-home";
+import { renderStageHome, stageHomeFocus } from "./stage-home";
 import { renderStageLibrary, stageLibraryFocus, stageLibraryMore, stageLibraryRenderToken } from "./stage-library";
 import { stageGameByKey } from "./stage-model";
 import { renderStageProgram } from "./stage-program";
 import { renderStageSearch } from "./stage-search";
 import { renderStageSettings } from "./stage-settings";
+import { resetStageBackdrop, stageBackdropMarkup, updateStageBackdrop } from "./stage-backdrop";
+import { stageWideArt } from "./stage-art";
 import { fullShotSrc } from "../screenshots/screenshots-view";
 // Side effect: register the button/back contract with the gamepad loop.
 import "./stage-input";
@@ -266,42 +268,46 @@ function topbar(): string {
   const pad = S.stage.controllerConnected;
   const battery = stageBatteryLabel();
   const online = navigator.onLine && !S.offlineMode;
+  const kind = S.gamepadKind;
+  const lbGlyph = kind === "playstation" ? "L1" : "LB";
+  const rbGlyph = kind === "playstation" ? "R1" : "RB";
+  const selectGlyph = kind === "playstation" ? "Share" : kind === "xbox" ? "View" : "Select";
+
+  const navTab = (route: StageRoute, label: string): string => {
+    const active = S.stage.route === route;
+    return `<button type="button" class="stage-nav-tab${active ? " active" : ""}" data-stage-act="go" data-route="${route}" data-gp-item data-gp-key="nav:${route}">
+      <span>${esc(label)}</span>
+      ${route === "downloads" && dl ? `<span class="stage-nav-badge tabular-nums">${Math.round(dl.percent)}%</span>` : ""}
+    </button>`;
+  };
+
   return `<header class="stage-topbar">
-    <div class="stage-brand">
-      <span class="stage-brand-name">EFXLVE</span>
-      <span class="stage-brand-mode">STAGE</span>
-      <span class="stage-beta-chip">${esc(t("stage.beta"))}</span>
+    <div class="stage-topbar-left">
+      <div class="stage-brand">
+        <span class="stage-brand-name">EFXLVE</span>
+        <span class="stage-brand-mode">STAGE</span>
+      </div>
+      <nav class="stage-top-nav" aria-label="${esc(t("stage.navHome"))}">
+        <span class="stage-bumper-hint is-left">${lbGlyph}</span>
+        ${navTab("home", t("stage.navHome"))}
+        ${navTab("library", t("stage.navLibrary"))}
+        ${navTab("downloads", t("stage.navDownloads"))}
+        ${navTab("settings", t("stage.navSettings"))}
+        <span class="stage-bumper-hint is-right">${rbGlyph}</span>
+      </nav>
     </div>
     <div class="stage-topbar-right">
+      <button type="button" class="stage-search-pill" data-stage-act="open-search" data-gp-item data-gp-key="top:search" aria-label="${esc(t("stage.search"))}" title="${esc(t("stage.search"))}">
+        ${icon("search", 15)}
+        <span class="stage-search-hint-key">${selectGlyph}</span>
+      </button>
       ${dl ? `<button type="button" class="stage-top-download" data-stage-act="go" data-route="downloads" data-gp-item data-gp-key="top:downloads">${icon("download", 15)}<span class="tabular-nums">${Math.round(dl.percent)}%</span><i style="width:${Math.max(2, Math.min(100, dl.percent))}%"></i></button>` : ""}
       <span class="stage-net ${online ? "is-online" : "is-offline"}"><span class="stage-net-dot"></span><span class="stage-net-label">${esc(online ? t("nav.online") : t("nav.offline"))}</span></span>
       ${pad ? `<span class="stage-pad-status" title="${esc(S.stage.controllerName)}">${icon("gamepad-2", 15)}${battery ? `<span class="tabular-nums">${esc(battery)}</span>` : ""}</span>` : ""}
       <span class="stage-clock tabular-nums"></span>
-      <button type="button" class="stage-icon-btn stage-menu-btn" data-stage-act="open-menu" data-gp-item data-gp-key="top:menu" aria-label="${esc(t("stage.quickMenu"))}" title="${esc(t("stage.quickMenu"))}">${icon("dots", 20)}</button>
+      <button type="button" class="stage-icon-btn stage-menu-btn" data-stage-act="open-menu" data-gp-item data-gp-key="top:menu" aria-label="${esc(t("stage.quickMenu"))}" title="${esc(t("stage.quickMenu"))}">${icon("dots", 18)}</button>
     </div>
   </header>`;
-}
-
-function spine(): string {
-  const item = (route: StageRoute, iconName: "home" | "layout-grid" | "download" | "sliders", label: string): string => {
-    const active = S.stage.route === route;
-    return `<button type="button" class="stage-spine-item${active ? " active" : ""}" data-stage-act="go" data-route="${route}" data-gp-item data-gp-key="nav:${route}">
-      <span class="stage-spine-icon">${icon(iconName, 20)}</span>
-      <span class="stage-spine-label">${esc(label)}</span>
-      <span class="stage-spine-mark"></span>
-    </button>`;
-  };
-  return `<nav class="stage-spine" aria-label="${esc(t("stage.navHome"))}">
-    ${item("home", "home", t("stage.navHome"))}
-    ${item("library", "layout-grid", t("stage.navLibrary"))}
-    ${item("downloads", "download", t("stage.navDownloads"))}
-    ${item("settings", "sliders", t("stage.navSettings"))}
-    <button type="button" class="stage-spine-item${S.stage.quickMenu ? " active" : ""}" data-stage-act="open-menu" data-gp-item data-gp-key="nav:menu">
-      <span class="stage-spine-icon">${icon("dots", 20)}</span>
-      <span class="stage-spine-label">${esc(t("stage.navMenu"))}</span>
-      <span class="stage-spine-mark"></span>
-    </button>
-  </nav>`;
 }
 
 function hints(): string {
@@ -344,6 +350,7 @@ function hints(): string {
     return stageHintBar([
       stageHint(face("a"), t("gamepad.select")),
       stageHint(face("b"), t("common.back")),
+      stageHint(bumpers, t("gamepad.tabs")),
       stageHint("Menu", t("stage.quickMenu")),
     ]);
   }
@@ -369,38 +376,41 @@ function quickMenu(entered: boolean): string {
     ? `${S.stage.controllerName || t("stage.controller")} · ${stageBatteryLabel()}`
     : t("stage.noController");
   return `<div class="stage-overlay stage-quick-menu${entered ? " stage-overlay-enter" : ""}">
-    <div class="stage-sheet" role="dialog" aria-modal="true" aria-label="${esc(t("stage.quickMenu"))}">
-      <div class="stage-sheet-head">
-        <div><span class="stage-kicker">${esc(t("stage.navMenu"))}</span><h2>${esc(t("stage.quickMenu"))}</h2></div>
-        <span class="stage-beta-chip">${esc(t("stage.beta"))}</span>
+    <div class="stage-dock-panel" role="dialog" aria-modal="true" aria-label="${esc(t("stage.quickMenu"))}">
+      <div class="stage-dock-head">
+        <span class="stage-dock-kicker">${esc(t("stage.quickMenu"))}</span>
+        <span class="stage-dock-status tabular-nums">${esc(pad)}</span>
       </div>
-      <div class="stage-sheet-grid">
-        <button type="button" class="stage-sheet-tile" data-stage-act="close-menu" data-gp-item data-gp-key="menu:resume">
-          <span class="stage-sheet-icon">${icon("play", 24)}</span>
-          <strong>${esc(t("stage.resume"))}</strong>
-          <small>${esc(t("stage.resumeHint"))}</small>
+      <div class="stage-dock-items" data-gp-row>
+        <button type="button" class="stage-dock-item" data-stage-act="go" data-route="home" data-gp-item data-gp-key="dock:home">
+          <span class="stage-dock-icon">${icon("home", 22)}</span>
+          <span class="stage-dock-text">${esc(t("stage.navHome"))}</span>
         </button>
-        <button type="button" class="stage-sheet-tile" data-stage-act="go" data-route="downloads" data-gp-item data-gp-key="menu:downloads">
-          <span class="stage-sheet-icon">${icon("download", 24)}</span>
-          <strong>${esc(t("stage.navDownloads"))}</strong>
-          <small>${dl ? `${Math.round(dl.percent)}% · ${esc(dl.title)}` : esc(t("stage.downloadsEmpty"))}</small>
+        <button type="button" class="stage-dock-item" data-stage-act="go" data-route="library" data-gp-item data-gp-key="dock:library">
+          <span class="stage-dock-icon">${icon("layout-grid", 22)}</span>
+          <span class="stage-dock-text">${esc(t("stage.navLibrary"))}</span>
         </button>
-        <button type="button" class="stage-sheet-tile" data-stage-act="controls" data-gp-item data-gp-key="menu:controls">
-          <span class="stage-sheet-icon">${icon("gamepad-2", 24)}</span>
-          <strong>${esc(t("stage.controller"))}</strong>
-          <small>${esc(pad)}</small>
+        <button type="button" class="stage-dock-item" data-stage-act="go" data-route="downloads" data-gp-item data-gp-key="dock:downloads">
+          <span class="stage-dock-icon">${icon("download", 22)}</span>
+          <span class="stage-dock-text">${esc(t("stage.navDownloads"))}</span>
+          ${dl ? `<span class="stage-dock-badge tabular-nums">${Math.round(dl.percent)}%</span>` : ""}
         </button>
-        <button type="button" class="stage-sheet-tile stage-sheet-tile-quiet" data-stage-act="desktop" data-gp-item data-gp-key="menu:exit">
-          <span class="stage-sheet-icon">${icon("external", 24)}</span>
-          <strong>${esc(t("stage.exit"))}</strong>
-          <small>${esc(t("stage.desktopHint"))}</small>
+        <button type="button" class="stage-dock-item" data-stage-act="controls" data-gp-item data-gp-key="dock:controls">
+          <span class="stage-dock-icon">${icon("gamepad-2", 22)}</span>
+          <span class="stage-dock-text">${esc(t("stage.controller"))}</span>
+        </button>
+        <button type="button" class="stage-dock-item" data-stage-act="go" data-route="settings" data-gp-item data-gp-key="dock:settings">
+          <span class="stage-dock-icon">${icon("sliders", 22)}</span>
+          <span class="stage-dock-text">${esc(t("stage.navSettings"))}</span>
+        </button>
+        <button type="button" class="stage-dock-item stage-dock-danger" data-stage-act="desktop" data-gp-item data-gp-key="dock:desktop">
+          <span class="stage-dock-icon">${icon("external", 22)}</span>
+          <span class="stage-dock-text">${esc(t("stage.exit"))}</span>
         </button>
       </div>
-      <div class="stage-sheet-foot">
-        <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="go" data-route="settings" data-gp-item data-gp-key="menu:stage-settings">${icon("sliders", 16)}<span>${esc(t("stage.navSettings"))}</span></button>
-        <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="desktop-settings" data-gp-item data-gp-key="menu:settings">${icon("settings", 16)}<span>${esc(t("stage.openDesktopSettings"))}</span></button>
-        <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="desktop" data-gp-item data-gp-key="menu:desktop">${icon("monitor", 16)}<span>${esc(t("stage.openDesktop"))}</span></button>
-        <span class="stage-sheet-note">${esc(t("stage.betaHint"))}</span>
+      <div class="stage-dock-hints">
+        <span>${stageFaceGlyph("a")} ${esc(t("gamepad.select"))}</span>
+        <span>${stageFaceGlyph("b")} ${esc(t("stage.closeMenu"))}</span>
       </div>
     </div>
   </div>`;
@@ -503,6 +513,7 @@ export function renderStage(): void {
   if (!S.stage.active) {
     document.getElementById("stage-root")?.remove();
     stopClock();
+    resetStageBackdrop();
     lastStageSignature = "";
     return;
   }
@@ -547,12 +558,17 @@ export function renderStage(): void {
   wasLaunch = Boolean(S.stage.launch);
   wasError = Boolean(S.stage.launchError);
 
+  if (S.stage.route === "program" && S.stage.gameKey) {
+    const summary = stageGameByKey(S.stage.gameKey);
+    if (summary) updateStageBackdrop(stageWideArt(summary));
+  }
+
   root.className = `stage-root stage-route-${S.stage.route}${S.stage.route === "program" ? " is-program" : ""}${S.stage.quickMenu ? " is-menu-open" : ""}${S.stage.searchOpen ? " is-search-open" : ""}${S.stage.stillIndex !== null ? " is-still-open" : ""}${S.stage.route === "settings" && settingsTabChanged ? " stage-settings-tab-enter" : ""}`;
   root.dataset.route = S.stage.route;
   root.style.setProperty("--stage-safe", `${S.stage.safeArea * 1.5}vmin`);
-  root.innerHTML = `<div class="stage-shell">
+  root.innerHTML = `${stageBackdropMarkup()}
+  <div class="stage-shell">
     ${topbar()}
-    ${S.stage.route === "program" ? "" : spine()}
     <main id="stage-main" class="stage-main">
       <div class="stage-layer stage-layer-main${routeChanged ? " stage-page-enter" : ""}" data-stage-layer="main">${contentForRoute()}</div>
     </main>
@@ -603,6 +619,7 @@ function bindGlobalFocus(): void {
     if (key) S.stage.focusKey = key;
     if (changed && !pointerFocus) stageFeedback("move");
     if (S.stage.route === "library" && key.startsWith("lib:")) stageLibraryFocus(key);
+    if (S.stage.route === "home" && key.startsWith("game:")) stageHomeFocus(key);
   });
   window.addEventListener("stage-mode", (event) => {
     const active = Boolean((event as CustomEvent<{ active?: boolean }>).detail?.active);
@@ -720,7 +737,11 @@ function bindStageEvents(root: HTMLElement): void {
     const index = Number(actionEl.dataset.index);
     switch (action) {
       case "go": if (route) stageGo(route); break;
-      case "open-program": stageOpenProgram(key); break;
+      case "open-program": {
+        stageOpenProgram(key);
+        if (tab) stageSetTab(tab);
+        break;
+      }
       case "back": stageBack(); break;
       case "favorite": { void stageToggleFavorite(key); break; }
       case "set-filter": if (filter) stageSetFilter(filter); break;
@@ -728,7 +749,8 @@ function bindStageEvents(root: HTMLElement): void {
       case "cycle-store": stageCycleStore(true); break;
       case "cycle-sort": stageCycleSort(); break;
       case "toggle-view": stageToggleView(); break;
-      case "open-search": stageOpenSearch(); break;
+      case "open-search":
+      case "search": stageOpenSearch(); break;
       case "search-close": stageFeedback("back"); stageCancelSearch(); break;
       case "search-key": stageSearchKey(actionEl.dataset.key || ""); break;
       case "search-submit": stageSearchSubmit(); break;
@@ -748,7 +770,7 @@ function bindStageEvents(root: HTMLElement): void {
       case "cycle-settings-tab": stageCycleSettingsTab(true); break;
       case "set-ach-filter": if (achFilter) stageSetAchievementFilter(achFilter); break;
       case "refresh-achievements": stageRefreshAchievements(key); break;
-      case "open-still": stageOpenStill(index); break;
+      case "open-still": stageOpenStill(index, key); break;
       case "close-still": stageCloseStill(); break;
       case "still-prev": stageStillStep(false); break;
       case "still-next": stageStillStep(true); break;

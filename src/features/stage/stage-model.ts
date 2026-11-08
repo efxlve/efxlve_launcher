@@ -124,6 +124,32 @@ export function stageRecentSummaries(limit = 12): EpicSummary[] {
   return out.slice(0, limit);
 }
 
+/** The horizontal ribbon on Home: recent titles, then installed, then favorites. */
+export function stageRibbonSummaries(limit = 18): EpicSummary[] {
+  const out: EpicSummary[] = [];
+  const seen = new Set<string>();
+  const add = (s: EpicSummary | undefined): void => {
+    if (!s || S.hiddenGames.has(s.appName)) return;
+    const key = S.separateCopies ? s.appName : canonicalGameTitle(s.title) || s.appName;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(s);
+  };
+  for (const key of S.epicRecent) add(summaryOf(key));
+  const base = recentOrder(stageBaseSummaries());
+  for (const s of base) {
+    if (out.length >= limit) break;
+    if (s.installed) add(s);
+  }
+  if (out.length < limit) {
+    for (const s of base) {
+      if (out.length >= limit) break;
+      add(s);
+    }
+  }
+  return out.slice(0, limit);
+}
+
 /** The big Home hero: the last played game, then the first installed title. */
 export function stageHeroSummary(): EpicSummary | null {
   const recent = stageRecentSummaries(1);
