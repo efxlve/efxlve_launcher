@@ -46,8 +46,13 @@ export function stageButton(button: StagePadButton): void {
     if (button === "start" || button === "select") stageCloseControls();
     return;
   }
-  const overlay = S.stage.quickMenu || S.stage.searchOpen;
-  if (overlay && button !== "start" && button !== "select") return;
+  if (S.stage.searchOpen) {
+    // While typing, View closes the overlay; Start must not open a sheet on
+    // top of the keyboard.
+    if (button === "select") stageBack();
+    return;
+  }
+  if (S.stage.quickMenu && button !== "start" && button !== "select") return;
   if (S.stage.route === "downloads" && (button === "x" || button === "y" || button === "lt" || button === "rt")) return;
 
   switch (button) {

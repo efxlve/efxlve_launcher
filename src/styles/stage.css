@@ -17,6 +17,11 @@ body.stage-mode #game-scene {
   display: none !important;
 }
 
+/* Toasts sit above the hint bar instead of covering it. */
+body.stage-mode #toasts {
+  inset-block-end: 76px;
+}
+
 #stage-root {
   --stage-bg: #050505;
   --stage-surface: #0a0a0a;
@@ -556,6 +561,18 @@ body.stage-mode #game-scene {
   display: inline-block;
   margin-inline: 5px;
   color: var(--stage-ink-4);
+}
+
+/* Sizes, hours and dates share one numeral width so a status line does not
+   jitter when the value changes. */
+.stage-hero-meta,
+.stage-side-meta,
+.stage-program-meta,
+.stage-reel-meta,
+.stage-mini-meta,
+.stage-list-main span,
+.stage-download-meta {
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- Status / progress ---------- */

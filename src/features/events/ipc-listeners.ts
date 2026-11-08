@@ -187,6 +187,9 @@ function scheduleDlDomUpdate(id: string): void {
   dlDomRaf = requestAnimationFrame(() => {
     dlDomRaf = 0;
     applyDlDomUpdate(dlDomId);
+    // The desktop nodes were patched in place; Stage has its own tree and its
+    // render guard decides whether this is a chip patch or a downloads repaint.
+    if (S.stage.active) render();
   });
 }
 
@@ -1038,6 +1041,10 @@ export async function initApp(hooks: {
 
       // The action row is repainted by refreshGameActionUi above: the game page
       // draws Stop for a running title and the library patches its own cards.
+
+      // Stage is a separate shell: the desktop card patch above cannot reach
+      // it, and a session that just ended must stop saying "Running".
+      if (S.stage.active) hooks.scheduleRender();
 
       if (S.view === "library") {
         patchLibraryCardDom(id);
