@@ -404,59 +404,6 @@
     linear-gradient(45deg, rgba(0, 0, 0, 0.05) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, 0.05) 75%);
 }
 
-/* White Mode: Upscaler DLL Panel */
-:root[data-surface="white"] :is(.upscaler-intro-card, .upscaler-card) {
-  background: #ffffff;
-  border-color: rgba(15, 23, 42, 0.1);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-}
-:root[data-surface="white"] :is(.upscaler-intro-card, .upscaler-card):hover {
-  background: #ffffff;
-  border-color: rgba(15, 23, 42, 0.18);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
-}
-:root[data-surface="white"] .upscaler-intro-icon,
-:root[data-surface="white"] .upscaler-kind-icon {
-  background: #f1f5f9;
-  border-color: rgba(15, 23, 42, 0.1);
-  color: var(--accent);
-}
-:root[data-surface="white"] .upscaler-path-box,
-:root[data-surface="white"] .upscaler-more-body {
-  background: #f8fafc;
-  border-color: rgba(15, 23, 42, 0.08);
-}
-:root[data-surface="white"] .upscaler-warning-banner {
-  background: rgba(245, 158, 11, 0.12);
-  border-color: rgba(245, 158, 11, 0.3);
-  color: #b45309;
-}
-:root[data-surface="white"] .upscaler-more-summary:hover {
-  background: #f1f5f9;
-}
-:root[data-surface="white"] .upscaler-select {
-  background: #ffffff;
-  border-color: rgba(15, 23, 42, 0.14);
-}
-:root[data-surface="white"] .upscaler-empty-state {
-  background: #ffffff;
-  border-color: rgba(15, 23, 42, 0.14);
-}
-:root[data-surface="white"] .upscaler-empty-icon {
-  background: #f1f5f9;
-  color: var(--text-3);
-}
-:root[data-surface="white"] .upscaler-state-chip.ok {
-  background: rgba(5, 150, 105, 0.12);
-  border-color: rgba(5, 150, 105, 0.25);
-  color: #047857;
-}
-:root[data-surface="white"] .upscaler-state-chip.warn {
-  background: rgba(217, 119, 6, 0.12);
-  border-color: rgba(217, 119, 6, 0.25);
-  color: #b45309;
-}
-
 /* White Mode: Storage manager & music & context menu */
 :root[data-surface="white"] .storage-stat-dot.dot-games {
   background: var(--accent);
@@ -796,54 +743,6 @@
 :root[data-surface="gloss"] .cover-anchor-btn {
   background: rgba(255, 255, 255, 0.5);
   border-color: rgba(255, 255, 255, 0.6);
-}
-
-/* Gloss: Upscaler DLL Panel */
-:root[data-surface="gloss"] :is(.upscaler-intro-card, .upscaler-card) {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0, rgba(255, 255, 255, 0.82) 44px, rgba(244, 251, 255, 0.78) 100%);
-  border-color: rgba(255, 255, 255, 0.95);
-  box-shadow: var(--aero-glass-edge), 0 8px 24px rgba(8, 62, 110, 0.12), inset 0 1px 0 #ffffff;
-}
-:root[data-surface="gloss"] :is(.upscaler-intro-card, .upscaler-card):hover {
-  border-color: #ffffff;
-  box-shadow: var(--aero-glass-edge), 0 10px 28px rgba(8, 62, 110, 0.18), inset 0 1px 0 #ffffff;
-}
-:root[data-surface="gloss"] .upscaler-main-title,
-:root[data-surface="gloss"] .upscaler-card-title {
-  color: var(--aero-heading);
-}
-:root[data-surface="gloss"] .upscaler-intro-icon,
-:root[data-surface="gloss"] .upscaler-kind-icon {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(200, 230, 255, 0.75));
-  border: 1px solid rgba(255, 255, 255, 0.95);
-  color: #0066cc;
-  box-shadow: 0 2px 6px rgba(8, 62, 110, 0.1);
-}
-:root[data-surface="gloss"] .upscaler-path-box,
-:root[data-surface="gloss"] .upscaler-more-body {
-  background: rgba(255, 255, 255, 0.65);
-  border-color: rgba(8, 62, 110, 0.15);
-  box-shadow: inset 0 1px 2px rgba(8, 62, 110, 0.05);
-}
-:root[data-surface="gloss"] .upscaler-warning-banner {
-  background: rgba(254, 243, 199, 0.85);
-  border-color: rgba(245, 158, 11, 0.4);
-  color: #92400e;
-}
-:root[data-surface="gloss"] .upscaler-more-summary:hover {
-  background: rgba(8, 62, 110, 0.08);
-}
-:root[data-surface="gloss"] .upscaler-select {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: rgba(8, 62, 110, 0.2);
-}
-:root[data-surface="gloss"] .upscaler-empty-state {
-  background: rgba(255, 255, 255, 0.7);
-  border-color: rgba(8, 62, 110, 0.2);
-}
-:root[data-surface="gloss"] .upscaler-empty-icon {
-  background: rgba(200, 230, 255, 0.6);
-  color: #0066cc;
 }
 
 /* Fields: sunken white with the Windows 7 blue focus glow. */
@@ -1841,62 +1740,6 @@
   color: #0c1e10;
 }
 
-/* Blades: Upscaler DLL Panel */
-:root[data-surface="blades"] :is(.upscaler-intro-card, .upscaler-card) {
-  background: linear-gradient(180deg, rgba(22, 50, 28, 0.88), rgba(12, 30, 16, 0.92));
-  border: 1px solid rgba(155, 212, 74, 0.25);
-  box-shadow: var(--x360-glass-edge), 0 8px 24px rgba(0, 14, 4, 0.45);
-}
-:root[data-surface="blades"] :is(.upscaler-intro-card, .upscaler-card):hover {
-  border-color: rgba(155, 212, 74, 0.45);
-}
-:root[data-surface="blades"] .upscaler-main-title,
-:root[data-surface="blades"] .upscaler-card-title {
-  color: #e2f5c8;
-}
-:root[data-surface="blades"] .upscaler-intro-icon,
-:root[data-surface="blades"] .upscaler-kind-icon {
-  background: rgba(26, 60, 34, 0.92);
-  border: 1px solid rgba(155, 212, 74, 0.3);
-  color: #9bd44a;
-}
-:root[data-surface="blades"] .upscaler-path-box,
-:root[data-surface="blades"] .upscaler-more-body {
-  background: rgba(8, 24, 12, 0.85);
-  border-color: rgba(155, 212, 74, 0.18);
-  box-shadow: inset 0 1px 2px rgba(0, 12, 4, 0.5);
-}
-:root[data-surface="blades"] .upscaler-warning-banner {
-  background: rgba(60, 45, 10, 0.7);
-  border-color: rgba(224, 163, 46, 0.35);
-  color: #ffd166;
-}
-:root[data-surface="blades"] .upscaler-more-summary:hover {
-  background: rgba(26, 60, 34, 0.6);
-}
-:root[data-surface="blades"] .upscaler-select {
-  background: rgba(8, 24, 12, 0.85);
-  border-color: rgba(155, 212, 74, 0.25);
-}
-:root[data-surface="blades"] .upscaler-empty-state {
-  background: rgba(12, 30, 16, 0.85);
-  border-color: rgba(155, 212, 74, 0.25);
-}
-:root[data-surface="blades"] .upscaler-empty-icon {
-  background: rgba(22, 50, 28, 0.85);
-  color: #9bd44a;
-}
-:root[data-surface="blades"] .upscaler-state-chip.ok {
-  background: rgba(155, 212, 74, 0.15);
-  border-color: rgba(155, 212, 74, 0.35);
-  color: #9bd44a;
-}
-:root[data-surface="blades"] .upscaler-state-chip.warn {
-  background: rgba(224, 163, 46, 0.18);
-  border-color: rgba(224, 163, 46, 0.35);
-  color: #ffd166;
-}
-
 /* Inputs and focus rings */
 :root[data-surface="blades"] :is(input:not([type="range"], [type="checkbox"], [type="radio"]), select, textarea, .input, .text-input, .search, .page-search, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input) {
   background: rgba(8, 24, 12, 0.85);
@@ -2334,73 +2177,6 @@
   background: #fcee0a;
   color: #000000;
   border-color: #fcee0a;
-}
-
-/* Neon Grid: Upscaler DLL Panel */
-:root[data-surface="neongrid"] :is(.upscaler-intro-card, .upscaler-card) {
-  background: rgba(14, 16, 22, 0.92);
-  border: 1px solid rgba(252, 238, 10, 0.2);
-  border-radius: 3px;
-  box-shadow: inset 0 1px 0 rgba(252, 238, 10, 0.18), 0 8px 24px rgba(0, 0, 0, 0.7);
-}
-:root[data-surface="neongrid"] :is(.upscaler-intro-card, .upscaler-card):hover {
-  border-color: rgba(252, 238, 10, 0.45);
-  box-shadow: inset 0 1px 0 rgba(252, 238, 10, 0.3), 0 0 16px rgba(252, 238, 10, 0.15);
-}
-:root[data-surface="neongrid"] .upscaler-main-title,
-:root[data-surface="neongrid"] .upscaler-card-title {
-  color: #fcee0a;
-}
-:root[data-surface="neongrid"] .upscaler-intro-icon,
-:root[data-surface="neongrid"] .upscaler-kind-icon {
-  background: rgba(252, 238, 10, 0.1);
-  border: 1px solid rgba(252, 238, 10, 0.3);
-  color: #fcee0a;
-  border-radius: 2px;
-}
-:root[data-surface="neongrid"] .upscaler-path-box,
-:root[data-surface="neongrid"] .upscaler-more-body {
-  background: rgba(8, 9, 12, 0.9);
-  border-color: rgba(252, 238, 10, 0.15);
-  border-radius: 2px;
-}
-:root[data-surface="neongrid"] .upscaler-warning-banner {
-  background: rgba(252, 238, 10, 0.08);
-  border-color: rgba(252, 238, 10, 0.3);
-  color: #fcee0a;
-  border-radius: 2px;
-}
-:root[data-surface="neongrid"] .upscaler-more-summary:hover {
-  background: rgba(252, 238, 10, 0.1);
-  color: #fcee0a;
-}
-:root[data-surface="neongrid"] .upscaler-select {
-  background: rgba(8, 9, 12, 0.9);
-  border-color: rgba(252, 238, 10, 0.25);
-  border-radius: 2px;
-  color: #ffffff;
-}
-:root[data-surface="neongrid"] .upscaler-empty-state {
-  background: rgba(14, 16, 22, 0.9);
-  border-color: rgba(252, 238, 10, 0.25);
-  border-radius: 2px;
-}
-:root[data-surface="neongrid"] .upscaler-empty-icon {
-  background: rgba(252, 238, 10, 0.1);
-  color: #fcee0a;
-  border-radius: 2px;
-}
-:root[data-surface="neongrid"] .upscaler-state-chip.ok {
-  background: rgba(47, 179, 109, 0.2);
-  color: #2fb36d;
-  border: 1px solid rgba(47, 179, 109, 0.4);
-  border-radius: 2px;
-}
-:root[data-surface="neongrid"] .upscaler-state-chip.warn {
-  background: rgba(252, 238, 10, 0.15);
-  color: #fcee0a;
-  border: 1px solid rgba(252, 238, 10, 0.35);
-  border-radius: 2px;
 }
 
 /* Neon Grid: Library Game Cards */

@@ -86,29 +86,21 @@ export function upscalerGroup(game: ManageGameLike): string {
   const installPath = (game.installPath || "").trim();
   if (!installPath) return "";
   return `
-    <section class="manage-group upscaler-section" data-tab="graphics" data-title="${esc(t("upscaler.title"))}" data-nav="${esc(t("upscaler.nav"))}" data-icon="cpu" id="manage-panel-graphics">
+    <section class="manage-group" data-tab="graphics" data-title="${esc(t("upscaler.title"))}" data-nav="${esc(t("upscaler.nav"))}" data-icon="cpu" id="manage-panel-graphics">
       <h3 class="manage-group-title">${icon("cpu", 14)} ${esc(t("upscaler.title"))}</h3>
-      <div class="list upscaler-list">
-        <div class="row mg-row stack upscaler-intro-card" data-search="${esc(`${t("upscaler.title")} ${t("upscaler.desc")}`)}">
-          <div class="upscaler-intro-header">
-            <div class="upscaler-intro-icon">${icon("cpu", 20)}</div>
-            <div class="upscaler-intro-titles">
-              <div class="mg-title upscaler-main-title">${esc(t("upscaler.title"))}</div>
-              <div class="mg-desc upscaler-main-desc">${esc(t("upscaler.desc"))}</div>
-            </div>
-          </div>
-          <div class="upscaler-warning-banner">
-            <span class="upscaler-warning-icon">${icon("alert-triangle", 13)}</span>
-            <span>${esc(t("upscaler.closeGame"))}</span>
-          </div>
-          <div class="mg-inline upscaler-top-actions">
-            <button class="btn ghost small upscaler-action-btn" data-act="upscaler-refresh">${icon("refresh", 13)} ${esc(t("upscaler.rescan"))}</button>
-            <button class="btn primary small upscaler-action-btn upscaler-update-all-btn" data-act="upscaler-update-all" disabled>${icon("download", 13)} ${esc(t("upscaler.updateAll"))}</button>
-            <button class="btn ghost small upscaler-action-btn" data-act="upscaler-import">${icon("upload", 13)} ${esc(t("upscaler.import"))}</button>
+      <div class="list">
+        <div class="row mg-row stack" data-search="${esc(`${t("upscaler.title")} ${t("upscaler.desc")}`)}">
+          <div class="mg-title">${esc(t("upscaler.title"))}</div>
+          <div class="mg-desc">${esc(t("upscaler.desc"))}</div>
+          <div class="mg-note">${icon("info", 12)} ${esc(t("upscaler.closeGame"))}</div>
+          <div class="mg-inline">
+            <button class="btn ghost small" data-act="upscaler-refresh">${icon("refresh", 13)} ${esc(t("upscaler.rescan"))}</button>
+            <button class="btn primary small" data-act="upscaler-update-all" disabled>${icon("download", 13)} ${esc(t("upscaler.updateAll"))}</button>
+            <button class="btn ghost small" data-act="upscaler-import">${icon("upload", 13)} ${esc(t("upscaler.import"))}</button>
           </div>
         </div>
         <div data-upscaler-root data-game-key="${esc(game.appName)}" data-install-path="${esc(installPath)}">
-          <div data-upscaler-body><div class="mg-note upscaler-scanning-note">${icon("refresh", 13)} ${esc(t("upscaler.scanning"))}</div></div>
+          <div data-upscaler-body><div class="mg-note">${esc(t("upscaler.scanning"))}</div></div>
         </div>
         <div class="upscaler-legal">${esc(t("upscaler.legal"))}</div>
       </div>
@@ -195,61 +187,40 @@ function renderDll(
     .join("");
 
   const downloadLatest = latest
-    ? `<button class="btn primary small upscaler-action-btn upscaler-dl-btn" data-act="upscaler-download-latest" data-kind="${dll.kind}" data-dll-path="${esc(dll.path)}">${icon("download", 13)} ${esc(
+    ? `<button class="btn primary small" data-act="upscaler-download-latest" data-kind="${dll.kind}" data-dll-path="${esc(dll.path)}">${icon("download", 13)} ${esc(
         t("upscaler.downloadLatest", { version: latest.version }),
       )}</button>`
     : catalogLoading
-      ? `<span class="chip upscaler-state-chip">${esc(t("upscaler.loadingCatalog"))}</span>`
-      : `<span class="chip upscaler-state-chip">${esc(t("upscaler.catalogUnavailable"))}</span>`;
+      ? `<span class="chip">${esc(t("upscaler.loadingCatalog"))}</span>`
+      : `<span class="chip">${esc(t("upscaler.catalogUnavailable"))}</span>`;
 
   return `
-    <div class="row mg-row stack upscaler-row upscaler-card" data-upscaler-dll data-dll-path="${esc(dll.path)}" data-kind="${dll.kind}" data-version="${esc(dll.version)}" data-latest-version="${latest ? esc(latest.version) : ""}" data-search="${esc(search)}">
-      <div class="upscaler-card-head">
-        <div class="upscaler-title-wrap">
-          <div class="upscaler-kind-icon">${icon("cpu", 16)}</div>
-          <div class="upscaler-title-col">
-            <div class="mg-title upscaler-card-title">
-              <span>${esc(KIND_LABEL[dll.kind])}</span>
-              <span class="chip upscaler-state-chip ${dll.state === "swapped" ? "warn" : "ok"}">${esc(stateLabel)}</span>
-            </div>
-            <div class="mg-desc upscaler-card-meta">
-              <span class="tabular-nums upscaler-version">${versionLabel}</span>
-              <span class="upscaler-meta-dot">·</span>
-              <span class="tabular-nums upscaler-size">${fmtBytes(dll.size)}</span>
-            </div>
-          </div>
-        </div>
+    <div class="row mg-row stack upscaler-row" data-upscaler-dll data-dll-path="${esc(dll.path)}" data-kind="${dll.kind}" data-version="${esc(dll.version)}" data-latest-version="${latest ? esc(latest.version) : ""}" data-search="${esc(search)}">
+      <div class="upscaler-head">
+        <div class="mg-title">${esc(KIND_LABEL[dll.kind])} <span class="chip ${dll.state === "swapped" ? "warn" : "ok"}">${esc(stateLabel)}</span></div>
+        <div class="mg-desc"><span class="tabular-nums">${versionLabel}</span> · ${fmtBytes(dll.size)}</div>
       </div>
-      <div class="upscaler-path-box">
-        <span class="upscaler-path-icon">${icon("folder", 12)}</span>
-        <span class="mg-path upscaler-path" title="${esc(dll.path)}">${esc(dll.path)}</span>
-      </div>
+      <div class="mg-path upscaler-path">${esc(dll.path)}</div>
       <div class="mg-desc upscaler-desc">${esc(description)}</div>
       <div class="upscaler-actions">
         ${downloadLatest}
-        <button class="btn ghost small upscaler-action-btn upscaler-restore-btn" data-act="upscaler-restore" data-dll-path="${esc(dll.path)}" ${dll.backupPath ? "" : "disabled"}>${icon("refresh", 13)} ${esc(t("upscaler.restore"))}</button>
+        <button class="btn ghost small" data-act="upscaler-restore" data-dll-path="${esc(dll.path)}" ${dll.backupPath ? "" : "disabled"}>${icon("refresh", 13)} ${esc(t("upscaler.restore"))}</button>
         ${
           dll.backupPath
-            ? `<button class="btn ghost small upscaler-action-btn upscaler-discard-btn" data-act="upscaler-discard" data-dll-path="${esc(dll.path)}" title="${esc(t("upscaler.discard"))}">${icon("trash", 13)} ${esc(t("upscaler.discard"))}</button>`
+            ? `<button class="btn ghost small" data-act="upscaler-discard" data-dll-path="${esc(dll.path)}" title="${esc(t("upscaler.discard"))}">${icon("trash", 13)} ${esc(t("upscaler.discard"))}</button>`
             : ""
         }
       </div>
-      <div class="upscaler-backup-status ${dll.backupPath ? "has-backup" : "no-backup"}">
-        <span class="upscaler-backup-dot"></span>
-        <span>${backupLabel}</span>
-      </div>
+      <div class="mg-note">${backupLabel}</div>
       <details class="upscaler-more">
-        <summary class="upscaler-more-summary">
-          <span class="upscaler-more-arrow">${icon("chevron-right", 12)}</span>
-          <span>${esc(t("upscaler.moreVersions"))}</span>
-        </summary>
+        <summary>${esc(t("upscaler.moreVersions"))}</summary>
         <div class="upscaler-more-body">
           <div class="upscaler-line">
             <span class="upscaler-line-label">${esc(t("upscaler.catalogVersions"))}</span>
             ${
               catalog.length
-                ? `<select class="settings-select upscaler-select" data-upscaler-catalog>${catalogOptions}</select>
-                   <button class="btn ghost small upscaler-action-btn" data-act="upscaler-download-selected" data-kind="${dll.kind}" data-dll-path="${esc(dll.path)}">${esc(t("upscaler.downloadSelected"))}</button>`
+                ? `<select class="settings-select" data-upscaler-catalog>${catalogOptions}</select>
+                   <button class="btn ghost small" data-act="upscaler-download-selected" data-kind="${dll.kind}" data-dll-path="${esc(dll.path)}">${esc(t("upscaler.downloadSelected"))}</button>`
                 : catalogLoading
                   ? `<span class="mg-note">${esc(t("upscaler.loadingCatalog"))}</span>`
                   : `<span class="mg-note">${esc(catalogError ? t("upscaler.catalogError") : t("upscaler.noCatalog"))}</span>`
@@ -259,8 +230,8 @@ function renderDll(
             <span class="upscaler-line-label">${esc(t("upscaler.localVersions"))}</span>
             ${
               imported.length
-                ? `<select class="settings-select upscaler-select" data-upscaler-imported>${importedOptions}</select>
-                   <button class="btn ghost small upscaler-action-btn" data-act="upscaler-apply-imported" data-kind="${dll.kind}" data-dll-path="${esc(dll.path)}">${esc(t("upscaler.applyImported"))}</button>`
+                ? `<select class="settings-select" data-upscaler-imported>${importedOptions}</select>
+                   <button class="btn ghost small" data-act="upscaler-apply-imported" data-kind="${dll.kind}" data-dll-path="${esc(dll.path)}">${esc(t("upscaler.applyImported"))}</button>`
                 : `<span class="mg-note">${esc(t("upscaler.noImported"))}</span>`
             }
           </div>
@@ -286,14 +257,10 @@ function renderBody(
   catalogLoading: boolean,
 ): string {
   if ("error" in scan) {
-    return `<div class="mg-note is-err upscaler-empty-note">${esc(scan.error)}</div>`;
+    return `<div class="mg-note is-err">${esc(scan.error)}</div>`;
   }
   if (scan.dlls.length === 0) {
-    return `
-      <div class="upscaler-empty-state">
-        <div class="upscaler-empty-icon">${icon("cpu", 22)}</div>
-        <div class="upscaler-empty-text">${esc(t("upscaler.empty"))}</div>
-      </div>`;
+    return `<div class="mg-note">${esc(t("upscaler.empty"))}</div>`;
   }
   const importedGroups = importedByKind(imported);
   const catalogGroups = catalogByKind(catalog);
@@ -324,11 +291,7 @@ export async function hydrateUpscalerPanel(force = false): Promise<void> {
   const gameKey = root.dataset.gameKey ?? "";
   const installPath = root.dataset.installPath ?? "";
   if (!installPath) {
-    body.innerHTML = `
-      <div class="upscaler-empty-state">
-        <div class="upscaler-empty-icon">${icon("cpu", 22)}</div>
-        <div class="upscaler-empty-text">${esc(t("upscaler.empty"))}</div>
-      </div>`;
+    body.innerHTML = `<div class="mg-note">${esc(t("upscaler.empty"))}</div>`;
     refreshUpdateAllState(root);
     return;
   }
@@ -342,7 +305,7 @@ export async function hydrateUpscalerPanel(force = false): Promise<void> {
     root.dataset.gameKey === gameKey &&
     root.dataset.generation === generation;
 
-  body.innerHTML = `<div class="mg-note upscaler-scanning-note">${icon("refresh", 13)} ${esc(t("upscaler.scanning"))}</div>`;
+  body.innerHTML = `<div class="mg-note">${esc(t("upscaler.scanning"))}</div>`;
   refreshUpdateAllState(root);
   const catalogPromise = loadCatalog(force)
     .then((entries) => ({ entries }))
