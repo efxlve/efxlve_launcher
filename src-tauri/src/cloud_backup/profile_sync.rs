@@ -366,6 +366,53 @@ fn merge_json(base: &mut Value, incoming: &Value) {
     }
 }
 
+/// A restored `notes.json` carries absolute image paths from the old PC. When
+/// the same file name exists in this PC's `note-images` folder, point the note
+/// at that copy so the image still renders after a move or a format.
+fn rebind_note_images(app_data: &Path) {
+    let notes_path = app_data.join("notes.json");
+    let Ok(text) = fs::read_to_string(&notes_path) else {
+        return;
+    };
+    let Ok(mut value) = serde_json::from_str::<Value>(&text) else {
+        return;
+    };
+    let image_dir = app_data.join("note-images");
+    let mut changed = false;
+    if let Some(notes) = value.get_mut("notes").and_then(Value::as_array_mut) {
+        for note in notes {
+            let Some(images) = note.get_mut("images").and_then(Value::as_array_mut) else {
+                continue;
+            };
+            for image in images {
+                let Some(path) = image.as_str() else {
+                    continue;
+                };
+                if path.starts_with("data:image/") {
+                    continue;
+                }
+                let Some(name) = Path::new(path).file_name() else {
+                    continue;
+                };
+                let local = image_dir.join(name);
+                if !local.is_file() {
+                    continue;
+                }
+                let local_text = local.to_string_lossy().to_string();
+                if path != local_text {
+                    *image = Value::String(local_text);
+                    changed = true;
+                }
+            }
+        }
+    }
+    if changed {
+        if let Ok(bytes) = serde_json::to_vec_pretty(&value) {
+            let _ = fs::write(&notes_path, bytes);
+        }
+    }
+}
+
 fn restore_settings(src: &Path, target: &Path) -> Result<(), String> {
     let mut incoming: Value = serde_json::from_slice(
         &fs::read(src).map_err(|error| format!("Could not read settings: {error}"))?,
@@ -438,6 +485,8 @@ fn restore_from_dir_in(
     };
 
     let mut restored = 0usize;
+    let mut restored_notes = false;
+    let notes_target = appdata.join("notes.json");
     let mut touched: Vec<PathBuf> = Vec::new();
     if let Some(entries) = manifest.get("files").and_then(Value::as_array) {
         for entry in entries {
@@ -471,6 +520,9 @@ fn restore_from_dir_in(
                 continue;
             }
             let target = target_root.join(rest);
+            if target == notes_target {
+                restored_notes = true;
+            }
             if touched.contains(&target) {
                 continue;
             }
@@ -486,6 +538,10 @@ fn restore_from_dir_in(
             restored += 1;
             touched.push(target);
         }
+    }
+
+    if restored_notes {
+        rebind_note_images(&appdata);
     }
 
     Ok(ProfileRestoreResult {
@@ -669,6 +725,58 @@ mod tests {
         assert!(stage.join("files/appdata/note-images/one.png").is_file());
         assert!(stage.join("files/appdata/note-backups/old.json").is_file());
         cleanup(&stage);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_restored_note_image_points_at_the_local_copy() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve_profile_note_rebind_{}_{}",
+            std::process::id(),
+            now_secs()
+        ));
+        let config = root.join("config");
+        let old_appdata = root.join("old");
+        let new_appdata = root.join("new");
+        std::fs::create_dir_all(old_appdata.join("note-images")).unwrap();
+        std::fs::create_dir_all(new_appdata.join("note-images")).unwrap();
+        let old_image = old_appdata.join("note-images").join("one.png");
+        std::fs::write(&old_image, b"png").unwrap();
+        std::fs::write(
+            old_appdata.join("notes.json"),
+            serde_json::to_vec(&json!({
+                "version": 1,
+                "notes": [{
+                    "id": "n1",
+                    "scope": "launcher",
+                    "images": [old_image.display().to_string()]
+                }]
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let stage = build_stage_in(&config, &old_appdata, &json!({})).unwrap();
+        let archive = root.join("profile.tar.gz");
+        pack_backup_dir(&stage, &archive).unwrap();
+        cleanup(&stage);
+        let unpack = root.join("unpack");
+        unpack_backup_tar_gz(&archive, &unpack).unwrap();
+
+        std::fs::write(new_appdata.join("note-images").join("one.png"), b"png").unwrap();
+        restore_from_dir_in(&config, &new_appdata, &unpack).unwrap();
+
+        let notes: Value =
+            serde_json::from_slice(&std::fs::read(new_appdata.join("notes.json")).unwrap()).unwrap();
+        let expected = new_appdata
+            .join("note-images")
+            .join("one.png")
+            .display()
+            .to_string();
+        assert_eq!(
+            notes.pointer("/notes/0/images/0").and_then(Value::as_str),
+            Some(expected.as_str())
+        );
         let _ = std::fs::remove_dir_all(&root);
     }
 
