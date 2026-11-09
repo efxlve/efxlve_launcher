@@ -1396,14 +1396,17 @@ function renderStorePopover(): void {
   }
   const storeItems = primaryStores
     .slice(0, 4)
-    .map(
-      (store) =>
-        `<button type="button" class="release-store-btn${store.direct ? " is-direct" : ""}" data-act="open-external-url" data-url="${esc(store.url)}" title="${esc(store.direct ? store.label : t("calendar.searchOn", { store: store.label }))}">
+    .map((store) => {
+      // A direct link is a confirmed store listing. Without one the button is
+      // only a search shortcut, and its label must say so: a plain store name
+      // looked like the game was already known to be sold there.
+      const label = store.direct ? store.label : t("calendar.searchOn", { store: store.label });
+      return `<button type="button" class="release-store-btn ${store.direct ? "is-direct" : "is-search"}" data-act="open-external-url" data-url="${esc(store.url)}" title="${esc(label)}">
           ${storeLogo(store.id, 14, "release-store-logo") || icon("external", 12)}
-          <span class="release-store-name">${esc(store.label)}</span>
-          <span class="release-store-arrow">${icon("external", 11)}</span>
-        </button>`,
-    )
+          <span class="release-store-name">${esc(label)}</span>
+          <span class="release-store-arrow">${icon(store.direct ? "external" : "search", 11)}</span>
+        </button>`;
+    })
     .join("");
   const followedNow = followed.has(release.id);
   storeLayer.innerHTML = `

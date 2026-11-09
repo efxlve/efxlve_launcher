@@ -90,8 +90,8 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         tr: "Oyun görseli arka planı açıkken kütüphane sayfa başlığı, yarı saydam oyun sayfasının arkasından hayalet gibi görünmüyor.",
       },
       {
-        en: "The release calendar's Epic Games button opens the store's real search page instead of a dead search route.",
-        tr: "Çıkış takvimindeki Epic Games düğmesi, ölü bir arama adresi yerine mağazanın gerçek arama sayfasını açıyor.",
+        en: "The release calendar's Epic Games button opens the store's real search page instead of a dead search route, and store rows without a confirmed listing are labelled \"Search on …\" with a magnifier instead of looking like the game is sold there.",
+        tr: "Çıkış takvimindeki Epic Games düğmesi, ölü bir arama adresi yerine mağazanın gerçek arama sayfasını açıyor; doğrulanmış mağaza bağlantısı olmayan satırlar ise oyun orada satılıyormuş gibi görünmek yerine büyüteç ve \"arama\" etiketi taşıyor.",
       },
     ],
   },

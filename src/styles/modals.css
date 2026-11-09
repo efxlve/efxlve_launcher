@@ -3222,6 +3222,16 @@
 .release-store-btn.is-direct {
   border-color: var(--line-strong); color: var(--text);
 }
+/* A fallback search is not a confirmed store listing; keep it secondary and
+   let the label ("Search on …") carry the meaning. */
+.release-store-btn.is-search {
+  border-style: dashed;
+  color: var(--text-3);
+}
+.release-store-btn.is-search:hover {
+  border-style: solid;
+  color: var(--text);
+}
 .release-store-logo { flex: none; border-radius: 2px; object-fit: contain; }
 .release-store-name {
   flex: 1; min-width: 0; text-align: left;
