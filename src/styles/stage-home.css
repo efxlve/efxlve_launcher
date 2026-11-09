@@ -317,14 +317,14 @@
   overflow: hidden;
   color: #ffffff;
   font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, sans-serif;
-  font-size: clamp(48px, 5.6vw, 92px);
-  font-weight: 850;
-  line-height: 0.96;
-  letter-spacing: -0.035em;
+  font-size: clamp(28px, 2.8vw, 44px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
   text-wrap: balance;
   text-shadow:
-    0 4px 28px rgba(0, 0, 0, 0.85),
-    0 2px 8px rgba(0, 0, 0, 0.6);
+    0 3px 20px rgba(0, 0, 0, 0.85),
+    0 1px 6px rgba(0, 0, 0, 0.6);
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -444,16 +444,15 @@
   box-shadow: 0 0 0 2.5px #ffffff, 0 0 24px rgba(255, 255, 255, 0.5) !important;
 }
 
-/* Side utility and status */
+/* Side utility buttons */
 .stage-home-side {
   position: absolute;
-  inset-block-end: clamp(70px, 8.2vh, 104px);
+  inset-block-end: clamp(68px, 8vh, 102px);
   inset-inline-end: clamp(28px, 4vw, 72px);
   z-index: 4;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 12px;
   pointer-events: none;
 }
 
@@ -1047,7 +1046,7 @@
     width: min(820px, 78vw);
   }
   .stage-home-title {
-    font-size: clamp(42px, 5.4vw, 76px);
+    font-size: clamp(26px, 2.7vw, 40px);
   }
 }
 
@@ -1061,11 +1060,11 @@
     width: min(720px, 88vw);
   }
   .stage-home-title {
-    font-size: clamp(38px, 6vw, 62px);
+    font-size: clamp(24px, 2.9vw, 36px);
   }
   .stage-home-side {
     inset-inline-end: 22px;
-    inset-block-end: 62px;
+    inset-block-end: 58px;
   }
   .stage-home-hub {
     --stage-hub-gutter: 22px;
@@ -1085,7 +1084,7 @@
     gap: 11px;
   }
   .stage-home-title {
-    font-size: clamp(34px, 9vw, 48px);
+    font-size: clamp(22px, 5.5vw, 30px);
   }
   .stage-home-actions {
     gap: 8px;
@@ -1104,7 +1103,7 @@
     display: none;
   }
   .stage-home-side {
-    inset-block-end: 62px;
+    inset-block-end: 58px;
   }
   .stage-activity-card {
     flex-basis: 260px;
@@ -1119,8 +1118,11 @@
   .stage-home-copy {
     inset-block-end: 46px;
   }
+  .stage-home-side {
+    inset-block-end: 46px;
+  }
   .stage-home-title {
-    font-size: clamp(36px, 4.6vw, 62px);
+    font-size: clamp(24px, 2.5vw, 34px);
   }
   .stage-home-hub {
     padding-block-start: 32px;

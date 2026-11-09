@@ -568,7 +568,7 @@ body.stage-mode .selective-overlay .gp-focused {
     gap: 20px;
   }
   .stage-home-title {
-    font-size: clamp(96px, 5.4vw, 154px);
+    font-size: clamp(48px, 2.6vw, 68px);
   }
   .stage-home-meta {
     font-size: 18px;

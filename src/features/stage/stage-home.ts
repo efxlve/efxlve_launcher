@@ -29,7 +29,7 @@ import {
   stageRibbonSummaries,
   stageUserCollections,
 } from "./stage-model";
-import { stageMetaLine, stageProgress, stageStatus, stageStoreName } from "./stage-ui";
+import { stageMetaLine, stageProgress, stageStoreName } from "./stage-ui";
 
 function ribbonCard(s: EpicSummary, isDefault = false): string {
   const hasDl = epicDlProgress(s.appName) !== null;
@@ -77,7 +77,6 @@ export function stageHomeHeroHtml(game: EpicSummary): string {
         ${icon("heart", 20)}
       </button>
     </div>
-    <div class="stage-home-status">${stageStatus(game)}</div>
   </div>`;
 }
 
