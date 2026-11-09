@@ -108,6 +108,14 @@
   outline-offset: 1px !important;
   box-shadow: none !important;
 }
+#stage-root .stage-program-tab.active,
+#stage-root .stage-program-tab.active.gp-focused,
+#stage-root .stage-filter.active,
+#stage-root .stage-filter.active.gp-focused {
+  color: #0b0e14 !important;
+  background: #ffffff !important;
+  border-color: #ffffff !important;
+}
 #stage-root .stage-key.gp-focused {
   background: rgba(255, 255, 255, 0.17);
   border-color: #fff;

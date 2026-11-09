@@ -76,19 +76,27 @@
   background: rgba(255, 255, 255, 0.08);
 }
 .stage-filter.gp-focused {
-  color: #ffffff !important;
-  background: rgba(255, 255, 255, 0.16) !important;
-  box-shadow: 0 0 0 2px #ffffff, 0 0 16px rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 0 0 2px #ffffff, 0 0 16px rgba(255, 255, 255, 0.4);
 }
 .stage-filter.active {
-  color: #0a0d14;
-  background: #ffffff;
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+  color: #0b0e14 !important;
+  background: #ffffff !important;
+  font-weight: 750 !important;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.45);
+}
+.stage-filter.active:hover,
+.stage-filter.active.gp-focused {
+  color: #0b0e14 !important;
+  background: #ffffff !important;
+  outline: 2px solid rgba(255, 255, 255, 0.8) !important;
+  outline-offset: 2px !important;
 }
 .stage-filter.active .stage-filter-count {
   background: rgba(0, 0, 0, 0.15);
   border-color: transparent;
-  color: #0a0d14;
+  color: #0b0e14;
   font-weight: 700;
 }
 .stage-filter.active::after {

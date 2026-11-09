@@ -343,17 +343,20 @@ function topbar(): string {
   </header>`;
 }
 
+function faceOrKey(b: "a" | "b" | "x" | "y"): string {
+  const isKbd = stageInputMode === "keyboard" || stageInputMode === "mouse";
+  if (isKbd) {
+    if (b === "a") return stageKeyGlyph("Enter");
+    if (b === "b") return stageKeyGlyph("Esc");
+    if (b === "x") return stageKeyGlyph("X");
+    if (b === "y") return stageKeyGlyph("F");
+  }
+  return stageFaceGlyph(b);
+}
+
 function hints(): string {
   const isKbd = stageInputMode === "keyboard" || stageInputMode === "mouse";
-  const face = (b: "a" | "b" | "x" | "y") => {
-    if (isKbd) {
-      if (b === "a") return stageKeyGlyph("Enter");
-      if (b === "b") return stageKeyGlyph("Esc");
-      if (b === "x") return stageKeyGlyph("X");
-      if (b === "y") return stageKeyGlyph("F");
-    }
-    return stageFaceGlyph(b);
-  };
+  const face = (b: "a" | "b" | "x" | "y") => faceOrKey(b);
   const bumpers = isKbd ? `${stageKeyGlyph("Q")} ${stageKeyGlyph("E")}` : stageBumperGlyphs();
   const menuKey = isKbd ? stageKeyGlyph("M") : "Menu";
 
@@ -454,8 +457,8 @@ function quickMenu(entered: boolean): string {
         </button>
       </div>
       <div class="stage-dock-hints">
-        <span>${stageFaceGlyph("a")} ${esc(t("gamepad.select"))}</span>
-        <span>${stageFaceGlyph("b")} ${esc(t("stage.closeMenu"))}</span>
+        <span>${faceOrKey("a")} ${esc(t("gamepad.select"))}</span>
+        <span>${faceOrKey("b")} ${esc(t("stage.closeMenu"))}</span>
       </div>
     </div>
   </div>`;
@@ -676,8 +679,8 @@ function stageManageSheet(appName: string, entered: boolean): string {
       </div>
 
       <div class="stage-manage-hints">
-        <span>${stageFaceGlyph("a")} ${esc(t("gamepad.select"))}</span>
-        <span>${stageFaceGlyph("b")} ${esc(t("common.close"))}</span>
+        <span>${faceOrKey("a")} ${esc(t("gamepad.select"))}</span>
+        <span>${faceOrKey("b")} ${esc(t("common.close"))}</span>
       </div>
     </div>
   </div>`;

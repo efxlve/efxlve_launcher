@@ -39,7 +39,7 @@ function downloadRow(id: string, title: string, progress: number): string {
       ${amazon ? "" : paused
         ? `<button type="button" class="stage-btn stage-btn-ghost" data-act="dl-resume" data-id="${esc(id)}">${icon("play", 16)}<span>${esc(t("downloads.resume"))}</span></button>`
         : `<button type="button" class="stage-btn stage-btn-ghost" data-act="dl-pause" data-id="${esc(id)}">${icon("pause", 16)}<span>${esc(t("downloads.pause"))}</span></button>`}
-      ${amazon ? "" : `<button type="button" class="stage-icon-btn stage-icon-danger" data-act="epic-cancel" data-id="${esc(id)}" aria-label="${esc(t("common.cancel"))}" title="${esc(t("common.cancel"))}">${icon("x", 18)}</button>`}
+      ${amazon ? "" : `<button type="button" class="stage-icon-btn stage-icon-danger" data-act="epic-cancel" data-id="${esc(id)}" aria-label="${esc(t("common.cancel"))}">${icon("x", 18)}</button>`}
     </div>
   </div>`;
 }
@@ -53,10 +53,10 @@ function queueRow(id: string, index: number, total: number): string {
       <small>${esc(t("stage.queueWaiting"))}</small>
     </span>
     <span class="stage-queue-actions">
-      <button type="button" class="stage-icon-btn" data-act="dl-reorder-up" data-id="${esc(id)}" ${index === 0 ? "disabled" : ""} aria-label="${esc(t("dl.moveUp"))}" title="${esc(t("dl.moveUp"))}">${icon("chevron-up", 16)}</button>
-      <button type="button" class="stage-icon-btn" data-act="dl-reorder-down" data-id="${esc(id)}" ${index === total - 1 ? "disabled" : ""} aria-label="${esc(t("dl.moveDown"))}" title="${esc(t("dl.moveDown"))}">${icon("chevron-down", 16)}</button>
+      <button type="button" class="stage-icon-btn" data-act="dl-reorder-up" data-id="${esc(id)}" ${index === 0 ? "disabled" : ""} aria-label="${esc(t("dl.moveUp"))}">${icon("chevron-up", 16)}</button>
+      <button type="button" class="stage-icon-btn" data-act="dl-reorder-down" data-id="${esc(id)}" ${index === total - 1 ? "disabled" : ""} aria-label="${esc(t("dl.moveDown"))}">${icon("chevron-down", 16)}</button>
       <button type="button" class="stage-btn stage-btn-ghost" data-act="dl-reorder-now" data-id="${esc(id)}">${icon("play", 14)}<span>${esc(t("dl.downloadNow"))}</span></button>
-      <button type="button" class="stage-icon-btn stage-icon-danger" data-act="dl-reorder-remove" data-id="${esc(id)}" aria-label="${esc(t("dl.removeFromQueue"))}" title="${esc(t("dl.removeFromQueue"))}">${icon("x", 16)}</button>
+      <button type="button" class="stage-icon-btn stage-icon-danger" data-act="dl-reorder-remove" data-id="${esc(id)}" aria-label="${esc(t("dl.removeFromQueue"))}">${icon("x", 16)}</button>
     </span>
   </div>`;
 }

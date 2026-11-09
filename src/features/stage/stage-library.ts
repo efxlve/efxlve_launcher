@@ -151,11 +151,10 @@ function sidePanel(s: EpicSummary | undefined): string {
       <span class="stage-side-store">${esc(stageStoreName(sourceOfKey(s.appName)))}</span>
       <h2 class="stage-side-title">${esc(s.title)}</h2>
       <div class="stage-side-meta">${stageMetaLine(s, { withStore: false })}</div>
-      <div class="stage-side-status">${stageStatus(s)}</div>
       <div class="stage-side-actions">
         <div class="stage-primary-action">${stagePrimaryAction(s)}</div>
-        <button type="button" class="stage-icon-btn${favorite ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(s.appName)}" data-gp-item data-gp-key="side:favorite" aria-label="${esc(t("stage.favorite"))}" title="${esc(t("stage.favorite"))}">${icon("heart", 18)}</button>
-        <button type="button" class="stage-icon-btn" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="side:details" aria-label="${esc(t("stage.details"))}" title="${esc(t("stage.details"))}">${icon("dots", 18)}</button>
+        <button type="button" class="stage-icon-btn${favorite ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(s.appName)}" data-gp-item data-gp-key="side:favorite" aria-label="${esc(t("stage.favorite"))}">${icon("heart", 18)}</button>
+        <button type="button" class="stage-icon-btn" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="side:details" aria-label="${esc(t("stage.details"))}">${icon("dots", 18)}</button>
       </div>
       ${achLine}
       <div class="stage-side-note">${esc(t("stage.sideHint"))}</div>
