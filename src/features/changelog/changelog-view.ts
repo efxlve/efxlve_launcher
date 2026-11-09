@@ -70,8 +70,8 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         tr: "Kütüphaneyi yenilemek, Epic başlatıcısında içe aktarılacak kategori yokken koleksiyon sekmelerini artık gizlemiyor; kayıtlı koleksiyonlar ekranda kalıyor.",
       },
       {
-        en: "The A–Z rail now jumps on the first click or tap instead of waiting for a drag.",
-        tr: "A–Z rayı artık sürüklemeyi beklemeden ilk tıklamada veya dokunuşta ilgili harfe atlıyor.",
+        en: "The A–Z rail now jumps on the first click or tap instead of waiting for a drag, and in a paginated library it switches to the page that holds the letter.",
+        tr: "A–Z rayı artık sürüklemeyi beklemeden ilk tıklamada veya dokunuşta ilgili harfe atlıyor; sayfalı kütüphanede harfin bulunduğu sayfaya geçiyor.",
       },
       {
         en: "Custom cover, hero and logo saves first shrink the oversized images left by older builds, so a full storage quota no longer rejects the new image, and repeated Save clicks cannot queue several full repaints.",
