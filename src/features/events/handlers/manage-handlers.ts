@@ -7,7 +7,7 @@ import { progressToast, toast } from "../../../core/toast";
 import { formatSyncStamp, localizeMessage, t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import { esc, fmtBytes, parseEnvText } from "../../../core/utils";
-import { rawOf } from "../../../core/selectors";
+import { rawOf, summaryOf } from "../../../core/selectors";
 import { openEpicModal, scheduleRender } from "../../../core/render";
 import { netMtuFix } from "../../../net-diag";
 import { checkMtuAfterSyncFailure } from "../../manage/mtu-guard";
@@ -43,6 +43,8 @@ import {
   epicBackupSave,
   epicCreateDesktopShortcut,
   epicDeleteBackup,
+  epicExportBackup,
+  epicImportBackup,
   epicOpenBackupFolder,
   epicOpenFolderPath,
   epicPreviewBackup,
@@ -56,6 +58,7 @@ import {
   requiresThirdPartyLauncher,
 } from "../../../epic";
 import { askRestorePreview } from "../../cloud-backup/restore-preview-dialog";
+import { customGamesPickFile } from "../../../custom-games";
 import {
   notifyLocalBackupDone,
   notifyLocalBackupFailed,
@@ -352,6 +355,48 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
             const btnAfter = document.querySelector<HTMLButtonElement>('[data-act="manage-create-backup"]');
             if (btnAfter) { btnAfter.disabled = false; btnAfter.textContent = i18nT("manage.backup"); }
           });
+      }
+      return true;
+
+    case "manage-export-backup":
+      if (id) {
+        const bid = t.dataset.bid;
+        if (bid) {
+          void (async () => {
+            const folder = await epicSelectFolderDialog(null, i18nT("manage.exportPickFolder")).catch(() => null);
+            if (!folder) return;
+            const title = summaryOf(id)?.title || S.activeManageSettings?.title || id;
+            try {
+              const path = await epicExportBackup(id, bid, folder, title);
+              toast(i18nT("manage.exported", { path }), "ok");
+              void epicOpenFolderPath(folder).catch(() => undefined);
+            } catch (err) {
+              toast(i18nT("manage.exportFailed", { msg: localizeMessage(String(err)) }), "err");
+            }
+          })();
+        }
+      }
+      return true;
+
+    case "manage-import-backup":
+      if (id) {
+        void (async () => {
+          const path = await customGamesPickFile(undefined, i18nT("manage.importPickFile")).catch(() => null);
+          if (!path) return;
+          try {
+            const b = await epicImportBackup(id, path);
+            toast(i18nT("manage.imported", { date: b.formatted_date }), "ok");
+            const cur = S.gameBackupsMap.get(id) || [];
+            const next = [b, ...cur.filter((x) => x.id !== b.id)].sort(
+              (a, z) => z.timestamp - a.timestamp,
+            );
+            S.gameBackupsMap.set(id, next);
+            const listEl = document.getElementById("manage-backup-list");
+            if (listEl) listEl.innerHTML = renderBackupListHtml(id);
+          } catch (err) {
+            toast(i18nT("manage.importFailed", { msg: localizeMessage(String(err)) }), "err");
+          }
+        })();
       }
       return true;
 

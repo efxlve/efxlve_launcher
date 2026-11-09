@@ -4023,5 +4023,17 @@
   "cloud.localDirSaved": "Yedek konumu kaydedildi.",
   "cloud.localDirMissing": "O klasör mevcut değil.",
   "cloud.localDirWrite": "O klasöre yazılamadı: {a1}",
-  "cloud.localDirPick": "Yedek klasörü seç"
+  "cloud.localDirPick": "Yedek klasörü seç",
+  "manage.exportSaveTitle": "Bu yedeği dosya olarak dışa aktar",
+  "manage.exportPickFolder": "Save dosyası için klasör seç",
+  "manage.exported": "Save dışa aktarıldı: {path}",
+  "manage.exportFailed": "Save dışa aktarılamadı: {msg}",
+  "manage.importSave": "Save içe aktar",
+  "manage.importPickFile": "Save dosyası seç",
+  "manage.imported": "Save içe aktarıldı ({date}). Uygulamak için Geri yükle'ye bas.",
+  "manage.importFailed": "Save içe aktarılamadı: {msg}",
+  "manage.autoBackupTitle": "Otomatik yedeklere dahil et",
+  "manage.autoBackupDesc": "Günlük yedek ve toplu yedekleme butonu bu oyunu atlar. Elle yedekleme ve toplu geri yükleme çalışmaya devam eder.",
+  "manage.autoBackupOn": "Otomatik yedeklere eklendi.",
+  "manage.autoBackupOff": "Otomatik yedeklerden çıkarıldı."
 }

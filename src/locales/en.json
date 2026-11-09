@@ -4023,5 +4023,17 @@
   "cloud.localDirSaved": "Backup location saved.",
   "cloud.localDirMissing": "That folder does not exist.",
   "cloud.localDirWrite": "Could not write to that folder: {a1}",
-  "cloud.localDirPick": "Choose a backup folder"
+  "cloud.localDirPick": "Choose a backup folder",
+  "manage.exportSaveTitle": "Export this backup as a file",
+  "manage.exportPickFolder": "Choose a folder for the save file",
+  "manage.exported": "Save exported to {path}",
+  "manage.exportFailed": "Could not export the save: {msg}",
+  "manage.importSave": "Import save",
+  "manage.importPickFile": "Choose a save file",
+  "manage.imported": "Save imported ({date}). Press Restore to apply it.",
+  "manage.importFailed": "Could not import the save: {msg}",
+  "manage.autoBackupTitle": "Include in automatic backups",
+  "manage.autoBackupDesc": "The daily backup and the bulk backup button skip this game. Manual backups and bulk restore still work.",
+  "manage.autoBackupOn": "Added to automatic backups.",
+  "manage.autoBackupOff": "Removed from automatic backups."
 }

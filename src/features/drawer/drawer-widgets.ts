@@ -1874,6 +1874,9 @@ export function renderBackupListHtml(appName: string): string {
         <span class="backup-item-sub">${b.file_count} ${i18nT("ach.files")} • ${fmtBytes(b.size_bytes)}</span>
       </div>
       <div class="backup-item-actions">
+        <button class="icon-btn" data-act="manage-export-backup" data-id="${esc(appName)}" data-bid="${esc(b.id)}" title="${i18nT("manage.exportSaveTitle")}">
+          ${icon("download", 14)}
+        </button>
         <button class="btn ghost small" data-act="manage-restore-backup" data-id="${esc(appName)}" data-bid="${esc(b.id)}" title="${i18nT("ach.restoreTitle")}">
           ${i18nT("ach.restore")}
         </button>

@@ -4023,5 +4023,17 @@
   "cloud.localDirSaved": "Sicherungsort gespeichert.",
   "cloud.localDirMissing": "Dieser Ordner existiert nicht.",
   "cloud.localDirWrite": "Konnte nicht in diesen Ordner schreiben: {a1}",
-  "cloud.localDirPick": "Sicherungsordner wählen"
+  "cloud.localDirPick": "Sicherungsordner wählen",
+  "manage.exportSaveTitle": "Diese Sicherung als Datei exportieren",
+  "manage.exportPickFolder": "Ordner für die Sicherungsdatei wählen",
+  "manage.exported": "Sicherung exportiert nach {path}",
+  "manage.exportFailed": "Sicherung konnte nicht exportiert werden: {msg}",
+  "manage.importSave": "Spielstand importieren",
+  "manage.importPickFile": "Sicherungsdatei wählen",
+  "manage.imported": "Spielstand importiert ({date}). Drücke Wiederherstellen, um ihn anzuwenden.",
+  "manage.importFailed": "Spielstand konnte nicht importiert werden: {msg}",
+  "manage.autoBackupTitle": "In automatische Sicherungen aufnehmen",
+  "manage.autoBackupDesc": "Die tägliche Sicherung und der Sammel-Sicherungsbutton überspringen dieses Spiel. Manuelle Sicherungen und das Sammel-Wiederherstellen funktionieren weiter.",
+  "manage.autoBackupOn": "Zu den automatischen Sicherungen hinzugefügt.",
+  "manage.autoBackupOff": "Aus den automatischen Sicherungen entfernt."
 }

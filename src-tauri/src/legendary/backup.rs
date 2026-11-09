@@ -1295,6 +1295,135 @@ pub fn create_backup(
     Ok(info)
 }
 
+/// Current UNIX timestamp in seconds.
+fn now_secs() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+/// Writes one local backup as a portable `.efxsave` archive in `folder`.
+/// The archive carries `data/` and `backup_info.json`, the same shape a cloud
+/// upload uses, so any launcher install can import it.
+pub fn export_backup(
+    app_name: &str,
+    backup_id: &str,
+    folder: &str,
+    title: &str,
+) -> Result<String, String> {
+    let id = safe_backup_id(backup_id)?;
+    export_backup_dir(&app_backup_dir(app_name).join(id), folder, title)
+}
+
+fn export_backup_dir(source: &Path, folder: &str, title: &str) -> Result<String, String> {
+    if !source.is_dir() {
+        return Err("@t:backup.infoNotFound".to_string());
+    }
+    let folder = PathBuf::from(folder.trim());
+    if !folder.is_dir() {
+        return Err("@t:backup.exportFolderMissing".to_string());
+    }
+    let timestamp = std::fs::read_to_string(source.join("backup_info.json"))
+        .ok()
+        .and_then(|text| serde_json::from_str::<SaveBackupInfo>(&text).ok())
+        .map(|info| info.timestamp)
+        .unwrap_or_else(now_secs);
+    let base: String = title
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() || matches!(c, ' ' | '-' | '_' | '.') {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    let trimmed = base.trim().trim_matches('.').trim();
+    let trimmed = if trimmed.is_empty() { "save" } else { trimmed };
+    let stem: String = trimmed.chars().take(80).collect();
+    let target = folder.join(format!("{stem} {timestamp}.efxsave"));
+    crate::cloud_backup::archive::pack_backup_dir(source, &target)?;
+    Ok(target.display().to_string())
+}
+
+/// Cap for an imported archive; a save tree larger than this is not a save.
+const MAX_IMPORT_BYTES: u64 = 16 * 1024 * 1024 * 1024;
+
+/// Adds a portable save archive to the current game, whichever store it came
+/// from. The archive keeps its original timestamp so the list shows when the
+/// save was made; restoring it uses the current game's resolved folder.
+pub fn import_backup(app_name: &str, archive: &str) -> Result<SaveBackupInfo, String> {
+    import_backup_into(&app_backup_dir(app_name), app_name, archive)
+}
+
+fn import_backup_into(
+    game_dir: &Path,
+    app_name: &str,
+    archive: &str,
+) -> Result<SaveBackupInfo, String> {
+    let file = Path::new(archive.trim());
+    let size = std::fs::metadata(file)
+        .map_err(|error| format!("@t:backup.importReadFailed\u{1f}{error}"))?
+        .len();
+    if size > MAX_IMPORT_BYTES {
+        return Err("@t:backup.importTooLarge".to_string());
+    }
+    let stamp = now_secs();
+    let unpack = std::env::temp_dir().join(format!(
+        "efxlve_backup_import_{}_{}",
+        std::process::id(),
+        stamp
+    ));
+    let _ = std::fs::remove_dir_all(&unpack);
+    let unpacked = crate::cloud_backup::archive::unpack_backup_tar_gz(file, &unpack);
+    if let Err(error) = unpacked {
+        let _ = std::fs::remove_dir_all(&unpack);
+        return Err(error);
+    }
+    let data_dir = unpack.join("data");
+    let parsed = std::fs::read_to_string(unpack.join("backup_info.json"))
+        .ok()
+        .and_then(|text| serde_json::from_str::<SaveBackupInfo>(&text).ok())
+        .filter(|_| data_dir.is_dir());
+    let Some(mut info) = parsed else {
+        let _ = std::fs::remove_dir_all(&unpack);
+        return Err("@t:backup.notASaveArchive".to_string());
+    };
+    if let Err(error) = verify_backup_tree(&info, &data_dir) {
+        let _ = std::fs::remove_dir_all(&unpack);
+        return Err(error);
+    }
+
+    let root = game_dir;
+    std::fs::create_dir_all(root).map_err(|e| e.to_string())?;
+    let mut id = stamp.to_string();
+    let mut serial = 1;
+    while root.join(&id).exists() {
+        id = format!("{stamp}-{serial}");
+        serial += 1;
+    }
+    let target = root.join(&id);
+    let copied = copy_dir_all(&data_dir, &target.join("data"))
+        .map_err(|e| format!("@t:backup.copyFailed\u{1f}{e}"));
+    let (size_bytes, file_count) = match copied {
+        Ok(values) => values,
+        Err(error) => {
+            let _ = std::fs::remove_dir_all(&target);
+            let _ = std::fs::remove_dir_all(&unpack);
+            return Err(error);
+        }
+    };
+    info.id = id;
+    info.app_name = app_name.to_string();
+    info.size_bytes = size_bytes;
+    info.file_count = file_count;
+    let info_json = serde_json::to_string_pretty(&info).map_err(|e| e.to_string())?;
+    std::fs::write(target.join("backup_info.json"), info_json).map_err(|e| e.to_string())?;
+    let _ = std::fs::remove_dir_all(&unpack);
+    Ok(info)
+}
+
 pub fn list_backups(app_name: &str) -> Vec<SaveBackupInfo> {
     migrate_legacy_dir(app_name);
     let dir = app_backup_dir(app_name);
@@ -1385,6 +1514,53 @@ pub fn delete_backup(app_name: &str, backup_id: &str) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_exported_save_imports_into_another_store() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve_export_import_{}_{}",
+            std::process::id(),
+            now_secs()
+        ));
+        let steam = root.join("steam");
+        let backup = steam.join("1700000000");
+        std::fs::create_dir_all(backup.join("data")).unwrap();
+        std::fs::write(backup.join("data").join("save.dat"), b"progress").unwrap();
+        let hash = tree_content_hash(&backup.join("data")).unwrap();
+        let info = SaveBackupInfo {
+            id: "1700000000".to_string(),
+            app_name: "steam::1".to_string(),
+            timestamp: 1_700_000_000,
+            formatted_date: "x".to_string(),
+            size_bytes: 8,
+            file_count: 1,
+            save_path: "C:/Users/x/Documents/Game".to_string(),
+            save_root: "Documents".to_string(),
+            save_rel: "Game".to_string(),
+            content_hash: Some(hash),
+        };
+        std::fs::write(
+            backup.join("backup_info.json"),
+            serde_json::to_string(&info).unwrap(),
+        )
+        .unwrap();
+
+        let out = root.join("out");
+        std::fs::create_dir_all(&out).unwrap();
+        let archive =
+            export_backup_dir(&backup, out.to_str().unwrap(), "Life is Strange").unwrap();
+        assert!(Path::new(&archive).is_file());
+
+        let gog = root.join("gog");
+        let imported = import_backup_into(&gog, "gog::2", &archive).unwrap();
+        assert_eq!(imported.app_name, "gog::2");
+        assert_eq!(imported.timestamp, 1_700_000_000);
+        assert_eq!(
+            std::fs::read(gog.join(&imported.id).join("data").join("save.dat")).unwrap(),
+            b"progress"
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
 
     #[test]
     fn content_hash_ignores_timestamps_and_order() {

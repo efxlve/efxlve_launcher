@@ -2193,6 +2193,8 @@ fn main() {
             legendary::commands::epic_set_auto_desktop_shortcut,
             legendary::commands::epic_backup_save,
             legendary::commands::epic_list_backups,
+            legendary::commands::epic_export_backup,
+            legendary::commands::epic_import_backup,
             legendary::commands::epic_preview_backup,
             legendary::commands::epic_restore_backup,
             legendary::commands::epic_delete_backup,

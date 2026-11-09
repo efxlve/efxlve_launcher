@@ -4023,5 +4023,17 @@
   "cloud.localDirSaved": "Ubicación de las copias guardada.",
   "cloud.localDirMissing": "Esa carpeta no existe.",
   "cloud.localDirWrite": "No se pudo escribir en esa carpeta: {a1}",
-  "cloud.localDirPick": "Elegir carpeta de copias"
+  "cloud.localDirPick": "Elegir carpeta de copias",
+  "manage.exportSaveTitle": "Exportar esta copia como archivo",
+  "manage.exportPickFolder": "Elige una carpeta para el archivo de partida",
+  "manage.exported": "Partida exportada a {path}",
+  "manage.exportFailed": "No se pudo exportar la partida: {msg}",
+  "manage.importSave": "Importar partida",
+  "manage.importPickFile": "Elige un archivo de partida",
+  "manage.imported": "Partida importada ({date}). Pulsa Restaurar para aplicarla.",
+  "manage.importFailed": "No se pudo importar la partida: {msg}",
+  "manage.autoBackupTitle": "Incluir en las copias automáticas",
+  "manage.autoBackupDesc": "La copia diaria y el botón de copia masiva omiten este juego. Las copias manuales y la restauración masiva siguen funcionando.",
+  "manage.autoBackupOn": "Añadido a las copias automáticas.",
+  "manage.autoBackupOff": "Quitado de las copias automáticas."
 }

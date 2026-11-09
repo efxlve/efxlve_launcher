@@ -4023,5 +4023,17 @@
   "cloud.localDirSaved": "Posizione dei backup salvata.",
   "cloud.localDirMissing": "Quella cartella non esiste.",
   "cloud.localDirWrite": "Impossibile scrivere in quella cartella: {a1}",
-  "cloud.localDirPick": "Scegli cartella di backup"
+  "cloud.localDirPick": "Scegli cartella di backup",
+  "manage.exportSaveTitle": "Esporta questo backup come file",
+  "manage.exportPickFolder": "Scegli una cartella per il file di salvataggio",
+  "manage.exported": "Salvataggio esportato in {path}",
+  "manage.exportFailed": "Impossibile esportare il salvataggio: {msg}",
+  "manage.importSave": "Importa salvataggio",
+  "manage.importPickFile": "Scegli un file di salvataggio",
+  "manage.imported": "Salvataggio importato ({date}). Premi Ripristina per applicarlo.",
+  "manage.importFailed": "Impossibile importare il salvataggio: {msg}",
+  "manage.autoBackupTitle": "Includi nei backup automatici",
+  "manage.autoBackupDesc": "Il backup giornaliero e il pulsante di backup multiplo saltano questo gioco. I backup manuali e il ripristino multiplo continuano a funzionare.",
+  "manage.autoBackupOn": "Aggiunto ai backup automatici.",
+  "manage.autoBackupOff": "Rimosso dai backup automatici."
 }

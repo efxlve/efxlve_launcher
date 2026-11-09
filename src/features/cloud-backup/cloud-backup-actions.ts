@@ -191,13 +191,14 @@ export async function disconnectGoogleDriveAction(): Promise<void> {
 }
 
 /** Installed games the launcher owns save backups for, one key per game. */
-function managedInstalledGames(): string[] {
+function managedInstalledGames(skipExcluded = true): string[] {
   const seen = new Set<string>();
   const keys: string[] = [];
   for (const item of S.allGamesMap.values()) {
     if (!item.installed) continue;
     if (!["epic", "gog", "amazon", "custom"].includes(item.source)) continue;
     const key = item.source === "epic" ? item.id : item.key;
+    if (skipExcluded && S.backupExcluded.has(key)) continue;
     if (seen.has(key)) continue;
     seen.add(key);
     keys.push(key);
@@ -268,7 +269,7 @@ export async function bulkLocalBackupAction(): Promise<void> {
 /** Restores the newest cloud backup of every installed managed game. */
 export async function bulkCloudRestoreAction(): Promise<void> {
   if (S.cloudBulkProgress) return;
-  const games = managedInstalledGames();
+  const games = managedInstalledGames(false);
   if (games.length === 0) {
     toast(t("cloud.bulkNone"), "");
     return;

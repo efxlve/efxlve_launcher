@@ -4023,5 +4023,17 @@
   "cloud.localDirSaved": "保存先を保存しました。",
   "cloud.localDirMissing": "そのフォルダーは存在しません。",
   "cloud.localDirWrite": "そのフォルダーに書き込めませんでした: {a1}",
-  "cloud.localDirPick": "バックアップフォルダーを選択"
+  "cloud.localDirPick": "バックアップフォルダーを選択",
+  "manage.exportSaveTitle": "このバックアップをファイルに書き出す",
+  "manage.exportPickFolder": "セーブファイルの保存先フォルダーを選択",
+  "manage.exported": "セーブを書き出しました: {path}",
+  "manage.exportFailed": "セーブを書き出せませんでした: {msg}",
+  "manage.importSave": "セーブを読み込む",
+  "manage.importPickFile": "セーブファイルを選択",
+  "manage.imported": "セーブを読み込みました（{date}）。適用するには「復元」を押してください。",
+  "manage.importFailed": "セーブを読み込めませんでした: {msg}",
+  "manage.autoBackupTitle": "自動バックアップに含める",
+  "manage.autoBackupDesc": "毎日のバックアップと一括バックアップボタンはこのゲームを飛ばします。手動バックアップと一括復元は使えます。",
+  "manage.autoBackupOn": "自動バックアップに追加しました。",
+  "manage.autoBackupOff": "自動バックアップから外しました。"
 }

@@ -4023,5 +4023,17 @@
   "cloud.localDirSaved": "Local dos backups salvo.",
   "cloud.localDirMissing": "Essa pasta não existe.",
   "cloud.localDirWrite": "Não foi possível gravar nessa pasta: {a1}",
-  "cloud.localDirPick": "Escolher pasta de backup"
+  "cloud.localDirPick": "Escolher pasta de backup",
+  "manage.exportSaveTitle": "Exportar este backup como arquivo",
+  "manage.exportPickFolder": "Escolha uma pasta para o arquivo de save",
+  "manage.exported": "Save exportado para {path}",
+  "manage.exportFailed": "Não foi possível exportar o save: {msg}",
+  "manage.importSave": "Importar save",
+  "manage.importPickFile": "Escolha um arquivo de save",
+  "manage.imported": "Save importado ({date}). Pressione Restaurar para aplicar.",
+  "manage.importFailed": "Não foi possível importar o save: {msg}",
+  "manage.autoBackupTitle": "Incluir nos backups automáticos",
+  "manage.autoBackupDesc": "O backup diário e o botão de backup em massa pulam este jogo. Backups manuais e a restauração em massa continuam funcionando.",
+  "manage.autoBackupOn": "Adicionado aos backups automáticos.",
+  "manage.autoBackupOff": "Removido dos backups automáticos."
 }

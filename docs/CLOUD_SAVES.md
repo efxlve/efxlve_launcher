@@ -21,9 +21,13 @@ Restoring is the same page: **Manage** → **Sync Cloud** → **Restore**.
 
 ## What gets backed up?
 
-- The game's save folder, packed into one `.tar.gz` archive.
+- The game's save folder, packed into one archive (`.tar.gz` for the cloud, `.efxsave` when you export it).
 - A small metadata file with the timestamp, size, file count and a SHA-256 of the save tree.
 - The launcher's own profile (custom games, collections, playtime, achievements, notes, themes) when you use **Launcher data** on the same page.
+
+A save archive is portable: **Export save** writes a `.efxsave` you can copy to a
+USB drive or another PC, and **Import save** adds it to the same game under any
+store before restoring it.
 
 It does **not** back up the game itself, screenshots, videos or your account passwords. Those stay where they are.
 
@@ -204,6 +208,13 @@ the cheaper roots miss.
 
 - **Backup to Cloud** — creates a fresh local backup, uploads the archive and
   refreshes the list.
+- **Export save** — writes the selected local backup as a portable `.efxsave`
+  file to a folder you pick. The file carries the save tree and its metadata.
+- **Import save** — adds a `.efxsave` from any store to the open game. It shows
+  up in the history and **Restore** applies it to this game's save folder, so a
+  Steam save can continue in the GOG install of the same title.
+- **Include in automatic backups** — a per-game switch; when it is off, the
+  daily run and both bulk buttons skip the game while manual backups still work.
 - **Restore** — downloads the selected archive and snapshots current saves
   first. When the newest local backup is newer than the selected cloud archive,
   a confirmation explains which is newer before overwriting anything. Both sides

@@ -4023,5 +4023,17 @@
   "cloud.localDirSaved": "备份位置已保存。",
   "cloud.localDirMissing": "该文件夹不存在。",
   "cloud.localDirWrite": "无法写入该文件夹：{a1}",
-  "cloud.localDirPick": "选择备份文件夹"
+  "cloud.localDirPick": "选择备份文件夹",
+  "manage.exportSaveTitle": "将此备份导出为文件",
+  "manage.exportPickFolder": "选择存档文件的保存位置",
+  "manage.exported": "存档已导出到 {path}",
+  "manage.exportFailed": "无法导出存档：{msg}",
+  "manage.importSave": "导入存档",
+  "manage.importPickFile": "选择存档文件",
+  "manage.imported": "存档已导入（{date}）。点击“恢复”以应用。",
+  "manage.importFailed": "无法导入存档：{msg}",
+  "manage.autoBackupTitle": "包含在自动备份中",
+  "manage.autoBackupDesc": "每日备份和批量备份按钮会跳过此游戏。手动备份与批量恢复仍然可用。",
+  "manage.autoBackupOn": "已加入自动备份。",
+  "manage.autoBackupOff": "已从自动备份中移除。"
 }

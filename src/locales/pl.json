@@ -4023,5 +4023,17 @@
   "cloud.localDirSaved": "Zapisano lokalizację kopii.",
   "cloud.localDirMissing": "Ten folder nie istnieje.",
   "cloud.localDirWrite": "Nie można zapisać w tym folderze: {a1}",
-  "cloud.localDirPick": "Wybierz folder kopii"
+  "cloud.localDirPick": "Wybierz folder kopii",
+  "manage.exportSaveTitle": "Wyeksportuj tę kopię do pliku",
+  "manage.exportPickFolder": "Wybierz folder na plik zapisu",
+  "manage.exported": "Wyeksportowano zapis do {path}",
+  "manage.exportFailed": "Nie udało się wyeksportować zapisu: {msg}",
+  "manage.importSave": "Importuj zapis",
+  "manage.importPickFile": "Wybierz plik zapisu",
+  "manage.imported": "Zaimportowano zapis ({date}). Naciśnij Przywróć, aby go zastosować.",
+  "manage.importFailed": "Nie udało się zaimportować zapisu: {msg}",
+  "manage.autoBackupTitle": "Uwzględnij w automatycznych kopiach",
+  "manage.autoBackupDesc": "Codzienna kopia i przycisk kopii zbiorczej pomijają tę grę. Ręczne kopie i zbiorcze przywracanie nadal działają.",
+  "manage.autoBackupOn": "Dodano do automatycznych kopii.",
+  "manage.autoBackupOff": "Usunięto z automatycznych kopii."
 }

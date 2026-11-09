@@ -4023,5 +4023,17 @@
   "cloud.localDirSaved": "備份位置已儲存。",
   "cloud.localDirMissing": "該資料夾不存在。",
   "cloud.localDirWrite": "無法寫入該資料夾：{a1}",
-  "cloud.localDirPick": "選擇備份資料夾"
+  "cloud.localDirPick": "選擇備份資料夾",
+  "manage.exportSaveTitle": "將此備份匯出為檔案",
+  "manage.exportPickFolder": "選擇存檔檔案的儲存位置",
+  "manage.exported": "存檔已匯出至 {path}",
+  "manage.exportFailed": "無法匯出存檔：{msg}",
+  "manage.importSave": "匯入存檔",
+  "manage.importPickFile": "選擇存檔檔案",
+  "manage.imported": "存檔已匯入（{date}）。點擊「還原」以套用。",
+  "manage.importFailed": "無法匯入存檔：{msg}",
+  "manage.autoBackupTitle": "包含在自動備份中",
+  "manage.autoBackupDesc": "每日備份與批次備份按鈕會跳過此遊戲。手動備份與批次還原仍可使用。",
+  "manage.autoBackupOn": "已加入自動備份。",
+  "manage.autoBackupOff": "已從自動備份中移除。"
 }

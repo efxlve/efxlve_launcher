@@ -4023,5 +4023,17 @@
   "cloud.localDirSaved": "백업 위치를 저장했습니다.",
   "cloud.localDirMissing": "해당 폴더가 없습니다.",
   "cloud.localDirWrite": "해당 폴더에 쓸 수 없습니다: {a1}",
-  "cloud.localDirPick": "백업 폴더 선택"
+  "cloud.localDirPick": "백업 폴더 선택",
+  "manage.exportSaveTitle": "이 백업을 파일로 내보내기",
+  "manage.exportPickFolder": "세이브 파일을 저장할 폴더 선택",
+  "manage.exported": "세이브를 내보냈습니다: {path}",
+  "manage.exportFailed": "세이브를 내보내지 못했습니다: {msg}",
+  "manage.importSave": "세이브 가져오기",
+  "manage.importPickFile": "세이브 파일 선택",
+  "manage.imported": "세이브를 가져왔습니다({date}). 적용하려면 복원을 누르세요.",
+  "manage.importFailed": "세이브를 가져오지 못했습니다: {msg}",
+  "manage.autoBackupTitle": "자동 백업에 포함",
+  "manage.autoBackupDesc": "일일 백업과 일괄 백업 버튼이 이 게임을 건너뜁니다. 수동 백업과 일괄 복원은 계속 작동합니다.",
+  "manage.autoBackupOn": "자동 백업에 추가했습니다.",
+  "manage.autoBackupOff": "자동 백업에서 제외했습니다."
 }

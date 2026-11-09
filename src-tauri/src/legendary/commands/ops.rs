@@ -206,6 +206,35 @@ pub fn epic_list_backups(app_name: String) -> Vec<crate::legendary::backup::Save
     crate::legendary::backup::list_backups(&app_name)
 }
 
+/// Writes one local backup as a portable `.efxsave` archive in `folder`.
+#[tauri::command]
+pub async fn epic_export_backup(
+    app_name: String,
+    backup_id: String,
+    folder: String,
+    title: String,
+) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::legendary::backup::export_backup(&app_name, &backup_id, &folder, &title)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Adds a portable save archive to the current game, whichever store it came
+/// from, so a Steam save can be restored into the GOG install and vice versa.
+#[tauri::command]
+pub async fn epic_import_backup(
+    app_name: String,
+    archive: String,
+) -> Result<crate::legendary::backup::SaveBackupInfo, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::legendary::backup::import_backup(&app_name, &archive)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Describes a local backup before a restore overwrites the save folder. The
 /// full tree is hashed off the main thread, so a large backup never freezes
 /// the window while its integrity is checked.

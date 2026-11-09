@@ -4023,5 +4023,17 @@
   "cloud.localDirSaved": "Папка резервных копий сохранена.",
   "cloud.localDirMissing": "Такой папки не существует.",
   "cloud.localDirWrite": "Не удалось записать в эту папку: {a1}",
-  "cloud.localDirPick": "Выбрать папку копий"
+  "cloud.localDirPick": "Выбрать папку копий",
+  "manage.exportSaveTitle": "Экспортировать эту копию в файл",
+  "manage.exportPickFolder": "Выберите папку для файла сохранения",
+  "manage.exported": "Сохранение экспортировано в {path}",
+  "manage.exportFailed": "Не удалось экспортировать сохранение: {msg}",
+  "manage.importSave": "Импортировать сохранение",
+  "manage.importPickFile": "Выберите файл сохранения",
+  "manage.imported": "Сохранение импортировано ({date}). Нажмите «Восстановить», чтобы применить.",
+  "manage.importFailed": "Не удалось импортировать сохранение: {msg}",
+  "manage.autoBackupTitle": "Включить в автоматические копии",
+  "manage.autoBackupDesc": "Ежедневная копия и кнопка общей копии пропускают эту игру. Ручные копии и общее восстановление работают.",
+  "manage.autoBackupOn": "Добавлено в автоматические копии.",
+  "manage.autoBackupOff": "Убрано из автоматических копий."
 }

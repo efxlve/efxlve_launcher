@@ -4023,5 +4023,17 @@
   "cloud.localDirSaved": "บันทึกตำแหน่งแบ็กอัปแล้ว",
   "cloud.localDirMissing": "ไม่มีโฟลเดอร์นั้น",
   "cloud.localDirWrite": "เขียนลงโฟลเดอร์นั้นไม่ได้: {a1}",
-  "cloud.localDirPick": "เลือกโฟลเดอร์แบ็กอัป"
+  "cloud.localDirPick": "เลือกโฟลเดอร์แบ็กอัป",
+  "manage.exportSaveTitle": "ส่งออกแบ็กอัปนี้เป็นไฟล์",
+  "manage.exportPickFolder": "เลือกโฟลเดอร์สำหรับไฟล์เซฟ",
+  "manage.exported": "ส่งออกเซฟไปยัง {path}",
+  "manage.exportFailed": "ส่งออกเซฟไม่ได้: {msg}",
+  "manage.importSave": "นำเข้าเซฟ",
+  "manage.importPickFile": "เลือกไฟล์เซฟ",
+  "manage.imported": "นำเข้าเซฟแล้ว ({date}) กดกู้คืนเพื่อใช้งาน",
+  "manage.importFailed": "นำเข้าเซฟไม่ได้: {msg}",
+  "manage.autoBackupTitle": "รวมในการแบ็กอัปอัตโนมัติ",
+  "manage.autoBackupDesc": "การแบ็กอัปประจำวันและปุ่มแบ็กอัปแบบกลุ่มจะข้ามเกมนี้ การแบ็กอัปด้วยตนเองและการกู้คืนแบบกลุ่มยังใช้ได้",
+  "manage.autoBackupOn": "เพิ่มในการแบ็กอัปอัตโนมัติแล้ว",
+  "manage.autoBackupOff": "นำออกจากการแบ็กอัปอัตโนมัติแล้ว"
 }

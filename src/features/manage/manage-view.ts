@@ -719,9 +719,12 @@ function amazonManageBody(s: EpicSummary): string {
           t("manage.localBackupTitle"),
           t("manage.backupDesc"),
           `<button class="btn ghost small" data-act="manage-open-backup-folder" data-id="${s.appName}" title="${t("manage.openBackupFolder")}">${icon("folder", 13)} ${t("manage.folder")}</button>
+           <button class="btn ghost small" data-act="manage-import-backup" data-id="${s.appName}">${icon("upload", 13)} ${t("manage.importSave")}</button>
            <button class="btn primary small" data-act="manage-create-backup" data-id="${s.appName}" ${S.isBackingUp ? "disabled" : ""}>${S.isBackingUp ? t("manage.backingUp") : t("manage.backup")}</button>`,
           `<div id="manage-backup-list" class="backup-list">${renderBackupListHtml(s.appName)}</div>`,
         )}
+        ${row(t("manage.autoBackupTitle"), t("manage.autoBackupDesc"),
+          toggle("manage-toggle-auto-backup", !S.backupExcluded.has(s.appName)))}
         <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>
       `)
     : "";
@@ -974,8 +977,11 @@ export function renderDrawerManage(s: EpicSummary): string {
             </div>
             ${row(t("manage.localBackupTitle"), t("manage.backupDesc"),
               `<button class="btn ghost small" data-act="manage-open-backup-folder" data-id="${id}" title="${t("manage.openBackupFolder")}">${icon("folder", 13)} ${t("manage.folder")}</button>
+               <button class="btn ghost small" data-act="manage-import-backup" data-id="${id}">${icon("upload", 13)} ${t("manage.importSave")}</button>
                <button class="btn primary small" data-act="manage-create-backup" data-id="${id}" ${S.isBackingUp ? "disabled" : ""}>${S.isBackingUp ? t("manage.backingUp") : t("manage.backup")}</button>`,
               `<div id="manage-backup-list" class="backup-list">${renderBackupListHtml(id)}</div>`)}
+            ${row(t("manage.autoBackupTitle"), t("manage.autoBackupDesc"),
+              toggle("manage-toggle-auto-backup", !S.backupExcluded.has(id)))}
             <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(id)}</div>`}
       `) : ""}
 

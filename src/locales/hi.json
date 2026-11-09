@@ -4023,5 +4023,17 @@
   "cloud.localDirSaved": "बैकअप स्थान सेव हो गया।",
   "cloud.localDirMissing": "वह फ़ोल्डर मौजूद नहीं है।",
   "cloud.localDirWrite": "उस फ़ोल्डर में लिखा नहीं जा सका: {a1}",
-  "cloud.localDirPick": "बैकअप फ़ोल्डर चुनें"
+  "cloud.localDirPick": "बैकअप फ़ोल्डर चुनें",
+  "manage.exportSaveTitle": "इस बैकअप को फ़ाइल के रूप में निर्यात करें",
+  "manage.exportPickFolder": "सेव फ़ाइल के लिए फ़ोल्डर चुनें",
+  "manage.exported": "सेव {path} में निर्यात हो गया",
+  "manage.exportFailed": "सेव निर्यात नहीं हो सका: {msg}",
+  "manage.importSave": "सेव आयात करें",
+  "manage.importPickFile": "सेव फ़ाइल चुनें",
+  "manage.imported": "सेव आयात हो गया ({date})। लागू करने के लिए रीस्टोर दबाएँ।",
+  "manage.importFailed": "सेव आयात नहीं हो सका: {msg}",
+  "manage.autoBackupTitle": "स्वचालित बैकअप में शामिल करें",
+  "manage.autoBackupDesc": "दैनिक बैकअप और बल्क बैकअप बटन इस गेम को छोड़ देते हैं। मैनुअल बैकअप और बल्क रीस्टोर काम करते रहेंगे।",
+  "manage.autoBackupOn": "स्वचालित बैकअप में जोड़ा गया।",
+  "manage.autoBackupOff": "स्वचालित बैकअप से हटाया गया।"
 }

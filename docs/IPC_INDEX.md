@@ -176,6 +176,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_detect_egl_games` | `epicDetectEglGames({ ... })` | `src-tauri/src/legendary/commands/metadata.rs` |
 | `epic_detect_eos` | `epicDetectEos({ ... })` | `src-tauri/src/main.rs` |
 | `epic_ensure_binary` | `epicEnsureBinary({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
+| `epic_export_backup` | `epicExportBackup({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_get_achievements` | `epicGetAchievements({ ... })` | `src-tauri/src/legendary/commands/achievements.rs` |
 | `epic_get_achievements_summary` | `epicGetAchievementsSummary({ ... })` | `src-tauri/src/legendary/commands/achievements.rs` |
 | `epic_get_all_screenshots` | `epicGetAllScreenshots({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
@@ -206,6 +207,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_get_system_drives` | `epicGetSystemDrives({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_get_system_requirements` | `epicGetSystemRequirements({ ... })` | `src-tauri/src/legendary/commands/metadata.rs` |
 | `epic_get_wiki_about` | `epicGetWikiAbout({ ... })` | `src-tauri/src/legendary/wiki.rs` |
+| `epic_import_backup` | `epicImportBackup({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_import_egl` | `epicImportEgl({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_import_egl_collections` | `epicImportEglCollections({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_import_installed_folder` | `epicImportInstalledFolder({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |

@@ -4023,5 +4023,17 @@
   "cloud.localDirSaved": "تم حفظ موقع النسخ الاحتياطي.",
   "cloud.localDirMissing": "هذا المجلد غير موجود.",
   "cloud.localDirWrite": "تعذرت الكتابة في هذا المجلد: {a1}",
-  "cloud.localDirPick": "اختر مجلد النسخ الاحتياطي"
+  "cloud.localDirPick": "اختر مجلد النسخ الاحتياطي",
+  "manage.exportSaveTitle": "تصدير هذه النسخة كملف",
+  "manage.exportPickFolder": "اختر مجلدًا لملف الحفظ",
+  "manage.exported": "تم تصدير الحفظ إلى {path}",
+  "manage.exportFailed": "تعذر تصدير الحفظ: {msg}",
+  "manage.importSave": "استيراد حفظ",
+  "manage.importPickFile": "اختر ملف حفظ",
+  "manage.imported": "تم استيراد الحفظ ({date}). اضغط استعادة لتطبيقه.",
+  "manage.importFailed": "تعذر استيراد الحفظ: {msg}",
+  "manage.autoBackupTitle": "تضمين في النسخ التلقائية",
+  "manage.autoBackupDesc": "النسخة اليومية وزر النسخ الجماعي يتجاوزان هذه اللعبة. النسخ اليدوية والاستعادة الجماعية تعمل.",
+  "manage.autoBackupOn": "أُضيفت إلى النسخ التلقائية.",
+  "manage.autoBackupOff": "أُزيلت من النسخ التلقائية."
 }

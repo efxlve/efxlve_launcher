@@ -669,6 +669,19 @@ export const epicSetCustomSavePath = (appName: string, savePath: string | null) 
 export const epicListBackups = (appName: string) =>
   invoke<SaveBackupInfo[]>("epic_list_backups", { appName });
 
+/** Writes one local backup as a portable `.efxsave` file in `folder`. */
+export const epicExportBackup = (
+  appName: string,
+  backupId: string,
+  folder: string,
+  title: string,
+) =>
+  invoke<string>("epic_export_backup", { appName, backupId, folder, title });
+
+/** Adds a portable save archive from any store to the current game. */
+export const epicImportBackup = (appName: string, archive: string) =>
+  invoke<SaveBackupInfo>("epic_import_backup", { appName, archive });
+
 export const epicPreviewBackup = (appName: string, backupId: string) =>
   invoke<BackupPreview>("epic_preview_backup", { appName, backupId });
 

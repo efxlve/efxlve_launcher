@@ -4023,5 +4023,17 @@
   "cloud.localDirSaved": "Emplacement des sauvegardes enregistré.",
   "cloud.localDirMissing": "Ce dossier n'existe pas.",
   "cloud.localDirWrite": "Impossible d'écrire dans ce dossier : {a1}",
-  "cloud.localDirPick": "Choisir un dossier de sauvegarde"
+  "cloud.localDirPick": "Choisir un dossier de sauvegarde",
+  "manage.exportSaveTitle": "Exporter cette sauvegarde en fichier",
+  "manage.exportPickFolder": "Choisis un dossier pour le fichier de sauvegarde",
+  "manage.exported": "Sauvegarde exportée vers {path}",
+  "manage.exportFailed": "Impossible d'exporter la sauvegarde : {msg}",
+  "manage.importSave": "Importer une sauvegarde",
+  "manage.importPickFile": "Choisis un fichier de sauvegarde",
+  "manage.imported": "Sauvegarde importée ({date}). Appuie sur Restaurer pour l'appliquer.",
+  "manage.importFailed": "Impossible d'importer la sauvegarde : {msg}",
+  "manage.autoBackupTitle": "Inclure dans les sauvegardes automatiques",
+  "manage.autoBackupDesc": "La sauvegarde quotidienne et le bouton de sauvegarde groupée ignorent ce jeu. Les sauvegardes manuelles et la restauration groupée restent possibles.",
+  "manage.autoBackupOn": "Ajouté aux sauvegardes automatiques.",
+  "manage.autoBackupOff": "Retiré des sauvegardes automatiques."
 }
