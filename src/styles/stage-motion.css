@@ -111,15 +111,19 @@
 #stage-root .stage-program-tab.active,
 #stage-root .stage-program-tab.active.gp-focused,
 #stage-root .stage-program-tab.active:hover,
-#stage-root .stage-filter.active,
-#stage-root .stage-filter.active.gp-focused,
-#stage-root .stage-filter.active:hover,
-#stage-root .stage-settings-tab.active,
-#stage-root .stage-settings-tab.active.gp-focused,
-#stage-root .stage-settings-tab.active:hover,
 #stage-root .stage-ach-filter.active,
 #stage-root .stage-ach-filter.active.gp-focused,
 #stage-root .stage-ach-filter.active:hover,
+#stage-root .stage-filter.active,
+#stage-root .stage-filter.active.gp-focused,
+#stage-root .stage-filter.active:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+#stage-root .stage-settings-tab.active,
+#stage-root .stage-settings-tab.active.gp-focused,
+#stage-root .stage-settings-tab.active:hover,
 #stage-root .stage-choice.active,
 #stage-root .stage-choice.active.gp-focused,
 #stage-root .stage-choice.active:hover {

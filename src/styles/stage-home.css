@@ -93,6 +93,9 @@
   scrollbar-width: none;
   scroll-behavior: smooth;
   scroll-padding: clamp(36px, 4.5vw, 84px);
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
   pointer-events: auto;
 }
 
@@ -628,6 +631,9 @@
   scrollbar-width: none;
   scroll-behavior: smooth;
   scroll-padding-inline: var(--stage-hub-gutter);
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
 }
 
 .stage-activity-row::-webkit-scrollbar {
@@ -874,6 +880,9 @@
   scrollbar-width: none;
   scroll-behavior: smooth;
   scroll-padding-inline: var(--stage-hub-gutter);
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
 }
 
 .stage-collection-row::-webkit-scrollbar {
