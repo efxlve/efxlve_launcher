@@ -82,10 +82,10 @@
   overflow: hidden;
   margin: 0;
   font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
-  font-size: clamp(38px, 4.2vw, 132px);
-  font-weight: 650;
-  line-height: 0.94;
-  letter-spacing: -0.035em;
+  font-size: clamp(28px, 3.2vw, 48px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
   text-wrap: balance;
   text-shadow: 0 2px 34px rgba(0, 0, 0, 0.5);
 }
@@ -94,9 +94,7 @@
   font-size: clamp(12px, 0.95vw, 20px);
 }
 .stage-program-status {
-  position: absolute;
-  inset-block-start: calc(var(--stage-top) + 10px);
-  inset-inline-end: var(--stage-pad);
+  display: none;
 }
 .stage-program-actions {
   position: relative;
@@ -180,25 +178,36 @@
   position: relative;
   height: 38px;
   padding: 0 20px;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 9999px;
-  background: transparent;
-  color: var(--stage-ink-3);
-  font-size: 13px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--stage-ink-2);
+  font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 160ms var(--stage-ease);
+  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .stage-program-tab:hover,
 .stage-program-tab.gp-focused {
-  color: var(--stage-ink);
-  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 .stage-program-tab.active {
-  color: #0a0d14;
-  background: #ffffff;
-  box-shadow: 0 0 22px rgba(255, 255, 255, 0.4);
+  color: #0b0e14 !important;
+  background: #ffffff !important;
+  border-color: #ffffff !important;
+  font-weight: 750 !important;
+  box-shadow: 0 0 22px rgba(255, 255, 255, 0.45);
+}
+.stage-program-tab.active:hover,
+.stage-program-tab.active.gp-focused {
+  color: #0b0e14 !important;
+  background: #ffffff !important;
+  border-color: #ffffff !important;
+  outline: 2px solid rgba(255, 255, 255, 0.8) !important;
+  outline-offset: 2px !important;
 }
 .stage-program-tab.active::after {
   display: none;
@@ -764,4 +773,304 @@
   height: 34px;
   padding: 0 10px;
   font-size: 11px;
+}
+
+/* ---------- Enhanced Console Program Hub (Overview Cards, Media, Notes) ---------- */
+
+.stage-program-main-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.stage-program-cards-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.stage-program-card {
+  padding: 20px 24px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.stage-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stage-card-icon {
+  display: grid;
+  place-items: center;
+  color: var(--stage-accent);
+}
+
+.stage-card-title {
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.stage-card-badge {
+  margin-inline-start: auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--stage-accent);
+}
+
+/* HLTB Grid */
+.stage-hltb-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.stage-hltb-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.stage-card-label {
+  color: var(--stage-ink-3);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stage-card-value {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Critic Grid */
+.stage-critic-grid {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.stage-critic-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stage-critic-score {
+  display: grid;
+  place-items: center;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 8px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.score-good {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.score-avg {
+  background: rgba(234, 179, 8, 0.2);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.4);
+}
+
+.score-bad {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.score-steam {
+  background: rgba(100, 160, 255, 0.18);
+  color: #93c5fd;
+  border: 1px solid rgba(100, 160, 255, 0.35);
+}
+
+/* Trophy Spotlight Card */
+.stage-card-trophy .stage-progress-hub {
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.stage-trophy-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+  color: var(--stage-ink-2);
+}
+
+.stage-trophy-next {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--stage-ink);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Media Gallery Tab */
+.stage-media-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.stage-media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.stage-still-card {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.stage-still-card:hover,
+.stage-still-card.gp-focused {
+  transform: scale(1.04) translateY(-2px);
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px #ffffff, 0 16px 36px rgba(0, 0, 0, 0.7);
+  outline: none;
+  z-index: 5;
+}
+
+.stage-still-art,
+.stage-still-art > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.stage-still-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 60%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 12px 14px;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.stage-still-card:hover .stage-still-overlay,
+.stage-still-card.gp-focused .stage-still-overlay {
+  opacity: 1;
+}
+
+.stage-still-title {
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-still-icon {
+  color: #ffffff;
+}
+
+/* Notes Tab */
+.stage-notes-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.stage-notes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.stage-note-card {
+  padding: 22px 24px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 160ms ease, border-color 160ms ease;
+}
+
+.stage-note-card.gp-focused {
+  border-color: #ffffff;
+  outline: 2px solid #ffffff;
+  transform: translateY(-2px);
+}
+
+.stage-note-card.is-pinned {
+  border-color: rgba(250, 204, 21, 0.4);
+  background: rgba(250, 204, 21, 0.03);
+}
+
+.stage-note-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stage-note-icon {
+  color: var(--stage-accent);
+}
+
+.stage-note-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-note-pin {
+  color: #facc15;
+}
+
+.stage-note-body {
+  color: var(--stage-ink-2);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.stage-note-body input[type="checkbox"] {
+  accent-color: var(--stage-accent);
+  margin-inline-end: 8px;
 }

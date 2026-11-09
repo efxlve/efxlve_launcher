@@ -12,7 +12,7 @@ export type View = "library" | "downloads" | "settings" | "profile" | "store" | 
 
 /** Screen inside Stage. Stage is a mode, not a desktop view. */
 export type StageRoute = "home" | "library" | "program" | "downloads" | "settings";
-export type StageProgramTab = "overview" | "achievements" | "extras";
+export type StageProgramTab = "overview" | "achievements" | "media" | "notes" | "extras";
 export type StageSettingsTab = "general" | "controller" | "appearance" | "about";
 export type StageLibraryFilter = "all" | "installed" | "favorites" | "updates";
 export type StageAchievementFilter = "all" | "unlocked" | "locked";

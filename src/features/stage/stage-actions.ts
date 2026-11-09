@@ -38,7 +38,7 @@ import { exitStage, setStageLibrarySort, setStageLibraryView } from "./stage-sta
 const TOP_ROUTES: StageRoute[] = ["home", "library", "downloads"];
 /** The shelf query to restore when the search is cancelled rather than applied. */
 let searchStartQuery = "";
-const TABS: StageProgramTab[] = ["overview", "achievements", "extras"];
+const TABS: StageProgramTab[] = ["overview", "achievements", "media", "notes", "extras"];
 const SETTINGS_TABS: StageSettingsTab[] = ["general", "controller", "appearance", "about"];
 const SORTS = ["recent", "alpha", "playtime", "installed"] as const;
 

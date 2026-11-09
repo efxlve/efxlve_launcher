@@ -59,28 +59,50 @@ export function playStageSound(kind: StageFeedback): void {
   const context = ctx();
   if (!context) return;
   if (context.state === "suspended") {
-    void context.resume().catch(() => undefined);
+    void context.resume().then(() => {
+      playStageSound(kind);
+    }).catch(() => undefined);
+    return;
   }
-  const volume = (S.stage.soundVolume / 100) * 0.16;
+  const volume = (S.stage.soundVolume / 100) * 0.22;
   switch (kind) {
     case "move":
-      tone(context, 820, 640, 0.035, volume * 0.35, "sine");
+      tone(context, 380, 220, 0.028, volume * 0.32, "sine");
       break;
     case "select":
-      tone(context, 480, 720, 0.08, volume * 0.65, "triangle");
-      tone(context, 960, 1440, 0.06, volume * 0.25, "sine");
+      tone(context, 523, 659, 0.09, volume * 0.7, "sine");
+      tone(context, 1046, 1318, 0.07, volume * 0.25, "triangle");
       break;
     case "back":
-      tone(context, 540, 320, 0.075, volume * 0.5, "sine");
+      tone(context, 440, 260, 0.08, volume * 0.55, "sine");
       break;
     case "launch":
-      tone(context, 140, 520, 0.36, volume * 0.9, "sine");
-      tone(context, 280, 1040, 0.28, volume * 0.4, "triangle");
+      tone(context, 60, 200, 0.38, volume * 0.95, "sine");
+      tone(context, 340, 720, 0.3, volume * 0.45, "triangle");
+      tone(context, 1080, 1440, 0.2, volume * 0.2, "sine");
       break;
     case "error":
-      tone(context, 240, 160, 0.18, volume * 0.6, "square");
+      tone(context, 260, 160, 0.16, volume * 0.6, "triangle");
       break;
   }
+}
+
+/** Pre-unlock audio context on user interaction to avoid browser policy mute. */
+export function unlockStageAudio(): void {
+  const context = ctx();
+  if (context && context.state === "suspended") {
+    void context.resume().catch(() => undefined);
+  }
+}
+
+if (typeof window !== "undefined") {
+  const unlock = () => {
+    unlockStageAudio();
+    window.removeEventListener("pointerdown", unlock, true);
+    window.removeEventListener("keydown", unlock, true);
+  };
+  window.addEventListener("pointerdown", unlock, true);
+  window.addEventListener("keydown", unlock, true);
 }
 
 /** A short test burst for the settings page. */
