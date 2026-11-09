@@ -98,7 +98,6 @@ function general(): string {
     ${globalToggle("launch", t("stage.settingsOpenAtLaunch"), t("stage.settingsOpenAtLaunchDesc"), S.stage.openAtLaunch, "toggle-stage-open-launch")}
     ${globalToggle("auto", t("stage.settingsAuto"), t("stage.settingsAutoDesc"), S.stage.autoEnter, "toggle-stage-auto")}
     ${globalToggle("reduce", t("settings.reduceEffectsTitle"), t("settings.reduceEffectsDesc"), S.reduceEffects, "toggle-reduce-effects")}
-    <div class="stage-settings-note">${icon("info", 15)}<span>${esc(t("stage.settingsBetaNote"))}</span></div>
   </div>`;
 }
 
@@ -164,7 +163,6 @@ export function renderStageSettings(): string {
   return `<div class="stage-settings">
     <header class="stage-settings-head">
       <div>
-        <span class="stage-kicker">${esc(t("stage.settingsTitle"))} <span class="stage-beta-chip">${esc(t("stage.beta"))}</span></span>
         <h1>${esc(t("stage.navSettings"))}</h1>
         <p>${esc(t("stage.settingsSubtitle"))}</p>
       </div>

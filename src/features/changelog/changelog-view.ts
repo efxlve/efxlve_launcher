@@ -97,6 +97,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "Stage uses the real Spotify mark instead of a music note, and the Spotify and Discord marks follow the theme's text colour rather than their brand colours.",
         tr: "Sahne, müzik notası yerine gerçek Spotify logosunu kullanıyor; Spotify ve Discord işaretleri marka renkleri yerine temanın metin rengini izliyor.",
       },
+      {
+        en: "Stage Settings no longer repeats the experimental label above the title or in a footer note.",
+        tr: "Sahne Ayarları, deneysel etiketi başlığın üstünde ve alt bilgide tekrar etmiyor.",
+      },
     ],
   },
   {
