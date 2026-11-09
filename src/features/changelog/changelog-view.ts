@@ -34,16 +34,16 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
     date: "2026-11-09",
     added: [
       {
-        en: "Stage Mode (experimental): a controller-first full-screen shell with a cinematic home, a cover shelf that previews the focused game, a programme page for each title, a bottom quick menu and an on-screen keyboard. Both Stage and the classic Full Screen Mode remain available, and Stage is labelled BETA in the title bar and in Settings.",
-        tr: "Sahne Modu (deneysel): sinematik bir ana ekran, odaktaki oyunu önizleyen kapak rafı, her oyun için bir program sayfası, alttan açılan hızlı menü ve ekran klavyesi olan kumanda odaklı tam ekran bir kabuk. Hem Sahne hem de klasik Tam Ekran Modu kullanılabilir; Sahne, başlık çubuğunda ve Ayarlar'da BETA olarak işaretlenir.",
+        en: "Stage Mode (experimental): a controller-first full-screen shell with a cinematic home, a cover shelf that previews the focused game, a programme page for each title, a bottom quick menu and an on-screen keyboard. Both Stage and the classic Full Screen Mode remain available, and Stage is labelled EXPERIMENTAL in the title bar and in Settings.",
+        tr: "Sahne Modu (deneysel): sinematik bir ana ekran, odaktaki oyunu önizleyen kapak rafı, her oyun için bir program sayfası, alttan açılan hızlı menü ve ekran klavyesi olan kumanda odaklı tam ekran bir kabuk. Hem Sahne hem de klasik Tam Ekran Modu kullanılabilir; Sahne, başlık çubuğunda ve Ayarlar'da DENEYSEL olarak işaretlenir.",
       },
       {
         en: "Stage's launch curtain, white spotlight focus, in-place game preview and staged page transitions; the animations respect reduced motion.",
         tr: "Sahne'nin başlatma perdesi, beyaz spot odak efekti, yerinde oyun önizlemesi ve sahneli sayfa geçişleri; animasyonlar hareketi azalt ayarına uyar.",
       },
       {
-        en: "Stage has its own settings screen: text size, TV safe area, optional synthesised feedback sounds and controller haptics, controller status, launch preferences and the beta notes.",
-        tr: "Sahne'nin kendi ayar ekranı var: yazı boyutu, TV güvenli alanı, isteğe bağlı sentez geri bildirim sesleri ve kumanda titreşimi, kumanda durumu, açılış tercihleri ve beta notları.",
+        en: "Stage has its own settings screen: text size, TV safe area, optional synthesised feedback sounds and controller haptics, controller status, launch preferences and the experimental notes.",
+        tr: "Sahne'nin kendi ayar ekranı var: yazı boyutu, TV güvenli alanı, isteğe bağlı sentez geri bildirim sesleri ve kumanda titreşimi, kumanda durumu, açılış tercihleri ve deneysel notlar.",
       },
       {
         en: "The Stage game page has a full achievement browser with all/unlocked/locked filters, hidden-achievement handling, rarity, XP and unlock dates. Collections appear on Home and as a library filter, Extras shows a stills viewer, and cloud-save backup is one button away.",

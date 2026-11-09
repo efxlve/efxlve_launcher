@@ -118,7 +118,7 @@ page per game.
   - Search keystrokes are protected by a **120ms debounce**, guaranteeing snappy input feedback.
 
 ### 3.2 Stage Mode, Full Screen Mode & Gamepad Navigation
-- Two controller surfaces share one gamepad poller: **Stage** (`src/features/stage/`) is the experimental controller-first shell, and **Full Screen Mode** (`src/features/gamepad/fullscreen-mode.ts`) remains the classic scaled-desktop option. Both stay available; Stage is labelled BETA wherever it is offered.
+- Two controller surfaces share one gamepad poller: **Stage** (`src/features/stage/`) is the experimental controller-first shell, and **Full Screen Mode** (`src/features/gamepad/fullscreen-mode.ts`) remains the classic scaled-desktop option. Both stay available; Stage is labelled EXPERIMENTAL wherever it is offered.
 - Stage is a **mode, not a `View`**: `S.stage.active` switches the render branch, the desktop DOM stays alive underneath, and exit restores the page and scroll position. Its screens (Home, Library, Downloads, Settings, Programme) live in `S.stage.route`, so desktop navigation history never sees them.
 - The Stage shell is a lazy chunk (`stage-boot.ts` imports `stage-render.ts` once); the desktop bundle keeps only the mode state, the boot frame and the gamepad bridge (`stage-bridge.ts`).
 - Focus is `[data-gp-item]` inside `#stage-root`; the renderer marks only the top overlay, and focus changes patch the Home hero/activity cards or the library side stage instead of rebuilding the route. The spatial engine scales its direction threshold with the focused control so a transformed card in the same row cannot capture an up/down move.

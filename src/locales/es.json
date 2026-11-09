@@ -3842,7 +3842,7 @@
   "settings.surfaceSanctum": "Santuario de Ceniza",
   "settings.surfaceResonance": "Núcleo de Resonancia",
   "stage.title": "Stage",
-  "stage.beta": "BETA",
+  "stage.beta": "EXPERIMENTAL",
   "stage.enter": "Abrir Stage",
   "stage.exit": "Salir de Stage",
   "stage.betaHint": "Stage es experimental. El modo escritorio tiene todas las funciones.",

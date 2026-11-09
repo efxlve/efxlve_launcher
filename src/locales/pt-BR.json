@@ -3842,7 +3842,7 @@
   "settings.surfaceSanctum": "Santuário das Cinzas",
   "settings.surfaceResonance": "Núcleo de Ressonância",
   "stage.title": "Stage",
-  "stage.beta": "BETA",
+  "stage.beta": "EXPERIMENTAL",
   "stage.enter": "Abrir o Stage",
   "stage.exit": "Sair do Stage",
   "stage.betaHint": "O Stage é experimental. O modo desktop tem todos os recursos.",

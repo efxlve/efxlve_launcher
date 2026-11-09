@@ -3842,7 +3842,7 @@
   "settings.surfaceSanctum": "Ashen Sanctum",
   "settings.surfaceResonance": "Resonance Core",
   "stage.title": "Stage",
-  "stage.beta": "BETA",
+  "stage.beta": "EXPERIMENTAL",
   "stage.enter": "Open Stage",
   "stage.exit": "Exit Stage",
   "stage.betaHint": "Stage is experimental. Desktop mode has every feature.",
