@@ -180,6 +180,10 @@ the cheaper roots miss.
   and configured by the user.
 - Auto-sync on game exit is a separate switch. With Folder selected it works
   with no account setup.
+- **Local backups** is the first group on the page. **Back up all games
+  locally** walks every installed Epic, GOG, Amazon and custom game and writes
+  a local archive with no provider configured; **Open backup folder** opens the
+  root that holds them.
 - **Daily local backup** creates one local backup per installed game at most
   once a day while the launcher is open, even with no cloud provider. It shares
   the progress row with the bulk actions.

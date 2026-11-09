@@ -4012,5 +4012,10 @@
   "stage.cloudSettings": "Bulut ayarları",
   "stage.queue": "Kuyruk",
   "stage.queueWaiting": "Sırasını bekliyor",
-  "stage.loadFailed": "Sahne yüklenemedi. Başlık çubuğundan yeniden dene."
+  "stage.loadFailed": "Sahne yüklenemedi. Başlık çubuğundan yeniden dene.",
+  "cloud.localSectionTitle": "Yerel yedekler",
+  "cloud.localNowTitle": "Şimdi yedekle",
+  "cloud.localNowDesc": "Kurulu her oyun için yerel bir yedek oluşturur. Hesap veya internet gerekmez. Kapaklar, koleksiyonlar ve ayarlar için Launcher verisi altındaki Dosyaya aktar'ı kullan.",
+  "cloud.localNowBtn": "Tüm oyunları yerel olarak yedekle",
+  "cloud.openBackupFolder": "Yedek klasörünü aç"
 }

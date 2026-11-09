@@ -9,6 +9,7 @@ import { esc } from "../../../core/utils";
 import {
   bulkCloudBackupAction,
   bulkCloudRestoreAction,
+  bulkLocalBackupAction,
   deleteAllCloudBackupsAction,
   deleteCloudBackupAction,
   disconnectGoogleDriveAction,
@@ -35,7 +36,12 @@ import {
   closeGoogleDriveGuideModal,
 } from "../../cloud-backup/cloud-backup-view";
 import type { CloudBackupProvider } from "../../../epic";
-import { cloudBackupOpenFolder, cloudBackupRcloneRemotes, epicSelectFolderDialog } from "../../../epic";
+import {
+  cloudBackupOpenFolder,
+  cloudBackupRcloneRemotes,
+  epicOpenLocalBackupsRoot,
+  epicSelectFolderDialog,
+} from "../../../epic";
 
 export function handleCloudBackupAction(act: string | undefined, t: HTMLElement, id?: string, targetEl?: HTMLElement): boolean {
   if (!act) return false;
@@ -223,6 +229,16 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
       });
       return true;
     }
+
+    case "cloud-local-bulk":
+      void bulkLocalBackupAction();
+      return true;
+
+    case "cloud-local-open-folder":
+      void epicOpenLocalBackupsRoot()
+        .then(() => toast(i18nT("manage.backupFolderOpened"), "ok"))
+        .catch((err: unknown) => toast(String(err), "err"));
+      return true;
 
     case "cloud-folder-open": {
       void cloudBackupOpenFolder()

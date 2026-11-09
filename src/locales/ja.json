@@ -4012,5 +4012,10 @@
   "stage.cloudSettings": "クラウド設定",
   "stage.queue": "キュー",
   "stage.queueWaiting": "順番待ち",
-  "stage.loadFailed": "Stageを読み込めませんでした。タイトルバーからもう一度試してください。"
+  "stage.loadFailed": "Stageを読み込めませんでした。タイトルバーからもう一度試してください。",
+  "cloud.localSectionTitle": "ローカルバックアップ",
+  "cloud.localNowTitle": "今すぐバックアップ",
+  "cloud.localNowDesc": "インストール済みの全ゲームのローカルバックアップを作成します。アカウントもインターネットも不要です。カバー、コレクション、設定は「ランチャーデータ」の「ファイルに書き出す」を使ってください。",
+  "cloud.localNowBtn": "全ゲームをローカルにバックアップ",
+  "cloud.openBackupFolder": "バックアップフォルダーを開く"
 }

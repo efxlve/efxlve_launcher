@@ -4012,5 +4012,10 @@
   "stage.cloudSettings": "Ajustes de la nube",
   "stage.queue": "Cola",
   "stage.queueWaiting": "Esperando su turno",
-  "stage.loadFailed": "No se pudo cargar Stage. Vuelve a intentarlo desde la barra de título."
+  "stage.loadFailed": "No se pudo cargar Stage. Vuelve a intentarlo desde la barra de título.",
+  "cloud.localSectionTitle": "Copias locales",
+  "cloud.localNowTitle": "Copiar ahora",
+  "cloud.localNowDesc": "Crea una copia local de cada juego instalado. No hace falta cuenta ni internet. Para portadas, colecciones y ajustes, usa Exportar a archivo en Datos del launcher.",
+  "cloud.localNowBtn": "Copiar todos los juegos en local",
+  "cloud.openBackupFolder": "Abrir carpeta de copias"
 }

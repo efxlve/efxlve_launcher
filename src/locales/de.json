@@ -4012,5 +4012,10 @@
   "stage.cloudSettings": "Cloud-Einstellungen",
   "stage.queue": "Warteschlange",
   "stage.queueWaiting": "Wartet auf seine Runde",
-  "stage.loadFailed": "Stage konnte nicht geladen werden. Versuche es über die Titelleiste erneut."
+  "stage.loadFailed": "Stage konnte nicht geladen werden. Versuche es über die Titelleiste erneut.",
+  "cloud.localSectionTitle": "Lokale Sicherungen",
+  "cloud.localNowTitle": "Jetzt sichern",
+  "cloud.localNowDesc": "Erstellt eine lokale Sicherung für jedes installierte Spiel. Kein Konto und kein Internet nötig. Für Cover, Sammlungen und Einstellungen nutze „In Datei exportieren“ unter Launcher-Daten.",
+  "cloud.localNowBtn": "Alle Spiele lokal sichern",
+  "cloud.openBackupFolder": "Backup-Ordner öffnen"
 }

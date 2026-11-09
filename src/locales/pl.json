@@ -4012,5 +4012,10 @@
   "stage.cloudSettings": "Ustawienia chmury",
   "stage.queue": "Kolejka",
   "stage.queueWaiting": "Czeka na swoją kolej",
-  "stage.loadFailed": "Nie udało się wczytać Stage. Spróbuj ponownie z paska tytułu."
+  "stage.loadFailed": "Nie udało się wczytać Stage. Spróbuj ponownie z paska tytułu.",
+  "cloud.localSectionTitle": "Kopie lokalne",
+  "cloud.localNowTitle": "Utwórz kopię teraz",
+  "cloud.localNowDesc": "Tworzy lokalną kopię każdej zainstalowanej gry. Konto i internet nie są potrzebne. Okładki, kolekcje i ustawienia wyeksportuj przez Eksportuj do pliku w Danych launchera.",
+  "cloud.localNowBtn": "Kopiuj wszystkie gry lokalnie",
+  "cloud.openBackupFolder": "Otwórz folder kopii"
 }

@@ -4012,5 +4012,10 @@
   "stage.cloudSettings": "Configurações da nuvem",
   "stage.queue": "Fila",
   "stage.queueWaiting": "Aguardando sua vez",
-  "stage.loadFailed": "Não foi possível carregar o Stage. Tente novamente pela barra de título."
+  "stage.loadFailed": "Não foi possível carregar o Stage. Tente novamente pela barra de título.",
+  "cloud.localSectionTitle": "Backups locais",
+  "cloud.localNowTitle": "Fazer backup agora",
+  "cloud.localNowDesc": "Cria um backup local de cada jogo instalado. Não precisa de conta nem de internet. Para capas, coleções e ajustes, use Exportar para arquivo em Dados do launcher.",
+  "cloud.localNowBtn": "Fazer backup de todos os jogos localmente",
+  "cloud.openBackupFolder": "Abrir pasta de backup"
 }

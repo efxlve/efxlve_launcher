@@ -243,7 +243,7 @@ export function renderCloudBackupSettingsGroup(): string {
         <div class="settings-row-desc">${t("cloud.bulkDesc")}</div>
       </div>
       <div class="settings-row-control">
-        ${S.cloudBulkProgress
+        ${S.cloudBulkProgress && !S.cloudBulkProgress.local
           ? `<span class="settings-value tabular-nums">${S.cloudBulkProgress.done}/${S.cloudBulkProgress.total}</span>`
           : `<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
               <button type="button" class="btn ghost small" data-act="cloud-bulk-backup">${icon("cloud", 13)} ${t("cloud.bulkBtn")}</button>
@@ -304,7 +304,27 @@ export function renderCloudBackupSettingsGroup(): string {
       <div class="settings-row-control">${providerSeg}</div>
     </div>` : "";
 
+  const localBusy = S.cloudBulkProgress?.local ? S.cloudBulkProgress : null;
+  const localSection = `
+    <h3 class="section-title">${t("cloud.localSectionTitle")}</h3>
+    <div class="list settings-group">
+      <div class="row settings-row stacked">
+        <div class="row-main">
+          <div class="settings-row-title">${t("cloud.localNowTitle")}</div>
+          <div class="settings-row-desc">${t("cloud.localNowDesc")}</div>
+        </div>
+        <div class="mg-inline" style="gap:8px;flex-wrap:wrap;margin-top:8px">
+          ${localBusy
+            ? `<span class="settings-value tabular-nums">${localBusy.done}/${localBusy.total}</span>`
+            : `<button type="button" class="btn primary small" data-act="cloud-local-bulk">${icon("package", 13)} ${t("cloud.localNowBtn")}</button>
+               <button type="button" class="btn ghost small" data-act="cloud-local-open-folder">${icon("folder", 13)} ${t("cloud.openBackupFolder")}</button>`}
+        </div>
+      </div>
+      ${localBackupRow}
+    </div>`;
+
   return `
+    ${localSection}
     <h3 class="section-title">${t("cloud.title")}</h3>
     <div class="list settings-group">
       ${toggleRow}
@@ -313,7 +333,6 @@ export function renderCloudBackupSettingsGroup(): string {
       ${autoSyncRow}
       ${retentionRow}
       ${bulkRow}
-      ${localBackupRow}
       ${profileRow}
       ${profileAutoRow}
     </div>`;

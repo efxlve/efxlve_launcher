@@ -4012,5 +4012,10 @@
   "stage.cloudSettings": "云设置",
   "stage.queue": "队列",
   "stage.queueWaiting": "等待轮到自己",
-  "stage.loadFailed": "无法加载 Stage。请从标题栏重试。"
+  "stage.loadFailed": "无法加载 Stage。请从标题栏重试。",
+  "cloud.localSectionTitle": "本地备份",
+  "cloud.localNowTitle": "立即备份",
+  "cloud.localNowDesc": "为每个已安装游戏创建本地备份。无需账号或网络。封面、合集和设置请使用启动器数据中的“导出到文件”。",
+  "cloud.localNowBtn": "本地备份所有游戏",
+  "cloud.openBackupFolder": "打开备份文件夹"
 }

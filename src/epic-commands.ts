@@ -693,6 +693,10 @@ export const epicDeleteBackup = (appName: string, backupId: string) =>
 export const epicOpenBackupFolder = (appName: string) =>
   invoke<string>("epic_open_backup_folder", { appName });
 
+/** Opens the folder that holds every local save backup. */
+export const epicOpenLocalBackupsRoot = () =>
+  invoke<string>("epic_open_local_backups_root");
+
 /* ---------- Collections ---------- */
 
 export const epicGetCollections = () =>

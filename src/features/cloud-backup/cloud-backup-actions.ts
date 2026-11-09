@@ -211,6 +211,36 @@ export async function bulkCloudBackupAction(): Promise<void> {
   notifyBulkCloudBackupDone(total, failed, failedTitles);
 }
 
+/** Backs up every installed game to this PC, with no cloud provider involved. */
+export async function bulkLocalBackupAction(): Promise<void> {
+  if (S.cloudBulkProgress) return;
+  const games = managedInstalledGames();
+  if (games.length === 0) {
+    toast(t("cloud.bulkNone"), "");
+    return;
+  }
+  const total = games.length;
+  S.cloudBulkProgress = { done: 0, total, failed: 0, local: true };
+  scheduleRender();
+  let failed = 0;
+  const failedTitles: string[] = [];
+  for (const key of games) {
+    try {
+      await epicBackupSave(key);
+    } catch {
+      failed += 1;
+      failedTitles.push(cloudGameTitle(key));
+    }
+    S.cloudBulkProgress.done += 1;
+    S.cloudBulkProgress.failed = failed;
+    scheduleRender();
+  }
+  S.cloudBulkProgress = null;
+  scheduleRender();
+  toast(t("cloud.bulkDone", { total, failed }), failed > 0 ? "err" : "ok");
+  notifyLocalBackupSummary(total, failed, failedTitles, "cloud.localNowTitle");
+}
+
 /** Restores the newest cloud backup of every installed managed game. */
 export async function bulkCloudRestoreAction(): Promise<void> {
   if (S.cloudBulkProgress) return;
@@ -286,7 +316,7 @@ async function runScheduledLocalBackup(): Promise<void> {
   if (st.lastLocalBackup && now - st.lastLocalBackup < 24 * 60 * 60) return;
   const games = managedInstalledGames();
   if (games.length === 0) return;
-  S.cloudBulkProgress = { done: 0, total: games.length, failed: 0 };
+  S.cloudBulkProgress = { done: 0, total: games.length, failed: 0, local: true };
   scheduleRender();
   let failed = 0;
   const failedTitles: string[] = [];

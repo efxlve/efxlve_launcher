@@ -88,13 +88,18 @@ export function notifyBulkCloudRestoreDone(total: number, failed: number, failed
   );
 }
 
-/** One row for the daily local backup instead of one row per installed game. */
-export function notifyLocalBackupSummary(total: number, failed: number, failedTitles: string[]): void {
+/** One row for a local bulk backup instead of one row per installed game. */
+export function notifyLocalBackupSummary(
+  total: number,
+  failed: number,
+  failedTitles: string[],
+  titleKey = "cloud.localBackupTitle",
+): void {
   const summary = t("cloud.bulkDone", { total, failed });
   const failures = failedList(failedTitles);
   push(
     failed > 0 ? "cloud-error" : "cloud",
-    t("cloud.localBackupTitle"),
+    t(titleKey),
     undefined,
     failures ? `${summary} · ${failures}` : summary,
   );

@@ -4012,5 +4012,10 @@
   "stage.cloudSettings": "क्लाउड सेटिंग्स",
   "stage.queue": "कतार",
   "stage.queueWaiting": "अपनी बारी का इंतज़ार",
-  "stage.loadFailed": "Stage लोड नहीं हो सका। शीर्षक पट्टी से फिर कोशिश करें।"
+  "stage.loadFailed": "Stage लोड नहीं हो सका। शीर्षक पट्टी से फिर कोशिश करें।",
+  "cloud.localSectionTitle": "लोकल बैकअप",
+  "cloud.localNowTitle": "अभी बैकअप लें",
+  "cloud.localNowDesc": "हर इंस्टॉल किए गए गेम का लोकल बैकअप बनाता है। खाते या इंटरनेट की ज़रूरत नहीं। कवर, कलेक्शन और सेटिंग्स के लिए लॉन्चर डेटा में फ़ाइल में निर्यात करें।",
+  "cloud.localNowBtn": "सभी गेम का लोकल बैकअप लें",
+  "cloud.openBackupFolder": "बैकअप फ़ोल्डर खोलें"
 }

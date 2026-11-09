@@ -261,6 +261,15 @@ pub fn epic_open_backup_folder(app_name: String) -> Result<String, String> {
     Ok("@t:manage.backupFolderOpened".to_string())
 }
 
+/// Opens the root folder that holds every local save backup.
+#[tauri::command]
+pub fn epic_open_local_backups_root() -> Result<String, String> {
+    let dir = crate::legendary::backup::backups_base_dir();
+    let _ = std::fs::create_dir_all(&dir);
+    crate::open_in_file_manager(&dir)?;
+    Ok("@t:manage.backupFolderOpened".to_string())
+}
+
 // -------------------------------------------------------------
 // COLLECTION (CATEGORY) MANAGEMENT
 // -------------------------------------------------------------
