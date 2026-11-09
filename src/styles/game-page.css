@@ -32,9 +32,13 @@
   background-clip: padding-box;
 }
 
-/* The game page is an opaque fixed layer over the library. Hide the library
-   while it is open so a sidebar resize repaint cannot flash it through. */
+/* The game page is a fixed layer over the library. Hide the library while it
+   is open so a sidebar resize repaint cannot flash it through. */
 body:has(#modal-root .overlay) #view { visibility: hidden; }
+/* With the game-art backdrop the page layer is translucent; the library header
+   behind it would otherwise ghost through as soon as the game page scrolls
+   past its hero. */
+body.game-hub-open #page-header { visibility: hidden; }
 html.sb-no-anim .overlay,
 html.sb-resizing .overlay,
 body.sb-resizing .overlay {

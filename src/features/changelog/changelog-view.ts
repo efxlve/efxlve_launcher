@@ -85,6 +85,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "A custom game with only a portrait cover fills its game-page banner with the blurred cover instead of showing a narrow portrait strip.",
         tr: "Yalnızca dikey kapağı olan özel oyunlar, oyun sayfası banner'ında ince bir dikey şerit yerine bulanık kapağın tamamını gösteriyor.",
       },
+      {
+        en: "The library page header no longer ghosts through the translucent game page when the game-art backdrop is on.",
+        tr: "Oyun görseli arka planı açıkken kütüphane sayfa başlığı, yarı saydam oyun sayfasının arkasından hayalet gibi görünmüyor.",
+      },
     ],
   },
   {
