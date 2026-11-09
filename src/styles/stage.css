@@ -583,6 +583,14 @@ body.stage-mode #toasts {
   display: inline-grid;
   place-items: center;
 }
+.stage-glyph-kbd {
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  padding: 0 7px;
+  min-width: 22px;
+}
 .stage-glyph-a {
   border-color: rgba(74, 222, 128, 0.65);
   color: #86efac;

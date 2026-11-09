@@ -29,9 +29,11 @@ import {
   stageCloseManage,
   stageCloseStill,
   stageCloudBackup,
+  stageCycleSection,
   stageCycleSettingsTab,
   stageCycleSort,
   stageCycleStore,
+  stageCycleTab,
   stageGo,
   stageManageAskUninstall,
   stageManageCancelUninstall,
@@ -49,6 +51,7 @@ import {
   stageOpenQuickMenu,
   stageOpenSearch,
   stageOpenStill,
+  stageQuickPlay,
   stageRefreshAchievements,
   stageResetFilters,
   stageSearchInput,
@@ -62,6 +65,7 @@ import {
   stageStillStep,
   stageToggleControls,
   stageToggleFavorite,
+  stageToggleQuickMenu,
   stageToggleView,
 } from "./stage-actions";
 import {
@@ -92,6 +96,7 @@ import {
   stageFaceGlyph,
   stageHint,
   stageHintBar,
+  stageKeyGlyph,
   stageStoreName,
 } from "./stage-ui";
 
@@ -106,6 +111,15 @@ let wasError = false;
 let wasSettingsTab = "";
 let lastStageSignature = "";
 let pointerFocus = false;
+export type StageInputMode = "gamepad" | "keyboard" | "mouse";
+let stageInputMode: StageInputMode = S.stage.controllerConnected ? "gamepad" : "keyboard";
+
+export function setStageGamepadMode(): void {
+  if (stageInputMode !== "gamepad") {
+    stageInputMode = "gamepad";
+    scheduleRender();
+  }
+}
 
 /**
  * The shell should repaint when the screen changes, not when a download ticks.
@@ -115,6 +129,7 @@ let pointerFocus = false;
 function stageLiveSignature(): string {
   const download = stageActiveDownload();
   return [
+    stageInputMode,
     S.stage.route,
     S.stage.gameKey ?? "",
     S.stage.homeHeroKey ?? "",
@@ -282,12 +297,13 @@ function restoreFocus(layer: HTMLElement | null): void {
 
 function topbar(): string {
   const dl = stageActiveDownload();
+  const isKbd = stageInputMode === "keyboard" || stageInputMode === "mouse";
   const pad = S.stage.controllerConnected;
   const battery = stageBatteryLabel();
   const online = navigator.onLine && !S.offlineMode;
   const kind = S.gamepadKind;
-  const lbGlyph = kind === "playstation" ? "L1" : "LB";
-  const rbGlyph = kind === "playstation" ? "R1" : "RB";
+  const lbGlyph = isKbd ? "Q" : (kind === "playstation" ? "L1" : "LB");
+  const rbGlyph = isKbd ? "E" : (kind === "playstation" ? "R1" : "RB");
   const selectGlyph = kind === "playstation" ? "Share" : kind === "xbox" ? "View" : "Select";
 
   const navTab = (route: StageRoute, label: string): string => {
@@ -328,14 +344,24 @@ function topbar(): string {
 }
 
 function hints(): string {
-  const pad = S.stage.controllerConnected || S.gamepadPolling;
-  const face = (b: "a" | "b" | "x" | "y") => stageFaceGlyph(b);
-  const bumpers = stageBumperGlyphs();
+  const isKbd = stageInputMode === "keyboard" || stageInputMode === "mouse";
+  const face = (b: "a" | "b" | "x" | "y") => {
+    if (isKbd) {
+      if (b === "a") return stageKeyGlyph("Enter");
+      if (b === "b") return stageKeyGlyph("Esc");
+      if (b === "x") return stageKeyGlyph("X");
+      if (b === "y") return stageKeyGlyph("F");
+    }
+    return stageFaceGlyph(b);
+  };
+  const bumpers = isKbd ? `${stageKeyGlyph("Q")} ${stageKeyGlyph("E")}` : stageBumperGlyphs();
+  const menuKey = isKbd ? stageKeyGlyph("M") : "Menu";
+
   if (S.stage.searchOpen) {
     return stageHintBar([
       stageHint(face("a"), t("gamepad.select")),
       stageHint(face("b"), t("common.close")),
-      stageHint(pad ? "↑↓←→" : "↑ ↓", t("gamepad.navigate")),
+      stageHint(isKbd ? "↑↓" : "↑ ↓", t("gamepad.navigate")),
     ]);
   }
   if (S.stage.quickMenu) {
@@ -350,7 +376,7 @@ function hints(): string {
       stageHint(face("x"), t("stage.quickPlay")),
       stageHint(bumpers, t("gamepad.tabs")),
       stageHint(face("b"), t("common.back")),
-      stageHint("Menu", t("stage.quickMenu")),
+      stageHint(menuKey, t("stage.quickMenu")),
     ]);
   }
   if (S.stage.route === "library") {
@@ -359,9 +385,9 @@ function hints(): string {
       stageHint(face("x"), t("stage.quickPlay")),
       stageHint(face("y"), S.stage.libraryView === "grid" ? t("stage.viewList") : t("stage.viewGrid")),
       stageHint(bumpers, t("gamepad.tabs")),
-      stageHint("L2 / R2", t("stage.storeFilter")),
-      stageHint("View", t("stage.search")),
-      stageHint("Menu", t("stage.quickMenu")),
+      stageHint(isKbd ? stageKeyGlyph("Tab") : "L2 / R2", t("stage.storeFilter")),
+      stageHint(isKbd ? stageKeyGlyph("Ctrl+K") : "View", t("stage.search")),
+      stageHint(menuKey, t("stage.quickMenu")),
     ]);
   }
   if (S.stage.route === "downloads") {
@@ -369,7 +395,7 @@ function hints(): string {
       stageHint(face("a"), t("gamepad.select")),
       stageHint(face("b"), t("common.back")),
       stageHint(bumpers, t("gamepad.tabs")),
-      stageHint("Menu", t("stage.quickMenu")),
+      stageHint(menuKey, t("stage.quickMenu")),
     ]);
   }
   if (S.stage.route === "settings") {
@@ -377,15 +403,15 @@ function hints(): string {
       stageHint(face("a"), t("gamepad.select")),
       stageHint(bumpers, t("gamepad.tabs")),
       stageHint(face("b"), t("common.back")),
-      stageHint("Menu", t("stage.quickMenu")),
+      stageHint(menuKey, t("stage.quickMenu")),
     ]);
   }
   return stageHintBar([
     stageHint(face("a"), t("stage.open")),
     stageHint(face("x"), t("stage.quickPlay")),
-    stageHint("↓", t("stage.details")),
+    stageHint(isKbd ? stageKeyGlyph("↓ / S") : "↓", t("stage.details")),
     stageHint(bumpers, t("gamepad.tabs")),
-    stageHint("Menu", t("stage.quickMenu")),
+    stageHint(menuKey, t("stage.quickMenu")),
   ]);
 }
 
@@ -844,8 +870,14 @@ function onStageKeydown(event: KeyboardEvent): void {
   const input = document.activeElement;
   const inSearchInput = input instanceof HTMLInputElement && input.id === "stage-search-input";
   const key = event.key;
+  const lower = key.toLowerCase();
 
-  if ((event.ctrlKey || event.metaKey) && key.toLowerCase() === "k") {
+  if (stageInputMode !== "keyboard") {
+    stageInputMode = "keyboard";
+    scheduleRender();
+  }
+
+  if ((event.ctrlKey || event.metaKey) && lower === "k") {
     event.preventDefault();
     event.stopPropagation();
     stageOpenSearch();
@@ -875,21 +907,103 @@ function onStageKeydown(event: KeyboardEvent): void {
     stageSearchKey("backspace");
     return;
   }
-  if (S.stage.stillIndex !== null && (key === "ArrowLeft" || key === "ArrowRight")) {
-    // A viewer steps through stills; the focus ring stays on the nav buttons.
-    event.preventDefault();
-    event.stopPropagation();
-    stageStillStep(key === "ArrowRight");
+  if (S.stage.stillIndex !== null) {
+    if (key === "ArrowLeft" || lower === "a" || lower === "q") {
+      event.preventDefault();
+      event.stopPropagation();
+      stageStillStep(false);
+      return;
+    }
+    if (key === "ArrowRight" || lower === "d" || lower === "e") {
+      event.preventDefault();
+      event.stopPropagation();
+      stageStillStep(true);
+      return;
+    }
     return;
   }
-  if (key === "ArrowUp" || key === "ArrowDown" || key === "ArrowLeft" || key === "ArrowRight") {
+
+  // Section / Tab cycling: Q and E, or Tab / Shift+Tab, or PageUp / PageDown
+  if (lower === "q" || key === "PageUp" || (key === "Tab" && event.shiftKey)) {
     event.preventDefault();
     event.stopPropagation();
-    moveGamepadFocus(key.slice(5).toLowerCase() as "up" | "down" | "left" | "right");
-  } else if (key === "Enter" || key === " ") {
+    if (S.stage.route === "program") stageCycleTab(false);
+    else stageCycleSection(false);
+    return;
+  }
+  if (lower === "e" || key === "PageDown" || (key === "Tab" && !event.shiftKey)) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (S.stage.route === "program") stageCycleTab(true);
+    else stageCycleSection(true);
+    return;
+  }
+
+  // Directional navigation: Arrow keys OR WASD
+  if (key === "ArrowUp" || lower === "w") {
+    event.preventDefault();
+    event.stopPropagation();
+    moveGamepadFocus("up");
+    return;
+  }
+  if (key === "ArrowDown" || lower === "s") {
+    event.preventDefault();
+    event.stopPropagation();
+    moveGamepadFocus("down");
+    return;
+  }
+  if (key === "ArrowLeft" || lower === "a") {
+    event.preventDefault();
+    event.stopPropagation();
+    moveGamepadFocus("left");
+    return;
+  }
+  if (key === "ArrowRight" || lower === "d") {
+    event.preventDefault();
+    event.stopPropagation();
+    moveGamepadFocus("right");
+    return;
+  }
+
+  // Selection / Activation: Enter or Space
+  if (key === "Enter" || key === " ") {
     event.preventDefault();
     event.stopPropagation();
     activateGamepadFocus();
+    return;
+  }
+
+  // Back: Backspace
+  if (key === "Backspace") {
+    event.preventDefault();
+    event.stopPropagation();
+    stageBack();
+    return;
+  }
+
+  // Quick Play: X
+  if (lower === "x" && !event.ctrlKey && !event.altKey) {
+    event.preventDefault();
+    event.stopPropagation();
+    stageQuickPlay();
+    return;
+  }
+
+  // Favorite: F
+  if (lower === "f" && !event.ctrlKey && !event.altKey) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (S.stage.route === "program") stageToggleFavorite(S.stage.gameKey ?? undefined);
+    else stageToggleFavorite();
+    return;
+  }
+
+  // Quick Menu: M
+  if (lower === "m" && !event.ctrlKey && !event.altKey) {
+    event.preventDefault();
+    event.stopPropagation();
+    stageToggleQuickMenu();
+    return;
   }
 }
 
@@ -1013,6 +1127,79 @@ function bindStageEvents(root: HTMLElement): void {
     pointerFocus = false;
   });
 
+  // Horizontal mouse wheel scrolling for ribbon and card shelves
+  root.addEventListener(
+    "wheel",
+    (event) => {
+      if (!S.stage.active) return;
+      const target = event.target instanceof Element ? event.target : null;
+      const hRow = target?.closest<HTMLElement>(
+        ".stage-ribbon-track, .stage-activity-row, .stage-collection-row, .stage-filter-tabs, .stage-program-tabs",
+      );
+      if (!hRow) return;
+
+      if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+        const maxScroll = hRow.scrollWidth - hRow.clientWidth;
+        if (maxScroll > 0) {
+          event.preventDefault();
+          hRow.scrollLeft += event.deltaY * 1.1;
+        }
+      }
+    },
+    { passive: false },
+  );
+
+  // Mouse drag-to-scroll on horizontal carousels
+  let dragTrack: HTMLElement | null = null;
+  let startX = 0;
+  let startScroll = 0;
+  let isDragging = false;
+  let dragMoved = false;
+
+  root.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    const target = event.target instanceof Element ? event.target : null;
+    const hRow = target?.closest<HTMLElement>(
+      ".stage-ribbon-track, .stage-activity-row, .stage-collection-row",
+    );
+    if (!hRow) return;
+    dragTrack = hRow;
+    startX = event.clientX;
+    startScroll = hRow.scrollLeft;
+    isDragging = false;
+    dragMoved = false;
+  });
+
+  window.addEventListener("pointermove", (event) => {
+    if (!dragTrack) return;
+    const diff = event.clientX - startX;
+    if (!isDragging && Math.abs(diff) > 7) {
+      isDragging = true;
+      dragMoved = true;
+    }
+    if (isDragging) {
+      dragTrack.scrollLeft = startScroll - diff;
+    }
+  });
+
+  window.addEventListener("pointerup", () => {
+    if (dragTrack) {
+      if (dragMoved) {
+        window.addEventListener(
+          "click",
+          (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          },
+          { capture: true, once: true },
+        );
+      }
+      dragTrack = null;
+      isDragging = false;
+      dragMoved = false;
+    }
+  });
+
   // Stage is a controller surface, not a desktop page: the library context
   // menu and its hover cards do not belong here.
   root.addEventListener("contextmenu", (event) => {
@@ -1036,6 +1223,23 @@ function bindStageEvents(root: HTMLElement): void {
       scheduleRender();
     }
   }, true);
+
+  // Switch to mouse input mode on pointer interaction
+  root.addEventListener("pointerdown", () => {
+    if (stageInputMode !== "mouse") {
+      stageInputMode = "mouse";
+      scheduleRender();
+    }
+  });
+
+  // Switch dynamically when gamepad inputs are detected
+  window.addEventListener("stage-input-mode", (event) => {
+    const mode = (event as CustomEvent<{ mode?: StageInputMode }>).detail?.mode;
+    if (mode && stageInputMode !== mode) {
+      stageInputMode = mode;
+      scheduleRender();
+    }
+  });
 }
 
 

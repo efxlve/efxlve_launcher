@@ -34,7 +34,7 @@ import { stageMetaLine, stageProgress, stageStatus, stageStoreName } from "./sta
 function ribbonCard(s: EpicSummary, isDefault = false): string {
   const hasDl = epicDlProgress(s.appName) !== null;
   const isUpdating = s.updateAvailable && !S.ignoredUpdates.has(s.appName);
-  return `<button type="button" class="stage-ribbon-card" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="game:${esc(s.appName)}"${isDefault ? " data-gp-default" : ""} aria-label="${esc(s.title)}" title="${esc(s.title)}">
+  return `<button type="button" class="stage-ribbon-card" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="game:${esc(s.appName)}"${isDefault ? " data-gp-default" : ""} aria-label="${esc(s.title)}">
     <span class="stage-ribbon-art">${stageHeroMarkup(s, "stage-ribbon-image")}</span>
     ${hasDl || isUpdating ? `<span class="stage-ribbon-indicator"></span>` : ""}
   </button>`;

@@ -28,6 +28,9 @@ export function stageIsActive(): boolean {
 
 /** Handle one non-directional pad button while Stage is active. */
 export function stageButton(button: StagePadButton): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("stage-input-mode", { detail: { mode: "gamepad" } }));
+  }
   if (!S.stage.active) return;
   // A dialog owns the pad while it is open. A/B reach its focus ring through
   // the generic path; the contextual buttons must not fire behind it.

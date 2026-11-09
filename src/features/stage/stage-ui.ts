@@ -30,6 +30,11 @@ export function stageBumperGlyphs(): string {
   return `<span class="stage-glyph stage-glyph-bumper">${left}</span><span class="stage-glyph stage-glyph-bumper">${right}</span>`;
 }
 
+/** Keyboard keycap glyph. */
+export function stageKeyGlyph(key: string): string {
+  return `<span class="stage-glyph stage-glyph-kbd">${esc(key)}</span>`;
+}
+
 export function stageHint(glyph: string, label: string): string {
   return `<span class="stage-hint"><span class="stage-hint-glyph">${glyph}</span><span>${esc(label)}</span></span>`;
 }

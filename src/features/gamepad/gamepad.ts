@@ -455,6 +455,9 @@ function gamepadLoop(): void {
   else if (isPressed(mask, BTN_RIGHT)) activeDir = "right";
 
   if (activeDir) {
+    if (S.stage.active) {
+      window.dispatchEvent(new CustomEvent("stage-input-mode", { detail: { mode: "gamepad" } }));
+    }
     if (activeDir !== repeatDir) {
       repeatDir = activeDir;
       lastMoveTime = now;
@@ -472,9 +475,15 @@ function gamepadLoop(): void {
 
   // Button actions
   if (justPressed(mask, BTN_A)) {
+    if (S.stage.active) {
+      window.dispatchEvent(new CustomEvent("stage-input-mode", { detail: { mode: "gamepad" } }));
+    }
     activateFocused();
   }
   if (justPressed(mask, BTN_B)) {
+    if (S.stage.active) {
+      window.dispatchEvent(new CustomEvent("stage-input-mode", { detail: { mode: "gamepad" } }));
+    }
     backAction();
   }
   if (S.stage.active) {
