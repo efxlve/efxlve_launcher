@@ -34,6 +34,30 @@ import { stageGameByKey, stageHeroSummary, stageLibraryList, stageLibraryStores,
 import { stageSearchResultsHtml } from "./stage-search";
 import { stageFeedback } from "./stage-sound";
 import { exitStage, setStageLibrarySort, setStageLibraryView } from "./stage-state";
+import { stageCloseBrowserSheet } from "./stage-browser";
+import { stageCloseSpotifySheet } from "./stage-spotify";
+import { stageCloseDiscordSheet } from "./stage-discord";
+
+export {
+  stageOpenBrowserSheet,
+  stageCloseBrowserSheet,
+  stageLaunchBrowser,
+  stageCloseBrowserWindow,
+} from "./stage-browser";
+export {
+  stageOpenSpotifySheet,
+  stageCloseSpotifySheet,
+  stageSpotifyAction,
+  stageSpotifyPlayPlaylist,
+} from "./stage-spotify";
+export {
+  stageOpenDiscordSheet,
+  stageCloseDiscordSheet,
+  stageDiscordConnect,
+  stageDiscordToggleMute,
+  stageDiscordHangup,
+  stageDiscordOpenApp,
+} from "./stage-discord";
 
 const TOP_ROUTES: StageRoute[] = ["home", "library", "downloads"];
 /** The shelf query to restore when the search is cancelled rather than applied. */
@@ -118,6 +142,18 @@ export function stageBack(): void {
   if (S.stage.launch) return;
   if (S.stage.stillIndex !== null) {
     stageCloseStill();
+    return;
+  }
+  if (S.stage.browserOpen) {
+    stageCloseBrowserSheet();
+    return;
+  }
+  if (S.stage.spotifyOpen) {
+    stageCloseSpotifySheet();
+    return;
+  }
+  if (S.stage.discordOpen) {
+    stageCloseDiscordSheet();
     return;
   }
   stageFeedback("back");

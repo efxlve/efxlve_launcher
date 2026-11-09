@@ -83,6 +83,30 @@ import { stageGameByKey, stageHeroSummary } from "./stage-model";
 import { renderStageProgram } from "./stage-program";
 import { renderStageSearch } from "./stage-search";
 import { renderStageSettings } from "./stage-settings";
+import {
+  renderStageBrowserSheet,
+  stageCloseBrowserSheet,
+  stageCloseBrowserWindow,
+  stageLaunchBrowser,
+  stageOpenBrowserSheet,
+} from "./stage-browser";
+import {
+  renderStageSpotifySheet,
+  stageCloseSpotifySheet,
+  stageOpenSpotifySheet,
+  stageSpotifyAction,
+  stageSpotifyNowSummary,
+  stageSpotifyPlayPlaylist,
+} from "./stage-spotify";
+import {
+  renderStageDiscordSheet,
+  stageCloseDiscordSheet,
+  stageDiscordConnect,
+  stageDiscordHangup,
+  stageDiscordOpenApp,
+  stageOpenDiscordSheet,
+  stageDiscordToggleMute,
+} from "./stage-discord";
 import { resetStageBackdrop, stageBackdropMarkup, updateStageBackdrop } from "./stage-backdrop";
 import { stageCoverMarkup, stageWideArt } from "./stage-art";
 import { fullShotSrc } from "../screenshots/screenshots-view";
@@ -108,6 +132,9 @@ let wasManage = false;
 let wasSearch = false;
 let wasLaunch = false;
 let wasError = false;
+let wasBrowser = false;
+let wasSpotify = false;
+let wasDiscord = false;
 let wasSettingsTab = "";
 let lastStageSignature = "";
 let pointerFocus = false;
@@ -155,6 +182,9 @@ function stageLiveSignature(): string {
     S.stage.searchOpen ? "1" : "0",
     S.stage.quickMenu ? "1" : "0",
     S.stage.controlsOpen ? "1" : "0",
+    S.stage.browserOpen ? "1" : "0",
+    S.stage.spotifyOpen ? "1" : "0",
+    S.stage.discordOpen ? "1" : "0",
     S.stage.manageKey ?? "",
     S.stage.manageConfirmUninstall ? "1" : "0",
     S.stage.launch?.key ?? "",
@@ -331,6 +361,9 @@ function topbar(): string {
       </nav>
     </div>
     <div class="stage-topbar-right">
+      <button type="button" class="stage-icon-pill" data-stage-act="open-browser-sheet" data-gp-item data-gp-key="top:browser" aria-label="${esc(t("overlay.tabBrowser"))}">${icon("globe", 16)}</button>
+      <button type="button" class="stage-icon-pill" data-stage-act="open-spotify-sheet" data-gp-item data-gp-key="top:spotify" aria-label="Spotify">${icon("music", 16)}</button>
+      <button type="button" class="stage-icon-pill" data-stage-act="open-discord-sheet" data-gp-item data-gp-key="top:discord" aria-label="Discord">${icon("discord", 16)}</button>
       <button type="button" class="stage-icon-pill" data-stage-act="open-search" data-gp-item data-gp-key="top:search" aria-label="${esc(t("stage.search"))}">
         ${icon("search", 16)}
       </button>
@@ -443,6 +476,9 @@ function quickMenu(entered: boolean): string {
           <span class="stage-dock-text">${esc(t("stage.navDownloads"))}</span>
           ${dl ? `<span class="stage-dock-badge tabular-nums">${Math.round(dl.percent)}%</span>` : ""}
         </button>
+        <button type="button" class="stage-dock-item" data-stage-act="open-browser-sheet" data-gp-item data-gp-key="dock:browser"><span class="stage-dock-icon">${icon("globe", 22)}</span><span class="stage-dock-text">${esc(t("overlay.tabBrowser"))}</span></button>
+        <button type="button" class="stage-dock-item" data-stage-act="open-spotify-sheet" data-gp-item data-gp-key="dock:spotify"><span class="stage-dock-icon" style="color:#1ed760">${icon("music", 22)}</span><span class="stage-dock-text">Spotify</span></button>
+        <button type="button" class="stage-dock-item" data-stage-act="open-discord-sheet" data-gp-item data-gp-key="dock:discord"><span class="stage-dock-icon" style="color:#5865f2">${icon("discord", 22)}</span><span class="stage-dock-text">Discord</span></button>
         <button type="button" class="stage-dock-item" data-stage-act="controls" data-gp-item data-gp-key="dock:controls">
           <span class="stage-dock-icon">${icon("gamepad-2", 22)}</span>
           <span class="stage-dock-text">${esc(t("stage.controller"))}</span>
@@ -748,6 +784,9 @@ export function renderStage(): void {
   const controlsEntered = S.stage.controlsOpen && !wasControls;
   const manageEntered = Boolean(S.stage.manageKey) && !wasManage;
   const searchEntered = S.stage.searchOpen && !wasSearch;
+  const browserEntered = S.stage.browserOpen && !wasBrowser;
+  const spotifyEntered = S.stage.spotifyOpen && !wasSpotify;
+  const discordEntered = S.stage.discordOpen && !wasDiscord;
   const launchEntered = Boolean(S.stage.launch) && !wasLaunch;
   const errorEntered = Boolean(S.stage.launchError) && !wasError;
   const settingsTabChanged = S.stage.settingsTab !== wasSettingsTab;
@@ -760,16 +799,22 @@ export function renderStage(): void {
   const controls = S.stage.controlsOpen ? controlsSheet(controlsEntered) : "";
   const manage = S.stage.manageKey ? stageManageSheet(S.stage.manageKey, manageEntered) : "";
   const still = S.stage.stillIndex !== null ? stillViewer() : "";
+  const browser = S.stage.browserOpen ? renderStageBrowserSheet(browserEntered) : "";
+  const spotify = S.stage.spotifyOpen ? renderStageSpotifySheet(spotifyEntered) : "";
+  const discord = S.stage.discordOpen ? renderStageDiscordSheet(discordEntered) : "";
   const cover = S.stage.launch ? curtain(launchEntered) : "";
   const error = launchError(errorEntered);
   wasQuickMenu = S.stage.quickMenu;
   wasControls = S.stage.controlsOpen;
   wasManage = Boolean(S.stage.manageKey);
   wasSearch = S.stage.searchOpen;
+  wasBrowser = S.stage.browserOpen;
+  wasSpotify = S.stage.spotifyOpen;
+  wasDiscord = S.stage.discordOpen;
   wasLaunch = Boolean(S.stage.launch);
   wasError = Boolean(S.stage.launchError);
 
-  root.className = `stage-root stage-route-${S.stage.route}${S.stage.route === "program" ? " is-program" : ""}${S.stage.quickMenu ? " is-menu-open" : ""}${S.stage.manageKey ? " is-manage-open" : ""}${S.stage.searchOpen ? " is-search-open" : ""}${S.stage.stillIndex !== null ? " is-still-open" : ""}${S.stage.route === "settings" && settingsTabChanged ? " stage-settings-tab-enter" : ""}`;
+  root.className = `stage-root stage-route-${S.stage.route}${S.stage.route === "program" ? " is-program" : ""}${S.stage.quickMenu ? " is-menu-open" : ""}${S.stage.manageKey ? " is-manage-open" : ""}${S.stage.searchOpen ? " is-search-open" : ""}${S.stage.browserOpen ? " is-browser-open" : ""}${S.stage.spotifyOpen ? " is-spotify-open" : ""}${S.stage.discordOpen ? " is-discord-open" : ""}${S.stage.stillIndex !== null ? " is-still-open" : ""}${S.stage.route === "settings" && settingsTabChanged ? " stage-settings-tab-enter" : ""}`;
   root.dataset.route = S.stage.route;
   root.style.setProperty("--stage-safe", `${S.stage.safeArea * 1.5}vmin`);
   root.innerHTML = `${stageBackdropMarkup()}
@@ -785,6 +830,9 @@ export function renderStage(): void {
   ${manage}
   ${search}
   ${still}
+  ${browser}
+  ${spotify}
+  ${discord}
   ${cover}
   ${error}`;
 
@@ -802,15 +850,21 @@ export function renderStage(): void {
       ? ".stage-curtain"
       : still
         ? ".stage-still-viewer"
-        : manage
-          ? ".stage-manage-overlay"
-          : controls
-            ? ".stage-controls"
-            : quick
-              ? ".stage-quick-menu"
-              : search
-                ? ".stage-search"
-                : '[data-stage-layer="main"]';
+        : browser
+          ? ".stage-browser-sheet"
+          : spotify
+            ? ".stage-spotify-sheet"
+            : discord
+              ? ".stage-discord-sheet"
+              : manage
+                ? ".stage-manage-overlay"
+                : controls
+                  ? ".stage-controls"
+                  : quick
+                    ? ".stage-quick-menu"
+                    : search
+                      ? ".stage-search"
+                      : '[data-stage-layer="main"]';
   const layer = root.querySelector<HTMLElement>(layerSelector);
   markFocusables(layer);
   // An install/manage dialog owns the focus while it is open. The Stage shell
@@ -872,6 +926,7 @@ function onStageKeydown(event: KeyboardEvent): void {
   if (modalOpen()) return;
   const input = document.activeElement;
   const inSearchInput = input instanceof HTMLInputElement && input.id === "stage-search-input";
+  const inBrowserInput = input instanceof HTMLInputElement && input.id === "stage-browser-input";
   const key = event.key;
   const lower = key.toLowerCase();
 
@@ -890,6 +945,16 @@ function onStageKeydown(event: KeyboardEvent): void {
     event.preventDefault();
     event.stopPropagation();
     stageBack();
+    return;
+  }
+  if (inBrowserInput) {
+    if (key === "ArrowDown") {
+      event.preventDefault();
+      moveGamepadFocus("down");
+    } else if (key === "Enter") {
+      event.preventDefault();
+      void stageLaunchBrowser(input.value);
+    }
     return;
   }
   if (inSearchInput) {
@@ -1080,6 +1145,34 @@ function bindStageEvents(root: HTMLElement): void {
       case "search-submit": stageSearchSubmit(); break;
       case "open-menu": stageOpenQuickMenu("menu:resume"); break;
       case "close-menu": stageFeedback("back"); S.stage.quickMenu = false; S.stage.controlsOpen = false; S.stage.focusKey = ""; scheduleRender(); break;
+      case "open-browser-sheet": void stageOpenBrowserSheet(); break;
+      case "close-browser-sheet": stageCloseBrowserSheet(); break;
+      case "browser-go": {
+        const inp = root.querySelector<HTMLInputElement>("#stage-browser-input");
+        if (inp) void stageLaunchBrowser(inp.value);
+        break;
+      }
+      case "browser-bookmark": {
+        const url = actionEl.dataset.url || "";
+        if (url) void stageLaunchBrowser(url);
+        break;
+      }
+      case "browser-close-window": void stageCloseBrowserWindow(); break;
+      case "open-spotify-sheet": stageOpenSpotifySheet(); break;
+      case "close-spotify-sheet": stageCloseSpotifySheet(); break;
+      case "spotify-toggle": void stageSpotifyAction("toggle"); break;
+      case "spotify-prev": void stageSpotifyAction("previous"); break;
+      case "spotify-next": void stageSpotifyAction("next"); break;
+      case "spotify-shuffle": void stageSpotifyAction("shuffle"); break;
+      case "spotify-repeat": void stageSpotifyAction("repeat"); break;
+      case "spotify-start": void stageSpotifyAction("start"); break;
+      case "spotify-playlist": void stageSpotifyPlayPlaylist(actionEl.dataset.uri || ""); break;
+      case "open-discord-sheet": stageOpenDiscordSheet(); break;
+      case "close-discord-sheet": stageCloseDiscordSheet(); break;
+      case "discord-connect": stageDiscordConnect(); break;
+      case "discord-mute": void stageDiscordToggleMute(); break;
+      case "discord-hangup": void stageDiscordHangup(); break;
+      case "discord-open-app": void stageDiscordOpenApp(); break;
       case "controls": stageToggleControls(); break;
       case "show-controls": stageShowControls(); break;
       case "close-controls": stageFeedback("back"); stageCloseControls(); break;

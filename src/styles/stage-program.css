@@ -195,19 +195,20 @@
   border-color: rgba(255, 255, 255, 0.3);
 }
 .stage-program-tab.active {
-  color: #0b0e14 !important;
+  color: #080a0f !important;
   background: #ffffff !important;
-  border-color: #ffffff !important;
-  font-weight: 750 !important;
-  box-shadow: 0 0 22px rgba(255, 255, 255, 0.45);
+  border-color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), 0 0 12px rgba(255, 255, 255, 0.25);
 }
 .stage-program-tab.active:hover,
 .stage-program-tab.active.gp-focused {
-  color: #0b0e14 !important;
+  color: #080a0f !important;
   background: #ffffff !important;
   border-color: #ffffff !important;
-  outline: 2px solid rgba(255, 255, 255, 0.8) !important;
+  outline: 2px solid rgba(255, 255, 255, 0.9) !important;
   outline-offset: 2px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 16px rgba(255, 255, 255, 0.35);
 }
 .stage-program-tab.active::after {
   display: none;

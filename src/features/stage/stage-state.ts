@@ -104,6 +104,10 @@ export async function enterStage(opts: { route?: StageRoute; gameKey?: string } 
   S.stage.searchOpen = false;
   S.stage.quickMenu = false;
   S.stage.controlsOpen = false;
+  S.stage.spotifyOpen = false;
+  S.stage.discordOpen = false;
+  S.stage.browserOpen = false;
+  S.stage.browserUrl = "";
   S.stage.manageKey = null;
   S.stage.manageConfirmUninstall = false;
   S.stage.launch = null;
@@ -139,6 +143,10 @@ export function exitStage(): void {
   S.stage.quickMenu = false;
   S.stage.searchOpen = false;
   S.stage.controlsOpen = false;
+  S.stage.spotifyOpen = false;
+  S.stage.discordOpen = false;
+  S.stage.browserOpen = false;
+  S.stage.browserUrl = "";
   S.stage.manageKey = null;
   S.stage.manageConfirmUninstall = false;
   S.stage.launch = null;

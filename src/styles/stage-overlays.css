@@ -837,3 +837,693 @@
   transform: translateY(-2px) scale(1.04);
   box-shadow: 0 12px 32px rgba(239, 68, 68, 0.65), 0 0 20px rgba(239, 68, 68, 0.5);
 }
+
+/* ==========================================================================
+   Stage Browser, Spotify & Discord Sheets
+   ========================================================================== */
+
+.stage-browser-sheet,
+.stage-spotify-sheet,
+.stage-discord-sheet {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(clamp(20px, 4vh, 48px) + var(--stage-safe, 0px)) calc(var(--stage-pad) + var(--stage-safe, 0px));
+  background: rgba(4, 6, 10, 0.78);
+  backdrop-filter: blur(20px);
+}
+
+.stage-browser-panel,
+.stage-spotify-panel,
+.stage-discord-panel {
+  width: min(860px, 92vw);
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 28px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 24px;
+  background: rgba(14, 18, 28, 0.92);
+  backdrop-filter: blur(28px);
+  box-shadow: 0 32px 100px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  animation: stage-panel-pop 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes stage-panel-pop {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Common Sheet Header */
+.stage-browser-head,
+.stage-spotify-head,
+.stage-discord-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-block-end: 14px;
+  border-block-end: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.stage-browser-title-wrap,
+.stage-spotify-title-wrap,
+.stage-discord-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.stage-browser-icon-main,
+.stage-spotify-brand,
+.stage-discord-icon-main {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.stage-spotify-brand {
+  color: #1ed760;
+  background: rgba(30, 215, 96, 0.12);
+  border-color: rgba(30, 215, 96, 0.3);
+}
+
+.stage-discord-icon-main {
+  color: #5865f2;
+  background: rgba(88, 101, 242, 0.12);
+  border-color: rgba(88, 101, 242, 0.3);
+}
+
+.stage-browser-title,
+.stage-spotify-title,
+.stage-discord-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.stage-browser-subtitle,
+.stage-spotify-subtitle,
+.stage-discord-subtitle {
+  font-size: 11.5px;
+  color: var(--stage-ink-3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---------- Browser Sheet Styles ---------- */
+.stage-browser-omnibox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.stage-browser-omnibox:focus-within {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.18);
+}
+
+.stage-browser-omni-icon {
+  color: var(--stage-ink-3);
+  display: grid;
+  place-items: center;
+}
+
+.stage-browser-input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+  outline: none;
+}
+
+.stage-browser-input::placeholder {
+  color: var(--stage-ink-4);
+}
+
+.stage-browser-go {
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 9999px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.stage-browser-shelf {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stage-browser-shelf-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--stage-ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.stage-browser-bookmarks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.stage-browser-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--stage-ink);
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.stage-browser-chip:hover,
+.stage-browser-chip.gp-focused {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+.stage-bm-icon {
+  display: grid;
+  place-items: center;
+  color: var(--stage-ink-2);
+}
+
+.stage-bm-title {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stage-browser-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-block-start: 10px;
+  border-block-start: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.stage-browser-hints {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--stage-ink-4);
+}
+
+/* ---------- Spotify Sheet Styles ---------- */
+.stage-spotify-hero {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 24px;
+  align-items: center;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.stage-spotify-art-wrap {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #080a10;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6);
+}
+
+.stage-spotify-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stage-spotify-art-empty {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--stage-ink-4);
+}
+
+.stage-spotify-playing-badge {
+  position: absolute;
+  inset-block-end: 10px;
+  inset-inline-end: 10px;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 20px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+}
+
+.stage-spotify-eq-bar {
+  width: 3px;
+  height: 12px;
+  background: #1ed760;
+  border-radius: 2px;
+  animation: stageEqPulse 800ms infinite ease-in-out alternate;
+}
+
+.stage-spotify-eq-bar:nth-child(2) { animation-delay: 200ms; height: 16px; }
+.stage-spotify-eq-bar:nth-child(3) { animation-delay: 400ms; height: 10px; }
+
+@keyframes stageEqPulse {
+  0% { transform: scaleY(0.3); }
+  100% { transform: scaleY(1); }
+}
+
+.stage-spotify-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stage-spotify-track {
+  margin: 0;
+  font-size: clamp(20px, 2.2vw, 26px);
+  font-weight: 750;
+  line-height: 1.15;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-spotify-artist {
+  font-size: 14px;
+  color: var(--stage-ink-2);
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-spotify-progress-wrap {
+  margin-block: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stage-spotify-timeline {
+  width: 100%;
+  height: 5px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.stage-spotify-bar {
+  display: block;
+  height: 100%;
+  background: #1ed760;
+  border-radius: 9999px;
+  transition: width 200ms linear;
+}
+
+.stage-spotify-times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: var(--stage-ink-3);
+}
+
+.stage-spotify-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-block-start: 4px;
+}
+
+.stage-spotify-play-btn {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: #1ed760;
+  color: #060810;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(30, 215, 96, 0.45);
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 160ms ease, background 160ms ease;
+}
+
+.stage-spotify-play-btn:hover,
+.stage-spotify-play-btn.gp-focused {
+  background: #22e267;
+  transform: scale(1.08);
+  box-shadow: 0 8px 26px rgba(30, 215, 96, 0.7);
+}
+
+.stage-spotify-connect-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: rgba(30, 215, 96, 0.08);
+  border: 1px solid rgba(30, 215, 96, 0.25);
+}
+
+.stage-spotify-connect-card strong {
+  display: block;
+  font-size: 14px;
+  color: #fff;
+}
+
+.stage-spotify-connect-card p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: var(--stage-ink-2);
+}
+
+.stage-spotify-connect-card .stage-btn {
+  margin-inline-start: auto;
+}
+
+.stage-spotify-playlists-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stage-spotify-playlists-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.stage-spotify-pl-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--stage-ink);
+  cursor: pointer;
+  text-align: start;
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), background 160ms ease, border-color 160ms ease;
+}
+
+.stage-spotify-pl-card:hover,
+.stage-spotify-pl-card.gp-focused {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.stage-spotify-pl-art {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.4);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.stage-spotify-pl-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stage-spotify-pl-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stage-spotify-pl-copy strong {
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-spotify-pl-copy span {
+  font-size: 10px;
+  color: var(--stage-ink-3);
+}
+
+/* ---------- Discord Sheet Styles ---------- */
+.stage-discord-voice-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: rgba(88, 101, 242, 0.12);
+  border: 1px solid rgba(88, 101, 242, 0.32);
+}
+
+.stage-voice-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stage-voice-badge {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #5865f2;
+  color: #fff;
+}
+
+.stage-voice-info strong {
+  display: block;
+  font-size: 14px;
+  color: #fff;
+}
+
+.stage-voice-info small {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.stage-voice-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stage-discord-onboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 30px 20px;
+  gap: 12px;
+}
+
+.stage-discord-onboard-art {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: rgba(88, 101, 242, 0.15);
+  border: 1px solid rgba(88, 101, 242, 0.3);
+  color: #5865f2;
+}
+
+.stage-discord-onboard h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #fff;
+}
+
+.stage-discord-onboard p {
+  max-width: 440px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--stage-ink-2);
+  line-height: 1.5;
+}
+
+.stage-discord-onboard-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-block-start: 10px;
+}
+
+.stage-discord-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stage-discord-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stage-discord-count {
+  font-size: 11px;
+  color: var(--stage-ink-3);
+}
+
+.stage-discord-friends-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.stage-discord-friend-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), background 160ms ease, border-color 160ms ease;
+}
+
+.stage-discord-friend-card:hover,
+.stage-discord-friend-card.gp-focused {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.stage-friend-avatar-wrap {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+}
+
+.stage-friend-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.stage-friend-avatar-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--stage-ink-3);
+}
+
+.stage-friend-dot {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-end: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid rgba(14, 18, 28, 0.95);
+}
+
+.stage-friend-dot.is-online { background: #23a55a; }
+.stage-friend-dot.is-idle { background: #f0b232; }
+.stage-friend-dot.is-dnd { background: #f23f43; }
+.stage-friend-dot.is-offline { background: #80848e; }
+
+.stage-friend-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stage-friend-name {
+  font-size: 13px;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-friend-activity {
+  font-size: 11px;
+  color: var(--stage-ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-discord-status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #80848e;
+}
+
+.stage-discord-status-dot.is-online {
+  background: #23a55a;
+  box-shadow: 0 0 6px #23a55a;
+}
+
+.stage-discord-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 24px;
+  color: var(--stage-ink-3);
+  font-size: 12px;
+}
+
+.stage-discord-foot-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-block-start: 10px;
+  border-block-start: 1px solid rgba(255, 255, 255, 0.08);
+}
+
