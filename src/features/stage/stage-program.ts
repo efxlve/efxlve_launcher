@@ -381,17 +381,15 @@ export function renderStageProgram(): string {
           <h1>${esc(game.title)}</h1>
           <div class="stage-program-meta">${stageMetaLine(game, { withStore: false })}</div>
         </div>
+        <div class="stage-program-actions" data-gp-default>
+          <div class="stage-primary-action">${stagePrimaryAction(game)}</div>
+          <button type="button" class="stage-btn stage-btn-ghost${favorite ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(game.appName)}" data-gp-item data-gp-key="prog:favorite">${icon("heart", 18)}<span>${esc(favorite ? t("stage.favorited") : t("stage.favorite"))}</span></button>
+          <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="manage-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="prog:manage">${icon("settings", 18)}<span>${esc(t("stage.manage"))}</span></button>
+        </div>
       </div>
     </section>
 
-    <div class="stage-program-actions" data-gp-default>
-      <div class="stage-primary-action">${stagePrimaryAction(game)}</div>
-      <button type="button" class="stage-btn stage-btn-ghost${favorite ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(game.appName)}" data-gp-item data-gp-key="prog:favorite">${icon("heart", 18)}<span>${esc(favorite ? t("stage.favorited") : t("stage.favorite"))}</span></button>
-      <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="manage-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="prog:manage">${icon("settings", 18)}<span>${esc(t("stage.manage"))}</span></button>
-    </div>
-
     ${tabs()}
     <div class="stage-program-content">${content(game)}</div>
-    <div class="stage-program-foot">${esc(t("stage.experimentalNote"))}</div>
   </div>`;
 }

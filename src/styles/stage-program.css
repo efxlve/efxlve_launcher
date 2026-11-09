@@ -9,10 +9,13 @@
 
 .stage-program-hero {
   position: relative;
-  min-height: clamp(340px, 48vh, 850px);
+  min-height: clamp(380px, 52vh, 600px);
+  padding: calc(var(--stage-top) + 20px) var(--stage-pad) 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   overflow: hidden;
-  border-block-end: 1px solid var(--stage-line);
-  background: var(--stage-surface);
+  background: transparent;
 }
 .stage-program-media,
 .stage-program-media > * {
@@ -25,44 +28,51 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 20%;
 }
 .stage-program-scrim {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(to right, #050505 0%, rgba(5, 5, 5, 0.92) 14%, rgba(5, 5, 5, 0.5) 45%, transparent 75%),
-    linear-gradient(to left, #050505 0%, rgba(5, 5, 5, 0.4) 6%, transparent 22%),
-    linear-gradient(to top, rgba(5, 5, 5, 0.97) 0%, rgba(5, 5, 5, 0.6) 30%, transparent 60%),
-    linear-gradient(to bottom, rgba(5, 5, 5, 0.8) 0%, rgba(5, 5, 5, 0.25) 20%, transparent 40%);
+    linear-gradient(to right, #06070a 0%, rgba(6, 7, 10, 0.92) 16%, rgba(6, 7, 10, 0.45) 48%, transparent 75%),
+    linear-gradient(to left, #06070a 0%, rgba(6, 7, 10, 0.4) 6%, transparent 24%),
+    linear-gradient(to top, #06070a 0%, rgba(6, 7, 10, 0.95) 12%, rgba(6, 7, 10, 0.5) 35%, transparent 65%),
+    linear-gradient(to bottom, rgba(6, 7, 10, 0.85) 0%, rgba(6, 7, 10, 0.3) 18%, transparent 38%);
   pointer-events: none;
 }
 .stage-program-head {
-  position: absolute;
-  inset-block-end: clamp(48px, 6vh, 84px);
-  inset-inline: var(--stage-pad);
+  position: relative;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 11px;
+  gap: 14px;
   max-width: 980px;
 }
 .stage-back {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  height: 34px;
-  padding: 0 10px;
-  border: 1px solid var(--stage-line);
-  border-radius: 7px;
-  background: rgba(0, 0, 0, 0.34);
-  color: var(--stage-ink-2);
-  font-size: 11.5px;
-  cursor: pointer;
-  transition: color 140ms var(--stage-ease), background 140ms var(--stage-ease);
-}
-.stage-back:hover {
-  color: var(--stage-ink);
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
   background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 160ms var(--stage-ease), background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+.stage-back:hover,
+.stage-back.gp-focused {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 16px rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  outline: none;
 }
 .stage-program-titles {
   display: flex;
@@ -84,29 +94,26 @@
   overflow: hidden;
   margin: 0;
   font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
-  font-size: clamp(28px, 3.2vw, 48px);
+  font-size: clamp(26px, 2.8vw, 44px);
   font-weight: 800;
-  line-height: 1.05;
+  line-height: 1.08;
   letter-spacing: -0.025em;
   text-wrap: balance;
-  text-shadow: 0 2px 34px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 3px 20px rgba(0, 0, 0, 0.85), 0 1px 6px rgba(0, 0, 0, 0.6);
 }
 .stage-program-meta {
   color: var(--stage-ink-2);
-  font-size: clamp(12px, 0.95vw, 20px);
+  font-size: clamp(12px, 0.95vw, 18px);
 }
 .stage-program-status {
   display: none;
 }
 .stage-program-actions {
-  position: relative;
-  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
-  margin-block-start: -24px;
-  padding-inline: var(--stage-pad);
+  margin-block-start: 4px;
 }
 
 .stage-program-actions .stage-primary-action .btn,
@@ -314,21 +321,23 @@
 .stage-ach-filter {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   height: 34px;
-  padding: 0 11px;
-  border: 1px solid var(--stage-line);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.04);
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.05);
   color: var(--stage-ink-3);
   font-family: inherit;
-  font-size: 11.5px;
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
-  transition: color 140ms var(--stage-ease), background 140ms var(--stage-ease), border-color 140ms var(--stage-ease);
+  transition: color 140ms var(--stage-ease), background 140ms var(--stage-ease), border-color 140ms var(--stage-ease), transform 140ms var(--stage-ease);
 }
 .stage-ach-filter:hover {
-  color: var(--stage-ink);
-  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 .stage-ach-filter.active {
   background: rgba(255, 255, 255, 0.2) !important;
@@ -355,25 +364,36 @@
 .stage-ach-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-block: 6px;
+  gap: 6px;
+  margin-block: 8px;
 }
 .stage-ach-row {
   display: flex;
   align-items: center;
-  gap: 13px;
+  gap: 14px;
   width: 100%;
   min-height: 64px;
-  padding: 9px 11px;
-  border: 1px solid transparent;
-  border-block-end-color: var(--stage-line);
-  border-radius: 8px;
-  background: transparent;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
   color: var(--stage-ink);
   font-family: inherit;
   text-align: start;
-  cursor: default;
-  transition: background 140ms var(--stage-ease), border-color 140ms var(--stage-ease);
+  cursor: pointer;
+  outline: none;
+  transition: background 160ms var(--stage-ease), border-color 160ms var(--stage-ease), transform 160ms var(--stage-ease), box-shadow 160ms var(--stage-ease);
+}
+.stage-ach-row:hover,
+.stage-ach-row.gp-focused {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  transform: translateX(4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+.stage-ach-row.gp-focused {
+  outline: 2px solid #ffffff !important;
+  outline-offset: -1px !important;
 }
 .stage-ach-row.is-unlocked {
   background: rgba(255, 255, 255, 0.02);
