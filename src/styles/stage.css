@@ -664,25 +664,35 @@ body.stage-mode #toasts {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  height: 56px;
+  height: 48px;
+  min-width: 140px;
   padding: 0 28px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  background: var(--stage-ink) !important;
-  color: #000 !important;
-  font-size: 16px;
-  font-weight: 650;
+  border: 1px solid rgba(255, 255, 255, 0.65) !important;
+  border-radius: 9999px !important;
+  background: linear-gradient(180deg, #ffffff 0%, #edf1f7 100%) !important;
+  color: #060810 !important;
+  font-size: 14.5px;
+  font-weight: 750;
+  letter-spacing: 0.03em;
   cursor: pointer;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.34);
-  transition: background 140ms var(--stage-ease), transform 140ms var(--stage-ease), box-shadow 140ms var(--stage-ease);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 #ffffff,
+    0 0 20px rgba(255, 255, 255, 0.25);
+  transition: background 180ms ease, transform 180ms var(--stage-ease), box-shadow 180ms ease;
 }
 .stage-primary-action .btn:hover {
-  background: #fff !important;
-  transform: translateY(-1px);
+  background: #ffffff !important;
+  transform: translateY(-2px) scale(1.03);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 #ffffff,
+    0 0 28px rgba(255, 255, 255, 0.45);
 }
 .stage-primary-action .btn.update {
-  background: #f2bf55 !important;
-  color: #1b1200 !important;
+  background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%) !important;
+  color: #1a0f00 !important;
+  border-color: rgba(251, 191, 36, 0.6) !important;
 }
 .stage-primary-action .btn.stop,
 .stage-primary-action .btn.danger {
@@ -692,12 +702,12 @@ body.stage-mode #toasts {
   box-shadow: none;
 }
 .stage-primary-action .btn.install {
-  background: var(--stage-ink) !important;
-  color: #000 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #edf1f7 100%) !important;
+  color: #060810 !important;
 }
 .stage-primary-action .btn svg {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
 }
 .stage-kicker {
   display: block;

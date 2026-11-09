@@ -78,11 +78,11 @@
 .stage-ribbon-track {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   overflow-x: auto;
   overflow-y: visible;
   padding-inline: clamp(36px, 4.5vw, 84px);
-  padding-block: 24px 34px;
+  padding-block: 20px 30px;
   margin: 0;
   width: 100%;
   box-sizing: border-box;
@@ -100,36 +100,39 @@
 
 .stage-ribbon-card {
   position: relative;
-  flex: 0 0 clamp(168px, 11.2vw, 218px);
-  aspect-ratio: 16 / 9;
+  flex: 0 0 clamp(96px, 7.2vw, 132px);
+  aspect-ratio: 1 / 1;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: center;
   padding: 0;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
-  background: #0c0e14;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: #0b0d14;
   color: #fff;
-  text-align: start;
+  text-align: center;
   cursor: pointer;
   outline: none;
   scroll-snap-align: start;
-  opacity: 0.74;
-  filter: brightness(0.8) contrast(1.05);
-  transform: scale(0.96);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  opacity: 0.72;
+  filter: brightness(0.86) contrast(1.04);
+  transform: scale(0.94);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
   transition:
     transform 280ms cubic-bezier(0.16, 1, 0.3, 1),
     border-color 280ms cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 280ms cubic-bezier(0.16, 1, 0.3, 1),
     opacity 280ms cubic-bezier(0.16, 1, 0.3, 1),
-    filter 280ms cubic-bezier(0.16, 1, 0.3, 1);
+    filter 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-radius 280ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .stage-ribbon-card::after {
   content: "";
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   background: linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, 0.25) 50%, transparent 80%);
   transform: translateX(-120%);
   transition: transform 650ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -139,23 +142,24 @@
 
 .stage-ribbon-card:hover {
   opacity: 0.94;
-  filter: brightness(0.96);
-  border-color: rgba(255, 255, 255, 0.35);
+  filter: brightness(0.98);
+  border-color: rgba(255, 255, 255, 0.4);
   transform: scale(1.02) translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.65);
 }
 
 .stage-ribbon-card.gp-focused {
   opacity: 1 !important;
-  filter: brightness(1.04) contrast(1.02) !important;
-  transform: scale(1.12) translateY(-5px) !important;
+  filter: brightness(1.05) contrast(1.02) !important;
+  transform: scale(1.15) translateY(-5px) !important;
   border-color: #ffffff !important;
   outline: none !important;
+  border-radius: 20px !important;
   box-shadow:
-    0 0 0 2.5px #ffffff,
-    0 0 20px rgba(255, 255, 255, 0.6),
-    0 0 45px rgba(90, 150, 255, 0.3),
-    0 16px 36px rgba(0, 0, 0, 0.85) !important;
+    0 0 0 3px #ffffff,
+    0 0 24px rgba(255, 255, 255, 0.65),
+    0 0 50px rgba(90, 150, 255, 0.35),
+    0 18px 40px rgba(0, 0, 0, 0.85) !important;
   z-index: 25 !important;
 }
 
@@ -175,39 +179,20 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .stage-ribbon-card.gp-focused .stage-ribbon-image {
-  transform: scale(1.06);
+  transform: scale(1.08);
 }
 
 .stage-ribbon-shade {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.25) 45%, transparent 75%);
-  pointer-events: none;
+  display: none;
 }
 
 .stage-ribbon-label {
-  position: relative;
-  z-index: 3;
-  width: 100%;
-  padding: 14px 10px 8px;
-  overflow: hidden;
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 11.5px;
-  font-weight: 650;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  transition: color 180ms ease, text-shadow 180ms ease;
-}
-
-.stage-ribbon-card.gp-focused .stage-ribbon-label {
-  color: #ffffff;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+  display: none;
 }
 
 .stage-ribbon-indicator {
@@ -256,11 +241,12 @@
 }
 
 .stage-ribbon-library .stage-ribbon-label {
+  display: block;
   width: auto;
   padding: 0;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.75);
 }
@@ -348,28 +334,29 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 14px;
-  margin-block-start: 4px;
+  gap: 12px;
+  margin-block-start: 6px;
 }
 
 .stage-primary-action .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  height: 56px;
-  min-width: clamp(170px, 13vw, 220px);
-  padding: 0 36px;
-  border: 1px solid transparent;
-  border-radius: 9999px;
-  background: linear-gradient(135deg, #ffffff 0%, #e6e9f2 100%) !important;
-  color: #06070a !important;
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  gap: 10px;
+  height: 48px;
+  min-width: clamp(140px, 11vw, 180px);
+  padding: 0 30px;
+  border: 1px solid rgba(255, 255, 255, 0.75) !important;
+  border-radius: 9999px !important;
+  background: linear-gradient(180deg, #ffffff 0%, #edf1f7 100%) !important;
+  color: #060810 !important;
+  font-size: 14.5px;
+  font-weight: 750;
+  letter-spacing: 0.03em;
   cursor: pointer;
   box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.45),
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 #ffffff,
     0 0 20px rgba(255, 255, 255, 0.25);
   transition:
     transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -380,23 +367,26 @@
 .stage-primary-action .btn:hover {
   transform: translateY(-2px) scale(1.03);
   box-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.55),
-    0 0 28px rgba(255, 255, 255, 0.4);
+    0 8px 24px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 #ffffff,
+    0 0 28px rgba(255, 255, 255, 0.45);
 }
 
 .stage-primary-action .btn.gp-focused {
   transform: scale(1.05) translateY(-2px) !important;
+  border-color: #ffffff !important;
   outline: none !important;
   box-shadow:
     0 0 0 3px #ffffff,
-    0 0 36px rgba(255, 255, 255, 0.8),
-    0 16px 42px rgba(0, 0, 0, 0.65) !important;
+    0 0 32px rgba(255, 255, 255, 0.8),
+    0 14px 36px rgba(0, 0, 0, 0.65) !important;
 }
 
 .stage-primary-action .btn.update {
   background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%) !important;
   color: #1a0f00 !important;
-  box-shadow: 0 8px 24px rgba(217, 119, 6, 0.4), 0 0 20px rgba(251, 191, 36, 0.3);
+  border-color: rgba(251, 191, 36, 0.6) !important;
+  box-shadow: 0 4px 16px rgba(217, 119, 6, 0.4), 0 0 20px rgba(251, 191, 36, 0.3);
 }
 
 .stage-primary-action .btn.stop,
@@ -408,8 +398,8 @@
 }
 
 .stage-primary-action .btn svg {
-  width: 19px;
-  height: 19px;
+  width: 17px;
+  height: 17px;
   fill: currentColor;
 }
 
@@ -1087,7 +1077,8 @@
     min-height: calc(100vh - var(--stage-top));
   }
   .stage-ribbon-card {
-    flex-basis: 132px;
+    flex-basis: 88px;
+    border-radius: 14px;
   }
   .stage-home-copy {
     width: calc(100vw - 44px);
@@ -1104,10 +1095,10 @@
     height: 46px;
   }
   .stage-primary-action .btn {
-    height: 50px;
-    min-width: 148px;
-    padding: 0 22px;
-    font-size: 14px;
+    height: 44px;
+    min-width: 124px;
+    padding: 0 20px;
+    font-size: 13.5px;
   }
   .stage-home-status {
     display: none;
