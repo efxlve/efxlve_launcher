@@ -55,7 +55,7 @@ export function stageButton(button: StagePadButton): void {
     if (button === "select") stageBack();
     return;
   }
-  if (S.stage.browserOpen || S.stage.spotifyOpen || S.stage.discordOpen) {
+  if (S.stage.powerOpen || S.stage.browserOpen || S.stage.spotifyOpen || S.stage.discordOpen) {
     if (button === "start" || button === "select") {
       stageBack();
       return;
