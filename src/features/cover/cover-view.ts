@@ -15,6 +15,8 @@ import type { CustomLogoSize, LogoAnchor } from "../../core/types";
 
 import { esc } from "../../core/utils";
 import { localizeMessage, t } from "../../i18n";
+import { artDataBudget, shrinkStoredArt, type CoverFileTarget } from "./cover-file";
+import { compactCustomArtStorage } from "./cover-storage";
 
 import { epicGetSteamGridCovers, epicSearchSteamGrid, type SteamGridGame, type SteamGridImage } from "../../epic";
 import { igdbCovers, igdbImage } from "../../igdb";
@@ -37,8 +39,10 @@ import {
 
 /** Persists one art record; rolls back when the storage quota rejects it. */
 function persistArt(key: string, appName: string, url: string, record: Record<string, string>): boolean {
+  const next = url.trim();
   const previous = record[appName];
-  record[appName] = url.trim();
+  if (previous === next) return true;
+  record[appName] = next;
   try {
     localStorage.setItem(key, JSON.stringify(record));
     return true;
@@ -49,13 +53,66 @@ function persistArt(key: string, appName: string, url: string, record: Record<st
   }
 }
 
-export function saveCustomCover(appName: string, url: string): boolean {
-  if (!persistArt(CUSTOM_COVERS_KEY, appName, url, S.customCovers)) return false;
-  clearWideArtCache(appName);
+/** The storage key and in-memory record behind one art target. */
+function artStore(target: CoverFileTarget): { key: string; record: Record<string, string> } {
+  if (target === "hero") return { key: CUSTOM_HEROES_KEY, record: S.customHeroes };
+  if (target === "logo") return { key: CUSTOM_LOGOS_KEY, record: S.customLogos };
+  return { key: CUSTOM_COVERS_KEY, record: S.customCovers };
+}
+
+function persistArtFor(target: CoverFileTarget, appName: string, url: string): boolean {
+  const { key, record } = artStore(target);
+  return persistArt(key, appName, url, record);
+}
+
+/** Repaints the library and the open game page after one art record changed. */
+function afterArtSaved(target: CoverFileTarget, appName: string): void {
+  // The portrait cover also feeds the wide art cache; a logo does not.
+  if (target !== "logo") clearWideArtCache(appName);
   S.libraryDataRev++;
   render();
   repaintGameHero(appName);
-  return true;
+}
+
+/**
+ * Saves custom art and, when the quota is already full, first shrinks the
+ * legacy full-size images stored by older builds and retries once.
+ */
+export async function saveCustomArtWithRecovery(
+  target: CoverFileTarget,
+  appName: string,
+  url: string,
+): Promise<boolean> {
+  // Free legacy space first when the origin is under pressure; the pass is a
+  // no-op otherwise. This keeps the first `setItem` from serialising a huge
+  // record on the click itself.
+  await compactCustomArtStorage();
+  if (persistArtFor(target, appName, url)) {
+    afterArtSaved(target, appName);
+    return true;
+  }
+  await compactCustomArtStorage(true);
+  if (persistArtFor(target, appName, url)) {
+    afterArtSaved(target, appName);
+    return true;
+  }
+  if (!url.startsWith("data:image/")) return false;
+  // A data URL can still be too large for the space that is left; one more
+  // encode at a lower budget is better than sending the user back to pick a
+  // different file.
+  let candidate = url;
+  for (const factor of [0.45, 0.25]) {
+    try {
+      candidate = await shrinkStoredArt(candidate, target, Math.round(artDataBudget(target) * factor));
+    } catch {
+      return false;
+    }
+    if (persistArtFor(target, appName, candidate)) {
+      afterArtSaved(target, appName);
+      return true;
+    }
+  }
+  return false;
 }
 
 export function resetCustomCover(appName: string): void {
@@ -65,15 +122,6 @@ export function resetCustomCover(appName: string): void {
   S.libraryDataRev++;
   render();
   repaintGameHero(appName);
-}
-
-export function saveCustomHero(appName: string, url: string): boolean {
-  if (!persistArt(CUSTOM_HEROES_KEY, appName, url, S.customHeroes)) return false;
-  clearWideArtCache(appName);
-  S.libraryDataRev++;
-  render();
-  repaintGameHero(appName);
-  return true;
 }
 
 export function resetCustomHero(appName: string): void {
@@ -90,15 +138,6 @@ export function logoSizeOf(appName: string): CustomLogoSize {
   if (scale <= 0.82) return "small";
   if (scale >= 1.18) return "large";
   return "medium";
-}
-
-/** Saves the transparent logo and repaints the open game page behind the modal. */
-export function saveCustomLogo(appName: string, url: string): boolean {
-  if (!persistArt(CUSTOM_LOGOS_KEY, appName, url, S.customLogos)) return false;
-  S.libraryDataRev++;
-  render();
-  repaintGameHero(appName);
-  return true;
 }
 
 export function resetCustomLogo(appName: string): void {

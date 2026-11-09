@@ -521,10 +521,23 @@ pub(crate) fn name_needs_repair(name: &str) -> bool {
 /// user already has wins over an import unless it still holds raw serialization
 /// bytes, which a clean import repairs.
 pub(crate) fn merge_collections(incoming: Vec<GameCollection>) -> Vec<GameCollection> {
+    let existing = read_collections_raw();
     if incoming.is_empty() {
-        return incoming;
+        // An import that found nothing must not clear the user's list. The
+        // manual library refresh trusts this answer as the whole collection
+        // set, so returning an empty vector here hid every collection until
+        // the next read from disk.
+        return existing;
     }
-    let mut merged = read_collections_raw();
+    let merged = merge_into(existing, incoming);
+    let _ = save_collections(&merged);
+    merged
+}
+
+fn merge_into(
+    mut merged: Vec<GameCollection>,
+    incoming: Vec<GameCollection>,
+) -> Vec<GameCollection> {
     for col in &incoming {
         if let Some(idx) = merged
             .iter()
@@ -540,7 +553,6 @@ pub(crate) fn merge_collections(incoming: Vec<GameCollection>) -> Vec<GameCollec
             merged.push(col.clone());
         }
     }
-    let _ = save_collections(&merged);
     merged
 }
 
@@ -896,6 +908,28 @@ mod tests {
         assert_eq!(dedup.len(), 2);
         assert_eq!(dedup[0], "Carnation");
         assert_eq!(dedup[1], "Ginger");
+    }
+
+    #[test]
+    fn test_merge_without_incoming_keeps_existing() {
+        let existing = vec![sample("kept")];
+        let merged = merge_into(existing, Vec::new());
+        assert_eq!(merged.len(), 1);
+        assert_eq!(merged[0].id, "kept");
+    }
+
+    #[test]
+    fn test_merge_unions_members_by_name_and_id() {
+        let mut existing = sample("story");
+        existing.name = "Story".to_string();
+        existing.app_names = vec!["one".to_string()];
+        let mut by_name = sample("other");
+        by_name.name = "story".to_string();
+        by_name.app_names = vec!["two".to_string()];
+        let merged = merge_into(vec![existing], vec![by_name]);
+        assert_eq!(merged.len(), 1);
+        assert_eq!(merged[0].id, "story");
+        assert_eq!(merged[0].app_names, vec!["one", "two"]);
     }
 
     #[test]

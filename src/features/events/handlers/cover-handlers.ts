@@ -20,9 +20,7 @@ import {
   resetCustomHero,
   resetCustomLogo,
   runIgdbCoverSearch,
-  saveCustomCover,
-  saveCustomHero,
-  saveCustomLogo,
+  saveCustomArtWithRecovery,
   searchAndLoadSteamGrid,
   setCustomLogoSize,
 } from "../../cover/cover-view";
@@ -302,48 +300,7 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
     }
 
     case "save-custom-cover":
-      if (id) {
-        const input = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
-        const val = S.sgdbSelectedCoverUrl || input?.value.trim() || "";
-        const hasExistingLogo = Boolean(S.customLogos[id] || customLogoOf(id));
-        const hasExistingHero = Boolean(S.customHeroes[id]);
-        const hasExistingCover = Boolean(S.customCovers[id]);
-
-        if (val) {
-          if (S.activeCoverTarget === "hero") {
-            if (!saveCustomHero(id, val)) {
-              toast(i18nT("cover.saveFailed"), "err");
-              return true;
-            }
-            toast(i18nT("cover.heroSaved"), "ok");
-          } else if (S.activeCoverTarget === "logo") {
-            if (!saveCustomLogo(id, val)) {
-              toast(i18nT("cover.saveFailed"), "err");
-              return true;
-            }
-            toast(i18nT("cover.logoSaved"), "ok");
-          } else {
-            if (!saveCustomCover(id, val)) {
-              toast(i18nT("cover.saveFailed"), "err");
-              return true;
-            }
-            toast(i18nT("cover.portraitSaved"), "ok");
-          }
-          closeCustomCoverModal();
-        } else if (S.activeCoverTarget === "logo" && (hasExistingLogo || S.customLogoLayouts[id])) {
-          repaintGameHero(id);
-          toast(i18nT("cover.logoSaved"), "ok");
-          closeCustomCoverModal();
-        } else if (S.activeCoverTarget === "hero" && hasExistingHero) {
-          toast(i18nT("cover.heroSaved"), "ok");
-          closeCustomCoverModal();
-        } else if (S.activeCoverTarget === "cover" && hasExistingCover) {
-          toast(i18nT("cover.portraitSaved"), "ok");
-          closeCustomCoverModal();
-        } else {
-          toast(i18nT("cover.pickFirst"), "err");
-        }
-      }
+      if (id) void saveCustomCoverFromModal(id, t);
       return true;
 
     case "reset-active-target":
@@ -388,26 +345,7 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
       return true;
 
     case "start-logo-hero-adjust":
-      if (id) {
-        const urlInput = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
-        const pendingUrl = S.sgdbSelectedCoverUrl || urlInput?.value.trim() || "";
-        if (pendingUrl && S.activeCoverTarget === "logo") {
-          if (!saveCustomLogo(id, pendingUrl)) {
-            toast(i18nT("cover.saveFailed"), "err");
-            return true;
-          }
-          S.sgdbSelectedCoverUrl = "";
-        }
-        if (!customLogoOf(id)) {
-          toast(i18nT("cover.pickFirst"), "err");
-          return true;
-        }
-        closeCustomCoverModal();
-        if (S.currentModalAppName !== id) {
-          openEpicModal(id, true);
-        }
-        startLogoHeroAdjust(id);
-      }
+      if (id) void startLogoHeroAdjustFromModal(id);
       return true;
 
     case "finish-logo-hero-adjust":
@@ -428,5 +366,85 @@ export function handleCoverAction(act: string | undefined, t: HTMLElement, id?: 
 
     default:
       return false;
+  }
+}
+
+/** One save/rebuild at a time: a burst of clicks must not queue full renders. */
+let coverSaveBusy = false;
+
+function setSaveButtonDisabled(el: HTMLElement, disabled: boolean): void {
+  const button = el.closest<HTMLButtonElement>("button");
+  if (button) button.disabled = disabled;
+}
+
+async function saveCustomCoverFromModal(id: string, button: HTMLElement): Promise<void> {
+  if (coverSaveBusy) return;
+  coverSaveBusy = true;
+  setSaveButtonDisabled(button, true);
+  const target = S.activeCoverTarget;
+  try {
+    const input = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
+    const val = S.sgdbSelectedCoverUrl || input?.value.trim() || "";
+    const hasExistingLogo = Boolean(S.customLogos[id] || customLogoOf(id));
+    const hasExistingHero = Boolean(S.customHeroes[id]);
+    const hasExistingCover = Boolean(S.customCovers[id]);
+
+    if (val) {
+      if (!(await saveCustomArtWithRecovery(target, id, val))) {
+        toast(i18nT("cover.saveFailed"), "err");
+        return;
+      }
+      toast(
+        target === "hero" ? i18nT("cover.heroSaved") : target === "logo" ? i18nT("cover.logoSaved") : i18nT("cover.portraitSaved"),
+        "ok",
+      );
+      closeCustomCoverModal();
+    } else if (target === "logo" && (hasExistingLogo || S.customLogoLayouts[id])) {
+      repaintGameHero(id);
+      toast(i18nT("cover.logoSaved"), "ok");
+      closeCustomCoverModal();
+    } else if (target === "hero" && hasExistingHero) {
+      toast(i18nT("cover.heroSaved"), "ok");
+      closeCustomCoverModal();
+    } else if (target === "cover" && hasExistingCover) {
+      toast(i18nT("cover.portraitSaved"), "ok");
+      closeCustomCoverModal();
+    } else {
+      toast(i18nT("cover.pickFirst"), "err");
+    }
+  } catch {
+    toast(i18nT("cover.saveFailed"), "err");
+  } finally {
+    coverSaveBusy = false;
+    setSaveButtonDisabled(button, false);
+  }
+}
+
+async function startLogoHeroAdjustFromModal(id: string): Promise<void> {
+  if (coverSaveBusy) return;
+  coverSaveBusy = true;
+  try {
+    const urlInput = document.getElementById("custom-cover-url-input") as HTMLInputElement | null;
+    const pendingUrl = S.sgdbSelectedCoverUrl || urlInput?.value.trim() || "";
+    if (pendingUrl && S.activeCoverTarget === "logo") {
+      if (!(await saveCustomArtWithRecovery("logo", id, pendingUrl))) {
+        toast(i18nT("cover.saveFailed"), "err");
+        return;
+      }
+      S.sgdbSelectedCoverUrl = "";
+    }
+    if (!customLogoOf(id)) {
+      toast(i18nT("cover.pickFirst"), "err");
+      return;
+    }
+    closeCustomCoverModal();
+    if (S.currentModalAppName !== id) {
+      openEpicModal(id, true);
+    }
+    startLogoHeroAdjust(id);
+  } catch {
+    toast(i18nT("cover.saveFailed"), "err");
+  } finally {
+    coverSaveBusy = false;
   }
 }

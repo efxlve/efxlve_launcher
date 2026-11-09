@@ -25,6 +25,7 @@ import type { View } from "./core/types";
 import { closeCollectionModal } from "./features/collections/collections-view";
 import { closeChangelogModal } from "./features/changelog/changelog-view";
 import { closeCustomCoverModal } from "./features/cover/cover-view";
+import { compactCustomArtStorage } from "./features/cover/cover-storage";
 import { destroyDiscordPage, hydrateDiscordPage, keepDiscordOpen, renderDiscordPage } from "./features/discord/discord-view";
 import { closeInstallDialog } from "./features/install/install-dialog";
 import { closeAddCustomGameModal } from "./features/custom-games/add-game-dialog";
@@ -93,6 +94,12 @@ applySidebarPageVisibility();
 // Windows reports a lost/restored connection; the chip follows it so the
 // launcher never claims "Online" while the cable is out.
 watchConnection(updateOfflineModeUi);
+
+// Older builds stored full-size custom art; shrink those records once the
+// shell has settled so a later save cannot hit a full storage quota.
+window.setTimeout(() => {
+  void compactCustomArtStorage().catch(() => undefined);
+}, 3000);
 
 // Prewarm the Discord page after the shell settles, so the first visit is
 // instant instead of paying the web-client boot in front of the person. The

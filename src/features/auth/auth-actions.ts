@@ -156,8 +156,16 @@ export async function syncEpicLibrary(manual: boolean, force = false): Promise<v
     void syncEpicServerPlaytimes();
     if (manual) {
       try {
-        S.epicCollections = (await epicImportEglCollections()) ?? S.epicCollections;
-        S.libraryDataRev++;
+        const imported = await epicImportEglCollections();
+        // An import that found no launcher categories answers with an empty
+        // list; replacing the state with it hid every collection until the
+        // next read from disk. Keep the current list and re-read the file.
+        if (imported && imported.length > 0) {
+          S.epicCollections = imported;
+          S.libraryDataRev++;
+        } else {
+          void loadEpicCollections();
+        }
       } catch {
         void loadEpicCollections();
       }

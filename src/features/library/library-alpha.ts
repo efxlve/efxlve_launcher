@@ -110,13 +110,19 @@ export function initLibraryAlphaEvents(): void {
     if (e.button !== 0) return;
     const btn = (e.target as HTMLElement | null)?.closest<HTMLButtonElement>(".lib-alpha-btn");
     if (!btn || btn.disabled) return;
+    const index = Number(btn.dataset.index);
+    if (!Number.isFinite(index) || index < 0) return;
     scrubbing = true;
-    lastScrubIndex = Number(btn.dataset.index);
+    lastScrubIndex = index;
     try {
       nav.setPointerCapture(e.pointerId);
     } catch {
       // Ignore synthetic events without active pointer id.
     }
+    // Pointer capture retargets the compatibility click to `nav`, so the
+    // delegated `data-act` handler never sees the button. Jump here; dragging
+    // to another letter is handled by `scrubAt` above.
+    jumpCallback?.(index, false);
   });
 
   nav.addEventListener("pointermove", (e) => {

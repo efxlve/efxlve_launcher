@@ -10,20 +10,28 @@
 
 export type CoverFileTarget = "cover" | "hero" | "logo";
 
-/** Largest edge per target, matching the size the art is painted at. */
-const MAX_EDGE: Record<CoverFileTarget, { width: number; height: number }> = {
-  cover: { width: 660, height: 990 },
-  hero: { width: 1600, height: 900 },
-  logo: { width: 1024, height: 1024 },
-};
+interface ArtBudget {
+  /** Largest edge the image is stored at. */
+  width: number;
+  height: number;
+  /** One stored data URL should stay below this many characters. */
+  chars: number;
+}
 
-/** One stored image past this many characters can fill the origin quota. */
-const MAX_DATA_CHARS = 900_000;
+/** Painted size per target, plus the storage budget that goes with it. */
+const BUDGET: Record<CoverFileTarget, ArtBudget> = {
+  cover: { width: 480, height: 720, chars: 150_000 },
+  hero: { width: 1280, height: 720, chars: 260_000 },
+  logo: { width: 640, height: 640, chars: 150_000 },
+};
 
 /** The file pane advertises this limit; larger files are refused up front. */
 const MAX_FILE_BYTES = 15 * 1024 * 1024;
 
-function decode(file: File): Promise<HTMLImageElement> {
+/** Quality ladder, tried until the data URL fits the target budget. */
+const QUALITIES = [0.86, 0.74, 0.62];
+
+function decodeFile(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const image = new Image();
@@ -39,38 +47,85 @@ function decode(file: File): Promise<HTMLImageElement> {
   });
 }
 
-/**
- * Reads a picked file into a data URL small enough to persist.
- *
- * Throws when the file is not an image or cannot fit the quota even at the
- * lowest quality; the caller shows the failure toast.
- */
-export async function readCoverFile(file: File, target: CoverFileTarget): Promise<string> {
-  if (!file.type.startsWith("image/") || file.size > MAX_FILE_BYTES) throw new Error("not an image");
-  const image = await decode(file);
-  const width = image.naturalWidth;
-  const height = image.naturalHeight;
-  if (!width || !height) throw new Error("empty image");
+function decodeDataUrl(value: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("image decode failed"));
+    image.src = value;
+  });
+}
 
-  const box = MAX_EDGE[target];
-  const scale = Math.min(1, box.width / width, box.height / height);
+function encode(
+  image: HTMLImageElement,
+  scale: number,
+  format: "image/webp" | "image/jpeg",
+  quality: number,
+): string {
   const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(width * scale));
-  canvas.height = Math.max(1, Math.round(height * scale));
+  canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
   const context = canvas.getContext("2d");
   if (!context) throw new Error("no canvas");
   context.imageSmoothingQuality = "high";
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL(format, quality);
+}
 
-  for (const quality of [0.9, 0.78, 0.66]) {
-    const dataUrl = canvas.toDataURL("image/webp", quality);
-    if (dataUrl.length <= MAX_DATA_CHARS) return dataUrl;
+/**
+ * Shrinks one decoded image under `maxChars`; a logo never falls back to JPEG
+ * because that would paint its transparent cut-out over black.
+ */
+function shrinkImage(image: HTMLImageElement, target: CoverFileTarget, maxChars: number): string {
+  const width = image.naturalWidth;
+  const height = image.naturalHeight;
+  if (!width || !height) throw new Error("empty image");
+
+  const box = BUDGET[target];
+  let scale = Math.min(1, box.width / width, box.height / height);
+
+  for (let attempt = 0; attempt < 4; attempt++) {
+    for (const quality of QUALITIES) {
+      const dataUrl = encode(image, scale, "image/webp", quality);
+      if (dataUrl.length <= maxChars) return dataUrl;
+    }
+    scale *= 0.82;
   }
-  // A logo is usually a transparent PNG, so it never falls back to JPEG:
-  // that would paint the cut-out over black.
+
   if (target !== "logo") {
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
-    if (dataUrl.length <= MAX_DATA_CHARS) return dataUrl;
+    const dataUrl = encode(image, scale, "image/jpeg", 0.8);
+    if (dataUrl.length <= maxChars) return dataUrl;
   }
   throw new Error("image too large");
+}
+
+/** The number of characters a freshly picked image may take at this target. */
+export function artDataBudget(target: CoverFileTarget): number {
+  return BUDGET[target].chars;
+}
+
+/**
+ * Reads a picked file into a data URL small enough to persist.
+ *
+ * Throws when the file is not an image or cannot fit the budget even at the
+ * lowest quality; the caller shows the failure toast.
+ */
+export async function readCoverFile(file: File, target: CoverFileTarget): Promise<string> {
+  if (!file.type.startsWith("image/") || file.size > MAX_FILE_BYTES) throw new Error("not an image");
+  const image = await decodeFile(file);
+  return shrinkImage(image, target, artDataBudget(target));
+}
+
+/**
+ * Re-encodes an already stored data URL under a stricter budget. Non-data
+ * values (web links and asset URLs) pass through untouched.
+ */
+export async function shrinkStoredArt(
+  value: string,
+  target: CoverFileTarget,
+  maxChars = artDataBudget(target),
+): Promise<string> {
+  if (!value.startsWith("data:image/")) return value;
+  const image = await decodeDataUrl(value);
+  return shrinkImage(image, target, maxChars);
 }

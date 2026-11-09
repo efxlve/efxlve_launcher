@@ -64,6 +64,20 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         tr: "Sahne kabuğu ayrı bir tembel parça: masaüstü paketi kumanda ekranlarını artık ayrıştırmıyor ve ilk Sahne girişi kısa bir içe aktarma bedeli ödüyor.",
       },
     ],
+    fixed: [
+      {
+        en: "Refreshing the library no longer hides the collection tabs when the Epic launcher has no categories to import; the saved collections stay on screen.",
+        tr: "Kütüphaneyi yenilemek, Epic başlatıcısında içe aktarılacak kategori yokken koleksiyon sekmelerini artık gizlemiyor; kayıtlı koleksiyonlar ekranda kalıyor.",
+      },
+      {
+        en: "The A–Z rail now jumps on the first click or tap instead of waiting for a drag.",
+        tr: "A–Z rayı artık sürüklemeyi beklemeden ilk tıklamada veya dokunuşta ilgili harfe atlıyor.",
+      },
+      {
+        en: "Custom cover, hero and logo saves first shrink the oversized images left by older builds, so a full storage quota no longer rejects the new image, and repeated Save clicks cannot queue several full repaints.",
+        tr: "Özel kapak, hero ve logo kaydederken eski sürümlerden kalan büyük görseller önce küçültülüyor; dolu depolama kotası yeni görseli artık reddetmiyor ve art arda Kaydet tıklamaları birkaç tam yeniden çizimi kuyruğa almıyor.",
+      },
+    ],
   },
   {
     version: "0.1.49",
