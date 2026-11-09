@@ -303,7 +303,10 @@ export function stageTitleKey(s: EpicSummary): string {
  * marker lets the gamepad layer return here after a dialog closes.
  */
 export function stagePrimaryAction(s: EpicSummary): string {
-  return epicActionButtons(s, "full", { primaryOnly: true }).replace("<button ", "<button data-gp-default ");
+  return epicActionButtons(s, "full", { primaryOnly: true }).replace(
+    "<button ",
+    '<button data-gp-default data-gp-key="primary" ',
+  );
 }
 
 export function stageAchievements(s: EpicSummary): ReturnType<typeof achSummaryOf> {

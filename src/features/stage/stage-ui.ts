@@ -131,9 +131,9 @@ export function stageChip(text: string, tone: "ok" | "warn" | "" = ""): string {
 }
 
 /** Horizontal progress track used by downloads and achievements. */
-export function stageProgress(percent: number, className = ""): string {
+export function stageProgress(percent: number, className = "", attrs = ""): string {
   const clamped = Math.max(0, Math.min(100, Math.round(percent)));
-  return `<span class="stage-progress ${className}" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${clamped}"><span style="width:${clamped}%"></span></span>`;
+  return `<span class="stage-progress ${className}" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${clamped}"${attrs ? ` ${attrs}` : ""}><span style="width:${clamped}%"></span></span>`;
 }
 
 /** The active download, if any, for the status bar and Home. */

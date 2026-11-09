@@ -141,8 +141,8 @@
 
 .stage-wall-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(clamp(116px, 9vw, 230px), 1fr));
-  gap: clamp(15px, 1.7vw, 25px);
+  grid-template-columns: repeat(auto-fill, minmax(clamp(112px, 8.4vw, 200px), 1fr));
+  gap: clamp(14px, 1.5vw, 22px);
   padding-block-end: 42px;
 }
 

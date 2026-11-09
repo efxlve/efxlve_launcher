@@ -1,47 +1,85 @@
 /* ==========================================================================
-   Stage Home: The premier console dashboard layout.
-   Two-floor spatial architecture: Floor 1 (Game Stage) & Floor 2 (Activity Hub).
+   Stage Home: one full-bleed stage, a readable game ribbon and a second-floor
+   activity hub. The art is the room; the copy and the focus are the light.
    ========================================================================== */
 
 .stage-home {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  position: relative;
   z-index: 10;
 }
 
-/* ==========================================================================
-   Floor 1: Primary Game Selection Stage (Full Viewport)
-   ========================================================================== */
+/* ---------- First floor: the selected game ---------- */
 
-.stage-floor-game {
+.stage-home-stage {
+  position: relative;
   min-height: calc(100vh - var(--stage-top));
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding-bottom: 24px;
-  box-sizing: border-box;
+  overflow: hidden;
+  isolation: isolate;
 }
 
-/* ---------- Top Horizontal Game Ribbon ---------- */
+.stage-home-art,
+.stage-home-art > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
 
-.stage-ribbon-section {
+.stage-home-art-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+  filter: saturate(1.04) contrast(1.02);
+  animation: stage-home-art-in 900ms var(--stage-ease) both;
+}
+
+.stage-home-art .stage-poster {
+  min-height: 0;
+}
+
+.stage-home-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top, rgba(5, 5, 5, 0.98) 0%, rgba(5, 5, 5, 0.74) 22%, rgba(5, 5, 5, 0.24) 54%, rgba(5, 5, 5, 0.1) 72%, rgba(5, 5, 5, 0.62) 100%),
+    linear-gradient(to right, rgba(5, 5, 5, 0.92) 0%, rgba(5, 5, 5, 0.52) 38%, rgba(5, 5, 5, 0.08) 72%, transparent 100%);
+  pointer-events: none;
+}
+
+/* ---------- Top ribbon ---------- */
+
+.stage-home-ribbon {
   position: relative;
-  padding: 14px clamp(24px, 4.2vw, 64px) 12px;
-  z-index: 20;
+  z-index: 4;
+  padding: clamp(12px, 1.6vh, 20px) clamp(24px, 3.4vw, 64px) 0;
+  pointer-events: none;
+}
+
+.stage-home-ribbon::before {
+  content: "";
+  position: absolute;
+  inset: -1px 0 auto;
+  height: 190px;
+  background: linear-gradient(to bottom, rgba(5, 5, 5, 0.82), rgba(5, 5, 5, 0.3) 48%, transparent);
+  pointer-events: none;
+  z-index: -1;
 }
 
 .stage-ribbon-track {
   display: flex;
-  align-items: center;
-  gap: clamp(12px, 1.2vw, 16px);
+  align-items: stretch;
+  gap: clamp(9px, 0.9vw, 14px);
   overflow-x: auto;
   overflow-y: visible;
-  padding-block: 10px 20px;
-  margin-block: -4px -8px;
+  padding: 8px 6px 14px;
+  margin-inline: -6px;
   scrollbar-width: none;
   scroll-behavior: smooth;
+  pointer-events: auto;
 }
 
 .stage-ribbon-track::-webkit-scrollbar {
@@ -50,38 +88,38 @@
 
 .stage-ribbon-card {
   position: relative;
-  width: clamp(110px, 7.6vw, 130px);
-  height: clamp(110px, 7.6vw, 130px);
-  flex-shrink: 0;
+  flex: 0 0 clamp(148px, 9.4vw, 186px);
+  aspect-ratio: 16 / 9;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-end;
   padding: 0;
-  border: 2px solid rgba(255, 255, 255, 0.12);
-  border-radius: 18px;
-  background: rgba(20, 20, 28, 0.85);
-  cursor: pointer;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  background: #101014;
+  color: #fff;
+  text-align: start;
+  cursor: pointer;
   outline: none;
+  scroll-snap-align: start;
   transition:
-    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 200ms ease;
-  will-change: transform;
+    transform 180ms var(--stage-ease),
+    border-color 180ms var(--stage-ease),
+    box-shadow 180ms var(--stage-ease);
 }
 
 .stage-ribbon-card:hover {
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.42);
   transform: translateY(-2px);
 }
 
 .stage-ribbon-card.gp-focused {
-  transform: scale(1.14) translateY(-4px) !important;
-  border-color: #ffffff !important;
+  transform: translateY(-3px) scale(1.035) !important;
+  border-color: #fff !important;
   box-shadow:
-    0 0 0 3px #ffffff,
-    0 16px 40px rgba(0, 0, 0, 0.95) !important;
-  z-index: 30 !important;
+    0 0 0 2px #fff,
+    0 14px 34px rgba(0, 0, 0, 0.7) !important;
+  z-index: 6 !important;
 }
 
 .stage-ribbon-art,
@@ -96,240 +134,318 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: inherit;
+  transition: transform 280ms var(--stage-ease);
+}
+
+.stage-ribbon-card.gp-focused .stage-ribbon-image {
+  transform: scale(1.055);
+}
+
+.stage-ribbon-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.3) 52%, transparent 78%);
+  pointer-events: none;
+}
+
+.stage-ribbon-label {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  padding: 16px 9px 7px;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 160ms var(--stage-ease);
+}
+
+.stage-ribbon-card.gp-focused .stage-ribbon-label {
+  color: #fff;
 }
 
 .stage-ribbon-indicator {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 8px;
-  height: 8px;
+  inset-block-start: 8px;
+  inset-inline-end: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: #3b82f6;
-  box-shadow: 0 0 10px #3b82f6;
+  background: var(--warn);
+  box-shadow: 0 0 9px rgba(224, 163, 46, 0.9);
 }
 
-/* All-Games Portal Card */
 .stage-ribbon-library {
-  background: rgba(30, 30, 40, 0.9);
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 6px;
-  color: var(--stage-ink);
-}
-
-.stage-ribbon-library.gp-focused {
-  border-style: solid;
-  border-color: #ffffff;
+  background: rgba(16, 16, 22, 0.92);
 }
 
 .stage-ribbon-library-icon {
+  position: relative;
+  z-index: 2;
   display: grid;
   place-items: center;
-  color: #ffffff;
+  color: #fff;
 }
 
-.stage-ribbon-library-label {
-  font-size: 11px;
-  font-weight: 750;
+.stage-ribbon-library .stage-ribbon-label {
+  width: auto;
+  padding: 0;
+  font-size: 10px;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--stage-ink-2);
+  color: rgba(255, 255, 255, 0.64);
 }
 
-.stage-ribbon-card.gp-focused .stage-ribbon-library-label {
-  color: #ffffff;
+.stage-ribbon-library.gp-focused .stage-ribbon-label {
+  color: #fff;
 }
 
-/* ---------- Panoramic Hero Showcase ---------- */
+/* ---------- Hero copy ---------- */
 
 .stage-home-hero {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 0 clamp(28px, 4.4vw, 68px) clamp(20px, 3vh, 36px);
-  max-width: 900px;
-  z-index: 15;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
 }
 
-.stage-hero-meta {
+.stage-home-copy {
+  position: absolute;
+  inset-block-end: clamp(62px, 7.2vh, 92px);
+  inset-inline-start: clamp(24px, 3.4vw, 64px);
+  width: min(980px, 72vw);
   display: flex;
+  flex-direction: column;
+  gap: 14px;
+  pointer-events: auto;
+}
+
+.stage-home-eyebrow {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  font-weight: 550;
-  color: rgba(255, 255, 255, 0.55);
+  gap: 12px;
+  min-width: 0;
 }
 
 .stage-hero-store {
   display: inline-flex;
   align-items: center;
-  height: 22px;
-  padding: 0 8px;
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 5px;
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.86);
   font-size: 10px;
-  font-weight: 750;
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.stage-hero-title {
-  margin: 0;
-  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
-  font-size: clamp(36px, 4.2vw, 72px);
-  font-weight: 750;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  text-shadow: 0 4px 40px rgba(0, 0, 0, 0.95);
-  color: #ffffff;
+.stage-home-meta {
   overflow: hidden;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: clamp(12px, 1vw, 15px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-home-title {
+  margin: 0;
+  overflow: hidden;
+  color: #fff;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: clamp(48px, 5.4vw, 102px);
+  font-weight: 760;
+  line-height: 0.94;
+  letter-spacing: -0.038em;
+  text-wrap: balance;
+  text-shadow: 0 3px 34px rgba(0, 0, 0, 0.6);
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
-.stage-hero-actions {
+.stage-home-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  margin-block-start: 4px;
+  gap: 11px;
+  margin-block-start: 2px;
 }
 
-/* Luxury Pill Play Button */
 .stage-primary-action .btn {
-  height: 48px;
-  padding: 0 32px;
-  border-radius: 9999px;
-  background: #ffffff !important;
-  color: #000000 !important;
-  font-size: 15px;
-  font-weight: 750;
-  letter-spacing: -0.01em;
-  border: none !important;
-  box-shadow: 0 6px 24px rgba(255, 255, 255, 0.2), 0 2px 8px rgba(0, 0, 0, 0.5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 56px;
+  min-width: clamp(168px, 13vw, 230px);
+  padding: 0 30px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: #fff !important;
+  color: #000 !important;
+  font-size: 15.5px;
+  font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
   transition: transform 160ms var(--stage-ease), box-shadow 160ms var(--stage-ease);
 }
-.stage-primary-action .btn:hover,
-.stage-primary-action .btn.gp-focused {
-  transform: translateY(-2px) scale(1.03);
-  box-shadow:
-    0 0 0 3px #ffffff,
-    0 10px 32px rgba(255, 255, 255, 0.4),
-    0 4px 10px rgba(0, 0, 0, 0.5) !important;
+
+.stage-primary-action .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.48);
+}
+
+.stage-primary-action .btn.update {
+  background: var(--warn) !important;
+  color: #1b1200 !important;
+}
+
+.stage-primary-action .btn.stop,
+.stage-primary-action .btn.danger {
+  background: rgba(229, 72, 77, 0.16) !important;
+  border-color: rgba(229, 72, 77, 0.48) !important;
+  color: #ffb4b6 !important;
+  box-shadow: none;
+}
+
+.stage-primary-action .btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .stage-hero-btn {
-  width: 48px;
-  height: 48px;
   display: grid;
   place-items: center;
+  width: 52px;
+  height: 52px;
   padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 50%;
-  border: 1.5px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(16px);
-  color: rgba(255, 255, 255, 0.8);
+  background: rgba(10, 10, 12, 0.42);
+  color: rgba(255, 255, 255, 0.82);
   cursor: pointer;
-  transition: transform 160ms var(--stage-ease), border-color 160ms var(--stage-ease), background 160ms var(--stage-ease);
+  transition: background 150ms var(--stage-ease), border-color 150ms var(--stage-ease), transform 150ms var(--stage-ease);
 }
-.stage-hero-btn:hover,
-.stage-hero-btn.gp-focused {
-  border-color: #ffffff;
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  transform: scale(1.06);
-  box-shadow: 0 0 16px rgba(255, 255, 255, 0.2);
+
+.stage-hero-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.62);
+  color: #fff;
+  transform: scale(1.05);
 }
+
 .stage-hero-btn.faved {
-  color: #ff4d6d;
+  color: #ff8a9b;
+  border-color: rgba(255, 138, 155, 0.42);
 }
+
 .stage-hero-btn.faved svg {
   fill: currentColor;
 }
 
-.stage-hero-scroll-prompt {
+.stage-home-more {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-block-start: 12px;
-  padding: 6px 14px;
-  border: none;
-  border-radius: 9999px;
-  background: transparent;
+  gap: 5px;
+  height: 40px;
+  margin-inline-start: 5px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(8, 8, 10, 0.3);
+  color: rgba(255, 255, 255, 0.56);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.35);
   cursor: pointer;
-  outline: none;
-  transition: color 160ms var(--stage-ease);
+  transition: color 150ms var(--stage-ease), background 150ms var(--stage-ease), border-color 150ms var(--stage-ease);
 }
 
-.stage-hero-scroll-prompt:hover,
-.stage-hero-scroll-prompt.gp-focused {
-  color: rgba(255, 255, 255, 0.7);
-}
-.stage-scroll-icon {
-  display: grid;
-  place-items: center;
-  animation: stage-bounce 2000ms ease-in-out infinite;
+.stage-home-more:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
-@keyframes stage-bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(5px); }
-}
-
-/* ==========================================================================
-   Floor 2: Activity & Details Hub (Slide Down Below the Fold)
-   ========================================================================== */
-
-.stage-floor-hub {
-  position: relative;
-  padding: clamp(28px, 3.5vh, 44px) clamp(28px, 4.4vw, 68px) 140px;
-  min-height: 80vh;
+.stage-home-side {
+  position: absolute;
+  inset-block-end: clamp(66px, 7.4vh, 96px);
+  inset-inline-end: clamp(24px, 3.4vw, 64px);
+  z-index: 4;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  box-sizing: border-box;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.stage-home-utility {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  pointer-events: auto;
+}
+
+.stage-home-status {
+  pointer-events: auto;
+}
+
+/* ---------- Second floor: activity hub ---------- */
+
+.stage-home-hub {
+  position: relative;
+  padding: clamp(30px, 4vh, 52px) clamp(24px, 3.4vw, 64px) 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
 .stage-shelf-header {
   display: flex;
   align-items: baseline;
-  gap: 14px;
+  gap: 13px;
+  min-width: 0;
 }
 
 .stage-shelf-title {
   margin: 0;
+  color: #fff;
   font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
-  font-size: 26px;
-  font-weight: 750;
+  font-size: clamp(21px, 1.7vw, 28px);
+  font-weight: 680;
   letter-spacing: -0.02em;
-  color: #ffffff;
 }
 
 .stage-shelf-subtitle {
-  font-size: 14px;
-  font-weight: 550;
-  color: rgba(255, 255, 255, 0.45);
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.44);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .stage-activity-row {
   display: flex;
-  gap: clamp(18px, 1.8vw, 26px);
+  gap: clamp(12px, 1.2vw, 18px);
   overflow-x: auto;
   overflow-y: visible;
-  padding-block: 12px 28px;
-  margin-block: -6px -16px;
+  padding: 10px 4px 22px;
+  margin-inline: -4px;
   scrollbar-width: none;
+  scroll-behavior: smooth;
 }
 
 .stage-activity-row::-webkit-scrollbar {
@@ -338,39 +454,38 @@
 
 .stage-activity-card {
   position: relative;
-  width: clamp(280px, 21vw, 340px);
-  height: clamp(170px, 14vh, 200px);
-  flex-shrink: 0;
+  flex: 0 0 clamp(270px, 19.5vw, 340px);
+  min-height: clamp(160px, 14.5vh, 196px);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: clamp(18px, 1.4vw, 24px);
-  border: 1.5px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  background: rgba(18, 18, 24, 0.75);
-  backdrop-filter: blur(28px);
-  cursor: pointer;
+  padding: clamp(17px, 1.2vw, 22px);
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: #0d0d10;
+  color: #fff;
+  text-align: start;
+  cursor: pointer;
   outline: none;
   transition:
-    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 200ms ease;
-  will-change: transform;
+    transform 180ms var(--stage-ease),
+    border-color 180ms var(--stage-ease),
+    box-shadow 180ms var(--stage-ease);
 }
 
 .stage-activity-card:hover {
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.28);
   transform: translateY(-2px);
 }
 
 .stage-activity-card.gp-focused {
-  transform: scale(1.04) translateY(-4px) !important;
-  border-color: #ffffff !important;
+  transform: translateY(-3px) scale(1.02) !important;
+  border-color: #fff !important;
   box-shadow:
-    0 0 0 2px #ffffff,
-    0 16px 40px rgba(0, 0, 0, 0.9) !important;
-  z-index: 25 !important;
+    0 0 0 2px #fff,
+    0 14px 34px rgba(0, 0, 0, 0.62) !important;
+  z-index: 4 !important;
 }
 
 .stage-act-media,
@@ -381,25 +496,31 @@
   height: 100%;
 }
 
-.stage-act-bg {
+.stage-act-bg,
+.stage-act-media img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: inherit;
+}
+
+.stage-act-media .shot-thumb-pending {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--stage-ink-3);
 }
 
 .stage-act-scrim {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(to top, rgba(5, 5, 5, 0.95) 0%, rgba(5, 5, 5, 0.6) 50%, rgba(5, 5, 5, 0.25) 100%),
-    linear-gradient(to right, rgba(5, 5, 5, 0.85) 0%, transparent 80%);
+  background: linear-gradient(to top, rgba(5, 5, 5, 0.96) 0%, rgba(5, 5, 5, 0.58) 52%, rgba(5, 5, 5, 0.18) 100%);
   pointer-events: none;
 }
 
 .stage-act-body {
   position: relative;
-  z-index: 3;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -407,81 +528,77 @@
 }
 
 .stage-act-body .stage-kicker {
-  font-size: 10px;
-  font-weight: 750;
+  font-size: 9.5px;
+  font-weight: 700;
   letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--stage-ink-3);
-}
-
-.stage-activity-card.gp-focused .stage-act-body .stage-kicker {
-  color: var(--stage-ink-2);
+  color: rgba(255, 255, 255, 0.48);
 }
 
 .stage-act-title {
   margin: 0;
-  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
-  font-size: clamp(16px, 1.25vw, 20px);
-  font-weight: 650;
-  line-height: 1.15;
-  letter-spacing: -0.015em;
-  color: #fff;
   overflow: hidden;
+  color: #fff;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: clamp(16px, 1.2vw, 20px);
+  font-weight: 650;
+  line-height: 1.18;
+  letter-spacing: -0.015em;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
 .stage-act-meta {
-  font-size: 11.5px;
-  color: var(--stage-ink-2);
   overflow: hidden;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .stage-act-icon-wrap {
+  position: relative;
+  z-index: 2;
   display: inline-grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--stage-ink);
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.86);
 }
 
 .stage-activity-card.gp-focused .stage-act-icon-wrap {
-  background: #ffffff;
-  color: #000000;
+  background: #fff;
+  color: #000;
 }
 
 .stage-act-trophy-head {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
 }
 
 .stage-act-trophy-count {
-  font-size: 16px;
-  font-weight: 750;
-  color: #fff;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .stage-act-progress {
-  height: 5px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.14);
-  margin-block: 4px;
-}
-
-.stage-act-progress > span {
-  background: #fff;
-  border-radius: 9999px;
+  height: 3px;
+  margin-block: 2px 3px;
 }
 
 .stage-act-foot {
   position: relative;
-  z-index: 3;
+  z-index: 2;
+  display: flex;
+  align-items: center;
 }
 
 .stage-act-pill {
@@ -489,10 +606,217 @@
   align-items: center;
   gap: 6px;
   height: 28px;
-  padding: 0 12px;
-  border-radius: 9999px;
-  background: #ffffff;
-  color: #000000;
-  font-size: 11.5px;
+  padding: 0 11px;
+  border-radius: 999px;
+  background: #fff;
+  color: #000;
+  font-size: 10.5px;
   font-weight: 700;
 }
+
+/* ---------- Collections ---------- */
+
+.stage-collection-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-block-start: 8px;
+}
+
+.stage-collection-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 8px 4px 16px;
+  margin-inline: -4px;
+  scrollbar-width: none;
+}
+
+.stage-collection-row::-webkit-scrollbar {
+  display: none;
+}
+
+.stage-collection-card {
+  flex: 0 0 clamp(220px, 17vw, 290px);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--stage-line);
+  border-radius: 11px;
+  background: #0d0d10;
+  color: #fff;
+  text-align: start;
+  cursor: pointer;
+  outline: none;
+  transition: background 150ms var(--stage-ease), border-color 150ms var(--stage-ease), transform 150ms var(--stage-ease);
+}
+
+.stage-collection-card:hover {
+  background: #141419;
+  border-color: var(--stage-line-strong);
+}
+
+.stage-collection-card.gp-focused {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px #fff;
+  transform: translateY(-2px);
+}
+
+.stage-collection-mosaic {
+  display: grid;
+  flex: 0 0 60px;
+  width: 60px;
+  height: 60px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  overflow: hidden;
+  border: 1px solid var(--stage-line);
+  border-radius: 7px;
+  background: #141418;
+}
+
+.stage-collection-mosaic-1 {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+.stage-collection-mosaic-2 {
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: 1fr;
+}
+
+.stage-collection-cover {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.stage-collection-cover > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stage-collection-empty {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  display: grid;
+  place-items: center;
+  color: var(--stage-ink-4);
+}
+
+.stage-collection-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.stage-collection-copy strong {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-collection-copy small {
+  color: var(--stage-ink-3);
+  font-size: 10.5px;
+}
+
+/* ---------- Responsive / motion ---------- */
+
+@keyframes stage-home-art-in {
+  from { opacity: 0; transform: scale(1.035); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 1180px) {
+  .stage-home-copy {
+    width: min(820px, 78vw);
+  }
+  .stage-home-title {
+    font-size: clamp(42px, 5.4vw, 76px);
+  }
+}
+
+@media (max-width: 960px) {
+  .stage-home-ribbon {
+    padding-inline: 22px;
+  }
+  .stage-home-copy {
+    inset-block-end: 58px;
+    inset-inline-start: 22px;
+    width: min(720px, 88vw);
+  }
+  .stage-home-title {
+    font-size: clamp(38px, 6vw, 62px);
+  }
+  .stage-home-side {
+    inset-inline-end: 22px;
+    inset-block-end: 62px;
+  }
+  .stage-home-hub {
+    padding-inline: 22px;
+  }
+}
+
+@media (max-width: 720px) {
+  .stage-home-stage {
+    min-height: calc(100vh - var(--stage-top));
+  }
+  .stage-ribbon-card {
+    flex-basis: 132px;
+  }
+  .stage-home-copy {
+    width: calc(100vw - 44px);
+    gap: 11px;
+  }
+  .stage-home-title {
+    font-size: clamp(34px, 9vw, 48px);
+  }
+  .stage-home-actions {
+    gap: 8px;
+  }
+  .stage-hero-btn {
+    width: 46px;
+    height: 46px;
+  }
+  .stage-primary-action .btn {
+    height: 50px;
+    min-width: 148px;
+    padding: 0 22px;
+    font-size: 14px;
+  }
+  .stage-home-status {
+    display: none;
+  }
+  .stage-home-side {
+    inset-block-end: 62px;
+  }
+  .stage-activity-card {
+    flex-basis: 260px;
+    min-height: 156px;
+  }
+  .stage-shelf-subtitle {
+    display: none;
+  }
+}
+
+@media (max-height: 680px) {
+  .stage-home-copy {
+    inset-block-end: 46px;
+  }
+  .stage-home-title {
+    font-size: clamp(36px, 4.6vw, 62px);
+  }
+  .stage-home-hub {
+    padding-block-start: 32px;
+  }
+}
+
+/* Reduced motion is handled by stage-motion.css. */

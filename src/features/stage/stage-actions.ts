@@ -40,7 +40,6 @@ export function stageFocusedKey(): string {
   const key = S.stage.focusKey;
   if (key.startsWith("game:")) return key.slice(5);
   if (key.startsWith("lib:")) return key.slice(4);
-  if (key.startsWith("prog:")) return key.slice(5);
   if (key.startsWith("search:game:")) return key.slice(12);
   return "";
 }
@@ -307,13 +306,19 @@ function stagePreviewKey(): string {
   return S.stage.route === "library" ? S.stage.previewKey || "" : "";
 }
 
+/** The game the Home hero is showing, even while the focus is on Play. */
+function stageHomeKey(): string {
+  if (S.stage.route !== "home") return "";
+  return S.stage.homeHeroKey || stageHeroSummary()?.appName || "";
+}
+
 export function stageToggleFavorite(key?: string): void {
   const target =
     key ||
     stageFocusedKey() ||
     stagePreviewKey() ||
     S.stage.gameKey ||
-    (S.stage.route === "home" ? stageHeroSummary()?.appName : "") ||
+    stageHomeKey() ||
     "";
   if (!target) return;
   stageFeedback("select");
@@ -329,7 +334,7 @@ export function stageQuickPlay(key?: string): void {
     stageFocusedKey() ||
     stagePreviewKey() ||
     S.stage.gameKey ||
-    stageHeroSummary()?.appName ||
+    stageHomeKey() ||
     "";
   if (!target) return;
   stageLaunchGame(target);

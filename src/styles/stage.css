@@ -33,8 +33,8 @@ body.stage-mode #toasts {
   --stage-ink-3: rgba(255, 255, 255, 0.42);
   --stage-ink-4: rgba(255, 255, 255, 0.26);
   --stage-ease: cubic-bezier(0.2, 0, 0, 1);
-  --stage-pad: clamp(20px, 2.4vw, 72px);
-  --stage-top: 66px;
+  --stage-pad: clamp(22px, 2.6vw, 76px);
+  --stage-top: 72px;
   --stage-radius: 14px;
 
   position: fixed;
@@ -77,7 +77,7 @@ body.stage-mode #toasts {
   background-position: center 25%;
   opacity: 0;
   transform: scale(1.06);
-  filter: saturate(1.15) contrast(1.08);
+  filter: blur(9px) saturate(1.08) brightness(0.8);
   transition:
     opacity 450ms cubic-bezier(0.16, 1, 0.3, 1),
     transform 750ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -85,7 +85,7 @@ body.stage-mode #toasts {
 }
 
 .stage-backdrop-canvas.is-active {
-  opacity: 0.55;
+  opacity: 0.34;
   transform: scale(1.0);
 }
 
@@ -207,17 +207,33 @@ body.stage-mode #toasts {
 }
 
 .stage-brand-name {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.24em;
   color: var(--stage-ink-3);
 }
 
 .stage-brand-mode {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.36em;
   color: var(--stage-ink);
+}
+
+.stage-beta-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 17px;
+  padding: 0 6px;
+  margin-inline-start: 7px;
+  border-radius: 4px;
+  background: var(--stage-ink);
+  color: #000;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 .stage-top-nav {
@@ -248,12 +264,12 @@ body.stage-mode #toasts {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  height: 38px;
+  height: 42px;
   padding: 0 clamp(10px, 1.1vw, 18px);
   border: none;
   background: transparent;
   color: rgba(255, 255, 255, 0.5);
-  font-size: 15px;
+  font-size: clamp(15px, 0.95vw, 18px);
   font-weight: 600;
   cursor: pointer;
   outline: none;
@@ -302,8 +318,8 @@ body.stage-mode #toasts {
 }
 
 .stage-icon-pill {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -364,7 +380,7 @@ body.stage-mode #toasts {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--stage-ink-3);
   white-space: nowrap;
 }
@@ -386,12 +402,12 @@ body.stage-mode #toasts {
   align-items: center;
   gap: 6px;
   color: var(--stage-ink-3);
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
 .stage-clock {
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-weight: 600;
   letter-spacing: 0.03em;
   color: var(--stage-ink-2);
@@ -455,6 +471,7 @@ body.stage-mode #toasts {
 .stage-route-program .stage-main {
   inset-block-start: 0;
   padding: 0 0 112px;
+  background: #050505;
 }
 
 .stage-layer {
@@ -468,24 +485,22 @@ body.stage-mode #toasts {
 .stage-hints {
   position: absolute;
   inset-block-end: 16px;
-  inset-inline-start: calc(var(--stage-spine) + var(--stage-pad));
+  inset-inline-start: var(--stage-pad);
   inset-inline-end: var(--stage-pad);
   z-index: 26;
   display: flex;
   align-items: center;
-  gap: clamp(10px, 1.6vw, 22px);
-  min-height: 42px;
-  padding: 8px 15px;
+  gap: clamp(12px, 1.7vw, 24px);
+  min-height: 46px;
+  padding: 8px 16px;
   border: 1px solid var(--stage-line);
-  border-radius: 9px;
-  background: rgba(8, 8, 8, 0.82);
+  border-radius: 10px;
+  background: rgba(8, 8, 8, 0.86);
   color: var(--stage-ink-3);
-  font-size: 11.5px;
+  font-size: 12.5px;
   pointer-events: none;
 }
-.stage-route-program .stage-hints {
-  inset-inline-start: var(--stage-pad);
-}
+
 
 .stage-hint {
   display: inline-flex;
@@ -502,8 +517,8 @@ body.stage-mode #toasts {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 22px;
+  min-width: 24px;
+  height: 24px;
   padding: 0 5px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 5px;
@@ -557,6 +572,11 @@ body.stage-mode #toasts {
 .stage-btn-ghost {
   background: rgba(0, 0, 0, 0.22);
 }
+#stage-root .stage-choice.active,
+#stage-root .stage-ach-filter.active,
+#stage-root .stage-key-accent {
+  color: #000 !important;
+}
 #stage-root .stage-btn.faved,
 #stage-root .stage-icon-btn.faved {
   color: #ffb4b6;
@@ -607,11 +627,6 @@ body.stage-mode #toasts {
   width: 18px;
   height: 18px;
 }
-.stage-hero-actions .stage-primary-action .btn,
-.stage-program-actions .stage-primary-action .btn {
-  min-width: clamp(152px, 13vw, 238px);
-}
-
 .stage-kicker {
   display: block;
   font-size: 10px;
@@ -629,11 +644,9 @@ body.stage-mode #toasts {
 
 /* Sizes, hours and dates share one numeral width so a status line does not
    jitter when the value changes. */
-.stage-hero-meta,
+.stage-home-meta,
 .stage-side-meta,
 .stage-program-meta,
-.stage-reel-meta,
-.stage-mini-meta,
 .stage-list-main span,
 .stage-download-meta {
   font-variant-numeric: tabular-nums;

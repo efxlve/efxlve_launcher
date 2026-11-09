@@ -20,19 +20,19 @@ function downloadRow(id: string, title: string, progress: number): string {
   const size = metrics && metrics.totalBytes > 0
     ? `${fmtBytes(metrics.downloadedBytes)} / ${fmtBytes(metrics.totalBytes)}`
     : "";
-  return `<div class="stage-download-row">
+  return `<div class="stage-download-row" data-stage-dl-row="${esc(id)}">
     <span class="stage-download-icon">${icon("download", 22)}</span>
     <div class="stage-download-main">
       <div class="stage-download-head">
         <strong>${esc(title)}</strong>
-        <span class="stage-download-pct tabular-nums">${percent}%</span>
+        <span class="stage-download-pct tabular-nums" data-stage-dl-pct="${esc(id)}">${percent}%</span>
       </div>
-      ${stageProgress(percent, paused ? "stage-progress-paused" : "")}
+      ${stageProgress(percent, paused ? "stage-progress-paused" : "", `data-stage-dl-bar="${esc(id)}"`)}
       <div class="stage-download-meta">
         <span>${esc(paused ? t("dl.statusPaused") : t("dl.statusActive"))}</span>
-        ${speed ? `<span>${esc(speed)}</span>` : ""}
-        ${eta ? `<span>${esc(eta)}</span>` : ""}
-        ${size ? `<span class="tabular-nums">${esc(size)}</span>` : ""}
+        ${speed ? `<span data-stage-dl-speed="${esc(id)}">${esc(speed)}</span>` : ""}
+        ${eta ? `<span data-stage-dl-eta="${esc(id)}">${esc(eta)}</span>` : ""}
+        ${size ? `<span class="tabular-nums" data-stage-dl-size="${esc(id)}">${esc(size)}</span>` : ""}
       </div>
     </div>
     <div class="stage-download-actions">
@@ -59,6 +59,38 @@ function queueRow(id: string, index: number, total: number): string {
       <button type="button" class="stage-icon-btn stage-icon-danger" data-act="dl-reorder-remove" data-id="${esc(id)}" aria-label="${esc(t("dl.removeFromQueue"))}" title="${esc(t("dl.removeFromQueue"))}">${icon("x", 16)}</button>
     </span>
   </div>`;
+}
+
+/** Progress-only repaint for the active transfer, without rebuilding the page. */
+export function patchStageDownloads(): void {
+  for (const [id, item] of S.downloads) {
+    if (item.done) continue;
+    const selector = CSS.escape(id);
+    const percent = Math.max(0, Math.min(100, Math.round(item.progress)));
+    const pct = document.querySelector<HTMLElement>(`[data-stage-dl-pct="${selector}"]`);
+    if (pct) pct.textContent = `${percent}%`;
+    const bar = document.querySelector<HTMLElement>(`[data-stage-dl-bar="${selector}"]`);
+    if (bar) {
+      bar.setAttribute("aria-valuenow", String(percent));
+      const fill = bar.querySelector<HTMLElement>("span");
+      if (fill) fill.style.width = `${percent}%`;
+    }
+    const metrics = S.activeDlMetrics && S.activeDlMetrics.id === id ? S.activeDlMetrics : null;
+    if (!metrics) continue;
+    const speed = metrics.speed || (metrics.speedBytes > 0 ? fmtSpeed(metrics.speedBytes) : "");
+    const setText = (name: string, value: string): void => {
+      const el = document.querySelector<HTMLElement>(`[data-stage-dl-${name}="${selector}"]`);
+      if (el && value) el.textContent = value;
+    };
+    setText("speed", speed);
+    setText("eta", metrics.eta || "");
+    setText(
+      "size",
+      metrics.totalBytes > 0
+        ? `${fmtBytes(metrics.downloadedBytes)} / ${fmtBytes(metrics.totalBytes)}`
+        : "",
+    );
+  }
 }
 
 export function renderStageDownloads(): string {

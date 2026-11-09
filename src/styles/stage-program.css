@@ -114,6 +114,7 @@
   gap: 4px;
   margin-inline: var(--stage-pad);
   border-block-end: 1px solid var(--stage-line);
+  background: #050505;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -150,6 +151,7 @@
 .stage-program-content {
   min-height: 190px;
   padding: 8px var(--stage-pad) 30px;
+  background: #050505;
   animation: stage-copy-in 220ms var(--stage-ease) both;
 }
 .stage-program-grid {
@@ -504,9 +506,10 @@
   font-size: 12px;
 }
 .stage-program-foot {
-  padding: 0 var(--stage-pad) 8px;
+  padding: 10px var(--stage-pad) 8px;
+  background: #050505;
   color: var(--stage-ink-4);
-  font-size: 10.5px;
+  font-size: 11px;
 }
 .stage-program-missing {
   min-height: 70vh;

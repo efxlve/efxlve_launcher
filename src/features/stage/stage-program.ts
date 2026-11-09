@@ -202,8 +202,8 @@ export function renderStageProgram(): string {
           <h1>${esc(game.title)}</h1>
           <div class="stage-program-meta">${stageMetaLine(game, { withStore: false })}</div>
         </div>
-        <div class="stage-program-status">${stageStatus(game)}</div>
       </div>
+      <div class="stage-program-status">${stageStatus(game)}</div>
     </section>
 
     <div class="stage-program-actions" data-gp-default>

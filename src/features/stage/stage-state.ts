@@ -90,6 +90,7 @@ export async function enterStage(opts: { route?: StageRoute; gameKey?: string } 
   S.stage.active = true;
   S.stage.route = opts.route ?? "home";
   S.stage.gameKey = opts.gameKey ?? null;
+  S.stage.homeHeroKey = null;
   S.stage.previewKey = null;
   S.stage.programTab = "overview";
   S.stage.settingsTab = "general";
@@ -141,6 +142,7 @@ export function exitStage(): void {
   S.stage.focusKey = "";
   S.stage.stack = [];
   S.stage.gameKey = null;
+  S.stage.homeHeroKey = null;
   S.stage.previewKey = null;
   S.stage.collectionId = null;
   S.stage.stillIndex = null;

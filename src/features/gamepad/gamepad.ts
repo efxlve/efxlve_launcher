@@ -261,6 +261,11 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
 
   const curRect = currentFocusedEl.getBoundingClientRect();
   const curCenter = { x: curRect.left + curRect.width / 2, y: curRect.top + curRect.height / 2 };
+  // A fixed 10px threshold lets a neighbour from the same row count as "down"
+  // when its transform shifts by a few pixels. Scale the threshold with the
+  // focused control so a shelf row stays a row.
+  const moveX = Math.max(12, curRect.width * 0.4);
+  const moveY = Math.max(12, curRect.height * 0.4);
 
   let bestEl: HTMLElement | null = null;
   let bestScore = Infinity;
@@ -278,19 +283,19 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
     let secondaryDist = 0;
 
     if (dir === "left") {
-      isMatch = dx < -10;
+      isMatch = dx < -moveX;
       primaryDist = -dx;
       secondaryDist = Math.abs(dy);
     } else if (dir === "right") {
-      isMatch = dx > 10;
+      isMatch = dx > moveX;
       primaryDist = dx;
       secondaryDist = Math.abs(dy);
     } else if (dir === "up") {
-      isMatch = dy < -10;
+      isMatch = dy < -moveY;
       primaryDist = -dy;
       secondaryDist = Math.abs(dx);
     } else if (dir === "down") {
-      isMatch = dy > 10;
+      isMatch = dy > moveY;
       primaryDist = dy;
       secondaryDist = Math.abs(dx);
     }

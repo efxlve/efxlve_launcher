@@ -8,7 +8,6 @@
   box-shadow:
     0 0 0 6px rgba(255, 255, 255, 0.085),
     0 18px 52px rgba(0, 0, 0, 0.58) !important;
-  transform: none !important;
   z-index: 28 !important;
 }
 
@@ -52,23 +51,12 @@
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.6) !important;
 }
 
-#stage-root .stage-reel-card.gp-focused {
-  transform: translateY(-6px) scale(1.018) !important;
-  border-color: rgba(255, 255, 255, 0.42) !important;
-}
 #stage-root .stage-cover-card.gp-focused {
   transform: translateY(-5px) !important;
 }
 #stage-root .stage-cover-card.gp-focused .stage-cover-frame {
   border-color: rgba(255, 255, 255, 0.48);
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.56), 0 0 30px rgba(255, 255, 255, 0.07);
-}
-#stage-root .stage-mini-card.gp-focused {
-  transform: translateY(-5px) !important;
-}
-#stage-root .stage-mini-card.gp-focused .stage-mini-art {
-  border-color: rgba(255, 255, 255, 0.48);
-  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.5), 0 0 24px rgba(255, 255, 255, 0.06);
 }
 #stage-root .stage-sheet-tile.gp-focused {
   transform: translateY(-2px) !important;
@@ -96,26 +84,11 @@
   background: #fff;
   color: #000;
 }
-#stage-root .stage-spine-item.gp-focused {
-  outline: 1px solid #fff !important;
-  outline-offset: 2px !important;
-  box-shadow: none !important;
-}
-
 /* ---------- Motion ---------- */
 
 /* Entry animations belong to a transition, not to every data repaint. The
    shell adds `stage-overlay-enter` only when an overlay opens and
    `stage-page-enter` only when the route changes. */
-.stage-page-enter .stage-hero {
-  animation: stage-hero-in 560ms var(--stage-ease) both;
-}
-.stage-page-enter .stage-hero-art {
-  animation: stage-art-in 1000ms var(--stage-ease) both;
-}
-.stage-page-enter .stage-hero-body {
-  animation: stage-copy-in 480ms 80ms var(--stage-ease) both;
-}
 .stage-page-enter .stage-program-media img {
   animation: stage-art-in 1000ms var(--stage-ease) both;
 }
@@ -212,9 +185,6 @@
   .stage-library-body {
     grid-template-columns: minmax(0, 1fr) 300px;
   }
-  .stage-hero-body {
-    inset-inline-end: 24%;
-  }
   .stage-sheet-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -222,15 +192,14 @@
 
 @media (max-width: 960px) {
   #stage-root {
-    --stage-spine: 62px;
     --stage-pad: 20px;
   }
-  .stage-spine-item {
-    width: 44px;
-    height: 44px;
-  }
-  .stage-spine-label {
+  .stage-brand-name,
+  .stage-bumper-hint {
     display: none;
+  }
+  .stage-topbar {
+    padding-inline: 16px;
   }
   .stage-library-body {
     grid-template-columns: minmax(0, 1fr);
@@ -245,10 +214,6 @@
     aspect-ratio: auto;
     min-height: 220px;
   }
-  .stage-hero-body {
-    inset-inline-end: var(--stage-pad);
-    max-width: 76%;
-  }
   .stage-program-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -259,8 +224,8 @@
     font-size: 11.5px;
   }
   .stage-hints {
-    gap: 10px;
-    font-size: 10.5px;
+    gap: 11px;
+    font-size: 11.5px;
     overflow-x: auto;
   }
 }
@@ -269,15 +234,6 @@
   .stage-brand-name,
   .stage-net {
     display: none;
-  }
-  .stage-hero {
-    min-height: 310px;
-  }
-  .stage-hero-body {
-    max-width: 100%;
-  }
-  .stage-hero-title {
-    font-size: clamp(32px, 8vw, 48px);
   }
   .stage-program-titles h1 {
     font-size: clamp(32px, 8vw, 48px);
@@ -332,17 +288,11 @@
 }
 
 @media (max-height: 700px) {
-  .stage-hero {
-    min-height: 290px;
-  }
   .stage-program-hero {
     min-height: 300px;
   }
   .stage-program-head {
     inset-block-end: 40px;
-  }
-  .stage-hero-body {
-    inset-block-end: 22px;
   }
   .stage-sheet-tile {
     min-height: 92px;
@@ -356,16 +306,6 @@
 
 /* ---------- RTL ---------- */
 
-[dir="rtl"] .stage-spine {
-  background: linear-gradient(to left, rgba(5, 5, 5, 0.88), rgba(5, 5, 5, 0));
-}
-[dir="rtl"] .stage-spine-label {
-  transform: translate(4px, -50%);
-}
-[dir="rtl"] .stage-spine-item:hover .stage-spine-label,
-[dir="rtl"] .stage-spine-item.gp-focused .stage-spine-label {
-  transform: translate(0, -50%);
-}
 [dir="rtl"] .stage-hero-scrim {
   background:
     linear-gradient(to top, rgba(5, 5, 5, 0.96) 0%, rgba(5, 5, 5, 0.6) 34%, transparent 68%),
@@ -411,24 +351,17 @@ body.stage-mode .selective-overlay .gp-focused {
 
 @media (min-width: 2200px) {
   #stage-root {
-    --stage-top: 72px;
+    --stage-top: 84px;
   }
-  .stage-reel-title {
-    font-size: 22px;
+  .stage-library-titles h1 {
+    font-size: 58px;
   }
-  .stage-reel-meta {
-    font-size: 15px;
+  .stage-library-body {
+    grid-template-columns: minmax(0, 1fr) clamp(420px, 26vw, 680px);
   }
-  .stage-reel-card > .stage-status {
-    font-size: 12px;
-    min-height: 26px;
-    padding: 3px 9px;
-  }
-  .stage-mini-title {
-    font-size: 17px;
-  }
-  .stage-mini-meta {
-    font-size: 14px;
+  .stage-wall-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 28px;
   }
   .stage-cover-title {
     font-size: 16px;
@@ -525,17 +458,6 @@ body.stage-mode .selective-overlay .gp-focused {
   .stage-sheet-head h2 {
     font-size: 30px;
   }
-  .stage-spine-item {
-    width: 64px;
-    height: 64px;
-  }
-  .stage-spine-icon svg {
-    width: 26px;
-    height: 26px;
-  }
-  .stage-spine-label {
-    font-size: 12px;
-  }
   .stage-controls-row {
     font-size: 16px;
   }
@@ -599,6 +521,105 @@ body.stage-mode .selective-overlay .gp-focused {
   .stage-search-sub {
     font-size: 13px;
   }
+  .stage-ribbon-card {
+    flex-basis: 238px;
+  }
+  .stage-ribbon-label {
+    padding: 22px 13px 10px;
+    font-size: 15px;
+  }
+  .stage-home-copy {
+    width: min(1320px, 76vw);
+    gap: 20px;
+  }
+  .stage-home-title {
+    font-size: clamp(96px, 5.4vw, 154px);
+  }
+  .stage-home-meta {
+    font-size: 18px;
+  }
+  .stage-hero-store {
+    height: 30px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+  .stage-primary-action .btn {
+    height: 70px;
+    min-width: 280px;
+    font-size: 19px;
+  }
+  .stage-hero-btn {
+    width: 66px;
+    height: 66px;
+  }
+  .stage-home-more {
+    height: 48px;
+    font-size: 13px;
+  }
+  .stage-activity-card {
+    flex-basis: 430px;
+    min-height: 250px;
+    padding: 26px;
+  }
+  .stage-act-title {
+    font-size: 26px;
+  }
+  .stage-act-meta {
+    font-size: 14px;
+  }
+  .stage-shelf-title {
+    font-size: 36px;
+  }
+  .stage-shelf-subtitle {
+    font-size: 17px;
+  }
+  .stage-collection-card {
+    flex-basis: 350px;
+    padding: 14px;
+  }
+  .stage-collection-mosaic {
+    flex-basis: 82px;
+    width: 82px;
+    height: 82px;
+  }
+  .stage-collection-copy strong {
+    font-size: 18px;
+  }
+  .stage-collection-copy small {
+    font-size: 14px;
+  }
+  .stage-nav-tab {
+    height: 50px;
+    font-size: 20px;
+  }
+  .stage-brand-name {
+    font-size: 15px;
+  }
+  .stage-brand-mode {
+    font-size: 17px;
+  }
+  .stage-settings {
+    width: min(1460px, 100%);
+  }
+  .stage-dock-panel {
+    width: min(1280px, 88vw);
+    padding: 22px 32px;
+  }
+  .stage-dock-item {
+    min-height: 112px;
+    border-radius: 22px;
+  }
+  .stage-dock-text {
+    font-size: 16px;
+  }
+  .stage-dock-icon {
+    width: 40px;
+    height: 40px;
+  }
+  .stage-dock-kicker,
+  .stage-dock-status {
+    font-size: 14px;
+  }
 }
 
 /* ---------- Reduced motion ---------- */
@@ -612,9 +633,10 @@ body.stage-mode .selective-overlay .gp-focused {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  #stage-root .stage-reel-card.gp-focused,
+  #stage-root .stage-ribbon-card.gp-focused,
+  #stage-root .stage-activity-card.gp-focused,
+  #stage-root .stage-collection-card.gp-focused,
   #stage-root .stage-cover-card.gp-focused,
-  #stage-root .stage-mini-card.gp-focused,
   #stage-root .stage-sheet-tile.gp-focused {
     transform: none !important;
   }
@@ -627,9 +649,10 @@ html.reduce-effects #stage-root *::after {
   transition: none !important;
   scroll-behavior: auto !important;
 }
-html.reduce-effects #stage-root .stage-reel-card.gp-focused,
+html.reduce-effects #stage-root .stage-ribbon-card.gp-focused,
+html.reduce-effects #stage-root .stage-activity-card.gp-focused,
+html.reduce-effects #stage-root .stage-collection-card.gp-focused,
 html.reduce-effects #stage-root .stage-cover-card.gp-focused,
-html.reduce-effects #stage-root .stage-mini-card.gp-focused,
 html.reduce-effects #stage-root .stage-sheet-tile.gp-focused {
   transform: none !important;
 }

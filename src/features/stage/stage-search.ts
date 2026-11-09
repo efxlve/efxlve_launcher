@@ -61,7 +61,7 @@ export function stageSearchResultsHtml(): string {
     return `<div class="stage-search-empty">${icon("search", 28)}<strong>${esc(t("stage.noResults"))}</strong><span>${esc(t("stage.noResultsHint"))}</span></div>`;
   }
   return `<div class="stage-search-grid">${list.map((s) => `<button type="button" class="stage-search-card" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="search:game:${esc(s.appName)}">
-    <span class="stage-search-art">${stageCoverMarkup(s)}</span>
+    <span class="stage-search-art">${stageCoverMarkup(s, "stage-cover-art", true)}</span>
     <span class="stage-search-title">${esc(s.title)}</span>
     <span class="stage-search-sub">${esc(s.installed ? t("stage.installed") : t("stage.notInstalled"))}</span>
   </button>`).join("")}</div>`;

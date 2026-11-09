@@ -1,9 +1,9 @@
 /**
  * Stage shell and route dispatch.
  *
- * The shell owns the one thing every screen shares: the top status line, the
- * chapter spine, the hint bar, the overlay stack and the focus contract. The
- * screens only return the content inside the active layer.
+ * The shell owns the one thing every screen shares: the top status line and
+ * navigation, the ambient backdrop, the hint bar, the overlay stack and the
+ * focus contract. The screens only return the content inside the active layer.
  */
 
 import { currentLanguage, t } from "../../i18n";
@@ -63,10 +63,10 @@ import {
   setStageTextScale,
 } from "./stage-state";
 import { stageLaunchGame } from "./stage-launch";
-import { renderStageDownloads } from "./stage-downloads";
+import { patchStageDownloads, renderStageDownloads } from "./stage-downloads";
 import { renderStageHome, stageHomeFocus } from "./stage-home";
 import { renderStageLibrary, stageLibraryFocus, stageLibraryMore, stageLibraryRenderToken } from "./stage-library";
-import { stageGameByKey } from "./stage-model";
+import { stageGameByKey, stageHeroSummary } from "./stage-model";
 import { renderStageProgram } from "./stage-program";
 import { renderStageSearch } from "./stage-search";
 import { renderStageSettings } from "./stage-settings";
@@ -96,13 +96,10 @@ let pointerFocus = false;
  */
 function stageLiveSignature(): string {
   const download = stageActiveDownload();
-  const downloadProgress = S.stage.route === "downloads" || S.stage.quickMenu
-    ? Array.from(S.downloads.entries()).map(([id, item]) => `${id}:${Math.round(item.progress)}`).join(",") +
-      `:${Math.round(S.activeDlMetrics?.progress ?? 0)}`
-    : "";
   return [
     S.stage.route,
     S.stage.gameKey ?? "",
+    S.stage.homeHeroKey ?? "",
     S.stage.programTab,
     S.stage.settingsTab,
     S.stage.achievementFilter,
@@ -169,12 +166,7 @@ function stageLiveSignature(): string {
     S.gogDlPaused ? "1" : "0",
     S.dlQueueStatus.active ?? "",
     S.dlQueueStatus.queue.join(","),
-    S.activeDlMetrics?.speed ?? "",
-    S.activeDlMetrics?.eta ?? "",
-    String(S.activeDlMetrics?.downloadedBytes ?? -1),
-    String(S.activeDlMetrics?.totalBytes ?? -1),
     S.stage.gameKey ? String(S.playtimeMap.get(S.stage.gameKey)?.total_seconds ?? -1) : "",
-    downloadProgress,
     stageLibraryRenderToken(),
   ].join("\u001f");
 }
@@ -182,14 +174,19 @@ function stageLiveSignature(): string {
 /** Live counters that can update without rebuilding a shelf. */
 function patchLiveStage(): void {
   const download = stageActiveDownload();
-  if (!download) return;
-  const chip = document.querySelector<HTMLElement>(".stage-top-download");
-  if (!chip) return;
-  const percent = Math.max(0, Math.min(100, Math.round(download.percent)));
-  const label = chip.querySelector<HTMLElement>("span");
-  if (label) label.textContent = `${percent}%`;
-  const bar = chip.querySelector<HTMLElement>("i");
-  if (bar) bar.style.width = `${Math.max(2, percent)}%`;
+  if (download) {
+    const percent = Math.max(0, Math.min(100, Math.round(download.percent)));
+    const chip = document.querySelector<HTMLElement>(".stage-top-download");
+    if (chip) {
+      const label = chip.querySelector<HTMLElement>("span");
+      if (label) label.textContent = `${percent}%`;
+      const bar = chip.querySelector<HTMLElement>("i");
+      if (bar) bar.style.width = `${Math.max(2, percent)}%`;
+    }
+    const badge = document.querySelector<HTMLElement>(".stage-dock-badge");
+    if (badge) badge.textContent = `${percent}%`;
+  }
+  if (S.stage.route === "downloads") patchStageDownloads();
 }
 
 function clockText(): string {
@@ -286,6 +283,7 @@ function topbar(): string {
       <div class="stage-brand">
         <span class="stage-brand-name">EFXLVE</span>
         <span class="stage-brand-mode">STAGE</span>
+        <span class="stage-beta-chip">${esc(t("stage.beta"))}</span>
       </div>
       <nav class="stage-top-nav" aria-label="${esc(t("stage.navHome"))}">
         <span class="stage-bumper-hint is-left">${lbGlyph}</span>
@@ -340,6 +338,7 @@ function hints(): string {
       stageHint(face("a"), t("stage.open")),
       stageHint(face("x"), t("stage.quickPlay")),
       stageHint(face("y"), S.stage.libraryView === "grid" ? t("stage.viewList") : t("stage.viewGrid")),
+      stageHint(bumpers, t("gamepad.tabs")),
       stageHint("L2 / R2", t("stage.storeFilter")),
       stageHint("View", t("stage.search")),
       stageHint("Menu", t("stage.quickMenu")),
@@ -364,6 +363,7 @@ function hints(): string {
   return stageHintBar([
     stageHint(face("a"), t("stage.open")),
     stageHint(face("x"), t("stage.quickPlay")),
+    stageHint("↓", t("stage.details")),
     stageHint(bumpers, t("gamepad.tabs")),
     stageHint("Menu", t("stage.quickMenu")),
   ]);
@@ -497,6 +497,26 @@ function stillViewer(): string {
   </div>`;
 }
 
+/** The art behind the shell for the current screen. */
+function currentBackdropArt(): string | null {
+  if (S.stage.route === "home") {
+    const key = S.stage.focusKey.startsWith("game:")
+      ? S.stage.focusKey.slice(5)
+      : S.stage.homeHeroKey || "";
+    const hero = (key ? stageGameByKey(key) : undefined) ?? stageHeroSummary();
+    return hero ? stageWideArt(hero) : null;
+  }
+  if (S.stage.route === "program" && S.stage.gameKey) {
+    const game = stageGameByKey(S.stage.gameKey);
+    return game ? stageWideArt(game) : null;
+  }
+  if (S.stage.route === "library") {
+    const game = S.stage.previewKey ? stageGameByKey(S.stage.previewKey) : null;
+    return game ? stageWideArt(game) : null;
+  }
+  return null;
+}
+
 function contentForRoute(): string {
   switch (S.stage.route) {
     case "library": return renderStageLibrary();
@@ -557,11 +577,6 @@ export function renderStage(): void {
   wasLaunch = Boolean(S.stage.launch);
   wasError = Boolean(S.stage.launchError);
 
-  if (S.stage.route === "program" && S.stage.gameKey) {
-    const summary = stageGameByKey(S.stage.gameKey);
-    if (summary) updateStageBackdrop(stageWideArt(summary));
-  }
-
   root.className = `stage-root stage-route-${S.stage.route}${S.stage.route === "program" ? " is-program" : ""}${S.stage.quickMenu ? " is-menu-open" : ""}${S.stage.searchOpen ? " is-search-open" : ""}${S.stage.stillIndex !== null ? " is-still-open" : ""}${S.stage.route === "settings" && settingsTabChanged ? " stage-settings-tab-enter" : ""}`;
   root.dataset.route = S.stage.route;
   root.style.setProperty("--stage-safe", `${S.stage.safeArea * 1.5}vmin`);
@@ -579,6 +594,11 @@ export function renderStage(): void {
   ${still}
   ${cover}
   ${error}`;
+
+  // The shell is rebuilt above, so the backdrop layers are fresh and empty.
+  // Apply the current route's art after the markup exists, not before.
+  resetStageBackdrop();
+  updateStageBackdrop(currentBackdropArt());
 
   const main = document.getElementById("stage-main");
   if (main) main.scrollTop = previousRoute === S.stage.route ? previousScroll : 0;

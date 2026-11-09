@@ -33,7 +33,10 @@ export function updateStageBackdrop(artUrl: string | null): void {
   activeBackdropLayer = activeBackdropLayer === "a" ? "b" : "a";
 
   if (artUrl) {
-    nextLayer.style.backgroundImage = `url("${CSS.escape(artUrl)}")`;
+    // CSS.escape() is for identifiers, not quoted URL strings: it would leave
+    // backslashes inside the url() token and can break data URLs. Escape the
+    // two characters a CSS string actually treats specially.
+    nextLayer.style.backgroundImage = `url("${artUrl.replace(/(["\\])/g, "\\$1")}")`;
     nextLayer.classList.add("is-active");
     prevLayer.classList.remove("is-active");
   } else {

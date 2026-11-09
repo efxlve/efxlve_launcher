@@ -164,12 +164,11 @@ export function renderStageSettings(): string {
   return `<div class="stage-settings">
     <header class="stage-settings-head">
       <div>
-        <span class="stage-kicker">${esc(t("stage.settingsTitle"))}</span>
+        <span class="stage-kicker">${esc(t("stage.settingsTitle"))} <span class="stage-beta-chip">${esc(t("stage.beta"))}</span></span>
         <h1>${esc(t("stage.navSettings"))}</h1>
         <p>${esc(t("stage.settingsSubtitle"))}</p>
       </div>
       <div class="stage-settings-head-actions">
-        <span class="stage-beta-chip">${esc(t("stage.beta"))}</span>
         <button type="button" class="stage-back" data-stage-act="back" data-gp-item data-gp-key="settings:back">${icon("arrow-left", 18)}<span>${esc(t("common.back"))}</span></button>
       </div>
     </header>

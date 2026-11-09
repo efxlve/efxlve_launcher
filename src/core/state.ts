@@ -927,6 +927,8 @@ export const S = {
     active: false,
     route: ("home") as StageRoute,
     gameKey: (null) as string | null,
+    /** Last game the Home hero showed, kept while the focus is on Play or a tool. */
+    homeHeroKey: (null) as string | null,
     /** Last game the library wall previewed, kept while the focus is on a tool. */
     previewKey: (null) as string | null,
     programTab: ("overview") as StageProgramTab,

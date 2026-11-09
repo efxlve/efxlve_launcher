@@ -329,7 +329,8 @@ export function fetchAndRenderScreenshots(appName: string, title: string, force 
       const desktopOpen = S.currentModalAppName === appName;
       const stageOpen = S.stage.active && S.stage.stillApp === appName;
       const programOpen = S.stage.active && S.stage.gameKey === appName;
-      if (!desktopOpen && !stageOpen && !programOpen) return;
+      const homeOpen = S.stage.active && S.stage.route === "home";
+      if (!desktopOpen && !stageOpen && !programOpen && !homeOpen) return;
       S.loadedScreenshots.set(appName, items);
       if (desktopOpen) {
         const badgeEl = modalRoot.querySelector('.drawer-tab[data-tab="screenshots"] .drawer-tab-badge');
@@ -345,7 +346,7 @@ export function fetchAndRenderScreenshots(appName: string, title: string, force 
           const moments = document.getElementById("gp-moments");
           if (moments) moments.outerHTML = renderMomentsStrip(appName);
         }
-      } else if (stageOpen || programOpen) {
+      } else if (stageOpen || programOpen || homeOpen) {
         scheduleRender();
       }
     })
