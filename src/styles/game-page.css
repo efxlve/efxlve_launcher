@@ -81,6 +81,14 @@ body.sb-resizing .overlay {
   object-position: center center;
   padding: 12px 0;
 }
+/* Custom games often have only a portrait cover. A contained strip in the
+   middle of the wide banner reads like a mistake; let the blurred cover fill
+   the banner instead, the way Steam handles a missing hero. */
+.gp-hero.is-custom-game .gp-hero-img.is-portrait { display: none; }
+.gp-hero.is-custom-game .gp-hero-backdrop {
+  filter: blur(28px) brightness(0.6) saturate(1.2);
+  opacity: 1;
+}
 /* A dead URL leaves the hero's gradient visible instead of the browser's
    broken-image icon. The element stays so the store-header fallback can swap
    its picture in and clear the class on load. */

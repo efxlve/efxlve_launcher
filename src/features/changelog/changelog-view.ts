@@ -81,6 +81,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "Open menus and dialog backdrops follow the game-art backdrop with a heavy iOS-style blur; themed menus and the collections sheet blend their own surface colour down to glass instead of a flat panel, so library row titles no longer read through them.",
         tr: "Oyun görseli arka planı açıkken açılır menüler ve iletişim kutularının arka planı iOS tarzı güçlü bir bulanıklık kullanıyor; temalı menüler ve koleksiyon paneli düz panel yerine kendi renklerinden cam bir yüzeye dönüşüyor ve arkalarındaki kütüphane satır başlıkları artık okunmuyor.",
       },
+      {
+        en: "A custom game with only a portrait cover fills its game-page banner with the blurred cover instead of showing a narrow portrait strip.",
+        tr: "Yalnızca dikey kapağı olan özel oyunlar, oyun sayfası banner'ında ince bir dikey şerit yerine bulanık kapağın tamamını gösteriyor.",
+      },
     ],
   },
   {

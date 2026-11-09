@@ -1497,6 +1497,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
 
   const isGog = appName.startsWith("gog::");
   const isSteam = appName.startsWith("steam::");
+  const isCustomGame = appName.startsWith("custom::");
   const customLogo = customLogoOf(appName, s.title);
   // A Steam title's wide art only exists under the store's hashed path; resolve
   // it before the hero settles on a low-resolution fallback.
@@ -1512,7 +1513,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   modalRoot.innerHTML = `
     <div class="overlay">
       <div class="game-hub">
-        <div class="gp-hero${customLogo ? " has-custom-logo" : ""}${S.isAdjustingLogo && customLogo ? " is-adjusting-logo" : ""}">
+        <div class="gp-hero${isCustomGame ? " is-custom-game" : ""}${customLogo ? " has-custom-logo" : ""}${S.isAdjustingLogo && customLogo ? " is-adjusting-logo" : ""}">
           ${renderGameHeroInnerHtml(s, partner, antiCheat)}
         </div>
 
