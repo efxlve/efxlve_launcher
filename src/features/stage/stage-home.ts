@@ -32,11 +32,12 @@ import {
 import { stageMetaLine, stageProgress, stageStoreName } from "./stage-ui";
 
 function ribbonCard(s: EpicSummary, isDefault = false): string {
+  const isRunning = S.runningGames.has(s.appName);
   const hasDl = epicDlProgress(s.appName) !== null;
   const isUpdating = s.updateAvailable && !S.ignoredUpdates.has(s.appName);
-  return `<button type="button" class="stage-ribbon-card" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="game:${esc(s.appName)}"${isDefault ? " data-gp-default" : ""} aria-label="${esc(s.title)}">
+  return `<button type="button" class="stage-ribbon-card${isRunning ? " is-running" : ""}" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="game:${esc(s.appName)}"${isDefault ? " data-gp-default" : ""} aria-label="${esc(s.title)}">
     <span class="stage-ribbon-art">${stageHeroMarkup(s, "stage-ribbon-image")}</span>
-    ${hasDl || isUpdating ? `<span class="stage-ribbon-indicator"></span>` : ""}
+    ${isRunning ? `<span class="stage-ribbon-running"></span>` : hasDl || isUpdating ? `<span class="stage-ribbon-indicator"></span>` : ""}
   </button>`;
 }
 
@@ -81,17 +82,18 @@ export function stageHomeHeroHtml(game: EpicSummary): string {
 }
 
 function resumeActivityCard(game: EpicSummary): string {
+  const isRunning = S.runningGames.has(game.appName);
   const play = stageGamePlaytime(game);
-  return `<button type="button" class="stage-activity-card stage-act-resume" data-stage-act="open-program" data-key="${esc(game.appName)}" data-gp-item data-gp-key="act:resume">
+  return `<button type="button" class="stage-activity-card stage-act-resume${isRunning ? " is-running" : ""}" data-stage-act="open-program" data-key="${esc(game.appName)}" data-gp-item data-gp-key="act:resume">
     <div class="stage-act-media">${stageHeroMarkup(game, "stage-act-bg")}</div>
     <div class="stage-act-scrim"></div>
     <div class="stage-act-body">
-      <span class="stage-kicker">${esc(t("stage.continue"))}</span>
+      <span class="stage-kicker${isRunning ? " is-running" : ""}">${isRunning ? `<span class="stage-dot-pulse"></span>${esc(t("common.playing"))}` : esc(t("stage.continue"))}</span>
       <h3 class="stage-act-title">${esc(game.title)}</h3>
       <span class="stage-act-meta">${play.seconds > 0 ? esc(t("stage.hoursValue", { h: (play.seconds / 3600).toFixed(1) })) : esc(t("playtime.notPlayed"))}</span>
     </div>
     <div class="stage-act-foot">
-      <span class="stage-act-pill">${icon("play", 14)} <span>${esc(t("stage.open"))}</span></span>
+      <span class="stage-act-pill">${icon("play", 14)} <span>${esc(isRunning ? t("stage.continue") : t("stage.open"))}</span></span>
     </div>
   </button>`;
 }

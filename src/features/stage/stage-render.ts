@@ -107,6 +107,16 @@ import {
   stageOpenDiscordSheet,
   stageDiscordToggleMute,
 } from "./stage-discord";
+import { initStageBattery, stageBatteryInfo, stageBatteryMarkup } from "./stage-battery";
+import {
+  renderStagePowerSheet,
+  stageClosePowerSheet,
+  stageOpenPowerSheet,
+  stageQuickVolume,
+  stageShutdownDevice,
+  stageSleepDevice,
+  stageToggleQuickMute,
+} from "./stage-power";
 import { resetStageBackdrop, stageBackdropMarkup, updateStageBackdrop } from "./stage-backdrop";
 import { stageCoverMarkup, stageWideArt } from "./stage-art";
 import { fullShotSrc } from "../screenshots/screenshots-view";
@@ -135,6 +145,7 @@ let wasError = false;
 let wasBrowser = false;
 let wasSpotify = false;
 let wasDiscord = false;
+let wasPower = false;
 let wasSettingsTab = "";
 let lastStageSignature = "";
 let pointerFocus = false;
@@ -181,6 +192,7 @@ function stageLiveSignature(): string {
     S.stage.searchOpen ? "" : S.stage.query,
     S.stage.searchOpen ? "1" : "0",
     S.stage.quickMenu ? "1" : "0",
+    S.stage.powerOpen ? "1" : "0",
     S.stage.controlsOpen ? "1" : "0",
     S.stage.browserOpen ? "1" : "0",
     S.stage.spotifyOpen ? "1" : "0",
@@ -204,6 +216,8 @@ function stageLiveSignature(): string {
     S.stage.gameKey ? (S.loadedScreenshots.get(S.stage.gameKey)?.[0]?.file_path ?? "") : "",
     S.stage.controllerConnected ? "1" : "0",
     String(Math.round((S.stage.controllerBattery ?? -1) * 100)),
+    String(stageBatteryInfo().level),
+    stageBatteryInfo().charging ? "1" : "0",
     S.offlineMode ? "1" : "0",
     navigator.onLine ? "1" : "0",
     S.appLanguage,
@@ -369,8 +383,10 @@ function topbar(): string {
       </button>
       ${dl ? `<button type="button" class="stage-top-download" data-stage-act="go" data-route="downloads" data-gp-item data-gp-key="top:downloads">${icon("download", 15)}<span class="tabular-nums">${Math.round(dl.percent)}%</span><i style="width:${Math.max(2, Math.min(100, dl.percent))}%"></i></button>` : ""}
       <span class="stage-net ${online ? "is-online" : "is-offline"}"><span class="stage-net-dot"></span><span class="stage-net-label">${esc(online ? t("nav.online") : t("nav.offline"))}</span></span>
+      ${stageBatteryMarkup()}
       ${pad ? `<span class="stage-pad-status">${icon("gamepad-2", 15)}${battery ? `<span class="tabular-nums">${esc(battery)}</span>` : ""}</span>` : ""}
       <span class="stage-clock tabular-nums"></span>
+      <button type="button" class="stage-icon-pill" data-stage-act="open-power-sheet" data-gp-item data-gp-key="top:power-sheet" aria-label="${esc(t("settings.finishActionSleep"))}">${icon("zap", 16)}</button>
       <button type="button" class="stage-icon-pill" data-stage-act="open-menu" data-gp-item data-gp-key="top:menu" aria-label="${esc(t("stage.quickMenu"))}">${icon("dots", 18)}</button>
     </div>
   </header>`;
@@ -398,6 +414,12 @@ function hints(): string {
       stageHint(face("a"), t("gamepad.select")),
       stageHint(face("b"), t("common.close")),
       stageHint(isKbd ? "↑↓" : "↑ ↓", t("gamepad.navigate")),
+    ]);
+  }
+  if (S.stage.powerOpen) {
+    return stageHintBar([
+      stageHint(face("a"), t("gamepad.select")),
+      stageHint(face("b"), t("common.close")),
     ]);
   }
   if (S.stage.quickMenu) {
@@ -456,6 +478,8 @@ function quickMenu(entered: boolean): string {
   const pad = S.stage.controllerConnected
     ? `${S.stage.controllerName || t("stage.controller")} · ${stageBatteryLabel()}`
     : t("stage.noController");
+  const runningAppName = Array.from(S.runningGames)[0];
+  const runningGame = runningAppName ? stageGameByKey(runningAppName) : null;
   return `<div class="stage-overlay stage-quick-menu${entered ? " stage-overlay-enter" : ""}">
     <div class="stage-dock-panel" role="dialog" aria-modal="true" aria-label="${esc(t("stage.quickMenu"))}">
       <div class="stage-dock-head">
@@ -463,7 +487,16 @@ function quickMenu(entered: boolean): string {
         <span class="stage-dock-status tabular-nums">${esc(pad)}</span>
       </div>
       <div class="stage-dock-items" data-gp-row>
-        <button type="button" class="stage-dock-item" data-stage-act="go" data-route="home" data-gp-item data-gp-key="dock:home">
+        ${runningGame ? `
+          <button type="button" class="stage-dock-item stage-dock-resume" data-stage-act="open-program" data-key="${esc(runningGame.appName)}" data-gp-item data-gp-key="dock:resume" data-gp-default>
+            <span class="stage-dock-icon is-running">${icon("play", 22)}</span>
+            <div class="stage-dock-resume-text">
+              <strong>${esc(t("stage.continue"))}: ${esc(runningGame.title)}</strong>
+              <span>${esc(t("common.playing"))}</span>
+            </div>
+          </button>
+        ` : ""}
+        <button type="button" class="stage-dock-item" data-stage-act="go" data-route="home" data-gp-item data-gp-key="dock:home"${!runningGame ? " data-gp-default" : ""}>
           <span class="stage-dock-icon">${icon("home", 22)}</span>
           <span class="stage-dock-text">${esc(t("stage.navHome"))}</span>
         </button>
@@ -479,6 +512,7 @@ function quickMenu(entered: boolean): string {
         <button type="button" class="stage-dock-item" data-stage-act="open-browser-sheet" data-gp-item data-gp-key="dock:browser"><span class="stage-dock-icon">${icon("globe", 22)}</span><span class="stage-dock-text">${esc(t("overlay.tabBrowser"))}</span></button>
         <button type="button" class="stage-dock-item" data-stage-act="open-spotify-sheet" data-gp-item data-gp-key="dock:spotify"><span class="stage-dock-icon">${icon("spotify", 22)}</span><span class="stage-dock-text">Spotify</span></button>
         <button type="button" class="stage-dock-item" data-stage-act="open-discord-sheet" data-gp-item data-gp-key="dock:discord"><span class="stage-dock-icon">${icon("discord", 22)}</span><span class="stage-dock-text">Discord</span></button>
+        <button type="button" class="stage-dock-item" data-stage-act="open-power-sheet" data-gp-item data-gp-key="dock:power"><span class="stage-dock-icon">${icon("zap", 22)}</span><span class="stage-dock-text">${esc(t("settings.finishActionSleep"))}</span></button>
         <button type="button" class="stage-dock-item" data-stage-act="controls" data-gp-item data-gp-key="dock:controls">
           <span class="stage-dock-icon">${icon("gamepad-2", 22)}</span>
           <span class="stage-dock-text">${esc(t("stage.controller"))}</span>
@@ -787,6 +821,7 @@ export function renderStage(): void {
   const browserEntered = S.stage.browserOpen && !wasBrowser;
   const spotifyEntered = S.stage.spotifyOpen && !wasSpotify;
   const discordEntered = S.stage.discordOpen && !wasDiscord;
+  const powerEntered = S.stage.powerOpen && !wasPower;
   const launchEntered = Boolean(S.stage.launch) && !wasLaunch;
   const errorEntered = Boolean(S.stage.launchError) && !wasError;
   const settingsTabChanged = S.stage.settingsTab !== wasSettingsTab;
@@ -802,6 +837,7 @@ export function renderStage(): void {
   const browser = S.stage.browserOpen ? renderStageBrowserSheet(browserEntered) : "";
   const spotify = S.stage.spotifyOpen ? renderStageSpotifySheet(spotifyEntered) : "";
   const discord = S.stage.discordOpen ? renderStageDiscordSheet(discordEntered) : "";
+  const power = S.stage.powerOpen ? renderStagePowerSheet(powerEntered) : "";
   const cover = S.stage.launch ? curtain(launchEntered) : "";
   const error = launchError(errorEntered);
   wasQuickMenu = S.stage.quickMenu;
@@ -811,10 +847,11 @@ export function renderStage(): void {
   wasBrowser = S.stage.browserOpen;
   wasSpotify = S.stage.spotifyOpen;
   wasDiscord = S.stage.discordOpen;
+  wasPower = S.stage.powerOpen;
   wasLaunch = Boolean(S.stage.launch);
   wasError = Boolean(S.stage.launchError);
 
-  root.className = `stage-root stage-route-${S.stage.route}${S.stage.route === "program" ? " is-program" : ""}${S.stage.quickMenu ? " is-menu-open" : ""}${S.stage.manageKey ? " is-manage-open" : ""}${S.stage.searchOpen ? " is-search-open" : ""}${S.stage.browserOpen ? " is-browser-open" : ""}${S.stage.spotifyOpen ? " is-spotify-open" : ""}${S.stage.discordOpen ? " is-discord-open" : ""}${S.stage.stillIndex !== null ? " is-still-open" : ""}${S.stage.route === "settings" && settingsTabChanged ? " stage-settings-tab-enter" : ""}`;
+  root.className = `stage-root stage-route-${S.stage.route}${S.stage.route === "program" ? " is-program" : ""}${S.stage.quickMenu ? " is-menu-open" : ""}${S.stage.powerOpen ? " is-power-open" : ""}${S.stage.manageKey ? " is-manage-open" : ""}${S.stage.searchOpen ? " is-search-open" : ""}${S.stage.browserOpen ? " is-browser-open" : ""}${S.stage.spotifyOpen ? " is-spotify-open" : ""}${S.stage.discordOpen ? " is-discord-open" : ""}${S.stage.stillIndex !== null ? " is-still-open" : ""}${S.stage.route === "settings" && settingsTabChanged ? " stage-settings-tab-enter" : ""}`;
   root.dataset.route = S.stage.route;
   root.style.setProperty("--stage-safe", `${S.stage.safeArea * 1.5}vmin`);
   root.innerHTML = `${stageBackdropMarkup()}
@@ -833,6 +870,7 @@ export function renderStage(): void {
   ${browser}
   ${spotify}
   ${discord}
+  ${power}
   ${cover}
   ${error}`;
 
@@ -850,7 +888,9 @@ export function renderStage(): void {
       ? ".stage-curtain"
       : still
         ? ".stage-still-viewer"
-        : browser
+        : power
+          ? ".stage-power-sheet"
+          : browser
           ? ".stage-browser-sheet"
           : spotify
             ? ".stage-spotify-sheet"
@@ -877,6 +917,7 @@ export function renderStage(): void {
 }
 
 function bindGlobalFocus(): void {
+  initStageBattery();
   if (focusBound) return;
   focusBound = true;
   window.addEventListener("stage:focus", (event) => {
@@ -1145,6 +1186,14 @@ function bindStageEvents(root: HTMLElement): void {
       case "search-submit": stageSearchSubmit(); break;
       case "open-menu": stageOpenQuickMenu("menu:resume"); break;
       case "close-menu": stageFeedback("back"); S.stage.quickMenu = false; S.stage.controlsOpen = false; S.stage.focusKey = ""; scheduleRender(); break;
+      case "open-power-sheet": stageOpenPowerSheet(); break;
+      case "close-power-sheet": stageClosePowerSheet(); break;
+      case "power-sleep": void stageSleepDevice(); break;
+      case "power-desktop": stageOpenDesktop(); break;
+      case "power-shutdown": void stageShutdownDevice(); break;
+      case "power-mute": stageToggleQuickMute(); break;
+      case "power-vol-down": stageQuickVolume(-10); break;
+      case "power-vol-up": stageQuickVolume(10); break;
       case "open-browser-sheet": void stageOpenBrowserSheet(); break;
       case "close-browser-sheet": stageCloseBrowserSheet(); break;
       case "browser-go": {

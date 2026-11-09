@@ -1515,3 +1515,338 @@
   border-block-start: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* ==========================================================================
+   Handheld Comfort: Battery Indicator & Power / Quick System Hub
+   ========================================================================== */
+
+.stage-battery-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--stage-ink);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), background 160ms ease, border-color 160ms ease;
+}
+
+.stage-battery-pill:hover,
+.stage-battery-pill.gp-focused {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.stage-battery-pill.is-charging {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.4);
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.2);
+}
+
+.stage-battery-pill.is-charging .stage-battery-icon {
+  animation: stagePulseNet 1.6s infinite ease-in-out;
+}
+
+.stage-battery-pill.is-low {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.stage-battery-pill.is-critical {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.5);
+  animation: stagePulseNet 1.2s infinite ease-in-out;
+}
+
+.stage-power-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 5200;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 3.5vw, 36px);
+  background: rgba(4, 5, 8, 0.82);
+  backdrop-filter: blur(28px);
+}
+
+.stage-power-panel {
+  width: min(520px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 28px;
+  border-radius: 24px;
+  background: linear-gradient(175deg, rgba(22, 28, 44, 0.94) 0%, rgba(10, 13, 20, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8), 0 0 40px rgba(80, 130, 255, 0.12);
+  animation: stage-overlay-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.stage-power-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stage-power-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stage-power-brand {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #38bdf8;
+}
+
+.stage-power-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.stage-power-subtitle {
+  font-size: 12px;
+  color: var(--stage-ink-3);
+}
+
+.stage-power-battery-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.stage-p-bat-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stage-p-bat-icon.is-charging {
+  color: #34d399;
+}
+
+.stage-p-bat-level {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.stage-p-bat-meter {
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.stage-p-bat-fill {
+  display: block;
+  height: 100%;
+  border-radius: 9999px;
+  background: #34d399;
+  transition: width 300ms ease;
+}
+
+.stage-p-bat-fill.is-warn { background: #fbbf24; }
+.stage-p-bat-fill.is-danger { background: #f87171; }
+
+.stage-power-volume-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.stage-p-vol-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stage-p-vol-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--stage-ink-2);
+}
+
+.stage-p-vol-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stage-p-vol-controls .stage-btn {
+  flex: 1;
+  height: 38px;
+  font-size: 12px;
+}
+
+.stage-power-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stage-power-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  text-align: start;
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.stage-power-card:hover,
+.stage-power-card.gp-focused {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+}
+
+.stage-power-card.is-primary {
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.stage-power-card.is-primary:hover,
+.stage-power-card.is-primary.gp-focused {
+  border-color: #38bdf8;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.35), 0 10px 24px rgba(0, 0, 0, 0.5);
+}
+
+.stage-power-card.is-danger {
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.stage-power-card.is-danger:hover,
+.stage-power-card.is-danger.gp-focused {
+  border-color: #f87171;
+  box-shadow: 0 0 20px rgba(248, 113, 113, 0.35), 0 10px 24px rgba(0, 0, 0, 0.5);
+}
+
+.stage-power-card-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.stage-power-card-icon.is-danger {
+  color: #f87171;
+}
+
+.stage-power-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stage-power-card-text strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.stage-power-card-text span {
+  font-size: 11.5px;
+  color: var(--stage-ink-3);
+}
+
+.stage-power-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding-block-start: 6px;
+}
+
+/* Quick Menu Running Game item */
+.stage-dock-resume {
+  grid-column: 1 / -1;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 10px 16px !important;
+  border-radius: 14px !important;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.18) 0%, rgba(16, 185, 129, 0.08) 100%) !important;
+  border: 1px solid rgba(34, 197, 94, 0.45) !important;
+}
+
+.stage-dock-resume .stage-dock-icon.is-running {
+  color: #22c55e;
+  animation: stagePulseNet 1.5s infinite ease-in-out;
+}
+
+.stage-dock-resume-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.stage-dock-resume-text strong {
+  font-size: 13px;
+  color: #22c55e;
+}
+
+.stage-dock-resume-text span {
+  font-size: 11px;
+  color: var(--stage-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Ribbon running indicator */
+.stage-ribbon-running {
+  position: absolute;
+  inset-block-start: 10px;
+  inset-inline-start: 10px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.95);
+  animation: stagePulseNet 1.5s infinite ease-in-out;
+  z-index: 7;
+}
+
+.stage-dot-pulse {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.95);
+  animation: stagePulseNet 1.4s infinite ease-in-out;
+  margin-inline-end: 6px;
+  vertical-align: middle;
+}
+
+
+

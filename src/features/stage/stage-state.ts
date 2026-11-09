@@ -108,6 +108,7 @@ export async function enterStage(opts: { route?: StageRoute; gameKey?: string } 
   S.stage.discordOpen = false;
   S.stage.browserOpen = false;
   S.stage.browserUrl = "";
+  S.stage.powerOpen = false;
   S.stage.manageKey = null;
   S.stage.manageConfirmUninstall = false;
   S.stage.launch = null;
@@ -147,6 +148,7 @@ export function exitStage(): void {
   S.stage.discordOpen = false;
   S.stage.browserOpen = false;
   S.stage.browserUrl = "";
+  S.stage.powerOpen = false;
   S.stage.manageKey = null;
   S.stage.manageConfirmUninstall = false;
   S.stage.launch = null;

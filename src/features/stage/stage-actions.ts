@@ -38,6 +38,7 @@ import { exitStage, setStageLibrarySort, setStageLibraryView } from "./stage-sta
 import { stageCloseBrowserSheet } from "./stage-browser";
 import { stageCloseSpotifySheet } from "./stage-spotify";
 import { stageCloseDiscordSheet } from "./stage-discord";
+import { stageClosePowerSheet } from "./stage-power";
 
 export {
   stageOpenBrowserSheet,
@@ -59,6 +60,14 @@ export {
   stageDiscordHangup,
   stageDiscordOpenApp,
 } from "./stage-discord";
+export {
+  stageOpenPowerSheet,
+  stageClosePowerSheet,
+  stageSleepDevice,
+  stageShutdownDevice,
+  stageQuickVolume,
+  stageToggleQuickMute,
+} from "./stage-power";
 
 const TOP_ROUTES: StageRoute[] = ["home", "library", "downloads"];
 /** The shelf query to restore when the search is cancelled rather than applied. */
@@ -155,6 +164,10 @@ export function stageBack(): void {
   }
   if (S.stage.discordOpen) {
     stageCloseDiscordSheet();
+    return;
+  }
+  if (S.stage.powerOpen) {
+    stageClosePowerSheet();
     return;
   }
   stageFeedback("back");

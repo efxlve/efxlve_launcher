@@ -1007,6 +1007,7 @@ export const S = {
     discordOpen: false,
     browserOpen: false,
     browserUrl: "",
+    powerOpen: false,
     manageKey: (null) as string | null,
     manageConfirmUninstall: false,
     launch: (null) as { key: string; title: string; art: string | null } | null,
