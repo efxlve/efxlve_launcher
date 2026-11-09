@@ -89,6 +89,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "The library page header no longer ghosts through the translucent game page when the game-art backdrop is on.",
         tr: "Oyun görseli arka planı açıkken kütüphane sayfa başlığı, yarı saydam oyun sayfasının arkasından hayalet gibi görünmüyor.",
       },
+      {
+        en: "The release calendar's Epic Games button opens the store's real search page instead of a dead search route.",
+        tr: "Çıkış takvimindeki Epic Games düğmesi, ölü bir arama adresi yerine mağazanın gerçek arama sayfasını açıyor.",
+      },
     ],
   },
   {

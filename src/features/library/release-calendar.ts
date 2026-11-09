@@ -479,7 +479,9 @@ function storeSearchLinks(name: string): Array<{ id: string; label: string; url:
   const query = encodeURIComponent(name);
   return [
     { id: "steam", label: "Steam", url: `https://store.steampowered.com/search/?term=${query}` },
-    { id: "epic", label: "Epic Games", url: `https://store.epicgames.com/en-US/search?q=${query}` },
+    // The store's search screen is /browse?q=; the old /search route returns
+    // an empty shell instead of results.
+    { id: "epic", label: "Epic Games", url: `https://store.epicgames.com/browse?q=${query}` },
     { id: "gog", label: "GOG", url: `https://www.gog.com/en/games?query=${query}` },
     { id: "xbox", label: "Microsoft Store", url: `https://apps.microsoft.com/search?query=${query}` },
   ];
