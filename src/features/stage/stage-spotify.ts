@@ -141,7 +141,7 @@ export function renderStageSpotifySheet(entered: boolean): string {
     <div class="stage-spotify-panel" role="dialog" aria-modal="true" aria-label="Spotify">
       <div class="stage-spotify-head">
         <div class="stage-spotify-title-wrap">
-          <span class="stage-spotify-brand">${icon("music", 24)}</span>
+          <span class="stage-spotify-brand">${icon("spotify", 24)}</span>
           <div>
             <h2 class="stage-spotify-title">Spotify</h2>
             <span class="stage-spotify-subtitle">${isRunning ? `${icon("check", 12)} ${esc(status?.deviceName || "Connect")}` : esc(t("accounts.spotifyDesc"))}</span>

@@ -908,18 +908,6 @@
   color: #fff;
 }
 
-.stage-spotify-brand {
-  color: #1ed760;
-  background: rgba(30, 215, 96, 0.12);
-  border-color: rgba(30, 215, 96, 0.3);
-}
-
-.stage-discord-icon-main {
-  color: #5865f2;
-  background: rgba(88, 101, 242, 0.12);
-  border-color: rgba(88, 101, 242, 0.3);
-}
-
 .stage-browser-title,
 .stage-spotify-title,
 .stage-discord-title {
@@ -1368,9 +1356,9 @@
   width: 72px;
   height: 72px;
   border-radius: 20px;
-  background: rgba(88, 101, 242, 0.15);
-  border: 1px solid rgba(88, 101, 242, 0.3);
-  color: #5865f2;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
 }
 
 .stage-discord-onboard h3 {

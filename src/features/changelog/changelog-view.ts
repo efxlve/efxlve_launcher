@@ -93,6 +93,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "The release calendar's Epic Games button opens the store's real search page instead of a dead search route, and store rows without a confirmed listing are labelled \"Search on …\" with a magnifier instead of looking like the game is sold there.",
         tr: "Çıkış takvimindeki Epic Games düğmesi, ölü bir arama adresi yerine mağazanın gerçek arama sayfasını açıyor; doğrulanmış mağaza bağlantısı olmayan satırlar ise oyun orada satılıyormuş gibi görünmek yerine büyüteç ve \"arama\" etiketi taşıyor.",
       },
+      {
+        en: "Stage uses the real Spotify mark instead of a music note, and the Spotify and Discord marks follow the theme's text colour rather than their brand colours.",
+        tr: "Sahne, müzik notası yerine gerçek Spotify logosunu kullanıyor; Spotify ve Discord işaretleri marka renkleri yerine temanın metin rengini izliyor.",
+      },
     ],
   },
   {

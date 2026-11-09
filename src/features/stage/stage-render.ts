@@ -362,7 +362,7 @@ function topbar(): string {
     </div>
     <div class="stage-topbar-right">
       <button type="button" class="stage-icon-pill" data-stage-act="open-browser-sheet" data-gp-item data-gp-key="top:browser" aria-label="${esc(t("overlay.tabBrowser"))}">${icon("globe", 16)}</button>
-      <button type="button" class="stage-icon-pill" data-stage-act="open-spotify-sheet" data-gp-item data-gp-key="top:spotify" aria-label="Spotify">${icon("music", 16)}</button>
+      <button type="button" class="stage-icon-pill" data-stage-act="open-spotify-sheet" data-gp-item data-gp-key="top:spotify" aria-label="Spotify">${icon("spotify", 16)}</button>
       <button type="button" class="stage-icon-pill" data-stage-act="open-discord-sheet" data-gp-item data-gp-key="top:discord" aria-label="Discord">${icon("discord", 16)}</button>
       <button type="button" class="stage-icon-pill" data-stage-act="open-search" data-gp-item data-gp-key="top:search" aria-label="${esc(t("stage.search"))}">
         ${icon("search", 16)}
@@ -477,8 +477,8 @@ function quickMenu(entered: boolean): string {
           ${dl ? `<span class="stage-dock-badge tabular-nums">${Math.round(dl.percent)}%</span>` : ""}
         </button>
         <button type="button" class="stage-dock-item" data-stage-act="open-browser-sheet" data-gp-item data-gp-key="dock:browser"><span class="stage-dock-icon">${icon("globe", 22)}</span><span class="stage-dock-text">${esc(t("overlay.tabBrowser"))}</span></button>
-        <button type="button" class="stage-dock-item" data-stage-act="open-spotify-sheet" data-gp-item data-gp-key="dock:spotify"><span class="stage-dock-icon" style="color:#1ed760">${icon("music", 22)}</span><span class="stage-dock-text">Spotify</span></button>
-        <button type="button" class="stage-dock-item" data-stage-act="open-discord-sheet" data-gp-item data-gp-key="dock:discord"><span class="stage-dock-icon" style="color:#5865f2">${icon("discord", 22)}</span><span class="stage-dock-text">Discord</span></button>
+        <button type="button" class="stage-dock-item" data-stage-act="open-spotify-sheet" data-gp-item data-gp-key="dock:spotify"><span class="stage-dock-icon">${icon("spotify", 22)}</span><span class="stage-dock-text">Spotify</span></button>
+        <button type="button" class="stage-dock-item" data-stage-act="open-discord-sheet" data-gp-item data-gp-key="dock:discord"><span class="stage-dock-icon">${icon("discord", 22)}</span><span class="stage-dock-text">Discord</span></button>
         <button type="button" class="stage-dock-item" data-stage-act="controls" data-gp-item data-gp-key="dock:controls">
           <span class="stage-dock-icon">${icon("gamepad-2", 22)}</span>
           <span class="stage-dock-text">${esc(t("stage.controller"))}</span>
