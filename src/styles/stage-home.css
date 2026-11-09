@@ -511,50 +511,6 @@
   fill: currentColor;
 }
 
-.stage-home-status {
-  pointer-events: auto;
-}
-
-.stage-home-status .stage-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 32px;
-  padding: 0 14px;
-  border-radius: 9999px;
-  background: rgba(10, 12, 18, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(14px);
-  font-size: 12px;
-  font-weight: 650;
-  color: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-}
-
-.stage-home-status .stage-status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.stage-home-status .stage-status.is-installed .stage-status-dot {
-  background: #34d399;
-  box-shadow: 0 0 8px #34d399;
-}
-
-.stage-home-status .stage-status.is-running .stage-status-dot {
-  background: #60a5fa;
-  box-shadow: 0 0 10px #60a5fa;
-  animation: stagePulseNet 1.8s infinite ease-in-out;
-}
-
-.stage-home-status .stage-status.is-updating .stage-status-dot {
-  background: #fbbf24;
-  box-shadow: 0 0 10px #fbbf24;
-  animation: stagePulseNet 1.6s infinite ease-in-out;
-}
-
 /* Staggered entrance when switching games */
 .stage-hero-animated .stage-home-eyebrow {
   animation: stageHeroMetaIn 340ms cubic-bezier(0.16, 1, 0.3, 1) both;

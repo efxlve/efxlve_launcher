@@ -16,7 +16,8 @@ import { renderMarkdownLite } from "../notes/markdown";
 import { loadNotes, notesForScope } from "../notes/notes-client";
 import { shotThumbHtml } from "../screenshots/screenshots-view";
 import { stageEnsureScreenshots } from "./stage-actions";
-import { stageHeroMarkup } from "./stage-art";
+import { stageHeroMarkup, stageWideArt } from "./stage-art";
+import { updateStageBackdrop } from "./stage-backdrop";
 import { stageAchievements, stageGameByKey, stageGamePlaytime, stagePrimaryAction } from "./stage-model";
 import { stageMetaLine, stageProgress, stageStoreName } from "./stage-ui";
 
@@ -367,6 +368,7 @@ export function renderStageProgram(): string {
       <button type="button" class="stage-btn stage-btn-primary" data-stage-act="back" data-gp-item data-gp-key="missing:back">${esc(t("common.back"))}</button>
     </div>`;
   }
+  updateStageBackdrop(stageWideArt(game));
   const favorite = S.epicFav.has(game.appName);
   return `<div class="stage-program" >
     <section class="stage-program-hero">

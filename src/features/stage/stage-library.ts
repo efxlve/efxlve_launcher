@@ -12,6 +12,7 @@ import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 import type { EpicSummary } from "../../epic";
 import { stageCoverMarkup, stageHeroMarkup, stagePrefetch, stageWideArt } from "./stage-art";
+import { updateStageBackdrop } from "./stage-backdrop";
 import {
   stageAchievements,
   stageFilterCounts,
@@ -181,6 +182,7 @@ export function renderStageLibrary(): string {
   if (!S.stage.focusKey && selected) S.stage.focusKey = `lib:${selected.appName}`;
   if (selected) {
     stagePrefetch([stageWideArt(selected)], 1);
+    updateStageBackdrop(stageWideArt(selected));
   }
 
   const more = list.length > visible.length
@@ -220,6 +222,7 @@ export function stageLibraryFocus(key: string): void {
   const side = document.getElementById("stage-library-side");
   if (!summary || !side) return;
   S.stage.previewKey = summary.appName;
+  updateStageBackdrop(stageWideArt(summary));
   side.outerHTML = sidePanel(summary);
   const next = stageGameByKey(key.slice(4));
   if (next) {
