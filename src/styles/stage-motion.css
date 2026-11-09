@@ -12,37 +12,67 @@
 }
 
 #stage-root .stage-primary-action .btn.gp-focused {
-  outline-color: #fff !important;
+  outline: none !important;
+  transform: scale(1.05) translateY(-2px) !important;
   box-shadow:
-    0 0 0 3px var(--stage-bg),
-    0 0 0 6px #fff,
-    0 18px 52px rgba(0, 0, 0, 0.58) !important;
+    0 0 0 3px #ffffff,
+    0 0 36px rgba(255, 255, 255, 0.8),
+    0 16px 42px rgba(0, 0, 0, 0.65) !important;
 }
 
 #stage-root .stage-ribbon-card.gp-focused {
-  transform: scale(1.18) translateY(-4px) !important;
+  outline: none !important;
+  transform: scale(1.15) translateY(-6px) !important;
   border-color: #ffffff !important;
   box-shadow:
-    0 0 0 3.5px #ffffff,
-    0 0 36px rgba(255, 255, 255, 0.45),
-    0 20px 48px rgba(0, 0, 0, 0.95) !important;
+    0 0 0 3px #ffffff,
+    0 0 24px rgba(255, 255, 255, 0.65),
+    0 0 54px rgba(100, 160, 255, 0.35),
+    0 22px 48px rgba(0, 0, 0, 0.95) !important;
   z-index: 28 !important;
 }
 
 #stage-root .stage-activity-card.gp-focused {
+  outline: none !important;
   transform: scale(1.05) translateY(-4px) !important;
   border-color: #ffffff !important;
   box-shadow:
     0 0 0 3px #ffffff,
-    0 16px 44px rgba(0, 0, 0, 0.9) !important;
+    0 0 28px rgba(255, 255, 255, 0.55),
+    0 20px 48px rgba(0, 0, 0, 0.85) !important;
   z-index: 28 !important;
 }
 
 #stage-root .stage-nav-tab.gp-focused {
-  outline: 2px solid #ffffff !important;
-  outline-offset: 2px !important;
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3) !important;
-  transform: translateY(-2px) !important;
+  outline: none !important;
+  border-radius: 9999px !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 20px rgba(255, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+#stage-root .stage-hero-btn.gp-focused {
+  outline: none !important;
+  border-radius: 50% !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 2.5px #ffffff, 0 0 24px rgba(255, 255, 255, 0.55), 0 12px 28px rgba(0, 0, 0, 0.6) !important;
+  transform: scale(1.1) !important;
+}
+
+#stage-root .stage-home-more.gp-focused {
+  outline: none !important;
+  border-radius: 9999px !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 2.5px #ffffff, 0 0 24px rgba(255, 255, 255, 0.5) !important;
+  transform: translateY(-2px) scale(1.04) !important;
+}
+
+#stage-root .stage-icon-pill.gp-focused {
+  outline: none !important;
+  border-radius: 50% !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 2.5px #ffffff, 0 0 20px rgba(255, 255, 255, 0.45) !important;
+  transform: scale(1.08) !important;
 }
 
 #stage-root .stage-dock-item.gp-focused {

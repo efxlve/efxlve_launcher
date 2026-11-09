@@ -245,7 +245,7 @@ export function renderStageHome(): string {
         </div>
       </div>
 
-      <div id="stage-home-hero" class="stage-home-hero" data-key="${esc(hero.appName)}">
+      <div id="stage-home-hero" class="stage-home-hero stage-hero-animated" data-key="${esc(hero.appName)}">
         ${stageHomeHeroHtml(hero)}
       </div>
     </section>
@@ -282,6 +282,9 @@ export function stageHomeFocus(key: string): void {
       heroEl.querySelectorAll<HTMLElement>("button, [data-gp-item]").forEach((btn) => {
         if (!btn.closest("[data-gp-skip]")) btn.setAttribute("data-gp-item", "");
       });
+      heroEl.classList.remove("stage-hero-animated");
+      void heroEl.offsetWidth;
+      heroEl.classList.add("stage-hero-animated");
     }
 
     // 3. Patch Activity Shelf in place
