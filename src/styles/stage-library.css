@@ -71,10 +71,14 @@
   white-space: nowrap;
   transition: all 160ms var(--stage-ease);
 }
-.stage-filter:hover,
-.stage-filter.gp-focused {
+.stage-filter:hover {
   color: var(--stage-ink);
   background: rgba(255, 255, 255, 0.08);
+}
+.stage-filter.gp-focused {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 16px rgba(255, 255, 255, 0.4) !important;
 }
 .stage-filter.active {
   color: #0a0d14;
@@ -187,11 +191,20 @@
     border-color 220ms var(--stage-ease),
     box-shadow 220ms var(--stage-ease);
 }
-.stage-cover-card:hover .stage-cover-frame,
+.stage-cover-card:hover .stage-cover-frame {
+  transform: translateY(-4px) scale(1.03);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 255, 255, 0.15);
+}
 .stage-cover-card.gp-focused .stage-cover-frame {
-  transform: translateY(-6px) scale(1.05);
-  border-color: rgba(255, 255, 255, 0.45);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.8), 0 0 28px rgba(255, 255, 255, 0.22);
+  transform: translateY(-6px) scale(1.06) !important;
+  border-color: #ffffff !important;
+  box-shadow:
+    0 0 0 2.5px #ffffff,
+    0 0 26px rgba(255, 255, 255, 0.55),
+    0 0 55px rgba(80, 140, 255, 0.28),
+    0 24px 56px rgba(0, 0, 0, 0.85) !important;
+  z-index: 10 !important;
 }
 .stage-cover-art,
 .stage-cover-frame > img {
@@ -251,6 +264,12 @@
 }
 .stage-list-row:hover {
   background: rgba(255, 255, 255, 0.045);
+}
+.stage-list-row.gp-focused {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 20px rgba(255, 255, 255, 0.35) !important;
+  transform: translateX(4px);
 }
 .stage-list-cover {
   flex: 0 0 43px;
