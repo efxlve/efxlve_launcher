@@ -72,7 +72,7 @@ export function stageHomeHeroHtml(game: EpicSummary): string {
   </div>
   <div class="stage-home-side">
     <div class="stage-home-utility">
-      <button type="button" class="stage-hero-btn" data-stage-act="open-program" data-key="${esc(game.appName)}" data-gp-item data-gp-key="hero:details" aria-label="${esc(t("stage.details"))}">
+      <button type="button" class="stage-hero-btn" data-stage-act="manage-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="hero:manage" aria-label="${esc(t("stage.manage"))}">
         ${icon("dots", 20)}
       </button>
       <button type="button" class="stage-hero-btn${isFav ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(game.appName)}" data-gp-item data-gp-key="hero:favorite" aria-label="${esc(t("stage.favorite"))}">

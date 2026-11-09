@@ -4,10 +4,17 @@
  * to know a screen's DOM.
  */
 
+import { invoke } from "@tauri-apps/api/core";
+import { epicUninstall } from "../../core/epic-actions";
+import { epicCreateDesktopShortcut, epicVerifyGame } from "../../epic";
 import { toggleFav } from "../../core/game-view";
 import { openEpicModal, scheduleRender } from "../../core/render";
+import { summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
+import { gogVerifyGame } from "../../gog";
+import { nileCreateDesktopShortcut, nileUninstall, nileVerify } from "../../nile";
+import { steamGameAction } from "../../steam";
 import type {
   SettingsSection,
   StageAchievementFilter,
@@ -16,7 +23,7 @@ import type {
   StageRoute,
   StageSettingsTab,
 } from "../../core/types";
-import { t } from "../../i18n";
+import { localizeMessage, t } from "../../i18n";
 import { uploadGameCloudAction } from "../cloud-backup/cloud-backup-actions";
 import { fetchAndRenderAchievements } from "../drawer/drawer-view";
 import { ensureFullShot, fetchAndRenderScreenshots } from "../screenshots/screenshots-view";
@@ -114,6 +121,16 @@ export function stageBack(): void {
     return;
   }
   stageFeedback("back");
+  if (S.stage.manageKey) {
+    if (S.stage.manageConfirmUninstall) {
+      S.stage.manageConfirmUninstall = false;
+      S.stage.focusKey = "manage:uninstall";
+      scheduleRender();
+      return;
+    }
+    stageCloseManage();
+    return;
+  }
   if (S.stage.controlsOpen) {
     stageCloseControls();
     return;
@@ -436,15 +453,114 @@ export function stageOpenDesktopSettings(): void {
   stageOpenDesktopSettingsSection("controller");
 }
 
-/** Advanced management lives in the desktop game page; Stage stays a launcher. */
-export function stageOpenDesktopGame(key?: string): void {
-  stageFeedback("back");
-  const target = key || S.stage.gameKey || stageFocusedKey();
+/** In-stage management keeps the player in couch mode without dropping to desktop. */
+export function stageOpenManage(key?: string): void {
+  const target = key || S.stage.gameKey || stageFocusedKey() || stageHomeKey();
   if (!target) return;
-  exitStage();
-  setView("library");
+  stageFeedback("select");
+  S.stage.manageKey = target;
+  S.stage.manageConfirmUninstall = false;
+  S.stage.quickMenu = false;
+  S.stage.controlsOpen = false;
+  S.stage.focusKey = "manage:play";
   scheduleRender();
-  window.setTimeout(() => openEpicModal(target), 80);
+}
+
+export function stageCloseManage(): void {
+  stageFeedback("back");
+  S.stage.manageKey = null;
+  S.stage.manageConfirmUninstall = false;
+  S.stage.focusKey = S.stage.route === "program" ? "prog:manage" : "hero:details";
+  scheduleRender();
+}
+
+export function stageManageOpenFolder(key?: string): void {
+  const target = key || S.stage.manageKey || S.stage.gameKey;
+  if (!target) return;
+  const game = stageGameByKey(target);
+  if (!game?.installPath) {
+    toast(t("common.installPathUnknown"), "err");
+    return;
+  }
+  stageFeedback("select");
+  invoke<string>("open_folder", { path: game.installPath })
+    .then((msg) => toast(msg, "ok"))
+    .catch((err) => toast(String(err), "err"));
+}
+
+export function stageManageVerify(key?: string): void {
+  const target = key || S.stage.manageKey || S.stage.gameKey;
+  if (!target) return;
+  stageFeedback("select");
+  toast(t("manage.verifying"), "");
+  if (target.startsWith("amazon::")) {
+    nileVerify(target.slice(8))
+      .then(() => toast(t("manage.verifyTitle"), "ok"))
+      .catch((err) => toast(String(err), "err"));
+  } else if (target.startsWith("gog::")) {
+    gogVerifyGame(target)
+      .then(() => toast(t("manage.verifyTitle"), "ok"))
+      .catch((err) => toast(String(err), "err"));
+  } else if (target.startsWith("steam::")) {
+    steamGameAction(target.slice(7), "validate")
+      .then(() => toast(t("steam.validate"), "ok"))
+      .catch((err) => toast(String(err), "err"));
+  } else {
+    epicVerifyGame(target)
+      .then((msg) => toast(msg, "ok"))
+      .catch((err) => toast(String(err), "err"));
+  }
+}
+
+export function stageManageShortcut(key?: string): void {
+  const target = key || S.stage.manageKey || S.stage.gameKey;
+  if (!target) return;
+  stageFeedback("select");
+  if (target.startsWith("amazon::")) {
+    nileCreateDesktopShortcut(target.slice(8))
+      .then((msg) => toast(localizeMessage(msg), "ok"))
+      .catch((err) => toast(String(err), "err"));
+  } else {
+    epicCreateDesktopShortcut(target)
+      .then((msg) => toast(localizeMessage(msg), "ok"))
+      .catch((err) => toast(String(err), "err"));
+  }
+}
+
+export function stageManageAskUninstall(key?: string): void {
+  stageFeedback("select");
+  S.stage.manageConfirmUninstall = true;
+  S.stage.focusKey = "manage:confirm-uninstall";
+  scheduleRender();
+}
+
+export function stageManageCancelUninstall(): void {
+  stageFeedback("back");
+  S.stage.manageConfirmUninstall = false;
+  S.stage.focusKey = "manage:uninstall";
+  scheduleRender();
+}
+
+export function stageManageConfirmUninstall(key?: string): void {
+  const target = key || S.stage.manageKey || S.stage.gameKey;
+  if (!target) return;
+  stageFeedback("select");
+  S.stage.manageKey = null;
+  S.stage.manageConfirmUninstall = false;
+  S.stage.focusKey = "prog:back";
+  scheduleRender();
+  if (target.startsWith("steam::")) {
+    void steamGameAction(target.slice(7), "uninstall").then(() => scheduleRender());
+  } else if (target.startsWith("amazon::")) {
+    void nileUninstall(target.slice(8)).then(() => scheduleRender());
+  } else {
+    void epicUninstall(target).then(() => scheduleRender());
+  }
+}
+
+/** In-stage management is always preferred so the user remains in couch/stage mode. */
+export function stageOpenDesktopGame(key?: string): void {
+  stageOpenManage(key);
 }
 
 export function stageResetFilters(): void {

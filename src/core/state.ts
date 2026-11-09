@@ -1003,6 +1003,8 @@ export const S = {
     searchOpen: false,
     quickMenu: false,
     controlsOpen: false,
+    manageKey: (null) as string | null,
+    manageConfirmUninstall: false,
     launch: (null) as { key: string; title: string; art: string | null } | null,
     launchError: "",
     returnView: ("library") as View,

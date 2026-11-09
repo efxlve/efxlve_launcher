@@ -139,7 +139,7 @@ function achievementsTab(game: EpicSummary): string {
     <div class="stage-ach-list">${visible.length > 0 ? visible.map(achievementRow).join("") : `<div class="stage-program-empty"><p>${esc(t("stage.achFilterEmpty"))}</p></div>`}</div>
     <div class="stage-settings-actions">
       <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="refresh-achievements" data-key="${esc(game.appName)}" data-gp-item data-gp-key="ach:refresh">${icon("refresh", 16)}<span>${esc(t("stage.achRefresh"))}</span></button>
-      <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="desktop-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="ach:desktop">${icon("external", 16)}<span>${esc(t("stage.openInDesktop"))}</span></button>
+      <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="manage-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="ach:manage">${icon("settings", 16)}<span>${esc(t("stage.manage"))}</span></button>
     </div>
   </div>`;
 }
@@ -168,7 +168,7 @@ function extrasTab(game: EpicSummary): string {
     <div class="stage-extra-actions">
       ${cloud ? `<button type="button" class="stage-btn stage-btn-ghost" data-stage-act="cloud-backup" data-key="${esc(game.appName)}" data-gp-item data-gp-key="extras:cloud">${icon("cloud", 16)}<span>${esc(t("stage.cloudBackupNow"))}</span></button>` : ""}
       ${cloud ? `<button type="button" class="stage-btn stage-btn-ghost" data-stage-act="desktop-settings-section" data-section="cloud" data-gp-item data-gp-key="extras:cloud-settings">${icon("cloud", 16)}<span>${esc(t("stage.cloudSettings"))}</span></button>` : ""}
-      <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="desktop-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="extras:desktop">${icon("settings", 16)}<span>${esc(t("stage.manageInDesktop"))}</span></button>
+      <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="manage-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="extras:manage">${icon("settings", 16)}<span>${esc(t("stage.manage"))}</span></button>
     </div>
   </div>`;
 }
@@ -209,7 +209,7 @@ export function renderStageProgram(): string {
     <div class="stage-program-actions" data-gp-default>
       <div class="stage-primary-action">${stagePrimaryAction(game)}</div>
       <button type="button" class="stage-btn stage-btn-ghost${favorite ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(game.appName)}" data-gp-item data-gp-key="prog:favorite">${icon("heart", 18)}<span>${esc(favorite ? t("stage.favorited") : t("stage.favorite"))}</span></button>
-      <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="desktop-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="prog:manage">${icon("settings", 18)}<span>${esc(t("stage.manage"))}</span></button>
+      <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="manage-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="prog:manage">${icon("settings", 18)}<span>${esc(t("stage.manage"))}</span></button>
     </div>
 
     ${tabs()}

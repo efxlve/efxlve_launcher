@@ -18,24 +18,33 @@ import type {
   StageRoute,
   StageSettingsTab,
 } from "../../core/types";
-import { esc } from "../../core/utils";
+import { esc, fmtBytes } from "../../core/utils";
+import { libraryItemOf, sourceOfKey } from "../../core/selectors";
 import { activateGamepadFocus, moveGamepadFocus, setGamepadFocus } from "../gamepad/gamepad";
 import {
   stageBack,
   stageCancelSearch,
   stageClearCollection,
   stageCloseControls,
+  stageCloseManage,
   stageCloseStill,
   stageCloudBackup,
   stageCycleSettingsTab,
   stageCycleSort,
   stageCycleStore,
   stageGo,
+  stageManageAskUninstall,
+  stageManageCancelUninstall,
+  stageManageConfirmUninstall,
+  stageManageOpenFolder,
+  stageManageShortcut,
+  stageManageVerify,
   stageOpenCollection,
   stageOpenDesktop,
   stageOpenDesktopGame,
   stageOpenDesktopSettings,
   stageOpenDesktopSettingsSection,
+  stageOpenManage,
   stageOpenProgram,
   stageOpenQuickMenu,
   stageOpenSearch,
@@ -71,17 +80,26 @@ import { renderStageProgram } from "./stage-program";
 import { renderStageSearch } from "./stage-search";
 import { renderStageSettings } from "./stage-settings";
 import { resetStageBackdrop, stageBackdropMarkup, updateStageBackdrop } from "./stage-backdrop";
-import { stageWideArt } from "./stage-art";
+import { stageCoverMarkup, stageWideArt } from "./stage-art";
 import { fullShotSrc } from "../screenshots/screenshots-view";
 // Side effect: register the button/back contract with the gamepad loop.
 import "./stage-input";
 import { previewStageSound, stageFeedback } from "./stage-sound";
-import { stageActiveDownload, stageBatteryLabel, stageBumperGlyphs, stageFaceGlyph, stageHint, stageHintBar } from "./stage-ui";
+import {
+  stageActiveDownload,
+  stageBatteryLabel,
+  stageBumperGlyphs,
+  stageFaceGlyph,
+  stageHint,
+  stageHintBar,
+  stageStoreName,
+} from "./stage-ui";
 
 let clockTimer = 0;
 let focusBound = false;
 let wasQuickMenu = false;
 let wasControls = false;
+let wasManage = false;
 let wasSearch = false;
 let wasLaunch = false;
 let wasError = false;
@@ -122,6 +140,8 @@ function stageLiveSignature(): string {
     S.stage.searchOpen ? "1" : "0",
     S.stage.quickMenu ? "1" : "0",
     S.stage.controlsOpen ? "1" : "0",
+    S.stage.manageKey ?? "",
+    S.stage.manageConfirmUninstall ? "1" : "0",
     S.stage.launch?.key ?? "",
     S.stage.launchError,
     String(S.loadedAchievements.size),
@@ -497,6 +517,146 @@ function stillViewer(): string {
   </div>`;
 }
 
+function stageManageSheet(appName: string, entered: boolean): string {
+  const game = stageGameByKey(appName);
+  if (!game) return "";
+  const source = sourceOfKey(game.appName);
+  const isInstalled = Boolean(game.installed);
+  const cloud = Boolean(libraryItemOf(game.appName, source)?.cloudSavesSupported);
+  const isConfirming = S.stage.manageConfirmUninstall;
+
+  if (isConfirming) {
+    return `<div class="stage-overlay stage-manage-overlay${entered ? " stage-overlay-enter" : ""}">
+      <div class="stage-sheet stage-confirm-sheet" role="dialog" aria-modal="true" aria-label="${esc(t("manage.uninstallTitle"))}">
+        <div class="stage-confirm-icon is-danger">${icon("trash", 38)}</div>
+        <div class="stage-confirm-copy">
+          <span class="stage-kicker is-danger">${esc(t("manage.uninstallTitle"))}</span>
+          <h2>${esc(game.title)}</h2>
+          <p>${esc(t("confirm.uninstallBody"))}</p>
+          ${game.installPath ? `<span class="stage-confirm-path tabular-nums">${esc(game.installPath)}</span>` : ""}
+        </div>
+        <div class="stage-confirm-actions" data-gp-row>
+          <button type="button" class="stage-btn stage-btn-danger" data-stage-act="manage-confirm-uninstall" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:confirm-uninstall" data-gp-default>
+            ${icon("trash", 18)}
+            <span>${esc(t("common.uninstall"))}</span>
+          </button>
+          <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="manage-cancel-uninstall" data-gp-item data-gp-key="manage:cancel-uninstall">
+            <span>${esc(t("common.cancel"))}</span>
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  return `<div class="stage-overlay stage-manage-overlay${entered ? " stage-overlay-enter" : ""}">
+    <div class="stage-sheet stage-manage-sheet" role="dialog" aria-modal="true" aria-label="${esc(t("stage.manage"))}: ${esc(game.title)}">
+      <div class="stage-manage-header">
+        <div class="stage-manage-thumb">
+          ${stageCoverMarkup(game)}
+        </div>
+        <div class="stage-manage-info">
+          <div class="stage-manage-badges">
+            <span class="stage-badge-store">${esc(stageStoreName(source))}</span>
+            <span class="stage-badge-status ${isInstalled ? "is-installed" : "is-not-installed"}">
+              <span class="stage-status-dot"></span>
+              ${esc(isInstalled ? t("common.installed") : t("common.notInstalled"))}
+            </span>
+            ${game.installSize > 0 ? `<span class="stage-badge-size tabular-nums">${esc(fmtBytes(game.installSize))}</span>` : ""}
+          </div>
+          <h2 class="stage-manage-title">${esc(game.title)}</h2>
+          ${game.installPath ? `<div class="stage-manage-path tabular-nums">${icon("folder", 14)}<span>${esc(game.installPath)}</span></div>` : ""}
+        </div>
+        <button type="button" class="stage-manage-close" data-stage-act="close-manage" data-gp-item data-gp-key="manage:close" aria-label="${esc(t("common.close"))}">
+          ${icon("x", 20)}
+        </button>
+      </div>
+
+      <div class="stage-manage-grid" data-gp-row>
+        ${isInstalled ? `
+          <button type="button" class="stage-manage-card stage-manage-card-highlight" data-stage-act="quick-play" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:play" data-gp-default>
+            <span class="stage-manage-card-icon is-play">${icon("play", 22)}</span>
+            <div class="stage-manage-card-text">
+              <strong>${esc(t("common.play"))}</strong>
+              <span>${esc(t("stage.quickPlay"))}</span>
+            </div>
+          </button>
+        ` : `
+          <button type="button" class="stage-manage-card stage-manage-card-highlight" data-stage-act="quick-play" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:play" data-gp-default>
+            <span class="stage-manage-card-icon is-install">${icon("download", 22)}</span>
+            <div class="stage-manage-card-text">
+              <strong>${esc(t("common.install"))}</strong>
+              <span>${esc(t("stage.installFolder"))}</span>
+            </div>
+          </button>
+        `}
+
+        ${isInstalled ? `
+          <button type="button" class="stage-manage-card" data-stage-act="manage-open-folder" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:folder">
+            <span class="stage-manage-card-icon">${icon("folder", 20)}</span>
+            <div class="stage-manage-card-text">
+              <strong>${esc(t("manage.openFolder"))}</strong>
+              <span>${esc(t("stage.installFolder"))}</span>
+            </div>
+          </button>
+        ` : ""}
+
+        ${isInstalled ? `
+          <button type="button" class="stage-manage-card" data-stage-act="manage-verify" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:verify">
+            <span class="stage-manage-card-icon">${icon("shield-check", 20)}</span>
+            <div class="stage-manage-card-text">
+              <strong>${esc(t("manage.verify"))}</strong>
+              <span>${esc(t("manage.verifyTitle"))}</span>
+            </div>
+          </button>
+        ` : ""}
+
+        ${isInstalled ? `
+          <button type="button" class="stage-manage-card" data-stage-act="manage-shortcut" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:shortcut">
+            <span class="stage-manage-card-icon">${icon("monitor", 20)}</span>
+            <div class="stage-manage-card-text">
+              <strong>${esc(t("manage.createShortcut"))}</strong>
+              <span>${esc(t("manage.shortcutTitle"))}</span>
+            </div>
+          </button>
+        ` : ""}
+
+        ${cloud ? `
+          <button type="button" class="stage-manage-card" data-stage-act="manage-sync-cloud" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:cloud">
+            <span class="stage-manage-card-icon">${icon("cloud", 20)}</span>
+            <div class="stage-manage-card-text">
+              <strong>${esc(t("manage.sync"))}</strong>
+              <span>${esc(t("stage.cloudBackupNow"))}</span>
+            </div>
+          </button>
+        ` : ""}
+
+        <button type="button" class="stage-manage-card" data-stage-act="favorite" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:fav">
+          <span class="stage-manage-card-icon ${S.epicFav.has(game.appName) ? "is-faved" : ""}">${icon("heart", 20)}</span>
+          <div class="stage-manage-card-text">
+            <strong>${esc(S.epicFav.has(game.appName) ? t("stage.favorited") : t("stage.favorite"))}</strong>
+            <span>${esc(t("stage.favorite"))}</span>
+          </div>
+        </button>
+
+        ${isInstalled ? `
+          <button type="button" class="stage-manage-card stage-manage-card-danger" data-stage-act="manage-ask-uninstall" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:uninstall">
+            <span class="stage-manage-card-icon is-danger">${icon("trash", 20)}</span>
+            <div class="stage-manage-card-text">
+              <strong>${esc(t("common.uninstall"))}</strong>
+              <span>${esc(t("manage.uninstallTitle"))}</span>
+            </div>
+          </button>
+        ` : ""}
+      </div>
+
+      <div class="stage-manage-hints">
+        <span>${stageFaceGlyph("a")} ${esc(t("gamepad.select"))}</span>
+        <span>${stageFaceGlyph("b")} ${esc(t("common.close"))}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
 /** The art behind the shell for the current screen. */
 function currentBackdropArt(): string | null {
   if (S.stage.route === "home") {
@@ -557,6 +717,7 @@ export function renderStage(): void {
   const previousScroll = document.getElementById("stage-main")?.scrollTop ?? 0;
   const quickEntered = S.stage.quickMenu && !wasQuickMenu;
   const controlsEntered = S.stage.controlsOpen && !wasControls;
+  const manageEntered = Boolean(S.stage.manageKey) && !wasManage;
   const searchEntered = S.stage.searchOpen && !wasSearch;
   const launchEntered = Boolean(S.stage.launch) && !wasLaunch;
   const errorEntered = Boolean(S.stage.launchError) && !wasError;
@@ -568,16 +729,18 @@ export function renderStage(): void {
   }
   const quick = S.stage.quickMenu ? quickMenu(quickEntered) : "";
   const controls = S.stage.controlsOpen ? controlsSheet(controlsEntered) : "";
+  const manage = S.stage.manageKey ? stageManageSheet(S.stage.manageKey, manageEntered) : "";
   const still = S.stage.stillIndex !== null ? stillViewer() : "";
   const cover = S.stage.launch ? curtain(launchEntered) : "";
   const error = launchError(errorEntered);
   wasQuickMenu = S.stage.quickMenu;
   wasControls = S.stage.controlsOpen;
+  wasManage = Boolean(S.stage.manageKey);
   wasSearch = S.stage.searchOpen;
   wasLaunch = Boolean(S.stage.launch);
   wasError = Boolean(S.stage.launchError);
 
-  root.className = `stage-root stage-route-${S.stage.route}${S.stage.route === "program" ? " is-program" : ""}${S.stage.quickMenu ? " is-menu-open" : ""}${S.stage.searchOpen ? " is-search-open" : ""}${S.stage.stillIndex !== null ? " is-still-open" : ""}${S.stage.route === "settings" && settingsTabChanged ? " stage-settings-tab-enter" : ""}`;
+  root.className = `stage-root stage-route-${S.stage.route}${S.stage.route === "program" ? " is-program" : ""}${S.stage.quickMenu ? " is-menu-open" : ""}${S.stage.manageKey ? " is-manage-open" : ""}${S.stage.searchOpen ? " is-search-open" : ""}${S.stage.stillIndex !== null ? " is-still-open" : ""}${S.stage.route === "settings" && settingsTabChanged ? " stage-settings-tab-enter" : ""}`;
   root.dataset.route = S.stage.route;
   root.style.setProperty("--stage-safe", `${S.stage.safeArea * 1.5}vmin`);
   root.innerHTML = `${stageBackdropMarkup()}
@@ -590,6 +753,7 @@ export function renderStage(): void {
   </div>
   ${quick}
   ${controls}
+  ${manage}
   ${search}
   ${still}
   ${cover}
@@ -609,13 +773,15 @@ export function renderStage(): void {
       ? ".stage-curtain"
       : still
         ? ".stage-still-viewer"
-        : controls
-          ? ".stage-controls"
-          : quick
-            ? ".stage-quick-menu"
-            : search
-              ? ".stage-search"
-              : '[data-stage-layer="main"]';
+        : manage
+          ? ".stage-manage-overlay"
+          : controls
+            ? ".stage-controls"
+            : quick
+              ? ".stage-quick-menu"
+              : search
+                ? ".stage-search"
+                : '[data-stage-layer="main"]';
   const layer = root.querySelector<HTMLElement>(layerSelector);
   markFocusables(layer);
   // An install/manage dialog owns the focus while it is open. The Stage shell
@@ -753,6 +919,11 @@ function bindStageEvents(root: HTMLElement): void {
       return;
     }
 
+    if (target?.classList.contains("stage-manage-overlay")) {
+      stageCloseManage();
+      return;
+    }
+
     const actionEl = target?.closest<HTMLElement>("[data-stage-act]");
     if (!actionEl) return;
     const action = actionEl.dataset.stageAct || "";
@@ -796,7 +967,16 @@ function bindStageEvents(root: HTMLElement): void {
       }
       case "desktop": stageOpenDesktop(); break;
       case "desktop-settings": stageOpenDesktopSettings(); break;
-      case "desktop-game": stageOpenDesktopGame(key); break;
+      case "desktop-game":
+      case "manage-game": stageOpenManage(key); break;
+      case "close-manage": stageCloseManage(); break;
+      case "manage-open-folder": stageManageOpenFolder(key); break;
+      case "manage-verify": stageManageVerify(key); break;
+      case "manage-shortcut": stageManageShortcut(key); break;
+      case "manage-sync-cloud": stageCloudBackup(key || S.stage.manageKey || ""); break;
+      case "manage-ask-uninstall": stageManageAskUninstall(key); break;
+      case "manage-cancel-uninstall": stageManageCancelUninstall(); break;
+      case "manage-confirm-uninstall": stageManageConfirmUninstall(key); break;
       case "reset-filters": stageResetFilters(); break;
       case "clear-query": S.stage.query = ""; S.stage.focusKey = "tool:search"; scheduleRender(); break;
       case "open-collection": stageOpenCollection(actionEl.dataset.id || ""); break;
