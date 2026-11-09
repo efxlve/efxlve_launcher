@@ -75,9 +75,17 @@
   background: rgba(255, 255, 255, 0.08);
 }
 .stage-settings-tab.active {
-  color: #0a0d14;
-  background: #ffffff;
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+  color: #0b0e14 !important;
+  background: #ffffff !important;
+  font-weight: 750 !important;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.45);
+}
+.stage-settings-tab.active:hover,
+.stage-settings-tab.active.gp-focused {
+  color: #0b0e14 !important;
+  background: #ffffff !important;
+  outline: 2px solid rgba(255, 255, 255, 0.8) !important;
+  outline-offset: 2px !important;
 }
 .stage-settings-tab.active::after {
   display: none;
@@ -197,10 +205,18 @@
   background: rgba(255, 255, 255, 0.09);
 }
 .stage-choice.active {
-  background: var(--stage-ink);
-  border-color: var(--stage-ink);
-  color: #000;
-  font-weight: 600;
+  background: #ffffff !important;
+  border-color: #ffffff !important;
+  color: #0b0e14 !important;
+  font-weight: 750 !important;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.4);
+}
+.stage-choice.active:hover,
+.stage-choice.active.gp-focused {
+  background: #ffffff !important;
+  color: #0b0e14 !important;
+  outline: 2px solid rgba(255, 255, 255, 0.8) !important;
+  outline-offset: 2px !important;
 }
 
 .stage-settings-actions {

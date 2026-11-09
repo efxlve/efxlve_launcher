@@ -1042,7 +1042,13 @@ function bindStageEvents(root: HTMLElement): void {
     }
 
     const actionEl = target?.closest<HTMLElement>("[data-stage-act]");
-    if (!actionEl) return;
+    if (!actionEl) {
+      const otherBtn = target?.closest<HTMLElement>("button, [data-act]");
+      if (otherBtn && !otherBtn.closest(".stage-search-head")) {
+        stageFeedback("select");
+      }
+      return;
+    }
     const action = actionEl.dataset.stageAct || "";
     const key = actionEl.dataset.key || "";
     const route = actionEl.dataset.route as StageRoute | undefined;
@@ -1073,11 +1079,12 @@ function bindStageEvents(root: HTMLElement): void {
       case "search-key": stageSearchKey(actionEl.dataset.key || ""); break;
       case "search-submit": stageSearchSubmit(); break;
       case "open-menu": stageOpenQuickMenu("menu:resume"); break;
-      case "close-menu": S.stage.quickMenu = false; S.stage.controlsOpen = false; S.stage.focusKey = ""; scheduleRender(); break;
+      case "close-menu": stageFeedback("back"); S.stage.quickMenu = false; S.stage.controlsOpen = false; S.stage.focusKey = ""; scheduleRender(); break;
       case "controls": stageToggleControls(); break;
       case "show-controls": stageShowControls(); break;
       case "close-controls": stageFeedback("back"); stageCloseControls(); break;
       case "scroll-to-hub": {
+        stageFeedback("select");
         const hub = document.getElementById("stage-home-activities");
         if (hub) hub.scrollIntoView({ behavior: "smooth", block: "start" });
         break;
@@ -1095,7 +1102,7 @@ function bindStageEvents(root: HTMLElement): void {
       case "manage-cancel-uninstall": stageManageCancelUninstall(); break;
       case "manage-confirm-uninstall": stageManageConfirmUninstall(key); break;
       case "reset-filters": stageResetFilters(); break;
-      case "clear-query": S.stage.query = ""; S.stage.focusKey = "tool:search"; scheduleRender(); break;
+      case "clear-query": stageFeedback("back"); S.stage.query = ""; S.stage.focusKey = "tool:search"; scheduleRender(); break;
       case "open-collection": stageOpenCollection(actionEl.dataset.id || ""); break;
       case "clear-collection": stageClearCollection(); break;
       case "set-settings-tab": if (settingsTab) stageSetSettingsTab(settingsTab); break;
@@ -1108,14 +1115,14 @@ function bindStageEvents(root: HTMLElement): void {
       case "still-next": stageStillStep(true); break;
       case "cloud-backup": stageCloudBackup(key); break;
       case "desktop-settings-section": if (section) stageOpenDesktopSettingsSection(section); break;
-      case "set-stage-text": if (Number.isFinite(value)) setStageTextScale(value); break;
-      case "set-stage-safe": if (Number.isFinite(value)) setStageSafeArea(value); break;
-      case "set-stage-volume": if (Number.isFinite(value)) setStageSoundVolume(value); break;
-      case "toggle-stage-sound": setStageSound(!S.stage.sound); break;
-      case "toggle-stage-haptics": setStageHaptics(!S.stage.haptics); break;
+      case "set-stage-text": if (Number.isFinite(value)) { stageFeedback("move"); setStageTextScale(value); } break;
+      case "set-stage-safe": if (Number.isFinite(value)) { stageFeedback("move"); setStageSafeArea(value); } break;
+      case "set-stage-volume": if (Number.isFinite(value)) { setStageSoundVolume(value); stageFeedback("select"); } break;
+      case "toggle-stage-sound": { const next = !S.stage.sound; setStageSound(next); if (next) stageFeedback("select"); } break;
+      case "toggle-stage-haptics": { stageFeedback("select"); setStageHaptics(!S.stage.haptics); } break;
       case "test-stage-sound": previewStageSound(); break;
       case "retry": S.stage.launchError = ""; stageLaunchGame(S.stage.gameKey || ""); break;
-      case "close-error": S.stage.launchError = ""; scheduleRender(); break;
+      case "close-error": stageFeedback("back"); S.stage.launchError = ""; scheduleRender(); break;
       default: break;
     }
   });

@@ -325,14 +325,24 @@
   background: rgba(255, 255, 255, 0.08);
 }
 .stage-ach-filter.active {
-  background: var(--stage-ink);
-  border-color: var(--stage-ink);
-  color: #000;
-  font-weight: 600;
+  background: #ffffff !important;
+  border-color: #ffffff !important;
+  color: #0b0e14 !important;
+  font-weight: 750 !important;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.45);
 }
-.stage-ach-filter span {
+.stage-ach-filter.active:hover,
+.stage-ach-filter.active.gp-focused {
+  background: #ffffff !important;
+  color: #0b0e14 !important;
+  outline: 2px solid rgba(255, 255, 255, 0.8) !important;
+  outline-offset: 2px !important;
+}
+.stage-ach-filter.active span {
   font-size: 9.5px;
-  opacity: 0.65;
+  color: #0b0e14 !important;
+  opacity: 0.8 !important;
+  font-weight: 700;
 }
 
 .stage-ach-list {
