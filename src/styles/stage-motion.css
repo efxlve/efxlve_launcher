@@ -22,13 +22,13 @@
 
 #stage-root .stage-ribbon-card.gp-focused {
   outline: none !important;
-  transform: scale(1.15) translateY(-6px) !important;
+  transform: scale(1.12) translateY(-5px) !important;
   border-color: #ffffff !important;
   box-shadow:
-    0 0 0 3px #ffffff,
-    0 0 24px rgba(255, 255, 255, 0.65),
-    0 0 54px rgba(100, 160, 255, 0.35),
-    0 22px 48px rgba(0, 0, 0, 0.95) !important;
+    0 0 0 2.5px #ffffff,
+    0 0 20px rgba(255, 255, 255, 0.6),
+    0 0 45px rgba(90, 150, 255, 0.3),
+    0 16px 36px rgba(0, 0, 0, 0.85) !important;
   z-index: 28 !important;
 }
 
@@ -82,11 +82,16 @@
 }
 
 #stage-root .stage-cover-card.gp-focused {
+  outline: none !important;
   transform: translateY(-5px) !important;
 }
 #stage-root .stage-cover-card.gp-focused .stage-cover-frame {
-  border-color: rgba(255, 255, 255, 0.48);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.56), 0 0 30px rgba(255, 255, 255, 0.07);
+  outline: none !important;
+  border-color: #ffffff !important;
+  box-shadow:
+    0 0 0 2.5px #ffffff,
+    0 0 22px rgba(255, 255, 255, 0.6),
+    0 20px 48px rgba(0, 0, 0, 0.85) !important;
 }
 #stage-root .stage-sheet-tile.gp-focused {
   transform: translateY(-2px) !important;

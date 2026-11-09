@@ -72,10 +72,10 @@ export function stageHomeHeroHtml(game: EpicSummary): string {
   </div>
   <div class="stage-home-side">
     <div class="stage-home-utility">
-      <button type="button" class="stage-hero-btn" data-stage-act="open-program" data-key="${esc(game.appName)}" data-gp-item data-gp-key="hero:details" aria-label="${esc(t("stage.details"))}" title="${esc(t("stage.details"))}">
+      <button type="button" class="stage-hero-btn" data-stage-act="open-program" data-key="${esc(game.appName)}" data-gp-item data-gp-key="hero:details" aria-label="${esc(t("stage.details"))}">
         ${icon("dots", 20)}
       </button>
-      <button type="button" class="stage-hero-btn${isFav ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(game.appName)}" data-gp-item data-gp-key="hero:favorite" aria-label="${esc(t("stage.favorite"))}" title="${esc(t("stage.favorite"))}">
+      <button type="button" class="stage-hero-btn${isFav ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(game.appName)}" data-gp-item data-gp-key="hero:favorite" aria-label="${esc(t("stage.favorite"))}">
         ${icon("heart", 20)}
       </button>
     </div>
@@ -237,7 +237,7 @@ export function renderStageHome(): string {
 
       <div class="stage-home-ribbon">
         <div class="stage-ribbon-track" data-gp-row>
-          <button type="button" class="stage-ribbon-card stage-ribbon-library" data-stage-act="go" data-route="library" data-gp-item data-gp-key="home:all-games" title="${esc(t("stage.navLibrary"))}">
+          <button type="button" class="stage-ribbon-card stage-ribbon-library" data-stage-act="go" data-route="library" data-gp-item data-gp-key="home:all-games" aria-label="${esc(t("stage.navLibrary"))}">
             <span class="stage-ribbon-library-icon">${icon("layout-grid", 26)}</span>
             <span class="stage-ribbon-label">${esc(t("stage.navLibrary"))}</span>
           </button>

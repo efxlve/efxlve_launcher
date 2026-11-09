@@ -162,10 +162,14 @@
   position: relative;
   aspect-ratio: 2 / 3;
   overflow: hidden;
-  border: 1px solid var(--stage-line);
-  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
   background: var(--stage-surface);
-  transition: border-color 160ms var(--stage-ease), box-shadow 160ms var(--stage-ease);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  transition:
+    transform 220ms var(--stage-ease),
+    border-color 220ms var(--stage-ease),
+    box-shadow 220ms var(--stage-ease);
 }
 .stage-cover-art,
 .stage-cover-frame > img {
@@ -287,10 +291,12 @@
   position: sticky;
   inset-block-start: 0;
   overflow: hidden;
-  border: 1px solid var(--stage-line);
-  border-radius: 13px;
-  background: var(--stage-surface);
-  animation: stage-side-in 220ms var(--stage-ease) both;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: linear-gradient(160deg, rgba(20, 24, 36, 0.88) 0%, rgba(10, 12, 18, 0.95) 100%);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65);
+  animation: stage-side-in 240ms var(--stage-ease) both;
 }
 .stage-side-art {
   position: relative;
