@@ -2495,6 +2495,88 @@ html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   filter: blur(52px) saturate(1.1) brightness(1.06);
 }
 
+/* Floating menus cover live library rows, not just the blurred scene. Without
+   their own backdrop blur the row titles read through the glass as soon as
+   the game-art backdrop makes surfaces translucent. A heavy iOS-style blur
+   keeps the material transparent while restoring legibility. */
+:root[data-game-scene="on"] :is(
+  .notif-panel,
+  .palette,
+  .sort-dropdown-menu,
+  .cover-size-menu,
+  .gp-store-menu,
+  .gp-version-menu,
+  .gp-more-menu,
+  .panel-context-menu,
+  .custom-search-dropdown,
+  .ctx-menu,
+  .ctx-submenu
+) {
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  backdrop-filter: blur(28px) saturate(1.4);
+}
+html[data-game-scene="on"]:not([data-surface]) :is(
+  .notif-panel,
+  .palette,
+  .sort-dropdown-menu,
+  .cover-size-menu,
+  .gp-store-menu,
+  .gp-version-menu,
+  .gp-more-menu,
+  .panel-context-menu,
+  .custom-search-dropdown,
+  .ctx-menu,
+  .ctx-submenu
+) {
+  background: color-mix(in srgb, #000 66%, rgba(255, 255, 255, 0.08));
+}
+/* Theme palettes bring their own opaque surface tokens; blend that colour
+   down to glass so the blur has something to work with instead of a flat
+   panel. The selected theme keeps its tint. */
+html[data-game-scene="on"][data-surface] :is(
+  .notif-panel,
+  .palette,
+  .sort-dropdown-menu,
+  .cover-size-menu,
+  .gp-store-menu,
+  .gp-version-menu,
+  .gp-more-menu,
+  .panel-context-menu,
+  .custom-search-dropdown,
+  .ctx-menu,
+  .ctx-submenu
+) {
+  background: color-mix(in srgb, var(--surface-1) 76%, transparent);
+}
+
+/* A dialog keeps a readable surface, but the page behind it should not stay
+   razor sharp under a translucent sheet. Frost the backdrop with the same
+   material as the menus. */
+:root[data-game-scene="on"] :is(
+  .col-gallery-backdrop,
+  .selective-overlay,
+  .playtime-overlay,
+  .cover-overlay,
+  .col-modal-backdrop,
+  .move-modal-backdrop,
+  .ss-share-backdrop,
+  .modal-backdrop,
+  .manage-overlay,
+  .changelog-backdrop,
+  .custom-game-backdrop
+) {
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  backdrop-filter: blur(18px) saturate(1.25);
+}
+/* The collections sheet is large, so it stays denser than a popover while
+   still picking up the tint of the blurred art behind it. */
+html[data-game-scene="on"]:not([data-surface]) .col-gallery {
+  background: color-mix(in srgb, #000 78%, rgba(255, 255, 255, 0.08));
+}
+html[data-game-scene="on"][data-surface] .col-gallery {
+  background: color-mix(in srgb, var(--surface-1) 86%, transparent);
+}
+
 
 /* ==========================================================================
    Game-Inspired Themes: Component & Scrollbar Refinements

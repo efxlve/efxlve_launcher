@@ -77,6 +77,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "Custom cover, hero and logo saves first shrink the oversized images left by older builds, so a full storage quota no longer rejects the new image, and repeated Save clicks cannot queue several full repaints.",
         tr: "Özel kapak, hero ve logo kaydederken eski sürümlerden kalan büyük görseller önce küçültülüyor; dolu depolama kotası yeni görseli artık reddetmiyor ve art arda Kaydet tıklamaları birkaç tam yeniden çizimi kuyruğa almıyor.",
       },
+      {
+        en: "Open menus and dialog backdrops follow the game-art backdrop with a heavy iOS-style blur; themed menus and the collections sheet blend their own surface colour down to glass instead of a flat panel, so library row titles no longer read through them.",
+        tr: "Oyun görseli arka planı açıkken açılır menüler ve iletişim kutularının arka planı iOS tarzı güçlü bir bulanıklık kullanıyor; temalı menüler ve koleksiyon paneli düz panel yerine kendi renklerinden cam bir yüzeye dönüşüyor ve arkalarındaki kütüphane satır başlıkları artık okunmuyor.",
+      },
     ],
   },
   {
