@@ -2198,6 +2198,8 @@ fn main() {
             legendary::commands::epic_delete_backup,
             legendary::commands::epic_open_backup_folder,
             legendary::commands::epic_open_local_backups_root,
+            legendary::commands::epic_get_local_backup_root,
+            legendary::commands::epic_set_local_backup_dir,
             legendary::commands::epic_get_collections,
             legendary::commands::epic_save_collection,
             legendary::commands::epic_reorder_collections,

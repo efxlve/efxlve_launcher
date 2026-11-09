@@ -36,6 +36,8 @@ import {
   cloudBackupDeleteRemote,
   cloudBackupRemoteHash,
   epicBackupSave,
+  epicGetLocalBackupRoot,
+  epicSetLocalBackupDir,
   type CloudBackupSettings,
   type CloudBackupEntry,
 } from "../../epic";
@@ -47,6 +49,28 @@ export async function initCloudBackupSettings(): Promise<CloudBackupSettings | n
     return st;
   } catch {
     return null;
+  }
+}
+
+/** Loads the local backup folder once; the settings view calls this on mount. */
+export async function initLocalBackupRoot(): Promise<void> {
+  if (S.localBackupRoot !== null) return;
+  try {
+    S.localBackupRoot = await epicGetLocalBackupRoot();
+  } catch {
+    S.localBackupRoot = { configured: "", effective: "" };
+  }
+  scheduleRender();
+}
+
+/** Saves a new local backup root; an empty path restores the default. */
+export async function saveLocalBackupDirAction(path: string): Promise<void> {
+  try {
+    S.localBackupRoot = await epicSetLocalBackupDir(path.trim());
+    toast(t("cloud.localDirSaved"), "ok");
+    scheduleRender();
+  } catch (error) {
+    toast(String(error), "err");
   }
 }
 

@@ -4017,5 +4017,11 @@
   "cloud.localNowTitle": "Esegui backup ora",
   "cloud.localNowDesc": "Crea un backup locale per ogni gioco installato. Non servono account o internet. Per copertine, collezioni e impostazioni usa Esporta su file in Dati del launcher.",
   "cloud.localNowBtn": "Esegui backup di tutti i giochi in locale",
-  "cloud.openBackupFolder": "Apri cartella backup"
+  "cloud.openBackupFolder": "Apri cartella backup",
+  "cloud.localDirTitle": "Posizione dei backup",
+  "cloud.localDirDesc": "Dove vengono scritti i backup locali. Scegli un altro disco per tenerli fuori dal disco di sistema; gli archivi esistenti restano nella cartella precedente.",
+  "cloud.localDirSaved": "Posizione dei backup salvata.",
+  "cloud.localDirMissing": "Quella cartella non esiste.",
+  "cloud.localDirWrite": "Impossibile scrivere in quella cartella: {a1}",
+  "cloud.localDirPick": "Scegli cartella di backup"
 }

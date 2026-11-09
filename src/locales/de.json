@@ -4017,5 +4017,11 @@
   "cloud.localNowTitle": "Jetzt sichern",
   "cloud.localNowDesc": "Erstellt eine lokale Sicherung für jedes installierte Spiel. Kein Konto und kein Internet nötig. Für Cover, Sammlungen und Einstellungen nutze „In Datei exportieren“ unter Launcher-Daten.",
   "cloud.localNowBtn": "Alle Spiele lokal sichern",
-  "cloud.openBackupFolder": "Backup-Ordner öffnen"
+  "cloud.openBackupFolder": "Backup-Ordner öffnen",
+  "cloud.localDirTitle": "Sicherungsort",
+  "cloud.localDirDesc": "Wohin lokale Spielstand-Sicherungen geschrieben werden. Wähle ein anderes Laufwerk, um sie von der Systemplatte fernzuhalten; vorhandene Archive bleiben im alten Ordner.",
+  "cloud.localDirSaved": "Sicherungsort gespeichert.",
+  "cloud.localDirMissing": "Dieser Ordner existiert nicht.",
+  "cloud.localDirWrite": "Konnte nicht in diesen Ordner schreiben: {a1}",
+  "cloud.localDirPick": "Sicherungsordner wählen"
 }

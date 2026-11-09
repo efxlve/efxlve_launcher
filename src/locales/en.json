@@ -4017,5 +4017,11 @@
   "cloud.localNowTitle": "Back up now",
   "cloud.localNowDesc": "Creates one local backup for every installed game. No account or internet needed. For covers, collections and settings, use Export to file under Launcher data.",
   "cloud.localNowBtn": "Back up all games locally",
-  "cloud.openBackupFolder": "Open backup folder"
+  "cloud.openBackupFolder": "Open backup folder",
+  "cloud.localDirTitle": "Backup location",
+  "cloud.localDirDesc": "Where local save backups are written. Pick another drive to keep them off the system disk; existing archives stay in their old folder.",
+  "cloud.localDirSaved": "Backup location saved.",
+  "cloud.localDirMissing": "That folder does not exist.",
+  "cloud.localDirWrite": "Could not write to that folder: {a1}",
+  "cloud.localDirPick": "Choose a backup folder"
 }

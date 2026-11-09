@@ -4017,5 +4017,11 @@
   "cloud.localNowTitle": "立即備份",
   "cloud.localNowDesc": "為每個已安裝遊戲建立本機備份。無需帳號或網路。封面、合集與設定請使用啟動器資料中的「匯出至檔案」。",
   "cloud.localNowBtn": "本機備份所有遊戲",
-  "cloud.openBackupFolder": "開啟備份資料夾"
+  "cloud.openBackupFolder": "開啟備份資料夾",
+  "cloud.localDirTitle": "備份位置",
+  "cloud.localDirDesc": "本機備份的寫入位置。可選擇其他磁碟以避免佔用系統碟；現有壓縮檔會留在原資料夾。",
+  "cloud.localDirSaved": "備份位置已儲存。",
+  "cloud.localDirMissing": "該資料夾不存在。",
+  "cloud.localDirWrite": "無法寫入該資料夾：{a1}",
+  "cloud.localDirPick": "選擇備份資料夾"
 }

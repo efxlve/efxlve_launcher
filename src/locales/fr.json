@@ -4017,5 +4017,11 @@
   "cloud.localNowTitle": "Sauvegarder maintenant",
   "cloud.localNowDesc": "Crée une sauvegarde locale pour chaque jeu installé. Aucun compte ni internet requis. Pour les couvertures, collections et réglages, utilise Exporter vers un fichier dans Données du launcher.",
   "cloud.localNowBtn": "Sauvegarder tous les jeux en local",
-  "cloud.openBackupFolder": "Ouvrir le dossier de sauvegarde"
+  "cloud.openBackupFolder": "Ouvrir le dossier de sauvegarde",
+  "cloud.localDirTitle": "Emplacement des sauvegardes",
+  "cloud.localDirDesc": "Où sont écrites les sauvegardes locales. Choisis un autre disque pour les garder hors du disque système ; les archives existantes restent dans leur ancien dossier.",
+  "cloud.localDirSaved": "Emplacement des sauvegardes enregistré.",
+  "cloud.localDirMissing": "Ce dossier n'existe pas.",
+  "cloud.localDirWrite": "Impossible d'écrire dans ce dossier : {a1}",
+  "cloud.localDirPick": "Choisir un dossier de sauvegarde"
 }

@@ -7,6 +7,7 @@
 
 use std::fs;
 use std::path::{Component, Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::Serialize;
@@ -36,9 +37,15 @@ const CONFIG_DIRS: &[&str] = &["metadata"];
 const APPDATA_FILES: &[&str] = &[
     "custom_games.json",
     "notes.json",
+    "skipped.json",
     "gog/achievements_cache.json",
 ];
-const APPDATA_DIRS: &[&str] = &["achievements", "steam/achievements"];
+const APPDATA_DIRS: &[&str] = &[
+    "achievements",
+    "steam/achievements",
+    "note-images",
+    "note-backups",
+];
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -61,19 +68,24 @@ fn app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
         .map_err(|error| format!("Could not resolve the app data folder: {error}"))
 }
 
+/// Distinguishes two exports that start in the same second.
+static NEXT_STAGE: AtomicU64 = AtomicU64::new(0);
+
 fn stage_dir() -> PathBuf {
     std::env::temp_dir().join(format!(
-        "efxlve_profile_stage_{}_{}",
+        "efxlve_profile_stage_{}_{}_{}",
         std::process::id(),
-        now_secs()
+        now_secs(),
+        NEXT_STAGE.fetch_add(1, Ordering::Relaxed)
     ))
 }
 
 fn unpack_dir() -> PathBuf {
     std::env::temp_dir().join(format!(
-        "efxlve_profile_unpack_{}_{}",
+        "efxlve_profile_unpack_{}_{}_{}",
         std::process::id(),
-        now_secs()
+        now_secs(),
+        NEXT_STAGE.fetch_add(1, Ordering::Relaxed)
     ))
 }
 
@@ -631,6 +643,32 @@ mod tests {
         assert_eq!(merged.get("offline_mode"), Some(&json!(false)));
         assert!(result.safety_archive.is_empty() || Path::new(&result.safety_archive).is_file());
 
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn profile_carries_note_images_and_skipped_games() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve_profile_notes_{}_{}",
+            std::process::id(),
+            now_secs()
+        ));
+        let config = root.join("config");
+        let appdata = root.join("appdata");
+        std::fs::create_dir_all(&config).unwrap();
+        std::fs::create_dir_all(appdata.join("note-images")).unwrap();
+        std::fs::create_dir_all(appdata.join("note-backups")).unwrap();
+        std::fs::write(appdata.join("notes.json"), r#"{"version":1,"notes":[]}"#).unwrap();
+        std::fs::write(appdata.join("skipped.json"), "[]").unwrap();
+        std::fs::write(appdata.join("note-images/one.png"), b"png").unwrap();
+        std::fs::write(appdata.join("note-backups/old.json"), "{}").unwrap();
+
+        let stage = build_stage_in(&config, &appdata, &json!({})).unwrap();
+        assert!(stage.join("files/appdata/notes.json").is_file());
+        assert!(stage.join("files/appdata/skipped.json").is_file());
+        assert!(stage.join("files/appdata/note-images/one.png").is_file());
+        assert!(stage.join("files/appdata/note-backups/old.json").is_file());
+        cleanup(&stage);
         let _ = std::fs::remove_dir_all(&root);
     }
 

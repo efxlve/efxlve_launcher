@@ -4017,5 +4017,11 @@
   "cloud.localNowTitle": "今すぐバックアップ",
   "cloud.localNowDesc": "インストール済みの全ゲームのローカルバックアップを作成します。アカウントもインターネットも不要です。カバー、コレクション、設定は「ランチャーデータ」の「ファイルに書き出す」を使ってください。",
   "cloud.localNowBtn": "全ゲームをローカルにバックアップ",
-  "cloud.openBackupFolder": "バックアップフォルダーを開く"
+  "cloud.openBackupFolder": "バックアップフォルダーを開く",
+  "cloud.localDirTitle": "バックアップの保存先",
+  "cloud.localDirDesc": "ローカルバックアップの書き込み先です。システムドライブ以外を選べます。既存のアーカイブは元のフォルダーに残ります。",
+  "cloud.localDirSaved": "保存先を保存しました。",
+  "cloud.localDirMissing": "そのフォルダーは存在しません。",
+  "cloud.localDirWrite": "そのフォルダーに書き込めませんでした: {a1}",
+  "cloud.localDirPick": "バックアップフォルダーを選択"
 }

@@ -609,6 +609,8 @@ export const S = {
   launcherProfileLoading: false,
   /** Bulk "back up all installed games" progress while it runs. */
   cloudBulkProgress: (null) as { done: number; total: number; failed: number; local?: boolean } | null,
+  /** Local backup folder override and the folder in use; null until loaded. */
+  localBackupRoot: (null) as { configured: string; effective: string } | null,
   epicFav: (loadStrSet(FAV_KEY)) as Set<string>,
   hiddenGames: (loadStrSet(HIDDEN_KEY)) as Set<string>,
   ignoredUpdates: (loadStrSet(IGNORED_UPDATES_KEY)) as Set<string>,

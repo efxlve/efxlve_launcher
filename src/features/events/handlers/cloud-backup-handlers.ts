@@ -16,6 +16,7 @@ import {
   downloadCloudBackupAction,
   loadCloudBackupsAction,
   runScheduledLocalBackupNow,
+  saveLocalBackupDirAction,
   scheduleLocalBackups,
   startGoogleDriveAuthAction,
   testCloudConnectionAction,
@@ -227,6 +228,20 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
       void updateCloudBackupSettings({ retentionCount: count }).then((ok) => {
         if (ok) toast(i18nT("cloud.retentionSaved"), "ok");
       });
+      return true;
+    }
+
+    case "local-backup-browse":
+      void epicSelectFolderDialog(null, i18nT("cloud.localDirPick"))
+        .then((folder) => {
+          if (folder) void saveLocalBackupDirAction(folder);
+        })
+        .catch((err: unknown) => toast(String(err), "err"));
+      return true;
+
+    case "local-backup-save": {
+      const input = document.getElementById("local-backup-dir") as HTMLInputElement | null;
+      void saveLocalBackupDirAction(input?.value ?? "");
       return true;
     }
 

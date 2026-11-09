@@ -4017,5 +4017,11 @@
   "cloud.localNowTitle": "立即备份",
   "cloud.localNowDesc": "为每个已安装游戏创建本地备份。无需账号或网络。封面、合集和设置请使用启动器数据中的“导出到文件”。",
   "cloud.localNowBtn": "本地备份所有游戏",
-  "cloud.openBackupFolder": "打开备份文件夹"
+  "cloud.openBackupFolder": "打开备份文件夹",
+  "cloud.localDirTitle": "备份位置",
+  "cloud.localDirDesc": "本地备份的写入位置。可选择其他磁盘以避免占用系统盘；已有压缩包会留在原文件夹。",
+  "cloud.localDirSaved": "备份位置已保存。",
+  "cloud.localDirMissing": "该文件夹不存在。",
+  "cloud.localDirWrite": "无法写入该文件夹：{a1}",
+  "cloud.localDirPick": "选择备份文件夹"
 }

@@ -41,8 +41,10 @@ The sections below describe the implementation and the roadmap for contributors.
 
 Two layers share one format:
 
-- **Local backup** — `<config>/backups/<safe-key>/<timestamp>/`
+- **Local backup** — `<local backup root>/<safe-key>/<timestamp>/`
   - `data/` is a raw copy of the game's save folder.
+  - The root is `<config>/backups` unless **Backup location** on the Cloud
+    settings page points it somewhere else, such as another drive.
   - `backup_info.json` stores id, app key, timestamp, size, file count, the
     original save path, the recognized logical root (`Documents`, `SavedGames`,
     `LocalAppData`, `RoamingAppData`, `Home`) and the path below that root.
@@ -183,7 +185,8 @@ the cheaper roots miss.
 - **Local backups** is the first group on the page. **Back up all games
   locally** walks every installed Epic, GOG, Amazon and custom game and writes
   a local archive with no provider configured; **Open backup folder** opens the
-  root that holds them.
+  root that holds them. **Backup location** moves that root to another drive;
+  an empty field restores `<config>/backups`.
 - **Daily local backup** creates one local backup per installed game at most
   once a day while the launcher is open, even with no cloud provider. It shares
   the progress row with the bulk actions.
@@ -307,7 +310,8 @@ Save archives cover game saves; the launcher's own data travels in a separate
   launcher is open, so the newest archive is ready after a format.
 
 The archive contains custom games, collections, playtime, Epic/GOG/Steam
-achievement caches, notes, custom themes, browser bookmarks and the portable
+achievement caches, notes and their images, deleted-note recovery copies,
+skipped library entries, custom themes, browser bookmarks and the portable
 launcher settings. It does **not** contain passwords, OAuth tokens, Steam
 sessions, API keys, Discord webhooks or absolute install/screenshot paths.
 Those stay on the machine and are re-entered after a format; the provider

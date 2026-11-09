@@ -4017,5 +4017,11 @@
   "cloud.localNowTitle": "Şimdi yedekle",
   "cloud.localNowDesc": "Kurulu her oyun için yerel bir yedek oluşturur. Hesap veya internet gerekmez. Kapaklar, koleksiyonlar ve ayarlar için Launcher verisi altındaki Dosyaya aktar'ı kullan.",
   "cloud.localNowBtn": "Tüm oyunları yerel olarak yedekle",
-  "cloud.openBackupFolder": "Yedek klasörünü aç"
+  "cloud.openBackupFolder": "Yedek klasörünü aç",
+  "cloud.localDirTitle": "Yedek konumu",
+  "cloud.localDirDesc": "Yerel kayıt yedeklerinin yazılacağı klasör. Sistem diskinden uzak tutmak için başka bir disk seç; mevcut arşivler eski klasöründe kalır.",
+  "cloud.localDirSaved": "Yedek konumu kaydedildi.",
+  "cloud.localDirMissing": "O klasör mevcut değil.",
+  "cloud.localDirWrite": "O klasöre yazılamadı: {a1}",
+  "cloud.localDirPick": "Yedek klasörü seç"
 }

@@ -7,7 +7,7 @@ import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
 import { t } from "../../i18n";
-import { initCloudBackupSettings, loadCloudBackupsAction, loadCloudFolderSuggestionsAction } from "./cloud-backup-actions";
+import { initCloudBackupSettings, initLocalBackupRoot, loadCloudBackupsAction, loadCloudFolderSuggestionsAction } from "./cloud-backup-actions";
 import { loadProfileArchivesAction } from "./profile-sync-actions";
 
 const CLOUD_DOCS = "https://github.com/efxlve/efxlve_launcher/blob/main/docs";
@@ -20,6 +20,10 @@ export function renderCloudBackupSettingsGroup(): string {
   if (!S.cloudBackupSettings) {
     void initCloudBackupSettings();
   }
+  if (S.localBackupRoot === null) {
+    void initLocalBackupRoot();
+  }
+  const localRoot = S.localBackupRoot ?? { configured: "", effective: "" };
 
   const st = S.cloudBackupSettings ?? {
     enabled: false,
@@ -318,6 +322,19 @@ export function renderCloudBackupSettingsGroup(): string {
             ? `<span class="settings-value tabular-nums">${localBusy.done}/${localBusy.total}</span>`
             : `<button type="button" class="btn primary small" data-act="cloud-local-bulk">${icon("package", 13)} ${t("cloud.localNowBtn")}</button>
                <button type="button" class="btn ghost small" data-act="cloud-local-open-folder">${icon("folder", 13)} ${t("cloud.openBackupFolder")}</button>`}
+        </div>
+      </div>
+      <div class="row settings-row stacked">
+        <div class="row-main">
+          <div class="settings-row-title">${t("cloud.localDirTitle")}</div>
+          <div class="settings-row-desc">${t("cloud.localDirDesc")}</div>
+        </div>
+        <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
+          <input id="local-backup-dir" class="input cloud-field" value="${esc(localRoot.configured)}" placeholder="${esc(localRoot.effective)}" spellcheck="false" autocomplete="off" />
+          <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+            <button type="button" class="btn ghost small" data-act="local-backup-browse">${icon("folder", 13)} ${t("cloud.folderBrowse")}</button>
+            <button type="button" class="btn primary small" data-act="local-backup-save">${t("common.save")}</button>
+          </div>
         </div>
       </div>
       ${localBackupRow}

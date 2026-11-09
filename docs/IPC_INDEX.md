@@ -187,6 +187,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_get_game_settings` | `epicGetGameSettings({ ... })` | `src-tauri/src/legendary/commands/game_local.rs` |
 | `epic_get_hltb` | `epicGetHltb({ ... })` | `src-tauri/src/legendary/commands/metadata.rs` |
 | `epic_get_install_options` | `epicGetInstallOptions({ ... })` | `src-tauri/src/legendary/commands/game_local.rs` |
+| `epic_get_local_backup_root` | `epicGetLocalBackupRoot({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_get_network_profile` | `epicGetNetworkProfile({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_get_offline_mode` | `epicGetOfflineMode({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_get_player_profile` | `epicGetPlayerProfile({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
@@ -249,6 +250,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_set_game_collections` | `epicSetGameCollections({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_set_gog_comet` | `epicSetGogComet({ ... })` | `src-tauri/src/comet/mod.rs` |
 | `epic_set_install_dir` | `epicSetInstallDir({ ... })` | `src-tauri/src/legendary/transfers/paths.rs` |
+| `epic_set_local_backup_dir` | `epicSetLocalBackupDir({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_set_network_profile` | `epicSetNetworkProfile({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_set_offline_mode` | `epicSetOfflineMode({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_set_playtime` | `epicSetPlaytime({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |

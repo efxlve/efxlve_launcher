@@ -4017,5 +4017,11 @@
   "cloud.localNowTitle": "Utwórz kopię teraz",
   "cloud.localNowDesc": "Tworzy lokalną kopię każdej zainstalowanej gry. Konto i internet nie są potrzebne. Okładki, kolekcje i ustawienia wyeksportuj przez Eksportuj do pliku w Danych launchera.",
   "cloud.localNowBtn": "Kopiuj wszystkie gry lokalnie",
-  "cloud.openBackupFolder": "Otwórz folder kopii"
+  "cloud.openBackupFolder": "Otwórz folder kopii",
+  "cloud.localDirTitle": "Lokalizacja kopii",
+  "cloud.localDirDesc": "Gdzie zapisywane są lokalne kopie. Wybierz inny dysk, aby trzymać je poza dyskiem systemowym; istniejące archiwa zostaną w starym folderze.",
+  "cloud.localDirSaved": "Zapisano lokalizację kopii.",
+  "cloud.localDirMissing": "Ten folder nie istnieje.",
+  "cloud.localDirWrite": "Nie można zapisać w tym folderze: {a1}",
+  "cloud.localDirPick": "Wybierz folder kopii"
 }

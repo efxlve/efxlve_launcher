@@ -4017,5 +4017,11 @@
   "cloud.localNowTitle": "지금 백업",
   "cloud.localNowDesc": "설치된 모든 게임의 로컬 백업을 만듭니다. 계정이나 인터넷이 필요 없습니다. 커버, 컬렉션, 설정은 런처 데이터의 파일로 내보내기를 사용하세요.",
   "cloud.localNowBtn": "모든 게임을 로컬에 백업",
-  "cloud.openBackupFolder": "백업 폴더 열기"
+  "cloud.openBackupFolder": "백업 폴더 열기",
+  "cloud.localDirTitle": "백업 위치",
+  "cloud.localDirDesc": "로컬 백업이 저장될 폴더입니다. 시스템 드라이브를 피하려면 다른 드라이브를 선택하세요. 기존 아카이브는 이전 폴더에 남습니다.",
+  "cloud.localDirSaved": "백업 위치를 저장했습니다.",
+  "cloud.localDirMissing": "해당 폴더가 없습니다.",
+  "cloud.localDirWrite": "해당 폴더에 쓸 수 없습니다: {a1}",
+  "cloud.localDirPick": "백업 폴더 선택"
 }

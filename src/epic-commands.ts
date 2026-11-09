@@ -697,6 +697,18 @@ export const epicOpenBackupFolder = (appName: string) =>
 export const epicOpenLocalBackupsRoot = () =>
   invoke<string>("epic_open_local_backups_root");
 
+/** Saved local backup folder override and the folder currently in use. */
+export interface LocalBackupRoot {
+  configured: string;
+  effective: string;
+}
+
+export const epicGetLocalBackupRoot = () =>
+  invoke<LocalBackupRoot>("epic_get_local_backup_root");
+
+export const epicSetLocalBackupDir = (path: string) =>
+  invoke<LocalBackupRoot>("epic_set_local_backup_dir", { path });
+
 /* ---------- Collections ---------- */
 
 export const epicGetCollections = () =>

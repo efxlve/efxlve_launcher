@@ -270,6 +270,22 @@ pub fn epic_open_local_backups_root() -> Result<String, String> {
     Ok("@t:manage.backupFolderOpened".to_string())
 }
 
+/// The saved local backup folder override and the folder currently in use.
+#[tauri::command]
+pub fn epic_get_local_backup_root() -> crate::legendary::backup::LocalBackupRoot {
+    crate::legendary::backup::local_backup_root()
+}
+
+/// Points local save backups at another folder. An empty path restores the
+/// default `backups` folder under the launcher config.
+#[tauri::command]
+pub fn epic_set_local_backup_dir(
+    path: String,
+) -> Result<crate::legendary::backup::LocalBackupRoot, String> {
+    crate::legendary::backup::set_backups_dir(&path)?;
+    Ok(crate::legendary::backup::local_backup_root())
+}
+
 // -------------------------------------------------------------
 // COLLECTION (CATEGORY) MANAGEMENT
 // -------------------------------------------------------------

@@ -31,8 +31,62 @@ pub struct SaveBackupInfo {
     pub content_hash: Option<String>,
 }
 
+/// File under the legendary config dir that stores a user-chosen local backup
+/// root. Missing or empty means `backups` next to it.
+const LOCAL_BACKUP_DIR_FILE: &str = "local_backup_dir.txt";
+
+/// The root of the local save backups, honouring a user-chosen folder.
 pub fn backups_base_dir() -> PathBuf {
-    super::skip::default_config_dir().join("backups")
+    let config = super::skip::default_config_dir();
+    match configured_backups_dir() {
+        text if !text.is_empty() => PathBuf::from(text),
+        _ => config.join("backups"),
+    }
+}
+
+/// The configured override, or an empty string when the default is used.
+fn configured_backups_dir() -> String {
+    std::fs::read_to_string(super::skip::default_config_dir().join(LOCAL_BACKUP_DIR_FILE))
+        .ok()
+        .map(|text| text.trim().to_string())
+        .unwrap_or_default()
+}
+
+/// What the settings field shows: the saved override and the folder in use.
+#[derive(Debug, Clone, Serialize)]
+pub struct LocalBackupRoot {
+    pub configured: String,
+    pub effective: String,
+}
+
+pub fn local_backup_root() -> LocalBackupRoot {
+    LocalBackupRoot {
+        configured: configured_backups_dir(),
+        effective: backups_base_dir().display().to_string(),
+    }
+}
+
+/// Stores a user-chosen backup root. An empty value restores the default.
+pub fn set_backups_dir(path: &str) -> Result<(), String> {
+    let config = super::skip::default_config_dir();
+    let target = config.join(LOCAL_BACKUP_DIR_FILE);
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        return match std::fs::remove_file(&target) {
+            Ok(()) => Ok(()),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(error) => Err(format!("@t:cloud.localDirWrite\u{1f}{error}")),
+        };
+    }
+    let dir = PathBuf::from(trimmed);
+    if !dir.is_dir() {
+        return Err("@t:cloud.localDirMissing".to_string());
+    }
+    let probe = dir.join(".efxlve-write-test");
+    std::fs::write(&probe, b"ok").map_err(|error| format!("@t:cloud.localDirWrite\u{1f}{error}"))?;
+    let _ = std::fs::remove_file(&probe);
+    std::fs::create_dir_all(&config).map_err(|error| format!("@t:cloud.localDirWrite\u{1f}{error}"))?;
+    std::fs::write(&target, trimmed).map_err(|error| format!("@t:cloud.localDirWrite\u{1f}{error}"))
 }
 
 /// A filesystem-safe folder name for a game key. Store keys contain `::`
