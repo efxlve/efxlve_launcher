@@ -31,7 +31,6 @@ function ribbonCard(s: EpicSummary, isDefault = false): string {
   const isUpdating = s.updateAvailable && !S.ignoredUpdates.has(s.appName);
   return `<button type="button" class="stage-ribbon-card" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="game:${esc(s.appName)}"${isDefault ? " data-gp-default" : ""}>
     <span class="stage-ribbon-art">${stageCoverMarkup(s, "stage-ribbon-image")}</span>
-    <span class="stage-ribbon-frame"></span>
     ${hasDl || isUpdating ? `<span class="stage-ribbon-indicator"></span>` : ""}
   </button>`;
 }
