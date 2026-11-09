@@ -506,7 +506,7 @@ body.stage-mode #toasts {
 #stage-root[data-route="program"] .stage-main {
   inset-block-start: 0 !important;
   padding: 0 0 112px;
-  background: var(--stage-bg);
+  background: transparent;
 }
 
 #stage-root[data-route="library"] .stage-main,

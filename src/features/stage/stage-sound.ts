@@ -9,7 +9,7 @@
 
 import { S } from "../../core/state";
 
-export type StageFeedback = "move" | "select" | "back" | "launch" | "error";
+export type StageFeedback = "move" | "select" | "back" | "launch" | "error" | "toggle" | "tab";
 
 let audio: AudioContext | null = null;
 let lastSoundAt = 0;
@@ -84,6 +84,13 @@ export function playStageSound(kind: StageFeedback): void {
     case "error":
       tone(context, 260, 160, 0.16, volume * 0.6, "triangle");
       break;
+    case "toggle":
+      tone(context, 440, 554, 0.06, volume * 0.5, "sine");
+      break;
+    case "tab":
+      tone(context, 587, 880, 0.08, volume * 0.45, "sine");
+      tone(context, 1174, 1320, 0.06, volume * 0.2, "triangle");
+      break;
   }
 }
 
@@ -141,6 +148,8 @@ function vibrate(kind: StageFeedback): void {
     back: { duration: 16, strongMagnitude: 0.16, weakMagnitude: 0.08 },
     launch: { duration: 70, strongMagnitude: 0.34, weakMagnitude: 0.2 },
     error: { duration: 55, strongMagnitude: 0.3, weakMagnitude: 0.3 },
+    toggle: { duration: 14, strongMagnitude: 0.15, weakMagnitude: 0.08 },
+    tab: { duration: 18, strongMagnitude: 0.18, weakMagnitude: 0.1 },
   }[kind];
   void actuator.playEffect("dual-rumble", effect).catch(() => undefined);
 }

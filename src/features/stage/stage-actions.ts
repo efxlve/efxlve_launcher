@@ -27,6 +27,7 @@ import { localizeMessage, t } from "../../i18n";
 import { uploadGameCloudAction } from "../cloud-backup/cloud-backup-actions";
 import { fetchAndRenderAchievements } from "../drawer/drawer-view";
 import { ensureFullShot, fetchAndRenderScreenshots } from "../screenshots/screenshots-view";
+import { loadNotes } from "../notes/notes-client";
 import { loadSettingsView } from "../settings/settings-view";
 import { setView } from "../store/store-view";
 import { stageLaunchGame } from "./stage-launch";
@@ -274,6 +275,7 @@ export function stageCycleSection(forward: boolean): void {
   ) {
     return;
   }
+  stageFeedback("tab");
   const index = Math.max(0, TOP_ROUTES.indexOf(S.stage.route));
   const next = (index + (forward ? 1 : -1) + TOP_ROUTES.length) % TOP_ROUTES.length;
   stageGo(TOP_ROUTES[next]);
@@ -285,13 +287,14 @@ export function stageCycleTab(forward: boolean): void {
     return;
   }
   if (S.stage.route !== "program" || S.stage.quickMenu || S.stage.searchOpen) return;
-  stageFeedback("select");
+  stageFeedback("tab");
   const index = Math.max(0, TABS.indexOf(S.stage.programTab));
   const next = (index + (forward ? 1 : -1) + TABS.length) % TABS.length;
   S.stage.programTab = TABS[next];
   S.stage.focusKey = `tab:${TABS[next]}`;
   if (S.stage.programTab === "achievements") stageEnsureAchievements(S.stage.gameKey);
-  if (S.stage.programTab === "extras") stageEnsureScreenshots(S.stage.gameKey);
+  if (S.stage.programTab === "media" || S.stage.programTab === "extras") stageEnsureScreenshots(S.stage.gameKey);
+  if (S.stage.programTab === "notes") void loadNotes();
   scheduleRender();
 }
 
@@ -300,13 +303,14 @@ export function stageSetTab(tab: StageProgramTab): void {
   S.stage.programTab = tab;
   S.stage.focusKey = `tab:${tab}`;
   if (tab === "achievements") stageEnsureAchievements(S.stage.gameKey);
-  if (tab === "extras") stageEnsureScreenshots(S.stage.gameKey);
+  if (tab === "media" || tab === "extras") stageEnsureScreenshots(S.stage.gameKey);
+  if (tab === "notes") void loadNotes();
   scheduleRender();
 }
 
 export function stageCycleSettingsTab(forward: boolean): void {
   if (S.stage.route !== "settings") return;
-  stageFeedback("select");
+  stageFeedback("tab");
   const index = Math.max(0, SETTINGS_TABS.indexOf(S.stage.settingsTab));
   const next = (index + (forward ? 1 : -1) + SETTINGS_TABS.length) % SETTINGS_TABS.length;
   S.stage.settingsTab = SETTINGS_TABS[next];

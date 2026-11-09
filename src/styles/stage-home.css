@@ -53,9 +53,11 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 1100px 750px at 10% 95%, rgba(6, 7, 10, 0.94) 0%, rgba(6, 7, 10, 0.7) 42%, rgba(6, 7, 10, 0.22) 75%, transparent 100%),
-    linear-gradient(to top, #06070a 0%, rgba(6, 7, 10, 0.85) 12%, rgba(6, 7, 10, 0.4) 24%, transparent 45%),
-    linear-gradient(to bottom, rgba(6, 7, 10, 0.65) 0%, rgba(6, 7, 10, 0.15) 20%, transparent 40%),
+    linear-gradient(to right, #06070a 0%, rgba(6, 7, 10, 0.9) 14%, rgba(6, 7, 10, 0.45) 32%, transparent 58%),
+    linear-gradient(to left, #06070a 0%, rgba(6, 7, 10, 0.4) 6%, transparent 22%),
+    linear-gradient(to top, #06070a 0%, rgba(6, 7, 10, 0.95) 14%, rgba(6, 7, 10, 0.5) 28%, transparent 50%),
+    linear-gradient(to bottom, rgba(6, 7, 10, 0.85) 0%, rgba(6, 7, 10, 0.3) 18%, transparent 35%),
+    radial-gradient(ellipse 1200px 800px at 15% 90%, rgba(6, 7, 10, 0.95) 0%, rgba(6, 7, 10, 0.7) 45%, transparent 80%),
     radial-gradient(circle at 80% 35%, rgba(60, 110, 240, 0.05), transparent 60%);
   pointer-events: none;
 }
@@ -69,6 +71,8 @@
   padding: calc(var(--stage-top) + 10px) 0 0;
   margin: 0;
   pointer-events: none;
+  mask-image: linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%);
 }
 
 .stage-home-ribbon::before {

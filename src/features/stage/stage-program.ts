@@ -34,7 +34,7 @@ function tabLabel(tab: StageProgramTab): string {
 }
 
 function tabs(): string {
-  return `<div class="stage-program-tabs" role="tablist">
+  return `<div class="stage-program-tabs" role="tablist" data-gp-row>
     ${TABS.map((tab) => `<button type="button" role="tab" aria-selected="${S.stage.programTab === tab}" class="stage-program-tab${S.stage.programTab === tab ? " active" : ""}" data-stage-act="set-tab" data-tab="${tab}" data-gp-item data-gp-key="tab:${tab}">${esc(tabLabel(tab))}</button>`).join("")}
   </div>`;
 }
@@ -185,7 +185,7 @@ function achievementFilterBar(total: number, unlocked: number): string {
     { id: "unlocked", label: t("stage.achUnlocked"), count: unlocked },
     { id: "locked", label: t("stage.achLocked"), count: total - unlocked },
   ];
-  return `<div class="stage-ach-filters" role="tablist">
+  return `<div class="stage-ach-filters" role="tablist" data-gp-row>
     ${filters.map((filter) => `<button type="button" role="tab" aria-selected="${S.stage.achievementFilter === filter.id}" class="stage-ach-filter${S.stage.achievementFilter === filter.id ? " active" : ""}" data-stage-act="set-ach-filter" data-filter="${filter.id}" data-gp-item data-gp-key="ach-filter:${filter.id}">${esc(filter.label)}<span class="tabular-nums">${filter.count}</span></button>`).join("")}
   </div>`;
 }
