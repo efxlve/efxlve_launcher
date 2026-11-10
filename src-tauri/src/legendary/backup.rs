@@ -29,6 +29,10 @@ pub struct SaveBackupInfo {
     /// backups have no value and fall back to the timestamp conflict check.
     #[serde(default)]
     pub content_hash: Option<String>,
+    /// A human title carried by an imported archive, so a game that is not
+    /// installed yet still has a name in the backups list.
+    #[serde(default)]
+    pub title: Option<String>,
     /// The game key this archive was exported from, when it was imported from
     /// another store or PC. `None` for a backup made on this game.
     #[serde(default)]
@@ -630,6 +634,8 @@ fn snapshot_before_restore(app_name: &str, save_path: &Path) -> Result<Option<St
         save_root,
         save_rel,
         content_hash,
+        title: None,
+
         origin_app_name: None,
         imported_at: None,
     };
@@ -1257,10 +1263,11 @@ fn prune_local_dir(dir: &Path, keep: u32) {
         .flatten()
         .filter_map(|entry| {
             let name = entry.file_name().to_string_lossy().to_string();
-            if name.starts_with("pre-restore-") {
+            if name.starts_with('.') || name.starts_with("pre-restore-") {
                 return None;
             }
-            let timestamp = name.parse::<u64>().ok()?;
+            // `1750000000-1` is a same-second duplicate; its age is the prefix.
+            let timestamp = name.split('-').next()?.parse::<u64>().ok()?;
             let path = entry.path();
             path.is_dir().then_some((timestamp, path))
         })
@@ -1334,19 +1341,37 @@ pub fn create_backup(
         .map(|d| d.as_secs())
         .unwrap_or(0);
 
-    let backup_id = format!("{now_ts}");
-    let target = app_backup_dir(app_name).join(&backup_id);
-    std::fs::create_dir_all(&target).map_err(|e| e.to_string())?;
+    let root = app_backup_dir(app_name);
+    std::fs::create_dir_all(&root).map_err(|e| e.to_string())?;
 
-    let (size_bytes, file_count) = copy_dir_all(&source, &target.join("data"))
-        .map_err(|e| format!("@t:backup.copyFailed\u{1f}{e}"))?;
+    // Two backups can start in the same second. Pick a free id and copy into
+    // a dot-prefixed staging folder that the list ignores; a crash leaves an
+    // incomplete tree behind instead of a restore candidate.
+    let mut backup_id = format!("{now_ts}");
+    let mut serial = 1;
+    while root.join(&backup_id).exists() {
+        backup_id = format!("{now_ts}-{serial}");
+        serial += 1;
+    }
+    let staging = root.join(format!(".{backup_id}.partial"));
+    let _ = std::fs::remove_dir_all(&staging);
+    std::fs::create_dir_all(&staging).map_err(|e| e.to_string())?;
+
+    let copied = copy_dir_all(&source, &staging.join("data"))
+        .map_err(|e| format!("@t:backup.copyFailed\u{1f}{e}"));
+    let (size_bytes, file_count) = match copied {
+        Ok(values) => values,
+        Err(error) => {
+            let _ = std::fs::remove_dir_all(&staging);
+            return Err(error);
+        }
+    };
 
     let formatted_date = format_backup_timestamp(now_ts);
-
-    let content_hash = tree_content_hash(&target.join("data"));
+    let content_hash = tree_content_hash(&staging.join("data"));
     let (save_root, save_rel) = save_root_kind(&source);
     let info = SaveBackupInfo {
-        id: backup_id,
+        id: backup_id.clone(),
         app_name: app_name.to_string(),
         timestamp: now_ts,
         formatted_date,
@@ -1356,12 +1381,23 @@ pub fn create_backup(
         save_root,
         save_rel,
         content_hash,
+        title: None,
+
         origin_app_name: None,
         imported_at: None,
     };
 
     let info_json = serde_json::to_string_pretty(&info).map_err(|e| e.to_string())?;
-    let _ = std::fs::write(target.join("backup_info.json"), info_json);
+    let write_info = std::fs::write(staging.join("backup_info.json"), info_json);
+    if let Err(error) = write_info {
+        let _ = std::fs::remove_dir_all(&staging);
+        return Err(error.to_string());
+    }
+    let target = root.join(&backup_id);
+    if let Err(error) = std::fs::rename(&staging, &target) {
+        let _ = std::fs::remove_dir_all(&staging);
+        return Err(format!("@t:backup.copyFailed\u{1f}{error}"));
+    }
 
     // A per-game limit wins over the shared cloud setting; snapshots stay
     // untouched either way.
@@ -1455,8 +1491,9 @@ pub fn import_backup(
     app_name: &str,
     archive: &str,
     password: Option<&str>,
+    title: Option<&str>,
 ) -> Result<SaveBackupInfo, String> {
-    import_backup_into(&app_backup_dir(app_name), app_name, archive, password)
+    import_backup_into(&app_backup_dir(app_name), app_name, archive, password, title)
 }
 
 fn import_backup_into(
@@ -1464,6 +1501,7 @@ fn import_backup_into(
     app_name: &str,
     archive: &str,
     password: Option<&str>,
+    title: Option<&str>,
 ) -> Result<SaveBackupInfo, String> {
     let file = Path::new(archive.trim());
     let size = std::fs::metadata(file)
@@ -1534,6 +1572,9 @@ fn import_backup_into(
         }
     };
     info.id = id;
+    if let Some(title) = title.map(str::trim).filter(|value| !value.is_empty()) {
+        info.title = Some(title.to_string());
+    }
     if info.origin_app_name.is_none() {
         info.origin_app_name = Some(info.app_name.clone());
     }
@@ -1576,11 +1617,17 @@ pub fn list_all_backups() -> Vec<SaveBackupInfo> {
             if !entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
                 continue;
             }
+            if entry.file_name().to_string_lossy().starts_with('.') {
+                continue;
+            }
             let Ok(backups) = std::fs::read_dir(entry.path()) else {
                 continue;
             };
             for backup in backups.flatten() {
                 if !backup.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                    continue;
+                }
+                if backup.file_name().to_string_lossy().starts_with('.') {
                     continue;
                 }
                 if let Ok(content) =
@@ -1599,11 +1646,16 @@ pub fn list_all_backups() -> Vec<SaveBackupInfo> {
 
 pub fn list_backups(app_name: &str) -> Vec<SaveBackupInfo> {
     migrate_legacy_dir(app_name);
-    let dir = app_backup_dir(app_name);
-    let mut list = Vec::new();
+    list_backups_in(&app_backup_dir(app_name))
+}
 
+fn list_backups_in(dir: &Path) -> Vec<SaveBackupInfo> {
+    let mut list = Vec::new();
     if let Ok(entries) = std::fs::read_dir(dir) {
         for entry in entries.flatten() {
+            if entry.file_name().to_string_lossy().starts_with('.') {
+                continue;
+            }
             if let Ok(ft) = entry.file_type() {
                 if ft.is_dir() {
                     let info_path = entry.path().join("backup_info.json");
@@ -1616,7 +1668,6 @@ pub fn list_backups(app_name: &str) -> Vec<SaveBackupInfo> {
             }
         }
     }
-
     list.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
     list
 }
@@ -1689,6 +1740,45 @@ mod tests {
     use super::*;
 
     #[test]
+    fn list_backups_ignores_staging_dirs() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve_list_skip_{}_{}",
+            std::process::id(),
+            now_secs()
+        ));
+        let good = root.join("1700000000");
+        let staging = root.join(".1700000001.partial");
+        for (dir, id) in [(&good, "1700000000"), (&staging, "1700000001")] {
+            std::fs::create_dir_all(dir.join("data")).unwrap();
+            let info = SaveBackupInfo {
+                id: id.to_string(),
+                app_name: "steam::1".to_string(),
+                timestamp: 1_700_000_000,
+                formatted_date: "x".to_string(),
+                size_bytes: 0,
+                file_count: 0,
+                save_path: "C:/Saves".to_string(),
+                save_root: "Documents".to_string(),
+                save_rel: "Game".to_string(),
+                content_hash: None,
+                title: None,
+
+                origin_app_name: None,
+                imported_at: None,
+            };
+            std::fs::write(
+                dir.join("backup_info.json"),
+                serde_json::to_string(&info).unwrap(),
+            )
+            .unwrap();
+        }
+        let list = list_backups_in(&root);
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].id, "1700000000");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn an_exported_save_imports_into_another_store() {
         let root = std::env::temp_dir().join(format!(
             "efxlve_export_import_{}_{}",
@@ -1711,6 +1801,8 @@ mod tests {
             save_root: "Documents".to_string(),
             save_rel: "Game".to_string(),
             content_hash: Some(hash),
+            title: None,
+
             origin_app_name: None,
             imported_at: None,
         };
@@ -1727,7 +1819,9 @@ mod tests {
         assert!(Path::new(&archive).is_file());
 
         let gog = root.join("gog");
-        let imported = import_backup_into(&gog, "gog::2", &archive, None).unwrap();
+        let imported =
+            import_backup_into(&gog, "gog::2", &archive, None, Some("Life is Strange")).unwrap();
+        assert_eq!(imported.title.as_deref(), Some("Life is Strange"));
         assert_eq!(imported.app_name, "gog::2");
         assert_eq!(imported.origin_app_name.as_deref(), Some("steam::1"));
         assert!(imported.imported_at.is_some());
@@ -1760,6 +1854,8 @@ mod tests {
             save_root: "Documents".to_string(),
             save_rel: "Game".to_string(),
             content_hash: tree_content_hash(&backup.join("data")),
+            title: None,
+
             origin_app_name: None,
             imported_at: None,
         };
@@ -1781,11 +1877,12 @@ mod tests {
         assert!(crate::cloud_backup::crypto::is_encrypted(Path::new(&archive)));
         let gog = root.join("gog");
         assert_eq!(
-            import_backup_into(&gog, "gog::3", &archive, None).unwrap_err(),
+            import_backup_into(&gog, "gog::3", &archive, None, None).unwrap_err(),
             "@t:backup.passwordRequired"
         );
-        assert!(import_backup_into(&gog, "gog::3", &archive, Some("wrong")).is_err());
-        let imported = import_backup_into(&gog, "gog::3", &archive, Some("secret")).unwrap();
+        assert!(import_backup_into(&gog, "gog::3", &archive, Some("wrong"), None).is_err());
+        let imported =
+            import_backup_into(&gog, "gog::3", &archive, Some("secret"), None).unwrap();
         assert_eq!(imported.app_name, "gog::3");
         let _ = std::fs::remove_dir_all(&root);
     }
@@ -1832,6 +1929,8 @@ mod tests {
             save_root: "Absolute".into(),
             save_rel: String::new(),
             content_hash: None,
+            title: None,
+
             origin_app_name: None,
             imported_at: None,
         };
@@ -2087,6 +2186,8 @@ mod tests {
             save_root: String::new(),
             save_rel: String::new(),
             content_hash: tree_content_hash(&data),
+            title: None,
+
             origin_app_name: None,
             imported_at: None,
         };

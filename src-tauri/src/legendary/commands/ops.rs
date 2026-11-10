@@ -241,9 +241,15 @@ pub async fn epic_import_backup(
     app_name: String,
     archive: String,
     password: Option<String>,
+    title: Option<String>,
 ) -> Result<crate::legendary::backup::SaveBackupInfo, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        crate::legendary::backup::import_backup(&app_name, &archive, password.as_deref())
+        crate::legendary::backup::import_backup(
+            &app_name,
+            &archive,
+            password.as_deref(),
+            title.as_deref(),
+        )
     })
     .await
     .map_err(|e| e.to_string())?

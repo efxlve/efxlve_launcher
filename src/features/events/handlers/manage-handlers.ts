@@ -373,6 +373,8 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
               placeholder: i18nT("profile.passwordPlaceholder"),
               confirm: i18nT("profile.export"),
               cancel: i18nT("common.cancel"),
+              confirmPlaceholder: i18nT("profile.passwordConfirmPlaceholder"),
+              mismatch: i18nT("profile.passwordMismatch"),
             });
             if (password === null) return;
             const title = summaryOf(id)?.title || S.activeManageSettings?.title || id;
@@ -417,7 +419,12 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
             password = entered;
           }
           try {
-            const b = await epicImportBackup(id, path, password);
+            const b = await epicImportBackup(
+              id,
+              path,
+              password,
+              summaryOf(id)?.title || S.activeManageSettings?.title,
+            );
             toast(i18nT("manage.imported", { date: b.formatted_date }), "ok");
             const cur = S.gameBackupsMap.get(id) || [];
             const next = [b, ...cur.filter((x) => x.id !== b.id)].sort(

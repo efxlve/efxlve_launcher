@@ -8,9 +8,10 @@ import { askPassword } from "../../core/password-dialog";
 import { scheduleRender } from "../../core/render";
 import { summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
-import { toast } from "../../core/toast";
+import { progressToast, toast } from "../../core/toast";
 import { fmtBytes } from "../../core/utils";
-import { t as i18nT, localizeMessage } from "../../i18n";import { customGamesPickFile } from "../../custom-games";
+import { t as i18nT, localizeMessage } from "../../i18n";
+import { customGamesPickFile } from "../../custom-games";
 import {
   cloudBackupExportMigration,
   cloudBackupImportMigration,
@@ -38,6 +39,8 @@ async function exportOne(key: string, backupId: string): Promise<void> {
     placeholder: i18nT("profile.passwordPlaceholder"),
     confirm: i18nT("profile.export"),
     cancel: i18nT("common.cancel"),
+    confirmPlaceholder: i18nT("profile.passwordConfirmPlaceholder"),
+    mismatch: i18nT("profile.passwordMismatch"),
   });
   if (password === null) return;
   const title = summaryOf(key)?.title || key;
@@ -69,7 +72,7 @@ async function importOne(key: string): Promise<void> {
     password = entered;
   }
   try {
-    const info = await epicImportBackup(key, path, password);
+    const info = await epicImportBackup(key, path, password, summaryOf(key)?.title);
     toast(i18nT("manage.imported", { date: info.formatted_date }), "ok");
     void hydrateBackupsPage(true);
   } catch (error) {
@@ -86,6 +89,8 @@ async function exportEverything(): Promise<void> {
     placeholder: i18nT("profile.passwordPlaceholder"),
     confirm: i18nT("backups.migrateExport"),
     cancel: i18nT("common.cancel"),
+    confirmPlaceholder: i18nT("profile.passwordConfirmPlaceholder"),
+    mismatch: i18nT("profile.passwordMismatch"),
   });
   if (password === null) return;
   const titles: Record<string, string> = {};
@@ -144,6 +149,15 @@ export function handleBackupsAction(act: string | undefined, t: HTMLElement, id?
       void hydrateBackupsPage(true);
       return true;
 
+    case "backups-filter": {
+      const filter = t.dataset.filter;
+      if (filter === "all" || filter === "backed" || filter === "missing" || filter === "stale") {
+        S.backupsFilter = filter;
+        scheduleRender();
+      }
+      return true;
+    }
+
     case "backups-bulk":
       void bulkLocalBackupAction().then(() => hydrateBackupsPage(true));
       return true;
@@ -175,6 +189,33 @@ export function handleBackupsAction(act: string | undefined, t: HTMLElement, id?
         })();
       }
       return true;
+
+    case "backups-verify": {
+      const backupId = t.dataset.bid;
+      if (!id || !backupId) return true;
+      void (async () => {
+        const checking = progressToast(i18nT("backups.verifying"));
+        try {
+          const preview = await epicPreviewBackup(id, backupId);
+          checking.close();
+          if (preview.damaged) {
+            toast(i18nT("backups.verifyDamaged"), "err");
+          } else {
+            toast(
+              i18nT("backups.verifyOk", {
+                count: preview.fileCount,
+                size: fmtBytes(preview.totalBytes),
+              }),
+              "ok",
+            );
+          }
+        } catch (error) {
+          checking.close();
+          toast(i18nT("backups.verifyFailed", { msg: localizeMessage(String(error)) }), "err");
+        }
+      })();
+      return true;
+    }
 
     case "backups-export": {
       const backupId = t.dataset.bid;

@@ -94,8 +94,16 @@ export function notifyLocalBackupSummary(
   failed: number,
   failedTitles: string[],
   titleKey = "cloud.localBackupTitle",
+  skipped = 0,
 ): void {
-  const summary = t("cloud.bulkDone", { total, failed });
+  const summary =
+    skipped > 0
+      ? t("cloud.localDailyDone", {
+          created: Math.max(0, total - skipped - failed),
+          skipped,
+          failed,
+        })
+      : t("cloud.bulkDone", { total, failed });
   const failures = failedList(failedTitles);
   push(
     failed > 0 ? "cloud-error" : "cloud",

@@ -49,6 +49,9 @@ Two layers share one format:
   - `data/` is a raw copy of the game's save folder.
   - The root is `<config>/backups` unless **Backup location** on the Cloud
     settings page points it somewhere else, such as another drive.
+  - A new copy is staged in a dot-prefixed folder and only renamed into place
+    after `backup_info.json` is written, so a crash cannot leave a half copy in
+    the list. Two backups that start in the same second get a `-1`, `-2` suffix.
   - `backup_info.json` stores id, app key, timestamp, size, file count, the
     original save path, the recognized logical root (`Documents`, `SavedGames`,
     `LocalAppData`, `RoamingAppData`, `Home`) and the path below that root.
@@ -199,8 +202,10 @@ the cheaper roots miss.
   that holds them. **Backup location** moves that root to another drive; an
   empty field restores `<config>/backups`.
 - **Daily local backup** creates one local backup per installed game at most
-  once a day while the launcher is open, even with no cloud provider. It shares
-  the progress row with the bulk actions.
+  once a day while the launcher is open, even with no cloud provider. A game
+  whose save tree already matches its newest local backup is skipped, so the
+  daily pass does not fill the disk with identical copies. It shares the
+  progress row with the bulk actions.
 - **Keep the last N versions** prunes older local backups and cloud archives
   after a successful backup. 0 (the default) keeps every backup; pre-restore
   snapshots are never pruned. A per-game value in Manage → Save wins over this
@@ -218,7 +223,8 @@ the cheaper roots miss.
   refreshes the list.
 - **Export save** — writes the selected local backup as a portable `.efxsave`
   file to a folder you pick. The file carries the save tree and its metadata.
-  A password is optional and encrypts the file with AES-256-GCM.
+  A password is optional and encrypts the file with AES-256-GCM; it is typed
+  twice, and a mismatch is refused before anything is written.
 - **Import save** — adds a `.efxsave` from any store to the open game. An
   encrypted file asks for its password. It shows up in the history and
   **Restore** applies it to this game's save folder, so a Steam save can
@@ -239,10 +245,14 @@ the cheaper roots miss.
 
 **Backups page**
 
-The **Backups** section at the bottom of the page lists every installed game with its newest local
-archive, a stale marker after seven days, and the include switch. Each row can
-back up, export or restore in place, and an imported archive that belongs to a
-game that is not installed stays listed under its game key.
+The **Backups** section at the bottom of the page lists every installed game
+with its newest local archive, a stale marker after seven days, and the include
+switch. Each row can back up, export or restore in place, and an imported
+archive that belongs to a game that is not installed stays listed under the
+title it was exported from. A search field and All / Backed up / Missing /
+Stale filters keep a large library manageable; the shield button re-hashes an
+archive against the SHA-256 recorded at backup time and reports a damaged copy
+before a restore would.
 
 **Export everything** writes a migration folder: the launcher profile plus every
 game's newest save. **Import from a folder** restores those saves and the

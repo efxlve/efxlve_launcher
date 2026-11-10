@@ -599,6 +599,8 @@ export const S = {
   /** Backups page data; null until the first load. */
   backupsPage: (null) as { list: SaveBackupInfo[]; excluded: Set<string> } | null,
   backupsPageLoading: false,
+  backupsQuery: "",
+  backupsFilter: ("all") as "all" | "backed" | "stale" | "missing",
   isBackingUp: false,
   cloudBackupSettings: (null) as CloudBackupSettings | null,
   cloudBackupTesting: false,

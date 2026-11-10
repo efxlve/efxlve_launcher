@@ -89,7 +89,11 @@ pub fn export_migration(
     }
     let mut saves = Vec::new();
     for (key, info) in latest {
-        let title = titles.get(&key).cloned().unwrap_or_else(|| key.clone());
+        let title = titles
+            .get(&key)
+            .cloned()
+            .or_else(|| info.title.clone())
+            .unwrap_or_else(|| key.clone());
         let archive =
             backup::export_backup(&key, &info.id, &target_text, &title, password.as_deref())?;
         saves.push(json!({
@@ -171,7 +175,8 @@ pub fn import_migration(
                 .ok_or_else(|| "@t:backup.notAMigrationFolder".to_string())?;
             let path = safe_join(&root, file)
                 .ok_or_else(|| "@t:backup.notAMigrationFolder".to_string())?;
-            backup::import_backup(key, &path.to_string_lossy(), password.as_deref())?;
+            let title = save.get("title").and_then(Value::as_str);
+            backup::import_backup(key, &path.to_string_lossy(), password.as_deref(), title)?;
             games += 1;
         }
     }

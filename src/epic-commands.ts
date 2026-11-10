@@ -636,6 +636,8 @@ export interface SaveBackupInfo {
   /** Path below the root, with forward slashes; empty for `Absolute`. */
   save_rel?: string;
   content_hash?: string | null;
+  /** A human title carried by an imported archive. */
+  title?: string | null;
   /** The game key this archive was imported from, when it came from another store. */
   origin_app_name?: string | null;
   /** UNIX seconds when the archive was imported. */
@@ -702,11 +704,17 @@ export const epicBackupArchiveEncrypted = (path: string) =>
   invoke<boolean>("epic_backup_archive_encrypted", { path });
 
 /** Adds a portable save archive from any store to the current game. */
-export const epicImportBackup = (appName: string, archive: string, password?: string) =>
+export const epicImportBackup = (
+  appName: string,
+  archive: string,
+  password?: string,
+  title?: string,
+) =>
   invoke<SaveBackupInfo>("epic_import_backup", {
     appName,
     archive,
     password: password ?? null,
+    title: title ?? null,
   });
 
 /** Creates a backup only when the save tree changed since the newest one. */

@@ -56,6 +56,8 @@ export function openCloudGuideModal(): void {
         ${block("download", "cloud.guideRestoreTitle", "cloud.guideRestoreDesc")}
         ${block("rocket", "cloud.guideMoveTitle", "cloud.guideMoveDesc")}
         ${block("search", "cloud.guideDetectTitle", "cloud.guideDetectDesc")}
+        ${block("alert-triangle", "cloud.guideTroubleTitle", "cloud.guideTroubleDesc")}
+        ${block("lock", "cloud.guidePasswordTitle", "cloud.guidePasswordDesc")}
         ${block("info", "cloud.guideNotSavedTitle", "cloud.guideNotSavedDesc")}
       </div>
 

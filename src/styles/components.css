@@ -350,6 +350,8 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
 /* Download finish countdown: the seconds are the one number worth enlarging. */
 .finish-dialog #finish-count { font-size: 18px; color: var(--text); }
 .password-dialog-input { width: 100%; margin-top: 4px; }
+.password-dialog-input + .password-dialog-input { margin-top: 8px; }
+.password-dialog-error { min-height: 15px; margin: 6px 0 0; color: var(--err); font-size: 11px; line-height: 1.4; }
 /* --- Report dialog: head, field, diagnostics row, report file and foot, so the
    modal frame reads as one sectioned sheet instead of a bare form. --- */
 .feedback-layer { z-index: 620; }

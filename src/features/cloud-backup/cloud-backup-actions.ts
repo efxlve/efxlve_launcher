@@ -37,6 +37,7 @@ import {
   cloudBackupRemoteHash,
   epicBackupExcluded,
   epicBackupSave,
+  epicBackupSaveIfChanged,
   epicGetLocalBackupRoot,
   epicSetLocalBackupDir,
   type CloudBackupSettings,
@@ -354,13 +355,17 @@ async function runScheduledLocalBackup(): Promise<void> {
   if (games.length === 0) return;
   S.cloudBulkProgress = { done: 0, total: games.length, failed: 0, local: true };
   scheduleRender();
+  let skipped = 0;
   let failed = 0;
   const failedTitles: string[] = [];
   for (const key of games) {
     try {
-      await epicBackupSave(key);
+      const info = await epicBackupSaveIfChanged(key);
+      if (!info) skipped += 1;
     } catch (error) {
-      if (!String(error).includes("backup.noSaveDir")) {
+      if (String(error).includes("backup.noSaveDir")) {
+        skipped += 1;
+      } else {
         failed += 1;
         failedTitles.push(cloudGameTitle(key));
       }
@@ -375,7 +380,7 @@ async function runScheduledLocalBackup(): Promise<void> {
   if (failed > 0) {
     console.warn(`scheduled local backup: ${failed} game(s) failed`);
   }
-  notifyLocalBackupSummary(games.length, failed, failedTitles);
+  notifyLocalBackupSummary(games.length, failed, failedTitles, "cloud.localBackupTitle", skipped);
 }
 
 export async function uploadGameCloudAction(appName: string, backupId?: string): Promise<void> {

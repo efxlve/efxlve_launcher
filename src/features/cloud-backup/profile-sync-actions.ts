@@ -85,6 +85,8 @@ export async function exportProfileAction(): Promise<void> {
     placeholder: t("profile.passwordPlaceholder"),
     confirm: t("profile.export"),
     cancel: t("common.cancel"),
+    confirmPlaceholder: t("profile.passwordConfirmPlaceholder"),
+    mismatch: t("profile.passwordMismatch"),
   });
   if (password === null) return;
   try {

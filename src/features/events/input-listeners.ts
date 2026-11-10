@@ -40,6 +40,7 @@ import {
   epicUninstallGame,
 } from "../../epic";
 import { updateBackupsIncluded } from "../backups/backups-handlers";
+import { applyBackupsDomFilter } from "../backups/backups-page";
 import { pushClipSettings } from "../screenshots/ss-settings";
 import {
   closeCollectionModal,
@@ -659,6 +660,11 @@ document.addEventListener("keydown", (event) => {
 
 document.addEventListener("input", (e) => {
   const t = e.target as HTMLElement;
+  if (t.id === "backups-search") {
+    S.backupsQuery = (t as HTMLInputElement).value;
+    applyBackupsDomFilter();
+    return;
+  }
   if (t.id === "tm-search") {
     applyTaskFilter((t as HTMLInputElement).value);
     return;

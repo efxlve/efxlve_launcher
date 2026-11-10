@@ -77,6 +77,41 @@ function latestByKey(list: SaveBackupInfo[]): Map<string, SaveBackupInfo> {
   return map;
 }
 
+function rowState(info: SaveBackupInfo | undefined): "backed" | "stale" | "missing" {
+  if (!info) return "missing";
+  return info.timestamp * 1000 < Date.now() - STALE_MS ? "stale" : "backed";
+}
+
+function matchesFilter(
+  query: string,
+  filter: string,
+  title: string,
+  key: string,
+  state: string,
+): boolean {
+  const needle = query.trim().toLowerCase();
+  if (needle && !`${title} ${key}`.toLowerCase().includes(needle)) return false;
+  return filter === "all" || filter === state;
+}
+
+/** Filters the already-rendered rows without rebuilding the page (keeps focus). */
+export function applyBackupsDomFilter(): void {
+  let visible = 0;
+  for (const row of document.querySelectorAll<HTMLElement>(".bk-row[data-state]")) {
+    const match = matchesFilter(
+      S.backupsQuery,
+      S.backupsFilter,
+      row.dataset.title ?? "",
+      row.dataset.key ?? "",
+      row.dataset.state ?? "",
+    );
+    row.hidden = !match;
+    if (match) visible += 1;
+  }
+  const empty = document.getElementById("backups-no-match");
+  if (empty) empty.hidden = visible > 0;
+}
+
 export function renderBackupsSection(): string {
   if (S.backupsPage === null) {
     void hydrateBackupsPage();
@@ -116,10 +151,12 @@ export function renderBackupsSection(): string {
     .map((key) => {
       const info = latest.get(key);
       const summary = summaryOf(key);
-      const title = summary?.title || key;
+      const title = info?.title || summary?.title || key;
       const isInstalled = installedSet.has(key);
       const isStale = info ? info.timestamp * 1000 < Date.now() - STALE_MS : false;
       const included = !excluded.has(key);
+      const state = rowState(info);
+      const matches = matchesFilter(S.backupsQuery, S.backupsFilter, title, key, state);
       const meta = info
         ? `${esc(fmtDay(info.timestamp))} · ${esc(fmtBytes(info.size_bytes))} · ${info.file_count} ${t("ach.files")}${
             info.origin_app_name
@@ -131,7 +168,7 @@ export function renderBackupsSection(): string {
         ? `<img src="${esc(summary.cover)}" alt="" loading="lazy" />`
         : icon("package", 18);
       return `
-        <div class="bk-row${isStale ? " stale" : ""}">
+        <div class="bk-row${isStale ? " stale" : ""}" data-title="${esc(title)}" data-key="${esc(key)}" data-state="${state}"${matches ? "" : " hidden"}>
           <div class="bk-cover">${cover}</div>
           <div class="bk-main">
             <div class="bk-title">
@@ -148,12 +185,31 @@ export function renderBackupsSection(): string {
                  <button type="button" class="btn ghost small" data-act="backups-create" data-id="${esc(key)}">${icon("cloud", 13)} ${esc(t("backups.backUp"))}</button>`
               : ""}
             ${info
-              ? `<button type="button" class="btn ghost small" data-act="backups-export" data-id="${esc(key)}" data-bid="${esc(info.id)}">${icon("download", 13)} ${esc(t("backups.export"))}</button>
+              ? `<button type="button" class="icon-btn" data-act="backups-verify" data-id="${esc(key)}" data-bid="${esc(info.id)}" title="${esc(t("backups.verify"))}">${icon("shield", 14)}</button>
+                 <button type="button" class="btn ghost small" data-act="backups-export" data-id="${esc(key)}" data-bid="${esc(info.id)}">${icon("download", 13)} ${esc(t("backups.export"))}</button>
                  <button type="button" class="btn primary small" data-act="backups-restore" data-id="${esc(key)}" data-bid="${esc(info.id)}" ${isInstalled ? "" : "disabled"}>${icon("upload", 13)} ${esc(t("ach.restore"))}</button>`
               : `<button type="button" class="btn ghost small" data-act="backups-import" data-id="${esc(key)}">${icon("upload", 13)} ${esc(t("manage.importSave"))}</button>`}
           </div>
         </div>`;
     })
+    .join("");
+
+  const visibleCount = keys.filter((key) => {
+    const info = latest.get(key);
+    const title = summaryOf(key)?.title || key;
+    return matchesFilter(S.backupsQuery, S.backupsFilter, title, key, rowState(info));
+  }).length;
+  const filters: Array<["all" | "backed" | "missing" | "stale", string]> = [
+    ["all", "backups.filterAll"],
+    ["backed", "backups.filterBacked"],
+    ["missing", "backups.filterMissing"],
+    ["stale", "backups.filterStale"],
+  ];
+  const filterButtons = filters
+    .map(
+      ([id, label]) =>
+        `<button type="button" class="bk-filter${S.backupsFilter === id ? " is-active" : ""}" data-act="backups-filter" data-filter="${id}" aria-pressed="${S.backupsFilter === id}">${t(label)}</button>`,
+    )
     .join("");
 
   return `
@@ -177,6 +233,13 @@ export function renderBackupsSection(): string {
         </div>
       </div>
 
-      <div class="bk-list">${rows || `<div class="bk-empty">${t("backups.empty")}</div>`}</div>
+      ${keys.length === 0
+        ? `<div class="bk-empty">${t("backups.empty")}</div>`
+        : `<div class="bk-toolbar">
+             <input id="backups-search" class="input bk-search" type="search" placeholder="${t("backups.searchPlaceholder")}" value="${esc(S.backupsQuery)}" aria-label="${t("backups.searchPlaceholder")}" />
+             <div class="bk-filters">${filterButtons}</div>
+           </div>
+           <div class="bk-list">${rows}</div>
+           <div class="bk-empty" id="backups-no-match"${visibleCount > 0 ? " hidden" : ""}>${t("backups.noMatch")}</div>`}
     </div>`;
 }
