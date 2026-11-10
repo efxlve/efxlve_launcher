@@ -101,6 +101,10 @@ also re-hashes the backup against the checksum recorded when it was created, so
 a damaged copy is refused instead of restored. Neither path can overwrite saves
 on a single stray click.
 
+A `pre-restore-*` snapshot is an undo point, not a save state. The Backups page,
+the migration export and the pre-launch comparison skip it when they ask for the
+newest backup; **Manage → Save** still lists it so the restore can be undone.
+
 ---
 
 ## 2. Providers

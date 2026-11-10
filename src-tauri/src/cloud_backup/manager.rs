@@ -17,9 +17,8 @@ use crate::cloud_backup::rclone;
 use crate::cloud_backup::secret_store;
 use crate::cloud_backup::webdav;
 use crate::legendary::backup::{
-    app_backup_dir, backup_key, create_backup, create_backup_if_changed, list_backups,
-    resolve_save_path, restore_backup,
-    tree_content_hash,
+    app_backup_dir, backup_key, create_backup, create_backup_if_changed, is_restore_snapshot,
+    list_backups, resolve_save_path, restore_backup, tree_content_hash,
 };
 use crate::legendary::skip::default_config_dir;
 
@@ -316,7 +315,11 @@ pub async fn upload_backup(
                 Ok(fresh) => fresh,
                 Err(err) => {
                     let existing = list_backups(app_name);
-                    if let Some(latest) = existing.into_iter().max_by_key(|b| b.timestamp) {
+                    if let Some(latest) = existing
+                        .into_iter()
+                        .filter(|backup| !is_restore_snapshot(&backup.id))
+                        .max_by_key(|b| b.timestamp)
+                    {
                         latest
                     } else {
                         return Err(err);

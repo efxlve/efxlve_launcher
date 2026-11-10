@@ -88,6 +88,7 @@ import {
   render,
 } from "../../core/render";
 import { S } from "../../core/state";
+import { invalidateBackupsPage } from "../../core/backup-utils";
 import { toast } from "../../core/toast";
 import { fmtBytes, fmtPlaytime, fmtSpeed } from "../../core/utils";
 import { updateMaxIcon } from "../../core/window";
@@ -100,7 +101,7 @@ import type { EaContentProgress, UbiDirectProgress, UbiDirectSummary, XboxInstal
 import { hydrateSteamAuth } from "../auth/steam-auth-actions";
 import { unwatchSteamAchievements, watchSteamAchievements } from "../../core/steam-watch";
 import { loadSavedAccounts } from "../auth/account-switcher";
-import { initCloudBackupSettings, scheduleLocalBackups } from "../cloud-backup/cloud-backup-actions";
+import { initCloudBackupSettings, scheduleLocalBackups, uploadGameCloudAction } from "../cloud-backup/cloud-backup-actions";
 import { scheduleProfileUploads } from "../cloud-backup/profile-sync-actions";
 import { initContextMenu } from "../context-menu/context-menu";
 import { initCollectionTabs, refreshLibraryResultsInPlace } from "../library/library-view";
@@ -1026,15 +1027,35 @@ export async function initApp(hooks: {
             : t("status.closed", { title }),
           "",
         );
-        // Opt-in: back up local saves when the game closes.
-        if (S.autoBackupOnExit && S.epicSummariesMap.get(id)?.installed) {
+        // Opt-in: back up local saves when the game closes. The Rust launch
+        // watcher owns auto-sync for Epic keys; other stores report their exit
+        // here, so the same local + cloud rule runs for them too.
+        const closedSummary = summaryOf(id);
+        const localAuto = S.autoBackupOnExit && closedSummary?.installed;
+        const cloudSettings = S.cloudBackupSettings;
+        const cloudAuto = Boolean(
+          cloudSettings?.enabled &&
+            cloudSettings.provider !== "none" &&
+            cloudSettings.autoSyncOnGameExit &&
+            closedSummary?.installed &&
+            id.includes("::"),
+        );
+        if (localAuto || cloudAuto) {
           void epicBackupSave(id)
-            .then(() => notifyLocalBackupDone(id))
+            .then((info) => {
+              invalidateBackupsPage();
+              if (S.view === "settings") render();
+              if (localAuto) notifyLocalBackupDone(id);
+              if (cloudAuto) void uploadGameCloudAction(id, info.id);
+            })
             .catch((err) => {
               const msg = String(err);
               // No recorded save folder is not a failed cloud sync.
-              if (msg.includes("backup.noSaveDir") || msg.includes("backup.saveDirMissing")) return;
-              notifyLocalBackupFailed(id, msg);
+              if (msg.includes("backup.noSaveDir") || msg.includes("backup.saveDirMissing")) {
+                return;
+              }
+              if (localAuto) notifyLocalBackupFailed(id, msg);
+              else notifyCloudUploadFailed(id, msg);
             });
         }
       }
@@ -1144,6 +1165,9 @@ export async function initApp(hooks: {
       // The transfer is over; the bar folds away and the row shows the result.
       S.cloudSyncProgress.delete(event.payload.id);
       updateManageSyncBar(event.payload.id);
+      // The automatic run also created a local backup; refresh a visible list.
+      invalidateBackupsPage();
+      if (S.view === "settings") render();
       if (event.payload.success) {
         // The automatic run reports its own time so "Last synced" moves without
         // the manual button; an older payload falls back to now.

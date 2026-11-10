@@ -78,13 +78,22 @@ pub fn export_migration(
     if !root.is_dir() {
         return Err("@t:backup.exportFolderMissing".to_string());
     }
-    let target = root.join(format!("efxlve-migration-{}", now_secs()));
+    let stamp = now_secs();
+    let mut target = root.join(format!("efxlve-migration-{stamp}"));
+    let mut serial = 1;
+    while target.exists() {
+        target = root.join(format!("efxlve-migration-{stamp}-{serial}"));
+        serial += 1;
+    }
     std::fs::create_dir_all(&target).map_err(|e| e.to_string())?;
     let target_text = target.to_string_lossy().to_string();
     let profile = profile_sync::export_to_file(app, &target_text, local_storage, password.clone())?;
 
     let mut latest: HashMap<String, backup::SaveBackupInfo> = HashMap::new();
     for info in backup::list_all_backups() {
+        if backup::is_restore_snapshot(&info.id) {
+            continue;
+        }
         latest.entry(info.app_name.clone()).or_insert(info);
     }
     let mut saves = Vec::new();

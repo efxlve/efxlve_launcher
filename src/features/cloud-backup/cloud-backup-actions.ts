@@ -10,6 +10,7 @@ import { scheduleRender } from "../../core/render";
 import { askConfirm } from "../../core/confirm-dialog";
 import { fmtCloudDate, updateManageCloudRowInPlace } from "./cloud-backup-view";
 import { askRestorePreview } from "./restore-preview-dialog";
+import { invalidateBackupsPage } from "../../core/backup-utils";
 import {
   cloudGameTitle,
   notifyBulkCloudBackupDone,
@@ -69,6 +70,8 @@ export async function initLocalBackupRoot(): Promise<void> {
 export async function saveLocalBackupDirAction(path: string): Promise<void> {
   try {
     S.localBackupRoot = await epicSetLocalBackupDir(path.trim());
+    // The list was read from the previous root; re-read it on the next paint.
+    invalidateBackupsPage();
     toast(t("cloud.localDirSaved"), "ok");
     scheduleRender();
   } catch (error) {
@@ -247,6 +250,7 @@ export async function bulkCloudBackupAction(): Promise<void> {
   }
   const total = games.length;
   S.cloudBulkProgress = null;
+  invalidateBackupsPage();
   scheduleRender();
   toast(t("cloud.bulkDone", { total, failed }), failed > 0 ? "err" : "ok");
   notifyBulkCloudBackupDone(total, failed, failedTitles);
@@ -279,6 +283,7 @@ export async function bulkLocalBackupAction(): Promise<void> {
     scheduleRender();
   }
   S.cloudBulkProgress = null;
+  invalidateBackupsPage();
   scheduleRender();
   toast(t("cloud.bulkDone", { total, failed }), failed > 0 ? "err" : "ok");
   notifyLocalBackupSummary(total, failed, failedTitles, "cloud.localNowTitle");
@@ -382,6 +387,7 @@ async function runScheduledLocalBackup(): Promise<void> {
   }
   S.cloudBulkProgress = null;
   await updateCloudBackupSettings({ lastLocalBackup: now });
+  invalidateBackupsPage();
   scheduleRender();
   if (failed > 0) {
     console.warn(`scheduled local backup: ${failed} game(s) failed`);
@@ -402,6 +408,7 @@ export async function uploadGameCloudAction(appName: string, backupId?: string):
     notifyCloudUploadDone(appName, unchanged);
     const existing = S.cloudBackupsMap.get(appName) || [];
     S.cloudBackupsMap.set(appName, [entry, ...existing.filter((e) => e.backupId !== entry.backupId)]);
+    invalidateBackupsPage();
     updateManageCloudRowInPlace(appName);
     scheduleRender();
   } catch (err) {

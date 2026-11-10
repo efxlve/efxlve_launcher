@@ -4,6 +4,7 @@
  */
 
 import { askConfirm } from "../../core/confirm-dialog";
+import { isRestoreSnapshotBackup } from "../../core/backup-utils";
 import { askPassword } from "../../core/password-dialog";
 import { scheduleRender } from "../../core/render";
 import { summaryOf } from "../../core/selectors";
@@ -168,7 +169,10 @@ export function handleBackupsAction(act: string | undefined, t: HTMLElement, id?
     case "backups-delete-all": {
       if (!id) return true;
       const count = Number(t.closest<HTMLElement>("[data-count]")?.dataset.count ?? "1") || 1;
-      const title = summaryOf(id)?.title || id;
+      const info = (S.backupsPage?.list ?? []).find(
+        (backup) => backup.app_name === id && !isRestoreSnapshotBackup(backup.id),
+      );
+      const title = info?.title || summaryOf(id)?.title || id;
       void (async () => {
         const proceed = await askConfirm({
           title: i18nT("backups.deleteAllTitle"),

@@ -25,6 +25,7 @@ import {
   updateVerifyProgressInPlace,
 } from "../../manage/manage-view";
 import { rememberCloudSync, renderBackupListHtml } from "../../drawer/drawer-widgets";
+import { invalidateBackupsPage } from "../../../core/backup-utils";
 import { repaintCloudWidget } from "../../drawer/drawer-view";
 import {
   browseMoveTarget,
@@ -319,6 +320,7 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
           .then((b) => {
             toast(i18nT("backup.created", { size: fmtBytes(b.size_bytes), count: b.file_count }), "ok");
             notifyLocalBackupDone(id);
+            invalidateBackupsPage();
             const cur = S.gameBackupsMap.get(id) || [];
             S.gameBackupsMap.set(id, [b, ...cur.filter((x) => x.id !== b.id)]);
             const listEl = document.getElementById("manage-backup-list");
@@ -340,6 +342,7 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
                   const b = await epicBackupSave(id, chosen);
                   toast(i18nT("backup.created", { size: fmtBytes(b.size_bytes), count: b.file_count }), "ok");
                   notifyLocalBackupDone(id);
+                  invalidateBackupsPage();
                   const cur = S.gameBackupsMap.get(id) || [];
                   S.gameBackupsMap.set(id, [b, ...cur.filter((x) => x.id !== b.id)]);
                   const listEl = document.getElementById("manage-backup-list");
@@ -428,6 +431,7 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
               summaryOf(id)?.title || S.activeManageSettings?.title,
             );
             toast(i18nT("manage.imported", { date: b.formatted_date }), "ok");
+            invalidateBackupsPage();
             const cur = S.gameBackupsMap.get(id) || [];
             const next = [b, ...cur.filter((x) => x.id !== b.id)].sort(
               (a, z) => z.timestamp - a.timestamp,
@@ -515,6 +519,7 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
             if (label === null) return;
             try {
               const info = await epicSetBackupLabel(id, bid, label || null, current?.pinned ?? false);
+              invalidateBackupsPage();
               const cur = S.gameBackupsMap.get(id) || [];
               S.gameBackupsMap.set(
                 id,
@@ -540,6 +545,7 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
             const next = !current.pinned;
             epicSetBackupLabel(id, bid, current.label ?? null, next)
               .then((info) => {
+                invalidateBackupsPage();
                 const cur = S.gameBackupsMap.get(id) || [];
                 S.gameBackupsMap.set(
                   id,
@@ -564,6 +570,7 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
           epicDeleteBackup(id, bid)
             .then(() => {
               toast(i18nT("backup.deleted"), "");
+              invalidateBackupsPage();
               const cur = S.gameBackupsMap.get(id) || [];
               S.gameBackupsMap.set(id, cur.filter((x) => x.id !== bid));
               const listEl = document.getElementById("manage-backup-list");

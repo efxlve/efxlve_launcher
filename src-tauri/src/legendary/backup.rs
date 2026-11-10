@@ -4,6 +4,7 @@
 
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
@@ -1282,13 +1283,19 @@ fn prune_local_dir(dir: &Path, keep: u32) {
             if name.starts_with('.') || name.starts_with("pre-restore-") {
                 return None;
             }
-            let pinned = std::fs::read_to_string(entry.path().join("backup_info.json"))
-                .ok()
-                .and_then(|text| serde_json::from_str::<SaveBackupInfo>(&text).ok())
-                .map(|info| info.pinned)
-                .unwrap_or(false);
-            if pinned {
-                return None;
+            let manifest = entry.path().join("backup_info.json");
+            if manifest.exists() {
+                // A manifest that cannot be read may belong to a pinned backup;
+                // leave it alone rather than risk deleting a kept copy.
+                let Ok(text) = std::fs::read_to_string(&manifest) else {
+                    return None;
+                };
+                let Ok(info) = serde_json::from_str::<SaveBackupInfo>(&text) else {
+                    return None;
+                };
+                if info.pinned {
+                    return None;
+                }
             }
             // `1750000000-1` is a same-second duplicate; its age is the prefix.
             let timestamp = name.split('-').next()?.parse::<u64>().ok()?;
@@ -1444,6 +1451,15 @@ fn now_secs() -> u64 {
         .unwrap_or(0)
 }
 
+/// Distinguishes temporary files created in the same second, so a second
+/// import or export cannot reuse another operation's staging path.
+static TEMP_SEQ: AtomicU64 = AtomicU64::new(0);
+
+fn temp_token() -> String {
+    let seq = TEMP_SEQ.fetch_add(1, Ordering::Relaxed);
+    format!("{}_{}", now_secs(), seq)
+}
+
 /// Host name of this machine, used to tell devices apart in the backup list.
 fn device_name() -> Option<String> {
     std::env::var("COMPUTERNAME")
@@ -1480,8 +1496,14 @@ fn set_backup_label_in(
     info.pinned = pinned;
     let json = serde_json::to_string_pretty(&info).map_err(|e| e.to_string())?;
     let temp = path.with_extension("json.tmp");
-    std::fs::write(&temp, json).map_err(|e| e.to_string())?;
-    std::fs::rename(&temp, &path).map_err(|e| e.to_string())?;
+    if let Err(error) = std::fs::write(&temp, json) {
+        let _ = std::fs::remove_file(&temp);
+        return Err(error.to_string());
+    }
+    if let Err(error) = std::fs::rename(&temp, &path) {
+        let _ = std::fs::remove_file(&temp);
+        return Err(error.to_string());
+    }
     Ok(info)
 }
 
@@ -1545,7 +1567,7 @@ fn export_backup_dir(
         let plain = std::env::temp_dir().join(format!(
             "efxlve_export_{}_{}.tar.gz",
             std::process::id(),
-            now_secs()
+            temp_token()
         ));
         let packed = crate::cloud_backup::archive::pack_backup_dir(source, &plain);
         let result = packed.and_then(|_| {
@@ -1588,7 +1610,7 @@ pub fn verify_archive(archive: &Path) -> Result<BackupVerifyResult, String> {
     let unpack = std::env::temp_dir().join(format!(
         "efxlve_backup_verify_{}_{}",
         std::process::id(),
-        now_secs()
+        temp_token()
     ));
     let _ = std::fs::remove_dir_all(&unpack);
     let unpacked = crate::cloud_backup::archive::unpack_backup_tar_gz(archive, &unpack);
@@ -1656,16 +1678,17 @@ fn import_backup_into(
         return Err("@t:backup.importTooLarge".to_string());
     }
     let stamp = now_secs();
+    let token = temp_token();
     let unpack = std::env::temp_dir().join(format!(
         "efxlve_backup_import_{}_{}",
         std::process::id(),
-        stamp
+        token
     ));
     let _ = std::fs::remove_dir_all(&unpack);
     let plain = std::env::temp_dir().join(format!(
         "efxlve_backup_plain_{}_{}.tar.gz",
         std::process::id(),
-        stamp
+        token
     ));
     let unpack_source = if crate::cloud_backup::crypto::is_encrypted(file) {
         let secret = password.map(str::trim).unwrap_or("");
@@ -1749,6 +1772,13 @@ fn import_backup_into(
     Ok(info)
 }
 
+/// True for the pre-restore safety snapshot a restore writes before it
+/// overwrites the save folder. It is an undo point, not a save state, so
+/// "newest backup" decisions skip it.
+pub fn is_restore_snapshot(id: &str) -> bool {
+    id.starts_with("pre-restore-")
+}
+
 /// Creates a backup only when the save tree differs from the newest one. The
 /// exit hook uses this so closing a game twice does not duplicate archives.
 pub fn create_backup_if_changed(app_name: &str) -> Result<Option<SaveBackupInfo>, String> {
@@ -1757,7 +1787,10 @@ pub fn create_backup_if_changed(app_name: &str) -> Result<Option<SaveBackupInfo>
     if !source.exists() {
         return Err(format!("@t:backup.saveDirMissing\u{1f}{save_path}"));
     }
-    if let Some(latest) = list_backups(app_name).into_iter().next() {
+    if let Some(latest) = list_backups(app_name)
+        .into_iter()
+        .find(|backup| !is_restore_snapshot(&backup.id))
+    {
         if let (Some(recorded), Some(actual)) =
             (latest.content_hash.as_deref(), tree_content_hash(&source))
         {
@@ -1901,6 +1934,13 @@ mod tests {
     use super::*;
 
     #[test]
+    fn restore_snapshot_ids_are_recognized() {
+        assert!(is_restore_snapshot("pre-restore-1700000000"));
+        assert!(!is_restore_snapshot("1700000000"));
+        assert!(!is_restore_snapshot("1700000000-1"));
+    }
+
+    #[test]
     fn retention_keeps_pinned_backups() {
         let root = std::env::temp_dir().join(format!(
             "efxlve_retention_pin_{}_{}",
@@ -1941,6 +1981,36 @@ mod tests {
         prune_local_dir(&root, 1);
         assert!(!root.join("1700000000").exists());
         assert!(root.join("1700000001").exists());
+        assert!(root.join("1700000002").exists());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn retention_keeps_a_backup_with_a_corrupt_manifest() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve_retention_corrupt_{}_{}",
+            std::process::id(),
+            now_secs()
+        ));
+        for (name, manifest) in [
+            ("1700000000", "{ not json"),
+            (
+                "1700000001",
+                r#"{"id":"1700000001","app_name":"steam::1","timestamp":1700000001,"formatted_date":"x","size_bytes":0,"file_count":0,"save_path":"C:/Saves"}"#,
+            ),
+            (
+                "1700000002",
+                r#"{"id":"1700000002","app_name":"steam::1","timestamp":1700000002,"formatted_date":"x","size_bytes":0,"file_count":0,"save_path":"C:/Saves"}"#,
+            ),
+        ] {
+            let dir = root.join(name);
+            std::fs::create_dir_all(&dir).unwrap();
+            std::fs::write(dir.join("backup_info.json"), manifest).unwrap();
+        }
+        prune_local_dir(&root, 1);
+        // The unreadable manifest is left alone; the older readable one goes.
+        assert!(root.join("1700000000").exists());
+        assert!(!root.join("1700000001").exists());
         assert!(root.join("1700000002").exists());
         let _ = std::fs::remove_dir_all(&root);
     }

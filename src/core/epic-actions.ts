@@ -27,6 +27,7 @@ import {
 } from "../epic";
 import { customGamesLaunch, customGamesStop } from "../custom-games";
 import { isTauri, IGNORED_UPDATES_KEY, CLOUD_PRELAUNCH_SKIP_KEY } from "./constants";
+import { isRestoreSnapshotBackup } from "./backup-utils";
 import { closeModal } from "./dom";
 import { closeManagePopup } from "../features/manage/manage-view";
 import { t, currentLanguage } from "../i18n";
@@ -164,7 +165,7 @@ async function offerNewerCloudSave(appName: string): Promise<boolean> {
     ]);
     const newestCloud = cloud?.[0];
     if (!newestCloud) return true;
-    const newestLocal = local?.[0];
+    const newestLocal = local?.find((backup) => !isRestoreSnapshotBackup(backup.id));
     if (newestLocal && newestLocal.timestamp >= newestCloud.timestamp) return true;
     // The user already chose "play anyway" for this exact archive.
     if (readPrelaunchSkips()[appName] === newestCloud.remoteId) return true;

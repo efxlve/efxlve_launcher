@@ -4,6 +4,7 @@
  */
 
 import { icon } from "../../core/icons";
+import { isRestoreSnapshotBackup } from "../../core/backup-utils";
 import { scheduleRender } from "../../core/render";
 import { summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -90,6 +91,7 @@ function fmtDay(timestamp: number): string {
 function latestByKey(list: SaveBackupInfo[]): Map<string, SaveBackupInfo> {
   const map = new Map<string, SaveBackupInfo>();
   for (const info of list) {
+    if (isRestoreSnapshotBackup(info.id)) continue;
     if (!map.has(info.app_name)) map.set(info.app_name, info);
   }
   return map;
@@ -144,7 +146,7 @@ export function renderBackupsSection(): string {
       <div class="bk-section-head">
         <div class="bk-sub">${t("backups.sub")}</div>
         <div class="bk-head-actions">
-          ${S.cloudBulkProgress
+          ${S.cloudBulkProgress?.local
             ? `<span class="bk-stat-num tabular-nums">${S.cloudBulkProgress.done}/${S.cloudBulkProgress.total}</span>`
             : `<button type="button" class="btn ghost small" data-act="backups-refresh">${icon("refresh", 13)} ${t("backups.refresh")}</button>
                <button type="button" class="btn ghost small" data-act="backups-bulk">${icon("package", 13)} ${t("backups.backUpAll")}</button>`}
@@ -218,7 +220,7 @@ export function renderBackupsSection(): string {
                    <span class="bk-auto-label">${t("backups.autoLabel")}</span>
                    <span class="switch"><input type="checkbox" data-act="backups-toggle-include" data-id="${esc(key)}" aria-label="${esc(t("manage.autoBackupTitle"))}" ${included ? "checked" : ""} /><span class="track"></span></span>
                  </label>
-                 <button type="button" class="btn ghost small" data-act="backups-create" data-id="${esc(key)}">${icon("cloud", 13)} ${esc(t("backups.backUp"))}</button>`
+                 <button type="button" class="btn ghost small" data-act="backups-create" data-id="${esc(key)}">${icon("package", 13)} ${esc(t("backups.backUp"))}</button>`
               : ""}
             ${info
               ? `<button type="button" class="btn ghost small icon-only" data-act="backups-verify" data-id="${esc(key)}" data-bid="${esc(info.id)}" title="${esc(t("backups.verify"))}" aria-label="${esc(t("backups.verify"))}">${icon("shield", 13)}</button>
@@ -233,7 +235,7 @@ export function renderBackupsSection(): string {
 
   const visibleCount = keys.filter((key) => {
     const info = latest.get(key);
-    const title = summaryOf(key)?.title || key;
+    const title = info?.title || summaryOf(key)?.title || key;
     return matchesFilter(S.backupsQuery, S.backupsFilter, title, key, rowState(info));
   }).length;
   const filterCounts: Record<string, number> = {

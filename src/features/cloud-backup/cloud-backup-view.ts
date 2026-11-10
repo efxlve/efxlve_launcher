@@ -4,6 +4,7 @@
  */
 
 import { icon } from "../../core/icons";
+import { isRestoreSnapshotBackup } from "../../core/backup-utils";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
 import { currentLanguage, t } from "../../i18n";
@@ -83,8 +84,10 @@ export function renderCloudBackupSettingsGroup(): string {
           : "WebDAV";
   const backupList = S.backupsPage?.list ?? [];
   const backupsKnown = S.backupsPage !== null;
-  const backedUpGames = new Set(backupList.map((info) => info.app_name)).size;
-  const lastLocal = backupList.reduce((max, info) => Math.max(max, info.timestamp), 0);
+  // Restore snapshots are undo points; they are not "what was last backed up".
+  const userBackups = backupList.filter((info) => !isRestoreSnapshotBackup(info.id));
+  const backedUpGames = new Set(userBackups.map((info) => info.app_name)).size;
+  const lastLocal = userBackups.reduce((max, info) => Math.max(max, info.timestamp), 0);
   const lastCloud = st.lastSyncTime ?? latestProfile?.timestamp ?? 0;
 
   let cloudDestTarget = "—";
