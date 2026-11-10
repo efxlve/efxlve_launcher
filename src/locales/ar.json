@@ -4165,5 +4165,5 @@
   "cloud.heroTestPassed": "تم اختبار الاتصال: {date}",
   "cloud.heroTestFailed": "فشل آخر اختبار: {date}",
   "cloud.heroNotTested": "لم يُختبر الاتصال بعد.",
-  "backups.autoLabel": "Auto"
+  "backups.autoLabel": "تلقائي"
 }

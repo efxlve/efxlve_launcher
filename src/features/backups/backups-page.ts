@@ -91,7 +91,11 @@ function matchesFilter(
 ): boolean {
   const needle = query.trim().toLowerCase();
   if (needle && !`${title} ${key}`.toLowerCase().includes(needle)) return false;
-  return filter === "all" || filter === state;
+  if (filter === "all") return true;
+  // A stale archive is still a backup: "Backed up" includes it, and the
+  // "Stale" filter narrows the same set further.
+  if (filter === "backed") return state !== "missing";
+  return filter === state;
 }
 
 /** Filters the already-rendered rows without rebuilding the page (keeps focus). */

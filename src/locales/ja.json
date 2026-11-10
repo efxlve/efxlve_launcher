@@ -4165,5 +4165,5 @@
   "cloud.heroTestPassed": "接続テスト成功: {date}",
   "cloud.heroTestFailed": "前回のテストに失敗: {date}",
   "cloud.heroNotTested": "接続はまだテストされていません。",
-  "backups.autoLabel": "Auto"
+  "backups.autoLabel": "自動"
 }

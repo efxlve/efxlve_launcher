@@ -4165,5 +4165,5 @@
   "cloud.heroTestPassed": "連線測試通過：{date}",
   "cloud.heroTestFailed": "上次測試失敗：{date}",
   "cloud.heroNotTested": "尚未測試連線。",
-  "backups.autoLabel": "Auto"
+  "backups.autoLabel": "自動"
 }

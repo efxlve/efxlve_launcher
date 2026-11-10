@@ -4165,5 +4165,5 @@
   "cloud.heroTestPassed": "Подключение проверено: {date}",
   "cloud.heroTestFailed": "Последняя проверка не удалась: {date}",
   "cloud.heroNotTested": "Подключение ещё не проверено.",
-  "backups.autoLabel": "Auto"
+  "backups.autoLabel": "Авто"
 }
