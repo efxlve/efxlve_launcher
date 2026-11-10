@@ -27,6 +27,14 @@ pub struct GameLocalSettings {
     pub custom_save_path: Option<String>,
     #[serde(default)]
     pub detected_save_path: Option<String>,
+    /// Local/cloud backups to keep for this game; 0 falls back to the shared
+    /// Cloud setting.
+    #[serde(default)]
+    pub backup_retention: u32,
+    /// Keeps the automatic exit backup, the daily run and the bulk button away
+    /// from this game; manual backups still work.
+    #[serde(default)]
+    pub backup_excluded: bool,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -43,6 +51,10 @@ pub struct GameCustomConfig {
     /// (Epic keeps its own copy in installed.json).
     #[serde(default)]
     pub launch_parameters: Option<String>,
+    #[serde(default)]
+    pub backup_retention: Option<u32>,
+    #[serde(default)]
+    pub backup_excluded: Option<bool>,
 }
 
 pub fn load_all_game_custom_configs() -> std::collections::HashMap<String, GameCustomConfig> {
@@ -151,6 +163,8 @@ pub fn epic_get_game_settings(app_name: String) -> Result<GameLocalSettings, Str
             let ip = entry.as_ref().map(|e| e.install_path.as_str());
             crate::legendary::backup::detect_save_path(&app_name, title, ip)
         },
+        backup_retention: cfg.and_then(|c| c.backup_retention).unwrap_or(0),
+        backup_excluded: cfg.and_then(|c| c.backup_excluded).unwrap_or(false),
     })
 }
 
@@ -186,6 +200,8 @@ pub fn epic_save_game_settings(settings: GameLocalSettings) -> Result<(), String
             env_vars: Some(settings.env_vars),
             custom_save_path: settings.custom_save_path,
             launch_parameters: Some(settings.launch_parameters.trim().to_string()),
+            backup_retention: Some(settings.backup_retention),
+            backup_excluded: Some(settings.backup_excluded),
         },
     );
     save_all_game_custom_configs(&cfgs);
@@ -205,6 +221,16 @@ pub fn epic_set_custom_save_path(
         .filter(|s| !s.is_empty());
     save_all_game_custom_configs(&cfgs);
     Ok(())
+}
+
+/// Game keys the automatic and bulk save backups skip.
+#[tauri::command]
+pub fn epic_backup_excluded() -> Vec<String> {
+    load_all_game_custom_configs()
+        .into_iter()
+        .filter(|(_, cfg)| cfg.backup_excluded.unwrap_or(false))
+        .map(|(key, _)| key)
+        .collect()
 }
 
 /// Progress pushed to the UI while a cloud sync runs.

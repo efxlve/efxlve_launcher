@@ -259,5 +259,7 @@ pub fn nile_game_settings(app: AppHandle, id: String) -> Result<GameLocalSetting
         save_path: None,
         custom_save_path: cfg.and_then(|c| c.custom_save_path.clone()),
         detected_save_path,
+        backup_retention: cfg.and_then(|c| c.backup_retention).unwrap_or(0),
+        backup_excluded: cfg.and_then(|c| c.backup_excluded).unwrap_or(false),
     })
 }

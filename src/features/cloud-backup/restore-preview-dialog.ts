@@ -23,6 +23,21 @@ export interface RestorePreviewView {
   sameContent?: boolean;
   /** True when the local backup failed its checksum verification. */
   damaged?: boolean;
+  /** The game key the archive was imported from, when it came from another store. */
+  originAppName?: string | null;
+  /** UNIX seconds when the archive was imported. */
+  importedAt?: number | null;
+}
+
+/** A short store label for an imported archive's origin key. */
+function storeLabel(key: string): string {
+  if (key.startsWith("gog::")) return "GOG";
+  if (key.startsWith("steam::")) return "Steam";
+  if (key.startsWith("amazon::")) return "Amazon Games";
+  if (key.startsWith("ubisoft::")) return "Ubisoft";
+  if (key.startsWith("ea::")) return "EA";
+  if (key.startsWith("custom::")) return "Custom";
+  return "Epic";
 }
 
 let pending: ((answer: boolean) => void) | null = null;
@@ -74,6 +89,7 @@ export function askRestorePreview(preview: RestorePreviewView): Promise<boolean>
           }),
         )}</p>
         <div class="restore-preview-target">${icon("folder", 13)}<span>${esc(preview.savePath || t("cloud.previewTargetUnknown"))}</span></div>
+        ${preview.originAppName ? `<div class="restore-preview-target">${icon("upload", 13)}<span>${esc(t("cloud.previewImported", { store: storeLabel(preview.originAppName) }))}</span></div>` : ""}
         <div class="restore-preview-files-head">${esc(t("cloud.previewFiles"))}<span class="count tabular-nums">${preview.fileCount}</span></div>
         <ul class="restore-preview-files">${rows || `<li><span>${esc(t("cloud.previewEmpty"))}</span></li>`}</ul>
         ${hidden > 0 ? `<div class="restore-preview-more">${esc(t("cloud.previewMore", { n: String(hidden) }))}</div>` : ""}

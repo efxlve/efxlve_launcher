@@ -6,6 +6,7 @@ pub mod crypto;
 pub mod folder;
 pub mod gdrive;
 pub mod manager;
+pub mod migration;
 pub mod models;
 pub mod profile_sync;
 pub mod rclone;

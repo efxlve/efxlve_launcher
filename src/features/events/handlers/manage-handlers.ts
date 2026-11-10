@@ -40,6 +40,7 @@ import {
   saveEditedPlaytime,
 } from "../../playtime/playtime-view";
 import {
+  epicBackupArchiveEncrypted,
   epicBackupSave,
   epicCreateDesktopShortcut,
   epicDeleteBackup,
@@ -58,6 +59,7 @@ import {
   requiresThirdPartyLauncher,
 } from "../../../epic";
 import { askRestorePreview } from "../../cloud-backup/restore-preview-dialog";
+import { askPassword } from "../../../core/password-dialog";
 import { customGamesPickFile } from "../../../custom-games";
 import {
   notifyLocalBackupDone,
@@ -365,9 +367,23 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
           void (async () => {
             const folder = await epicSelectFolderDialog(null, i18nT("manage.exportPickFolder")).catch(() => null);
             if (!folder) return;
+            const password = await askPassword({
+              title: i18nT("manage.exportPasswordTitle"),
+              body: i18nT("manage.exportPasswordBody"),
+              placeholder: i18nT("profile.passwordPlaceholder"),
+              confirm: i18nT("profile.export"),
+              cancel: i18nT("common.cancel"),
+            });
+            if (password === null) return;
             const title = summaryOf(id)?.title || S.activeManageSettings?.title || id;
             try {
-              const path = await epicExportBackup(id, bid, folder, title);
+              const path = await epicExportBackup(
+                id,
+                bid,
+                folder,
+                title,
+                password.trim() || undefined,
+              );
               toast(i18nT("manage.exported", { path }), "ok");
               void epicOpenFolderPath(folder).catch(() => undefined);
             } catch (err) {
@@ -383,8 +399,25 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
         void (async () => {
           const path = await customGamesPickFile(undefined, i18nT("manage.importPickFile")).catch(() => null);
           if (!path) return;
+          let password: string | undefined;
+          const encrypted = await epicBackupArchiveEncrypted(path).catch(() => false);
+          if (encrypted) {
+            const entered = await askPassword({
+              title: i18nT("manage.importPasswordTitle"),
+              body: i18nT("manage.importPasswordBody"),
+              placeholder: i18nT("profile.passwordPlaceholder"),
+              confirm: i18nT("manage.importSave"),
+              cancel: i18nT("common.cancel"),
+            });
+            if (entered === null) return;
+            if (!entered.trim()) {
+              toast(i18nT("backup.passwordRequired"), "err");
+              return;
+            }
+            password = entered;
+          }
           try {
-            const b = await epicImportBackup(id, path);
+            const b = await epicImportBackup(id, path, password);
             toast(i18nT("manage.imported", { date: b.formatted_date }), "ok");
             const cur = S.gameBackupsMap.get(id) || [];
             const next = [b, ...cur.filter((x) => x.id !== b.id)].sort(
@@ -397,6 +430,19 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
             toast(i18nT("manage.importFailed", { msg: localizeMessage(String(err)) }), "err");
           }
         })();
+      }
+      return true;
+
+    case "manage-save-retention":
+      if (id && S.activeManageSettings) {
+        const input = document.getElementById("manage-backup-retention") as HTMLInputElement | null;
+        const raw = Number(input?.value ?? 0);
+        S.activeManageSettings.backupRetention = Number.isFinite(raw)
+          ? Math.min(100, Math.max(0, Math.floor(raw)))
+          : 0;
+        epicSaveGameSettings(S.activeManageSettings)
+          .then(() => toast(i18nT("manage.retentionSaved"), "ok"))
+          .catch((err) => toast(String(err), "err"));
       }
       return true;
 

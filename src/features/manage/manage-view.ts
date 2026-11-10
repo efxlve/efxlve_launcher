@@ -646,6 +646,8 @@ function ensureAmazonManageSettings(s: EpicSummary): GameLocalSettings {
     version: s.installedVersion || s.version || "1.0",
     wrapper: "",
     envVars: {},
+    backupRetention: 0,
+    backupExcluded: false,
   };
   S.activeManageSettings = seeded;
   const id = s.appName.slice(8);
@@ -724,7 +726,10 @@ function amazonManageBody(s: EpicSummary): string {
           `<div id="manage-backup-list" class="backup-list">${renderBackupListHtml(s.appName)}</div>`,
         )}
         ${row(t("manage.autoBackupTitle"), t("manage.autoBackupDesc"),
-          toggle("manage-toggle-auto-backup", !S.backupExcluded.has(s.appName)))}
+          toggle("manage-toggle-auto-backup", !st.backupExcluded))}
+        ${row(t("manage.backupRetentionTitle"), t("manage.backupRetentionDesc"),
+          `<input id="manage-backup-retention" type="number" min="0" max="100" class="input" style="width:80px" value="${Number(st.backupRetention ?? 0)}" />
+           <button class="btn ghost small" data-act="manage-save-retention" data-id="${s.appName}">${t("common.save")}</button>`)}
         <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(s.appName)}</div>
       `)
     : "";
@@ -912,6 +917,8 @@ export function renderDrawerManage(s: EpicSummary): string {
       version: s.installedVersion || s.version || "1.0",
       wrapper: "",
       envVars: {},
+      backupRetention: 0,
+      backupExcluded: false,
     };
     epicGetGameSettings(s.appName).then((st) => {
       if (S.activeManageSettings?.appName === s.appName) {
@@ -981,7 +988,10 @@ export function renderDrawerManage(s: EpicSummary): string {
                <button class="btn primary small" data-act="manage-create-backup" data-id="${id}" ${S.isBackingUp ? "disabled" : ""}>${S.isBackingUp ? t("manage.backingUp") : t("manage.backup")}</button>`,
               `<div id="manage-backup-list" class="backup-list">${renderBackupListHtml(id)}</div>`)}
             ${row(t("manage.autoBackupTitle"), t("manage.autoBackupDesc"),
-              toggle("manage-toggle-auto-backup", !S.backupExcluded.has(id)))}
+              toggle("manage-toggle-auto-backup", !st.backupExcluded))}
+            ${row(t("manage.backupRetentionTitle"), t("manage.backupRetentionDesc"),
+              `<input id="manage-backup-retention" type="number" min="0" max="100" class="input" style="width:80px" value="${Number(st.backupRetention ?? 0)}" />
+               <button class="btn ghost small" data-act="manage-save-retention" data-id="${id}">${t("common.save")}</button>`)}
             <div id="manage-cloud-container" class="manage-cloud-container">${renderManageCloudBackupRow(id)}</div>`}
       `) : ""}
 

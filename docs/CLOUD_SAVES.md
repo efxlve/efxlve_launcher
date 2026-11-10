@@ -145,6 +145,10 @@ Google Drive notes:
    `companion/ubi_direct/saves.rs` (see below).
 5. Heuristic detection from the game title and install folder.
 
+Steam titles are resolved from `userdata/<account>/<appid>/remote` first: the
+newest non-empty account folder wins, so a save the Steam client wrote is found
+before a title guess.
+
 Ubisoft titles do not follow the Epic layout. The resolver checks, in order:
 the direct install's `<install>\Saves` folder written by the compatibility shim,
 the official client's `savegames\<account>\<uplay_id>` (then `<product_id>`)
@@ -184,8 +188,10 @@ the cheaper roots miss.
 - Google Drive: Client ID/secret, Save, Test, Connect with Google.
 - rclone: remote path (`remote:folder`), Test, Save; rclone itself is installed
   and configured by the user.
-- Auto-sync on game exit is a separate switch. With Folder selected it works
-  with no account setup.
+- Auto-sync on game exit is a separate switch. It backs up the changed save
+  locally, and uploads it when a provider is configured; it works with no
+  account setup. The per-game **Include in automatic backups** switch opts a
+  game out of the exit backup, the daily run and both bulk buttons.
 - **Local backups** is the first group on the page. **Back up all games
   locally** walks every installed Epic, GOG, Amazon and custom game and writes
   a local archive with no provider configured; **Open backup folder** opens the
@@ -196,7 +202,8 @@ the cheaper roots miss.
   the progress row with the bulk actions.
 - **Keep the last N versions** prunes older local backups and cloud archives
   after a successful backup. 0 (the default) keeps every backup; pre-restore
-  snapshots are never pruned.
+  snapshots are never pruned. A per-game value in Manage → Save wins over this
+  shared number.
 - **Back up all installed games** walks every installed Epic, GOG, Amazon and
   custom game, creates a local backup and uploads it. The row shows progress
   while it runs and reports the failure count at the end; games without a save
@@ -210,11 +217,17 @@ the cheaper roots miss.
   refreshes the list.
 - **Export save** — writes the selected local backup as a portable `.efxsave`
   file to a folder you pick. The file carries the save tree and its metadata.
-- **Import save** — adds a `.efxsave` from any store to the open game. It shows
-  up in the history and **Restore** applies it to this game's save folder, so a
-  Steam save can continue in the GOG install of the same title.
-- **Include in automatic backups** — a per-game switch; when it is off, the
-  daily run and both bulk buttons skip the game while manual backups still work.
+  A password is optional and encrypts the file with AES-256-GCM.
+- **Import save** — adds a `.efxsave` from any store to the open game. An
+  encrypted file asks for its password. It shows up in the history and
+  **Restore** applies it to this game's save folder, so a Steam save can
+  continue in the GOG install of the same title. The preview names the store the
+  archive came from.
+- **Include in automatic backups** — a per-game switch; when it is off, the exit
+  backup, the daily run and both bulk buttons skip the game while manual backups
+  still work.
+- **Keep the last versions** — a per-game number for local and cloud archives;
+  0 uses the shared Cloud setting.
 - **Restore** — downloads the selected archive and snapshots current saves
   first. When the newest local backup is newer than the selected cloud archive,
   a confirmation explains which is newer before overwriting anything. Both sides
@@ -222,6 +235,18 @@ the cheaper roots miss.
   timestamps differ.
 - **History** — timestamp, size and file count; newest first.
 - **Delete / Delete all** — removes remote archives for that game.
+
+**Backups page**
+
+The sidebar **Backups** entry lists every installed game with its newest local
+archive, a stale marker after seven days, and the include switch. Each row can
+back up, export or restore in place, and an imported archive that belongs to a
+game that is not installed stays listed under its game key.
+
+**Export everything** writes a migration folder: the launcher profile plus every
+game's newest save. **Import from a folder** restores those saves and the
+profile on the new PC, then restarts the launcher. The same optional password
+protects both the profile and the saves.
 
 Cloud links from the Manage drawer and the Cloud settings card now open the
 **Cloud** settings section instead of Integrations.

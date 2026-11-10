@@ -213,12 +213,25 @@ pub async fn epic_export_backup(
     backup_id: String,
     folder: String,
     title: String,
+    password: Option<String>,
 ) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        crate::legendary::backup::export_backup(&app_name, &backup_id, &folder, &title)
+        crate::legendary::backup::export_backup(
+            &app_name,
+            &backup_id,
+            &folder,
+            &title,
+            password.as_deref(),
+        )
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+/// True when a `.efxsave` file is password-protected.
+#[tauri::command]
+pub fn epic_backup_archive_encrypted(path: String) -> bool {
+    crate::cloud_backup::crypto::is_encrypted(std::path::Path::new(path.trim()))
 }
 
 /// Adds a portable save archive to the current game, whichever store it came
@@ -227,12 +240,31 @@ pub async fn epic_export_backup(
 pub async fn epic_import_backup(
     app_name: String,
     archive: String,
+    password: Option<String>,
 ) -> Result<crate::legendary::backup::SaveBackupInfo, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        crate::legendary::backup::import_backup(&app_name, &archive)
+        crate::legendary::backup::import_backup(&app_name, &archive, password.as_deref())
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+/// Creates a backup only when the save tree changed since the newest one.
+#[tauri::command]
+pub async fn epic_backup_save_if_changed(
+    app_name: String,
+) -> Result<Option<crate::legendary::backup::SaveBackupInfo>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::legendary::backup::create_backup_if_changed(&app_name)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Every local backup across every game, newest first.
+#[tauri::command]
+pub fn epic_list_all_backups() -> Vec<crate::legendary::backup::SaveBackupInfo> {
+    crate::legendary::backup::list_all_backups()
 }
 
 /// Describes a local backup before a restore overwrites the save folder. The

@@ -67,7 +67,7 @@ function applyProfileLocalStorage(values: Record<string, string>): void {
   }
 }
 
-async function finishRestore(result: ProfileRestoreResult): Promise<void> {
+export async function finishProfileRestore(result: ProfileRestoreResult): Promise<void> {
   applyProfileLocalStorage(result.localStorage);
   toast(t("profile.done"), "ok");
   // The backend files are on disk; a relaunch reloads every store and theme.
@@ -129,7 +129,7 @@ export async function importProfileAction(): Promise<void> {
   if (!proceed) return;
   try {
     const result = await profileImport(path, password);
-    await finishRestore(result);
+    await finishProfileRestore(result);
   } catch (error) {
     toast(String(error), "err");
   }
@@ -227,7 +227,7 @@ export async function restoreProfileFromCloudAction(): Promise<void> {
   if (!proceed) return;
   try {
     const result = await profileCloudRestore(latest.remoteId, latest.backupId);
-    await finishRestore(result);
+    await finishProfileRestore(result);
     // After applyProfileLocalStorage: the restored profile may carry its own
     // notification history, and this row must survive that copy.
     notifyProfileRestoreDone();

@@ -17,7 +17,8 @@ use crate::cloud_backup::rclone;
 use crate::cloud_backup::secret_store;
 use crate::cloud_backup::webdav;
 use crate::legendary::backup::{
-    app_backup_dir, backup_key, create_backup, list_backups, resolve_save_path, restore_backup,
+    app_backup_dir, backup_key, create_backup, create_backup_if_changed, list_backups,
+    resolve_save_path, restore_backup,
     tree_content_hash,
 };
 use crate::legendary::skip::default_config_dir;
@@ -489,9 +490,14 @@ pub async fn upload_backup(
     let _ = save_settings(&settings);
 
     // Retention is best effort: a failed prune must not turn a successful
-    // upload into an error, and the newest archive is always kept.
-    if settings.retention_count > 0 {
-        prune_remote_backups(app_name, settings.retention_count).await;
+    // upload into an error, and the newest archive is always kept. A per-game
+    // limit wins over the shared Cloud setting.
+    let per_game = crate::legendary::commands::load_all_game_custom_configs()
+        .get(app_name)
+        .and_then(|cfg| cfg.backup_retention);
+    let keep = per_game.unwrap_or(settings.retention_count);
+    if keep > 0 {
+        prune_remote_backups(app_name, keep).await;
     }
 
     Ok(entry)
@@ -1036,17 +1042,22 @@ pub async fn download_cloud_archive(remote_id: &str, backup_id: &str) -> Result<
     Ok(dest)
 }
 
-/// Hook called automatically when a game process exits.
-/// If cloud backup is enabled with auto_sync_on_game_exit = true,
-/// this creates a local backup and uploads it silently in the background.
+/// Hook called automatically when a game process exits. A changed save tree is
+/// backed up locally; when a provider is configured the same archive is
+/// uploaded. The per-game "include in automatic backups" switch opts out.
 pub fn trigger_auto_sync_on_exit(app: AppHandle, app_name: String) {
     let settings = load_settings();
-    if !settings.enabled
-        || !settings.auto_sync_on_game_exit
-        || settings.provider == CloudBackupProvider::None
-    {
+    if !settings.auto_sync_on_game_exit {
         return;
     }
+    let excluded = crate::legendary::commands::load_all_game_custom_configs()
+        .get(&app_name)
+        .and_then(|cfg| cfg.backup_excluded)
+        .unwrap_or(false);
+    if excluded {
+        return;
+    }
+    let upload = settings.enabled && settings.provider != CloudBackupProvider::None;
 
     tauri::async_runtime::spawn(async move {
         let _queue = auto_sync_queue().lock().await;
@@ -1054,23 +1065,42 @@ pub fn trigger_auto_sync_on_exit(app: AppHandle, app_name: String) {
         // UI: `cloud-sync-complete` is the channel the frontend already listens to.
         let local_res = tauri::async_runtime::spawn_blocking({
             let name = app_name.clone();
-            move || create_backup(&name, None)
+            move || create_backup_if_changed(&name)
         })
         .await;
 
         match local_res {
-            Ok(Ok(info)) => match upload_backup(&app_name, Some(&info.id)).await {
-                Ok(_) => {
-                    let _ = app.emit(
-                        "cloud-sync-complete",
-                        serde_json::json!({
-                            "id": app_name,
-                            "success": true,
-                            "message": ""
-                        }),
-                    );
+            Ok(Ok(Some(info))) => {
+                if !upload {
+                    return;
                 }
-                Err(err) => {
+                match upload_backup(&app_name, Some(&info.id)).await {
+                    Ok(_) => {
+                        let _ = app.emit(
+                            "cloud-sync-complete",
+                            serde_json::json!({
+                                "id": app_name,
+                                "success": true,
+                                "message": ""
+                            }),
+                        );
+                    }
+                    Err(err) => {
+                        let _ = app.emit(
+                            "cloud-sync-complete",
+                            serde_json::json!({
+                                "id": app_name,
+                                "success": false,
+                                "message": err
+                            }),
+                        );
+                    }
+                }
+            }
+            // An unchanged save tree needs neither a new local copy nor an upload.
+            Ok(Ok(None)) => {}
+            Ok(Err(err)) => {
+                if upload {
                     let _ = app.emit(
                         "cloud-sync-complete",
                         serde_json::json!({
@@ -1080,16 +1110,6 @@ pub fn trigger_auto_sync_on_exit(app: AppHandle, app_name: String) {
                         }),
                     );
                 }
-            },
-            Ok(Err(err)) => {
-                let _ = app.emit(
-                    "cloud-sync-complete",
-                    serde_json::json!({
-                        "id": app_name,
-                        "success": false,
-                        "message": err
-                    }),
-                );
             }
             Err(_) => {}
         }

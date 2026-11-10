@@ -52,7 +52,9 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `cloud_backup_delete_remote` | `cloudBackupDeleteRemote({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_disconnect_gdrive` | `cloudBackupDisconnectGdrive({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_download_game` | `cloudBackupDownloadGame({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
+| `cloud_backup_export_migration` | `cloudBackupExportMigration({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_get_settings` | `cloudBackupGetSettings({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
+| `cloud_backup_import_migration` | `cloudBackupImportMigration({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_list_game` | `cloudBackupListGame({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_open_folder` | `cloudBackupOpenFolder({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
 | `cloud_backup_preview_game` | `cloudBackupPreviewGame({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |
@@ -161,7 +163,10 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `eos_overlay_status` | `eosOverlayStatus({ ... })` | `src-tauri/src/eos.rs` |
 | `epic_add_screenshot_root` | `epicAddScreenshotRoot({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_anticheat_status` | `epicAnticheatStatus({ ... })` | `src-tauri/src/steam/awacy.rs` |
+| `epic_backup_archive_encrypted` | `epicBackupArchiveEncrypted({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
+| `epic_backup_excluded` | `epicBackupExcluded({ ... })` | `src-tauri/src/legendary/commands/game_local.rs` |
 | `epic_backup_save` | `epicBackupSave({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
+| `epic_backup_save_if_changed` | `epicBackupSaveIfChanged({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_cached_critic_scores` | `epicCachedCriticScores({ ... })` | `src-tauri/src/legendary/commands/metadata.rs` |
 | `epic_cached_library` | `epicCachedLibrary({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_cancel_download` | `epicCancelDownload({ ... })` | `src-tauri/src/legendary/transfers/queue.rs` |
@@ -215,6 +220,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_install_with_options` | `epicInstallWithOptions({ ... })` | `src-tauri/src/legendary/transfers/queue.rs` |
 | `epic_launch_game` | `epicLaunchGame({ ... })` | `src-tauri/src/legendary/transfers/launch.rs` |
 | `epic_launch_support` | `epicLaunchSupport({ ... })` | `src-tauri/src/legendary/transfers/launch.rs` |
+| `epic_list_all_backups` | `epicListAllBackups({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_list_backups` | `epicListBackups({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_list_games` | `epicListGames({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_list_installed` | `epicListInstalled({ ... })` | `src-tauri/src/legendary/commands/session.rs` |

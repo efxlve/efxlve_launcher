@@ -8,7 +8,7 @@ import { clearOverlayBlock, overlayBlockedGames, setOverlayAntiCheatOverride } f
  */
 
 import { applyWinbarAppIcon } from "../../core/app-icon";
-import { APP_ICON_KEY, BACKUP_EXCLUDED_KEY, CUSTOM_APP_ICON_KEY, AUTO_UPDATE_TIME_KEY, CASE_STORE_COLORS_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY, LIB_PAGE_SIZE_KEY, STARTUP_TAB_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeDownloadFinishAction, normalizeLibraryPageSize } from "../../core/constants";
+import { APP_ICON_KEY, CUSTOM_APP_ICON_KEY, AUTO_UPDATE_TIME_KEY, CASE_STORE_COLORS_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY, LIB_PAGE_SIZE_KEY, STARTUP_TAB_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeDownloadFinishAction, normalizeLibraryPageSize } from "../../core/constants";
 import { setCoverSize, setListDensity } from "../library/library-options";
 import { syncCaseCustomStoreColors } from "../library/case-colors";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
@@ -32,12 +32,14 @@ import { esc } from "../../core/utils";
 import { t as i18nT } from "../../i18n";
 import {
   clipSetOptions,
+  epicGetGameSettings,
   epicInstallGame,
   epicSaveGameSettings,
   epicSetScreenshotHotkey,
   epicSetSteamGridKey,
   epicUninstallGame,
 } from "../../epic";
+import { updateBackupsIncluded } from "../backups/backups-handlers";
 import { pushClipSettings } from "../screenshots/ss-settings";
 import {
   closeCollectionModal,
@@ -1067,14 +1069,27 @@ document.addEventListener("change", (e) => {
     epicSaveGameSettings(S.activeManageSettings)
       .then(() => toast(i18nT(S.activeManageSettings?.cloudSavesEnabled ? "manage.cloudOn" : "manage.cloudOff"), ""))
       .catch((err) => toast(String(err), "err"));
-  } else if (act === "manage-toggle-auto-backup") {
-    const key = S.activeManageSettings?.appName;
+  } else if (act === "manage-toggle-auto-backup" && S.activeManageSettings) {
+    S.activeManageSettings.backupExcluded = !(t as HTMLInputElement).checked;
+    epicSaveGameSettings(S.activeManageSettings)
+      .then(() => toast(i18nT(!S.activeManageSettings?.backupExcluded ? "manage.autoBackupOn" : "manage.autoBackupOff"), ""))
+      .catch((err) => toast(String(err), "err"));
+  } else if (act === "backups-toggle-include") {
+    const key = t.dataset.id;
     if (key) {
-      const enabled = (t as HTMLInputElement).checked;
-      if (enabled) S.backupExcluded.delete(key);
-      else S.backupExcluded.add(key);
-      localStorage.setItem(BACKUP_EXCLUDED_KEY, JSON.stringify([...S.backupExcluded]));
-      toast(i18nT(enabled ? "manage.autoBackupOn" : "manage.autoBackupOff"), "");
+      const included = (t as HTMLInputElement).checked;
+      void (async () => {
+        try {
+          const settings = await epicGetGameSettings(key);
+          settings.backupExcluded = !included;
+          await epicSaveGameSettings(settings);
+          updateBackupsIncluded(key, included);
+          toast(i18nT(included ? "manage.autoBackupOn" : "manage.autoBackupOff"), "");
+        } catch (error) {
+          toast(String(error), "err");
+          render();
+        }
+      })();
     }
   } else if (act === "install-toggle-autoupdate") {
     S.installDialogAutoUpdate = (t as HTMLInputElement).checked;

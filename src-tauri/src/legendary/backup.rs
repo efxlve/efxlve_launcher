@@ -29,6 +29,13 @@ pub struct SaveBackupInfo {
     /// backups have no value and fall back to the timestamp conflict check.
     #[serde(default)]
     pub content_hash: Option<String>,
+    /// The game key this archive was exported from, when it was imported from
+    /// another store or PC. `None` for a backup made on this game.
+    #[serde(default)]
+    pub origin_app_name: Option<String>,
+    /// UNIX seconds when the archive was imported; `None` for a local backup.
+    #[serde(default)]
+    pub imported_at: Option<u64>,
 }
 
 /// File under the legendary config dir that stores a user-chosen local backup
@@ -423,6 +430,7 @@ pub struct BackupPreviewFile {
 
 /// What the user sees before a local backup overwrites the save folder.
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BackupPreview {
     pub app_name: String,
     pub backup_id: String,
@@ -444,6 +452,11 @@ pub struct BackupPreview {
     /// True when the save folder already matches the backup byte for byte.
     pub same_content: bool,
     pub target_exists: bool,
+    /// The game key this archive was exported from, when it was imported from
+    /// another store or PC.
+    pub origin_app_name: Option<String>,
+    /// UNIX seconds when the archive was imported; `None` for a local backup.
+    pub imported_at: Option<u64>,
 }
 
 /// A backup id is one folder name: `1750000000` or `pre-restore-…`. Anything
@@ -567,6 +580,8 @@ fn preview_from_backup_dir(
         damaged,
         same_content,
         target_exists,
+        origin_app_name: info.origin_app_name,
+        imported_at: info.imported_at,
     })
 }
 
@@ -615,6 +630,8 @@ fn snapshot_before_restore(app_name: &str, save_path: &Path) -> Result<Option<St
         save_root,
         save_rel,
         content_hash,
+        origin_app_name: None,
+        imported_at: None,
     };
     let info_json = serde_json::to_string_pretty(&info).map_err(|error| error.to_string())?;
     std::fs::write(target.join("backup_info.json"), info_json).map_err(|error| error.to_string())?;
@@ -853,11 +870,67 @@ fn has_save_like_files(dir: &Path) -> bool {
 /// LocalAppData, LocalLow, Roaming). Linux/macOS search the XDG data/config
 /// homes, Documents, Unity's `unity3d` tree and the Wine/Proton prefixes the
 /// launcher creates.
+/// Steam keeps per-account saves under `userdata/<account>/<appid>`. The
+/// folder is shared by every PC, so it is a stronger signal than a title match.
+/// Returns the newest non-empty `remote` folder across accounts.
+fn steam_userdata_save(app_name: &str) -> Option<PathBuf> {
+    let app_id = app_name.strip_prefix("steam::")?;
+    if app_id.is_empty() || !app_id.bytes().all(|b| b.is_ascii_digit()) {
+        return None;
+    }
+    let root = crate::steam::steam_install_path()?;
+    let accounts = std::fs::read_dir(root.join("userdata")).ok()?;
+    let mut best: Option<(u64, PathBuf)> = None;
+    for account in accounts.flatten() {
+        if !account.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+            continue;
+        }
+        let base = account.path().join(app_id);
+        for candidate in [base.join("remote"), base] {
+            if !candidate.is_dir() {
+                continue;
+            }
+            let Ok(files) = std::fs::read_dir(&candidate) else {
+                continue;
+            };
+            let mut newest = 0u64;
+            let mut has_file = false;
+            for file in files.flatten() {
+                let Ok(meta) = file.metadata() else {
+                    continue;
+                };
+                if !meta.is_file() {
+                    continue;
+                }
+                has_file = true;
+                let stamp = meta
+                    .modified()
+                    .ok()
+                    .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+                    .map(|d| d.as_secs())
+                    .unwrap_or(0);
+                newest = newest.max(stamp);
+            }
+            if !has_file {
+                continue;
+            }
+            if best.as_ref().map(|(stamp, _)| newest > *stamp).unwrap_or(true) {
+                best = Some((newest, candidate));
+            }
+            break;
+        }
+    }
+    best.map(|(_, path)| path)
+}
+
 pub fn detect_save_path(
     app_name: &str,
     title: Option<&str>,
     install_path: Option<&str>,
 ) -> Option<String> {
+    if let Some(path) = steam_userdata_save(app_name) {
+        return Some(path.to_string_lossy().to_string());
+    }
     // 0. Fast-path known save locations for popular titles
     if let Ok(user_profile) = std::env::var("USERPROFILE") {
         let base = Path::new(&user_profile);
@@ -1283,13 +1356,19 @@ pub fn create_backup(
         save_root,
         save_rel,
         content_hash,
+        origin_app_name: None,
+        imported_at: None,
     };
 
     let info_json = serde_json::to_string_pretty(&info).map_err(|e| e.to_string())?;
     let _ = std::fs::write(target.join("backup_info.json"), info_json);
 
-    // Local retention shares the cloud setting; snapshots stay untouched.
-    let keep = crate::cloud_backup::manager::load_settings().retention_count;
+    // A per-game limit wins over the shared cloud setting; snapshots stay
+    // untouched either way.
+    let per_game = crate::legendary::commands::load_all_game_custom_configs()
+        .get(app_name)
+        .and_then(|cfg| cfg.backup_retention);
+    let keep = per_game.unwrap_or_else(|| crate::cloud_backup::manager::load_settings().retention_count);
     prune_local_dir(&app_backup_dir(app_name), keep);
 
     Ok(info)
@@ -1311,12 +1390,18 @@ pub fn export_backup(
     backup_id: &str,
     folder: &str,
     title: &str,
+    password: Option<&str>,
 ) -> Result<String, String> {
     let id = safe_backup_id(backup_id)?;
-    export_backup_dir(&app_backup_dir(app_name).join(id), folder, title)
+    export_backup_dir(&app_backup_dir(app_name).join(id), folder, title, password)
 }
 
-fn export_backup_dir(source: &Path, folder: &str, title: &str) -> Result<String, String> {
+fn export_backup_dir(
+    source: &Path,
+    folder: &str,
+    title: &str,
+    password: Option<&str>,
+) -> Result<String, String> {
     if !source.is_dir() {
         return Err("@t:backup.infoNotFound".to_string());
     }
@@ -1343,7 +1428,20 @@ fn export_backup_dir(source: &Path, folder: &str, title: &str) -> Result<String,
     let trimmed = if trimmed.is_empty() { "save" } else { trimmed };
     let stem: String = trimmed.chars().take(80).collect();
     let target = folder.join(format!("{stem} {timestamp}.efxsave"));
-    crate::cloud_backup::archive::pack_backup_dir(source, &target)?;
+    let secret = password.map(str::trim).filter(|value| !value.is_empty());
+    let Some(secret) = secret else {
+        crate::cloud_backup::archive::pack_backup_dir(source, &target)?;
+        return Ok(target.display().to_string());
+    };
+    let plain = std::env::temp_dir().join(format!(
+        "efxlve_export_{}_{}.tar.gz",
+        std::process::id(),
+        now_secs()
+    ));
+    let packed = crate::cloud_backup::archive::pack_backup_dir(source, &plain);
+    let result = packed.and_then(|_| crate::cloud_backup::crypto::encrypt_file(&plain, &target, secret));
+    let _ = std::fs::remove_file(&plain);
+    result?;
     Ok(target.display().to_string())
 }
 
@@ -1353,14 +1451,19 @@ const MAX_IMPORT_BYTES: u64 = 16 * 1024 * 1024 * 1024;
 /// Adds a portable save archive to the current game, whichever store it came
 /// from. The archive keeps its original timestamp so the list shows when the
 /// save was made; restoring it uses the current game's resolved folder.
-pub fn import_backup(app_name: &str, archive: &str) -> Result<SaveBackupInfo, String> {
-    import_backup_into(&app_backup_dir(app_name), app_name, archive)
+pub fn import_backup(
+    app_name: &str,
+    archive: &str,
+    password: Option<&str>,
+) -> Result<SaveBackupInfo, String> {
+    import_backup_into(&app_backup_dir(app_name), app_name, archive, password)
 }
 
 fn import_backup_into(
     game_dir: &Path,
     app_name: &str,
     archive: &str,
+    password: Option<&str>,
 ) -> Result<SaveBackupInfo, String> {
     let file = Path::new(archive.trim());
     let size = std::fs::metadata(file)
@@ -1376,7 +1479,23 @@ fn import_backup_into(
         stamp
     ));
     let _ = std::fs::remove_dir_all(&unpack);
-    let unpacked = crate::cloud_backup::archive::unpack_backup_tar_gz(file, &unpack);
+    let plain = std::env::temp_dir().join(format!(
+        "efxlve_backup_plain_{}_{}.tar.gz",
+        std::process::id(),
+        stamp
+    ));
+    let unpack_source = if crate::cloud_backup::crypto::is_encrypted(file) {
+        let secret = password.map(str::trim).unwrap_or("");
+        if secret.is_empty() {
+            return Err("@t:backup.passwordRequired".to_string());
+        }
+        crate::cloud_backup::crypto::decrypt_file(file, &plain, secret)?;
+        plain.as_path()
+    } else {
+        file
+    };
+    let unpacked = crate::cloud_backup::archive::unpack_backup_tar_gz(unpack_source, &unpack);
+    let _ = std::fs::remove_file(&plain);
     if let Err(error) = unpacked {
         let _ = std::fs::remove_dir_all(&unpack);
         return Err(error);
@@ -1415,6 +1534,10 @@ fn import_backup_into(
         }
     };
     info.id = id;
+    if info.origin_app_name.is_none() {
+        info.origin_app_name = Some(info.app_name.clone());
+    }
+    info.imported_at = Some(stamp);
     info.app_name = app_name.to_string();
     info.size_bytes = size_bytes;
     info.file_count = file_count;
@@ -1422,6 +1545,56 @@ fn import_backup_into(
     std::fs::write(target.join("backup_info.json"), info_json).map_err(|e| e.to_string())?;
     let _ = std::fs::remove_dir_all(&unpack);
     Ok(info)
+}
+
+/// Creates a backup only when the save tree differs from the newest one. The
+/// exit hook uses this so closing a game twice does not duplicate archives.
+pub fn create_backup_if_changed(app_name: &str) -> Result<Option<SaveBackupInfo>, String> {
+    let save_path = resolve_save_path(app_name, None)?;
+    let source = PathBuf::from(&save_path);
+    if !source.exists() {
+        return Err(format!("@t:backup.saveDirMissing\u{1f}{save_path}"));
+    }
+    if let Some(latest) = list_backups(app_name).into_iter().next() {
+        if let (Some(recorded), Some(actual)) =
+            (latest.content_hash.as_deref(), tree_content_hash(&source))
+        {
+            if recorded == actual {
+                return Ok(None);
+            }
+        }
+    }
+    create_backup(app_name, None).map(Some)
+}
+
+/// Every local backup, newest first, across every game and store.
+pub fn list_all_backups() -> Vec<SaveBackupInfo> {
+    let root = backups_base_dir();
+    let mut list = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(&root) {
+        for entry in entries.flatten() {
+            if !entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                continue;
+            }
+            let Ok(backups) = std::fs::read_dir(entry.path()) else {
+                continue;
+            };
+            for backup in backups.flatten() {
+                if !backup.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                    continue;
+                }
+                if let Ok(content) =
+                    std::fs::read_to_string(backup.path().join("backup_info.json"))
+                {
+                    if let Ok(info) = serde_json::from_str::<SaveBackupInfo>(&content) {
+                        list.push(info);
+                    }
+                }
+            }
+        }
+    }
+    list.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+    list
 }
 
 pub fn list_backups(app_name: &str) -> Vec<SaveBackupInfo> {
@@ -1538,6 +1711,8 @@ mod tests {
             save_root: "Documents".to_string(),
             save_rel: "Game".to_string(),
             content_hash: Some(hash),
+            origin_app_name: None,
+            imported_at: None,
         };
         std::fs::write(
             backup.join("backup_info.json"),
@@ -1548,17 +1723,70 @@ mod tests {
         let out = root.join("out");
         std::fs::create_dir_all(&out).unwrap();
         let archive =
-            export_backup_dir(&backup, out.to_str().unwrap(), "Life is Strange").unwrap();
+            export_backup_dir(&backup, out.to_str().unwrap(), "Life is Strange", None).unwrap();
         assert!(Path::new(&archive).is_file());
 
         let gog = root.join("gog");
-        let imported = import_backup_into(&gog, "gog::2", &archive).unwrap();
+        let imported = import_backup_into(&gog, "gog::2", &archive, None).unwrap();
         assert_eq!(imported.app_name, "gog::2");
+        assert_eq!(imported.origin_app_name.as_deref(), Some("steam::1"));
+        assert!(imported.imported_at.is_some());
         assert_eq!(imported.timestamp, 1_700_000_000);
         assert_eq!(
             std::fs::read(gog.join(&imported.id).join("data").join("save.dat")).unwrap(),
             b"progress"
         );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn an_encrypted_save_needs_its_password() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve_export_encrypted_{}_{}",
+            std::process::id(),
+            now_secs()
+        ));
+        let backup = root.join("steam").join("1700000000");
+        std::fs::create_dir_all(backup.join("data")).unwrap();
+        std::fs::write(backup.join("data").join("save.dat"), b"progress").unwrap();
+        let info = SaveBackupInfo {
+            id: "1700000000".to_string(),
+            app_name: "steam::1".to_string(),
+            timestamp: 1_700_000_000,
+            formatted_date: "x".to_string(),
+            size_bytes: 8,
+            file_count: 1,
+            save_path: "C:/Users/x/Documents/Game".to_string(),
+            save_root: "Documents".to_string(),
+            save_rel: "Game".to_string(),
+            content_hash: tree_content_hash(&backup.join("data")),
+            origin_app_name: None,
+            imported_at: None,
+        };
+        std::fs::write(
+            backup.join("backup_info.json"),
+            serde_json::to_string(&info).unwrap(),
+        )
+        .unwrap();
+
+        let out = root.join("out");
+        std::fs::create_dir_all(&out).unwrap();
+        let archive = export_backup_dir(
+            &backup,
+            out.to_str().unwrap(),
+            "Life is Strange",
+            Some("secret"),
+        )
+        .unwrap();
+        assert!(crate::cloud_backup::crypto::is_encrypted(Path::new(&archive)));
+        let gog = root.join("gog");
+        assert_eq!(
+            import_backup_into(&gog, "gog::3", &archive, None).unwrap_err(),
+            "@t:backup.passwordRequired"
+        );
+        assert!(import_backup_into(&gog, "gog::3", &archive, Some("wrong")).is_err());
+        let imported = import_backup_into(&gog, "gog::3", &archive, Some("secret")).unwrap();
+        assert_eq!(imported.app_name, "gog::3");
         let _ = std::fs::remove_dir_all(&root);
     }
 
@@ -1604,6 +1832,8 @@ mod tests {
             save_root: "Absolute".into(),
             save_rel: String::new(),
             content_hash: None,
+            origin_app_name: None,
+            imported_at: None,
         };
 
         let json = serde_json::to_string(&info).unwrap();
@@ -1857,6 +2087,8 @@ mod tests {
             save_root: String::new(),
             save_rel: String::new(),
             content_hash: tree_content_hash(&data),
+            origin_app_name: None,
+            imported_at: None,
         };
         std::fs::write(
             backup.join("backup_info.json"),

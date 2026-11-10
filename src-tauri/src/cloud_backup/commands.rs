@@ -201,3 +201,39 @@ pub fn cloud_backup_open_folder() -> Result<(), String> {
     std::fs::create_dir_all(&root).map_err(|error| format!("Folder is not writable: {error}"))?;
     crate::open_in_file_manager(&root)
 }
+
+/// Writes a migration folder with the profile and every game's newest save.
+#[command]
+pub async fn cloud_backup_export_migration(
+    app: AppHandle,
+    folder: String,
+    local_storage: serde_json::Value,
+    password: Option<String>,
+    titles: std::collections::HashMap<String, String>,
+) -> Result<crate::cloud_backup::migration::MigrationExport, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::cloud_backup::migration::export_migration(
+            &app,
+            &folder,
+            &local_storage,
+            password,
+            titles,
+        )
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Restores a migration folder: every save first, then the launcher profile.
+#[command]
+pub async fn cloud_backup_import_migration(
+    app: AppHandle,
+    folder: String,
+    password: Option<String>,
+) -> Result<crate::cloud_backup::migration::MigrationImport, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::cloud_backup::migration::import_migration(&app, &folder, password)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}

@@ -35,6 +35,7 @@ import {
   cloudBackupCancelRestore,
   cloudBackupDeleteRemote,
   cloudBackupRemoteHash,
+  epicBackupExcluded,
   epicBackupSave,
   epicGetLocalBackupRoot,
   epicSetLocalBackupDir,
@@ -191,14 +192,14 @@ export async function disconnectGoogleDriveAction(): Promise<void> {
 }
 
 /** Installed games the launcher owns save backups for, one key per game. */
-function managedInstalledGames(skipExcluded = true): string[] {
+function managedInstalledGames(excluded: ReadonlySet<string> = new Set()): string[] {
   const seen = new Set<string>();
   const keys: string[] = [];
   for (const item of S.allGamesMap.values()) {
     if (!item.installed) continue;
     if (!["epic", "gog", "amazon", "custom"].includes(item.source)) continue;
     const key = item.source === "epic" ? item.id : item.key;
-    if (skipExcluded && S.backupExcluded.has(key)) continue;
+    if (excluded.has(key)) continue;
     if (seen.has(key)) continue;
     seen.add(key);
     keys.push(key);
@@ -209,7 +210,7 @@ function managedInstalledGames(skipExcluded = true): string[] {
 /** Backs up every installed game from the stores the launcher manages. */
 export async function bulkCloudBackupAction(): Promise<void> {
   if (S.cloudBulkProgress) return;
-  const games = managedInstalledGames();
+  const games = managedInstalledGames(new Set(await epicBackupExcluded()));
   if (games.length === 0) {
     toast(t("cloud.bulkNone"), "");
     return;
@@ -239,7 +240,7 @@ export async function bulkCloudBackupAction(): Promise<void> {
 /** Backs up every installed game to this PC, with no cloud provider involved. */
 export async function bulkLocalBackupAction(): Promise<void> {
   if (S.cloudBulkProgress) return;
-  const games = managedInstalledGames();
+  const games = managedInstalledGames(new Set(await epicBackupExcluded()));
   if (games.length === 0) {
     toast(t("cloud.bulkNone"), "");
     return;
@@ -269,7 +270,7 @@ export async function bulkLocalBackupAction(): Promise<void> {
 /** Restores the newest cloud backup of every installed managed game. */
 export async function bulkCloudRestoreAction(): Promise<void> {
   if (S.cloudBulkProgress) return;
-  const games = managedInstalledGames(false);
+  const games = managedInstalledGames();
   if (games.length === 0) {
     toast(t("cloud.bulkNone"), "");
     return;
@@ -339,7 +340,7 @@ async function runScheduledLocalBackup(): Promise<void> {
   if (!st?.localBackupDaily || S.cloudBulkProgress) return;
   const now = Math.floor(Date.now() / 1000);
   if (st.lastLocalBackup && now - st.lastLocalBackup < 24 * 60 * 60) return;
-  const games = managedInstalledGames();
+  const games = managedInstalledGames(new Set(await epicBackupExcluded()));
   if (games.length === 0) return;
   S.cloudBulkProgress = { done: 0, total: games.length, failed: 0, local: true };
   scheduleRender();

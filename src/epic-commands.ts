@@ -369,6 +369,10 @@ export interface GameLocalSettings {
   savePath?: string | null;
   customSavePath?: string | null;
   detectedSavePath?: string | null;
+  /** Local/cloud backups to keep for this game; 0 uses the shared Cloud setting. */
+  backupRetention: number;
+  /** The automatic exit backup and bulk buttons skip this game. */
+  backupExcluded: boolean;
 }
 
 export interface VerifyProgressEvent {
@@ -632,6 +636,10 @@ export interface SaveBackupInfo {
   /** Path below the root, with forward slashes; empty for `Absolute`. */
   save_rel?: string;
   content_hash?: string | null;
+  /** The game key this archive was imported from, when it came from another store. */
+  origin_app_name?: string | null;
+  /** UNIX seconds when the archive was imported. */
+  imported_at?: number | null;
 }
 
 export interface BackupPreviewFile {
@@ -658,6 +666,10 @@ export interface BackupPreview {
   damaged: boolean;
   sameContent: boolean;
   targetExists: boolean;
+  /** The game key this archive was imported from, when it came from another store. */
+  originAppName?: string | null;
+  /** UNIX seconds when the archive was imported. */
+  importedAt?: number | null;
 }
 
 export const epicBackupSave = (appName: string, savePathOverride?: string) =>
@@ -675,12 +687,38 @@ export const epicExportBackup = (
   backupId: string,
   folder: string,
   title: string,
+  password?: string,
 ) =>
-  invoke<string>("epic_export_backup", { appName, backupId, folder, title });
+  invoke<string>("epic_export_backup", {
+    appName,
+    backupId,
+    folder,
+    title,
+    password: password ?? null,
+  });
+
+/** True when a `.efxsave` file is password-protected. */
+export const epicBackupArchiveEncrypted = (path: string) =>
+  invoke<boolean>("epic_backup_archive_encrypted", { path });
 
 /** Adds a portable save archive from any store to the current game. */
-export const epicImportBackup = (appName: string, archive: string) =>
-  invoke<SaveBackupInfo>("epic_import_backup", { appName, archive });
+export const epicImportBackup = (appName: string, archive: string, password?: string) =>
+  invoke<SaveBackupInfo>("epic_import_backup", {
+    appName,
+    archive,
+    password: password ?? null,
+  });
+
+/** Creates a backup only when the save tree changed since the newest one. */
+export const epicBackupSaveIfChanged = (appName: string) =>
+  invoke<SaveBackupInfo | null>("epic_backup_save_if_changed", { appName });
+
+/** Every local backup across every game, newest first. */
+export const epicListAllBackups = () =>
+  invoke<SaveBackupInfo[]>("epic_list_all_backups");
+
+/** Game keys the automatic and bulk save backups skip. */
+export const epicBackupExcluded = () => invoke<string[]>("epic_backup_excluded");
 
 export const epicPreviewBackup = (appName: string, backupId: string) =>
   invoke<BackupPreview>("epic_preview_backup", { appName, backupId });
@@ -1213,6 +1251,38 @@ export const cloudBackupRemoteHash = (remoteId: string, backupId: string) =>
   invoke<string | null>("cloud_backup_remote_hash", { remoteId, backupId });
 
 export const cloudBackupRcloneRemotes = () => invoke<string[]>("cloud_backup_rclone_remotes");
+
+/** One folder with the launcher profile and every game's newest save. */
+export interface MigrationExport {
+  folder: string;
+  games: number;
+  profile: string;
+}
+
+export interface MigrationImport {
+  games: number;
+  profileRestored: boolean;
+  localStorage: Record<string, string>;
+}
+
+export const cloudBackupExportMigration = (
+  folder: string,
+  localStorage: Record<string, string>,
+  password?: string,
+  titles?: Record<string, string>,
+) =>
+  invoke<MigrationExport>("cloud_backup_export_migration", {
+    folder,
+    localStorage,
+    password: password ?? null,
+    titles: titles ?? {},
+  });
+
+export const cloudBackupImportMigration = (folder: string, password?: string) =>
+  invoke<MigrationImport>("cloud_backup_import_migration", {
+    folder,
+    password: password ?? null,
+  });
 
 export const cloudBackupTestConnection = (settings: CloudBackupSettings) =>
   invoke<string>("cloud_backup_test_connection", { settings });

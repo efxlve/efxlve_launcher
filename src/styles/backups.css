@@ -1,0 +1,204 @@
+/* Backups page: one row per game, latest archive and the actions that touch it. */
+
+.bk-page {
+  padding: 22px 28px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.bk-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bk-head h2 {
+  font-size: 20px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.bk-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.5;
+}
+
+.bk-head-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bk-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.bk-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.bk-stat-num {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.bk-stat.warn .bk-stat-num {
+  color: #e0a33a;
+}
+
+.bk-migrate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+
+.bk-migrate-main {
+  min-width: 0;
+}
+
+.bk-migrate-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.bk-migrate-desc {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-3);
+  line-height: 1.45;
+}
+
+.bk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bk-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+
+.bk-row.stale {
+  border-color: rgba(224, 163, 58, 0.42);
+}
+
+.bk-cover {
+  flex: none;
+  width: 38px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-3);
+}
+
+.bk-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bk-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.bk-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.bk-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bk-store {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 10px;
+  color: var(--text-3);
+}
+
+.bk-stale {
+  color: #e0a33a;
+  font-size: 10px;
+}
+
+.bk-meta {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.bk-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.bk-empty {
+  padding: 34px 16px;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+@media (max-width: 980px) {
+  .bk-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .bk-row {
+    flex-wrap: wrap;
+  }
+  .bk-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

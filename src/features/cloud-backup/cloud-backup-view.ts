@@ -217,7 +217,7 @@ export function renderCloudBackupSettingsGroup(): string {
       </div>
     </div>`;
 
-  const autoSyncRow = isEnabled ? `
+  const autoSyncRow = `
     <div class="row settings-row">
       <div class="row-main">
         <div class="settings-row-title">${t("cloud.autoSyncTitle")}</div>
@@ -226,7 +226,7 @@ export function renderCloudBackupSettingsGroup(): string {
       <div class="settings-row-control">
         <label class="switch"><input type="checkbox" data-act="toggle-cloud-auto-sync" ${st.autoSyncOnGameExit ? "checked" : ""} /><span class="track"></span></label>
       </div>
-    </div>` : "";
+    </div>`;
 
   const retentionRow = `
     <div class="row settings-row">

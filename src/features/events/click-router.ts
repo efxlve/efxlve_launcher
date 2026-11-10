@@ -163,6 +163,7 @@ import { closeAvatarModal, closeChangeNameModal, openAvatarFilePicker, openChang
 // Feature action handlers
 import { handleAuthAction } from "./handlers/auth-handlers";
 import { handleCloudBackupAction } from "./handlers/cloud-backup-handlers";
+import { handleBackupsAction } from "../backups/backups-handlers";
 import { handleCollectionAction } from "./handlers/collection-handlers";
 import { handleCoverAction } from "./handlers/cover-handlers";
 import { handleEglRemovalAction } from "./handlers/egl-removal-handlers";
@@ -402,6 +403,7 @@ document.addEventListener("click", (e) => {
   if (handleIgdbAction(act, t)) return;
   if (handleAuthAction(act, t, id)) return;
   if (handleCloudBackupAction(act, t, id, targetEl)) return;
+  if (handleBackupsAction(act, t, id)) return;
   if (handleCoverAction(act, t, id, targetEl)) return;
   if (handleEglRemovalAction(act, t, id, targetEl)) return;
   if (handleCollectionAction(act, t, id, targetEl)) return;

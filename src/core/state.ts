@@ -19,7 +19,6 @@ import {
   CUSTOM_COVERS_KEY,
   CUSTOM_HEROES_KEY,
   CUSTOM_LOGOS_KEY,
-  BACKUP_EXCLUDED_KEY,
   CUSTOM_LOGO_SIZES_KEY,
   CUSTOM_LOGO_LAYOUTS_KEY,
   CUSTOM_SORT_NAMES_KEY,
@@ -597,6 +596,9 @@ export const S = {
   /** Epic download cap in Mbit/s; 0 = unlimited. */
   downloadLimitMbps: 0,
   gameBackupsMap: (new Map()) as Map<string, SaveBackupInfo[]>,
+  /** Backups page data; null until the first load. */
+  backupsPage: (null) as { list: SaveBackupInfo[]; excluded: Set<string> } | null,
+  backupsPageLoading: false,
   isBackingUp: false,
   cloudBackupSettings: (null) as CloudBackupSettings | null,
   cloudBackupTesting: false,
@@ -613,7 +615,6 @@ export const S = {
   /** Local backup folder override and the folder in use; null until loaded. */
   localBackupRoot: (null) as { configured: string; effective: string } | null,
   epicFav: (loadStrSet(FAV_KEY)) as Set<string>,
-  backupExcluded: (loadStrSet(BACKUP_EXCLUDED_KEY)) as Set<string>,
   hiddenGames: (loadStrSet(HIDDEN_KEY)) as Set<string>,
   ignoredUpdates: (loadStrSet(IGNORED_UPDATES_KEY)) as Set<string>,
   hiddenAchievements: (loadStrSet(HIDDEN_ACH_KEY)) as Set<string>,
