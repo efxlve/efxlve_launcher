@@ -46,8 +46,8 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         tr: "Sahne Ayarları > Görünüm bölümüne ortam müziği açma/kapama ve ses düzeyi, konsol açılışı anahtarı ve çekim modu önizlemesi eklendi. Ortam müziği kısa gezinme seslerinden ayrı.",
       },
       {
-        en: "A dedicated 1280 × 800 handheld pass: larger shelf covers, a two-row quick menu, thumb-sized targets, a lighter Deck render path and Stage as the default shell on a Steam Deck. The desktop shell also gets larger thumb targets on a handheld, and the Guide/PS button opens Stage or its quick menu.",
-        tr: "1280 × 800 için özel el konsolu geçişi: daha büyük raf kapakları, iki sıralı hızlı menü, parmak boyu hedefler, Deck için daha hafif çizim yolu ve Steam Deck'te varsayılan kabuk olarak Sahne. Masaüstü kabuğu da el konsolunda daha büyük dokunma hedefleri kullanıyor; Guide/PS tuşu Sahne'yi veya hızlı menüsünü açıyor.",
+        en: "A dedicated 1280 × 800 handheld pass: larger shelf covers, a two-row quick menu, thumb-sized targets, a lighter Deck render path and Stage as the default shell on a Steam Deck. The desktop shell also gets larger thumb targets on a handheld, and the Guide button opens Stage or its quick menu.",
+        tr: "1280 × 800 için özel el konsolu geçişi: daha büyük raf kapakları, iki sıralı hızlı menü, parmak boyu hedefler, Deck için daha hafif çizim yolu ve Steam Deck'te varsayılan kabuk olarak Sahne. Masaüstü kabuğu da el konsolunda daha büyük dokunma hedefleri kullanıyor; Guide tuşu Sahne'yi veya hızlı menüsünü açıyor.",
       },
     ],
     improved: [
