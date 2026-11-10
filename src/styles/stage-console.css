@@ -58,14 +58,20 @@
   overflow: hidden;
   pointer-events: none;
   opacity: 0.92;
+  /*
+   * One full-screen image, four ellipses positioned with `at`. The previous
+   * version used per-gradient `background-size` boxes; a 68% transparent stop
+   * lands just inside the box edge of a wide ellipse, so the colour was
+   * clipped into a hard vertical line. These gradients fade to transparent
+   * well before their own edge, so the fog has no seams.
+   */
   background-image:
-    radial-gradient(circle, var(--stage-amb-a) 0%, transparent 68%),
-    radial-gradient(circle, var(--stage-amb-b) 0%, transparent 68%),
-    radial-gradient(circle, var(--stage-amb-c) 0%, transparent 70%),
-    radial-gradient(circle, var(--stage-amb-d) 0%, transparent 72%);
+    radial-gradient(ellipse 58% 58% at 16% 10%, var(--stage-amb-a) 0%, transparent 78%),
+    radial-gradient(ellipse 52% 52% at 88% 22%, var(--stage-amb-b) 0%, transparent 80%),
+    radial-gradient(ellipse 68% 48% at 50% 96%, var(--stage-amb-c) 0%, transparent 82%),
+    radial-gradient(ellipse 30% 30% at 58% 50%, var(--stage-amb-d) 0%, transparent 80%);
   background-repeat: no-repeat;
-  background-size: 58% 58%, 52% 52%, 68% 48%, 30% 30%;
-  background-position: 4% -12%, 100% 6%, 22% 118%, 42% 38%;
+  background-size: 100% 100%;
 }
 
 /* The blobs are now part of the parent's background. */
