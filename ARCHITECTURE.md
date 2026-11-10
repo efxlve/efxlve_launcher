@@ -125,6 +125,15 @@ page per game.
 - Polling runs at requestAnimationFrame cadence with deadzone handling (axes: ±0.55) and falls back to a 40 ms idle timer for a connected but untouched pad.
 - Supports Xbox, DualSense (PS5), Switch and generic DirectInput controllers through the standard Web Gamepad API; the glyphs follow the detected family, and haptics use `vibrationActuator` when the browser exposes it.
 
+### 3.2.1 The Stage room: ambience, boot and attract mode
+
+- `stage-ambience.ts` is an original generative theme, not a recording: a four-chord D-major pad, a sparse pentatonic bell line and a generated impulse reverb. It is synthesised only while Stage is active, ducks under the launch curtain and closes with the mode. No PlayStation (or other) console audio ships with the launcher; the licence-safe rule is "compose the feeling, never sample it".
+- `stage-intro.ts` paints one short boot mark with its own chime. It is dismissible with any input and skipped when reduced effects or the Console intro setting is off.
+- `stage-idle.ts` owns attract mode. It is a class on `#stage-root`, not a re-render: after 75 quiet seconds on Home the chrome fades, the key art gets a slow pan and the clock/greeting stay legible. The first input wakes and is consumed, so waking never launches the item that happened to own the ring.
+- `stage-console.css` holds the time-of-day light field, the film grain, the boot mark, the attract layout and the 1280 × 800 handheld pass. The light palette follows the local hour (`stage-tod-*`), so a TV at night is cool and a TV at sunset is warm.
+- The top bar is intentionally small: navigation on the left, status and the Quick menu on the right. Browser, music, Discord and power remain one press away in the Quick menu instead of competing with the shelf for header space.
+- A handheld boots into Stage by default (`isSteamDeckDevice()` decides both `openAtLaunch` and `autoEnter` when no stored preference exists), and `handheld.css` enlarges the desktop shell's thumb targets without changing its layout. The Guide/PS button opens Stage from desktop; inside Stage it opens the Quick menu.
+
 ### 3.3 Embedded Child Webviews (Multi-Storefront)
 - 8 embedded store views: Epic Games, GOG.COM, Steam, Xbox (PC-filtered), Battle.net, Ubisoft, EA, and Amazon Games (Luna claims).
 - Built via Tauri's native `WebviewBuilder::new(...)` using the `unstable` feature flag and `window.add_child`.

@@ -62,6 +62,7 @@ import { applyWinbarAppIcon } from "./core/app-icon";
 import { applyUiScale } from "./core/game-status";
 import { applyCrosshairConfig, loadCrosshair, setCrosshairVisible } from "./core/crosshair";
 import { applyGameScene, initGameSceneHover } from "./core/game-scene";
+import { isSteamDeckDevice } from "./core/constants";
 
 applySurface(S.surface, false);
 applyGameScene();
@@ -268,6 +269,15 @@ function closeAllModals(): void {
   if (selectiveRoot) selectiveRoot.innerHTML = "";
   if (playtimeRoot) playtimeRoot.innerHTML = "";
 }
+
+// The handheld shell is a boot-time fact, not a controller event: a Deck can
+// start with its pad asleep and still needs the larger targets. The gamepad
+// layer adds `is-steam-deck` too, so both paths land on the same class.
+const handheld =
+  isSteamDeckDevice() ||
+  (navigator.maxTouchPoints > 0 && window.matchMedia("(pointer: coarse)").matches);
+document.documentElement.classList.toggle("is-handheld", handheld);
+if (isSteamDeckDevice()) document.documentElement.classList.add("is-steam-deck");
 
 // Stage-at-launch must be active before the first desktop paint, otherwise the
 // user sees the library flash for a second and then the controller shell.

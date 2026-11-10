@@ -20,7 +20,12 @@ import { toggleFav } from "../../core/game-view";
 import { openPalette } from "../palette/palette";
 import { setView } from "../store/store-view";
 import { stageBridge } from "./stage-bridge";
-import { stageControllerBattery, stageControllerConnected, stageControllerDisconnected } from "../stage/stage-state";
+import {
+  enterStage,
+  stageControllerBattery,
+  stageControllerConnected,
+  stageControllerDisconnected,
+} from "../stage/stage-state";
 
 const STICK_DEADZONE = 0.42;
 const REPEAT_FIRST_MS = 260;
@@ -129,7 +134,7 @@ export function updateGamepadHud(active = true): void {
 
   hud.classList.remove("hidden");
   const kind = S.gamepadKind;
-  const hudKey = `${S.isFullscreen ? "f" : "w"}|${S.fullscreenModeEnabled ? "on" : "off"}|${S.view}|${S.appLanguage}|${kind}`;
+  const hudKey = `${S.isFullscreen ? "f" : "w"}|${S.fullscreenModeEnabled ? "on" : "off"}|${S.stage.enabled ? "stage" : ""}|${S.view}|${S.appLanguage}|${kind}`;
   if (hudKey === lastHudKey) return;
   lastHudKey = hudKey;
 
@@ -145,6 +150,9 @@ export function updateGamepadHud(active = true): void {
   // must not advertise it.
   if (S.fullscreenModeEnabled) {
     items.push(hudItem(`<span class="gp-glyph">Menu</span>`, S.isFullscreen ? t("fullscreen.exit") : t("fullscreen.mode")));
+  }
+  if (S.stage.enabled) {
+    items.push(hudItem(`<span class="gp-glyph">Guide</span>`, t("stage.enter")));
   }
   items.push(hudItem(dpad, t("gamepad.navigate")));
   hud.innerHTML = items.join("");
@@ -316,6 +324,9 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
 }
 
 function activateFocused(): void {
+  // Stage's attract mode owns the first press; the bridge reports whether it
+  // swallowed it. Desktop mode has no bridge, so this is a no-op there.
+  if (S.stage.active && stageBridge()?.wake?.()) return;
   if (!currentFocusedEl) {
     initGamepadFocus();
     return;
@@ -329,6 +340,8 @@ export function activateGamepadFocus(): void {
 }
 
 function backAction(): void {
+  // Attract mode uses the first Back press to wake, not to leave the screen.
+  if (S.stage.active && stageBridge()?.wake?.()) return;
   // 1. Close modal if open
   const modal = document.querySelector<HTMLElement>(
     ".modal:not(.hidden), .confirm-dialog:not(.hidden), .selective-overlay, #install-root > div",
@@ -495,6 +508,8 @@ function gamepadLoop(): void {
     if (justPressed(mask, BTN_LT)) bridge?.button("lt");
     if (justPressed(mask, BTN_RT)) bridge?.button("rt");
     if (justPressed(mask, BTN_START)) bridge?.button("start");
+    // The guide/PS button is the console's control-centre key.
+    if (justPressed(mask, BTN_GUIDE)) bridge?.button("start");
     if (justPressed(mask, BTN_SELECT)) bridge?.button("select");
     prevButtons = mask;
     if (mask === 0) window.setTimeout(gamepadLoop, IDLE_PAD_POLL_MS);
@@ -513,8 +528,14 @@ function gamepadLoop(): void {
   if (justPressed(mask, BTN_RB)) {
     switchFilterTab(true);
   }
-  if (justPressed(mask, BTN_START) || justPressed(mask, BTN_GUIDE)) {
+  if (justPressed(mask, BTN_START)) {
     if (S.fullscreenModeEnabled) void toggleFullscreenMode();
+  }
+  // The guide/PS button is the launcher's home key: it opens the console
+  // shell when Stage is available, otherwise it keeps the classic behaviour.
+  if (justPressed(mask, BTN_GUIDE)) {
+    if (S.stage.enabled) void enterStage();
+    else if (S.fullscreenModeEnabled) void toggleFullscreenMode();
   }
   if (justPressed(mask, BTN_SELECT)) {
     openPalette();

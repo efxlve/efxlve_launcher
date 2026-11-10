@@ -9,7 +9,8 @@
 import { currentLanguage, t } from "../../i18n";
 import { icon } from "../../core/icons";
 import { scheduleRender } from "../../core/render";
-import { S } from "../../core/state";
+import { currentProfileName, getCustomAvatar, globalAvatar, S } from "../../core/state";
+import { isSteamDeckDevice } from "../../core/constants";
 import type {
   SettingsSection,
   StageAchievementFilter,
@@ -69,6 +70,10 @@ import {
   stageToggleView,
 } from "./stage-actions";
 import {
+  setStageAmbience,
+  setStageAmbienceVolume,
+  setStageAttract,
+  setStageCinematic,
   setStageHaptics,
   setStageSafeArea,
   setStageSound,
@@ -119,6 +124,24 @@ import {
 } from "./stage-power";
 import { resetStageBackdrop, stageBackdropMarkup, updateStageBackdrop } from "./stage-backdrop";
 import { stageCoverMarkup, stageWideArt } from "./stage-art";
+import { stageIntroMarkup, resetStageIntro, skipStageIntro, startStageIntro } from "./stage-intro";
+import {
+  applyStageAmbienceSettings,
+  duckStageAmbience,
+  setStageAmbienceScene,
+  stageAmbienceActive,
+  startStageAmbience,
+  stopStageAmbience,
+} from "./stage-ambience";
+import {
+  initStageIdle,
+  previewStageIdle,
+  refreshStageIdle,
+  resetStageIdleTimer,
+  stageIdleGreeting,
+  touchStageActivity,
+  wakeStageIdle,
+} from "./stage-idle";
 import { fullShotSrc } from "../screenshots/screenshots-view";
 // Side effect: register the button/back contract with the gamepad loop.
 import "./stage-input";
@@ -149,6 +172,7 @@ let wasPower = false;
 let wasSettingsTab = "";
 let lastStageSignature = "";
 let pointerFocus = false;
+let introStarted = false;
 export type StageInputMode = "gamepad" | "keyboard" | "mouse";
 let stageInputMode: StageInputMode = S.stage.controllerConnected ? "gamepad" : "keyboard";
 
@@ -182,6 +206,12 @@ function stageLiveSignature(): string {
     S.stage.sound ? "1" : "0",
     String(S.stage.soundVolume),
     S.stage.haptics ? "1" : "0",
+    S.stage.ambience ? "1" : "0",
+    String(S.stage.ambienceVolume),
+    S.stage.cinematic ? "1" : "0",
+    S.stage.attract ? "1" : "0",
+    S.stage.intro ? "1" : "0",
+    stageTimeOfDay(),
     S.stage.autoEnter ? "1" : "0",
     S.stage.openAtLaunch ? "1" : "0",
     S.reduceEffects ? "1" : "0",
@@ -276,9 +306,35 @@ function clockText(): string {
   }
 }
 
+/** The room changes colour with the hour; never with a random value. */
+function stageTimeOfDay(): "morning" | "day" | "evening" | "night" {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return "morning";
+  if (hour >= 12 && hour < 18) return "day";
+  if (hour >= 18 && hour < 23) return "evening";
+  return "night";
+}
+
 function paintClock(): void {
+  const text = clockText();
   const node = document.querySelector<HTMLElement>(".stage-clock");
-  if (node) node.textContent = clockText();
+  if (node) node.textContent = text;
+  const idle = document.querySelector<HTMLElement>(".stage-idle-clock");
+  if (idle) idle.textContent = text;
+  const greeting = document.querySelector<HTMLElement>(".stage-idle-greeting");
+  if (greeting) {
+    const name = S.customProfileName.trim();
+    greeting.textContent = `${stageIdleGreeting()}${name ? ` · ${name}` : ""}`;
+  }
+  // A Stage left open crosses sunset without a render; move the room with it.
+  const root = document.getElementById("stage-root");
+  if (root) {
+    const tod = `stage-tod-${stageTimeOfDay()}`;
+    if (!root.classList.contains(tod)) {
+      root.classList.remove("stage-tod-morning", "stage-tod-day", "stage-tod-evening", "stage-tod-night");
+      root.classList.add(tod);
+    }
+  }
 }
 
 function startClock(): void {
@@ -339,6 +395,13 @@ function restoreFocus(layer: HTMLElement | null): void {
   setGamepadFocus(target);
 }
 
+/** A quiet PS-style profile mark: the custom avatar, or a user glyph. */
+function stageProfileChip(): string {
+  const name = currentProfileName();
+  const avatar = globalAvatar() || getCustomAvatar();
+  return `<span class="stage-profile" title="${esc(name)}" aria-hidden="true">${avatar ? `<img src="${esc(avatar)}" alt="" />` : icon("user", 14)}</span>`;
+}
+
 function topbar(): string {
   const dl = stageActiveDownload();
   const isKbd = stageInputMode === "keyboard" || stageInputMode === "mouse";
@@ -348,7 +411,6 @@ function topbar(): string {
   const kind = S.gamepadKind;
   const lbGlyph = isKbd ? "Q" : (kind === "playstation" ? "L1" : "LB");
   const rbGlyph = isKbd ? "E" : (kind === "playstation" ? "R1" : "RB");
-  const selectGlyph = kind === "playstation" ? "Share" : kind === "xbox" ? "View" : "Select";
 
   const navTab = (route: StageRoute, label: string): string => {
     const active = S.stage.route === route;
@@ -358,13 +420,17 @@ function topbar(): string {
     </button>`;
   };
 
+  // The console bar is deliberately small: navigation on the left, status on
+  // the right. The browser, music, Discord and power panels live one press
+  // away in the Quick menu instead of six equal circles competing with the
+  // shelf for the same 40 pixels.
   return `<header class="stage-topbar">
     <div class="stage-topbar-left">
       <div class="stage-brand">
         <span class="stage-brand-name">EFXLVE</span>
         <span class="stage-brand-mode">STAGE</span>
-        <span class="stage-beta-chip">${esc(t("stage.beta"))}</span>
       </div>
+      <span class="stage-top-greeting">${esc(stageIdleGreeting())}${S.customProfileName.trim() ? ` · ${esc(S.customProfileName.trim())}` : ""}</span>
       <nav class="stage-top-nav" aria-label="${esc(t("stage.navHome"))}">
         <span class="stage-bumper-hint is-left">${lbGlyph}</span>
         ${navTab("home", t("stage.navHome"))}
@@ -375,18 +441,16 @@ function topbar(): string {
       </nav>
     </div>
     <div class="stage-topbar-right">
-      <button type="button" class="stage-icon-pill" data-stage-act="open-browser-sheet" data-gp-item data-gp-key="top:browser" aria-label="${esc(t("overlay.tabBrowser"))}">${icon("globe", 16)}</button>
-      <button type="button" class="stage-icon-pill" data-stage-act="open-spotify-sheet" data-gp-item data-gp-key="top:spotify" aria-label="Spotify">${icon("spotify", 16)}</button>
-      <button type="button" class="stage-icon-pill" data-stage-act="open-discord-sheet" data-gp-item data-gp-key="top:discord" aria-label="Discord">${icon("discord", 16)}</button>
       <button type="button" class="stage-icon-pill" data-stage-act="open-search" data-gp-item data-gp-key="top:search" aria-label="${esc(t("stage.search"))}">
         ${icon("search", 16)}
       </button>
       ${dl ? `<button type="button" class="stage-top-download" data-stage-act="go" data-route="downloads" data-gp-item data-gp-key="top:downloads">${icon("download", 15)}<span class="tabular-nums">${Math.round(dl.percent)}%</span><i style="width:${Math.max(2, Math.min(100, dl.percent))}%"></i></button>` : ""}
+      ${S.stage.ambience && S.stage.ambienceVolume > 0 ? `<span class="stage-ambient-status" title="${esc(t("stage.ambience"))}" aria-hidden="true">${icon("music", 13)}<span class="stage-ambient-bars"><i></i><i></i><i></i><i></i></span></span>` : ""}
       <span class="stage-net ${online ? "is-online" : "is-offline"}"><span class="stage-net-dot"></span><span class="stage-net-label">${esc(online ? t("nav.online") : t("nav.offline"))}</span></span>
       ${stageBatteryMarkup()}
       ${pad ? `<span class="stage-pad-status">${icon("gamepad-2", 15)}${battery ? `<span class="tabular-nums">${esc(battery)}</span>` : ""}</span>` : ""}
       <span class="stage-clock tabular-nums"></span>
-      <button type="button" class="stage-icon-pill" data-stage-act="open-power-sheet" data-gp-item data-gp-key="top:power-sheet" aria-label="${esc(t("settings.finishActionSleep"))}">${icon("zap", 16)}</button>
+      ${stageProfileChip()}
       <button type="button" class="stage-icon-pill" data-stage-act="open-menu" data-gp-item data-gp-key="top:menu" aria-label="${esc(t("stage.quickMenu"))}">${icon("dots", 18)}</button>
     </div>
   </header>`;
@@ -404,6 +468,7 @@ function faceOrKey(b: "a" | "b" | "x" | "y"): string {
 }
 
 function hints(): string {
+  if (S.stage.idle) return "";
   const isKbd = stageInputMode === "keyboard" || stageInputMode === "mouse";
   const face = (b: "a" | "b" | "x" | "y") => faceOrKey(b);
   const bumpers = isKbd ? `${stageKeyGlyph("Q")} ${stageKeyGlyph("E")}` : stageBumperGlyphs();
@@ -793,7 +858,14 @@ export function renderStage(): void {
     stopClock();
     resetStageBackdrop();
     lastStageSignature = "";
+    introStarted = false;
     return;
+  }
+  if (!introStarted) {
+    introStarted = true;
+    // The stage-mode event fires before the lazy chunk exists on the first
+    // entry, so the chunk starts its own intro once it is ready.
+    startStageIntro();
   }
   const signature = stageLiveSignature();
   if (signature === lastStageSignature && document.getElementById("stage-root")) {
@@ -851,7 +923,7 @@ export function renderStage(): void {
   wasLaunch = Boolean(S.stage.launch);
   wasError = Boolean(S.stage.launchError);
 
-  root.className = `stage-root stage-route-${S.stage.route}${S.stage.route === "program" ? " is-program" : ""}${S.stage.quickMenu ? " is-menu-open" : ""}${S.stage.powerOpen ? " is-power-open" : ""}${S.stage.manageKey ? " is-manage-open" : ""}${S.stage.searchOpen ? " is-search-open" : ""}${S.stage.browserOpen ? " is-browser-open" : ""}${S.stage.spotifyOpen ? " is-spotify-open" : ""}${S.stage.discordOpen ? " is-discord-open" : ""}${S.stage.stillIndex !== null ? " is-still-open" : ""}${S.stage.route === "settings" && settingsTabChanged ? " stage-settings-tab-enter" : ""}`;
+  root.className = `stage-root stage-route-${S.stage.route} stage-tod-${stageTimeOfDay()}${isSteamDeckDevice() ? " is-handheld-device" : ""}${S.stage.idle ? " is-idle" : ""}${S.stage.route === "program" ? " is-program" : ""}${S.stage.quickMenu ? " is-menu-open" : ""}${S.stage.powerOpen ? " is-power-open" : ""}${S.stage.manageKey ? " is-manage-open" : ""}${S.stage.searchOpen ? " is-search-open" : ""}${S.stage.browserOpen ? " is-browser-open" : ""}${S.stage.spotifyOpen ? " is-spotify-open" : ""}${S.stage.discordOpen ? " is-discord-open" : ""}${S.stage.stillIndex !== null ? " is-still-open" : ""}${S.stage.route === "settings" && settingsTabChanged ? " stage-settings-tab-enter" : ""}`;
   root.dataset.route = S.stage.route;
   root.style.setProperty("--stage-safe", `${S.stage.safeArea * 1.5}vmin`);
   root.innerHTML = `${stageBackdropMarkup()}
@@ -872,7 +944,8 @@ export function renderStage(): void {
   ${discord}
   ${power}
   ${cover}
-  ${error}`;
+  ${error}
+  ${stageIntroMarkup()}`;
 
   // The shell is rebuilt above, so the backdrop layers are fresh and empty.
   // Apply the current route's art after the markup exists, not before.
@@ -909,8 +982,19 @@ export function renderStage(): void {
   markFocusables(layer);
   // An install/manage dialog owns the focus while it is open. The Stage shell
   // can repaint behind it, but it must not steal the ring back.
-  if (!modalOpen()) restoreFocus(layer);
+  // Attract mode owns the screen: a background repaint (a download tick, a
+  // store refresh) must not restore the ring and wake the room.
+  if (!modalOpen() && !S.stage.idle) restoreFocus(layer);
   startClock();
+  // The room follows the screen: Home is the full theme, tools step back.
+  setStageAmbienceScene(S.stage.route === "home" ? "home" : S.stage.route === "library" ? "library" : "quiet");
+  startStageAmbience();
+  // A running game owns the speakers; the menu only breathes underneath it.
+  duckStageAmbience(S.runningGames.size > 0);
+  // The equalizer in the top bar is honest: it only moves while the audio
+  // graph is actually running.
+  root.dataset.ambience = stageAmbienceActive() ? "on" : "off";
+  refreshStageIdle();
   // The render may have advanced the library chunk or normalized the query;
   // recompute so the next pass can take the lightweight patch path.
   lastStageSignature = stageLiveSignature();
@@ -918,10 +1002,15 @@ export function renderStage(): void {
 
 function bindGlobalFocus(): void {
   initStageBattery();
+  initStageIdle();
   if (focusBound) return;
   focusBound = true;
   window.addEventListener("stage:focus", (event) => {
     if (!S.stage.active) return;
+    if (S.stage.intro) {
+      skipStageIntro();
+      return;
+    }
     const detail = (event as CustomEvent<{ key?: string }>).detail;
     const key = detail?.key || "";
     const changed = Boolean(key) && key !== S.stage.focusKey;
@@ -944,8 +1033,24 @@ function bindGlobalFocus(): void {
   window.addEventListener("stage-mode", (event) => {
     const active = Boolean((event as CustomEvent<{ active?: boolean }>).detail?.active);
     lastStageSignature = "";
-    if (active) startClock();
-    else stopClock();
+    if (active) {
+      startClock();
+      startStageIntro();
+      startStageAmbience();
+      resetStageIdleTimer();
+    } else {
+      stopClock();
+      stopStageAmbience();
+      resetStageIntro();
+      refreshStageIdle();
+    }
+  });
+  // A window that moves from a desktop monitor to a handheld panel keeps the
+  // same DOM; the CSS breakpoints do the layout work. This only re-runs the
+  // intro/greeting bookkeeping after the resize settles.
+  window.addEventListener("resize", () => {
+    if (!S.stage.active) return;
+    paintClock();
   });
   window.addEventListener("keydown", onStageKeydown, true);
   window.addEventListener("online", () => {
@@ -964,7 +1069,20 @@ function modalOpen(): boolean {
 
 function onStageKeydown(event: KeyboardEvent): void {
   if (!S.stage.active || event.defaultPrevented) return;
+  if (S.stage.idle) {
+    // The capture listener normally consumes this first; this is the keyboard
+    // path when a synthetic event arrives from the automation layer.
+    event.preventDefault();
+    wakeStageIdle();
+    return;
+  }
+  if (S.stage.intro) {
+    event.preventDefault();
+    skipStageIntro();
+    return;
+  }
   if (modalOpen()) return;
+  touchStageActivity();
   const input = document.activeElement;
   const inSearchInput = input instanceof HTMLInputElement && input.id === "stage-search-input";
   const inBrowserInput = input instanceof HTMLInputElement && input.id === "stage-browser-input";
@@ -1260,9 +1378,45 @@ function bindStageEvents(root: HTMLElement): void {
       case "set-stage-text": if (Number.isFinite(value)) { stageFeedback("move"); setStageTextScale(value); } break;
       case "set-stage-safe": if (Number.isFinite(value)) { stageFeedback("move"); setStageSafeArea(value); } break;
       case "set-stage-volume": if (Number.isFinite(value)) { setStageSoundVolume(value); stageFeedback("select"); } break;
+      case "set-stage-ambience-volume": {
+        if (Number.isFinite(value)) {
+          setStageAmbienceVolume(value);
+          applyStageAmbienceSettings();
+          stageFeedback("select");
+        }
+        break;
+      }
       case "toggle-stage-sound": { const next = !S.stage.sound; setStageSound(next); if (next) stageFeedback("select"); } break;
+      case "toggle-stage-ambience": {
+        const next = !S.stage.ambience;
+        setStageAmbience(next);
+        applyStageAmbienceSettings();
+        if (next) stageFeedback("select");
+        break;
+      }
+      case "toggle-stage-cinematic": { stageFeedback("select"); setStageCinematic(!S.stage.cinematic); break; }
+      case "toggle-stage-attract": { stageFeedback("select"); setStageAttract(!S.stage.attract); break; }
       case "toggle-stage-haptics": { stageFeedback("select"); setStageHaptics(!S.stage.haptics); } break;
       case "test-stage-sound": previewStageSound(); break;
+      case "test-stage-ambience": {
+        // The settings screen normally runs the quiet scene; lift it for the
+        // test burst so the button actually demonstrates the theme.
+        setStageAmbienceScene("home");
+        applyStageAmbienceSettings();
+        stageFeedback("select");
+        window.setTimeout(() => {
+          if (!S.stage.active) return;
+          setStageAmbienceScene(S.stage.route === "home" ? "home" : S.stage.route === "library" ? "library" : "quiet");
+        }, 6000);
+        break;
+      }
+      case "preview-stage-idle": {
+        stageFeedback("select");
+        // Leave the settings screen first; the preview owns Home only.
+        if (S.stage.route !== "home") stageGo("home");
+        window.setTimeout(() => previewStageIdle(), 300);
+        break;
+      }
       case "retry": S.stage.launchError = ""; stageLaunchGame(S.stage.gameKey || ""); break;
       case "close-error": stageFeedback("back"); S.stage.launchError = ""; scheduleRender(); break;
       default: break;
@@ -1378,6 +1532,9 @@ function bindStageEvents(root: HTMLElement): void {
 
   // Switch to mouse input mode on pointer interaction
   root.addEventListener("pointerdown", () => {
+    // The boot mark never traps the first tap.
+    if (S.stage.intro) skipStageIntro();
+    touchStageActivity();
     if (stageInputMode !== "mouse") {
       stageInputMode = "mouse";
       scheduleRender();

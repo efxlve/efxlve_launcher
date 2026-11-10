@@ -12,6 +12,7 @@ import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
 import { stageWideArt } from "./stage-art";
+import { duckStageAmbience } from "./stage-ambience";
 import { stageGameByKey } from "./stage-model";
 import { stageFeedback } from "./stage-sound";
 
@@ -35,6 +36,9 @@ export function stageLaunchGame(key: string): void {
   if (S.stage.launch) return;
 
   stageFeedback("launch");
+  // The curtain takes the room down a little; the game's own audio should own
+  // the speakers the moment it starts.
+  duckStageAmbience(true);
   const token = ++launchToken;
   S.stage.launch = {
     key: summary.appName,
@@ -58,6 +62,7 @@ export function stageLaunchGame(key: string): void {
     }
     if (token !== launchToken) return;
     S.stage.launch = null;
+    duckStageAmbience(false);
     scheduleRender();
   })();
 }
@@ -66,6 +71,7 @@ export function stageLaunchGame(key: string): void {
 export function stageLaunchFailed(message: string): void {
   launchToken++;
   stageFeedback("error");
+  duckStageAmbience(false);
   S.stage.launch = null;
   S.stage.launchError = message;
   scheduleRender();

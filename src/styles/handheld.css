@@ -1,0 +1,103 @@
+/* ==========================================================================
+   Handheld pass for the desktop shell.
+
+   Stage owns the couch experience; this file only makes the window behind it
+   thumb-friendly when the launcher runs on a Steam Deck or a touch handheld.
+   It never changes the layout, only the size of the targets and the smallest
+   text, so a 1280 x 800 panel stays readable without turning the desktop into
+   a different application.
+   ========================================================================== */
+
+html.is-handheld .sb-item {
+  height: 48px;
+  font-size: 13.5px;
+}
+
+html.is-handheld .sb-item svg {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+}
+
+html.is-handheld .sb-item span:first-of-type {
+  font-size: 13.5px;
+}
+
+html.is-handheld .winbar-btn {
+  height: 32px;
+  padding-inline: 11px;
+}
+
+html.is-handheld .winbar-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+html.is-handheld .lib-tools .lib-hide-btn {
+  width: 44px;
+  height: 44px;
+}
+
+html.is-handheld .lib-filters .tab,
+html.is-handheld .lib-tab {
+  min-height: 44px;
+}
+
+html.is-handheld .settings-nav-item {
+  min-height: 46px;
+}
+
+html.is-handheld .settings-row {
+  padding-block: 14px;
+}
+
+html.is-handheld .settings-row-title {
+  font-size: 14px;
+}
+
+html.is-handheld .settings-row-desc {
+  font-size: 13px;
+}
+
+html.is-handheld .settings-row .btn,
+html.is-handheld .modal .btn,
+html.is-handheld .selective-dialog .btn {
+  min-height: 40px;
+}
+
+html.is-handheld .pcard-caption {
+  margin-top: 12px;
+}
+
+html.is-handheld .pcard-title {
+  font-size: 14.5px;
+}
+
+html.is-handheld .lib-list .lrow {
+  min-height: max(64px, var(--lrow-h));
+}
+
+html.is-handheld .lrow-name {
+  font-size: max(14px, var(--lrow-name-size));
+}
+
+html.is-handheld .lrow-meta,
+html.is-handheld .lrow-col,
+html.is-handheld .lrow-store-name {
+  font-size: 13.5px;
+}
+
+html.is-handheld .notif-item {
+  min-height: 56px;
+}
+
+/* A finger does not need the dense hover cards; keep their hit areas honest. */
+html.is-handheld .pcard-play-btn {
+  min-width: 28px;
+  min-height: 28px;
+}
+
+html.is-handheld .sb-toggle,
+html.is-handheld .sb-account {
+  min-height: 48px;
+}

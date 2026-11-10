@@ -216,6 +216,11 @@ export const STAGE_VOLUME_KEY = "efxlve-stage-volume";
 export const STAGE_HAPTICS_KEY = "efxlve-stage-haptics";
 export const STAGE_TEXT_SCALE_KEY = "efxlve-stage-text-scale";
 export const STAGE_SAFE_AREA_KEY = "efxlve-stage-safe-area";
+/** Original generative ambient theme, console intro and the idle Home screen. */
+export const STAGE_AMBIENCE_KEY = "efxlve-stage-ambience";
+export const STAGE_AMBIENCE_VOLUME_KEY = "efxlve-stage-ambience-volume";
+export const STAGE_CINEMATIC_KEY = "efxlve-stage-cinematic";
+export const STAGE_ATTRACT_KEY = "efxlve-stage-attract";
 
 /** Spotify / Discord pages: missing = visible. The overlay follows these. */
 export const SHOW_SPOTIFY_KEY = "efxlve-show-spotify";

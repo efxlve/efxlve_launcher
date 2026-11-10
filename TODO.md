@@ -67,6 +67,11 @@ Open work only. Delete the item when it lands.
 
 ## Stage Mode (experimental)
 
+- Real-hardware pass for the console room: Steam Deck speaker and headphones
+  (audio starts only after a gesture on some WebView builds), suspend/resume,
+  the 1280 × 800 two-row Quick menu, and a 1080p/4K TV with a DualSense.
+  Confirm the attract screen wakes on the first D-pad or face button without
+  launching anything.
 - The store remains desktop-only by decision. A controller-native Spotlight
   needs a catalogue/deals data source; do not route third-party store webviews
   through a virtual cursor, because a purchase-capable page needs its own

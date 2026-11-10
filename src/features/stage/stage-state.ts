@@ -7,7 +7,11 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import {
+  STAGE_AMBIENCE_KEY,
+  STAGE_AMBIENCE_VOLUME_KEY,
+  STAGE_ATTRACT_KEY,
   STAGE_AUTO_KEY,
+  STAGE_CINEMATIC_KEY,
   STAGE_ENABLED_KEY,
   STAGE_HAPTICS_KEY,
   STAGE_LIBRARY_SORT_KEY,
@@ -113,6 +117,10 @@ export async function enterStage(opts: { route?: StageRoute; gameKey?: string } 
   S.stage.manageConfirmUninstall = false;
   S.stage.launch = null;
   S.stage.launchError = "";
+  // Presentation flags are owned by the Stage chunk; the state is reset here
+  // so a re-entry never flashes the previous session's idle frame.
+  S.stage.intro = false;
+  S.stage.idle = false;
   S.stage.returnView = S.view;
   S.stage.wasFullscreen = S.isFullscreen;
   const view = document.getElementById("view");
@@ -153,6 +161,8 @@ export function exitStage(): void {
   S.stage.manageConfirmUninstall = false;
   S.stage.launch = null;
   S.stage.launchError = "";
+  S.stage.intro = false;
+  S.stage.idle = false;
   S.stage.focusKey = "";
   S.stage.stack = [];
   S.stage.gameKey = null;
@@ -299,6 +309,47 @@ export function setStageHaptics(on: boolean): void {
   S.stage.haptics = on;
   try {
     localStorage.setItem(STAGE_HAPTICS_KEY, String(on));
+  } catch {
+    /* ignore */
+  }
+  scheduleRender();
+}
+
+export function setStageAmbience(on: boolean): void {
+  S.stage.ambience = on;
+  try {
+    localStorage.setItem(STAGE_AMBIENCE_KEY, String(on));
+  } catch {
+    /* ignore */
+  }
+  scheduleRender();
+}
+
+export function setStageAmbienceVolume(volume: number): void {
+  S.stage.ambienceVolume = Math.max(0, Math.min(100, Math.round(volume)));
+  try {
+    localStorage.setItem(STAGE_AMBIENCE_VOLUME_KEY, String(S.stage.ambienceVolume));
+  } catch {
+    /* ignore */
+  }
+  scheduleRender();
+}
+
+export function setStageCinematic(on: boolean): void {
+  S.stage.cinematic = on;
+  try {
+    localStorage.setItem(STAGE_CINEMATIC_KEY, String(on));
+  } catch {
+    /* ignore */
+  }
+  scheduleRender();
+}
+
+export function setStageAttract(on: boolean): void {
+  S.stage.attract = on;
+  if (!on) S.stage.idle = false;
+  try {
+    localStorage.setItem(STAGE_ATTRACT_KEY, String(on));
   } catch {
     /* ignore */
   }

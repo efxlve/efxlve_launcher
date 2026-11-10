@@ -6,6 +6,8 @@
 
 import { S } from "../../core/state";
 import { registerStageBridge, type StagePadButton } from "../gamepad/stage-bridge";
+import { wakeStageIdle } from "./stage-idle";
+import { skipStageIntro } from "./stage-intro";
 import {
   stageBack,
   stageCloseControls,
@@ -32,6 +34,16 @@ export function stageButton(button: StagePadButton): void {
     window.dispatchEvent(new CustomEvent("stage-input-mode", { detail: { mode: "gamepad" } }));
   }
   if (!S.stage.active) return;
+  if (S.stage.intro) {
+    // The boot mark consumes the first press; it never doubles as an action.
+    skipStageIntro();
+    return;
+  }
+  if (S.stage.idle) {
+    // The first button only wakes the room, exactly like a sleeping console.
+    wakeStageIdle();
+    return;
+  }
   // A dialog owns the pad while it is open. A/B reach its focus ring through
   // the generic path; the contextual buttons must not fire behind it.
   if (document.querySelector(".modal:not(.hidden), .selective-overlay, .confirm-dialog:not(.hidden), .palette-backdrop, #modal-root > div, #install-root > div")) {
@@ -103,4 +115,15 @@ registerStageBridge({
   button: stageButton,
   back: stageBack,
   go: (view) => stageGo(view),
+  wake: () => {
+    if (S.stage.idle) {
+      wakeStageIdle();
+      return true;
+    }
+    if (S.stage.intro) {
+      skipStageIntro();
+      return true;
+    }
+    return false;
+  },
 });

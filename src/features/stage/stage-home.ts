@@ -19,6 +19,7 @@ import { fetchAndRenderAchievements } from "../drawer/drawer-view";
 import { fetchAndRenderScreenshots, shotThumbHtml } from "../screenshots/screenshots-view";
 import { stageCoverMarkup, stageHeroMarkup, stagePrefetch, stageWideArt } from "./stage-art";
 import { updateStageBackdrop } from "./stage-backdrop";
+import { stageIdleGreeting } from "./stage-idle";
 import {
   stageAchievements,
   stageCollectionCoverKeys,
@@ -217,6 +218,9 @@ export function stageHomeActivitiesHtml(game: EpicSummary): string {
 export function renderStageHome(): string {
   const ribbon = stageRibbonSummaries(24);
   if (ribbon.length === 0) return emptyStage();
+  // Only the explicit display name is shown; an account e-mail is not a
+  // greeting.
+  const profileName = S.customProfileName.trim();
 
   const focusKey = S.stage.focusKey;
   const focusedGame = focusKey.startsWith("game:")
@@ -233,6 +237,8 @@ export function renderStageHome(): string {
     <section class="stage-home-stage">
       <div id="stage-home-art" class="stage-home-art">${stageHeroMarkup(hero, "stage-home-art-image")}</div>
       <div class="stage-home-scrim"></div>
+      <div class="stage-home-ambient" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div class="stage-home-grain" aria-hidden="true"></div>
 
       <div class="stage-home-ribbon">
         <div class="stage-ribbon-track" data-gp-row>
@@ -252,6 +258,17 @@ export function renderStageHome(): string {
     <section id="stage-home-activities" class="stage-home-hub">
       ${stageHomeActivitiesHtml(hero)}
     </section>
+
+    <div id="stage-home-idle" class="stage-home-idle" aria-hidden="true">
+      <div class="stage-idle-top">
+        <span class="stage-idle-brand">EFXLVE <b>STAGE</b></span>
+        <span class="stage-idle-greeting">${esc(stageIdleGreeting())}${profileName ? ` · ${esc(profileName)}` : ""}</span>
+      </div>
+      <div class="stage-idle-bottom">
+        <span class="stage-idle-clock tabular-nums"></span>
+        <span class="stage-idle-hint">${esc(t("stage.idleHint"))}</span>
+      </div>
+    </div>
   </div>`;
 }
 

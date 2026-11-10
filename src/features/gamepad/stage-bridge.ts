@@ -11,6 +11,11 @@ export interface StageBridge {
   button(button: StagePadButton): void;
   back(): void;
   go(view: "downloads" | "library"): void;
+  /**
+   * Wake attract mode (or dismiss the boot mark). Returns true when the press
+   * belongs to the wake-up and must not activate the focused control.
+   */
+  wake?(): boolean;
 }
 
 let bridge: StageBridge | null = null;

@@ -101,20 +101,40 @@ function general(): string {
   </div>`;
 }
 
+function levelChoices(current: number): Choice[] {
+  return [
+    { label: t("stage.settingsVolumeOff"), value: 0, selected: current === 0 },
+    { label: t("stage.settingsVolumeLow"), value: 25, selected: Math.round(current / 25) * 25 === 25 },
+    { label: t("stage.settingsVolumeMedium"), value: 50, selected: Math.round(current / 25) * 25 === 50 },
+    { label: t("stage.settingsVolumeHigh"), value: 75, selected: Math.round(current / 25) * 25 === 75 },
+    { label: t("stage.settingsVolumeMax"), value: 100, selected: Math.round(current / 25) * 25 === 100 },
+  ];
+}
+
 function appearance(): string {
   return `<div class="stage-settings-panel">
-    ${stageToggle("sound", t("stage.settingsSound"), t("stage.settingsSoundDesc"), S.stage.sound, "toggle-stage-sound")}
-    ${choiceRow("volume", t("stage.settingsVolume"), t("stage.settingsVolumeDesc"), "set-stage-volume", [
-      { label: t("stage.settingsVolumeOff"), value: 0, selected: S.stage.soundVolume === 0 },
-      { label: t("stage.settingsVolumeLow"), value: 25, selected: Math.round(S.stage.soundVolume / 25) * 25 === 25 },
-      { label: t("stage.settingsVolumeMedium"), value: 50, selected: Math.round(S.stage.soundVolume / 25) * 25 === 50 },
-      { label: t("stage.settingsVolumeHigh"), value: 75, selected: Math.round(S.stage.soundVolume / 25) * 25 === 75 },
-      { label: t("stage.settingsVolumeMax"), value: 100, selected: Math.round(S.stage.soundVolume / 25) * 25 === 100 },
-    ])}
-    ${stageToggle("haptics", t("stage.settingsHaptics"), t("stage.settingsHapticsDesc"), S.stage.haptics, "toggle-stage-haptics")}
-    <div class="stage-settings-actions">
-      <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="test-stage-sound" data-gp-item data-gp-key="set:sound-test">${icon("volume-2", 16)}<span>${esc(t("stage.settingsTestSound"))}</span></button>
+    <div class="stage-settings-group">
+      <span class="stage-kicker">${esc(t("stage.settingsConsoleTitle"))}</span>
+      ${stageToggle("sound", t("stage.settingsSound"), t("stage.settingsSoundDesc"), S.stage.sound, "toggle-stage-sound")}
+      ${choiceRow("volume", t("stage.settingsVolume"), t("stage.settingsVolumeDesc"), "set-stage-volume", levelChoices(S.stage.soundVolume))}
+      ${stageToggle("ambience", t("stage.settingsAmbience"), t("stage.settingsAmbienceDesc"), S.stage.ambience, "toggle-stage-ambience")}
+      ${S.stage.ambience ? choiceRow("ambience-volume", t("stage.settingsAmbienceVolume"), t("stage.settingsAmbienceVolumeDesc"), "set-stage-ambience-volume", levelChoices(S.stage.ambienceVolume)) : ""}
+      <div class="stage-settings-actions">
+        <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="test-stage-sound" data-gp-item data-gp-key="set:sound-test">${icon("volume-2", 16)}<span>${esc(t("stage.settingsTestSound"))}</span></button>
+        <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="test-stage-ambience" data-gp-item data-gp-key="set:ambience-test">${icon("music", 16)}<span>${esc(t("stage.settingsTestAmbience"))}</span></button>
+      </div>
     </div>
+
+    <div class="stage-settings-group">
+      <span class="stage-kicker">${esc(t("stage.settingsPresentationTitle"))}</span>
+      ${stageToggle("cinematic", t("stage.settingsCinematic"), t("stage.settingsCinematicDesc"), S.stage.cinematic, "toggle-stage-cinematic")}
+      ${stageToggle("attract", t("stage.settingsAttract"), t("stage.settingsAttractDesc"), S.stage.attract, "toggle-stage-attract")}
+      <div class="stage-settings-actions">
+        <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="preview-stage-idle" data-gp-item data-gp-key="set:idle-preview">${icon("sparkles", 16)}<span>${esc(t("stage.settingsPreviewIdle"))}</span></button>
+      </div>
+      ${stageToggle("haptics", t("stage.settingsHaptics"), t("stage.settingsHapticsDesc"), S.stage.haptics, "toggle-stage-haptics")}
+    </div>
+
     <div class="stage-settings-note">${icon("sliders", 15)}<span>${esc(t("stage.settingsAppearanceNote"))}</span></div>
   </div>`;
 }

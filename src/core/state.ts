@@ -95,6 +95,10 @@ import {
   STAGE_HAPTICS_KEY,
   STAGE_TEXT_SCALE_KEY,
   STAGE_SAFE_AREA_KEY,
+  STAGE_AMBIENCE_KEY,
+  STAGE_AMBIENCE_VOLUME_KEY,
+  STAGE_CINEMATIC_KEY,
+  STAGE_ATTRACT_KEY,
   isSteamDeckDevice,
   INSTALLED_ICON_KEY,
   HIGHLIGHT_INSTALLED_KEY,
@@ -970,7 +974,8 @@ export const S = {
     })() as StageLibraryView,
     textScale: (() => {
       try {
-        const stored = Number(localStorage.getItem(STAGE_TEXT_SCALE_KEY));
+        const raw = localStorage.getItem(STAGE_TEXT_SCALE_KEY);
+        const stored = raw === null ? NaN : Number(raw);
         if ([100, 110, 120].includes(stored)) return stored;
       } catch {
         /* ignore */
@@ -979,12 +984,16 @@ export const S = {
     })() as number,
     safeArea: (() => {
       try {
-        const stored = Number(localStorage.getItem(STAGE_SAFE_AREA_KEY));
+        const raw = localStorage.getItem(STAGE_SAFE_AREA_KEY);
+        const stored = raw === null ? NaN : Number(raw);
         if ([0, 1, 2, 3].includes(stored)) return stored;
       } catch {
         /* ignore */
       }
-      return 0;
+      // A TV can crop the outer few percent and a handheld sits inside a
+      // bezel; the subtle inset keeps the focus ring and the hint bar visible
+      // without shrinking the stage. The setting can still turn it off.
+      return 1;
     })() as number,
     sound: (() => {
       try {
@@ -995,7 +1004,8 @@ export const S = {
     })() as boolean,
     soundVolume: (() => {
       try {
-        const stored = Number(localStorage.getItem(STAGE_VOLUME_KEY));
+        const raw = localStorage.getItem(STAGE_VOLUME_KEY);
+        const stored = raw === null ? NaN : Number(raw);
         if (Number.isFinite(stored) && stored >= 0 && stored <= 100) return stored;
       } catch {
         /* ignore */
@@ -1009,6 +1019,48 @@ export const S = {
         return true;
       }
     })() as boolean,
+    /**
+     * Stage's own generative ambient theme. It is an original composition
+     * synthesised at runtime; no sampled or third-party music ships with the
+     * launcher. Kept separate from the navigation ticks so a player can mute
+     * one without the other.
+     */
+    ambience: (() => {
+      try {
+        return localStorage.getItem(STAGE_AMBIENCE_KEY) !== "false";
+      } catch {
+        return true;
+      }
+    })() as boolean,
+    ambienceVolume: (() => {
+      try {
+        const raw = localStorage.getItem(STAGE_AMBIENCE_VOLUME_KEY);
+        const stored = raw === null ? NaN : Number(raw);
+        if (Number.isFinite(stored) && stored >= 0 && stored <= 100) return stored;
+      } catch {
+        /* ignore */
+      }
+      return 50;
+    })() as number,
+    /** The short boot flourish; off means Stage opens directly on Home. */
+    cinematic: (() => {
+      try {
+        return localStorage.getItem(STAGE_CINEMATIC_KEY) !== "false";
+      } catch {
+        return true;
+      }
+    })() as boolean,
+    /** Fade the chrome away after a quiet Home screen, like an attract loop. */
+    attract: (() => {
+      try {
+        return localStorage.getItem(STAGE_ATTRACT_KEY) !== "false";
+      } catch {
+        return true;
+      }
+    })() as boolean,
+    /** Transient presentation flags; a render picks them up immediately. */
+    intro: false,
+    idle: false,
     query: "",
     searchOpen: false,
     quickMenu: false,
@@ -1047,10 +1099,15 @@ export const S = {
     })() as boolean,
     openAtLaunch: (() => {
       try {
-        return localStorage.getItem(STAGE_OPEN_AT_LAUNCH_KEY) === "true";
+        const stored = localStorage.getItem(STAGE_OPEN_AT_LAUNCH_KEY);
+        if (stored === "true") return true;
+        if (stored === "false") return false;
       } catch {
-        return false;
+        /* ignore */
       }
+      // A Deck is a console first: boot into the couch shell unless the owner
+      // explicitly chose the desktop. Desktop machines keep the normal window.
+      return isSteamDeckDevice();
     })() as boolean,
     controllerConnected: false,
     controllerName: "",
