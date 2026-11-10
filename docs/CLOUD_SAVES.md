@@ -52,6 +52,7 @@ Two layers share one format:
   - A new copy is staged in a dot-prefixed folder and only renamed into place
     after `backup_info.json` is written, so a crash cannot leave a half copy in
     the list. Two backups that start in the same second get a `-1`, `-2` suffix.
+    Imports use the same staging step.
   - `backup_info.json` stores id, app key, timestamp, size, file count, the
     original save path, the recognized logical root (`Documents`, `SavedGames`,
     `LocalAppData`, `RoamingAppData`, `Home`) and the path below that root.
@@ -224,7 +225,9 @@ the cheaper roots miss.
 - **Export save** — writes the selected local backup as a portable `.efxsave`
   file to a folder you pick. The file carries the save tree and its metadata.
   A password is optional and encrypts the file with AES-256-GCM; it is typed
-  twice, and a mismatch is refused before anything is written.
+  twice, and a mismatch is refused before anything is written. The archive is
+  staged beside the target and renamed when complete; exporting the same backup
+  twice adds `(1)`, `(2)` instead of overwriting.
 - **Import save** — adds a `.efxsave` from any store to the open game. An
   encrypted file asks for its password. It shows up in the history and
   **Restore** applies it to this game's save folder, so a Steam save can

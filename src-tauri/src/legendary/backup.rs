@@ -1463,21 +1463,40 @@ fn export_backup_dir(
     let trimmed = base.trim().trim_matches('.').trim();
     let trimmed = if trimmed.is_empty() { "save" } else { trimmed };
     let stem: String = trimmed.chars().take(80).collect();
-    let target = folder.join(format!("{stem} {timestamp}.efxsave"));
+    let mut target = folder.join(format!("{stem} {timestamp}.efxsave"));
+    let mut serial = 1;
+    while target.exists() {
+        target = folder.join(format!("{stem} {timestamp} ({serial}).efxsave"));
+        serial += 1;
+    }
+    // Pack (and encrypt) beside the target, then rename in one step: a crash
+    // leaves a dot-prefixed partial file instead of a corrupt .efxsave.
+    let staging = folder.join(format!(".{stem} {timestamp}.exporting"));
+    let _ = std::fs::remove_file(&staging);
     let secret = password.map(str::trim).filter(|value| !value.is_empty());
-    let Some(secret) = secret else {
-        crate::cloud_backup::archive::pack_backup_dir(source, &target)?;
-        return Ok(target.display().to_string());
+    let packed = if let Some(secret) = secret {
+        let plain = std::env::temp_dir().join(format!(
+            "efxlve_export_{}_{}.tar.gz",
+            std::process::id(),
+            now_secs()
+        ));
+        let packed = crate::cloud_backup::archive::pack_backup_dir(source, &plain);
+        let result = packed.and_then(|_| {
+            crate::cloud_backup::crypto::encrypt_file(&plain, &staging, secret)
+        });
+        let _ = std::fs::remove_file(&plain);
+        result
+    } else {
+        crate::cloud_backup::archive::pack_backup_dir(source, &staging).map(|_| ())
     };
-    let plain = std::env::temp_dir().join(format!(
-        "efxlve_export_{}_{}.tar.gz",
-        std::process::id(),
-        now_secs()
-    ));
-    let packed = crate::cloud_backup::archive::pack_backup_dir(source, &plain);
-    let result = packed.and_then(|_| crate::cloud_backup::crypto::encrypt_file(&plain, &target, secret));
-    let _ = std::fs::remove_file(&plain);
-    result?;
+    if let Err(error) = packed {
+        let _ = std::fs::remove_file(&staging);
+        return Err(error);
+    }
+    if let Err(error) = std::fs::rename(&staging, &target) {
+        let _ = std::fs::remove_file(&staging);
+        return Err(format!("Could not finalize the save export: {error}"));
+    }
     Ok(target.display().to_string())
 }
 
@@ -1560,18 +1579,20 @@ fn import_backup_into(
         id = format!("{stamp}-{serial}");
         serial += 1;
     }
-    let target = root.join(&id);
-    let copied = copy_dir_all(&data_dir, &target.join("data"))
+    let staging = root.join(format!(".{id}.importing"));
+    let _ = std::fs::remove_dir_all(&staging);
+    std::fs::create_dir_all(&staging).map_err(|e| e.to_string())?;
+    let copied = copy_dir_all(&data_dir, &staging.join("data"))
         .map_err(|e| format!("@t:backup.copyFailed\u{1f}{e}"));
     let (size_bytes, file_count) = match copied {
         Ok(values) => values,
         Err(error) => {
-            let _ = std::fs::remove_dir_all(&target);
+            let _ = std::fs::remove_dir_all(&staging);
             let _ = std::fs::remove_dir_all(&unpack);
             return Err(error);
         }
     };
-    info.id = id;
+    info.id = id.clone();
     if let Some(title) = title.map(str::trim).filter(|value| !value.is_empty()) {
         info.title = Some(title.to_string());
     }
@@ -1583,7 +1604,18 @@ fn import_backup_into(
     info.size_bytes = size_bytes;
     info.file_count = file_count;
     let info_json = serde_json::to_string_pretty(&info).map_err(|e| e.to_string())?;
-    std::fs::write(target.join("backup_info.json"), info_json).map_err(|e| e.to_string())?;
+    let write_info = std::fs::write(staging.join("backup_info.json"), info_json);
+    if let Err(error) = write_info {
+        let _ = std::fs::remove_dir_all(&staging);
+        let _ = std::fs::remove_dir_all(&unpack);
+        return Err(error.to_string());
+    }
+    let target = root.join(&id);
+    if let Err(error) = std::fs::rename(&staging, &target) {
+        let _ = std::fs::remove_dir_all(&staging);
+        let _ = std::fs::remove_dir_all(&unpack);
+        return Err(format!("@t:backup.copyFailed\u{1f}{error}"));
+    }
     let _ = std::fs::remove_dir_all(&unpack);
     Ok(info)
 }
@@ -1817,6 +1849,11 @@ mod tests {
         let archive =
             export_backup_dir(&backup, out.to_str().unwrap(), "Life is Strange", None).unwrap();
         assert!(Path::new(&archive).is_file());
+        // A second export to the same folder must not overwrite the first file.
+        let second =
+            export_backup_dir(&backup, out.to_str().unwrap(), "Life is Strange", None).unwrap();
+        assert_ne!(second, archive);
+        assert!(Path::new(&second).is_file());
 
         let gog = root.join("gog");
         let imported =
