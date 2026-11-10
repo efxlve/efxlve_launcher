@@ -197,7 +197,13 @@ function managedInstalledGames(excluded: ReadonlySet<string> = new Set()): strin
   const keys: string[] = [];
   for (const item of S.allGamesMap.values()) {
     if (!item.installed) continue;
-    if (!["epic", "gog", "amazon", "custom"].includes(item.source)) continue;
+    if (
+      !["epic", "gog", "amazon", "custom", "steam", "ubisoft", "ea", "xbox", "battlenet"].includes(
+        item.source,
+      )
+    ) {
+      continue;
+    }
     const key = item.source === "epic" ? item.id : item.key;
     if (excluded.has(key)) continue;
     if (seen.has(key)) continue;
@@ -222,9 +228,11 @@ export async function bulkCloudBackupAction(): Promise<void> {
   for (const key of games) {
     try {
       await cloudBackupUploadGame(key);
-    } catch {
-      failed += 1;
-      failedTitles.push(cloudGameTitle(key));
+    } catch (error) {
+      if (!String(error).includes("backup.noSaveDir")) {
+        failed += 1;
+        failedTitles.push(cloudGameTitle(key));
+      }
     }
     S.cloudBulkProgress.done += 1;
     S.cloudBulkProgress.failed = failed;
@@ -253,9 +261,11 @@ export async function bulkLocalBackupAction(): Promise<void> {
   for (const key of games) {
     try {
       await epicBackupSave(key);
-    } catch {
-      failed += 1;
-      failedTitles.push(cloudGameTitle(key));
+    } catch (error) {
+      if (!String(error).includes("backup.noSaveDir")) {
+        failed += 1;
+        failedTitles.push(cloudGameTitle(key));
+      }
     }
     S.cloudBulkProgress.done += 1;
     S.cloudBulkProgress.failed = failed;
@@ -349,9 +359,11 @@ async function runScheduledLocalBackup(): Promise<void> {
   for (const key of games) {
     try {
       await epicBackupSave(key);
-    } catch {
-      failed += 1;
-      failedTitles.push(cloudGameTitle(key));
+    } catch (error) {
+      if (!String(error).includes("backup.noSaveDir")) {
+        failed += 1;
+        failedTitles.push(cloudGameTitle(key));
+      }
     }
     S.cloudBulkProgress.done += 1;
     S.cloudBulkProgress.failed = failed;

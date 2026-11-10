@@ -3387,7 +3387,7 @@
   "cloud.retentionDesc": "Elimina copias locales y archivos en la nube más antiguos tras una copia correcta. Las instantáneas previas a una restauración nunca se borran. 0 conserva todo.",
   "cloud.retentionSaved": "Retención en la nube guardada.",
   "cloud.bulkTitle": "Copia de seguridad de todos los juegos instalados",
-  "cloud.bulkDesc": "Crea una copia local y la sube para cada juego instalado de Epic, GOG, Amazon y personalizado. Los juegos sin carpeta de guardado se omiten.",
+  "cloud.bulkDesc": "Creates a local backup and uploads it for every installed game from a supported store. Games without a save folder are skipped.",
   "cloud.bulkBtn": "Copiar todos",
   "cloud.bulkNone": "No se encontraron juegos instalados con carpeta de guardado gestionada.",
   "cloud.bulkDone": "Copia completada: {total} juegos, {failed} con error.",

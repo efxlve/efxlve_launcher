@@ -3387,7 +3387,7 @@
   "cloud.retentionDesc": "バックアップ成功後に古いローカルバックアップとクラウドアーカイブを削除します。復元前のスナップショットは削除されません。0 はすべて保持します。",
   "cloud.retentionSaved": "クラウド保持設定を保存しました。",
   "cloud.bulkTitle": "インストール済みの全ゲームをバックアップ",
-  "cloud.bulkDesc": "インストール済みの Epic、GOG、Amazon、カスタムゲームごとにローカルバックアップを作成してアップロードします。セーブフォルダーがないゲームはスキップされます。",
+  "cloud.bulkDesc": "Creates a local backup and uploads it for every installed game from a supported store. Games without a save folder are skipped.",
   "cloud.bulkBtn": "すべてバックアップ",
   "cloud.bulkNone": "管理対象のセーブフォルダーを持つインストール済みゲームが見つかりません。",
   "cloud.bulkDone": "バックアップ完了: {total} 件、失敗 {failed} 件。",

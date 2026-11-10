@@ -3387,7 +3387,7 @@
   "cloud.retentionDesc": "सफल बैकअप के बाद पुराने स्थानीय बैकअप और क्लाउड आर्काइव हटाता है। पुनर्स्थापना से पहले के स्नैपशॉट कभी नहीं हटाए जाते। 0 सब कुछ रखता है।",
   "cloud.retentionSaved": "क्लाउड रिटेंशन सहेजा गया।",
   "cloud.bulkTitle": "सभी इंस्टॉल किए गए गेम का बैकअप लें",
-  "cloud.bulkDesc": "हर इंस्टॉल किए गए Epic, GOG, Amazon और कस्टम गेम के लिए स्थानीय बैकअप बनाकर अपलोड करता है। जिन गेम में सेव फ़ोल्डर नहीं है वे छोड़े जाते हैं।",
+  "cloud.bulkDesc": "Creates a local backup and uploads it for every installed game from a supported store. Games without a save folder are skipped.",
   "cloud.bulkBtn": "सभी का बैकअप लें",
   "cloud.bulkNone": "प्रबंधित सेव फ़ोल्डर वाला कोई इंस्टॉल गेम नहीं मिला।",
   "cloud.bulkDone": "बैकअप पूरा: {total} गेम, {failed} विफल।",

@@ -3387,7 +3387,7 @@
   "cloud.retentionDesc": "백업 성공 후 오래된 로컬 백업과 클라우드 아카이브를 삭제합니다. 복원 전 스냅샷은 절대 삭제되지 않습니다. 0은 모두 보관합니다.",
   "cloud.retentionSaved": "클라우드 보관 설정을 저장했습니다.",
   "cloud.bulkTitle": "설치된 모든 게임 백업",
-  "cloud.bulkDesc": "설치된 Epic, GOG, Amazon 및 사용자 지정 게임마다 로컬 백업을 만들어 업로드합니다. 세이브 폴더가 없는 게임은 건너뜁니다.",
+  "cloud.bulkDesc": "Creates a local backup and uploads it for every installed game from a supported store. Games without a save folder are skipped.",
   "cloud.bulkBtn": "모두 백업",
   "cloud.bulkNone": "관리되는 세이브 폴더가 있는 설치된 게임을 찾지 못했습니다.",
   "cloud.bulkDone": "백업 완료: 게임 {total}개, 실패 {failed}개.",

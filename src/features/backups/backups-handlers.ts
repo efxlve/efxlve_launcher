@@ -22,6 +22,7 @@ import {
   epicPreviewBackup,
   epicRestoreBackup,
   epicSelectFolderDialog,
+  epicSetCustomSavePath,
 } from "../../epic";
 import { askRestorePreview } from "../cloud-backup/restore-preview-dialog";
 import { bulkLocalBackupAction } from "../cloud-backup/cloud-backup-actions";
@@ -149,14 +150,29 @@ export function handleBackupsAction(act: string | undefined, t: HTMLElement, id?
 
     case "backups-create":
       if (id) {
-        void epicBackupSave(id)
-          .then((info) => {
+        void (async () => {
+          try {
+            const info = await epicBackupSave(id);
             toast(i18nT("backup.created", { size: fmtBytes(info.size_bytes), count: info.file_count }), "ok");
             void hydrateBackupsPage(true);
-          })
-          .catch((error) =>
-            toast(i18nT("backup.failed", { msg: localizeMessage(String(error)) }), "err"),
-          );
+          } catch (error) {
+            if (!String(error).includes("backup.noSaveDir")) {
+              toast(i18nT("backup.failed", { msg: localizeMessage(String(error)) }), "err");
+              return;
+            }
+            // No detected save folder: let the user point at it once.
+            const chosen = await epicSelectFolderDialog(null, i18nT("manage.chooseSaveFolderTitle")).catch(() => null);
+            if (!chosen) return;
+            try {
+              await epicSetCustomSavePath(id, chosen);
+              const info = await epicBackupSave(id, chosen);
+              toast(i18nT("backup.created", { size: fmtBytes(info.size_bytes), count: info.file_count }), "ok");
+              void hydrateBackupsPage(true);
+            } catch (inner) {
+              toast(i18nT("backup.failed", { msg: localizeMessage(String(inner)) }), "err");
+            }
+          }
+        })();
       }
       return true;
 

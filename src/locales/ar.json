@@ -3387,7 +3387,7 @@
   "cloud.retentionDesc": "يحذف النسخ المحلية والأرشيفات السحابية الأقدم بعد نسخ احتياطي ناجح. لا تُحذف نسخ ما قبل الاستعادة أبدًا. القيمة 0 تحتفظ بكل شيء.",
   "cloud.retentionSaved": "تم حفظ إعداد الاحتفاظ السحابي.",
   "cloud.bulkTitle": "نسخ كل الألعاب المثبتة احتياطيًا",
-  "cloud.bulkDesc": "ينشئ نسخة محلية ويرفعها لكل لعبة مثبتة من Epic وGOG وAmazon والألعاب المخصصة. تُتجاوز الألعاب التي ليس لها مجلد حفظ.",
+  "cloud.bulkDesc": "Creates a local backup and uploads it for every installed game from a supported store. Games without a save folder are skipped.",
   "cloud.bulkBtn": "انسخ الكل",
   "cloud.bulkNone": "لم يُعثر على ألعاب مثبتة لها مجلد حفظ مُدار.",
   "cloud.bulkDone": "اكتمل النسخ: {total} لعبة، {failed} فشلت.",

@@ -32,7 +32,7 @@ function installedKeys(): string[] {
   const seen = new Set<string>();
   for (const item of S.allGamesMap.values()) {
     if (!item.installed) continue;
-    if (!["epic", "gog", "amazon", "custom", "steam", "ubisoft", "ea"].includes(item.source)) {
+    if (!["epic", "gog", "amazon", "custom", "steam", "ubisoft", "ea", "xbox", "battlenet"].includes(item.source)) {
       continue;
     }
     const key = item.source === "epic" ? item.id : item.key;

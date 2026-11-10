@@ -3387,7 +3387,7 @@
   "cloud.retentionDesc": "Удаляет старые локальные копии и облачные архивы после успешного резервного копирования. Снимки перед восстановлением не удаляются. 0 — хранить всё.",
   "cloud.retentionSaved": "Настройка хранения в облаке сохранена.",
   "cloud.bulkTitle": "Резервная копия всех установленных игр",
-  "cloud.bulkDesc": "Создаёт локальную копию и загружает её для каждой установленной игры Epic, GOG, Amazon и собственной. Игры без папки сохранений пропускаются.",
+  "cloud.bulkDesc": "Creates a local backup and uploads it for every installed game from a supported store. Games without a save folder are skipped.",
   "cloud.bulkBtn": "Копировать все",
   "cloud.bulkNone": "Не найдено установленных игр с управляемой папкой сохранений.",
   "cloud.bulkDone": "Копирование завершено: игр — {total}, ошибок — {failed}.",

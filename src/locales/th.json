@@ -3387,7 +3387,7 @@
   "cloud.retentionDesc": "ลบแบ็กอัปในเครื่องและไฟล์คลาวด์เก่าหลังแบ็กอัปสำเร็จ สแนปช็อตก่อนกู้คืนจะไม่ถูกลบ ค่า 0 จะเก็บทั้งหมด",
   "cloud.retentionSaved": "บันทึกการตั้งค่าการเก็บรักษาคลาวด์แล้ว",
   "cloud.bulkTitle": "แบ็กอัปเกมที่ติดตั้งทั้งหมด",
-  "cloud.bulkDesc": "สร้างแบ็กอัปในเครื่องและอัปโหลดสำหรับเกม Epic, GOG, Amazon และเกมกำหนดเองที่ติดตั้งไว้ เกมที่ไม่มีโฟลเดอร์เซฟจะถูกข้าม",
+  "cloud.bulkDesc": "Creates a local backup and uploads it for every installed game from a supported store. Games without a save folder are skipped.",
   "cloud.bulkBtn": "แบ็กอัปทั้งหมด",
   "cloud.bulkNone": "ไม่พบเกมที่ติดตั้งซึ่งมีโฟลเดอร์เซฟที่จัดการอยู่",
   "cloud.bulkDone": "แบ็กอัปเสร็จ: {total} เกม, ล้มเหลว {failed}",

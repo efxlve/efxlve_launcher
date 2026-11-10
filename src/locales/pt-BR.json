@@ -3387,7 +3387,7 @@
   "cloud.retentionDesc": "Exclui backups locais e arquivos na nuvem mais antigos após um backup bem-sucedido. Snapshots anteriores à restauração nunca são excluídos. 0 mantém tudo.",
   "cloud.retentionSaved": "Retenção na nuvem salva.",
   "cloud.bulkTitle": "Fazer backup de todos os jogos instalados",
-  "cloud.bulkDesc": "Cria um backup local e o envia para cada jogo instalado da Epic, GOG, Amazon e personalizado. Jogos sem pasta de save são ignorados.",
+  "cloud.bulkDesc": "Creates a local backup and uploads it for every installed game from a supported store. Games without a save folder are skipped.",
   "cloud.bulkBtn": "Fazer backup de todos",
   "cloud.bulkNone": "Nenhum jogo instalado com pasta de save gerenciada foi encontrado.",
   "cloud.bulkDone": "Backup concluído: {total} jogos, {failed} falharam.",

@@ -193,10 +193,11 @@ the cheaper roots miss.
   account setup. The per-game **Include in automatic backups** switch opts a
   game out of the exit backup, the daily run and both bulk buttons.
 - **Local backups** is the first group on the page. **Back up all games
-  locally** walks every installed Epic, GOG, Amazon and custom game and writes
-  a local archive with no provider configured; **Open backup folder** opens the
-  root that holds them. **Backup location** moves that root to another drive;
-  an empty field restores `<config>/backups`.
+  locally** walks every installed game from a supported store (Epic, GOG,
+  Amazon, Steam, Ubisoft, EA, Xbox, Battle.net and custom) and writes a local
+  archive with no provider configured; **Open backup folder** opens the root
+  that holds them. **Backup location** moves that root to another drive; an
+  empty field restores `<config>/backups`.
 - **Daily local backup** creates one local backup per installed game at most
   once a day while the launcher is open, even with no cloud provider. It shares
   the progress row with the bulk actions.
@@ -204,12 +205,12 @@ the cheaper roots miss.
   after a successful backup. 0 (the default) keeps every backup; pre-restore
   snapshots are never pruned. A per-game value in Manage → Save wins over this
   shared number.
-- **Back up all installed games** walks every installed Epic, GOG, Amazon and
-  custom game, creates a local backup and uploads it. The row shows progress
-  while it runs and reports the failure count at the end; games without a save
-  folder are skipped. **Restore newest** does the same walk and restores each
-  game's newest cloud archive after a confirmation; every restore snapshots the
-  current local saves first.
+- **Back up all installed games** walks every installed game from a supported
+  store, creates a local backup and uploads it. The row shows progress while it
+  runs and reports the failure count at the end; games without a save folder are
+  skipped. **Restore newest** does the same walk and restores each game's newest
+  cloud archive after a confirmation; every restore snapshots the current local
+  saves first.
 
 **Game Manage drawer**
 

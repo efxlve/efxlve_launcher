@@ -3387,7 +3387,7 @@
   "cloud.retentionDesc": "備份成功後刪除較舊的本機備份與雲端封存。還原前的快照永遠不會刪除。0 表示全部保留。",
   "cloud.retentionSaved": "雲端保留設定已儲存。",
   "cloud.bulkTitle": "備份所有已安裝遊戲",
-  "cloud.bulkDesc": "為每個已安裝的 Epic、GOG、Amazon 與自訂遊戲建立本機備份並上傳。沒有存檔資料夾的遊戲會被略過。",
+  "cloud.bulkDesc": "Creates a local backup and uploads it for every installed game from a supported store. Games without a save folder are skipped.",
   "cloud.bulkBtn": "全部備份",
   "cloud.bulkNone": "找不到具有受管理存檔資料夾的已安裝遊戲。",
   "cloud.bulkDone": "備份完成：{total} 個遊戲，{failed} 個失敗。",

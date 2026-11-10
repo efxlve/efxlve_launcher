@@ -3387,7 +3387,7 @@
   "cloud.retentionDesc": "Löscht ältere lokale Sicherungen und Cloud-Archive nach einer erfolgreichen Sicherung. Sicherungen vor einer Wiederherstellung werden nie gelöscht. 0 behält alles.",
   "cloud.retentionSaved": "Cloud-Aufbewahrung gespeichert.",
   "cloud.bulkTitle": "Alle installierten Spiele sichern",
-  "cloud.bulkDesc": "Erstellt für jedes installierte Epic-, GOG-, Amazon- und eigene Spiel eine lokale Sicherung und lädt sie hoch. Spiele ohne Speicherordner werden übersprungen.",
+  "cloud.bulkDesc": "Creates a local backup and uploads it for every installed game from a supported store. Games without a save folder are skipped.",
   "cloud.bulkBtn": "Alle sichern",
   "cloud.bulkNone": "Keine installierten Spiele mit verwaltetem Speicherordner gefunden.",
   "cloud.bulkDone": "Sicherung abgeschlossen: {total} Spiele, {failed} fehlgeschlagen.",

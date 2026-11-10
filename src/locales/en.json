@@ -3387,7 +3387,7 @@
   "cloud.retentionDesc": "Delete older local backups and cloud archives after a successful backup. Pre-restore snapshots are never deleted. 0 keeps everything.",
   "cloud.retentionSaved": "Cloud retention saved.",
   "cloud.bulkTitle": "Back up all installed games",
-  "cloud.bulkDesc": "Creates a local backup and uploads it for every installed Epic, GOG, Amazon and custom game. Games without a save folder are skipped.",
+  "cloud.bulkDesc": "Creates a local backup and uploads it for every installed game from a supported store. Games without a save folder are skipped.",
   "cloud.bulkBtn": "Back up all",
   "cloud.bulkNone": "No installed games with a managed save folder were found.",
   "cloud.bulkDone": "Backup finished: {total} games, {failed} failed.",
