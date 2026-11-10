@@ -11,7 +11,7 @@ This page is the **short version**. You do not need to understand the architectu
 
 ## The one-minute version
 
-1. **Settings → Cloud** → turn on **Enable Cloud Save Backup**.
+1. **Settings → Cloud Saves & Backup** → turn on **Enable Cloud Save Backup**.
 2. Choose the provider that matches your guide.
 3. Fill the two or three fields the guide names.
 4. Press **Test Connection**, then **Save**.
@@ -180,7 +180,7 @@ the cheaper roots miss.
 
 ## 4. User flows
 
-**Settings → Cloud**
+**Settings → Cloud Saves & Backup**
 
 - Enable cloud backup and choose Folder, Google Drive, WebDAV or rclone.
 - Folder: path field, native folder picker, Test connection, Save.
@@ -239,7 +239,7 @@ the cheaper roots miss.
 
 **Backups page**
 
-The sidebar **Backups** entry lists every installed game with its newest local
+The **Backups** section at the bottom of the page lists every installed game with its newest local
 archive, a stale marker after seven days, and the include switch. Each row can
 back up, export or restore in place, and an imported archive that belongs to a
 game that is not installed stays listed under its game key.
@@ -249,12 +249,12 @@ game's newest save. **Import from a folder** restores those saves and the
 profile on the new PC, then restarts the launcher. The same optional password
 protects both the profile and the saves.
 
-Cloud links from the Manage drawer and the Cloud settings card now open the
-**Cloud** settings section instead of Integrations.
+Cloud links from the Manage drawer and the settings card open the
+**Cloud Saves & Backup** section instead of Integrations.
 
 ### Provider setup
 
-Every provider is configured in **Settings → Cloud**, works on Windows, Linux and
+Every provider is configured in **Settings → Cloud Saves & Backup**, works on Windows, Linux and
 macOS, and stores its settings only on the local machine. The first three fields
 are optional: the launcher creates the `efxlve_saves` folder when it is missing.
 
@@ -265,7 +265,7 @@ Google Drive for desktop, iCloud Drive, Nextcloud desktop, Syncthing or a NAS
 share mounted as a drive.
 
 1. Install and sign in to the sync client, and let it finish its first sync.
-2. Settings → Cloud → enable the feature → choose **Folder**. Press the
+2. Settings → Cloud Saves & Backup → enable the feature → choose **Folder**. Press the
    **Detected on this PC** button for the client, or choose a folder by hand
    (for example `EfxlveSaves` inside OneDrive).
 3. **Test Connection** creates `efxlve_saves` when the folder is writable, then
@@ -318,7 +318,7 @@ directly.
    <https://rclone.org/downloads/> on Linux.
 2. Configure the remote once with `rclone config` and check it with
    `rclone lsd <remote>:`.
-3. In Settings → Cloud choose **rclone**, press **List remotes** and pick one,
+3. In Settings → Cloud Saves & Backup choose **rclone**, press **List remotes** and pick one,
    then append a folder, for example `gdrive:efxlve_saves` or
    `s3:my-bucket/efxlve_saves`.
 4. **Test Connection** creates the folder when needed; **Save** stores the path.
@@ -332,7 +332,7 @@ installing it on Windows.
 #### Launcher profile (custom games, achievements, themes)
 
 Save archives cover game saves; the launcher's own data travels in a separate
-`.efxprofile` archive. **Settings → Cloud → Launcher data** has:
+`.efxprofile` archive. **Settings → Cloud Saves & Backup → Launcher data** has:
 
 - **Export to file** — pick a folder; the archive is written as
   `efxlve_profile_<timestamp>.efxprofile`. Move it with a USB drive or another
@@ -359,7 +359,7 @@ Every import writes a safety archive to
 anything, so a wrong import can be rolled back. The archive itself is not
 encrypted; it relies on the provider's access control, so keep the cloud account
 and the export file private. After a format, install the launcher, configure the
-same provider under Settings → Cloud, and press **Restore from cloud**: the
+same provider under Settings → Cloud Saves & Backup, and press **Restore from cloud**: the
 newest profile is shown with its date. The launcher cannot restore itself before
 a provider is configured because the credentials are deliberately not in the
 profile.

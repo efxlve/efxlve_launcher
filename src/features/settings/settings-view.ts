@@ -356,7 +356,7 @@ function renderDownloads(): string {
 
 /** Cloud saves page: its own top-level section instead of an Integrations block. */
 function renderCloud(): string {
-  return infoBox("cloud.pageInfo") + renderCloudBackupSettingsGroup() + renderBackupsSection();
+  return renderCloudBackupSettingsGroup() + renderBackupsSection();
 }
 
 /**

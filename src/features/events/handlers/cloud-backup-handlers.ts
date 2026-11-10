@@ -36,6 +36,7 @@ import {
   openGoogleDriveGuideModal,
   closeGoogleDriveGuideModal,
 } from "../../cloud-backup/cloud-backup-view";
+import { closeCloudGuideModal, openCloudGuideModal } from "../../cloud-backup/cloud-guide";
 import type { CloudBackupProvider } from "../../../epic";
 import {
   cloudBackupOpenFolder,
@@ -129,6 +130,14 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
 
     case "open-gdrive-guide":
       openGoogleDriveGuideModal();
+      return true;
+
+    case "open-cloud-guide":
+      openCloudGuideModal();
+      return true;
+
+    case "close-cloud-guide":
+      closeCloudGuideModal();
       return true;
 
     case "close-gdrive-guide":
@@ -248,6 +257,15 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
     case "cloud-local-bulk":
       void bulkLocalBackupAction();
       return true;
+
+    case "cloud-hero-enable": {
+      const current = S.cloudBackupSettings;
+      void updateCloudBackupSettings({
+        enabled: true,
+        provider: current && current.provider !== "none" ? current.provider : "folder",
+      });
+      return true;
+    }
 
     case "cloud-local-open-folder":
       void epicOpenLocalBackupsRoot()

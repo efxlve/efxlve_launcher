@@ -15,7 +15,7 @@ const FOLDER_GUIDE_URL = `${CLOUD_DOCS}/CLOUD_FOLDER_GUIDE.md`;
 const WEBDAV_GUIDE_URL = `${CLOUD_DOCS}/CLOUD_WEBDAV_GUIDE.md`;
 const RCLONE_GUIDE_URL = `${CLOUD_DOCS}/CLOUD_RCLONE_GUIDE.md`;
 
-/** Renders the Cloud Save Backup configuration card in Settings > Integrations. */
+/** Renders the Cloud Saves & Backup page in Settings. */
 export function renderCloudBackupSettingsGroup(): string {
   if (!S.cloudBackupSettings) {
     void initCloudBackupSettings();
@@ -65,13 +65,53 @@ export function renderCloudBackupSettingsGroup(): string {
     )
     .join("");
 
-  const providerSeg = `
-    <div class="seg" role="radiogroup">
-      <button class="${activeProvider === "folder" ? "active" : ""}" data-act="set-cloud-provider" data-provider="folder">${t("cloud.providerFolder")}</button>
-      <button class="${activeProvider === "google_drive" ? "active" : ""}" data-act="set-cloud-provider" data-provider="google_drive">Google Drive</button>
-      <button class="${activeProvider === "webdav" ? "active" : ""}" data-act="set-cloud-provider" data-provider="webdav">WebDAV / Nextcloud</button>
-      <button class="${activeProvider === "rclone" ? "active" : ""}" data-act="set-cloud-provider" data-provider="rclone">rclone</button>
-    </div>`;
+  const providerLabel =
+    st.provider === "google_drive"
+      ? "Google Drive"
+      : st.provider === "folder"
+        ? t("cloud.providerFolderName")
+        : st.provider === "rclone"
+          ? "rclone"
+          : "WebDAV";
+  const backupList = S.backupsPage?.list ?? [];
+  const backupsKnown = S.backupsPage !== null;
+  const backedUpGames = new Set(backupList.map((info) => info.app_name)).size;
+  const lastLocal = backupList.reduce((max, info) => Math.max(max, info.timestamp), 0);
+  const lastCloud = st.lastSyncTime ?? latestProfile?.timestamp ?? 0;
+
+  const providerCards = `
+    <button type="button" class="cs-provider${activeProvider === "folder" ? " is-active" : ""}" data-act="set-cloud-provider" data-provider="folder" aria-pressed="${activeProvider === "folder"}">
+      <span class="cs-provider-icon">${icon("folder", 16)}</span>
+      <span class="cs-provider-body">
+        <span class="cs-provider-name">${t("cloud.providerFolderName")}</span>
+        <span class="cs-provider-desc">${t("cloud.providerFolderDesc")}</span>
+      </span>
+      <span class="cs-provider-check">${activeProvider === "folder" ? icon("check", 14) : ""}</span>
+    </button>
+    <button type="button" class="cs-provider${activeProvider === "google_drive" ? " is-active" : ""}" data-act="set-cloud-provider" data-provider="google_drive" aria-pressed="${activeProvider === "google_drive"}">
+      <span class="cs-provider-icon">${icon("globe", 16)}</span>
+      <span class="cs-provider-body">
+        <span class="cs-provider-name">Google Drive</span>
+        <span class="cs-provider-desc">${t("cloud.providerGdriveDesc")}</span>
+      </span>
+      <span class="cs-provider-check">${activeProvider === "google_drive" ? icon("check", 14) : ""}</span>
+    </button>
+    <button type="button" class="cs-provider${activeProvider === "webdav" ? " is-active" : ""}" data-act="set-cloud-provider" data-provider="webdav" aria-pressed="${activeProvider === "webdav"}">
+      <span class="cs-provider-icon">${icon("server", 16)}</span>
+      <span class="cs-provider-body">
+        <span class="cs-provider-name">WebDAV / Nextcloud</span>
+        <span class="cs-provider-desc">${t("cloud.providerWebdavDesc")}</span>
+      </span>
+      <span class="cs-provider-check">${activeProvider === "webdav" ? icon("check", 14) : ""}</span>
+    </button>
+    <button type="button" class="cs-provider${activeProvider === "rclone" ? " is-active" : ""}" data-act="set-cloud-provider" data-provider="rclone" aria-pressed="${activeProvider === "rclone"}">
+      <span class="cs-provider-icon">${icon("terminal", 16)}</span>
+      <span class="cs-provider-body">
+        <span class="cs-provider-name">rclone</span>
+        <span class="cs-provider-desc">${t("cloud.providerRcloneDesc")}</span>
+      </span>
+      <span class="cs-provider-check">${activeProvider === "rclone" ? icon("check", 14) : ""}</span>
+    </button>`;
 
   let providerConfig = "";
   if (activeProvider === "folder") {
@@ -270,7 +310,7 @@ export function renderCloudBackupSettingsGroup(): string {
   const profileRow = `
     <div class="row settings-row stacked">
       <div class="row-main">
-        <div class="settings-row-title">${icon("user", 14)} ${t("profile.title")}</div>
+        <div class="settings-row-title">${icon("user", 14)} ${t("cloud.profileRowTitle")}</div>
         <div class="settings-row-desc">${t("profile.desc")}</div>
       </div>
       <div class="mg-inline" style="gap:8px;flex-wrap:wrap;margin-top:8px">
@@ -299,18 +339,72 @@ export function renderCloudBackupSettingsGroup(): string {
       </div>
     </div>` : "";
 
-  const providerRow = isEnabled ? `
-    <div class="row settings-row">
-      <div class="row-main">
-        <div class="settings-row-title">${t("cloud.providerTitle")}</div>
-        <div class="settings-row-desc">${t("cloud.providerDesc")}</div>
-      </div>
-      <div class="settings-row-control">${providerSeg}</div>
-    </div>` : "";
-
   const localBusy = S.cloudBulkProgress?.local ? S.cloudBulkProgress : null;
+
+  const hero = `
+    <div class="cs-hero">
+      <div class="cs-hero-head">
+        <p class="cs-hero-lead">${t("cloud.heroLead")}</p>
+        <button type="button" class="btn ghost small" data-act="open-cloud-guide">${icon("info", 13)} ${t("cloud.heroGuide")}</button>
+      </div>
+      <div class="cs-dest-grid">
+        <article class="cs-dest">
+          <div class="cs-dest-head">
+            <span class="cs-dest-icon">${icon("monitor", 16)}</span>
+            <span class="cs-dest-name">${t("cloud.heroLocal")}</span>
+            <span class="cs-dest-state is-ok">${icon("check", 12)} ${t("cloud.heroReady")}</span>
+          </div>
+          <div class="cs-dest-path" title="${esc(localRoot.effective)}">${esc(localRoot.effective || "—")}</div>
+          <p class="cs-dest-note">${t("cloud.heroLocalHint")}</p>
+          <div class="cs-dest-meta">
+            <span>${backupsKnown ? (backedUpGames > 0 ? t("cloud.heroGames", { count: backedUpGames }) : t("cloud.heroNoBackup")) : t("cloud.statusChecking")}</span>
+            ${lastLocal ? `<span>${t("cloud.heroLast", { date: fmtCloudDate(lastLocal) })}</span>` : ""}
+          </div>
+          <div class="cs-dest-actions">
+            <button type="button" class="btn primary small" data-act="backups-bulk">${icon("package", 13)} ${t("backups.backUpAll")}</button>
+            <button type="button" class="btn ghost small" data-act="cloud-local-open-folder">${icon("folder", 13)} ${t("cloud.openBackupFolder")}</button>
+          </div>
+        </article>
+        <article class="cs-dest${isEnabled ? " is-on" : ""}">
+          <div class="cs-dest-head">
+            <span class="cs-dest-icon">${icon("cloud", 16)}</span>
+            <span class="cs-dest-name">${t("cloud.heroCloud")}</span>
+            <span class="cs-dest-state${isEnabled ? " is-ok" : ""}">${isEnabled ? `${icon("check", 12)} ${t("cloud.heroCloudOn")}` : t("cloud.heroCloudOff")}</span>
+          </div>
+          <div class="cs-dest-path">${esc(isEnabled ? providerLabel : "—")}</div>
+          <p class="cs-dest-note">${isEnabled ? t("cloud.heroCloudHintOn") : t("cloud.heroCloudHintOff")}</p>
+          <div class="cs-dest-meta">
+            <span>${lastCloud ? t("cloud.heroLast", { date: fmtCloudDate(lastCloud) }) : t("cloud.heroNoBackup")}</span>
+          </div>
+          <div class="cs-dest-actions">
+            ${isEnabled
+              ? `<span class="cs-dest-hint">${t("cloud.heroCloudSetup")}</span>`
+              : `<button type="button" class="btn primary small" data-act="cloud-hero-enable">${icon("cloud", 13)} ${t("cloud.heroEnable")}</button>`}
+          </div>
+        </article>
+      </div>
+      <p class="cs-hero-note">${icon("shield", 12)} ${t("cloud.pageInfo")}</p>
+    </div>`;
+
+  const steps = `
+    <ol class="cs-steps">
+      <li class="cs-step">
+        <span class="cs-step-num">1</span>
+        <div><h4 class="cs-step-title">${t("cloud.step1Title")}</h4><p class="cs-step-desc">${t("cloud.step1Desc")}</p></div>
+      </li>
+      <li class="cs-step">
+        <span class="cs-step-num">2</span>
+        <div><h4 class="cs-step-title">${t("cloud.step2Title")}</h4><p class="cs-step-desc">${t("cloud.step2Desc")}</p></div>
+      </li>
+      <li class="cs-step">
+        <span class="cs-step-num">3</span>
+        <div><h4 class="cs-step-title">${t("cloud.step3Title")}</h4><p class="cs-step-desc">${t("cloud.step3Desc")}</p></div>
+      </li>
+    </ol>`;
+
   const localSection = `
     <h3 class="section-title">${t("cloud.localSectionTitle")}</h3>
+    <p class="cs-lead">${t("cloud.localLead")}</p>
     <div class="list settings-group">
       <div class="row settings-row stacked">
         <div class="row-main">
@@ -340,19 +434,35 @@ export function renderCloudBackupSettingsGroup(): string {
       ${localBackupRow}
     </div>`;
 
-  return `
-    ${localSection}
-    <h3 class="section-title">${t("cloud.title")}</h3>
+  const cloudSection = `
+    <h3 class="section-title">${t("cloud.cloudSectionTitle")}</h3>
+    <p class="cs-lead">${t("cloud.cloudLead")}</p>
     <div class="list settings-group">
       ${toggleRow}
-      ${providerRow}
+      ${isEnabled
+        ? `<div class="row settings-row stacked">
+             <div class="row-main">
+               <div class="settings-row-title">${t("cloud.providerTitle")}</div>
+               <div class="settings-row-desc">${t("cloud.providerDesc")}</div>
+             </div>
+             <div class="cs-provider-grid">${providerCards}</div>
+           </div>`
+        : ""}
       ${isEnabled ? providerConfig : ""}
       ${autoSyncRow}
       ${retentionRow}
       ${bulkRow}
+    </div>`;
+
+  const profileSection = `
+    <h3 class="section-title">${t("profile.title")}</h3>
+    <p class="cs-lead">${t("cloud.profileLead")}</p>
+    <div class="list settings-group">
       ${profileRow}
       ${profileAutoRow}
     </div>`;
+
+  return `${hero}${steps}${localSection}${cloudSection}${profileSection}`;
 }
 
 /** Formats a UNIX timestamp into a human-friendly localized date string. */
