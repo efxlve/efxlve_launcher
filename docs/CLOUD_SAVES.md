@@ -255,7 +255,8 @@ archive that belongs to a game that is not installed stays listed under the
 title it was exported from. A search field and All / Backed up / Missing /
 Stale filters keep a large library manageable; the shield button re-hashes an
 archive against the SHA-256 recorded at backup time and reports a damaged copy
-before a restore would.
+before a restore would. The list is local-only: cloud archives are listed on
+each game's **Manage → Save** page.
 
 **Export everything** writes a migration folder: the launcher profile plus every
 game's newest save. **Import from a folder** restores those saves and the

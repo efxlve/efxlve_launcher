@@ -185,7 +185,7 @@ export function renderBackupsSection(): string {
                  <button type="button" class="btn ghost small" data-act="backups-create" data-id="${esc(key)}">${icon("cloud", 13)} ${esc(t("backups.backUp"))}</button>`
               : ""}
             ${info
-              ? `<button type="button" class="icon-btn" data-act="backups-verify" data-id="${esc(key)}" data-bid="${esc(info.id)}" title="${esc(t("backups.verify"))}">${icon("shield", 14)}</button>
+              ? `<button type="button" class="icon-btn" data-act="backups-verify" data-id="${esc(key)}" data-bid="${esc(info.id)}" title="${esc(t("backups.verify"))}" aria-label="${esc(t("backups.verify"))}">${icon("shield", 14)}</button>
                  <button type="button" class="btn ghost small" data-act="backups-export" data-id="${esc(key)}" data-bid="${esc(info.id)}">${icon("download", 13)} ${esc(t("backups.export"))}</button>
                  <button type="button" class="btn primary small" data-act="backups-restore" data-id="${esc(key)}" data-bid="${esc(info.id)}" ${isInstalled ? "" : "disabled"}>${icon("upload", 13)} ${esc(t("ach.restore"))}</button>`
               : `<button type="button" class="btn ghost small" data-act="backups-import" data-id="${esc(key)}">${icon("upload", 13)} ${esc(t("manage.importSave"))}</button>`}
@@ -235,7 +235,8 @@ export function renderBackupsSection(): string {
 
       ${keys.length === 0
         ? `<div class="bk-empty">${t("backups.empty")}</div>`
-        : `<div class="bk-toolbar">
+        : `<p class="bk-note">${icon("info", 12)} ${t("backups.localOnlyNote")}</p>
+           <div class="bk-toolbar">
              <input id="backups-search" class="input bk-search" type="search" placeholder="${t("backups.searchPlaceholder")}" value="${esc(S.backupsQuery)}" aria-label="${t("backups.searchPlaceholder")}" />
              <div class="bk-filters">${filterButtons}</div>
            </div>

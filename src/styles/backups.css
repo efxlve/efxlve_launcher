@@ -208,6 +208,20 @@
   flex-wrap: wrap;
 }
 
+.bk-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.bk-note svg {
+  flex: none;
+  margin-top: 1px;
+}
+
 .bk-search {
   flex: 1 1 240px;
   min-width: 200px;

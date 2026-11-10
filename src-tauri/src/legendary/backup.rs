@@ -1546,7 +1546,10 @@ fn import_backup_into(
         if secret.is_empty() {
             return Err("@t:backup.passwordRequired".to_string());
         }
-        crate::cloud_backup::crypto::decrypt_file(file, &plain, secret)?;
+        if let Err(error) = crate::cloud_backup::crypto::decrypt_file(file, &plain, secret) {
+            let _ = std::fs::remove_file(&plain);
+            return Err(error);
+        }
         plain.as_path()
     } else {
         file
@@ -1770,6 +1773,23 @@ pub fn delete_backup(app_name: &str, backup_id: &str) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn retention_keeps_snapshots_and_understands_serial_ids() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve_retention_serial_{}_{}",
+            std::process::id(),
+            now_secs()
+        ));
+        for name in ["1700000000", "1700000001-1", "pre-restore-1700000002"] {
+            std::fs::create_dir_all(root.join(name)).unwrap();
+        }
+        prune_local_dir(&root, 1);
+        assert!(!root.join("1700000000").exists());
+        assert!(root.join("1700000001-1").exists());
+        assert!(root.join("pre-restore-1700000002").exists());
+        let _ = std::fs::remove_dir_all(&root);
+    }
 
     #[test]
     fn list_backups_ignores_staging_dirs() {
