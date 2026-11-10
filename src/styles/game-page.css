@@ -2094,6 +2094,11 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 .backup-item-meta { display: flex; flex-direction: column; }
 .backup-item-title { font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .backup-item-sub { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.backup-item-label { color: var(--text-2); }
+.backup-item-device { margin-top: 1px; }
+.backup-item.is-pinned { box-shadow: inset 2px 0 0 var(--accent); }
+.backup-item-title svg { vertical-align: -1px; color: var(--accent); }
+.icon-btn.is-active { color: var(--accent); background: var(--accent-tint); }
 .backup-item-actions { display: flex; gap: 4px; }
 .backup-empty { font-size: 12px; color: var(--text-3); }
 

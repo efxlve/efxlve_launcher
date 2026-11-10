@@ -7,12 +7,15 @@
 
 import {
   checkInstallPathState,
+  cloudBackupDownloadGame,
+  cloudBackupListGame,
   epicCancelDownload,
   epicCheckUpdates,
   epicGetQueue,
   epicInstallGame,
   epicLaunchGame,
   epicLaunchSupport,
+  epicListBackups,
   epicStopGame,
   epicListInstalled,
   epicListSkipped,
@@ -23,10 +26,11 @@ import {
   stopGameAtPath,
 } from "../epic";
 import { customGamesLaunch, customGamesStop } from "../custom-games";
-import { isTauri, IGNORED_UPDATES_KEY } from "./constants";
+import { isTauri, IGNORED_UPDATES_KEY, CLOUD_PRELAUNCH_SKIP_KEY } from "./constants";
 import { closeModal } from "./dom";
 import { closeManagePopup } from "../features/manage/manage-view";
-import { t } from "../i18n";
+import { t, currentLanguage } from "../i18n";
+import { askConfirm } from "./confirm-dialog";
 import { gogLaunchGame, gogStopGame, gogUninstallGame } from "../gog";
 import { steamGameAction } from "../steam";
 import { watchSteamAchievements } from "./steam-watch";
@@ -45,7 +49,7 @@ import {
   showEpicRelayNoticeOnce,
 } from "../features/epic-launcher/epic-launcher-notice";
 import { syncLibraryHeadingCount } from "../features/library/library-view";
-import { blockedOffline } from "./offline";
+import { blockedOffline, hasConnection } from "./offline";
 
 /** A launch can spend a while creating a compatibility prefix; its toast stays
  *  open and receives progress text until the launch call returns. */
@@ -120,6 +124,83 @@ export async function epicStop(appName: string): Promise<void> {
   }
 }
 
+/** Cloud archives the user chose to skip at launch, per game. */
+function readPrelaunchSkips(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(CLOUD_PRELAUNCH_SKIP_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writePrelaunchSkip(appName: string, remoteId: string | null): void {
+  try {
+    const map = readPrelaunchSkips();
+    if (remoteId) map[appName] = remoteId;
+    else delete map[appName];
+    localStorage.setItem(CLOUD_PRELAUNCH_SKIP_KEY, JSON.stringify(map));
+  } catch {
+    // A storage failure only costs one extra prompt.
+  }
+}
+
+/**
+ * Steam-Cloud style check: when the configured provider holds a newer archive
+ * than this PC, offer to pull it in before the game starts. Opt-in, online only,
+ * and silent when the archive is not newer, so a launch keeps its speed.
+ * Returns false only when the restore was chosen and failed.
+ */
+async function offerNewerCloudSave(appName: string): Promise<boolean> {
+  const st = S.cloudBackupSettings;  if (!st?.enabled || st.provider === "none" || !st.checkBeforeLaunch) return true;
+  if (S.offlineMode || !hasConnection()) return true;
+  const summary = summaryOf(appName);
+  if (!summary?.installed) return true;
+  try {
+    const [cloud, local] = await Promise.all([
+      cloudBackupListGame(appName),
+      epicListBackups(appName),
+    ]);
+    const newestCloud = cloud?.[0];
+    if (!newestCloud) return true;
+    const newestLocal = local?.[0];
+    if (newestLocal && newestLocal.timestamp >= newestCloud.timestamp) return true;
+    // The user already chose "play anyway" for this exact archive.
+    if (readPrelaunchSkips()[appName] === newestCloud.remoteId) return true;
+    const when = new Date(newestCloud.timestamp * 1000).toLocaleString(currentLanguage(), {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+    const restore = await askConfirm({
+      title: t("cloud.preLaunchFoundTitle"),
+      name: summary.title || appName,
+      body: t("cloud.preLaunchBody", { date: when }),
+      confirm: t("cloud.preLaunchRestore"),
+      cancel: t("cloud.preLaunchPlayNow"),
+    });
+    if (!restore) {
+      writePrelaunchSkip(appName, newestCloud.remoteId);
+      return true;
+    }
+    const checking = progressToast(t("cloud.preLaunchRestoring"));
+    try {
+      await cloudBackupDownloadGame(appName, newestCloud.remoteId, newestCloud.backupId);
+      checking.close();
+      writePrelaunchSkip(appName, null);
+      toast(t("cloud.preLaunchRestored"), "ok");
+      return true;
+    } catch (error) {
+      checking.close();
+      toast(t("cloud.preLaunchFailed", { msg: String(error) }), "err");
+      return false;
+    }
+  } catch {
+    // A provider hiccup must never block a launch.
+    return true;
+  }
+}
+
 export async function epicPlay(appName: string): Promise<void> {
   if (appName.startsWith("custom::")) {
     pushRecent(appName);
@@ -139,6 +220,8 @@ export async function epicPlay(appName: string): Promise<void> {
     await epicPlay(backend);
     return;
   }
+  // Steam-Cloud style check runs once, for the key that actually launches.
+  if (!(await offerNewerCloudSave(appName))) return;
   // A copy whose drive or folder disappeared cannot launch. Name the problem
   // instead of letting the store CLI return a raw filesystem error.
   if (isTauri && !appName.startsWith("steam::") && !isCompanionKey(appName)) {

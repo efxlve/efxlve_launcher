@@ -33,6 +33,15 @@ pub struct SaveBackupInfo {
     /// installed yet still has a name in the backups list.
     #[serde(default)]
     pub title: Option<String>,
+    /// The machine that created the archive (host name when available).
+    #[serde(default)]
+    pub device: Option<String>,
+    /// A user label such as "Before the boss".
+    #[serde(default)]
+    pub label: Option<String>,
+    /// A pinned local backup is never removed by local retention.
+    #[serde(default)]
+    pub pinned: bool,
     /// The game key this archive was exported from, when it was imported from
     /// another store or PC. `None` for a backup made on this game.
     #[serde(default)]
@@ -461,6 +470,9 @@ pub struct BackupPreview {
     pub origin_app_name: Option<String>,
     /// UNIX seconds when the archive was imported; `None` for a local backup.
     pub imported_at: Option<u64>,
+    /// Machine that created the archive and the optional user label.
+    pub device: Option<String>,
+    pub label: Option<String>,
 }
 
 /// A backup id is one folder name: `1750000000` or `pre-restore-…`. Anything
@@ -586,6 +598,8 @@ fn preview_from_backup_dir(
         target_exists,
         origin_app_name: info.origin_app_name,
         imported_at: info.imported_at,
+        device: info.device,
+        label: info.label,
     })
 }
 
@@ -634,8 +648,10 @@ fn snapshot_before_restore(app_name: &str, save_path: &Path) -> Result<Option<St
         save_root,
         save_rel,
         content_hash,
+        device: None,
+        label: None,
+        pinned: false,
         title: None,
-
         origin_app_name: None,
         imported_at: None,
     };
@@ -1266,6 +1282,14 @@ fn prune_local_dir(dir: &Path, keep: u32) {
             if name.starts_with('.') || name.starts_with("pre-restore-") {
                 return None;
             }
+            let pinned = std::fs::read_to_string(entry.path().join("backup_info.json"))
+                .ok()
+                .and_then(|text| serde_json::from_str::<SaveBackupInfo>(&text).ok())
+                .map(|info| info.pinned)
+                .unwrap_or(false);
+            if pinned {
+                return None;
+            }
             // `1750000000-1` is a same-second duplicate; its age is the prefix.
             let timestamp = name.split('-').next()?.parse::<u64>().ok()?;
             let path = entry.path();
@@ -1381,8 +1405,10 @@ pub fn create_backup(
         save_root,
         save_rel,
         content_hash,
+        device: device_name(),
+        label: None,
+        pinned: false,
         title: None,
-
         origin_app_name: None,
         imported_at: None,
     };
@@ -1416,6 +1442,47 @@ fn now_secs() -> u64 {
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0)
+}
+
+/// Host name of this machine, used to tell devices apart in the backup list.
+fn device_name() -> Option<String> {
+    std::env::var("COMPUTERNAME")
+        .ok()
+        .or_else(|| std::env::var("HOSTNAME").ok())
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+}
+
+/// Sets a user label and the local-retention pin on one backup.
+pub fn set_backup_label(
+    app_name: &str,
+    backup_id: &str,
+    label: Option<&str>,
+    pinned: bool,
+) -> Result<SaveBackupInfo, String> {
+    let id = safe_backup_id(backup_id)?;
+    set_backup_label_in(&app_backup_dir(app_name), id, label, pinned)
+}
+
+fn set_backup_label_in(
+    game_dir: &Path,
+    id: &str,
+    label: Option<&str>,
+    pinned: bool,
+) -> Result<SaveBackupInfo, String> {
+    let path = game_dir.join(id).join("backup_info.json");
+    let text = std::fs::read_to_string(&path).map_err(|_| "@t:backup.infoNotFound".to_string())?;
+    let mut info: SaveBackupInfo = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+    info.label = label
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string);
+    info.pinned = pinned;
+    let json = serde_json::to_string_pretty(&info).map_err(|e| e.to_string())?;
+    let temp = path.with_extension("json.tmp");
+    std::fs::write(&temp, json).map_err(|e| e.to_string())?;
+    std::fs::rename(&temp, &path).map_err(|e| e.to_string())?;
+    Ok(info)
 }
 
 /// Writes one local backup as a portable `.efxsave` archive in `folder`.
@@ -1834,6 +1901,51 @@ mod tests {
     use super::*;
 
     #[test]
+    fn retention_keeps_pinned_backups() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve_retention_pin_{}_{}",
+            std::process::id(),
+            now_secs()
+        ));
+        for (name, timestamp, pinned) in [
+            ("1700000000", 1_700_000_000u64, false),
+            ("1700000001", 1_700_000_001u64, false),
+            ("1700000002", 1_700_000_002u64, true),
+        ] {
+            let dir = root.join(name);
+            std::fs::create_dir_all(dir.join("data")).unwrap();
+            let info = SaveBackupInfo {
+                id: name.to_string(),
+                app_name: "steam::1".to_string(),
+                timestamp,
+                formatted_date: "x".to_string(),
+                size_bytes: 0,
+                file_count: 0,
+                save_path: "C:/Saves".to_string(),
+                save_root: "Documents".to_string(),
+                save_rel: "Game".to_string(),
+                content_hash: None,
+                device: None,
+                label: None,
+                pinned,
+                title: None,
+                origin_app_name: None,
+                imported_at: None,
+            };
+            std::fs::write(
+                dir.join("backup_info.json"),
+                serde_json::to_string(&info).unwrap(),
+            )
+            .unwrap();
+        }
+        prune_local_dir(&root, 1);
+        assert!(!root.join("1700000000").exists());
+        assert!(root.join("1700000001").exists());
+        assert!(root.join("1700000002").exists());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn retention_keeps_snapshots_and_understands_serial_ids() {
         let root = std::env::temp_dir().join(format!(
             "efxlve_retention_serial_{}_{}",
@@ -1847,6 +1959,58 @@ mod tests {
         assert!(!root.join("1700000000").exists());
         assert!(root.join("1700000001-1").exists());
         assert!(root.join("pre-restore-1700000002").exists());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn labels_and_pins_round_trip_through_the_manifest() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve_label_pin_{}_{}",
+            std::process::id(),
+            now_secs()
+        ));
+        let dir = root.join("1700000000");
+        std::fs::create_dir_all(dir.join("data")).unwrap();
+        let info = SaveBackupInfo {
+            id: "1700000000".to_string(),
+            app_name: "steam::1".to_string(),
+            timestamp: 1_700_000_000,
+            formatted_date: "x".to_string(),
+            size_bytes: 0,
+            file_count: 0,
+            save_path: "C:/Saves".to_string(),
+            save_root: "Documents".to_string(),
+            save_rel: "Game".to_string(),
+            content_hash: None,
+            device: Some("Desktop".to_string()),
+            label: None,
+            pinned: false,
+            title: None,
+            origin_app_name: None,
+            imported_at: None,
+        };
+        std::fs::write(
+            dir.join("backup_info.json"),
+            serde_json::to_string(&info).unwrap(),
+        )
+        .unwrap();
+
+        let updated =
+            set_backup_label_in(&root, "1700000000", Some("  Before the boss  "), true).unwrap();
+        assert_eq!(updated.label.as_deref(), Some("Before the boss"));
+        assert!(updated.pinned);
+        let listed = list_backups_in(&root);
+        assert_eq!(listed[0].label.as_deref(), Some("Before the boss"));
+        assert!(listed[0].pinned);
+        assert_eq!(listed[0].device.as_deref(), Some("Desktop"));
+
+        let cleared = set_backup_label_in(&root, "1700000000", Some("   "), false).unwrap();
+        assert!(cleared.label.is_none());
+        assert!(!cleared.pinned);
+        assert_eq!(
+            set_backup_label_in(&root, "999", None, false).unwrap_err(),
+            "@t:backup.infoNotFound"
+        );
         let _ = std::fs::remove_dir_all(&root);
     }
 
@@ -1872,6 +2036,9 @@ mod tests {
             save_root: "Documents".to_string(),
             save_rel: "Game".to_string(),
             content_hash: tree_content_hash(&data),
+            device: None,
+            label: None,
+            pinned: false,
             title: None,
             origin_app_name: None,
             imported_at: None,
@@ -1932,8 +2099,10 @@ mod tests {
                 save_root: "Documents".to_string(),
                 save_rel: "Game".to_string(),
                 content_hash: None,
+                device: None,
+                label: None,
+                pinned: false,
                 title: None,
-
                 origin_app_name: None,
                 imported_at: None,
             };
@@ -1972,8 +2141,10 @@ mod tests {
             save_root: "Documents".to_string(),
             save_rel: "Game".to_string(),
             content_hash: Some(hash),
+            device: None,
+            label: None,
+            pinned: false,
             title: None,
-
             origin_app_name: None,
             imported_at: None,
         };
@@ -2030,8 +2201,10 @@ mod tests {
             save_root: "Documents".to_string(),
             save_rel: "Game".to_string(),
             content_hash: tree_content_hash(&backup.join("data")),
+            device: None,
+            label: None,
+            pinned: false,
             title: None,
-
             origin_app_name: None,
             imported_at: None,
         };
@@ -2105,8 +2278,10 @@ mod tests {
             save_root: "Absolute".into(),
             save_rel: String::new(),
             content_hash: None,
+            device: None,
+            label: None,
+            pinned: false,
             title: None,
-
             origin_app_name: None,
             imported_at: None,
         };
@@ -2362,8 +2537,10 @@ mod tests {
             save_root: String::new(),
             save_rel: String::new(),
             content_hash: tree_content_hash(&data),
+            device: None,
+            label: None,
+            pinned: false,
             title: None,
-
             origin_app_name: None,
             imported_at: None,
         };

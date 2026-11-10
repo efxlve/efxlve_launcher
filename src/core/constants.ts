@@ -317,6 +317,8 @@ export const FAV_KEY = "efxlve-favorites";
 export const HIDDEN_KEY = "efxlve-hidden-games";
 /** Games whose pending update indicators/badges have been cleared/dismissed by the user. */
 export const IGNORED_UPDATES_KEY = "efxlve-ignored-updates";
+/** Cloud archives the user chose to play past at launch; per game, keyed by remote id. */
+export const CLOUD_PRELAUNCH_SKIP_KEY = "efxlve-cloud-prelaunch-skip";
 /** Achievement sandbox ids hidden from the profile list. Separate from hidden games. */
 export const HIDDEN_ACH_KEY = "efxlve-hidden-achievements";
 /** Hidden achievements whose spoiler the player opened; kept across sessions. */

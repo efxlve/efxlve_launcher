@@ -139,6 +139,10 @@ export function renderBackupsSection(): string {
 
   const { list, excluded } = S.backupsPage;
   const latest = latestByKey(list);
+  const countByKey = new Map<string, number>();
+  for (const info of list) {
+    countByKey.set(info.app_name, (countByKey.get(info.app_name) ?? 0) + 1);
+  }
   const installed = installedKeys();
   const installedSet = new Set(installed);
   const extra = [...latest.keys()].filter((key) => !installedSet.has(key));
@@ -162,11 +166,18 @@ export function renderBackupsSection(): string {
       const state = rowState(info);
       const matches = matchesFilter(S.backupsQuery, S.backupsFilter, title, key, state);
       const meta = info
-        ? `${esc(fmtDay(info.timestamp))} · ${esc(fmtBytes(info.size_bytes))} · ${info.file_count} ${t("ach.files")}${
+        ? [
+            esc(fmtDay(info.timestamp)),
+            esc(fmtBytes(info.size_bytes)),
+            `${info.file_count} ${t("ach.files")}`,
+            info.label ? esc(info.label) : "",
+            info.device ? esc(info.device) : "",
             info.origin_app_name
-              ? ` · ${t("backups.importedFrom", { store: storeLabel(info.origin_app_name) })}`
-              : ""
-          }`
+              ? t("backups.importedFrom", { store: storeLabel(info.origin_app_name) })
+              : "",
+          ]
+            .filter(Boolean)
+            .join(" · ")
         : t("backups.never");
       const cover = summary?.cover
         ? `<img src="${esc(summary.cover)}" alt="" loading="lazy" />`
@@ -194,7 +205,8 @@ export function renderBackupsSection(): string {
             ${info
               ? `<button type="button" class="btn ghost small icon-only" data-act="backups-verify" data-id="${esc(key)}" data-bid="${esc(info.id)}" title="${esc(t("backups.verify"))}" aria-label="${esc(t("backups.verify"))}">${icon("shield", 13)}</button>
                  <button type="button" class="btn ghost small" data-act="backups-export" data-id="${esc(key)}" data-bid="${esc(info.id)}">${icon("download", 13)} ${esc(t("backups.export"))}</button>
-                 <button type="button" class="btn primary small" data-act="backups-restore" data-id="${esc(key)}" data-bid="${esc(info.id)}" ${isInstalled ? "" : "disabled"}>${icon("upload", 13)} ${esc(t("ach.restore"))}</button>`
+                 <button type="button" class="btn primary small" data-act="backups-restore" data-id="${esc(key)}" data-bid="${esc(info.id)}" ${isInstalled ? "" : "disabled"}>${icon("upload", 13)} ${esc(t("ach.restore"))}</button>
+                 <button type="button" class="btn ghost small icon-only danger" data-act="backups-delete-all" data-id="${esc(key)}" data-count="${countByKey.get(key) ?? 1}" title="${esc(t("backups.deleteAllTip"))}" aria-label="${esc(t("backups.deleteAllTip"))}">${icon("trash", 13)}</button>`
               : `<button type="button" class="btn ghost small" data-act="backups-import" data-id="${esc(key)}">${icon("upload", 13)} ${esc(t("manage.importSave"))}</button>`}
           </div>
         </div>`;

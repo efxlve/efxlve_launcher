@@ -17,8 +17,10 @@ import {
   cloudBackupImportMigration,
   epicBackupArchiveEncrypted,
   epicBackupSave,
+  epicDeleteBackup,
   epicExportBackup,
   epicImportBackup,
+  epicListBackups,
   epicOpenFolderPath,
   epicPreviewBackup,
   epicRestoreBackup,
@@ -162,6 +164,33 @@ export function handleBackupsAction(act: string | undefined, t: HTMLElement, id?
     case "backups-bulk":
       void bulkLocalBackupAction().then(() => hydrateBackupsPage(true));
       return true;
+
+    case "backups-delete-all": {
+      if (!id) return true;
+      const count = Number(t.closest<HTMLElement>("[data-count]")?.dataset.count ?? "1") || 1;
+      const title = summaryOf(id)?.title || id;
+      void (async () => {
+        const proceed = await askConfirm({
+          title: i18nT("backups.deleteAllTitle"),
+          name: title,
+          body: i18nT("backups.deleteAllBody", { count }),
+          confirm: i18nT("backups.deleteAllConfirm"),
+          cancel: i18nT("common.cancel"),
+        });
+        if (!proceed) return;
+        try {
+          const backups = await epicListBackups(id);
+          for (const backup of backups) {
+            await epicDeleteBackup(id, backup.id);
+          }
+          toast(i18nT("backups.deleteAllDone", { count: backups.length }), "ok");
+          await hydrateBackupsPage(true);
+        } catch (error) {
+          toast(i18nT("backups.deleteAllFailed", { msg: localizeMessage(String(error)) }), "err");
+        }
+      })();
+      return true;
+    }
 
     case "backups-create":
       if (id) {

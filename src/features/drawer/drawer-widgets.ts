@@ -1866,14 +1866,27 @@ export function renderBackupListHtml(appName: string): string {
     return `<div class="backup-empty">${i18nT("ach.noBackup")}</div>`;
   }
   return list
-    .map(
-      (b) => `
-    <div class="backup-item">
+    .map((b) => {
+      const meta = [
+        b.label ? `<span class="backup-item-label">${esc(b.label)}</span>` : "",
+        b.device ? `<span>${esc(b.device)}</span>` : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      return `
+    <div class="backup-item${b.pinned ? " is-pinned" : ""}">
       <div class="backup-item-meta">
-        <span class="backup-item-title">${esc(b.formatted_date)}</span>
+        <span class="backup-item-title">${esc(b.formatted_date)}${b.pinned ? ` ${icon("pin", 11)}` : ""}</span>
         <span class="backup-item-sub">${b.file_count} ${i18nT("ach.files")} • ${fmtBytes(b.size_bytes)}</span>
+        ${meta ? `<span class="backup-item-sub backup-item-device">${meta}</span>` : ""}
       </div>
       <div class="backup-item-actions">
+        <button class="icon-btn" data-act="manage-label-backup" data-id="${esc(appName)}" data-bid="${esc(b.id)}" title="${i18nT("manage.backupLabelTip")}" aria-label="${i18nT("manage.backupLabelTip")}">
+          ${icon("edit", 14)}
+        </button>
+        <button class="icon-btn${b.pinned ? " is-active" : ""}" data-act="manage-pin-backup" data-id="${esc(appName)}" data-bid="${esc(b.id)}" data-pinned="${b.pinned ? "1" : "0"}" title="${i18nT(b.pinned ? "manage.backupUnpinTip" : "manage.backupPinTip")}" aria-label="${i18nT(b.pinned ? "manage.backupUnpinTip" : "manage.backupPinTip")}">
+          ${icon("pin", 14)}
+        </button>
         <button class="icon-btn" data-act="manage-export-backup" data-id="${esc(appName)}" data-bid="${esc(b.id)}" title="${i18nT("manage.exportSaveTitle")}">
           ${icon("download", 14)}
         </button>
@@ -1885,8 +1898,8 @@ export function renderBackupListHtml(appName: string): string {
         </button>
       </div>
     </div>
-  `
-    )
+  `;
+    })
     .join("");
 }
 

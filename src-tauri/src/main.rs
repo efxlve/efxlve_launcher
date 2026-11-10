@@ -2198,6 +2198,7 @@ fn main() {
             legendary::commands::epic_backup_archive_encrypted,
             legendary::commands::epic_backup_save_if_changed,
             legendary::commands::epic_list_all_backups,
+            legendary::commands::epic_set_backup_label,
             legendary::commands::epic_backup_excluded,
             legendary::commands::epic_preview_backup,
             legendary::commands::epic_restore_backup,

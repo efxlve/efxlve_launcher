@@ -273,6 +273,17 @@ pub fn epic_list_all_backups() -> Vec<crate::legendary::backup::SaveBackupInfo> 
     crate::legendary::backup::list_all_backups()
 }
 
+/// Sets a user label and the local-retention pin on one backup.
+#[tauri::command]
+pub fn epic_set_backup_label(
+    app_name: String,
+    backup_id: String,
+    label: Option<String>,
+    pinned: bool,
+) -> Result<crate::legendary::backup::SaveBackupInfo, String> {
+    crate::legendary::backup::set_backup_label(&app_name, &backup_id, label.as_deref(), pinned)
+}
+
 /// Describes a local backup before a restore overwrites the save folder. The
 /// full tree is hashed off the main thread, so a large backup never freezes
 /// the window while its integrity is checked.

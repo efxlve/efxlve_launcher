@@ -582,6 +582,9 @@ pub struct RestorePreview {
     /// Save-tree hash when the preview opened. Empty when there were no saves.
     pub current_hash: String,
     pub expires_at: u64,
+    /// Machine that created the archive and the optional user label.
+    pub device: Option<String>,
+    pub label: Option<String>,
 }
 
 struct PendingRestore {
@@ -760,6 +763,8 @@ pub async fn preview_restore(
         save_path: resolved.clone().unwrap_or(info.save_path.clone()),
         current_hash: local_hash.clone().unwrap_or_default(),
         expires_at,
+        device: info.device.clone(),
+        label: info.label.clone(),
     };
 
     let mut map = pending_restores()

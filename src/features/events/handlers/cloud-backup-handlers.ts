@@ -181,6 +181,12 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
       return true;
     }
 
+    case "toggle-cloud-pre-launch": {
+      const chk = ((targetEl || t) as HTMLInputElement).checked ?? !S.cloudBackupSettings?.checkBeforeLaunch;
+      void updateCloudBackupSettings({ checkBeforeLaunch: chk });
+      return true;
+    }
+
     case "open-gdrive-guide":
       openGoogleDriveGuideModal();
       return true;

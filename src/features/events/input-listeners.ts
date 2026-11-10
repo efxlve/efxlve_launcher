@@ -17,6 +17,7 @@ import { epicSetDownloadLimit } from "../../epic-commands";
 import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "../../core/dom";
 import { cancelChoice, cancelConfirm } from "../../core/confirm-dialog";
 import { answerPassword, cancelPassword } from "../../core/password-dialog";
+import { answerText, cancelText } from "../../core/text-dialog";
 import { cancelRestorePreview } from "../cloud-backup/restore-preview-dialog";
 import { navGoBack, navGoForward } from "../../core/nav";
 import { openEpicModal, render } from "../../core/render";
@@ -263,6 +264,8 @@ document.addEventListener("keydown", (e) => {
     if (cancelRestorePreview()) return;
     // The password prompt sits above every page and owns Escape while it is open.
     if (cancelPassword()) return;
+    // A text prompt (save backup label) layers above it in the same slot.
+    if (cancelText()) return;
     // The store picker sits above the calendar and owns Escape first.
     if (cancelReleaseStores()) return;
     // A running search clears before the calendar itself closes.
@@ -397,6 +400,11 @@ document.addEventListener("keydown", (e) => {
     if (activeEl && activeEl.id === "password-dialog-input") {
       e.preventDefault();
       answerPassword();
+      return;
+    }
+    if (activeEl && activeEl.id === "text-dialog-input") {
+      e.preventDefault();
+      answerText();
       return;
     }
     if (activeEl && activeEl.id === "sgdb-search-input" && S.activeCustomCoverAppName) {

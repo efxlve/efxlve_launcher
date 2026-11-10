@@ -638,6 +638,12 @@ export interface SaveBackupInfo {
   content_hash?: string | null;
   /** A human title carried by an imported archive. */
   title?: string | null;
+  /** Machine that created the archive. */
+  device?: string | null;
+  /** User label such as "Before the boss". */
+  label?: string | null;
+  /** Pinned backups are never removed by local retention. */
+  pinned?: boolean;
   /** The game key this archive was imported from, when it came from another store. */
   origin_app_name?: string | null;
   /** UNIX seconds when the archive was imported. */
@@ -668,6 +674,9 @@ export interface BackupPreview {
   damaged: boolean;
   sameContent: boolean;
   targetExists: boolean;
+  /** Machine that created the archive and the optional user label. */
+  device?: string | null;
+  label?: string | null;
   /** The game key this archive was imported from, when it came from another store. */
   originAppName?: string | null;
   /** UNIX seconds when the archive was imported. */
@@ -748,6 +757,20 @@ export const epicRestoreBackup = (
 
 export const epicDeleteBackup = (appName: string, backupId: string) =>
   invoke<void>("epic_delete_backup", { appName, backupId });
+
+/** Stores a user label and the local-retention pin on one backup. */
+export const epicSetBackupLabel = (
+  appName: string,
+  backupId: string,
+  label: string | null,
+  pinned: boolean,
+) =>
+  invoke<SaveBackupInfo>("epic_set_backup_label", {
+    appName,
+    backupId,
+    label,
+    pinned,
+  });
 
 export const epicOpenBackupFolder = (appName: string) =>
   invoke<string>("epic_open_backup_folder", { appName });
@@ -1178,6 +1201,8 @@ export interface CloudBackupSettings {
   enabled: boolean;
   provider: CloudBackupProvider;
   autoSyncOnGameExit: boolean;
+  /** Queries the provider for a newer archive before a game starts. */
+  checkBeforeLaunch?: boolean;
   retentionCount: number;
   localBackupDaily: boolean;
   lastLocalBackup?: number | null;
@@ -1344,6 +1369,9 @@ export interface RestorePreview {
   savePath: string;
   currentHash: string;
   expiresAt: number;
+  /** Machine that created the archive and the optional user label. */
+  device?: string | null;
+  label?: string | null;
 }
 
 export const cloudBackupPreviewGame = (appName: string, remoteId: string, backupId: string) =>

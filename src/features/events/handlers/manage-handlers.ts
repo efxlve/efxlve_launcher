@@ -52,6 +52,7 @@ import {
   epicRestoreBackup,
   epicSaveGameSettings,
   epicSelectFolderDialog,
+  epicSetBackupLabel,
   epicSetCustomSavePath,
   epicSyncSaves,
   epicVerifyGame,
@@ -60,6 +61,7 @@ import {
 } from "../../../epic";
 import { askRestorePreview } from "../../cloud-backup/restore-preview-dialog";
 import { askPassword } from "../../../core/password-dialog";
+import { askText } from "../../../core/text-dialog";
 import { customGamesPickFile } from "../../../custom-games";
 import {
   notifyLocalBackupDone,
@@ -492,6 +494,65 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
               notifyLocalRestoreFailed(id, String(err));
             }
           })();
+        }
+      }
+      return true;
+
+    case "manage-label-backup":
+      if (id) {
+        const bid = t.dataset.bid;
+        if (bid) {
+          const current = (S.gameBackupsMap.get(id) || []).find((x) => x.id === bid);
+          void (async () => {
+            const label = await askText({
+              title: i18nT("manage.backupLabelTitle"),
+              body: i18nT("manage.backupLabelBody"),
+              placeholder: i18nT("manage.backupLabelPlaceholder"),
+              value: current?.label ?? "",
+              confirm: i18nT("common.save"),
+              cancel: i18nT("common.cancel"),
+            });
+            if (label === null) return;
+            try {
+              const info = await epicSetBackupLabel(id, bid, label || null, current?.pinned ?? false);
+              const cur = S.gameBackupsMap.get(id) || [];
+              S.gameBackupsMap.set(
+                id,
+                cur.map((x) => (x.id === bid ? { ...x, ...info } : x)),
+              );
+              const listEl = document.getElementById("manage-backup-list");
+              if (listEl) listEl.innerHTML = renderBackupListHtml(id);
+              toast(i18nT("manage.backupLabelSaved"), "ok");
+            } catch (err) {
+              toast(i18nT("manage.backupLabelFailed", { msg: localizeMessage(String(err)) }), "err");
+            }
+          })();
+        }
+      }
+      return true;
+
+    case "manage-pin-backup":
+      if (id) {
+        const bid = t.dataset.bid;
+        if (bid) {
+          const current = (S.gameBackupsMap.get(id) || []).find((x) => x.id === bid);
+          if (current) {
+            const next = !current.pinned;
+            epicSetBackupLabel(id, bid, current.label ?? null, next)
+              .then((info) => {
+                const cur = S.gameBackupsMap.get(id) || [];
+                S.gameBackupsMap.set(
+                  id,
+                  cur.map((x) => (x.id === bid ? { ...x, ...info } : x)),
+                );
+                const listEl = document.getElementById("manage-backup-list");
+                if (listEl) listEl.innerHTML = renderBackupListHtml(id);
+                toast(i18nT(next ? "manage.backupPinned" : "manage.backupUnpinned"), "ok");
+              })
+              .catch((err) =>
+                toast(i18nT("manage.backupLabelFailed", { msg: localizeMessage(String(err)) }), "err"),
+              );
+          }
         }
       }
       return true;

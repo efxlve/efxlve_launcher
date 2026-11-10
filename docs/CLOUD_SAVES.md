@@ -55,7 +55,8 @@ Two layers share one format:
     Imports use the same staging step.
   - `backup_info.json` stores id, app key, timestamp, size, file count, the
     original save path, the recognized logical root (`Documents`, `SavedGames`,
-    `LocalAppData`, `RoamingAppData`, `Home`) and the path below that root.
+    `LocalAppData`, `RoamingAppData`, `Home`) and the path below that root, plus
+    the machine name, an optional user label and the local-retention pin.
     A restore on another PC resolves the same root under its own profile; an
     older archive without those fields falls back to the absolute path and the
     detection scans.
@@ -86,7 +87,9 @@ A restore is deliberately two-step:
    restore can be undone without another provider.
 
 A cloud restore first downloads the archive and shows its file list, target
-folder, size and date without touching the saves. The confirmation is a
+folder, size and date without touching the saves. The preview also names the
+machine that created the archive and its label when one was set, so a save from
+a handheld is recognizable. The confirmation is a
 one-use token valid for five minutes; applying it re-hashes the local save
 tree and refuses when the game wrote new saves while the preview was open.
 Closing the preview drops the token and the temporary archive.
@@ -212,8 +215,16 @@ the cheaper roots miss.
   progress row with the bulk actions.
 - **Keep the last N versions** prunes older local backups and cloud archives
   after a successful backup. 0 (the default) keeps every backup; pre-restore
-  snapshots are never pruned. A per-game value in Manage → Save wins over this
-  shared number.
+  snapshots and pinned backups are never pruned. A per-game value in Manage →
+  Save wins over this shared number.
+- **Check cloud before launch** is opt-in. Before a game starts, it lists the
+  provider once; when the newest archive there is newer than the newest local
+  backup (or the game has no local backup), a dialog offers **Restore and play**
+  or **Play without restoring**. Offline mode, a provider error or an uninstalled
+  game skip the check, so a launch never waits on the network longer than the
+  listing. The dialog only appears while the cloud copy is genuinely newer;
+  **Play without restoring** silences that exact archive until a newer one is
+  uploaded.
 - **Back up all installed games** walks every installed game from a supported
   store, creates a local backup and uploads it. The row shows progress while it
   runs and reports the failure count at the end; games without a save folder are
@@ -246,10 +257,15 @@ the cheaper roots miss.
   a confirmation explains which is newer before overwriting anything. Both sides
   carry a save-tree SHA-256, so an identical tree skips the warning even when the
   timestamps differ.
-- **History** — timestamp, size and file count; newest first. The shield button
+- **History** — timestamp, size and file count; newest first. Each row names the
+  device that created it and shows the optional label. The shield button
   next to an archive downloads it, validates `backup_info.json`, and re-hashes
   the save tree against the checksum recorded at backup time; the row then shows
   **Intact**, **Damaged** or **No hash** (an older archive without a checksum).
+- **Label / pin** — the pencil stores a short label such as "Before the boss";
+  an empty label clears it. The pin keeps that local backup out of retention, so
+  a milestone survives later backups. Pinning is local only: cloud pruning still
+  follows the retention count.
 - **Delete / Delete all** — removes remote archives for that game.
 
 **Backups page**
@@ -261,8 +277,10 @@ archive that belongs to a game that is not installed stays listed under the
 title it was exported from. A search field and All / Backed up / Missing /
 Stale filters keep a large library manageable; the shield button re-hashes an
 archive against the SHA-256 recorded at backup time and reports a damaged copy
-before a restore would. The list is local-only: cloud archives are listed on
-each game's **Manage → Save** page.
+before a restore would. The trash button deletes every local archive for that
+game after a confirmation — the way to clear archives of games that were
+uninstalled — and leaves cloud archives untouched. The list is local-only:
+cloud archives are listed on each game's **Manage → Save** page.
 
 **Export everything** writes a migration folder: the launcher profile plus every
 game's newest save. **Import from a folder** restores those saves and the
@@ -420,7 +438,7 @@ profile.
 Local backup:
 
 - `epic_backup_save`, `epic_list_backups`, `epic_restore_backup`,
-  `epic_delete_backup`, `epic_open_backup_folder`
+  `epic_delete_backup`, `epic_open_backup_folder`, `epic_set_backup_label`
 
 Cloud:
 

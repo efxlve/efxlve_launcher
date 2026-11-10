@@ -27,6 +27,10 @@ export interface RestorePreviewView {
   originAppName?: string | null;
   /** UNIX seconds when the archive was imported. */
   importedAt?: number | null;
+  /** Machine that created the archive. */
+  device?: string | null;
+  /** User label stored with the archive. */
+  label?: string | null;
 }
 
 /** A short store label for an imported archive's origin key. */
@@ -89,6 +93,8 @@ export function askRestorePreview(preview: RestorePreviewView): Promise<boolean>
           }),
         )}</p>
         <div class="restore-preview-target">${icon("folder", 13)}<span>${esc(preview.savePath || t("cloud.previewTargetUnknown"))}</span></div>
+        ${preview.device ? `<div class="restore-preview-target">${icon("monitor", 13)}<span>${esc(t("cloud.previewDevice", { device: preview.device }))}</span></div>` : ""}
+        ${preview.label ? `<div class="restore-preview-target">${icon("edit", 13)}<span>${esc(preview.label)}</span></div>` : ""}
         ${preview.originAppName ? `<div class="restore-preview-target">${icon("upload", 13)}<span>${esc(t("cloud.previewImported", { store: storeLabel(preview.originAppName) }))}</span></div>` : ""}
         <div class="restore-preview-files-head">${esc(t("cloud.previewFiles"))}<span class="count tabular-nums">${preview.fileCount}</span></div>
         <ul class="restore-preview-files">${rows || `<li><span>${esc(t("cloud.previewEmpty"))}</span></li>`}</ul>

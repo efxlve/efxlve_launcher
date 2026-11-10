@@ -34,6 +34,7 @@ export function renderCloudBackupSettingsGroup(): string {
     enabled: false,
     provider: "none",
     autoSyncOnGameExit: false,
+    checkBeforeLaunch: false,
     retentionCount: 0,
     localBackupDaily: false,
     lastLocalBackup: null,
@@ -317,6 +318,17 @@ export function renderCloudBackupSettingsGroup(): string {
       </div>
     </div>`;
 
+  const preLaunchRow = `
+    <div class="row settings-row">
+      <div class="row-main">
+        <div class="settings-row-title">${t("cloud.preLaunchTitle")}</div>
+        <div class="settings-row-desc">${t("cloud.preLaunchDesc")}</div>
+      </div>
+      <div class="settings-row-control">
+        <label class="switch"><input type="checkbox" data-act="toggle-cloud-pre-launch" ${st.checkBeforeLaunch ? "checked" : ""} /><span class="track"></span></label>
+      </div>
+    </div>`;
+
   const retentionRow = `
     <div class="row settings-row">
       <div class="row-main">
@@ -494,6 +506,7 @@ export function renderCloudBackupSettingsGroup(): string {
            </div>`
         : ""}
       ${autoSyncRow}
+      ${preLaunchRow}
       ${retentionRow}
       ${bulkRow}
     </div>`;

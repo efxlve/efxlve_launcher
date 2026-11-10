@@ -22,6 +22,9 @@ pub struct CloudBackupSettings {
     pub provider: CloudBackupProvider,
     #[serde(default)]
     pub auto_sync_on_game_exit: bool,
+    /// Queries the provider for a newer archive before a game starts.
+    #[serde(default)]
+    pub check_before_launch: bool,
     /// Cloud archives kept per game; 0 keeps every archive.
     #[serde(default)]
     pub retention_count: u32,
@@ -74,6 +77,7 @@ impl Default for CloudBackupSettings {
             enabled: false,
             provider: CloudBackupProvider::None,
             auto_sync_on_game_exit: false,
+            check_before_launch: false,
             retention_count: 0,
             local_backup_daily: false,
             last_local_backup: None,

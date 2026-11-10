@@ -83,6 +83,7 @@ export async function updateCloudBackupSettings(
     enabled: false,
     provider: "none",
     autoSyncOnGameExit: false,
+    checkBeforeLaunch: false,
     retentionCount: 0,
     localBackupDaily: false,
     lastLocalBackup: null,
