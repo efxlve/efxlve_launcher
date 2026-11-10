@@ -1,8 +1,6 @@
 /**
- * Backups page: every game with its latest save archive, one screen.
- *
- * The page is read-only HTML; the actions live in `backups-handlers.ts` so a
- * full render never starts a backup by itself.
+ * Backups section inside Settings → Cloud Saves: every game with its latest
+ * save archive, one screen. The actions live in `backups-handlers.ts`.
  */
 
 import { icon } from "../../core/icons";
@@ -32,7 +30,11 @@ function installedKeys(): string[] {
   const seen = new Set<string>();
   for (const item of S.allGamesMap.values()) {
     if (!item.installed) continue;
-    if (!["epic", "gog", "amazon", "custom", "steam", "ubisoft", "ea", "xbox", "battlenet"].includes(item.source)) {
+    if (
+      !["epic", "gog", "amazon", "custom", "steam", "ubisoft", "ea", "xbox", "battlenet"].includes(
+        item.source,
+      )
+    ) {
       continue;
     }
     const key = item.source === "epic" ? item.id : item.key;
@@ -75,18 +77,25 @@ function latestByKey(list: SaveBackupInfo[]): Map<string, SaveBackupInfo> {
   return map;
 }
 
-export function renderBackupsPage(): string {
+export function renderBackupsSection(): string {
   if (S.backupsPage === null) {
-    return `
-      <div class="bk-page">
-        <div class="bk-head">
-          <div>
-            <h2>${t("backups.title")}</h2>
-            <p class="bk-sub">${t("backups.sub")}</p>
-          </div>
+    void hydrateBackupsPage();
+  }
+  const head = `
+    <h3 class="section-title">${t("backups.title")}</h3>
+    <div class="bk-section">
+      <div class="bk-section-head">
+        <div class="bk-sub">${t("backups.sub")}</div>
+        <div class="bk-head-actions">
+          ${S.cloudBulkProgress
+            ? `<span class="bk-stat-num tabular-nums">${S.cloudBulkProgress.done}/${S.cloudBulkProgress.total}</span>`
+            : `<button type="button" class="btn ghost small" data-act="backups-refresh">${icon("refresh", 13)} ${t("backups.refresh")}</button>
+               <button type="button" class="btn ghost small" data-act="backups-bulk">${icon("package", 13)} ${t("backups.backUpAll")}</button>`}
         </div>
-        <div class="bk-empty">${icon("refresh", 16, "spin")} ${t("backups.loading")}</div>
       </div>`;
+
+  if (S.backupsPage === null) {
+    return `${head}<div class="bk-empty">${icon("refresh", 16, "spin")} ${t("backups.loading")}</div></div>`;
   }
 
   const { list, excluded } = S.backupsPage;
@@ -148,20 +157,7 @@ export function renderBackupsPage(): string {
     .join("");
 
   return `
-    <div class="bk-page">
-      <div class="bk-head">
-        <div>
-          <h2>${t("backups.title")}</h2>
-          <p class="bk-sub">${t("backups.sub")}</p>
-        </div>
-        <div class="bk-head-actions">
-          ${S.cloudBulkProgress
-            ? `<span class="bk-stat-num tabular-nums">${S.cloudBulkProgress.done}/${S.cloudBulkProgress.total}</span>`
-            : `<button type="button" class="btn ghost small" data-act="backups-refresh">${icon("refresh", 13)} ${t("backups.refresh")}</button>
-               <button type="button" class="btn ghost small" data-act="backups-bulk">${icon("package", 13)} ${t("backups.backUpAll")}</button>`}
-        </div>
-      </div>
-
+    ${head}
       <div class="bk-stats">
         <div class="bk-stat"><span class="bk-stat-num tabular-nums">${keys.length}</span><span>${t("backups.statGames")}</span></div>
         <div class="bk-stat"><span class="bk-stat-num tabular-nums">${withBackup}</span><span>${t("backups.statBackedUp")}</span></div>

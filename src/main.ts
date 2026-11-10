@@ -55,7 +55,6 @@ import { closeScreenshotLightbox, closeScreenshotMoveConfirm, closeShareModal } 
 import { renderSettings } from "./features/settings/settings-view";
 import { renderNotesPage } from "./features/notes/notes-view";
 import { renderScreenshotsPage } from "./features/screenshots/screenshots-page";
-import { hydrateBackupsPage, renderBackupsPage } from "./features/backups/backups-page";
 import { closeManagePopup } from "./features/manage/manage-view";
 import { closeStorageManager } from "./features/storage/storage-view";
 import { embeddedStoreHeld, hideStore, paintStoreLoadingScreen } from "./features/store/store-view";
@@ -220,7 +219,6 @@ function render(): void {
     : S.view === "discord" ? renderDiscordPage()
     : S.view === "notes" ? renderNotesPage()
     : S.view === "screenshots" ? renderScreenshotsPage()
-    : S.view === "backups" ? renderBackupsPage()
         : renderSettings();
   if (S.view === "library") {
     setupLibScrollObserver();
@@ -239,9 +237,6 @@ function render(): void {
   if (S.view === "downloads") {
     startSpeedChartTimer();
     drawSpeedCanvas();
-  }
-  if (S.view === "backups") {
-    void hydrateBackupsPage();
   }
   updateChrome();
   updateNavHistoryUi();

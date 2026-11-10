@@ -102,6 +102,7 @@ import {
   type DrawerCardId,
 } from "../drawer/side-widgets";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
+import { renderBackupsSection } from "../backups/backups-page";
 import { handleCompatAction, loadCompatView, renderCompatSection } from "./compat-view";
 import { keepDiscordOpen } from "../discord/discord-view";
 import { pcCheckResultHtml } from "./pc-check";
@@ -355,7 +356,7 @@ function renderDownloads(): string {
 
 /** Cloud saves page: its own top-level section instead of an Integrations block. */
 function renderCloud(): string {
-  return infoBox("cloud.pageInfo") + renderCloudBackupSettingsGroup();
+  return infoBox("cloud.pageInfo") + renderCloudBackupSettingsGroup() + renderBackupsSection();
 }
 
 /**

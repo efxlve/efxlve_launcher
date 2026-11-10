@@ -1,12 +1,16 @@
 /* Backups page: one row per game, latest archive and the actions that touch it. */
 
-.bk-page {
-  padding: 22px 28px 48px;
+.bk-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  max-width: 1180px;
-  margin: 0 auto;
+  gap: 12px;
+}
+
+.bk-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .bk-head {

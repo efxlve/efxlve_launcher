@@ -6,7 +6,7 @@
  */
 
 /** Top-level application view/route. */
-export type View = "library" | "downloads" | "settings" | "profile" | "store" | "accounts" | "music" | "discord" | "notes" | "screenshots" | "backups";
+export type View = "library" | "downloads" | "settings" | "profile" | "store" | "accounts" | "music" | "discord" | "notes" | "screenshots";
 
 /* ---------- Stage Mode (experimental controller shell) ---------- */
 
