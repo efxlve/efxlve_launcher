@@ -50,7 +50,7 @@
   flex-direction: column;
   gap: 2px;
   padding: 10px 12px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--line);
   border-radius: var(--r-sm);
   background: var(--surface-2);
   font-size: 11px;
@@ -65,7 +65,7 @@
 }
 
 .bk-stat.warn .bk-stat-num {
-  color: #e0a33a;
+  color: var(--warn);
 }
 
 .bk-migrate {
@@ -74,7 +74,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--line);
   border-radius: var(--r-sm);
   background: var(--surface-2);
 }
@@ -110,13 +110,18 @@
   align-items: center;
   gap: 12px;
   padding: 9px 12px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--line);
   border-radius: var(--r-sm);
   background: var(--surface-2);
+  transition: border-color var(--ease), background var(--ease);
+}
+
+.bk-row:hover {
+  background: var(--surface-3);
 }
 
 .bk-row.stale {
-  border-color: rgba(224, 163, 58, 0.42);
+  border-color: var(--warn);
 }
 
 .bk-cover {
@@ -128,7 +133,7 @@
   justify-content: center;
   overflow: hidden;
   border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-3);
   color: var(--text-3);
 }
 
@@ -161,15 +166,17 @@
 
 .bk-store {
   padding: 1px 6px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  border: 1px solid var(--line);
   font-size: 10px;
   color: var(--text-3);
 }
 
 .bk-stale {
-  color: #e0a33a;
+  color: var(--warn);
   font-size: 10px;
+  font-weight: 500;
 }
 
 .bk-meta {

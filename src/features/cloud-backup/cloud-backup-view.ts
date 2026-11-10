@@ -1,13 +1,18 @@
 /**
  * Visual components for Cloud Save Backup in Settings and Game Manage drawer.
- * Strict PS5 Obsidian console dark aesthetic.
+ * Strict Hydra / obsidian aesthetic adhering to docs/DESIGN_SYSTEM.md.
  */
 
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
 import { t } from "../../i18n";
-import { initCloudBackupSettings, initLocalBackupRoot, loadCloudBackupsAction, loadCloudFolderSuggestionsAction } from "./cloud-backup-actions";
+import {
+  initCloudBackupSettings,
+  initLocalBackupRoot,
+  loadCloudBackupsAction,
+  loadCloudFolderSuggestionsAction,
+} from "./cloud-backup-actions";
 import { loadProfileArchivesAction } from "./profile-sync-actions";
 
 const CLOUD_DOCS = "https://github.com/efxlve/efxlve_launcher/blob/main/docs";
@@ -79,56 +84,86 @@ export function renderCloudBackupSettingsGroup(): string {
   const lastLocal = backupList.reduce((max, info) => Math.max(max, info.timestamp), 0);
   const lastCloud = st.lastSyncTime ?? latestProfile?.timestamp ?? 0;
 
+  let cloudDestTarget = t("cloud.heroCloudOff");
+  let cloudDestIcon = icon("cloud", 12);
+  if (isEnabled) {
+    if (activeProvider === "folder") {
+      cloudDestIcon = icon("folder", 12);
+      cloudDestTarget = st.folderPath || t("cloud.folderNotSelected");
+    } else if (activeProvider === "google_drive") {
+      cloudDestIcon = icon("globe", 12);
+      cloudDestTarget = st.gdriveUserEmail ? `${st.gdriveUserEmail} (Google Drive)` : "Google Drive AppData";
+    } else if (activeProvider === "webdav") {
+      cloudDestIcon = icon("server", 12);
+      cloudDestTarget = st.webdavUrl || "WebDAV Server";
+    } else if (activeProvider === "rclone") {
+      cloudDestIcon = icon("terminal", 12);
+      cloudDestTarget = st.rcloneRemote || "rclone remote";
+    }
+  }
+
   const providerCards = `
     <button type="button" class="cs-provider${activeProvider === "folder" ? " is-active" : ""}" data-act="set-cloud-provider" data-provider="folder" aria-pressed="${activeProvider === "folder"}">
       <span class="cs-provider-icon">${icon("folder", 16)}</span>
       <span class="cs-provider-body">
-        <span class="cs-provider-name">${t("cloud.providerFolderName")}</span>
+        <span class="cs-provider-head">
+          <span class="cs-provider-name">${t("cloud.providerFolderName")}</span>
+          <span class="cs-provider-badge">${t("cloud.badgeRecommended")}</span>
+        </span>
         <span class="cs-provider-desc">${t("cloud.providerFolderDesc")}</span>
       </span>
-      <span class="cs-provider-check">${activeProvider === "folder" ? icon("check", 14) : ""}</span>
+      <span class="cs-provider-check">${activeProvider === "folder" ? icon("check", 12) : ""}</span>
     </button>
     <button type="button" class="cs-provider${activeProvider === "google_drive" ? " is-active" : ""}" data-act="set-cloud-provider" data-provider="google_drive" aria-pressed="${activeProvider === "google_drive"}">
       <span class="cs-provider-icon">${icon("globe", 16)}</span>
       <span class="cs-provider-body">
-        <span class="cs-provider-name">Google Drive</span>
+        <span class="cs-provider-head">
+          <span class="cs-provider-name">Google Drive</span>
+          <span class="cs-provider-badge">${t("cloud.badgeDirectOAuth")}</span>
+        </span>
         <span class="cs-provider-desc">${t("cloud.providerGdriveDesc")}</span>
       </span>
-      <span class="cs-provider-check">${activeProvider === "google_drive" ? icon("check", 14) : ""}</span>
+      <span class="cs-provider-check">${activeProvider === "google_drive" ? icon("check", 12) : ""}</span>
     </button>
     <button type="button" class="cs-provider${activeProvider === "webdav" ? " is-active" : ""}" data-act="set-cloud-provider" data-provider="webdav" aria-pressed="${activeProvider === "webdav"}">
       <span class="cs-provider-icon">${icon("server", 16)}</span>
       <span class="cs-provider-body">
-        <span class="cs-provider-name">WebDAV / Nextcloud</span>
+        <span class="cs-provider-head">
+          <span class="cs-provider-name">WebDAV / Nextcloud</span>
+          <span class="cs-provider-badge">${t("cloud.badgeSelfHosted")}</span>
+        </span>
         <span class="cs-provider-desc">${t("cloud.providerWebdavDesc")}</span>
       </span>
-      <span class="cs-provider-check">${activeProvider === "webdav" ? icon("check", 14) : ""}</span>
+      <span class="cs-provider-check">${activeProvider === "webdav" ? icon("check", 12) : ""}</span>
     </button>
     <button type="button" class="cs-provider${activeProvider === "rclone" ? " is-active" : ""}" data-act="set-cloud-provider" data-provider="rclone" aria-pressed="${activeProvider === "rclone"}">
       <span class="cs-provider-icon">${icon("terminal", 16)}</span>
       <span class="cs-provider-body">
-        <span class="cs-provider-name">rclone</span>
+        <span class="cs-provider-head">
+          <span class="cs-provider-name">rclone</span>
+          <span class="cs-provider-badge">${t("cloud.badgeAdvanced")}</span>
+        </span>
         <span class="cs-provider-desc">${t("cloud.providerRcloneDesc")}</span>
       </span>
-      <span class="cs-provider-check">${activeProvider === "rclone" ? icon("check", 14) : ""}</span>
+      <span class="cs-provider-check">${activeProvider === "rclone" ? icon("check", 12) : ""}</span>
     </button>`;
 
   let providerConfig = "";
   if (activeProvider === "folder") {
     providerConfig = `
-      <div class="row settings-row stacked">
-        <div class="row-main">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-            <div class="settings-row-title">${t("cloud.folderTitle")}</div>
-            <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${FOLDER_GUIDE_URL}" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
+      <div class="cs-config-box">
+        <div class="cs-config-head">
+          <div>
+            <div class="cs-config-title">${t("cloud.folderTitle")}</div>
+            <div class="cs-config-desc">${t("cloud.folderDesc")}</div>
           </div>
-          <div class="settings-row-desc">${t("cloud.folderDesc")}</div>
+          <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${FOLDER_GUIDE_URL}" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
         </div>
-        <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
+        <div class="mg-inline" style="flex-direction:column;gap:8px">
           <input id="cloud-folder-path" class="input cloud-field" placeholder="${t("cloud.folderPath")}" value="${esc(st.folderPath)}" spellcheck="false" autocomplete="off" />
           ${detectedFolders
-            ? `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-                 <span style="font-size:11px;color:var(--text-3)">${t("cloud.folderDetected")}</span>
+            ? `<div class="cs-detected-bar">
+                 <span class="cs-detected-label">${t("cloud.folderDetected")}</span>
                  ${detectedFolders}
                </div>`
             : ""}
@@ -153,19 +188,29 @@ export function renderCloudBackupSettingsGroup(): string {
     const email = st.gdriveUserEmail || t("cloud.connected");
 
     providerConfig = `
-      <div class="row settings-row stacked">
-        <div class="row-main">
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-            <div class="settings-row-title">Google Drive (OAuth 2.0)</div>
-            <button type="button" class="btn ghost small" data-act="open-gdrive-guide" title="${t("cloud.guideBtnTip")}">
-              ${icon("info", 13)} ${t("cloud.guideBtn")}
-            </button>
+      <div class="cs-config-box">
+        <div class="cs-config-head">
+          <div>
+            <div class="cs-config-title">${t("cloud.gdriveConfigTitle")}</div>
+            <div class="cs-config-desc">${t("cloud.gdriveConfigDesc")}</div>
           </div>
-          <div class="settings-row-desc">
-            ${isConnected ? `${t("cloud.gdriveConnectedHint", { email: esc(email) })}<div style="font-size: 11px; color: var(--text-3); margin-top: 4px; line-height: 1.5;">${icon("info", 12)} ${t("cloud.gdriveLocationHint")}</div>` : t("cloud.gdriveDisconnectedHint")}
-          </div>
+          <button type="button" class="btn ghost small" data-act="open-gdrive-guide" title="${t("cloud.guideBtnTip")}">
+            ${icon("info", 13)} ${t("cloud.guideBtn")}
+          </button>
         </div>
-        <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
+        ${isConnected
+          ? `<div class="info-box" style="border-color:var(--ok);background:var(--ok-tint);color:var(--text)">
+               ${icon("check", 14)}
+               <div>
+                 <strong>${t("cloud.connected")}: ${esc(email)}</strong>
+                 <div style="font-size:11px;color:var(--text-2);margin-top:2px;line-height:1.5;">${t("cloud.gdriveLocationHint")}</div>
+               </div>
+             </div>`
+          : `<div class="info-box">
+               ${icon("info", 14)}
+               <div>${t("cloud.gdriveConnectHint")}</div>
+             </div>`}
+        <div class="mg-inline" style="flex-direction:column;gap:8px">
           <div style="display:flex;flex-direction:column;gap:4px">
             <label style="font-size: 11px; color: var(--text-2); font-weight: 500;">${t("cloud.gdriveClientId")}</label>
             <input id="cloud-gdrive-client-id" class="input cloud-field" placeholder="123456789-xxxxxxxx.apps.googleusercontent.com" value="${esc(st.gdriveClientId || "")}" spellcheck="false" autocomplete="off" />
@@ -174,8 +219,7 @@ export function renderCloudBackupSettingsGroup(): string {
             <label style="font-size: 11px; color: var(--text-2); font-weight: 500;">${t("cloud.gdriveClientSecret")}</label>
             <input id="cloud-gdrive-client-secret" type="password" class="input cloud-field" placeholder="GOCSPX-xxxxxxxxx (${t("cloud.gdriveClientSecret")})" value="${esc(st.gdriveClientSecret || "")}" spellcheck="false" autocomplete="off" />
           </div>
-          <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-top:4px">
-            ${isConnected ? `<span class="chip ok">${esc(email)}</span>` : ""}
+          <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-top:4px;flex-wrap:wrap">
             <button type="button" class="btn ghost small" data-act="cloud-gdrive-save">
               ${t("common.save")}
             </button>
@@ -190,21 +234,21 @@ export function renderCloudBackupSettingsGroup(): string {
       </div>`;
   } else if (activeProvider === "webdav") {
     providerConfig = `
-      <div class="row settings-row stacked">
-        <div class="row-main">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-            <div class="settings-row-title">${t("cloud.webdavConfigTitle")}</div>
-            <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${WEBDAV_GUIDE_URL}" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
+      <div class="cs-config-box">
+        <div class="cs-config-head">
+          <div>
+            <div class="cs-config-title">${t("cloud.webdavConfigTitle")}</div>
+            <div class="cs-config-desc">${t("cloud.webdavConfigDesc")}</div>
           </div>
-          <div class="settings-row-desc">${t("cloud.webdavConfigDesc")}</div>
+          <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${WEBDAV_GUIDE_URL}" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
         </div>
-        <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
+        <div class="mg-inline" style="flex-direction:column;gap:8px">
           <input id="cloud-webdav-url" class="input cloud-field" placeholder="https://nextcloud.example.com/remote.php/dav/files/user/" value="${esc(st.webdavUrl)}" spellcheck="false" autocomplete="off" />
-          <div style="display:flex;gap:8px">
-            <input id="cloud-webdav-user" class="input cloud-field" placeholder="${t("cloud.username")}" value="${esc(st.webdavUsername)}" spellcheck="false" autocomplete="off" style="flex:1" />
-            <input id="cloud-webdav-pass" type="password" class="input cloud-field" placeholder="${t("cloud.password")}" value="${esc(st.webdavPassword)}" spellcheck="false" autocomplete="off" style="flex:1" />
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input id="cloud-webdav-user" class="input cloud-field" placeholder="${t("cloud.username")}" value="${esc(st.webdavUsername)}" spellcheck="false" autocomplete="off" style="flex:1;min-width:140px" />
+            <input id="cloud-webdav-pass" type="password" class="input cloud-field" placeholder="${t("cloud.password")}" value="${esc(st.webdavPassword)}" spellcheck="false" autocomplete="off" style="flex:1;min-width:140px" />
           </div>
-          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2)">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2);cursor:pointer">
             <input type="checkbox" data-act="toggle-webdav-invalid-cert" ${st.webdavAllowInvalidCert ? "checked" : ""} />
             ${t("cloud.webdavAllowInvalidCert")}
           </label>
@@ -220,15 +264,15 @@ export function renderCloudBackupSettingsGroup(): string {
       </div>`;
   } else if (activeProvider === "rclone") {
     providerConfig = `
-      <div class="row settings-row stacked">
-        <div class="row-main">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-            <div class="settings-row-title">${t("cloud.rcloneTitle")}</div>
-            <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${RCLONE_GUIDE_URL}" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
+      <div class="cs-config-box">
+        <div class="cs-config-head">
+          <div>
+            <div class="cs-config-title">${t("cloud.rcloneTitle")}</div>
+            <div class="cs-config-desc">${t("cloud.rcloneDesc")}</div>
           </div>
-          <div class="settings-row-desc">${t("cloud.rcloneDesc")}</div>
+          <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${RCLONE_GUIDE_URL}" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
         </div>
-        <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
+        <div class="mg-inline" style="flex-direction:column;gap:8px">
           <input id="cloud-rclone-remote" class="input cloud-field" placeholder="gdrive:efxlve_saves" value="${esc(st.rcloneRemote)}" spellcheck="false" autocomplete="off" />
           <div id="cloud-rclone-remotes" style="display:flex;gap:6px;flex-wrap:wrap"></div>
           <div class="mg-note" style="color:var(--text-3);font-size:11px;line-height:1.5">${icon("info", 12)} ${t("cloud.rcloneHint")}</div>
@@ -339,26 +383,32 @@ export function renderCloudBackupSettingsGroup(): string {
       </div>
     </div>` : "";
 
-  const localBusy = S.cloudBulkProgress?.local ? S.cloudBulkProgress : null;
-
   const hero = `
-    <div class="cs-hero">
+    <div class="cs-hero card">
       <div class="cs-hero-head">
-        <p class="cs-hero-lead">${t("cloud.heroLead")}</p>
+        <div class="cs-hero-info">
+          <p class="cs-hero-lead">${t("cloud.heroLead")}</p>
+        </div>
         <button type="button" class="btn ghost small" data-act="open-cloud-guide">${icon("info", 13)} ${t("cloud.heroGuide")}</button>
       </div>
       <div class="cs-dest-grid">
-        <article class="cs-dest">
+        <article class="cs-dest is-on">
           <div class="cs-dest-head">
             <span class="cs-dest-icon">${icon("monitor", 16)}</span>
-            <span class="cs-dest-name">${t("cloud.heroLocal")}</span>
-            <span class="cs-dest-state is-ok">${icon("check", 12)} ${t("cloud.heroReady")}</span>
+            <div class="cs-dest-title-wrap">
+              <span class="cs-dest-name">${t("cloud.heroLocal")}</span>
+              <span class="cs-dest-sub">${t("cloud.heroLocalSub")}</span>
+            </div>
+            <span class="cs-dest-state is-ok">${icon("check", 11)} ${t("cloud.heroReady")}</span>
           </div>
-          <div class="cs-dest-path" title="${esc(localRoot.effective)}">${esc(localRoot.effective || "—")}</div>
+          <div class="cs-dest-path" title="${esc(localRoot.effective)}">
+            ${icon("folder", 12)}
+            <span>${esc(localRoot.effective || "—")}</span>
+          </div>
           <p class="cs-dest-note">${t("cloud.heroLocalHint")}</p>
           <div class="cs-dest-meta">
-            <span>${backupsKnown ? (backedUpGames > 0 ? t("cloud.heroGames", { count: backedUpGames }) : t("cloud.heroNoBackup")) : t("cloud.statusChecking")}</span>
-            ${lastLocal ? `<span>${t("cloud.heroLast", { date: fmtCloudDate(lastLocal) })}</span>` : ""}
+            <span class="cs-meta-item">${icon("package", 12)} ${backupsKnown ? (backedUpGames > 0 ? t("cloud.heroGames", { count: backedUpGames }) : t("cloud.heroNoBackup")) : t("cloud.statusChecking")}</span>
+            ${lastLocal ? `<span class="cs-meta-item">${icon("clock", 12)} ${t("cloud.heroLast", { date: fmtCloudDate(lastLocal) })}</span>` : ""}
           </div>
           <div class="cs-dest-actions">
             <button type="button" class="btn primary small" data-act="backups-bulk">${icon("package", 13)} ${t("backups.backUpAll")}</button>
@@ -368,56 +418,38 @@ export function renderCloudBackupSettingsGroup(): string {
         <article class="cs-dest${isEnabled ? " is-on" : ""}">
           <div class="cs-dest-head">
             <span class="cs-dest-icon">${icon("cloud", 16)}</span>
-            <span class="cs-dest-name">${t("cloud.heroCloud")}</span>
-            <span class="cs-dest-state${isEnabled ? " is-ok" : ""}">${isEnabled ? `${icon("check", 12)} ${t("cloud.heroCloudOn")}` : t("cloud.heroCloudOff")}</span>
+            <div class="cs-dest-title-wrap">
+              <span class="cs-dest-name">${t("cloud.heroCloud")}</span>
+              <span class="cs-dest-sub">${isEnabled ? providerLabel : t("cloud.heroCloudDisabledSub")}</span>
+            </div>
+            <span class="cs-dest-state${isEnabled ? " is-ok" : ""}">${isEnabled ? `${icon("check", 11)} ${t("cloud.heroCloudOn")}` : t("cloud.heroCloudOff")}</span>
           </div>
-          <div class="cs-dest-path">${esc(isEnabled ? providerLabel : "—")}</div>
+          <div class="cs-dest-path" title="${esc(cloudDestTarget)}">
+            ${cloudDestIcon}
+            <span>${esc(cloudDestTarget)}</span>
+          </div>
           <p class="cs-dest-note">${isEnabled ? t("cloud.heroCloudHintOn") : t("cloud.heroCloudHintOff")}</p>
           <div class="cs-dest-meta">
-            <span>${lastCloud ? t("cloud.heroLast", { date: fmtCloudDate(lastCloud) }) : t("cloud.heroNoBackup")}</span>
+            <span class="cs-meta-item">${icon("clock", 12)} ${lastCloud ? t("cloud.heroLast", { date: fmtCloudDate(lastCloud) }) : t("cloud.heroNoBackup")}</span>
           </div>
           <div class="cs-dest-actions">
             ${isEnabled
-              ? `<span class="cs-dest-hint">${t("cloud.heroCloudSetup")}</span>`
+              ? `<button type="button" class="btn primary small" data-act="cloud-bulk-backup">${icon("cloud", 13)} ${t("cloud.bulkBtn")}</button>
+                 <button type="button" class="btn ghost small" data-act="cloud-bulk-restore">${icon("download", 13)} ${t("cloud.bulkRestoreBtn")}</button>`
               : `<button type="button" class="btn primary small" data-act="cloud-hero-enable">${icon("cloud", 13)} ${t("cloud.heroEnable")}</button>`}
           </div>
         </article>
       </div>
-      <p class="cs-hero-note">${icon("shield", 12)} ${t("cloud.pageInfo")}</p>
+      <div class="cs-hero-note">
+        ${icon("shield", 14)}
+        <span><strong>${t("cloud.privacyTitle")}:</strong> ${t("cloud.pageInfo")}</span>
+      </div>
     </div>`;
-
-  const steps = `
-    <ol class="cs-steps">
-      <li class="cs-step">
-        <span class="cs-step-num">1</span>
-        <div><h4 class="cs-step-title">${t("cloud.step1Title")}</h4><p class="cs-step-desc">${t("cloud.step1Desc")}</p></div>
-      </li>
-      <li class="cs-step">
-        <span class="cs-step-num">2</span>
-        <div><h4 class="cs-step-title">${t("cloud.step2Title")}</h4><p class="cs-step-desc">${t("cloud.step2Desc")}</p></div>
-      </li>
-      <li class="cs-step">
-        <span class="cs-step-num">3</span>
-        <div><h4 class="cs-step-title">${t("cloud.step3Title")}</h4><p class="cs-step-desc">${t("cloud.step3Desc")}</p></div>
-      </li>
-    </ol>`;
 
   const localSection = `
     <h3 class="section-title">${t("cloud.localSectionTitle")}</h3>
     <p class="cs-lead">${t("cloud.localLead")}</p>
     <div class="list settings-group">
-      <div class="row settings-row stacked">
-        <div class="row-main">
-          <div class="settings-row-title">${t("cloud.localNowTitle")}</div>
-          <div class="settings-row-desc">${t("cloud.localNowDesc")}</div>
-        </div>
-        <div class="mg-inline" style="gap:8px;flex-wrap:wrap;margin-top:8px">
-          ${localBusy
-            ? `<span class="settings-value tabular-nums">${localBusy.done}/${localBusy.total}</span>`
-            : `<button type="button" class="btn primary small" data-act="cloud-local-bulk">${icon("package", 13)} ${t("cloud.localNowBtn")}</button>
-               <button type="button" class="btn ghost small" data-act="cloud-local-open-folder">${icon("folder", 13)} ${t("cloud.openBackupFolder")}</button>`}
-        </div>
-      </div>
       <div class="row settings-row stacked">
         <div class="row-main">
           <div class="settings-row-title">${t("cloud.localDirTitle")}</div>
@@ -426,6 +458,7 @@ export function renderCloudBackupSettingsGroup(): string {
         <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
           <input id="local-backup-dir" class="input cloud-field" value="${esc(localRoot.configured)}" placeholder="${esc(localRoot.effective)}" spellcheck="false" autocomplete="off" />
           <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+            <button type="button" class="btn ghost small" data-act="cloud-local-open-folder">${icon("folder", 13)} ${t("cloud.openBackupFolder")}</button>
             <button type="button" class="btn ghost small" data-act="local-backup-browse">${icon("folder", 13)} ${t("cloud.folderBrowse")}</button>
             <button type="button" class="btn primary small" data-act="local-backup-save">${t("common.save")}</button>
           </div>
@@ -446,9 +479,9 @@ export function renderCloudBackupSettingsGroup(): string {
                <div class="settings-row-desc">${t("cloud.providerDesc")}</div>
              </div>
              <div class="cs-provider-grid">${providerCards}</div>
+             ${providerConfig}
            </div>`
         : ""}
-      ${isEnabled ? providerConfig : ""}
       ${autoSyncRow}
       ${retentionRow}
       ${bulkRow}
@@ -462,7 +495,7 @@ export function renderCloudBackupSettingsGroup(): string {
       ${profileAutoRow}
     </div>`;
 
-  return `${hero}${steps}${localSection}${cloudSection}${profileSection}`;
+  return `${hero}${localSection}${cloudSection}${profileSection}`;
 }
 
 /** Formats a UNIX timestamp into a human-friendly localized date string. */
@@ -663,55 +696,55 @@ export function openGoogleDriveGuideModal(): void {
       </div>
 
       <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px;">
-        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm);">
+        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2);">
           <div style="font-size: 13px; font-weight: 600; color: var(--text);">${t("cloud.guideStep1")}</div>
           <div style="font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.5;">${t("cloud.guideStep1Desc")}</div>
-          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: monospace; font-size: 11px; color: var(--text-3);">
+          <div style="background: var(--surface-3); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: Consolas, monospace; font-size: 11px; color: var(--text-2);">
             API: Google Drive API · Project Name: Efxlve Launcher
           </div>
         </div>
 
-        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm);">
+        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2);">
           <div style="font-size: 13px; font-weight: 600; color: var(--text);">${t("cloud.guideStep2")}</div>
           <div style="font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.5;">${t("cloud.guideStep2Desc")}</div>
-          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: monospace; font-size: 11px; color: var(--text-3);">
+          <div style="background: var(--surface-3); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: Consolas, monospace; font-size: 11px; color: var(--text-2);">
             User Type: External · App Name: Efxlve Launcher
           </div>
         </div>
 
-        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm);">
+        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2);">
           <div style="font-size: 13px; font-weight: 600; color: var(--text);">${t("cloud.guideStep3")}</div>
           <div style="font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.5;">${t("cloud.guideStep3Desc")}</div>
-          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: monospace; font-size: 11px; color: var(--text-3);">
+          <div style="background: var(--surface-3); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: Consolas, monospace; font-size: 11px; color: var(--text-2);">
             Scope: .../auth/drive.appdata
           </div>
         </div>
 
-        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm);">
+        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2);">
           <div style="font-size: 13px; font-weight: 600; color: var(--text);">${t("cloud.guideStep4")}</div>
           <div style="font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.5;">${t("cloud.guideStep4Desc")}</div>
-          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: monospace; font-size: 11px; color: var(--text-3);">
+          <div style="background: var(--surface-3); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: Consolas, monospace; font-size: 11px; color: var(--text-2);">
             Test user: your-email@gmail.com
           </div>
         </div>
 
-        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm);">
+        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2);">
           <div style="font-size: 13px; font-weight: 600; color: var(--text);">${t("cloud.guideStep5")}</div>
           <div style="font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.5;">${t("cloud.guideStep5Desc")}</div>
-          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: monospace; font-size: 11px; color: var(--text-3);">
+          <div style="background: var(--surface-3); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: Consolas, monospace; font-size: 11px; color: var(--text-2);">
             Application Type: Desktop App · Name: Efxlve Desktop
           </div>
         </div>
 
-        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm);">
+        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2);">
           <div style="font-size: 13px; font-weight: 600; color: var(--text);">${t("cloud.guideStep6")}</div>
           <div style="font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.5;">${t("cloud.guideStep6Desc")}</div>
-          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: monospace; font-size: 11px; color: var(--text-3);">
+          <div style="background: var(--surface-3); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 6px 10px; margin-top: 6px; font-family: Consolas, monospace; font-size: 11px; color: var(--text-2);">
             Client ID: 123456789-xxxxxxxx.apps.googleusercontent.com<br>Client Secret: GOCSPX-xxxxxxxxxxxxxxxxxxxxxxxxx
           </div>
         </div>
 
-        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm);">
+        <div class="row mg-row stack mg-callout" style="padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2);">
           <div style="font-size: 13px; font-weight: 600; color: var(--text);">${t("cloud.guideStep7")}</div>
           <div style="font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.5;">${t("cloud.guideStep7Desc")}</div>
         </div>
@@ -732,4 +765,3 @@ export function openGoogleDriveGuideModal(): void {
 
   document.body.appendChild(backdrop);
 }
-

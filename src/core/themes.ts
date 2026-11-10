@@ -1247,9 +1247,9 @@ function sceneRules(id: string, input: CustomThemeInput): string {
     // by the same scrim, so the library cannot bleed through and the theme still
     // reaches the page the user spends the most time on.
     rules.push(`${selector} .overlay { background: linear-gradient(${scrim}, ${scrim}), ${input.bg} url("${input.scene}") center / cover no-repeat fixed !important; }`);
-    rules.push(`${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item) { backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }`);
+    rules.push(`${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item, .cs-hero, .cs-dest, .cs-provider, .bk-section, .cs-config-box) { backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }`);
   } else if (input.cardGlass) {
-    rules.push(`${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item) { backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }`);
+    rules.push(`${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item, .cs-hero, .cs-dest, .cs-provider, .bk-section, .cs-config-box) { backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }`);
   }
 
   if (input.glow && input.glow !== "none") {

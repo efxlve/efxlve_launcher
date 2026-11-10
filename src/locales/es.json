@@ -4121,5 +4121,15 @@
   "cloud.guideDetectDesc": "Steam saves are read from the Steam userdata folder. For anything else, open the game's Manage → Save, choose the save folder once, then back it up.",
   "cloud.guideNotSavedTitle": "What is not included",
   "cloud.guideNotSavedDesc": "The games themselves, screenshots, clips, and your account passwords. Those stay where they are.",
-  "cloud.heroEnable": "Turn on cloud backup"
+  "cloud.heroEnable": "Turn on cloud backup",
+  "cloud.heroLocalSub": "Local Save Archives",
+  "cloud.heroCloudDisabledSub": "Remote Backup",
+  "cloud.privacyTitle": "Privacy first",
+  "cloud.badgeRecommended": "Recommended",
+  "cloud.badgeDirectOAuth": "Direct OAuth",
+  "cloud.badgeSelfHosted": "Self-Hosted",
+  "cloud.badgeAdvanced": "Advanced",
+  "cloud.folderNotSelected": "No folder selected yet",
+  "cloud.gdriveAppDataNotice": "Saves are stored in Google Drive AppData (isolated from your Drive files)",
+  "cloud.gdriveConnectHint": "Direct OAuth 2.0 connection. No third-party servers see your data."
 }
