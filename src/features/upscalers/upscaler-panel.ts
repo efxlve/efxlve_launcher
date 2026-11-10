@@ -150,6 +150,22 @@ function importedLabel(entry: ImportedDll): string {
   return `${version} · ${entry.fileName} · ${fmtBytes(entry.size)}`;
 }
 
+/** True when `candidate` is a newer dotted version than `current`. */
+function isNewerVersion(candidate: string, current: string): boolean {
+  if (!candidate.trim()) return false;
+  // An unreadable game DLL version cannot be compared; offer the catalog file.
+  if (!current.trim()) return true;
+  const candidateParts = candidate.trim().split(".");
+  const currentParts = current.trim().split(".");
+  const length = Math.max(candidateParts.length, currentParts.length);
+  for (let index = 0; index < length; index += 1) {
+    const a = Number.parseInt(candidateParts[index] ?? "0", 10) || 0;
+    const b = Number.parseInt(currentParts[index] ?? "0", 10) || 0;
+    if (a !== b) return a > b;
+  }
+  return false;
+}
+
 function renderDll(
   dll: UpscalerDll,
   imported: ImportedDll[],
@@ -187,9 +203,11 @@ function renderDll(
     .join("");
 
   const downloadLatest = latest
-    ? `<button class="btn primary small" data-act="upscaler-download-latest" data-kind="${dll.kind}" data-dll-path="${esc(dll.path)}">${icon("download", 13)} ${esc(
-        t("upscaler.downloadLatest", { version: latest.version }),
-      )}</button>`
+    ? isNewerVersion(latest.version, dll.version)
+      ? `<button class="btn primary small" data-act="upscaler-download-latest" data-kind="${dll.kind}" data-dll-path="${esc(dll.path)}">${icon("download", 13)} ${esc(
+          t("upscaler.downloadLatest", { version: latest.version }),
+        )}</button>`
+      : `<span class="chip ok">${esc(t("appUpdate.upToDateShort"))}</span>`
     : catalogLoading
       ? `<span class="chip">${esc(t("upscaler.loadingCatalog"))}</span>`
       : `<span class="chip">${esc(t("upscaler.catalogUnavailable"))}</span>`;
@@ -243,7 +261,7 @@ function renderDll(
 /** Enables the one-click update only when a row has a newer catalog version. */
 function refreshUpdateAllState(root: HTMLElement): void {
   const button = root
-    .closest("section")
+    .closest(".manage-group")
     ?.querySelector<HTMLButtonElement>('[data-act="upscaler-update-all"]');
   if (!button) return;
   button.disabled = !root.querySelector('[data-act="upscaler-download-latest"]');
@@ -336,7 +354,14 @@ export async function hydrateUpscalerPanel(force = false): Promise<void> {
 }
 
 function panelRoot(element: HTMLElement): HTMLElement | null {
-  return element.closest<HTMLElement>("[data-upscaler-root]");
+  const root = element.closest<HTMLElement>("[data-upscaler-root]");
+  if (root) return root;
+  // The toolbar buttons sit above the root, inside the same manage section.
+  return (
+    element
+      .closest<HTMLElement>(".manage-group")
+      ?.querySelector<HTMLElement>("[data-upscaler-root]") ?? null
+  );
 }
 
 function actionErrorMessage(error: unknown): string {
@@ -436,6 +461,8 @@ export async function handleUpscalerAction(
         }
         await hydrateUpscalerPanel(true);
       });
+      // withBusy re-enables the toolbar button; the fresh scan decides again.
+      refreshUpdateAllState(root);
       return true;
     }
 
