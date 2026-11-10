@@ -100,6 +100,8 @@ export async function updateCloudBackupSettings(
     gdriveUserEmail: null,
     gdriveRefreshToken: null,
     lastSyncTime: null,
+    lastTestAt: null,
+    lastTestOk: null,
   };
 
   const updated: CloudBackupSettings = { ...current, ...patch };
@@ -122,11 +124,14 @@ export async function testCloudConnectionAction(): Promise<void> {
   if (!S.cloudBackupSettings) return;
   S.cloudBackupTesting = true;
   scheduleRender();
+  const now = Math.floor(Date.now() / 1000);
   try {
     const res = await cloudBackupTestConnection(S.cloudBackupSettings);
     toast(res, "ok");
+    await updateCloudBackupSettings({ lastTestAt: now, lastTestOk: true });
   } catch (err) {
     toast(String(err), "err");
+    await updateCloudBackupSettings({ lastTestAt: now, lastTestOk: false });
   } finally {
     S.cloudBackupTesting = false;
     scheduleRender();

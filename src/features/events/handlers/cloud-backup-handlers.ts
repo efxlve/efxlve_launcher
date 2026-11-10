@@ -38,6 +38,9 @@ import {
   updateManageCloudRowInPlace,
 } from "../../cloud-backup/cloud-backup-view";
 import { closeCloudGuideModal, openCloudGuideModal } from "../../cloud-backup/cloud-guide";
+
+/** A destination change invalidates the stored connection test result. */
+const RESET_CLOUD_TEST = { lastTestAt: null, lastTestOk: null };
 import type { CloudBackupProvider } from "../../../epic";
 import {
   cloudBackupOpenFolder,
@@ -147,7 +150,7 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
       const provider = t.dataset.provider as CloudBackupProvider;
       if (provider) {
         S.launcherProfileArchives = null;
-        void updateCloudBackupSettings({ provider, enabled: true });
+        void updateCloudBackupSettings({ provider, enabled: true, ...RESET_CLOUD_TEST });
       }
       return true;
     }
@@ -202,6 +205,7 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
       void updateCloudBackupSettings({
         gdriveClientId,
         gdriveClientSecret,
+        ...RESET_CLOUD_TEST,
       }).then((ok) => {
         if (ok) toast(i18nT("cloud.gdriveSaved"), "ok");
       });
@@ -228,6 +232,7 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
           const saved = await updateCloudBackupSettings({
             gdriveClientId: currentId,
             gdriveClientSecret: currentSecret,
+            ...RESET_CLOUD_TEST,
           });
           if (!saved) return;
         }
@@ -247,6 +252,7 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
         const saved = await updateCloudBackupSettings({
           gdriveClientId: clientIdInput?.value.trim() ?? "",
           gdriveClientSecret: clientSecretInput?.value.trim() ?? "",
+          ...RESET_CLOUD_TEST,
         });
         if (!saved) return;
         await testCloudConnectionAction();
@@ -259,7 +265,7 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
         const current = S.cloudBackupSettings?.folderPath ?? "";
         const chosen = await epicSelectFolderDialog(current || null, i18nT("cloud.folderBrowse")).catch(() => null);
         if (!chosen) return;
-        const ok = await updateCloudBackupSettings({ folderPath: chosen });
+        const ok = await updateCloudBackupSettings({ folderPath: chosen, ...RESET_CLOUD_TEST });
         if (ok) toast(i18nT("cloud.folderSaved"), "ok");
       })();
       return true;
@@ -332,7 +338,7 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
 
     case "cloud-folder-save": {
       const input = document.getElementById("cloud-folder-path") as HTMLInputElement | null;
-      void updateCloudBackupSettings({ folderPath: input?.value.trim() ?? "" }).then((ok) => {
+      void updateCloudBackupSettings({ folderPath: input?.value.trim() ?? "", ...RESET_CLOUD_TEST }).then((ok) => {
         if (ok) toast(i18nT("cloud.folderSaved"), "ok");
       });
       return true;
@@ -341,7 +347,7 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
     case "cloud-folder-test": {
       const input = document.getElementById("cloud-folder-path") as HTMLInputElement | null;
       void (async () => {
-        const saved = await updateCloudBackupSettings({ folderPath: input?.value.trim() ?? "" });
+        const saved = await updateCloudBackupSettings({ folderPath: input?.value.trim() ?? "", ...RESET_CLOUD_TEST });
         if (!saved) return;
         await testCloudConnectionAction();
       })();
@@ -350,7 +356,7 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
 
     case "toggle-webdav-invalid-cert": {
       const checked = ((targetEl || t) as HTMLInputElement).checked;
-      void updateCloudBackupSettings({ webdavAllowInvalidCert: checked });
+      void updateCloudBackupSettings({ webdavAllowInvalidCert: checked, ...RESET_CLOUD_TEST });
       return true;
     }
 
@@ -362,6 +368,7 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
         webdavUrl: urlInput?.value.trim() ?? "",
         webdavUsername: userInput?.value.trim() ?? "",
         webdavPassword: passInput?.value ?? "",
+        ...RESET_CLOUD_TEST,
       }).then((ok) => {
         if (ok) toast(i18nT("cloud.webdavSaved"), "ok");
       });
@@ -377,6 +384,7 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
           webdavUrl: urlInput?.value.trim() ?? "",
           webdavUsername: userInput?.value.trim() ?? "",
           webdavPassword: passInput?.value ?? "",
+          ...RESET_CLOUD_TEST,
         });
         if (!saved) return;
         await testCloudConnectionAction();
@@ -441,7 +449,7 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
 
     case "cloud-rclone-save": {
       const input = document.getElementById("cloud-rclone-remote") as HTMLInputElement | null;
-      void updateCloudBackupSettings({ rcloneRemote: input?.value.trim() ?? "" }).then((ok) => {
+      void updateCloudBackupSettings({ rcloneRemote: input?.value.trim() ?? "", ...RESET_CLOUD_TEST }).then((ok) => {
         if (ok) toast(i18nT("cloud.rcloneSaved"), "ok");
       });
       return true;
@@ -450,7 +458,7 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
     case "cloud-rclone-test": {
       const input = document.getElementById("cloud-rclone-remote") as HTMLInputElement | null;
       void (async () => {
-        const saved = await updateCloudBackupSettings({ rcloneRemote: input?.value.trim() ?? "" });
+        const saved = await updateCloudBackupSettings({ rcloneRemote: input?.value.trim() ?? "", ...RESET_CLOUD_TEST });
         if (!saved) return;
         await testCloudConnectionAction();
       })();

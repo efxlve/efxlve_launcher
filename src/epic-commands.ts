@@ -1195,6 +1195,9 @@ export interface CloudBackupSettings {
   gdriveUserEmail?: string | null;
   gdriveRefreshToken?: string | null;
   lastSyncTime?: number | null;
+  /** When the provider was last tested and whether it passed. */
+  lastTestAt?: number | null;
+  lastTestOk?: boolean | null;
 }
 
 export interface CloudBackupEntry {

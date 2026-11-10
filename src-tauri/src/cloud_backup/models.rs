@@ -61,6 +61,11 @@ pub struct CloudBackupSettings {
     pub gdrive_refresh_token: Option<String>,
     #[serde(default)]
     pub last_sync_time: Option<u64>,
+    /// When the provider was last tested and whether it passed.
+    #[serde(default)]
+    pub last_test_at: Option<u64>,
+    #[serde(default)]
+    pub last_test_ok: Option<bool>,
 }
 
 impl Default for CloudBackupSettings {
@@ -86,6 +91,8 @@ impl Default for CloudBackupSettings {
             gdrive_user_email: None,
             gdrive_refresh_token: None,
             last_sync_time: None,
+            last_test_at: None,
+            last_test_ok: None,
         }
     }
 }

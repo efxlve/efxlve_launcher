@@ -4161,5 +4161,8 @@
   "cloud.verifyOk": "Archive is intact: {count} files, {size}.",
   "cloud.verifyDamagedToast": "Archive is damaged and will not restore.",
   "cloud.verifyNoHashToast": "Archive is readable, but it has no save-tree hash to compare.",
-  "cloud.verifyFailed": "Could not verify the archive: {msg}"
+  "cloud.verifyFailed": "Could not verify the archive: {msg}",
+  "cloud.heroTestPassed": "Connection tested: {date}",
+  "cloud.heroTestFailed": "Last test failed: {date}",
+  "cloud.heroNotTested": "Connection not tested yet."
 }

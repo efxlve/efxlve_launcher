@@ -176,6 +176,16 @@
   flex-shrink: 0;
 }
 
+.cs-test.is-ok,
+.cs-test.is-ok svg {
+  color: var(--ok);
+}
+
+.cs-test.is-err,
+.cs-test.is-err svg {
+  color: var(--err);
+}
+
 .cs-dest-actions {
   display: flex;
   flex-wrap: wrap;

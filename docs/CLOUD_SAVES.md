@@ -192,6 +192,9 @@ the cheaper roots miss.
 - Google Drive: Client ID/secret, Save, Test, Connect with Google.
 - rclone: remote path (`remote:folder`), Test, Save; rclone itself is installed
   and configured by the user.
+- **Test Connection** stores the time and result on the device. The cloud card
+  on the same page shows the last pass or failure, so "Configured" never hides
+  an untested provider; changing the destination clears the old result.
 - Auto-sync on game exit is a separate switch. It backs up the changed save
   locally, and uploads it when a provider is configured; it works with no
   account setup. The per-game **Include in automatic backups** switch opts a

@@ -4161,5 +4161,8 @@
   "cloud.verifyOk": "Arşiv sağlam: {count} dosya, {size}.",
   "cloud.verifyDamagedToast": "Arşiv hasarlı; geri yüklenmez.",
   "cloud.verifyNoHashToast": "Arşiv okunabiliyor, ancak karşılaştırılacak save ağacı hash'i yok.",
-  "cloud.verifyFailed": "Arşiv doğrulanamadı: {msg}"
+  "cloud.verifyFailed": "Arşiv doğrulanamadı: {msg}",
+  "cloud.heroTestPassed": "Bağlantı test edildi: {date}",
+  "cloud.heroTestFailed": "Son test başarısız: {date}",
+  "cloud.heroNotTested": "Bağlantı henüz test edilmedi."
 }

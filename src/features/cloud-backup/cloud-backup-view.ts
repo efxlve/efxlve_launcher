@@ -51,6 +51,8 @@ export function renderCloudBackupSettingsGroup(): string {
     gdriveUserEmail: null,
     gdriveRefreshToken: null,
     lastSyncTime: null,
+    lastTestAt: null,
+    lastTestOk: null,
   };
 
   const isEnabled = st.enabled && st.provider !== "none";
@@ -434,6 +436,12 @@ export function renderCloudBackupSettingsGroup(): string {
           <p class="cs-dest-note">${isEnabled ? t("cloud.heroCloudHintOn") : t("cloud.heroCloudHintOff")}</p>
           <div class="cs-dest-meta">
             <span class="cs-meta-item">${icon("clock", 12)} ${lastCloud ? t("cloud.heroLastCloud", { date: fmtCloudDate(lastCloud) }) : t("cloud.heroNoCloudBackup")}</span>
+            ${isEnabled && st.lastTestAt
+              ? `<span class="cs-meta-item cs-test${st.lastTestOk ? " is-ok" : " is-err"}">${icon(st.lastTestOk ? "check" : "x", 12)} ${t(st.lastTestOk ? "cloud.heroTestPassed" : "cloud.heroTestFailed", { date: fmtCloudDate(st.lastTestAt) })}</span>`
+              : ""}
+            ${isEnabled && !st.lastTestAt
+              ? `<span class="cs-meta-item cs-test">${icon("info", 12)} ${t("cloud.heroNotTested")}</span>`
+              : ""}
           </div>
           <div class="cs-dest-actions">
             ${isEnabled
