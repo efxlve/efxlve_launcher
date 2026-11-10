@@ -170,6 +170,14 @@ Rules for these files:
 | `docs/PERFORMANCE.md` | Low-end performance rules, implemented wins and open work |
 | `docs/GOOGLE_DRIVE_SETUP_GUIDE.md` | Google Drive backup setup |
 
+## Changelog
+
+`src/features/changelog/changelog-view.ts` is player-facing, and the GitHub
+release body is generated from it. Keep each release to **2–5 short bullets**
+under Added / Improved / Fixed. Say what the player can see or do; do not list
+file names, internal mechanics, test runs, implementation notes or every fix.
+The release page and the in-app changelog are the same short text.
+
 ## Release
 
 The workflow keeps the release as a draft until every platform's assets and the
