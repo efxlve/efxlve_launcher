@@ -216,7 +216,7 @@ export function renderBackupsSection(): string {
             ${isInstalled
               ? `<label class="bk-auto-toggle" title="${esc(t("manage.autoBackupTitle"))}">
                    <span class="bk-auto-label">${t("backups.autoLabel")}</span>
-                   <span class="switch"><input type="checkbox" data-act="backups-toggle-include" data-id="${esc(key)}" ${included ? "checked" : ""} /><span class="track"></span></span>
+                   <span class="switch"><input type="checkbox" data-act="backups-toggle-include" data-id="${esc(key)}" aria-label="${esc(t("manage.autoBackupTitle"))}" ${included ? "checked" : ""} /><span class="track"></span></span>
                  </label>
                  <button type="button" class="btn ghost small" data-act="backups-create" data-id="${esc(key)}">${icon("cloud", 13)} ${esc(t("backups.backUp"))}</button>`
               : ""}

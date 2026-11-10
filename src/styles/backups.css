@@ -226,31 +226,40 @@
 .bk-auto-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 6px 0 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  background: var(--surface-1);
+  gap: 7px;
   cursor: pointer;
-  transition: border-color var(--ease), background-color var(--ease);
-}
-
-.bk-auto-toggle:hover {
-  border-color: var(--line-strong);
-  background: var(--surface-3);
+  user-select: none;
 }
 
 .bk-auto-label {
   font-size: 11px;
   font-weight: 500;
   color: var(--text-2);
-  user-select: none;
+  transition: color var(--ease);
+}
+
+.bk-auto-toggle:hover .bk-auto-label {
+  color: var(--text);
 }
 
 .bk-auto-toggle .switch {
-  transform: scale(0.85);
-  margin: 0 -2px;
+  width: 30px;
+  height: 18px;
+}
+
+.bk-auto-toggle .switch .track {
+  border-radius: 9px;
+}
+
+.bk-auto-toggle .switch .track::before {
+  width: 12px;
+  height: 12px;
+  left: 3px;
+  top: 3px;
+}
+
+.bk-auto-toggle .switch input:checked + .track::before {
+  transform: translateX(12px);
 }
 
 .bk-empty {
