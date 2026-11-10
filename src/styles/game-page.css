@@ -2037,6 +2037,10 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   line-height: 1.55;
 }
 .upscaler-desc { margin-top: 2px; }
+.upscaler-current { margin-top: 2px; }
+/* A catalog download locks the panel and shows one indeterminate bar, so a
+   slow connection still looks like work instead of a dead button. */
+.manage-group[data-upscaler-busy="1"] [data-upscaler-root] { opacity: 0.55; }
 .mg-row { align-items: flex-start; gap: 18px; padding: 15px 16px; }
 .mg-row:hover { background: transparent; }
 /* A form block (launch arguments, wrapper, environment): stacked, and outlined
@@ -2081,6 +2085,7 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
   from { transform: translateX(-110%); }
   to { transform: translateX(340%); }
 }
+.upscaler-progress { max-width: 520px; margin-top: 2px; }
 /* Cloud sync: a path smaller than the interface MTU black-holes uploads. */
 .manage-mtu-issue {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;

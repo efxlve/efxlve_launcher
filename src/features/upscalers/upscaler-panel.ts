@@ -98,6 +98,11 @@ export function upscalerGroup(game: ManageGameLike): string {
             <button class="btn primary small" data-act="upscaler-update-all" disabled>${icon("download", 13)} ${esc(t("upscaler.updateAll"))}</button>
             <button class="btn ghost small" data-act="upscaler-import">${icon("upload", 13)} ${esc(t("upscaler.import"))}</button>
           </div>
+          <div class="manage-sync-progress upscaler-progress hidden" data-upscaler-progress>
+            <div class="manage-sync-track"><span class="manage-sync-fill"></span></div>
+            <div class="manage-sync-label" data-upscaler-progress-label aria-live="polite"></div>
+          </div>
+          <div class="mg-note is-ok upscaler-current hidden" data-upscaler-current>${icon("check-circle", 12)} ${esc(t("upscaler.allCurrent"))}</div>
         </div>
         <div data-upscaler-root data-game-key="${esc(game.appName)}" data-install-path="${esc(installPath)}">
           <div data-upscaler-body><div class="mg-note">${esc(t("upscaler.scanning"))}</div></div>
@@ -207,7 +212,7 @@ function renderDll(
       ? `<button class="btn primary small" data-act="upscaler-download-latest" data-kind="${dll.kind}" data-dll-path="${esc(dll.path)}">${icon("download", 13)} ${esc(
           t("upscaler.downloadLatest", { version: latest.version }),
         )}</button>`
-      : `<span class="chip ok">${esc(t("appUpdate.upToDateShort"))}</span>`
+      : `<span class="chip ok" data-upscaler-status="current">${esc(t("appUpdate.upToDateShort"))}</span>`
     : catalogLoading
       ? `<span class="chip">${esc(t("upscaler.loadingCatalog"))}</span>`
       : `<span class="chip">${esc(t("upscaler.catalogUnavailable"))}</span>`;
@@ -260,11 +265,80 @@ function renderDll(
 
 /** Enables the one-click update only when a row has a newer catalog version. */
 function refreshUpdateAllState(root: HTMLElement): void {
-  const button = root
-    .closest(".manage-group")
-    ?.querySelector<HTMLButtonElement>('[data-act="upscaler-update-all"]');
-  if (!button) return;
-  button.disabled = !root.querySelector('[data-act="upscaler-download-latest"]');
+  const group = root.closest<HTMLElement>(".manage-group");
+  const button = group?.querySelector<HTMLButtonElement>(
+    '[data-act="upscaler-update-all"]',
+  );
+  if (button) {
+    button.disabled =
+      group?.dataset.upscalerBusy === "1" ||
+      !root.querySelector('[data-act="upscaler-download-latest"]');
+  }
+  const note = group?.querySelector<HTMLElement>("[data-upscaler-current]");
+  if (!note) return;
+  const rows = root.querySelectorAll("[data-upscaler-dll]");
+  const current = root.querySelectorAll('[data-upscaler-status="current"]');
+  note.classList.toggle(
+    "hidden",
+    rows.length === 0 || current.length !== rows.length,
+  );
+}
+
+/**
+ * Locks the whole panel while a catalog file downloads, so a slow connection
+ * cannot invite a second click. The update button stays readable and reports
+ * progress; every other control is disabled until the run ends.
+ */
+function setPanelBusy(root: HTMLElement | null, busy: boolean): void {
+  const group = root?.closest<HTMLElement>(".manage-group") ?? null;
+  if (!root || !group) return;
+  if (busy) group.dataset.upscalerBusy = "1";
+  else delete group.dataset.upscalerBusy;
+  if (busy) group.setAttribute("aria-busy", "true");
+  else group.removeAttribute("aria-busy");
+  root.inert = busy;
+
+  const progress = group.querySelector<HTMLElement>("[data-upscaler-progress]");
+  if (progress) {
+    progress.classList.toggle("hidden", !busy);
+    progress.classList.toggle("indeterminate", busy);
+    if (!busy) {
+      const label = progress.querySelector<HTMLElement>(
+        "[data-upscaler-progress-label]",
+      );
+      if (label) label.textContent = "";
+    }
+  }
+
+  const controls = group.querySelectorAll<HTMLButtonElement | HTMLSelectElement>(
+    "[data-upscaler-root] button, [data-upscaler-root] select, .mg-inline button",
+  );
+  for (const control of controls) {
+    if (busy) {
+      if (!control.disabled) {
+        control.disabled = true;
+        control.dataset.upscalerLocked = "1";
+      }
+    } else if (control.dataset.upscalerLocked === "1") {
+      control.disabled = false;
+      delete control.dataset.upscalerLocked;
+    }
+  }
+}
+
+/** Names the DLL currently in flight; the bar itself has no byte counter. */
+function setPanelProgress(
+  root: HTMLElement | null,
+  done: number,
+  total: number,
+  kind: UpscalerKind,
+): void {
+  const label = root
+    ?.closest<HTMLElement>(".manage-group")
+    ?.querySelector<HTMLElement>("[data-upscaler-progress-label]");
+  if (!label) return;
+  const waiting = t("upscaler.updating", { done, total });
+  label.textContent = `${waiting} ${KIND_LABEL[kind]}`;
 }
 
 function renderBody(
@@ -297,9 +371,13 @@ function renderBody(
 
 /**
  * Loads the scan, the local cache and the catalog, then replaces only the
- * panel body. The Manage shell and the other tabs stay untouched.
+ * panel body. The Manage shell and the other tabs stay untouched. `force`
+ * rescans the game folder; `forceCatalog` also fetches a new manifest.
  */
-export async function hydrateUpscalerPanel(force = false): Promise<void> {
+export async function hydrateUpscalerPanel(
+  force = false,
+  forceCatalog = force,
+): Promise<void> {
   const root = document.querySelector<HTMLElement>("[data-upscaler-root]");
   if (!root) return;
   if (!force && root.dataset.loaded === "1") return;
@@ -325,7 +403,7 @@ export async function hydrateUpscalerPanel(force = false): Promise<void> {
 
   body.innerHTML = `<div class="mg-note">${esc(t("upscaler.scanning"))}</div>`;
   refreshUpdateAllState(root);
-  const catalogPromise = loadCatalog(force)
+  const catalogPromise = loadCatalog(forceCatalog)
     .then((entries) => ({ entries }))
     .catch((error: unknown) => ({
       error: String(error).replace(/^Error: /, ""),
@@ -398,6 +476,10 @@ export async function handleUpscalerAction(
 ): Promise<boolean> {
   if (!act.startsWith("upscaler-")) return false;
   const root = panelRoot(element);
+  // A download owns the panel until it ends; a stale click must not interleave.
+  if (root?.closest<HTMLElement>(".manage-group")?.dataset.upscalerBusy === "1") {
+    return true;
+  }
   const installPath = root?.dataset.installPath ?? "";
   const dllPath = element.dataset.dllPath ?? "";
   const kind = element.dataset.kind as UpscalerKind | undefined;
@@ -419,50 +501,58 @@ export async function handleUpscalerAction(
         return true;
       }
       if (!(await confirmRisk())) return true;
-      await withBusy(element, async () => {
-        let done = 0;
-        let updated = 0;
-        const failures: string[] = [];
-        for (const row of rows) {
-          const path = row.dataset.dllPath ?? "";
-          const kind = row.dataset.kind as UpscalerKind | undefined;
-          const current = row.dataset.version ?? "";
-          const latest = row.dataset.latestVersion ?? "";
-          if (!path || !kind) continue;
-          done += 1;
-          if (current && latest && current === latest) {
-            continue;
-          }
+      try {
+        await withBusy(element, async () => {
+          setPanelBusy(root, true);
           try {
-            await upscalersDownloadLatest(installPath, path, kind);
-            updated += 1;
-          } catch (error) {
-            failures.push(`${KIND_LABEL[kind]}: ${actionErrorMessage(error)}`);
+            let updated = 0;
+            const failures: string[] = [];
+            for (const [index, row] of rows.entries()) {
+              const path = row.dataset.dllPath ?? "";
+              const rowKind = row.dataset.kind as UpscalerKind | undefined;
+              const current = row.dataset.version ?? "";
+              const latest = row.dataset.latestVersion ?? "";
+              if (!path || !rowKind) continue;
+              if (current && latest && current === latest) continue;
+              const position = index + 1;
+              setPanelProgress(root, position, rows.length, rowKind);
+              if (element instanceof HTMLButtonElement) {
+                element.textContent = `${t("upscaler.updating", {
+                  done: position,
+                  total: rows.length,
+                })} ${KIND_LABEL[rowKind]}`;
+              }
+              try {
+                await upscalersDownloadLatest(installPath, path, rowKind);
+                updated += 1;
+              } catch (error) {
+                failures.push(
+                  `${KIND_LABEL[rowKind]}: ${actionErrorMessage(error)}`,
+                );
+              }
+            }
+            if (failures.length > 0) {
+              toast(
+                `${t("upscaler.updateAllPartial", {
+                  ok: updated,
+                  total: rows.length,
+                })} ${failures[0]}`,
+                "err",
+              );
+            } else if (updated === 0) {
+              toast(t("upscaler.allCurrent"), "ok");
+            } else {
+              toast(t("upscaler.updatedAll", { count: updated }), "ok");
+            }
+            await hydrateUpscalerPanel(true, false);
+          } finally {
+            setPanelBusy(root, false);
           }
-          if (element instanceof HTMLButtonElement) {
-            element.textContent = t("upscaler.updating", {
-              done,
-              total: rows.length,
-            });
-          }
-        }
-        if (failures.length > 0) {
-          toast(
-            `${t("upscaler.updateAllPartial", {
-              ok: updated,
-              total: rows.length,
-            })} ${failures[0]}`,
-            "err",
-          );
-        } else if (updated === 0) {
-          toast(t("upscaler.allCurrent"), "ok");
-        } else {
-          toast(t("upscaler.updatedAll", { count: updated }), "ok");
-        }
-        await hydrateUpscalerPanel(true);
-      });
-      // withBusy re-enables the toolbar button; the fresh scan decides again.
-      refreshUpdateAllState(root);
+        });
+      } finally {
+        // withBusy re-enables the toolbar button; the fresh scan decides again.
+        refreshUpdateAllState(root);
+      }
       return true;
     }
 
@@ -477,7 +567,7 @@ export async function handleUpscalerAction(
       try {
         await upscalersImportDll(picked);
         toast(t("upscaler.imported"), "ok");
-        await hydrateUpscalerPanel(true);
+        await hydrateUpscalerPanel(true, false);
       } catch (error) {
         toast(actionErrorMessage(error), "err");
       }
@@ -485,22 +575,27 @@ export async function handleUpscalerAction(
     }
 
     case "upscaler-download-latest": {
-      if (!installPath || !dllPath || !kind) return true;
+      if (!installPath || !dllPath || !kind || !root) return true;
       if (!(await confirmRisk())) return true;
       await withBusy(element, async () => {
+        setPanelBusy(root, true);
+        setPanelProgress(root, 1, 1, kind);
         try {
           await upscalersDownloadLatest(installPath, dllPath, kind);
           toast(t("upscaler.swappedOk"), "ok");
-          await hydrateUpscalerPanel(true);
+          await hydrateUpscalerPanel(true, false);
         } catch (error) {
           toast(actionErrorMessage(error), "err");
+        } finally {
+          setPanelBusy(root, false);
         }
       });
+      refreshUpdateAllState(root);
       return true;
     }
 
     case "upscaler-download-selected": {
-      if (!installPath || !dllPath || !kind) return true;
+      if (!installPath || !dllPath || !kind || !root) return true;
       const select = element
         .closest(".upscaler-line")
         ?.querySelector<HTMLSelectElement>("[data-upscaler-catalog]");
@@ -511,14 +606,19 @@ export async function handleUpscalerAction(
       }
       if (!(await confirmRisk())) return true;
       await withBusy(element, async () => {
+        setPanelBusy(root, true);
+        setPanelProgress(root, 1, 1, kind);
         try {
           await upscalersDownloadSwap(installPath, dllPath, kind, md5);
           toast(t("upscaler.swappedOk"), "ok");
-          await hydrateUpscalerPanel(true);
+          await hydrateUpscalerPanel(true, false);
         } catch (error) {
           toast(actionErrorMessage(error), "err");
+        } finally {
+          setPanelBusy(root, false);
         }
       });
+      refreshUpdateAllState(root);
       return true;
     }
 
@@ -537,7 +637,7 @@ export async function handleUpscalerAction(
         try {
           await upscalersSwap(installPath, dllPath, importedId);
           toast(t("upscaler.swappedOk"), "ok");
-          await hydrateUpscalerPanel(true);
+          await hydrateUpscalerPanel(true, false);
         } catch (error) {
           toast(actionErrorMessage(error), "err");
         }
@@ -558,7 +658,7 @@ export async function handleUpscalerAction(
         try {
           await upscalersRestore(installPath, dllPath);
           toast(t("upscaler.restoredOk"), "ok");
-          await hydrateUpscalerPanel(true);
+          await hydrateUpscalerPanel(true, false);
         } catch (error) {
           toast(actionErrorMessage(error), "err");
         }
@@ -579,7 +679,7 @@ export async function handleUpscalerAction(
         try {
           await upscalersDiscardBackup(installPath, dllPath);
           toast(t("upscaler.discardedOk"), "ok");
-          await hydrateUpscalerPanel(true);
+          await hydrateUpscalerPanel(true, false);
         } catch (error) {
           toast(actionErrorMessage(error), "err");
         }
