@@ -12,7 +12,7 @@ import { S } from "../../core/state";
 import { progressToast, toast } from "../../core/toast";
 import { fmtBytes } from "../../core/utils";
 import { t as i18nT, localizeMessage } from "../../i18n";
-import { customGamesPickFile } from "../../custom-games";
+import { pickArchiveFile } from "../../core/file-picker";
 import {
   cloudBackupExportMigration,
   cloudBackupImportMigration,
@@ -56,7 +56,7 @@ async function exportOne(key: string, backupId: string): Promise<void> {
 }
 
 async function importOne(key: string): Promise<void> {
-  const path = await customGamesPickFile(undefined, i18nT("manage.importPickFile")).catch(() => null);
+  const path = await pickArchiveFile(i18nT("manage.importPickFile")).catch(() => null);
   if (!path) return;
   let password: string | undefined;
   if (await epicBackupArchiveEncrypted(path).catch(() => false)) {

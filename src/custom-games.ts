@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { openFileDialog } from "./core/file-picker";
 import type { EpicSummary } from "./epic";
 import type { LibraryItem } from "./core/types";
 
@@ -54,7 +55,7 @@ export const customGamesStop = (id: string) =>
   invoke<void>("custom_games_stop", { id });
 
 export const customGamesPickFile = (defaultPath?: string, title?: string) =>
-  invoke<string | null>("custom_games_pick_file", { defaultPath, title });
+  openFileDialog("executable", title, defaultPath);
 
 export const customGamesPickFolder = (defaultPath?: string, title?: string) =>
   invoke<string | null>("custom_games_pick_folder", { defaultPath, title });

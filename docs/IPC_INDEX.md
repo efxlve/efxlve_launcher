@@ -109,7 +109,6 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `custom_games_import_folder` | `customGamesImportFolder({ ... })` | `src-tauri/src/custom_games.rs` |
 | `custom_games_launch` | `customGamesLaunch({ ... })` | `src-tauri/src/custom_games.rs` |
 | `custom_games_list` | `customGamesList({ ... })` | `src-tauri/src/custom_games.rs` |
-| `custom_games_pick_file` | `customGamesPickFile({ ... })` | `src-tauri/src/custom_games.rs` |
 | `custom_games_pick_folder` | `customGamesPickFolder({ ... })` | `src-tauri/src/custom_games.rs` |
 | `custom_games_remove` | `customGamesRemove({ ... })` | `src-tauri/src/custom_games.rs` |
 | `custom_games_search_steam` | `customGamesSearchSteam({ ... })` | `src-tauri/src/custom_games.rs` |
@@ -407,6 +406,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `overlay_show_launcher` | `overlayShowLauncher({ ... })` | `src-tauri/src/overlay/mod.rs` |
 | `pc_check_system` | `pcCheckSystem({ ... })` | `src-tauri/src/pc_check.rs` |
 | `perf_mark` | `perfMark({ ... })` | `src-tauri/src/perf.rs` |
+| `pick_file_dialog` | `pickFileDialog({ ... })` | `src-tauri/src/file_dialog.rs` |
 | `powerpyx_game_guide` | `powerpyxGameGuide({ ... })` | `src-tauri/src/guides/powerpyx.rs` |
 | `prewarm_store_view` | `prewarmStoreView({ ... })` | `src-tauri/src/store_host.rs` |
 | `profile_archive_encrypted` | `profileArchiveEncrypted({ ... })` | `src-tauri/src/cloud_backup/commands.rs` |

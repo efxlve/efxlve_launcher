@@ -10,7 +10,7 @@ import { askPassword } from "../../core/password-dialog";
 import { scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import { customGamesPickFile } from "../../custom-games";
+import { pickArchiveFile } from "../../core/file-picker";
 import { t } from "../../i18n";
 import {
   cloudBackupSaveSettings,
@@ -103,7 +103,7 @@ export async function exportProfileAction(): Promise<void> {
 }
 
 export async function importProfileAction(): Promise<void> {
-  const path = await customGamesPickFile(undefined, t("profile.pickFile")).catch(() => null);
+  const path = await pickArchiveFile(t("profile.pickFile")).catch(() => null);
   if (!path) return;
   const encrypted = await profileArchiveEncrypted(path).catch(() => false);
   let password: string | undefined;

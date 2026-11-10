@@ -17,6 +17,7 @@ mod discord_sdk;
 mod download_limit;
 mod eos;
 mod egl_removal;
+mod file_dialog;
 mod epic_shim;
 mod feedback;
 mod gogdl;
@@ -2419,7 +2420,7 @@ fn main() {
             custom_games::custom_games_stop,
             custom_games::custom_games_import_folder,
             custom_games::custom_games_pick_folder,
-            custom_games::custom_games_pick_file,
+            file_dialog::pick_file_dialog,
             custom_games::custom_games_search_steam,
             custom_games::custom_games_steam_details,
             upscalers::upscalers_scan_game,

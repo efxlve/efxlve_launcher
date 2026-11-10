@@ -63,7 +63,7 @@ import {
 import { askRestorePreview } from "../../cloud-backup/restore-preview-dialog";
 import { askPassword } from "../../../core/password-dialog";
 import { askText } from "../../../core/text-dialog";
-import { customGamesPickFile } from "../../../custom-games";
+import { pickArchiveFile } from "../../../core/file-picker";
 import {
   notifyLocalBackupDone,
   notifyLocalBackupFailed,
@@ -404,7 +404,7 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
     case "manage-import-backup":
       if (id) {
         void (async () => {
-          const path = await customGamesPickFile(undefined, i18nT("manage.importPickFile")).catch(() => null);
+          const path = await pickArchiveFile(i18nT("manage.importPickFile")).catch(() => null);
           if (!path) return;
           let password: string | undefined;
           const encrypted = await epicBackupArchiveEncrypted(path).catch(() => false);
