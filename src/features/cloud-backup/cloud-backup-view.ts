@@ -609,7 +609,7 @@ export function renderManageCloudBackupRow(appName: string): string {
         const dateStr = fmtCloudDate(b.timestamp) || b.formattedDate;
         const sizeStr = fmtBytes(b.sizeBytes);
         const isLatest = idx === 0;
-        const verdict = S.cloudVerifyVerdicts.get(b.backupId);
+        const verdict = S.cloudVerifyVerdicts.get(b.remoteId);
         const verdictChip =
           verdict === "ok"
             ? `<span class="chip ok" style="font-size: 10px; padding: 1px 6px; line-height: 14px;">${t("cloud.verifyIntact")}</span>`
@@ -629,8 +629,8 @@ export function renderManageCloudBackupRow(appName: string): string {
               <span class="backup-item-sub tabular-nums">${b.fileCount ? `${b.fileCount} ${t("ach.files")} • ` : ""}${sizeStr}</span>
             </div>
             <div class="backup-item-actions">
-              <button class="icon-btn" data-act="manage-cloud-verify" data-id="${appName}" data-remote-id="${esc(b.remoteId)}" data-bid="${esc(b.backupId)}" title="${t("cloud.verifyTip")}" aria-label="${t("cloud.verifyTip")}" ${S.cloudVerifyingId === b.backupId ? "disabled" : ""}>
-                ${S.cloudVerifyingId === b.backupId ? icon("refresh", 13, "spin") : icon("shield", 14)}
+              <button class="icon-btn" data-act="manage-cloud-verify" data-id="${appName}" data-remote-id="${esc(b.remoteId)}" data-bid="${esc(b.backupId)}" title="${t("cloud.verifyTip")}" aria-label="${t("cloud.verifyTip")}" ${S.cloudVerifyingId === b.remoteId ? "disabled" : ""}>
+                ${S.cloudVerifyingId === b.remoteId ? icon("refresh", 13, "spin") : icon("shield", 14)}
               </button>
               <button class="btn ghost small" data-act="manage-cloud-restore" data-id="${appName}" data-remote-id="${esc(b.remoteId)}" data-bid="${esc(b.backupId)}" title="${t("cloud.restoreTip")}" ${busy}>
                 ${icon("download", 13)} ${t("ach.restore")}

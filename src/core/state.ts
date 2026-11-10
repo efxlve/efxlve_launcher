@@ -607,7 +607,7 @@ export const S = {
   cloudBackupSyncing: false,
   cloudBackupSyncingApp: (null) as string | null,
   cloudBackupsMap: (new Map()) as Map<string, CloudBackupEntry[]>,
-  /** Per-archive integrity verdicts shown in the Manage drawer. */
+  /** Per-archive integrity verdicts (keyed by remote id) shown in the Manage drawer. */
   cloudVerifyVerdicts: (new Map()) as Map<string, "ok" | "damaged" | "nohash">,
   cloudVerifyingId: (null) as string | null,
   /** Sync roots found on this PC; null until the Folder provider asks once. */

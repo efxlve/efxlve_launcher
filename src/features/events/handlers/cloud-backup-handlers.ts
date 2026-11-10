@@ -74,7 +74,7 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
         const remoteId = btn.dataset.remoteId;
         const backupId = btn.dataset.bid;
         if (remoteId && backupId && !S.cloudVerifyingId) {
-          S.cloudVerifyingId = backupId;
+          S.cloudVerifyingId = remoteId;
           updateManageCloudRowInPlace(id);
           const checking = progressToast(i18nT("cloud.verifyingArchive"));
           void (async () => {
@@ -86,7 +86,7 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
                 : result.hashChecked
                   ? "ok"
                   : "nohash";
-              S.cloudVerifyVerdicts.set(backupId, verdict);
+              S.cloudVerifyVerdicts.set(remoteId, verdict);
               if (verdict === "damaged") {
                 toast(i18nT("cloud.verifyDamagedToast"), "err");
               } else if (verdict === "nohash") {
