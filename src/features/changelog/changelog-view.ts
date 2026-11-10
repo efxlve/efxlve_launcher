@@ -30,6 +30,20 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.52",
+    date: "2026-11-10",
+    fixed: [
+      {
+        en: "Cover art in Downloads, Hide games, Hide achievements and the recent sidebar now uses the same fallback chain as a library card. A Steam capsule that 404s is resolved from the store, stale remembered art is retried, and a missing cover becomes a placeholder instead of an empty tile.",
+        tr: "İndirmeler, Oyunları gizle, Başarımları gizle ve son oynananlar kenar çubuğundaki kapaklar artık kütüphane kartıyla aynı yedek zincirini kullanıyor. 404 veren Steam kapsülü mağazadan çözülüyor, önbellekteki eski görsel yeniden deneniyor ve kapak yoksa boş kutu yerine yer tutucu gösteriliyor.",
+      },
+      {
+        en: "The release notes and in-app changelog use neutral wording for the original Stage audio; the 0.1.52 copy does not name console brands.",
+        tr: "Sürüm notları ve uygulama içi changelog, özgün Sahne sesi için nötr ifadeler kullanıyor; 0.1.52 metninde konsol marka adı geçmiyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.51",
     date: "2026-11-10",
     added: [
