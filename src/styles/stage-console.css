@@ -566,7 +566,7 @@
   }
 
   .stage-home-copy {
-    inset-block-end: calc(56px + var(--stage-safe, 0px));
+    inset-block-end: calc(64px + var(--stage-safe, 0px));
     inset-inline-start: 24px;
     width: min(700px, 76vw);
     gap: 9px;
@@ -604,7 +604,7 @@
   }
 
   .stage-home-side {
-    inset-block-end: calc(56px + var(--stage-safe, 0px));
+    inset-block-end: calc(64px + var(--stage-safe, 0px));
     inset-inline-end: 24px;
   }
 

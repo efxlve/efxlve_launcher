@@ -145,7 +145,12 @@ body.stage-mode #toasts {
 
 .stage-shell {
   position: absolute;
-  inset: var(--stage-safe, 0px);
+  /*
+   * The safe area is a content inset, not a window inset. Shrinking the shell
+   * left the root background visible as a black border around the picture;
+   * the top bar, hint bar and page paddings already honour --stage-safe.
+   */
+  inset: 0;
   overflow: hidden;
 }
 

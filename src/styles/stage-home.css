@@ -15,9 +15,9 @@
 
 .stage-home-stage {
   position: relative;
-  /* The shell is already inset by the safe area; a raw 100vh would push the
-     hero actions under the hint bar when a TV safe area is active. */
-  min-height: calc(100vh - 2 * var(--stage-safe, 0px));
+  /* Art always fills the window; the safe area only moves the copy and the
+     hint bar, so no black border can appear around the hero. */
+  min-height: 100vh;
   overflow: visible;
   isolation: isolate;
 }
@@ -1044,7 +1044,7 @@
 
 @media (max-width: 720px) {
   .stage-home-stage {
-    min-height: calc(100vh - var(--stage-top) - 2 * var(--stage-safe, 0px));
+    min-height: calc(100vh - var(--stage-top));
   }
   .stage-ribbon-card {
     flex-basis: 88px;
