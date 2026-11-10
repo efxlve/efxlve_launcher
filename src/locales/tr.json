@@ -4152,5 +4152,14 @@
   "backups.verifyOk": "Yedek sağlam: {count} dosya, {size}.",
   "backups.verifyDamaged": "Bu yedek hasarlı; geri yüklenmez.",
   "backups.verifyFailed": "Yedek doğrulanamadı: {msg}",
-  "backups.localOnlyNote": "Bu liste yerel yedekleri sayar. Bulut arşivleri her oyunun Manage → Save sayfasında listelenir."
+  "backups.localOnlyNote": "Bu liste yerel yedekleri sayar. Bulut arşivleri her oyunun Manage → Save sayfasında listelenir.",
+  "cloud.verifyTip": "Bu arşivin bütünlüğünü kontrol et",
+  "cloud.verifyingArchive": "Bulut arşivi kontrol ediliyor...",
+  "cloud.verifyIntact": "Sağlam",
+  "cloud.verifyDamaged": "Hasarlı",
+  "cloud.verifyNoHash": "Hash yok",
+  "cloud.verifyOk": "Arşiv sağlam: {count} dosya, {size}.",
+  "cloud.verifyDamagedToast": "Arşiv hasarlı; geri yüklenmez.",
+  "cloud.verifyNoHashToast": "Arşiv okunabiliyor, ancak karşılaştırılacak save ağacı hash'i yok.",
+  "cloud.verifyFailed": "Arşiv doğrulanamadı: {msg}"
 }

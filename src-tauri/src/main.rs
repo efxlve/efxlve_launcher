@@ -2640,6 +2640,7 @@ fn main() {
             cloud_backup::commands::cloud_backup_suggest_folders,
             cloud_backup::commands::cloud_backup_rclone_remotes,
             cloud_backup::commands::cloud_backup_remote_hash,
+            cloud_backup::commands::cloud_backup_verify_archive,
             cloud_backup::commands::profile_export,
             cloud_backup::commands::profile_import,
             cloud_backup::commands::profile_archive_encrypted,

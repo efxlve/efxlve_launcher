@@ -1500,6 +1500,65 @@ fn export_backup_dir(
     Ok(target.display().to_string())
 }
 
+/// Result of checking a portable save archive.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackupVerifyResult {
+    pub intact: bool,
+    pub hash_checked: bool,
+    pub file_count: usize,
+    pub size_bytes: u64,
+    pub archive_size: u64,
+}
+
+/// Unpacks a portable archive into a temporary folder, validates its manifest
+/// and re-hashes the save tree against the checksum recorded at backup time.
+/// A missing checksum is reported as readable but not hash-checked.
+pub fn verify_archive(archive: &Path) -> Result<BackupVerifyResult, String> {
+    let archive_size = std::fs::metadata(archive)
+        .map_err(|error| format!("@t:backup.importReadFailed\u{1f}{error}"))?
+        .len();
+    let unpack = std::env::temp_dir().join(format!(
+        "efxlve_backup_verify_{}_{}",
+        std::process::id(),
+        now_secs()
+    ));
+    let _ = std::fs::remove_dir_all(&unpack);
+    let unpacked = crate::cloud_backup::archive::unpack_backup_tar_gz(archive, &unpack);
+    if let Err(error) = unpacked {
+        let _ = std::fs::remove_dir_all(&unpack);
+        return Err(error);
+    }
+    let data_dir = unpack.join("data");
+    let parsed = std::fs::read_to_string(unpack.join("backup_info.json"))
+        .ok()
+        .and_then(|text| serde_json::from_str::<SaveBackupInfo>(&text).ok())
+        .filter(|_| data_dir.is_dir());
+    let Some(info) = parsed else {
+        let _ = std::fs::remove_dir_all(&unpack);
+        return Err("@t:backup.notASaveArchive".to_string());
+    };
+    let recorded = info
+        .content_hash
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+    let actual = tree_content_hash(&data_dir);
+    let intact = match recorded {
+        Some(recorded) => actual.as_deref() == Some(recorded),
+        None => true,
+    };
+    let result = BackupVerifyResult {
+        intact,
+        hash_checked: recorded.is_some(),
+        file_count: info.file_count,
+        size_bytes: info.size_bytes,
+        archive_size,
+    };
+    let _ = std::fs::remove_dir_all(&unpack);
+    Ok(result)
+}
+
 /// Cap for an imported archive; a save tree larger than this is not a save.
 const MAX_IMPORT_BYTES: u64 = 16 * 1024 * 1024 * 1024;
 
@@ -1788,6 +1847,66 @@ mod tests {
         assert!(!root.join("1700000000").exists());
         assert!(root.join("1700000001-1").exists());
         assert!(root.join("pre-restore-1700000002").exists());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn verify_archive_accepts_intact_and_flags_changed_payload() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve_verify_archive_{}_{}",
+            std::process::id(),
+            now_secs()
+        ));
+        let backup = root.join("backup");
+        let data = backup.join("data");
+        std::fs::create_dir_all(&data).unwrap();
+        std::fs::write(data.join("save.dat"), b"progress").unwrap();
+        let mut info = SaveBackupInfo {
+            id: "1700000000".to_string(),
+            app_name: "steam::1".to_string(),
+            timestamp: 1_700_000_000,
+            formatted_date: "x".to_string(),
+            size_bytes: 8,
+            file_count: 1,
+            save_path: "C:/Saves/Game".to_string(),
+            save_root: "Documents".to_string(),
+            save_rel: "Game".to_string(),
+            content_hash: tree_content_hash(&data),
+            title: None,
+            origin_app_name: None,
+            imported_at: None,
+        };
+        std::fs::write(
+            backup.join("backup_info.json"),
+            serde_json::to_string(&info).unwrap(),
+        )
+        .unwrap();
+
+        let intact = root.join("intact.efxsave");
+        crate::cloud_backup::archive::pack_backup_dir(&backup, &intact).unwrap();
+        let checked = verify_archive(&intact).unwrap();
+        assert!(checked.intact);
+        assert!(checked.hash_checked);
+        assert_eq!(checked.file_count, 1);
+
+        std::fs::write(data.join("save.dat"), b"changed").unwrap();
+        let changed = root.join("changed.efxsave");
+        crate::cloud_backup::archive::pack_backup_dir(&backup, &changed).unwrap();
+        let checked = verify_archive(&changed).unwrap();
+        assert!(!checked.intact);
+        assert!(checked.hash_checked);
+
+        info.content_hash = None;
+        std::fs::write(
+            backup.join("backup_info.json"),
+            serde_json::to_string(&info).unwrap(),
+        )
+        .unwrap();
+        let no_hash = root.join("no-hash.efxsave");
+        crate::cloud_backup::archive::pack_backup_dir(&backup, &no_hash).unwrap();
+        let checked = verify_archive(&no_hash).unwrap();
+        assert!(checked.intact);
+        assert!(!checked.hash_checked);
         let _ = std::fs::remove_dir_all(&root);
     }
 

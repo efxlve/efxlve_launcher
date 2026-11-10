@@ -1258,6 +1258,18 @@ export const cloudBackupSuggestFolders = () =>
 export const cloudBackupRemoteHash = (remoteId: string, backupId: string) =>
   invoke<string | null>("cloud_backup_remote_hash", { remoteId, backupId });
 
+export interface CloudArchiveVerify {
+  intact: boolean;
+  hashChecked: boolean;
+  fileCount: number;
+  sizeBytes: number;
+  archiveSize: number;
+}
+
+/** Downloads one cloud archive and checks its save tree against its checksum. */
+export const cloudBackupVerifyArchive = (remoteId: string, backupId: string) =>
+  invoke<CloudArchiveVerify>("cloud_backup_verify_archive", { remoteId, backupId });
+
 export const cloudBackupRcloneRemotes = () => invoke<string[]>("cloud_backup_rclone_remotes");
 
 /** One folder with the launcher profile and every game's newest save. */

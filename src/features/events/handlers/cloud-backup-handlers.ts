@@ -2,10 +2,10 @@
  * Click delegation handlers for Cloud Save Backup (Google Drive & WebDAV).
  */
 
-import { toast } from "../../../core/toast";
-import { t as i18nT } from "../../../i18n";
+import { progressToast, toast } from "../../../core/toast";
+import { t as i18nT, localizeMessage } from "../../../i18n";
 import { S } from "../../../core/state";
-import { esc } from "../../../core/utils";
+import { esc, fmtBytes } from "../../../core/utils";
 import {
   bulkCloudBackupAction,
   bulkCloudRestoreAction,
@@ -35,12 +35,14 @@ import {
 import {
   openGoogleDriveGuideModal,
   closeGoogleDriveGuideModal,
+  updateManageCloudRowInPlace,
 } from "../../cloud-backup/cloud-backup-view";
 import { closeCloudGuideModal, openCloudGuideModal } from "../../cloud-backup/cloud-guide";
 import type { CloudBackupProvider } from "../../../epic";
 import {
   cloudBackupOpenFolder,
   cloudBackupRcloneRemotes,
+  cloudBackupVerifyArchive,
   epicOpenLocalBackupsRoot,
   epicSelectFolderDialog,
 } from "../../../epic";
@@ -62,6 +64,54 @@ export function handleCloudBackupAction(act: string | undefined, t: HTMLElement,
         })();
       }
       return true;
+
+    case "manage-cloud-verify": {
+      if (id) {
+        const btn = t.closest<HTMLElement>('[data-act="manage-cloud-verify"]') ?? t;
+        const remoteId = btn.dataset.remoteId;
+        const backupId = btn.dataset.bid;
+        if (remoteId && backupId && !S.cloudVerifyingId) {
+          S.cloudVerifyingId = backupId;
+          updateManageCloudRowInPlace(id);
+          const checking = progressToast(i18nT("cloud.verifyingArchive"));
+          void (async () => {
+            try {
+              const result = await cloudBackupVerifyArchive(remoteId, backupId);
+              checking.close();
+              const verdict = !result.intact
+                ? "damaged"
+                : result.hashChecked
+                  ? "ok"
+                  : "nohash";
+              S.cloudVerifyVerdicts.set(backupId, verdict);
+              if (verdict === "damaged") {
+                toast(i18nT("cloud.verifyDamagedToast"), "err");
+              } else if (verdict === "nohash") {
+                toast(i18nT("cloud.verifyNoHashToast"), "");
+              } else {
+                toast(
+                  i18nT("cloud.verifyOk", {
+                    count: result.fileCount,
+                    size: fmtBytes(result.sizeBytes),
+                  }),
+                  "ok",
+                );
+              }
+            } catch (error) {
+              checking.close();
+              toast(
+                i18nT("cloud.verifyFailed", { msg: localizeMessage(String(error)) }),
+                "err",
+              );
+            } finally {
+              S.cloudVerifyingId = null;
+              updateManageCloudRowInPlace(id);
+            }
+          })();
+        }
+      }
+      return true;
+    }
 
     case "manage-cloud-restore": {
       const btn = t.closest<HTMLElement>('[data-act="manage-cloud-restore"]') ?? t;

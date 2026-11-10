@@ -243,7 +243,10 @@ the cheaper roots miss.
   a confirmation explains which is newer before overwriting anything. Both sides
   carry a save-tree SHA-256, so an identical tree skips the warning even when the
   timestamps differ.
-- **History** — timestamp, size and file count; newest first.
+- **History** — timestamp, size and file count; newest first. The shield button
+  next to an archive downloads it, validates `backup_info.json`, and re-hashes
+  the save tree against the checksum recorded at backup time; the row then shows
+  **Intact**, **Damaged** or **No hash** (an older archive without a checksum).
 - **Delete / Delete all** — removes remote archives for that game.
 
 **Backups page**
@@ -423,7 +426,8 @@ Cloud:
   `cloud_backup_list_game`, `cloud_backup_download_game`,
   `cloud_backup_delete_remote`, `cloud_backup_delete_all_remote`,
   `cloud_backup_open_folder`, `cloud_backup_suggest_folders`,
-  `cloud_backup_rclone_remotes`, `cloud_backup_remote_hash`
+  `cloud_backup_rclone_remotes`, `cloud_backup_remote_hash`,
+  `cloud_backup_verify_archive`
 
 Google Drive auth:
 

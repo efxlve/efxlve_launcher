@@ -165,6 +165,19 @@ pub async fn cloud_backup_remote_hash(
     result
 }
 
+/// Downloads one cloud archive, unpacks it and re-hashes its save tree against
+/// the checksum recorded when the backup was made.
+#[command]
+pub async fn cloud_backup_verify_archive(
+    remote_id: String,
+    backup_id: String,
+) -> Result<crate::legendary::backup::BackupVerifyResult, String> {
+    let archive = manager::download_cloud_archive(&remote_id, &backup_id).await?;
+    let result = crate::legendary::backup::verify_archive(&archive);
+    let _ = std::fs::remove_file(&archive);
+    result
+}
+
 #[command]
 pub async fn profile_cloud_restore(
     app: AppHandle,

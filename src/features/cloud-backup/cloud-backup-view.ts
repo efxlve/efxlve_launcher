@@ -601,16 +601,29 @@ export function renderManageCloudBackupRow(appName: string): string {
         const dateStr = fmtCloudDate(b.timestamp) || b.formattedDate;
         const sizeStr = fmtBytes(b.sizeBytes);
         const isLatest = idx === 0;
+        const verdict = S.cloudVerifyVerdicts.get(b.backupId);
+        const verdictChip =
+          verdict === "ok"
+            ? `<span class="chip ok" style="font-size: 10px; padding: 1px 6px; line-height: 14px;">${t("cloud.verifyIntact")}</span>`
+            : verdict === "damaged"
+              ? `<span class="chip err" style="font-size: 10px; padding: 1px 6px; line-height: 14px;">${t("cloud.verifyDamaged")}</span>`
+              : verdict === "nohash"
+                ? `<span class="chip" style="font-size: 10px; padding: 1px 6px; line-height: 14px;">${t("cloud.verifyNoHash")}</span>`
+                : "";
         return `
           <div class="backup-item">
             <div class="backup-item-meta">
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span class="backup-item-title tabular-nums">${esc(dateStr)}</span>
                 ${isLatest ? `<span class="chip ok" style="font-size: 10px; padding: 1px 6px; line-height: 14px;">${t("cloud.latestChip")}</span>` : ""}
+                ${verdictChip}
               </div>
               <span class="backup-item-sub tabular-nums">${b.fileCount ? `${b.fileCount} ${t("ach.files")} • ` : ""}${sizeStr}</span>
             </div>
             <div class="backup-item-actions">
+              <button class="icon-btn" data-act="manage-cloud-verify" data-id="${appName}" data-remote-id="${esc(b.remoteId)}" data-bid="${esc(b.backupId)}" title="${t("cloud.verifyTip")}" aria-label="${t("cloud.verifyTip")}" ${S.cloudVerifyingId === b.backupId ? "disabled" : ""}>
+                ${S.cloudVerifyingId === b.backupId ? icon("refresh", 13, "spin") : icon("shield", 14)}
+              </button>
               <button class="btn ghost small" data-act="manage-cloud-restore" data-id="${appName}" data-remote-id="${esc(b.remoteId)}" data-bid="${esc(b.backupId)}" title="${t("cloud.restoreTip")}" ${busy}>
                 ${icon("download", 13)} ${t("ach.restore")}
               </button>
