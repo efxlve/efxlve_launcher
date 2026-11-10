@@ -167,13 +167,15 @@
 }
 
 .bk-store {
-  padding: 1px 6px;
-  border-radius: var(--r-sm);
-  background: var(--surface-3);
-  border: 1px solid var(--line);
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-2);
+  gap: 5px;
+  padding: 0 6px;
+}
+
+.bk-store-logo {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
 }
 
 .bk-stale {

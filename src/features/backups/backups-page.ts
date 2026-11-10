@@ -9,6 +9,7 @@ import { summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
 import { currentLanguage, t } from "../../i18n";
+import { storeLogo } from "../store/store-logos";
 import { epicBackupExcluded, epicListAllBackups, type SaveBackupInfo } from "../../epic";
 
 /** A backup older than this is worth flagging, not deleting. */
@@ -20,8 +21,25 @@ export function storeLabel(key: string): string {
   if (key.startsWith("amazon::")) return "Amazon";
   if (key.startsWith("ubisoft::")) return "Ubisoft";
   if (key.startsWith("ea::")) return "EA";
+  if (key.startsWith("xbox::")) return "Xbox";
+  if (key.startsWith("battlenet::")) return "Battle.net";
+  if (key.startsWith("riot::")) return "Riot Games";
   if (key.startsWith("custom::")) return t("backups.storeCustom");
   return "Epic";
+}
+
+/** Storefront id for the logo asset; Epic keys carry no prefix. */
+function storeLogoId(key: string): string {
+  if (key.startsWith("gog::")) return "gog";
+  if (key.startsWith("steam::")) return "steam";
+  if (key.startsWith("amazon::")) return "amazon";
+  if (key.startsWith("ubisoft::")) return "ubisoft";
+  if (key.startsWith("ea::")) return "ea";
+  if (key.startsWith("xbox::")) return "xbox";
+  if (key.startsWith("battlenet::")) return "battlenet";
+  if (key.startsWith("riot::")) return "riot";
+  if (key.startsWith("custom::")) return "custom";
+  return "epic";
 }
 
 /** Installed games the launcher owns save backups for. */
@@ -188,8 +206,8 @@ export function renderBackupsSection(): string {
           <div class="bk-main">
             <div class="bk-title">
               <span class="bk-name">${esc(title)}</span>
-              <span class="bk-store">${esc(storeLabel(key))}</span>
-              ${isInstalled ? "" : `<span class="bk-store">${esc(t("backups.notInstalled"))}</span>`}
+              <span class="chip bk-store">${storeLogo(storeLogoId(key), 12, "bk-store-logo")}<span>${esc(storeLabel(key))}</span></span>
+              ${isInstalled ? "" : `<span class="chip bk-store">${esc(t("backups.notInstalled"))}</span>`}
               ${isStale ? `<span class="bk-stale">${esc(t("backups.stale"))}</span>` : ""}
             </div>
             <div class="bk-meta tabular-nums"><span class="bk-status-dot ${info ? (isStale ? "is-stale" : "is-backed") : "is-missing"}"></span><span>${meta}</span></div>
