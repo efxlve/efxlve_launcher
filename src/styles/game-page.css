@@ -535,6 +535,9 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .gp-body { padding: 18px 32px 48px; flex: 1; }
 .gp-tabs { margin-bottom: 22px; overflow-x: auto; scrollbar-width: none; }
 .gp-tabs::-webkit-scrollbar { display: none; }
+/* Room for the controller focus pill, which lives inside the tab box so the
+   scroll container cannot clip it. */
+.gp-tabs .tab { padding-inline: 4px; }
 .gp-tabs .tab svg { width: 13px; height: 13px; }
 .gp-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
 .gp-toolbar-right { display: flex; align-items: center; gap: 8px; }

@@ -3,22 +3,22 @@
  *
  * Provides smooth, natural controller navigation for the entire launcher,
  * with spatial 2D D-pad/stick movement, quick actions (Play, Back, Favorite,
- * Filter tabs), and Fullscreen Mode toggling.
+ * Filter tabs), and the Stage shell.
  */
 
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { isSteamDeckDevice, isTauri } from "../../core/constants";
-import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
 import type { ControllerKind } from "../../core/types";
 import { controllerSupportStatus } from "../../epic";
-import { pushNotification } from "../notifications/notifications";
+import { psShapeFor, psShapeSvg } from "../../core/controller-glyphs";
+import { closeNotifPanel, pushNotification } from "../notifications/notifications";
 import { setFullscreenMode, toggleFullscreenMode } from "./fullscreen-mode";
 import { closeAllModals } from "../../core/render";
 import { toggleFav } from "../../core/game-view";
-import { openPalette } from "../palette/palette";
+import { closePalette, isPaletteOpen, openPalette } from "../palette/palette";
 import { setView } from "../store/store-view";
 import { stageBridge } from "./stage-bridge";
 import {
@@ -26,6 +26,7 @@ import {
   stageControllerBattery,
   stageControllerConnected,
   stageControllerDisconnected,
+  toggleStage,
 } from "../stage/stage-state";
 
 const STICK_DEADZONE = 0.42;
@@ -72,16 +73,19 @@ export function controllerKind(id: string): ControllerKind {
 /** Face-button glyph: PlayStation pads get their geometric shapes instead of A/B/X/Y. */
 function faceGlyph(kind: ControllerKind, btn: "a" | "b" | "x" | "y"): string {
   if (kind === "playstation") {
-    const shapes = { a: "x", b: "circle", x: "square", y: "triangle" } as const;
-    return `<span class="gp-glyph btn-${btn}">${icon(shapes[btn], 11)}</span>`;
+    return `<span class="gp-glyph gp-face ps-${psShapeFor(btn)}">${psShapeSvg(btn)}</span>`;
   }
-  return `<span class="gp-glyph btn-${btn}">${btn.toUpperCase()}</span>`;
+  return `<span class="gp-glyph gp-face gp-${btn}">${btn.toUpperCase()}</span>`;
 }
 
 /** Shoulder glyphs: L1/R1 on PlayStation and Steam Deck, LB/RB on Xbox. */
 function bumperGlyphs(kind: ControllerKind): string {
   const [l, r] = kind === "xbox" || kind === "generic" ? ["LB", "RB"] : ["L1", "R1"];
-  return `<span class="gp-glyph btn-bumper">${l}</span><span class="gp-glyph btn-bumper">${r}</span>`;
+  return `<span class="gp-glyph gp-bumper">${l}</span><span class="gp-glyph gp-bumper">${r}</span>`;
+}
+
+function systemGlyph(label: string): string {
+  return `<span class="gp-glyph gp-system">${label}</span>`;
 }
 
 function hudItem(glyphs: string, label: string): string {
@@ -139,23 +143,20 @@ export function updateGamepadHud(active = true): void {
   if (hudKey === lastHudKey) return;
   lastHudKey = hudKey;
 
-  const dpad = `<span class="gp-glyph btn-dpad">D-Pad</span>`;
-
   const items = [
-    hudItem(faceGlyph(kind, "a"), t("common.play") + " / " + t("gamepad.select")),
+    hudItem(faceGlyph(kind, "a"), t("gamepad.select")),
     hudItem(faceGlyph(kind, "b"), t("common.back")),
     hudItem(faceGlyph(kind, "x"), t("gamepad.favorite")),
     hudItem(bumperGlyphs(kind), t("gamepad.tabs")),
   ];
-  // The Menu button does nothing while the mode is switched off, so the HUD
-  // must not advertise it.
-  if (S.fullscreenModeEnabled) {
-    items.push(hudItem(`<span class="gp-glyph">Menu</span>`, S.isFullscreen ? t("fullscreen.exit") : t("fullscreen.mode")));
-  }
+  // Stage is the couch shell now: Menu opens it instead of the old Full
+  // Screen Mode. The fallback keeps the hint honest when Stage is disabled.
   if (S.stage.enabled) {
-    items.push(hudItem(`<span class="gp-glyph">Guide</span>`, t("stage.enter")));
+    items.push(hudItem(systemGlyph("Menu"), t("stage.title")));
+  } else if (S.fullscreenModeEnabled) {
+    items.push(hudItem(systemGlyph("Menu"), S.isFullscreen ? t("fullscreen.exit") : t("fullscreen.mode")));
   }
-  items.push(hudItem(dpad, t("gamepad.navigate")));
+  items.push(hudItem(systemGlyph("D-Pad"), t("gamepad.navigate")));
   hud.innerHTML = items.join("");
 }
 
@@ -164,54 +165,165 @@ export function updateGamepadHud(active = true): void {
 /* ========================================================================= */
 
 let currentFocusedEl: HTMLElement | null = null;
+let lastFocusedKey = "";
+
+/** Stable identity of a control across a re-render. */
+function focusKeyOf(el: HTMLElement): string {
+  if (el.dataset.gpKey) return `gp:${el.dataset.gpKey}`;
+  if (el.matches(".switch")) {
+    const input = el.querySelector<HTMLInputElement>("input[data-act]");
+    if (input?.dataset.act) return `switch:${input.dataset.act}:${input.dataset.store || ""}`;
+  }
+  if (el.dataset.id) {
+    // The same game appears as a grid card, a list row and a sidebar entry;
+    // their keys must not collide or a repaint would jump between them.
+    const kind = el.classList.contains("sb-game")
+      ? "side"
+      : el.classList.contains("pcard")
+        ? "card"
+        : el.classList.contains("lrow")
+          ? "row"
+          : "id";
+    return `${kind}:${el.dataset.id}:${el.dataset.act || ""}`;
+  }
+  if (el.dataset.libItem) return `lib:${el.dataset.libItem}`;
+  if (el.dataset.view) return `view:${el.dataset.view}`;
+  if (el.id) return `el:${el.id}`;
+  if (el.dataset.act) {
+    const variant = [
+      el.dataset.tab,
+      el.dataset.val,
+      el.dataset.page,
+      el.dataset.group,
+      el.dataset.value,
+      el.dataset.filter,
+      el.dataset.sort,
+      el.dataset.key,
+    ].filter(Boolean).join(":");
+    return `act:${el.dataset.act}:${variant}`;
+  }
+  return "";
+}
+
+function isVisibleEl(el: HTMLElement): boolean {
+  return el.getClientRects().length > 0 && !el.classList.contains("hidden");
+}
+
+function visibleIn(root: ParentNode, selector: string): HTMLElement[] {
+  return Array.from(root.querySelectorAll<HTMLElement>(selector)).filter(isVisibleEl);
+}
+
+/**
+ * The topmost popup, in stacking order. A single `querySelector` on a comma
+ * list would return document order instead, so the game page behind a confirm
+ * could win the focus scope.
+ */
+function topOverlay(): HTMLElement | null {
+  const selectors = [
+    "#confirm-root > *",
+    "#install-root > *",
+    "#selective-root > *",
+    "#manage-root > *",
+    "#options-root > *",
+    "#theme-modal-root > *",
+    "#playtime-root > *",
+    "#cover-modal-root > *",
+    "#move-modal-root > *",
+    "#hide-games-root > *",
+    "#hide-achievements-root > *",
+    "#share-modal-root > *",
+    "#custom-game-root > *",
+    "#sort-name-root > *",
+    "#changelog-root > *",
+    "#feedback-root > *",
+    "#collection-root > *",
+    "#storage-root > *",
+    "#palette-root .palette",
+    ".lib-filter-panel",
+    "#notif-root .notif-panel",
+    "#modal-root > *",
+    ".modal:not(.hidden)",
+  ];
+  for (const selector of selectors) {
+    const el = document.querySelector<HTMLElement>(selector);
+    if (el && isVisibleEl(el)) return el;
+  }
+  return null;
+}
 
 export function initGamepadFocus(): void {
   const candidates = getNavigableElements();
   if (candidates.length === 0) return;
-  const preferred = candidates.find((el) => el.hasAttribute("data-gp-default")) ?? candidates[0];
-  setFocus(preferred);
+  setFocus(candidates.find((el) => el.hasAttribute("data-gp-default")) ?? candidates[0]);
 }
 
 function getNavigableElements(): HTMLElement[] {
-  // 1. Modals or popups take absolute priority
-  const modal = document.querySelector<HTMLElement>(
-    ".modal:not(.hidden), .confirm-dialog:not(.hidden), #modal-root > div, .selective-overlay, #install-root > div",
-  );
-  // `offsetParent` is null for a fixed-position overlay in Chromium; the
-  // install dialog uses exactly that shape, so visibility is measured by its
-  // client rects instead.
-  if (modal && modal.getClientRects().length > 0) {
-    return Array.from(modal.querySelectorAll<HTMLElement>("button:not([disabled]), [role='button'], input:not([disabled]), a[href]"))
-      .filter((el) => el.getClientRects().length > 0);
+  // 1. A popup or the game page owns the pad while it is open.
+  const overlay = topOverlay();
+  if (overlay) {
+    if (overlay.matches(".palette")) {
+      return visibleIn(overlay, ".palette-item");
+    }
+    if (overlay.matches(".lib-filter-panel")) {
+      const rows = visibleIn(
+        overlay,
+        ".lib-facet-row, button:not([disabled]), [role='checkbox'], [role='menuitemcheckbox'], input:not([disabled])",
+      );
+      const firstFacet = rows.find((el) => el.classList.contains("lib-facet-row"));
+      return firstFacet ? [firstFacet, ...rows.filter((el) => el !== firstFacet)] : rows;
+    }
+    const controls = visibleIn(
+      overlay,
+      "button:not([disabled]), [role='button'], input:not([disabled]), select:not([disabled]), a[href]",
+    );
+    // The game page opens on its main action, not on the Back button. A Stop
+    // button is deliberately left out: a running session should not sit under
+    // the first A press.
+    const primary = overlay.querySelector<HTMLElement>(
+      ".gp-actions .btn.play:not([disabled]), .gp-actions .btn.install:not([disabled]), .gp-actions .btn.update:not([disabled]), .choice-option:not([disabled])",
+    );
+    if (primary && controls.includes(primary)) {
+      return [primary, ...controls.filter((el) => el !== primary)];
+    }
+    return controls;
   }
 
-  // 2. Stage owns its own focus scope. This must run before the library-card
-  // branch: the desktop view stays in the DOM (hidden) while Stage is open.
+  // 2. Stage owns its own focus scope. This must run before the library branch:
+  // the desktop view stays in the DOM (hidden) while Stage is open.
   if (S.stage.active) {
     const stageRoot = document.getElementById("stage-root");
-    if (stageRoot) {
-      return Array.from(stageRoot.querySelectorAll<HTMLElement>("[data-gp-item]"))
-        .filter((el) => el.getClientRects().length > 0 && !el.classList.contains("hidden"));
-    }
+    if (stageRoot) return visibleIn(stageRoot, "[data-gp-item]");
   }
 
-  // 3. Game drawer if visible
+  // 3. The standalone game drawer, when it is not hosted in #modal-root.
   const drawer = document.querySelector<HTMLElement>(".game-drawer:not(.hidden), #game-detail-drawer:not(.hidden)");
-  if (drawer && drawer.offsetParent !== null) {
-    return Array.from(drawer.querySelectorAll<HTMLElement>(".nav-back-btn, #btn-play, #btn-install, [data-act], button:not([disabled]), [role='button']"))
-      .filter((el) => el.offsetParent !== null);
+  if (drawer && isVisibleEl(drawer)) {
+    return visibleIn(drawer, ".nav-back-btn, #btn-play, #btn-install, [data-act], button:not([disabled]), [role='button']");
   }
 
-  // 3. Library cards
+  // The sidebar, page header and every page-level control. Cards used to be the
+  // only library candidates, which left the filters, search and sidebar
+  // unreachable with a controller.
+  const chromeSelector =
+    ".sb-account, .sb-notif, .sb-item, .sb-game, #sb-toggle, " +
+    "#page-header button:not([disabled]), " +
+    "#view button:not([disabled]), #view [role='button'], #view a[href], #view .switch";
+  const withoutCardInternals = (el: HTMLElement): boolean =>
+    !el.closest(".pcard, .lrow, #totop, .win-controls");
+
+  // 4. Library: cards are the default stop, the surrounding chrome stays
+  // reachable. Listing the cards first also makes the first D-pad press start
+  // on the grid instead of the account button.
   if (S.view === "library") {
-    const cards = Array.from(document.querySelectorAll<HTMLElement>(".pcard, .lrow"))
-      .filter((el) => el.offsetParent !== null);
-    if (cards.length > 0) return cards;
+    const cards = visibleIn(document, ".pcard, .lrow");
+    const chrome = visibleIn(document, chromeSelector).filter(
+      (el) => withoutCardInternals(el) && !cards.includes(el),
+    );
+    return [...cards, ...chrome];
   }
 
-  // 4. Default interactive elements
-  return Array.from(document.querySelectorAll<HTMLElement>(".lib-tab, .sidebar-item, .pcard, .lrow, button:not([disabled]), [role='button']"))
-    .filter((el) => el.offsetParent !== null && !el.classList.contains("hidden"));
+  // 5. Every other desktop page.
+  return visibleIn(document, chromeSelector).filter(withoutCardInternals);
 }
 
 function setFocus(el: HTMLElement | null): void {
@@ -221,6 +333,7 @@ function setFocus(el: HTMLElement | null): void {
     if (S.stage.active) currentFocusedEl.blur();
   }
   currentFocusedEl = el;
+  lastFocusedKey = el ? focusKeyOf(el) : "";
   if (currentFocusedEl) {
     const reduceMotion =
       document.documentElement.classList.contains("reduce-effects") ||
@@ -254,82 +367,145 @@ export function setGamepadFocus(el: HTMLElement | null): void {
   setFocus(el);
 }
 
-/** Re-run the default focus pass after a screen changed. */
+/**
+ * Restore the ring after a render. The element itself is often replaced, so
+ * its stable key is what survives; a mouse user (no ring, no key) is left
+ * alone instead of being handed a focus outline on every repaint.
+ */
 export function refreshGamepadFocus(): void {
-  initGamepadFocus();
+  if (!currentFocusedEl && !lastFocusedKey) return;
+  const candidates = getNavigableElements();
+  if (candidates.length === 0) {
+    setFocus(null);
+    return;
+  }
+  if (currentFocusedEl && candidates.includes(currentFocusedEl)) return;
+  const match = lastFocusedKey
+    ? candidates.find((el) => focusKeyOf(el) === lastFocusedKey)
+    : undefined;
+  setFocus(match ?? candidates.find((el) => el.hasAttribute("data-gp-default")) ?? candidates[0]);
+}
+
+type FocusRegion = "sidebar" | "header" | "content";
+
+function focusRegionOf(el: HTMLElement): FocusRegion | null {
+  if (el.closest("#sidebar")) return "sidebar";
+  if (el.closest("#page-header")) return "header";
+  if (el.closest("#content")) return "content";
+  return null;
+}
+
+/** Cross-region order for one direction: the first region with a hit wins. */
+function regionOrder(from: FocusRegion, dir: "up" | "down" | "left" | "right"): FocusRegion[] {
+  if (from === "sidebar") {
+    // Right enters the page; stay inside the sidebar for vertical movement.
+    return dir === "right" ? ["content", "header"] : ["sidebar"];
+  }
+  if (from === "header") {
+    if (dir === "down") return ["content", "header"];
+    if (dir === "up") return ["header"];
+    return ["header", "content"];
+  }
+  // Content: horizontal movement stays in the grid; only a left edge step
+  // reaches the sidebar. Up may climb to the filter row and then the header.
+  if (dir === "left") return ["content", "sidebar"];
+  if (dir === "up") return ["content", "header"];
+  return ["content"];
 }
 
 export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
   const candidates = getNavigableElements();
   if (candidates.length === 0) return;
 
-  if (!currentFocusedEl || !document.contains(currentFocusedEl) || currentFocusedEl.offsetParent === null) {
-    setFocus(candidates[0]);
-    return;
+  // Opening a dialog, the palette or a game page changes the scope. The first
+  // press should put the ring inside it instead of moving from a hidden card.
+  // With no ring at all (mouse user, fresh boot) the same press also moves one
+  // step, so the D-pad never feels dead on its first tap.
+  if (!currentFocusedEl || !candidates.includes(currentFocusedEl)) {
+    const hadRing = currentFocusedEl !== null;
+    const preferred = candidates.find((el) => el.hasAttribute("data-gp-default")) ?? candidates[0];
+    setFocus(preferred);
+    if (hadRing) return;
   }
 
-  const curRect = currentFocusedEl.getBoundingClientRect();
+  const origin = currentFocusedEl;
+  if (!origin) return;
+  const curRect = origin.getBoundingClientRect();
   const curCenter = { x: curRect.left + curRect.width / 2, y: curRect.top + curRect.height / 2 };
-  // A fixed 10px threshold lets a neighbour from the same row count as "down"
-  // when its transform shifts by a few pixels. Scale the threshold with the
-  // focused control so a shelf row stays a row.
-  const moveX = Math.max(12, curRect.width * 0.4);
-  const moveY = Math.max(12, curRect.height * 0.4);
+
+  // The desktop shell has three regions. Moving inside one is a geometry
+  // contest; crossing to another is a deliberate step. Without this, the
+  // nearest neighbour of a card's right side is often a top-bar button.
+  const fromRegion = focusRegionOf(origin);
+  const scan = (elements: HTMLElement[]): HTMLElement | null => {
+    let best: HTMLElement | null = null;
+    let bestScore = Infinity;
+    for (const el of elements) {
+      if (el === origin) continue;
+      const r = el.getBoundingClientRect();
+      const c = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      const dx = c.x - curCenter.x;
+      const dy = c.y - curCenter.y;
+
+      let primary = 0;
+      let cross = 0;
+      let gap = 0;
+      if (dir === "left") {
+        if (dx >= -1) continue;
+        primary = -dx;
+        cross = Math.abs(dy);
+        gap = Math.max(0, Math.max(curRect.top, r.top) - Math.min(curRect.bottom, r.bottom));
+      } else if (dir === "right") {
+        if (dx <= 1) continue;
+        primary = dx;
+        cross = Math.abs(dy);
+        gap = Math.max(0, Math.max(curRect.top, r.top) - Math.min(curRect.bottom, r.bottom));
+      } else if (dir === "up") {
+        if (dy >= -1) continue;
+        primary = -dy;
+        cross = Math.abs(dx);
+        gap = Math.max(0, Math.max(curRect.left, r.left) - Math.min(curRect.right, r.right));
+      } else {
+        if (dy <= 1) continue;
+        primary = dy;
+        cross = Math.abs(dx);
+        gap = Math.max(0, Math.max(curRect.left, r.left) - Math.min(curRect.right, r.right));
+      }
+
+      // A control in the same row/column beats a diagonal neighbour: the gap
+      // penalty is what keeps a six-column grid from zig-zagging.
+      const score = primary + gap * 8 + cross * 0.35;
+      if (score < bestScore) {
+        bestScore = score;
+        best = el;
+      }
+    }
+    return best;
+  };
 
   let bestEl: HTMLElement | null = null;
-  let bestScore = Infinity;
-
-  for (const el of candidates) {
-    if (el === currentFocusedEl) continue;
-    const r = el.getBoundingClientRect();
-    const c = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-
-    const dx = c.x - curCenter.x;
-    const dy = c.y - curCenter.y;
-
-    let isMatch = false;
-    let primaryDist = 0;
-    let secondaryDist = 0;
-
-    if (dir === "left") {
-      isMatch = dx < -moveX;
-      primaryDist = -dx;
-      secondaryDist = Math.abs(dy);
-    } else if (dir === "right") {
-      isMatch = dx > moveX;
-      primaryDist = dx;
-      secondaryDist = Math.abs(dy);
-    } else if (dir === "up") {
-      isMatch = dy < -moveY;
-      primaryDist = -dy;
-      secondaryDist = Math.abs(dx);
-    } else if (dir === "down") {
-      isMatch = dy > moveY;
-      primaryDist = dy;
-      secondaryDist = Math.abs(dx);
+  if (fromRegion) {
+    for (const region of regionOrder(fromRegion, dir)) {
+      bestEl = scan(candidates.filter((el) => focusRegionOf(el) === region));
+      if (bestEl) break;
     }
-
-    if (!isMatch) continue;
-
-    // Weight secondary distance higher to favor elements strictly in that direction
-    const score = primaryDist + secondaryDist * 2.2;
-    if (score < bestScore) {
-      bestScore = score;
-      bestEl = el;
-    }
+  } else {
+    bestEl = scan(candidates);
   }
 
-  if (bestEl) {
-    setFocus(bestEl);
-  }
+  if (bestEl) setFocus(bestEl);
 }
 
 function activateFocused(): void {
   // Stage's attract mode owns the first press; the bridge reports whether it
   // swallowed it. Desktop mode has no bridge, so this is a no-op there.
   if (S.stage.active && stageBridge()?.wake?.()) return;
-  if (!currentFocusedEl) {
-    initGamepadFocus();
+  const candidates = getNavigableElements();
+  if (candidates.length === 0) return;
+  // Never click a control that a newly opened dialog has covered; the first
+  // press gives the ring to the dialog instead.
+  if (!currentFocusedEl || !candidates.includes(currentFocusedEl)) {
+    setFocus(candidates.find((el) => el.hasAttribute("data-gp-default")) ?? candidates[0]);
     return;
   }
   currentFocusedEl.click();
@@ -343,12 +519,44 @@ export function activateGamepadFocus(): void {
 function backAction(): void {
   // Attract mode uses the first Back press to wake, not to leave the screen.
   if (S.stage.active && stageBridge()?.wake?.()) return;
-  // 1. Close modal if open
-  const modal = document.querySelector<HTMLElement>(
-    ".modal:not(.hidden), .confirm-dialog:not(.hidden), .selective-overlay, #install-root > div",
-  );
-  if (modal) {
+
+  // 1. The palette and the filter slide-over are not part of closeAllModals.
+  if (isPaletteOpen()) {
+    closePalette();
+    return;
+  }
+  const filterPanel = document.querySelector<HTMLElement>(".lib-filter-panel");
+  if (filterPanel && isVisibleEl(filterPanel)) {
+    filterPanel.querySelector<HTMLElement>("[data-act='lib-filter-close']")?.click();
+    return;
+  }
+
+  // 2. Close any other popup or the game page.
+  const overlay = topOverlay();
+  if (overlay) {
+    if (overlay.matches(".notif-panel")) {
+      closeNotifPanel();
+      return;
+    }
+    // A confirm/choice over the game page must answer No, not close the page
+    // that opened it.
+    const cancel = overlay.querySelector<HTMLElement>(
+      "[data-act='confirm-cancel'], [data-act='choice-cancel']",
+    );
+    if (cancel) {
+      cancel.click();
+      return;
+    }
     closeAllModals();
+    // A few dialogs own their close action rather than living in a root that
+    // closeAllModals clears (theme designer, feedback).
+    if (overlay.isConnected) {
+      overlay
+        .querySelector<HTMLElement>(
+          "[data-act='td-cancel'], [data-act='feedback-close'], [data-act='theme-import-close'], .modal-head .win-close",
+        )
+        ?.click();
+    }
     return;
   }
 
@@ -392,7 +600,7 @@ function switchFilterTab(forward: boolean): void {
   // old `.lib-tab` selector matched nothing, so LB/RB did nothing.
   const tabs = Array.from(
     document.querySelectorAll<HTMLElement>(".lib-filters .lib-filter[data-act='quick-tab']"),
-  ).filter((t) => t.offsetParent !== null);
+  ).filter(isVisibleEl);
   if (tabs.length === 0) return;
 
   const activeIdx = tabs.findIndex((t) => t.classList.contains("active"));
@@ -638,11 +846,14 @@ function gamepadLoop(): void {
   if (justPressed(mask, BTN_RB)) {
     switchFilterTab(true);
   }
+  // Menu is the console key now: it opens Stage, the couch shell, and falls
+  // back to Full Screen Mode only when Stage is switched off.
   if (justPressed(mask, BTN_START)) {
-    if (S.fullscreenModeEnabled) void toggleFullscreenMode();
+    if (S.stage.enabled) void toggleStage();
+    else if (S.fullscreenModeEnabled) void toggleFullscreenMode();
   }
-  // The guide/PS button is the launcher's home key: it opens the console
-  // shell when Stage is available, otherwise it keeps the classic behaviour.
+  // Guide stays as a second home key for pads whose Menu button is awkward to
+  // reach; the HUD no longer advertises the duplicate.
   if (justPressed(mask, BTN_GUIDE)) {
     if (S.stage.enabled) void enterStage();
     else if (S.fullscreenModeEnabled) void toggleFullscreenMode();
@@ -737,6 +948,63 @@ export function initGamepadSupport(): void {
   for (const id of ["modal-root", "selective-root", "confirm-root", "install-root"]) {
     const root = document.getElementById(id);
     if (root) new MutationObserver(onModalRootChange).observe(root, { childList: true });
+  }
+
+  // A popup can open from a mouse click or a dialog can mount above the page.
+  // Move the ring into the new scope (and back to the page when it closes)
+  // instead of leaving it on a control the overlay now covers. With a pad
+  // connected but no ring yet (the page was opened with the mouse), give the
+  // new scope its primary action so the game page is usable from the couch.
+  let scopeRaf = 0;
+  const onScopeChange = (): void => {
+    if (scopeRaf) return;
+    scopeRaf = requestAnimationFrame(() => {
+      scopeRaf = 0;
+      if (!S.gamepadPolling) return;
+      if (currentFocusedEl || lastFocusedKey) refreshGamepadFocus();
+      else if (topOverlay()) initGamepadFocus();
+    });
+  };
+  // Sidebar repaints must not hand a ring to a mouse user; they only keep an
+  // existing ring on the same entry.
+  let sidebarRaf = 0;
+  const onSidebarChange = (): void => {
+    if (sidebarRaf) return;
+    sidebarRaf = requestAnimationFrame(() => {
+      sidebarRaf = 0;
+      if (currentFocusedEl || lastFocusedKey) refreshGamepadFocus();
+    });
+  };
+  const sidebarRoot = document.getElementById("sidebar");
+  if (sidebarRoot) {
+    new MutationObserver(onSidebarChange).observe(sidebarRoot, { childList: true, subtree: true });
+  }
+  for (const id of [
+    "modal-root",
+    "palette-root",
+    "lib-filter-root",
+    "confirm-root",
+    "install-root",
+    "selective-root",
+    "notif-root",
+    "manage-root",
+    "collection-root",
+    "storage-root",
+    "theme-modal-root",
+    "options-root",
+    "playtime-root",
+    "cover-modal-root",
+    "move-modal-root",
+    "hide-games-root",
+    "hide-achievements-root",
+    "share-modal-root",
+    "custom-game-root",
+    "sort-name-root",
+    "changelog-root",
+    "feedback-root",
+  ]) {
+    const root = document.getElementById(id);
+    if (root) new MutationObserver(onScopeChange).observe(root, { childList: true, subtree: true });
   }
 
   // A pad that was already connected when the window opened does not always

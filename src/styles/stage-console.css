@@ -535,7 +535,8 @@
   .stage-glyph-a,
   .stage-glyph-b,
   .stage-glyph-x,
-  .stage-glyph-y {
+  .stage-glyph-y,
+  .stage-glyph-face {
     width: 20px;
     min-width: 20px;
     height: 20px;

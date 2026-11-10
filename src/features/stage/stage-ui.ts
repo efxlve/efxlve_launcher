@@ -5,6 +5,7 @@
  * state into a string so the route modules stay focused on their own layout.
  */
 
+import { psShapeFor, psShapeSvg } from "../../core/controller-glyphs";
 import { epicDlProgress } from "../../core/game-view";
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
@@ -18,8 +19,7 @@ import type { EpicSummary } from "../../epic";
 export function stageFaceGlyph(button: "a" | "b" | "x" | "y"): string {
   const kind = S.gamepadKind;
   if (kind === "playstation") {
-    const shapes = { a: "x", b: "circle", x: "square", y: "triangle" } as const;
-    return `<span class="stage-glyph stage-glyph-${button}">${icon(shapes[button], 12)}</span>`;
+    return `<span class="stage-glyph stage-glyph-face ps-${psShapeFor(button)}">${psShapeSvg(button, 12)}</span>`;
   }
   return `<span class="stage-glyph stage-glyph-${button}">${button.toUpperCase()}</span>`;
 }

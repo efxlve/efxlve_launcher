@@ -596,7 +596,8 @@ body.stage-mode #toasts {
 .stage-glyph-a,
 .stage-glyph-b,
 .stage-glyph-x,
-.stage-glyph-y {
+.stage-glyph-y,
+.stage-glyph-face {
   min-width: 22px;
   width: 22px;
   height: 22px;
@@ -628,6 +629,24 @@ body.stage-mode #toasts {
 .stage-glyph-y {
   border-color: rgba(251, 191, 36, 0.65);
   color: #fde047;
+}
+/* PlayStation shapes keep their own colours instead of the Xbox A/B/X/Y
+   mapping; the cross is blue, the square pink. */
+.stage-glyph.ps-cross {
+  border-color: rgba(96, 165, 250, 0.65);
+  color: #93c5fd;
+}
+.stage-glyph.ps-circle {
+  border-color: rgba(248, 113, 113, 0.65);
+  color: #fca5a5;
+}
+.stage-glyph.ps-square {
+  border-color: rgba(244, 114, 182, 0.65);
+  color: #f9a8d4;
+}
+.stage-glyph.ps-triangle {
+  border-color: rgba(74, 222, 128, 0.65);
+  color: #86efac;
 }
 .stage-glyph-bumper {
   font-size: 9.5px;

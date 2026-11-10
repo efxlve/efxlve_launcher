@@ -33,7 +33,7 @@ import { drawSpeedCanvas, renderDownloads, startSpeedChartTimer } from "./featur
 import "./features/events/click-router";
 import "./features/events/input-listeners";
 import { initApp } from "./features/events/ipc-listeners";
-import { updateGamepadHud } from "./features/gamepad/gamepad";
+import { refreshGamepadFocus, updateGamepadHud } from "./features/gamepad/gamepad";
 import { updateFullscreenUi } from "./features/gamepad/fullscreen-mode";
 import { renderStageBoot } from "./features/stage/stage-boot";
 import { enterStage, updateStageUi } from "./features/stage/stage-state";
@@ -242,6 +242,7 @@ function render(): void {
   updateChrome();
   updateNavHistoryUi();
   updateGamepadHud(S.gamepadPolling);
+  refreshGamepadFocus();
   renderNotificationPanel();
   presenceSync();
 }

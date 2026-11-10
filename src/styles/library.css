@@ -10,7 +10,9 @@
 .lib-tools .btn { height: 40px; font-size: 14px; }
 .lib-tools .seg { height: 40px; }
 .lib-tools .seg > button { height: 34px; }
-.lib-filters .tab { height: 48px; font-size: 16px; }
+/* The 4px inline padding gives the controller focus pill a little breathing
+   room while keeping the tab text aligned with the cover grid. */
+.lib-filters .tab { height: 48px; font-size: 16px; padding-inline: 4px; }
 .lib-filters.tabs { gap: clamp(14px, 2vw, 28px); }
 .lib-tools .lib-hide-btn { width: 40px; height: 40px; }
 .lib-sort-icon { display: inline-flex; color: var(--text-3); }
