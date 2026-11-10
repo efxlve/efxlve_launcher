@@ -990,10 +990,9 @@ export const S = {
       } catch {
         /* ignore */
       }
-      // A TV can crop the outer few percent and a handheld sits inside a
-      // bezel; the subtle inset keeps the focus ring and the hint bar visible
-      // without shrinking the stage. The setting can still turn it off.
-      return 1;
+      // The setting is opt-in: the TV/handheld safe-area inset changes the
+      // shell geometry, so the default keeps the stage edge-to-edge.
+      return 0;
     })() as number,
     sound: (() => {
       try {

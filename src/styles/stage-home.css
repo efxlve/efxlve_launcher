@@ -15,7 +15,9 @@
 
 .stage-home-stage {
   position: relative;
-  min-height: 100vh;
+  /* The shell is already inset by the safe area; a raw 100vh would push the
+     hero actions under the hint bar when a TV safe area is active. */
+  min-height: calc(100vh - 2 * var(--stage-safe, 0px));
   overflow: visible;
   isolation: isolate;
 }
@@ -274,7 +276,7 @@
 
 .stage-home-copy {
   position: absolute;
-  inset-block-end: clamp(68px, 8vh, 102px);
+  inset-block-end: calc(clamp(68px, 8vh, 102px) + var(--stage-safe, 0px));
   inset-inline-start: clamp(28px, 4vw, 72px);
   width: min(1000px, 75vw);
   display: flex;
@@ -454,7 +456,7 @@
 /* Side utility buttons */
 .stage-home-side {
   position: absolute;
-  inset-block-end: clamp(68px, 8vh, 102px);
+  inset-block-end: calc(clamp(68px, 8vh, 102px) + var(--stage-safe, 0px));
   inset-inline-end: clamp(28px, 4vw, 72px);
   z-index: 4;
   display: flex;
@@ -1024,7 +1026,7 @@
     padding-inline: 22px;
   }
   .stage-home-copy {
-    inset-block-end: 58px;
+    inset-block-end: calc(58px + var(--stage-safe, 0px));
     inset-inline-start: 22px;
     width: min(720px, 88vw);
   }
@@ -1033,7 +1035,7 @@
   }
   .stage-home-side {
     inset-inline-end: 22px;
-    inset-block-end: 58px;
+    inset-block-end: calc(58px + var(--stage-safe, 0px));
   }
   .stage-home-hub {
     --stage-hub-gutter: 22px;
@@ -1042,7 +1044,7 @@
 
 @media (max-width: 720px) {
   .stage-home-stage {
-    min-height: calc(100vh - var(--stage-top));
+    min-height: calc(100vh - var(--stage-top) - 2 * var(--stage-safe, 0px));
   }
   .stage-ribbon-card {
     flex-basis: 88px;
@@ -1072,7 +1074,7 @@
     display: none;
   }
   .stage-home-side {
-    inset-block-end: 58px;
+    inset-block-end: calc(58px + var(--stage-safe, 0px));
   }
   .stage-activity-card {
     flex-basis: 260px;
@@ -1085,10 +1087,10 @@
 
 @media (max-height: 680px) {
   .stage-home-copy {
-    inset-block-end: 46px;
+    inset-block-end: calc(46px + var(--stage-safe, 0px));
   }
   .stage-home-side {
-    inset-block-end: 46px;
+    inset-block-end: calc(46px + var(--stage-safe, 0px));
   }
   .stage-home-title {
     font-size: clamp(24px, 2.5vw, 34px);

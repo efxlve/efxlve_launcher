@@ -43,87 +43,63 @@
   --stage-amb-d: rgba(180, 220, 255, 0.05);
 }
 
+/*
+ * One static paint, no blur filter and no blend mode.
+ *
+ * The first version used four 50-110 vw elements, each with a 110 px blur and
+ * a transform animation. On a TV that is four huge textures being re-blurred
+ * under a backdrop-filtered top bar every frame; it looks identical but it
+ * costs a fraction of the GPU when the gradients themselves do the falloff.
+ */
 .stage-home-ambient {
   position: absolute;
   inset: 0;
   z-index: 2;
   overflow: hidden;
   pointer-events: none;
-  mix-blend-mode: screen;
-  opacity: 0.9;
-  transition: opacity 900ms ease;
+  opacity: 0.92;
+  background-image:
+    radial-gradient(circle, var(--stage-amb-a) 0%, transparent 68%),
+    radial-gradient(circle, var(--stage-amb-b) 0%, transparent 68%),
+    radial-gradient(circle, var(--stage-amb-c) 0%, transparent 70%),
+    radial-gradient(circle, var(--stage-amb-d) 0%, transparent 72%);
+  background-repeat: no-repeat;
+  background-size: 58% 58%, 52% 52%, 68% 48%, 30% 30%;
+  background-position: 4% -12%, 100% 6%, 22% 118%, 42% 38%;
 }
 
+/* The blobs are now part of the parent's background. */
 .stage-home-ambient i {
-  position: absolute;
-  display: block;
-  border-radius: 50%;
-  filter: blur(clamp(46px, 7vw, 110px));
-  opacity: 0.8;
-  will-change: transform;
+  display: none;
 }
 
-.stage-home-ambient i:nth-child(1) {
-  inset-block-start: -18%;
-  inset-inline-start: 4%;
-  width: 58vw;
-  height: 58vw;
-  background: radial-gradient(circle at 40% 40%, var(--stage-amb-a), transparent 68%);
-  animation: stage-amb-drift-a 34s ease-in-out infinite alternate;
-}
-
-.stage-home-ambient i:nth-child(2) {
-  inset-block-start: 8%;
-  inset-inline-end: -14%;
-  width: 52vw;
-  height: 52vw;
-  background: radial-gradient(circle at 55% 45%, var(--stage-amb-b), transparent 66%);
-  animation: stage-amb-drift-b 41s ease-in-out infinite alternate;
-}
-
-.stage-home-ambient i:nth-child(3) {
-  inset-block-end: -26%;
-  inset-inline-start: 22%;
-  width: 68vw;
-  height: 48vw;
-  background: radial-gradient(circle at 50% 50%, var(--stage-amb-c), transparent 70%);
-  animation: stage-amb-drift-c 29s ease-in-out infinite alternate;
-}
-
-.stage-home-ambient i:nth-child(4) {
-  inset-block-start: 38%;
-  inset-inline-start: 42%;
-  width: 30vw;
-  height: 30vw;
-  background: radial-gradient(circle at 50% 50%, var(--stage-amb-d), transparent 72%);
-  animation: stage-amb-drift-a 23s 2s ease-in-out infinite alternate-reverse;
-}
-
-@keyframes stage-amb-drift-a {
-  from { transform: translate3d(-2%, -1%, 0) scale(0.96); }
-  to { transform: translate3d(5%, 3%, 0) scale(1.08); }
-}
-
-@keyframes stage-amb-drift-b {
-  from { transform: translate3d(2%, 2%, 0) scale(1.04); }
-  to { transform: translate3d(-6%, -3%, 0) scale(0.94); }
-}
-
-@keyframes stage-amb-drift-c {
-  from { transform: translate3d(3%, 1%, 0) scale(0.98); }
-  to { transform: translate3d(-4%, -4%, 0) scale(1.1); }
-}
-
-/* A breath of film grain keeps large flat gradients from banding on a TV. */
+/*
+ * A static, pre-rasterised grain. It is one image and normal compositing;
+ * soft-light over an animated background forced a full-screen blend pass.
+ */
 .stage-home-grain {
   position: absolute;
   inset: 0;
   z-index: 3;
   pointer-events: none;
-  opacity: 0.05;
-  mix-blend-mode: soft-light;
+  opacity: 0.035;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.86' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
   background-size: 160px 160px;
+}
+
+/* A 1080p/4K TV is close enough to the wall that the grain is invisible and
+   the extra full-screen texture pass is not worth its cost. The top bar also
+   drops its full-width backdrop blur; the opaque gradient keeps the same
+   contrast over the art without re-blurring the wall on every scroll. */
+@media (min-width: 1600px) {
+  .stage-home-grain {
+    display: none;
+  }
+
+  #stage-root .stage-topbar {
+    backdrop-filter: none;
+    background: linear-gradient(180deg, rgba(6, 8, 14, 0.92) 0%, rgba(6, 8, 14, 0.62) 62%, transparent 100%);
+  }
 }
 
 /* ---------- Top bar: navigation on the left, status on the right ---------- */
@@ -215,9 +191,11 @@
 .stage-ambient-bars i {
   display: block;
   width: 2px;
-  height: 3px;
+  height: 10px;
   border-radius: 999px;
   background: currentColor;
+  transform: scaleY(0.3);
+  transform-origin: center bottom;
   animation: stage-eq 2.1s ease-in-out infinite;
 }
 
@@ -225,10 +203,12 @@
 .stage-ambient-bars i:nth-child(3) { animation-delay: 0.7s; }
 .stage-ambient-bars i:nth-child(4) { animation-delay: 0.15s; }
 
+/* scaleY is a compositor transform; animating height repainted the blurred
+   top bar every frame. */
 @keyframes stage-eq {
-  0%, 100% { height: 3px; opacity: 0.5; }
-  35% { height: 9px; opacity: 1; }
-  65% { height: 5px; opacity: 0.8; }
+  0%, 100% { transform: scaleY(0.3); opacity: 0.5; }
+  35% { transform: scaleY(1); opacity: 1; }
+  65% { transform: scaleY(0.55); opacity: 0.8; }
 }
 
 #stage-root[data-ambience="off"] .stage-ambient-bars i {
@@ -580,7 +560,7 @@
   }
 
   .stage-home-copy {
-    inset-block-end: 56px;
+    inset-block-end: calc(56px + var(--stage-safe, 0px));
     inset-inline-start: 24px;
     width: min(700px, 76vw);
     gap: 9px;
@@ -618,7 +598,7 @@
   }
 
   .stage-home-side {
-    inset-block-end: 56px;
+    inset-block-end: calc(56px + var(--stage-safe, 0px));
     inset-inline-end: 24px;
   }
 
@@ -732,19 +712,11 @@ html.is-steam-deck #stage-root .stage-dock-panel {
   backdrop-filter: blur(12px);
 }
 
-/* Four animated, heavily blurred blobs are the one expensive part of the
-   room. On the Deck the wash stays, the per-frame work does not. */
+/* The Deck keeps the colour wash and drops the grain pass. */
 html.is-steam-deck #stage-root .stage-home-ambient {
-  opacity: 0.6;
+  opacity: 0.72;
 }
 
-html.is-steam-deck #stage-root .stage-home-ambient i {
-  animation: none !important;
-  filter: blur(34px);
-  will-change: auto;
-}
-
-html.is-steam-deck #stage-root .stage-home-ambient i:nth-child(4),
 html.is-steam-deck #stage-root .stage-home-grain {
   display: none;
 }
@@ -800,7 +772,6 @@ html.is-steam-deck #stage-root .stage-collection-card {
 /* ---------- Reduced effects ---------- */
 
 @media (prefers-reduced-motion: reduce) {
-  .stage-home-ambient i,
   .stage-intro-ring,
   .stage-intro-ring::before,
   .stage-ambient-bars i,

@@ -62,9 +62,12 @@ function midiToHz(note: number): number {
   return 440 * Math.pow(2, (note - 69) / 12);
 }
 
-/** A generated stereo room: no asset, no fetch, about 1.3 MB of float data. */
+/**
+ * A generated stereo room: no asset, no fetch. 2.2 s is enough tail for a
+ * menu pad and keeps the convolution light on a low-power handheld.
+ */
 function makeImpulse(ctx: AudioContext): AudioBuffer {
-  const seconds = 3.4;
+  const seconds = 2.2;
   const length = Math.max(1, Math.floor(ctx.sampleRate * seconds));
   const buffer = ctx.createBuffer(2, length, ctx.sampleRate);
   for (let channel = 0; channel < 2; channel++) {
@@ -98,7 +101,7 @@ function ensureGraph(): boolean {
   const reverb = ctx.createConvolver();
   reverb.buffer = makeImpulse(ctx);
   wetBus = ctx.createGain();
-  wetBus.gain.value = 0.5;
+  wetBus.gain.value = 0.42;
 
   dryBus.connect(master);
   dryBus.connect(reverb);
