@@ -34,12 +34,12 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
     date: "2026-11-10",
     fixed: [
       {
-        en: "Cover art in Downloads, Hide games, Hide achievements and the recent sidebar now uses the same fallback chain as a library card. A Steam capsule that 404s is resolved from the store, stale remembered art is retried, and a missing cover becomes a placeholder instead of an empty tile.",
-        tr: "İndirmeler, Oyunları gizle, Başarımları gizle ve son oynananlar kenar çubuğundaki kapaklar artık kütüphane kartıyla aynı yedek zincirini kullanıyor. 404 veren Steam kapsülü mağazadan çözülüyor, önbellekteki eski görsel yeniden deneniyor ve kapak yoksa boş kutu yerine yer tutucu gösteriliyor.",
+        en: "Missing cover art in Downloads, Hide games, Hide achievements and Recently Played.",
+        tr: "İndirmeler, Oyunları gizle, Başarımları gizle ve Son oynananlar bölümlerinde eksik kapak görselleri düzeltildi.",
       },
       {
-        en: "The release notes and in-app changelog use neutral wording for the original Stage audio; the 0.1.52 copy does not name console brands.",
-        tr: "Sürüm notları ve uygulama içi changelog, özgün Sahne sesi için nötr ifadeler kullanıyor; 0.1.52 metninde konsol marka adı geçmiyor.",
+        en: "Games without a usable cover now show a placeholder instead of an empty tile.",
+        tr: "Kullanılabilir kapağı olmayan oyunlar artık boş kutu yerine düzgün bir yer tutucu gösteriyor.",
       },
     ],
   },
@@ -48,48 +48,32 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
     date: "2026-11-10",
     added: [
       {
-        en: "Stage now has a real living-room shell: an original generative ambient theme (a slow pad, sparse bells and a generated reverb), a short boot mark with its own chime, a time-of-day light field, a profile mark and a greeting with the profile name. Everything is synthesised at runtime; no sampled or third-party music is bundled.",
-        tr: "Sahne artık gerçek bir salon kabuğu: tamamen özgün, çalışma anında üretilen bir ortam müziği (yavaş bir pad, seyrek çanlar ve üretilen reverb), kendi sesiyle kısa bir açılış işareti, günün saatine göre değişen ışık, profil işareti ve profil adıyla bir karşılama. Her şey çalışma anında sentezleniyor; hiçbir örneklenmiş veya üçüncü taraf müzik paketlenmiyor.",
+        en: "Stage now has a home screen that feels like a console, with an original ambient soundtrack, a short boot animation and a calm idle screen for when you leave it on.",
+        tr: "Sahne artık konsol hissi veren bir ana ekrana sahip: özgün bir ortam müziği, kısa bir açılış animasyonu ve açık bıraktığında sakin bir bekleme ekranı.",
       },
       {
-        en: "Attract mode: after a quiet minute on Home the chrome fades away, the key art starts a slow pan and the clock and greeting stay on screen, like a console left on in the living room. Any input wakes it and the first press only wakes the room.",
-        tr: "Çekim modu: Ana ekranda bir dakika sessizlik olunca arayüz çekiliyor, oyun görseli yavaşça kayıyor, saat ve karşılama ekranda kalıyor; tıpkı salonda açık bırakılmış bir konsol gibi. Herhangi bir giriş uyandırıyor ve ilk basış yalnızca odayı uyandırıyor.",
-      },
-      {
-        en: "Stage Settings > Appearance now has ambient music on/off and volume, a console intro toggle and an attract-mode preview. The ambience is separate from the short navigation ticks.",
-        tr: "Sahne Ayarları > Görünüm bölümüne ortam müziği açma/kapama ve ses düzeyi, konsol açılışı anahtarı ve çekim modu önizlemesi eklendi. Ortam müziği kısa gezinme seslerinden ayrı.",
-      },
-      {
-        en: "A dedicated 1280 × 800 handheld pass: larger shelf covers, a two-row quick menu, thumb-sized targets, a lighter Deck render path and Stage as the default shell on a Steam Deck. The desktop shell also gets larger thumb targets on a handheld, and the Guide button opens Stage or its quick menu.",
-        tr: "1280 × 800 için özel el konsolu geçişi: daha büyük raf kapakları, iki sıralı hızlı menü, parmak boyu hedefler, Deck için daha hafif çizim yolu ve Steam Deck'te varsayılan kabuk olarak Sahne. Masaüstü kabuğu da el konsolunda daha büyük dokunma hedefleri kullanıyor; Guide tuşu Sahne'yi veya hızlı menüsünü açıyor.",
+        en: "You can now control the music, boot animation and idle screen from Stage Settings.",
+        tr: "Müzik, açılış animasyonu ve bekleme ekranını artık Sahne Ayarları'ndan kontrol edebilirsin.",
       },
     ],
     improved: [
       {
-        en: "Mouse and keyboard are first-class on Stage: moving the mouse no longer drags the controller ring across the shelf or swaps the Home hero on the slightest hover. The mouse gets hover feedback and clicks, the keyboard keeps arrows/WASD, Enter, Esc, Q/E, X, F, M and Ctrl+K, and the hint bar follows the active input.",
-        tr: "Fare ve klavye Sahne'de birinci sınıf: fareyi hareket ettirmek artık kumanda halkasını rafta sürüklemiyor veya en ufak hover'da ana ekran oyununu değiştirmiyor. Fare hover geri bildirimi ve tıklamayı kullanıyor; klavyede ok tuşları/WASD, Enter, Esc, Q/E, X, F, M ve Ctrl+K çalışıyor, ipucu çubuğu etkin girişi izliyor.",
+        en: "Steam Deck and other handhelds get a 1280 × 800 layout with larger touch targets, and Stage opens by default.",
+        tr: "Steam Deck ve diğer el konsollarına daha büyük dokunma hedefleriyle 1280 × 800 düzeni geldi; Sahne varsayılan olarak açılıyor.",
       },
       {
-        en: "The TV safe area is now a content inset instead of a window inset: it moves the hero copy, hint bar and page padding while the art stays edge-to-edge, so no black frame appears around the picture.",
-        tr: "TV güvenli alanı artık pencereyi küçültmek yerine içeriği kaydırıyor: kahraman yazısını, ipucu çubuğunu ve sayfa boşluklarını kaydırıyor, görsel kenardan kenara kalıyor; böylece resmin çevresinde siyah çerçeve oluşmuyor.",
-      },
-      {
-        en: "The Stage top bar fades into the art with no backdrop blur and no bottom border, and the Windows 11 window border is removed rather than painted black.",
-        tr: "Sahne üst barı bulanıklık ve alt çizgi olmadan görsele karışıyor; Windows 11 pencere kenarlığı siyaha boyanmak yerine tamamen kaldırılıyor.",
+        en: "Mouse and keyboard navigation is calmer: hovering no longer changes the selected game, and the hints follow the input you use.",
+        tr: "Fare ve klavye ile gezinme daha sakin: hover artık seçili oyunu değiştirmiyor ve ipuçları kullandığın girişe göre güncelleniyor.",
       },
     ],
     fixed: [
       {
-        en: "The Stage room no longer drops frames on a TV: the four animated 110 px blurred light blobs, the full-screen blend and the height-animated equalizer are gone in favour of static, seamless gradients and a transform-driven bar. The ambient reverb tail is shorter, and the grain and top-bar blur are dropped on large screens.",
-        tr: "Sahne odası TV'de artık kare düşürmüyor: dört hareketli 110 px bulanık ışık lekesi, tam ekran karışım ve yükseklikle animasyonlu ekolayzer yerine statik, dikişsiz gradyanlar ve transform ile çizilen bir çubuk var. Ortam reverb kuyruğu kısaltıldı; büyük ekranlarda grain ve üst bar bulanıklığı kapatıldı.",
+        en: "Fixed stuttering on TV-sized screens.",
+        tr: "TV boyutundaki ekranlardaki takılmalar giderildi.",
       },
       {
-        en: "The fog is seamless: the light field is one full-screen paint of soft ellipses, so the vertical clipping line and the rectangular edge from the old per-gradient background boxes are gone.",
-        tr: "Sis dikişsiz: ışık alanı yumuşak elipslerden oluşan tek bir tam ekran boyama; eski gradient kutularından kalan dikey kesme çizgisi ve dikdörtgen kenar yok.",
-      },
-      {
-        en: "With the safe area on, the Play row no longer touches the hint bar.",
-        tr: "Güvenli alan açıkken Oyna satırı ipucu çubuğuna değmiyor.",
+        en: "Fixed the dark line at the top of Stage and the seam in the background art.",
+        tr: "Sahne'nin üstündeki koyu çizgi ve arka plan görselindeki dikiş giderildi.",
       },
     ],
   },
