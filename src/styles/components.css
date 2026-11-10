@@ -259,6 +259,7 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
 .row:first-child { border-top: none; }
 .row:hover { background: var(--surface-2); }
 .row-thumb { width: 36px; height: 48px; border-radius: 4px; object-fit: cover; background: var(--surface-3); flex-shrink: 0; }
+.row-thumb.art-thumb-placeholder { display: grid; place-items: center; color: var(--text-3); }
 .row-main { flex: 1; min-width: 0; }
 .row-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .row-meta { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }

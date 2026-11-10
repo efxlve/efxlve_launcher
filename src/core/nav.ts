@@ -312,7 +312,7 @@ export function updateSidebarGames(): void {
     .map((g) => {
       const steamApp = g.appName.startsWith("steam::") ? ` data-steam-app="${esc(g.appName.slice(7))}"` : "";
       const thumb = g.cover
-        ? `<img${steamApp} src="${esc(g.cover)}" alt="" loading="lazy" decoding="async" />`
+        ? `<img${steamApp} data-cover-art src="${esc(g.cover)}" alt="" loading="lazy" decoding="async" />`
         : `<span class="sb-game-ph">${esc((g.title[0] || "?").toUpperCase())}</span>`;
       return `<button class="sb-game ${g.appName === S.currentModalAppName ? "active" : ""}" data-act="epic-detail" data-id="${esc(g.appName)}" title="${esc(g.title)}">${thumb}<span class="sb-game-title">${esc(g.title)}</span></button>`;
     })

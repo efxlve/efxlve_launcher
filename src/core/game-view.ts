@@ -434,6 +434,23 @@ export function epicArt(s: EpicSummary): string {
 }
 
 /**
+ * A list-row portrait thumb that reuses the card art fallback chain.
+ *
+ * `epicArt` owns the custom cover, the Steam resolver, the Epic URL rewrite and
+ * the placeholder. Wrapping the same markup with a row-sized class keeps every
+ * list (downloads, hidden games, hidden achievements) on the one resolve path;
+ * a flat Steam capsule that 404s is repaired by `art-fallback` instead of
+ * leaving an empty tile.
+ */
+export function coverThumb(s: EpicSummary, className: string): string {
+  const html = epicArt(s);
+  if (html.startsWith("<img")) {
+    return html.replace(/^<img\b/, `<img class="${className}"`);
+  }
+  return `<span class="${className} art-thumb-placeholder">${icon("gamepad-2", 16)}</span>`;
+}
+
+/**
  * The cover URL a card would use, without the markup around it. The idle
  * prefetch warms these while nothing else is happening, so scrolling into the
  * next chunk of cards shows pictures instead of empty boxes. `""` when the game

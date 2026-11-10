@@ -2300,7 +2300,8 @@
   min-height: 42px; max-height: 42px; flex: 0 0 32px; overflow: hidden;
   border-radius: 4px; object-fit: cover; background: var(--surface-2);
 }
-.hide-game-thumb.placeholder { display: grid; place-items: center; color: var(--text-3); }
+.hide-game-thumb.placeholder,
+.hide-game-thumb.art-thumb-placeholder { display: grid; place-items: center; color: var(--text-3); }
 .hide-game-title {
   flex: 1; min-width: 0; font-size: 14px; font-weight: 500;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;

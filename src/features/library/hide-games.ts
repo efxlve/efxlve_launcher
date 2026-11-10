@@ -12,11 +12,12 @@ import { closeModal } from "../../core/dom";
 import { icon } from "../../core/icons";
 import { updateBadge, updateChrome } from "../../core/nav";
 import { render } from "../../core/render";
-import { allStoreSummaries, rawOf } from "../../core/selectors";
+import { coverThumb } from "../../core/game-view";
+import { allStoreSummaries } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
-import { epicPortrait, type EpicSummary } from "../../epic";
+import type { EpicSummary } from "../../epic";
 import { t } from "../../i18n";
 import { storeChipHtml } from "../profile/profile-view";
 import { refreshLibraryResultsInPlace } from "./library-view";
@@ -27,14 +28,6 @@ let wired = false;
 
 function rootEl(): HTMLElement | null {
   return document.getElementById("hide-games-root");
-}
-
-function coverUrl(s: EpicSummary): string {
-  const custom = S.customCovers[s.appName];
-  if (custom) return custom;
-  if (s.appName.startsWith("gog::")) return s.cover || "";
-  const raw = rawOf(s.appName);
-  return (raw ? epicPortrait(raw) : null) || s.cover || "";
 }
 
 /** Non-hidden library games, title order. One pass over summaries, then one sort. */
@@ -49,10 +42,7 @@ function listableGames(): EpicSummary[] {
 }
 
 function rowHtml(s: EpicSummary): string {
-  const url = coverUrl(s);
-  const thumb = url
-    ? `<img class="hide-game-thumb" src="${esc(url)}" alt="" width="32" height="42" loading="lazy" decoding="async" />`
-    : `<span class="hide-game-thumb placeholder">${icon("gamepad-2", 14)}</span>`;
+  const thumb = coverThumb(s, "hide-game-thumb");
   return `
     <label class="hide-game-row" data-hide-row data-id="${esc(s.appName)}" data-title="${esc(s.title.toLowerCase())}">
       <input type="checkbox" class="selective-checkbox" />

@@ -8,10 +8,10 @@
  */
 
 import { IGNORED_UPDATES_KEY } from "../../core/constants";
-import { epicActionButtons } from "../../core/game-view";
+import { coverThumb, epicActionButtons } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
 import { updateBadge } from "../../core/nav";
-import { epicWideArt, gogToEpicSummary, libraryItemToSummary, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
+import { epicWideArt, gogToEpicSummary, libraryItemToSummary, sourceOfKey, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { DlMetrics, GameSource } from "../../core/types";
@@ -20,7 +20,7 @@ import { localizeMessage, formatSyncStamp, t } from "../../i18n";
 import { storeName } from "../profile/profile-view";
 import { storeLogo } from "../store/store-logos";
 import { getRecentDownloads, type RecentDownload } from "../../core/recent";
-import { epicPortrait, type EpicSummary } from "../../epic";
+import type { EpicSummary } from "../../epic";
 import type { SteamGame } from "../../steam";
 import { steamDownloadLabel, steamDownloadWaiting } from "../library/steam-library";
 import { ubiClientDownloads } from "../../companion";
@@ -262,11 +262,10 @@ document.addEventListener("visibilitychange", () => {
 
 function thumbOf(s: EpicSummary | undefined): string {
   if (!s) return `<span class="row-thumb dl-thumb-ph">${icon("gamepad-2", 16)}</span>`;
-  const raw = rawOf(s.appName);
-  const url = S.customCovers[s.appName] || (raw ? epicPortrait(raw) : null) || s.cover;
-  return url
-    ? `<img class="row-thumb" src="${esc(url)}" alt="" loading="lazy" decoding="async" />`
-    : `<span class="row-thumb dl-thumb-ph">${icon("gamepad-2", 16)}</span>`;
+  // Reuse the library card's cover chain. A flat Steam capsule that 404s is
+  // repaired by the shared art fallback, and a missing cover becomes a tile
+  // instead of an empty box.
+  return coverThumb(s, "row-thumb");
 }
 
 /** Storefront identity plate: the mark plus its brand name, never a state colour. */
@@ -315,7 +314,7 @@ function activeDownload(): DlMetrics | null {
 function renderActiveCard(dl: DlMetrics): string {
   const s = summaryOf(dl.id);
   const title = esc(s?.title || dl.title || dl.id);
-  const art = s?.cover || null;
+  const art = s ? epicWideArt(s) || s.cover : null;
   // The cover and the title open the same game page as a library click, so a
   // downloading game is never a dead end.
   const detail = `role="button" tabindex="0" data-act="epic-detail" data-id="${esc(dl.id)}" title="${title}"`;
@@ -328,7 +327,7 @@ function renderActiveCard(dl: DlMetrics): string {
     `<div class="dl-metric"><span class="dl-metric-label">${label}</span><span class="dl-metric-value" id="${id}">${value}</span></div>`;
   return `
     <section class="card dl-active">
-      <div class="dl-active-art dl-active-open" ${detail}>${art ? `<img src="${esc(art)}" alt="" decoding="async" />` : ""}</div>
+      <div class="dl-active-art dl-active-open" ${detail}>${art ? `<img src="${esc(art)}" data-cover-art alt="" decoding="async" />` : ""}</div>
       <div class="dl-active-body">
         <div class="dl-active-head">
           <div class="dl-active-text dl-active-open" ${detail}>
@@ -389,7 +388,7 @@ function steamEtaText(g: SteamGame, waiting: boolean): string {
 function renderSteamActiveCard(g: SteamGame): string {
   const s = summaryOf(`steam::${g.appId}`);
   const title = esc(s?.title || g.name || g.appId);
-  const art = s?.cover || null;
+  const art = s ? epicWideArt(s) || s.cover : null;
   const detail = `role="button" tabindex="0" data-act="epic-detail" data-id="${esc(`steam::${g.appId}`)}" title="${title}"`;
   const waiting = steamDownloadWaiting(g.appId);
   const total = g.bytesToDownload;
@@ -400,7 +399,7 @@ function renderSteamActiveCard(g: SteamGame): string {
     `<div class="dl-metric"><span class="dl-metric-label">${label}</span><span class="dl-metric-value" id="${id}">${value}</span></div>`;
   return `
     <section class="card dl-active" id="dl-steam-card" data-app-id="${esc(g.appId)}">
-      <div class="dl-active-art dl-active-open" ${detail}>${art ? `<img src="${esc(art)}" alt="" decoding="async" />` : ""}</div>
+      <div class="dl-active-art dl-active-open" ${detail}>${art ? `<img src="${esc(art)}" data-cover-art alt="" decoding="async" />` : ""}</div>
       <div class="dl-active-body">
         <div class="dl-active-head">
           <div class="dl-active-text dl-active-open" ${detail}>

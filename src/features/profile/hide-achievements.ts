@@ -8,13 +8,14 @@
  */
 
 import { HIDDEN_ACH_KEY, PROFILE_CARD_CHUNK } from "../../core/constants";
+import { coverThumb } from "../../core/game-view";
 import { icon } from "../../core/icons";
 import { render } from "../../core/render";
-import { rawOf } from "../../core/selectors";
+import { summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, isOpaqueId } from "../../core/utils";
-import { epicPortrait, type ProfileGameRecord } from "../../epic";
+import type { ProfileGameRecord } from "../../epic";
 import { t } from "../../i18n";
 import { profileListGames, storeChipHtml, trackedGame } from "./profile-view";
 
@@ -24,14 +25,6 @@ let wired = false;
 
 function rootEl(): HTMLElement | null {
   return document.getElementById("hide-achievements-root");
-}
-
-/** Same portrait source as the profile row: custom cover, catalog art, then the record. */
-function coverUrl(g: ProfileGameRecord): string {
-  const custom = S.customCovers[g.app_name];
-  if (custom) return custom;
-  const raw = rawOf(g.app_name);
-  return (raw ? epicPortrait(raw) : null) || S.epicSummariesMap.get(g.app_name)?.cover || g.cover || "";
 }
 
 /** Achievement rows that are still on the profile list. */
@@ -48,10 +41,17 @@ function listable(): ProfileGameRecord[] {
 }
 
 function rowHtml(g: ProfileGameRecord): string {
-  const url = coverUrl(g);
-  const thumb = url
-    ? `<img class="hide-game-thumb" src="${esc(url)}" alt="" width="32" height="42" loading="lazy" decoding="async" />`
-    : `<span class="hide-game-thumb placeholder">${icon("gamepad-2", 14)}</span>`;
+  // Prefer the library summary so the same Steam/Epic fallback chain runs here
+  // as on a library card; a profile-only record keeps its own cover URL.
+  const summary = summaryOf(g.app_name) ?? S.epicSummariesMap.get(g.app_name);
+  const libraryThumb = summary ? coverThumb(summary, "hide-game-thumb") : "";
+  let thumb = libraryThumb;
+  if ((!libraryThumb || libraryThumb.includes("art-thumb-placeholder")) && g.cover) {
+    const steam = g.app_name.startsWith("steam::") ? ` data-steam-app="${esc(g.app_name.slice(7))}" data-art-step="0"` : "";
+    thumb = `<img class="hide-game-thumb" src="${esc(g.cover)}"${steam} data-cover-art alt="" width="32" height="42" loading="lazy" decoding="async" />`;
+  } else if (!thumb) {
+    thumb = `<span class="hide-game-thumb placeholder">${icon("gamepad-2", 14)}</span>`;
+  }
   return `
     <label class="hide-game-row" data-hide-ach-row data-id="${esc(g.sandbox_id)}" data-title="${esc(g.app_title.toLowerCase())}">
       <input type="checkbox" class="selective-checkbox" />

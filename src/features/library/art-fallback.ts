@@ -116,7 +116,9 @@ function onArtError(ev: Event): void {
 
   const appId = img.dataset.steamApp;
   if (!appId || !/^\d+$/.test(appId)) {
-    if (img.closest("[data-card-art], .lrow-art")) showPlaceholder(img);
+    // `data-cover-art` covers list thumbs that reuse the library markup
+    // (downloads, hidden games); without it a 404 leaves an empty box.
+    if (img.closest("[data-card-art], .lrow-art, [data-cover-art]")) showPlaceholder(img);
     return;
   }
 
@@ -132,7 +134,15 @@ function onArtError(ev: Event): void {
     return;
   }
   if (step === "resolved") {
+    // A remembered URL can go stale when Steam republishes the capsule. Drop it
+    // and ask the store once; the old path only walked hero/header and could
+    // stay a placeholder for the rest of the session.
     forgetSteamCover(appId);
+    if (img.dataset.artRetried !== "1") {
+      img.dataset.artRetried = "1";
+      queueSteamResolve(appId, img);
+      return;
+    }
     const hero = cachedSteamHero(appId);
     if (hero) {
       img.dataset.artStep = "hero";
@@ -156,7 +166,7 @@ function onArtLoad(ev: Event): void {
   const img = ev.target;
   if (!(img instanceof HTMLImageElement)) return;
   if (img.naturalWidth > 0) return;
-  if (!img.closest("[data-card-art], .lrow-art")) return;
+  if (!img.closest("[data-card-art], .lrow-art, [data-cover-art]")) return;
   onArtError(ev);
 }
 
