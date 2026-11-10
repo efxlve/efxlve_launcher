@@ -150,7 +150,8 @@ export function handleBackupsAction(act: string | undefined, t: HTMLElement, id?
       return true;
 
     case "backups-filter": {
-      const filter = t.dataset.filter;
+      const btn = t.closest<HTMLElement>('[data-act="backups-filter"]') ?? t;
+      const filter = btn.dataset.filter;
       if (filter === "all" || filter === "backed" || filter === "missing" || filter === "stale") {
         S.backupsFilter = filter;
         scheduleRender();

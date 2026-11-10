@@ -177,15 +177,18 @@ export function renderBackupsSection(): string {
               ${isInstalled ? "" : `<span class="bk-store">${esc(t("backups.notInstalled"))}</span>`}
               ${isStale ? `<span class="bk-stale">${esc(t("backups.stale"))}</span>` : ""}
             </div>
-            <div class="bk-meta tabular-nums">${meta}</div>
+            <div class="bk-meta tabular-nums"><span class="bk-status-dot ${info ? (isStale ? "is-stale" : "is-backed") : "is-missing"}"></span><span>${meta}</span></div>
           </div>
           <div class="bk-actions">
             ${isInstalled
-              ? `<label class="switch" title="${esc(t("manage.autoBackupTitle"))}"><input type="checkbox" data-act="backups-toggle-include" data-id="${esc(key)}" ${included ? "checked" : ""} /><span class="track"></span></label>
+              ? `<label class="bk-auto-toggle" title="${esc(t("manage.autoBackupTitle"))}">
+                   <span class="bk-auto-label">${t("backups.autoLabel")}</span>
+                   <span class="switch"><input type="checkbox" data-act="backups-toggle-include" data-id="${esc(key)}" ${included ? "checked" : ""} /><span class="track"></span></span>
+                 </label>
                  <button type="button" class="btn ghost small" data-act="backups-create" data-id="${esc(key)}">${icon("cloud", 13)} ${esc(t("backups.backUp"))}</button>`
               : ""}
             ${info
-              ? `<button type="button" class="icon-btn" data-act="backups-verify" data-id="${esc(key)}" data-bid="${esc(info.id)}" title="${esc(t("backups.verify"))}" aria-label="${esc(t("backups.verify"))}">${icon("shield", 14)}</button>
+              ? `<button type="button" class="btn ghost small icon-only" data-act="backups-verify" data-id="${esc(key)}" data-bid="${esc(info.id)}" title="${esc(t("backups.verify"))}" aria-label="${esc(t("backups.verify"))}">${icon("shield", 13)}</button>
                  <button type="button" class="btn ghost small" data-act="backups-export" data-id="${esc(key)}" data-bid="${esc(info.id)}">${icon("download", 13)} ${esc(t("backups.export"))}</button>
                  <button type="button" class="btn primary small" data-act="backups-restore" data-id="${esc(key)}" data-bid="${esc(info.id)}" ${isInstalled ? "" : "disabled"}>${icon("upload", 13)} ${esc(t("ach.restore"))}</button>`
               : `<button type="button" class="btn ghost small" data-act="backups-import" data-id="${esc(key)}">${icon("upload", 13)} ${esc(t("manage.importSave"))}</button>`}
@@ -199,6 +202,12 @@ export function renderBackupsSection(): string {
     const title = summaryOf(key)?.title || key;
     return matchesFilter(S.backupsQuery, S.backupsFilter, title, key, rowState(info));
   }).length;
+  const filterCounts: Record<string, number> = {
+    all: keys.length,
+    backed: withBackup,
+    missing: keys.length - withBackup,
+    stale,
+  };
   const filters: Array<["all" | "backed" | "missing" | "stale", string]> = [
     ["all", "backups.filterAll"],
     ["backed", "backups.filterBacked"],
@@ -208,7 +217,10 @@ export function renderBackupsSection(): string {
   const filterButtons = filters
     .map(
       ([id, label]) =>
-        `<button type="button" class="bk-filter${S.backupsFilter === id ? " is-active" : ""}" data-act="backups-filter" data-filter="${id}" aria-pressed="${S.backupsFilter === id}">${t(label)}</button>`,
+        `<button type="button" class="bk-filter${S.backupsFilter === id ? " is-active" : ""}" data-act="backups-filter" data-filter="${id}" aria-pressed="${S.backupsFilter === id}">
+          <span>${t(label)}</span>
+          <span class="bk-filter-count tabular-nums">${filterCounts[id] ?? 0}</span>
+        </button>`,
     )
     .join("");
 

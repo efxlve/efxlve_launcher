@@ -4164,5 +4164,6 @@
   "cloud.verifyFailed": "Не удалось проверить архив: {msg}",
   "cloud.heroTestPassed": "Подключение проверено: {date}",
   "cloud.heroTestFailed": "Последняя проверка не удалась: {date}",
-  "cloud.heroNotTested": "Подключение ещё не проверено."
+  "cloud.heroNotTested": "Подключение ещё не проверено.",
+  "backups.autoLabel": "Auto"
 }

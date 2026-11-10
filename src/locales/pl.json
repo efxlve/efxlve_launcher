@@ -4164,5 +4164,6 @@
   "cloud.verifyFailed": "Nie udało się sprawdzić archiwum: {msg}",
   "cloud.heroTestPassed": "Połączenie przetestowane: {date}",
   "cloud.heroTestFailed": "Ostatni test nie powiódł się: {date}",
-  "cloud.heroNotTested": "Połączenie nie zostało jeszcze przetestowane."
+  "cloud.heroNotTested": "Połączenie nie zostało jeszcze przetestowane.",
+  "backups.autoLabel": "Auto"
 }

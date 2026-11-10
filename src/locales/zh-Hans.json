@@ -4164,5 +4164,6 @@
   "cloud.verifyFailed": "无法校验归档：{msg}",
   "cloud.heroTestPassed": "连接已测试：{date}",
   "cloud.heroTestFailed": "上次测试失败：{date}",
-  "cloud.heroNotTested": "尚未测试连接。"
+  "cloud.heroNotTested": "尚未测试连接。",
+  "backups.autoLabel": "Auto"
 }

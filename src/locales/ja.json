@@ -4164,5 +4164,6 @@
   "cloud.verifyFailed": "アーカイブを検証できませんでした: {msg}",
   "cloud.heroTestPassed": "接続テスト成功: {date}",
   "cloud.heroTestFailed": "前回のテストに失敗: {date}",
-  "cloud.heroNotTested": "接続はまだテストされていません。"
+  "cloud.heroNotTested": "接続はまだテストされていません。",
+  "backups.autoLabel": "Auto"
 }

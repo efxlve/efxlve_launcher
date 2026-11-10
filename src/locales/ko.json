@@ -4164,5 +4164,6 @@
   "cloud.verifyFailed": "아카이브를 확인할 수 없습니다: {msg}",
   "cloud.heroTestPassed": "연결 테스트 완료: {date}",
   "cloud.heroTestFailed": "마지막 테스트 실패: {date}",
-  "cloud.heroNotTested": "아직 연결을 테스트하지 않았습니다."
+  "cloud.heroNotTested": "아직 연결을 테스트하지 않았습니다.",
+  "backups.autoLabel": "Auto"
 }

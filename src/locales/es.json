@@ -4164,5 +4164,6 @@
   "cloud.verifyFailed": "No se pudo comprobar el archivo: {msg}",
   "cloud.heroTestPassed": "Conexión probada: {date}",
   "cloud.heroTestFailed": "Última prueba fallida: {date}",
-  "cloud.heroNotTested": "La conexión aún no se ha probado."
+  "cloud.heroNotTested": "La conexión aún no se ha probado.",
+  "backups.autoLabel": "Auto"
 }

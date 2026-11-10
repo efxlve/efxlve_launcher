@@ -4164,5 +4164,6 @@
   "cloud.verifyFailed": "अभिलेख सत्यापित नहीं हो सका: {msg}",
   "cloud.heroTestPassed": "कनेक्शन की जाँच हुई: {date}",
   "cloud.heroTestFailed": "पिछली जाँच विफल: {date}",
-  "cloud.heroNotTested": "कनेक्शन की अभी जाँच नहीं हुई।"
+  "cloud.heroNotTested": "कनेक्शन की अभी जाँच नहीं हुई।",
+  "backups.autoLabel": "Auto"
 }

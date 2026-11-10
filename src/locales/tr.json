@@ -4164,5 +4164,6 @@
   "cloud.verifyFailed": "Arşiv doğrulanamadı: {msg}",
   "cloud.heroTestPassed": "Bağlantı test edildi: {date}",
   "cloud.heroTestFailed": "Son test başarısız: {date}",
-  "cloud.heroNotTested": "Bağlantı henüz test edilmedi."
+  "cloud.heroNotTested": "Bağlantı henüz test edilmedi.",
+  "backups.autoLabel": "Oto"
 }

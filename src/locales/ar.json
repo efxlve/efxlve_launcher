@@ -4164,5 +4164,6 @@
   "cloud.verifyFailed": "تعذّر فحص الأرشيف: {msg}",
   "cloud.heroTestPassed": "تم اختبار الاتصال: {date}",
   "cloud.heroTestFailed": "فشل آخر اختبار: {date}",
-  "cloud.heroNotTested": "لم يُختبر الاتصال بعد."
+  "cloud.heroNotTested": "لم يُختبر الاتصال بعد.",
+  "backups.autoLabel": "Auto"
 }
