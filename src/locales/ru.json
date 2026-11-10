@@ -3570,7 +3570,7 @@
   "settings.achExitStyleDesc": "Выберите, как карточка достижения исчезает с экрана по истечении времени показа.",
   "settings.achExitAuto": "В тон появлению (авто)",
   "settings.achExitCollapse": "Сворачивание капсулы (Xbox)",
-  "settings.achExitGlide": "Шёлковое скольжение (PlayStation)",
+  "settings.achExitGlide": "Шёлковое скольжение",
   "settings.achExitFold": "Пространственная складка (Epic)",
   "settings.achExitLaser": "Лазерный луч (Cyber)",
   "settings.achExitImplode": "Кристаллическое схлопывание (Shatter)",

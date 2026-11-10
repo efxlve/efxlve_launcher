@@ -394,7 +394,7 @@ function restoreFocus(layer: HTMLElement | null): void {
   setGamepadFocus(target);
 }
 
-/** A quiet PS-style profile mark: the custom avatar, or a user glyph. */
+/** A quiet profile mark: the custom avatar, or a user glyph. */
 function stageProfileChip(): string {
   const name = currentProfileName();
   const avatar = globalAvatar() || getCustomAvatar();

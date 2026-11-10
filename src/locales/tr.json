@@ -3570,7 +3570,7 @@
   "settings.achExitStyleDesc": "Gösterim süresi dolduğunda bildirimin ekrandan nasıl ayrılacağını seçin.",
   "settings.achExitAuto": "Stile Uygun (Otomatik)",
   "settings.achExitCollapse": "Kapsül Kapanışı (Xbox)",
-  "settings.achExitGlide": "İpek Kayış (PlayStation)",
+  "settings.achExitGlide": "İpek Kayış",
   "settings.achExitFold": "Boyutsal Katlanma (Epic)",
   "settings.achExitLaser": "Lazer Çizgisi (Cyber)",
   "settings.achExitImplode": "Kristal Çöküş (Shatter)",

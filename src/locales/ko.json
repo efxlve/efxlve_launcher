@@ -3570,7 +3570,7 @@
   "settings.achExitStyleDesc": "표시 시간이 끝났을 때 업적 배너가 화면에서 사라지는 방식을 선택하세요.",
   "settings.achExitAuto": "등장 연출에 맞춤 (자동)",
   "settings.achExitCollapse": "캡슐 축소 (Xbox)",
-  "settings.achExitGlide": "실크 글라이드 (PlayStation)",
+  "settings.achExitGlide": "실크 글라이드",
   "settings.achExitFold": "디멘셔널 폴드 (Epic)",
   "settings.achExitLaser": "레이저 빔 (사이버)",
   "settings.achExitImplode": "크리스탈 내파 (분쇄)",

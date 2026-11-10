@@ -4,8 +4,8 @@
  * This is an original composition synthesised in the browser, not a sample of
  * a console theme: a slow D-major pad (Dmaj9, Bm11, Gmaj9, A6/9), a sparse
  * pentatonic bell line and a low air layer, all sent through a generated
- * impulse reverb. Nothing here is copied from, or depends on, a PlayStation
- * recording; it only borrows the *feeling* of a calm menu room.
+ * impulse reverb. Nothing here is copied from, or depends on, a third-party
+ * recording; it only aims for the *feeling* of a calm menu room.
  *
  * The module lives in the lazy Stage chunk. Desktop mode never pays for the
  * oscillators, and leaving Stage suspends the audio graph.

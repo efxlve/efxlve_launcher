@@ -3570,7 +3570,7 @@
   "settings.achExitStyleDesc": "Wähle, wie das Erfolgsbanner den Bildschirm verlässt, wenn der Timer abläuft.",
   "settings.achExitAuto": "Wie Öffnung (Automatisch)",
   "settings.achExitCollapse": "Kapsel-Kollaps (Xbox)",
-  "settings.achExitGlide": "Seidiges Gleiten (PlayStation)",
+  "settings.achExitGlide": "Seidiges Gleiten",
   "settings.achExitFold": "Dimensionale Faltung (Epic)",
   "settings.achExitLaser": "Laserstrahl (Cyber)",
   "settings.achExitImplode": "Kristall-Implosion (Shatter)",

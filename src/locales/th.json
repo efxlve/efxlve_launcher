@@ -3570,7 +3570,7 @@
   "settings.achExitStyleDesc": "เลือกรูปแบบที่แบนเนอร์ความสำเร็จจะออกจากหน้าจอเมื่อหมดเวลา",
   "settings.achExitAuto": "ตรงกับการเปิด (อัตโนมัติ)",
   "settings.achExitCollapse": "Capsule Collapse (Xbox)",
-  "settings.achExitGlide": "Silk Glide (PlayStation)",
+  "settings.achExitGlide": "Silk Glide",
   "settings.achExitFold": "Dimensional Fold (Epic)",
   "settings.achExitLaser": "Laser Beam (Cyber)",
   "settings.achExitImplode": "Crystal Implode (Shatter)",

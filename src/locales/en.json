@@ -3570,7 +3570,7 @@
   "settings.achExitStyleDesc": "Choose how the achievement banner leaves the screen when its timer ends.",
   "settings.achExitAuto": "Match Opening (Auto)",
   "settings.achExitCollapse": "Capsule Collapse (Xbox)",
-  "settings.achExitGlide": "Silk Glide (PlayStation)",
+  "settings.achExitGlide": "Silk Glide",
   "settings.achExitFold": "Dimensional Fold (Epic)",
   "settings.achExitLaser": "Laser Beam (Cyber)",
   "settings.achExitImplode": "Crystal Implode (Shatter)",

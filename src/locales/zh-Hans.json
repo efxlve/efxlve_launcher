@@ -3570,7 +3570,7 @@
   "settings.achExitStyleDesc": "选择显示倒计时结束时成就横幅的离场效果。",
   "settings.achExitAuto": "匹配入场动画（自动）",
   "settings.achExitCollapse": "胶囊收缩 (Xbox)",
-  "settings.achExitGlide": "丝滑滑动 (PlayStation)",
+  "settings.achExitGlide": "丝滑滑动",
   "settings.achExitFold": "维度折叠 (Epic)",
   "settings.achExitLaser": "激光光束 (Cyber)",
   "settings.achExitImplode": "水晶内爆 (Shatter)",

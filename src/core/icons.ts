@@ -1,5 +1,5 @@
 /**
- * Inline SVG icon system and the PlayStation platinum trophy artwork.
+ * Inline SVG icon system and the platinum trophy artwork.
  *
  * The project forbids raw OS emojis in the UI (see AGENTS.md zero-emoji
  * policy). All icons are crisp, scalable inline SVG vectors with a single

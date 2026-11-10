@@ -3570,7 +3570,7 @@
   "settings.achExitStyleDesc": "Wybierz, jak baner osiągnięcia znika z ekranu po upływie czasu.",
   "settings.achExitAuto": "Dopasuj do otwarcia (automatycznie)",
   "settings.achExitCollapse": "Zwinięcie kapsuły (Xbox)",
-  "settings.achExitGlide": "Jedwabny ślizg (PlayStation)",
+  "settings.achExitGlide": "Jedwabny ślizg",
   "settings.achExitFold": "Zagięcie wymiarowe (Epic)",
   "settings.achExitLaser": "Wiązka lasera (Cyber)",
   "settings.achExitImplode": "Implozja kryształu (Shatter)",

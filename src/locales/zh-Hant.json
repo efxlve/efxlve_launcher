@@ -3570,7 +3570,7 @@
   "settings.achExitStyleDesc": "選擇顯示計時結束時成就橫幅的退場效果。",
   "settings.achExitAuto": "符合入場動畫（自動）",
   "settings.achExitCollapse": "膠囊收縮 (Xbox)",
-  "settings.achExitGlide": "絲滑滑動 (PlayStation)",
+  "settings.achExitGlide": "絲滑滑動",
   "settings.achExitFold": "維度折疊 (Epic)",
   "settings.achExitLaser": "雷射光束 (Cyber)",
   "settings.achExitImplode": "水晶內爆 (Shatter)",

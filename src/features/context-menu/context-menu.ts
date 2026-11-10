@@ -1,5 +1,5 @@
 /**
- * PS5/Steam-style custom right-click context menu.
+ * Console/Steam-style custom right-click context menu.
  *
  * Replaces the default browser context menu on game cards/rows with a console
  * action menu. Menu items reuse the global `data-act` delegation router in

@@ -3570,7 +3570,7 @@
   "settings.achExitStyleDesc": "चुनें कि टाइमर समाप्त होने पर उपलब्धि बैनर स्क्रीन से कैसे बाहर निकलता है।",
   "settings.achExitAuto": "शुरुआत से मेल खाता (स्वचालित)",
   "settings.achExitCollapse": "कैप्सूल संक्षिप्त (Xbox)",
-  "settings.achExitGlide": "सिल्क ग्लाइड (PlayStation)",
+  "settings.achExitGlide": "सिल्क ग्लाइड",
   "settings.achExitFold": "डाइमेंशनल फ़ोल्ड (Epic)",
   "settings.achExitLaser": "लेज़र बीम (Cyber)",
   "settings.achExitImplode": "क्रिस्टल इम्प्लोड (Shatter)",

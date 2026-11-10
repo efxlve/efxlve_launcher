@@ -3570,7 +3570,7 @@
   "settings.achExitStyleDesc": "اختر كيف يغادر شريط الإنجاز الشاشة عند انتهاء وقته.",
   "settings.achExitAuto": "مطابقة الفتح (تلقائي)",
   "settings.achExitCollapse": "طي الكبسولة (Xbox)",
-  "settings.achExitGlide": "انزلاق حريري (PlayStation)",
+  "settings.achExitGlide": "انزلاق حريري",
   "settings.achExitFold": "طي الأبعاد (Epic)",
   "settings.achExitLaser": "شعاع الليزر (Cyber)",
   "settings.achExitImplode": "انهيار الكريستال (Shatter)",

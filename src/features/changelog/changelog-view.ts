@@ -34,8 +34,8 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
     date: "2026-11-10",
     added: [
       {
-        en: "Stage now has a real console room: an original generative ambient theme (a slow D-major pad, sparse pentatonic bells and a generated reverb), a short boot mark with its own chime, a time-of-day light field, a profile mark and a greeting with the profile name. Everything is synthesised at runtime; no PlayStation or other console recording is bundled.",
-        tr: "Sahne artık gerçek bir konsol odası: tamamen özgün, çalışma anında üretilen bir ortam müziği (yavaş bir D-major pad, seyrek pentatonik çanlar ve üretilen reverb), kendi sesiyle kısa bir açılış işareti, günün saatine göre değişen ışık, profil işareti ve profil adıyla bir karşılama. Her şey çalışma anında sentezleniyor; hiçbir PlayStation veya başka konsol kaydı paketlenmiyor.",
+        en: "Stage now has a real living-room shell: an original generative ambient theme (a slow pad, sparse bells and a generated reverb), a short boot mark with its own chime, a time-of-day light field, a profile mark and a greeting with the profile name. Everything is synthesised at runtime; no sampled or third-party music is bundled.",
+        tr: "Sahne artık gerçek bir salon kabuğu: tamamen özgün, çalışma anında üretilen bir ortam müziği (yavaş bir pad, seyrek çanlar ve üretilen reverb), kendi sesiyle kısa bir açılış işareti, günün saatine göre değişen ışık, profil işareti ve profil adıyla bir karşılama. Her şey çalışma anında sentezleniyor; hiçbir örneklenmiş veya üçüncü taraf müzik paketlenmiyor.",
       },
       {
         en: "Attract mode: after a quiet minute on Home the chrome fades away, the key art starts a slow pan and the clock and greeting stay on screen, like a console left on in the living room. Any input wakes it and the first press only wakes the room.",
@@ -66,8 +66,8 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
     ],
     fixed: [
       {
-        en: "The console room no longer drops frames on a TV: the four animated 110 px blurred light blobs, the full-screen blend and the height-animated equalizer are gone in favour of static, seamless gradients and a transform-driven bar. The ambient reverb tail is shorter, and the grain and top-bar blur are dropped on large screens.",
-        tr: "Konsol odası TV'de artık kare düşürmüyor: dört hareketli 110 px bulanık ışık lekesi, tam ekran karışım ve yükseklikle animasyonlu ekolayzer yerine statik, dikişsiz gradyanlar ve transform ile çizilen bir çubuk var. Ortam reverb kuyruğu kısaltıldı; büyük ekranlarda grain ve üst bar bulanıklığı kapatıldı.",
+        en: "The Stage room no longer drops frames on a TV: the four animated 110 px blurred light blobs, the full-screen blend and the height-animated equalizer are gone in favour of static, seamless gradients and a transform-driven bar. The ambient reverb tail is shorter, and the grain and top-bar blur are dropped on large screens.",
+        tr: "Sahne odası TV'de artık kare düşürmüyor: dört hareketli 110 px bulanık ışık lekesi, tam ekran karışım ve yükseklikle animasyonlu ekolayzer yerine statik, dikişsiz gradyanlar ve transform ile çizilen bir çubuk var. Ortam reverb kuyruğu kısaltıldı; büyük ekranlarda grain ve üst bar bulanıklığı kapatıldı.",
       },
       {
         en: "The fog is seamless: the light field is one full-screen paint of soft ellipses, so the vertical clipping line and the rectangular edge from the old per-gradient background boxes are gone.",

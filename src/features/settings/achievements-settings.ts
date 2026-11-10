@@ -234,7 +234,7 @@ export function playWebAudioAchievementChime(
         over.stop(at + decay + 0.05);
       });
     } else if (animStyle === "playstation") {
-      // PlayStation 5 Trophy: airy celestial synth pad + bright metallic trophy ping (G5 -> D6 -> F#6)
+      // Airy celestial synth pad + bright metallic trophy ping (G5 -> D6 -> F#6)
       [196.0, 293.66].forEach((padHz) => {
         const padOsc = ctx.createOscillator();
         const padGain = ctx.createGain();
@@ -290,7 +290,7 @@ export function playWebAudioAchievementChime(
         over.stop(at + 1.4);
       });
     } else {
-      // Prism Unfurl (default): PS5-inspired warm D-Maj9 crystal pad + chime arpeggio
+      // Prism Unfurl (default): warm D-Maj9 crystal pad + chime arpeggio
       [146.83, 220.0].forEach((padHz) => {
         const padOsc = ctx.createOscillator();
         const padGain = ctx.createGain();

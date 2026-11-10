@@ -178,7 +178,7 @@ pub(super) fn synthesize_dopamine_chime_wav(style: &str, tier: u8) -> Vec<u8> {
                 }
             }
             "playstation" => {
-                // PlayStation 5 Trophy: airy celestial synth pad + bright metallic trophy ping (G5 -> D6 -> F#6)
+                // Airy celestial synth pad + bright metallic trophy ping (G5 -> D6 -> F#6)
                 let pad_env = smooth_attack(t, 0.05) * (-t * 1.35).exp() * 0.11;
                 left += ((t * 196.00 * tau).sin() + 0.55 * (t * 293.66 * tau).sin()) * pad_env;
                 right += ((t * 196.30 * tau).sin() + 0.55 * (t * 293.35 * tau).sin()) * pad_env;
@@ -218,7 +218,7 @@ pub(super) fn synthesize_dopamine_chime_wav(style: &str, tier: u8) -> Vec<u8> {
                 }
             }
             _ => {
-                // Prism Unfurl (default): PS5-inspired warm D-Maj9 crystal pad + chime arpeggio
+                // Prism Unfurl (default): warm D-Maj9 crystal pad + chime arpeggio
                 let pad_env = smooth_attack(t, 0.045) * (-t * 1.45).exp() * 0.09;
                 left += ((t * 146.83 * tau).sin() + 0.6 * (t * 220.00 * tau).sin()) * pad_env;
                 right += ((t * 147.10 * tau).sin() + 0.6 * (t * 219.75 * tau).sin()) * pad_env;

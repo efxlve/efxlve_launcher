@@ -3570,7 +3570,7 @@
   "settings.achExitStyleDesc": "表示時間が終了した際に実績バナーが画面から消える演出を選択します。",
   "settings.achExitAuto": "開始演出に合わせる (自動)",
   "settings.achExitCollapse": "カプセルコラップス (Xbox)",
-  "settings.achExitGlide": "シルクグライド (PlayStation)",
+  "settings.achExitGlide": "シルクグライド",
   "settings.achExitFold": "ディメンショナルフォールド (Epic)",
   "settings.achExitLaser": "レーザービーム (Cyber)",
   "settings.achExitImplode": "クリスタルインプロード (Shatter)",

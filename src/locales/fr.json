@@ -3570,7 +3570,7 @@
   "settings.achExitStyleDesc": "Choisissez la manière dont la bannière de succès quitte l'écran lorsque son décompte prend fin.",
   "settings.achExitAuto": "Identique à l'ouverture (auto)",
   "settings.achExitCollapse": "Repli de capsule (Xbox)",
-  "settings.achExitGlide": "Glissement de soie (PlayStation)",
+  "settings.achExitGlide": "Glissement de soie",
   "settings.achExitFold": "Pli dimensionnel (Epic)",
   "settings.achExitLaser": "Faisceau laser (Cyber)",
   "settings.achExitImplode": "Implosion de cristal (Shatter)",
