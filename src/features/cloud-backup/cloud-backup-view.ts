@@ -6,7 +6,7 @@
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
-import { t } from "../../i18n";
+import { currentLanguage, t } from "../../i18n";
 import {
   initCloudBackupSettings,
   initLocalBackupRoot,
@@ -84,12 +84,15 @@ export function renderCloudBackupSettingsGroup(): string {
   const lastLocal = backupList.reduce((max, info) => Math.max(max, info.timestamp), 0);
   const lastCloud = st.lastSyncTime ?? latestProfile?.timestamp ?? 0;
 
-  let cloudDestTarget = t("cloud.heroCloudOff");
+  let cloudDestTarget = "—";
   let cloudDestIcon = icon("cloud", 12);
   if (isEnabled) {
     if (activeProvider === "folder") {
       cloudDestIcon = icon("folder", 12);
-      cloudDestTarget = st.folderPath || t("cloud.folderNotSelected");
+      const base = st.folderPath.trim().replace(/[\\/]+$/, "");
+      cloudDestTarget = base
+        ? `${base}${base.includes("\\") ? "\\" : "/"}efxlve_saves`
+        : t("cloud.folderNotSelected");
     } else if (activeProvider === "google_drive") {
       cloudDestIcon = icon("globe", 12);
       cloudDestTarget = st.gdriveUserEmail ? `${st.gdriveUserEmail} (Google Drive)` : "Google Drive AppData";
@@ -422,7 +425,7 @@ export function renderCloudBackupSettingsGroup(): string {
               <span class="cs-dest-name">${t("cloud.heroCloud")}</span>
               <span class="cs-dest-sub">${isEnabled ? providerLabel : t("cloud.heroCloudDisabledSub")}</span>
             </div>
-            <span class="cs-dest-state${isEnabled ? " is-ok" : ""}">${isEnabled ? `${icon("check", 11)} ${t("cloud.heroCloudOn")}` : t("cloud.heroCloudOff")}</span>
+            <span class="cs-dest-state">${isEnabled ? `${icon("settings", 11)} ${t("cloud.heroCloudOn")}` : t("cloud.heroCloudOff")}</span>
           </div>
           <div class="cs-dest-path" title="${esc(cloudDestTarget)}">
             ${cloudDestIcon}
@@ -430,7 +433,7 @@ export function renderCloudBackupSettingsGroup(): string {
           </div>
           <p class="cs-dest-note">${isEnabled ? t("cloud.heroCloudHintOn") : t("cloud.heroCloudHintOff")}</p>
           <div class="cs-dest-meta">
-            <span class="cs-meta-item">${icon("clock", 12)} ${lastCloud ? t("cloud.heroLast", { date: fmtCloudDate(lastCloud) }) : t("cloud.heroNoBackup")}</span>
+            <span class="cs-meta-item">${icon("clock", 12)} ${lastCloud ? t("cloud.heroLastCloud", { date: fmtCloudDate(lastCloud) }) : t("cloud.heroNoCloudBackup")}</span>
           </div>
           <div class="cs-dest-actions">
             ${isEnabled
@@ -503,7 +506,7 @@ export function fmtCloudDate(timestamp: number): string {
   if (!timestamp) return "-";
   const d = new Date(timestamp * 1000);
   if (isNaN(d.getTime())) return "-";
-  return d.toLocaleString(undefined, {
+  return d.toLocaleString(currentLanguage(), {
     day: "numeric",
     month: "short",
     year: "numeric",

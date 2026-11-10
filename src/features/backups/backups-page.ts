@@ -8,7 +8,7 @@ import { scheduleRender } from "../../core/render";
 import { summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
-import { t } from "../../i18n";
+import { currentLanguage, t } from "../../i18n";
 import { epicBackupExcluded, epicListAllBackups, type SaveBackupInfo } from "../../epic";
 
 /** A backup older than this is worth flagging, not deleting. */
@@ -62,7 +62,7 @@ export async function hydrateBackupsPage(force = false): Promise<void> {
 
 function fmtDay(timestamp: number): string {
   if (!timestamp) return "-";
-  return new Date(timestamp * 1000).toLocaleDateString(undefined, {
+  return new Date(timestamp * 1000).toLocaleDateString(currentLanguage(), {
     day: "numeric",
     month: "short",
     year: "numeric",
