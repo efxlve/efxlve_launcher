@@ -10,7 +10,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { Bell, CircleUserRound, Clapperboard, Download, Image, LayoutGrid, Monitor, Music, NotebookPen, Settings, ShoppingBag, Store, createIcons } from "lucide";
 import {
-  epicBackupSave,
+  epicBackupSaveIfChanged,
   epicCreateDesktopShortcut,
   epicDefaultInstallDir,
   epicGetAutoDesktopShortcut,
@@ -1028,21 +1028,25 @@ export async function initApp(hooks: {
           "",
         );
         // Opt-in: back up local saves when the game closes. The Rust launch
-        // watcher owns auto-sync for Epic keys; other stores report their exit
-        // here, so the same local + cloud rule runs for them too.
+        // watcher owns both local and cloud auto-sync for Epic keys; other
+        // stores report their exit here. `SaveIfChanged` keeps an unchanged
+        // save from adding a duplicate archive (and a duplicate upload).
         const closedSummary = summaryOf(id);
-        const localAuto = S.autoBackupOnExit && closedSummary?.installed;
+        const closedInstalled = Boolean(closedSummary?.installed);
         const cloudSettings = S.cloudBackupSettings;
+        const rustOwnsExit = !id.includes("::") && Boolean(cloudSettings?.autoSyncOnGameExit);
+        const localAuto = S.autoBackupOnExit && closedInstalled && !rustOwnsExit;
         const cloudAuto = Boolean(
           cloudSettings?.enabled &&
             cloudSettings.provider !== "none" &&
             cloudSettings.autoSyncOnGameExit &&
-            closedSummary?.installed &&
+            closedInstalled &&
             id.includes("::"),
         );
         if (localAuto || cloudAuto) {
-          void epicBackupSave(id)
+          void epicBackupSaveIfChanged(id)
             .then((info) => {
+              if (!info) return;
               invalidateBackupsPage();
               if (S.view === "settings") render();
               if (localAuto) notifyLocalBackupDone(id);
