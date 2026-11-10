@@ -362,13 +362,22 @@ function safeToAutoEnter(): boolean {
   return true;
 }
 
-/** Called by the gamepad layer when a pad connects. */
-export function stageControllerConnected(name: string, kind: import("../../core/types").ControllerKind, battery: number | null): void {
+/**
+ * Called by the gamepad layer when a pad connects. `allowAutoEnter` is false
+ * when a game is running or another window owns the screen: a pad reconnecting
+ * mid-session must not pull the full-screen Stage shell over the game.
+ */
+export function stageControllerConnected(
+  name: string,
+  kind: import("../../core/types").ControllerKind,
+  battery: number | null,
+  allowAutoEnter = false,
+): void {
   S.stage.controllerConnected = true;
   S.stage.controllerName = name;
   S.stage.controllerBattery = battery;
   S.gamepadKind = kind;
-  if (!S.stage.active && S.stage.enabled && S.stage.autoEnter && safeToAutoEnter()) {
+  if (allowAutoEnter && !S.stage.active && S.stage.enabled && S.stage.autoEnter && safeToAutoEnter()) {
     void enterStage();
     return;
   }

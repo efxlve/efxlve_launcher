@@ -6,7 +6,8 @@
  * Filter tabs), and Fullscreen Mode toggling.
  */
 
-import { isSteamDeckDevice } from "../../core/constants";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { isSteamDeckDevice, isTauri } from "../../core/constants";
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -415,6 +416,108 @@ let repeatTimer = 0;
 let repeatDir: "up" | "down" | "left" | "right" | null = null;
 let lastMoveTime = 0;
 
+/** One scheduled poll at a time. A focus change restarts the loop instead of
+ *  leaving a second timer to race it. */
+let pollTimer = 0;
+let pollRaf = 0;
+
+function clearPoll(): void {
+  if (pollTimer) {
+    window.clearTimeout(pollTimer);
+    pollTimer = 0;
+  }
+  if (pollRaf) {
+    cancelAnimationFrame(pollRaf);
+    pollRaf = 0;
+  }
+}
+
+function schedulePoll(delay: number): void {
+  clearPoll();
+  if (!S.gamepadPolling) return;
+  if (delay <= 0) pollRaf = window.requestAnimationFrame(gamepadLoop);
+  else pollTimer = window.setTimeout(gamepadLoop, delay);
+}
+
+/**
+ * Window activation, not only document focus: an embedded store/Spotify child
+ * webview holds document focus while the launcher is still the active window,
+ * and another application must never leave the launcher holding the pad.
+ */
+let windowFocused = !isTauri;
+
+/**
+ * The pad belongs to the game whenever the launcher is not the foreground
+ * window. WebView2 can keep delivering snapshots to a background window, and a
+ * press there used to reach whatever the launcher had focused, including the
+ * Stop button of a running game.
+ */
+function launcherOwnsController(): boolean {
+  return !document.hidden && (windowFocused || document.hasFocus());
+}
+
+// A game already open when the launcher boots is not a fresh transition: the
+// user just opened the window and expects the pad to work.
+let gameWasRunning = S.runningGames.size > 0;
+let padArmed = true;
+
+/**
+ * A game that starts while the launcher is still focused must not let the same
+ * pad presses reach the control that replaced Play with Stop. Re-arm only when
+ * the launcher itself gains focus again.
+ */
+function refreshPadArming(): void {
+  const running = S.runningGames.size > 0;
+  if (running && !gameWasRunning) padArmed = false;
+  if (!running) padArmed = true;
+  gameWasRunning = running;
+}
+
+/** The launcher is in front again: re-arm and ignore anything already held. */
+function launcherGainedFocus(): void {
+  padArmed = true;
+  prevButtons = heldPadMask();
+  repeatDir = null;
+  schedulePoll(0);
+}
+
+function launcherLostFocus(): void {
+  prevButtons = 0;
+  repeatDir = null;
+  // A background rAF loop stops, so keep the slow timer alive: it is how a
+  // game that starts while the launcher is behind is noticed and disarmed
+  // before the window is focused again.
+  schedulePoll(IDLE_POLL_MS);
+}
+
+/** Buttons and stick directions as one bitmask. */
+function padMask(gp: Gamepad): number {
+  let mask = 0;
+  for (let i = 0; i < gp.buttons.length && i < 32; i++) {
+    if (gp.buttons[i].pressed || gp.buttons[i].value > 0.5) {
+      mask |= 1 << i;
+    }
+  }
+
+  const lx = gp.axes[0] ?? 0;
+  const ly = gp.axes[1] ?? 0;
+
+  if (lx < -STICK_DEADZONE) mask |= 1 << BTN_LEFT;
+  else if (lx > STICK_DEADZONE) mask |= 1 << BTN_RIGHT;
+
+  if (ly < -STICK_DEADZONE) mask |= 1 << BTN_UP;
+  else if (ly > STICK_DEADZONE) mask |= 1 << BTN_DOWN;
+
+  return mask;
+}
+
+/** The mask a pad already held at this instant; 0 when none is connected. */
+function heldPadMask(): number {
+  const pad = (navigator.getGamepads ? navigator.getGamepads() : [])
+    .find((p): p is Gamepad => Boolean(p && p.connected));
+  return pad ? padMask(pad) : 0;
+}
+
 function justPressed(mask: number, btn: number): boolean {
   return (mask & (1 << btn)) !== 0 && (prevButtons & (1 << btn)) === 0;
 }
@@ -424,7 +527,21 @@ function isPressed(mask: number, btn: number): boolean {
 }
 
 function gamepadLoop(): void {
+  pollTimer = 0;
+  pollRaf = 0;
   if (!S.gamepadPolling) return;
+
+  refreshPadArming();
+  if (!launcherOwnsController()) {
+    // Forget every held button: the press that brings the launcher forward
+    // must not count as a fresh press on the focused control.
+    prevButtons = 0;
+    repeatDir = null;
+    // Stay on a slow check in case the window regains focus without a blur/
+    // focus pair (first boot with the window already behind another app).
+    schedulePoll(IDLE_POLL_MS);
+    return;
+  }
 
   const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
   let gp: Gamepad | null = null;
@@ -437,26 +554,20 @@ function gamepadLoop(): void {
   }
 
   if (!gp) {
-    setTimeout(gamepadLoop, IDLE_POLL_MS);
+    schedulePoll(IDLE_POLL_MS);
     return;
   }
 
-  let mask = 0;
-  for (let i = 0; i < gp.buttons.length && i < 32; i++) {
-    if (gp.buttons[i].pressed || gp.buttons[i].value > 0.5) {
-      mask |= 1 << i;
-    }
+  const mask = padMask(gp);
+
+  if (!padArmed) {
+    // Keep the snapshot current without acting on it, so the first press after
+    // the launcher is focused again is a real edge.
+    prevButtons = mask;
+    repeatDir = null;
+    schedulePoll(mask === 0 ? IDLE_PAD_POLL_MS : 0);
+    return;
   }
-
-  // Stick navigation
-  const lx = gp.axes[0] ?? 0;
-  const ly = gp.axes[1] ?? 0;
-
-  if (lx < -STICK_DEADZONE) mask |= 1 << BTN_LEFT;
-  else if (lx > STICK_DEADZONE) mask |= 1 << BTN_RIGHT;
-
-  if (ly < -STICK_DEADZONE) mask |= 1 << BTN_UP;
-  else if (ly > STICK_DEADZONE) mask |= 1 << BTN_DOWN;
 
   const now = performance.now();
 
@@ -512,8 +623,7 @@ function gamepadLoop(): void {
     if (justPressed(mask, BTN_GUIDE)) bridge?.button("start");
     if (justPressed(mask, BTN_SELECT)) bridge?.button("select");
     prevButtons = mask;
-    if (mask === 0) window.setTimeout(gamepadLoop, IDLE_PAD_POLL_MS);
-    else requestAnimationFrame(gamepadLoop);
+    schedulePoll(mask === 0 ? IDLE_PAD_POLL_MS : 0);
     return;
   }
   if (justPressed(mask, BTN_X)) {
@@ -546,11 +656,7 @@ function gamepadLoop(): void {
   // loop wakes on a timer and goes back to rAF on the first press. 40 ms still
   // samples a human tap, and a connected pad no longer keeps the compositor
   // rendering at the display's refresh rate for the whole session.
-  if (mask === 0) {
-    window.setTimeout(gamepadLoop, IDLE_PAD_POLL_MS);
-  } else {
-    requestAnimationFrame(gamepadLoop);
-  }
+  schedulePoll(mask === 0 ? IDLE_PAD_POLL_MS : 0);
 }
 
 function bindPad(gp: Gamepad): void {
@@ -561,7 +667,14 @@ function bindPad(gp: Gamepad): void {
   const batteryState = (gp as Gamepad & { battery?: { level?: number } }).battery;
   const battery = batteryState && Number.isFinite(batteryState.level) ? (batteryState.level ?? null) : null;
   stageControllerBattery(battery);
-  stageControllerConnected(name, S.gamepadKind, battery);
+  stageControllerConnected(
+    name,
+    S.gamepadKind,
+    battery,
+    // Stage is a launcher takeover: never open it over a running game or
+    // while another application is in front.
+    S.runningGames.size === 0 && launcherOwnsController(),
+  );
 }
 
 export function initGamepadSupport(): void {
@@ -572,15 +685,22 @@ export function initGamepadSupport(): void {
     lastHudKey = "";
 
     // Auto-enter the classic full screen mode only when Stage did not already
-    // take over the window.
-    if (!S.stage.active && S.fullscreenAutoEnter && S.fullscreenModeEnabled) {
+    // take over the window. A pad that reconnects mid-session must never pull
+    // the launcher in front of a running game.
+    if (
+      !S.stage.active &&
+      S.runningGames.size === 0 &&
+      launcherOwnsController() &&
+      S.fullscreenAutoEnter &&
+      S.fullscreenModeEnabled
+    ) {
       void setFullscreenMode(true);
     }
 
     if (!S.gamepadPolling) {
       S.gamepadPolling = true;
       updateGamepadHud(true);
-      requestAnimationFrame(gamepadLoop);
+      schedulePoll(0);
     }
   });
 
@@ -629,8 +749,42 @@ export function initGamepadSupport(): void {
     if (!S.gamepadPolling) {
       S.gamepadPolling = true;
       updateGamepadHud(true);
-      requestAnimationFrame(gamepadLoop);
+      schedulePoll(0);
     }
+  }
+
+  // Only the foreground launcher may consume the pad. A blur that happens mid
+  // press must also drop the held mask, or the next focus would look like a
+  // release and the following press could click a stale control.
+  window.addEventListener("focus", launcherGainedFocus);
+  window.addEventListener("blur", launcherLostFocus);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) launcherLostFocus();
+    else launcherGainedFocus();
+  });
+
+  // A child webview (store, Spotify, Discord) can blur the main document while
+  // the launcher window is still the active window. Track the window itself so
+  // the pad keeps working there, but not while another application is in front.
+  if (isTauri) {
+    const win = getCurrentWindow();
+    void win
+      .isFocused()
+      .then((focused) => {
+        windowFocused = focused;
+      })
+      .catch(() => {
+        /* DOM focus events still gate the pad. */
+      });
+    void win
+      .onFocusChanged(({ payload: focused }) => {
+        windowFocused = focused;
+        if (focused) launcherGainedFocus();
+        else launcherLostFocus();
+      })
+      .catch(() => {
+        /* Older hosts have no window focus events; DOM focus stays in charge. */
+      });
   }
 
   // Mouse movement hides focus outline and hud temporarily. Stage keeps its
