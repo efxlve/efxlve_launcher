@@ -171,7 +171,6 @@ let wasDiscord = false;
 let wasPower = false;
 let wasSettingsTab = "";
 let lastStageSignature = "";
-let pointerFocus = false;
 let introStarted = false;
 export type StageInputMode = "gamepad" | "keyboard" | "mouse";
 let stageInputMode: StageInputMode = S.stage.controllerConnected ? "gamepad" : "keyboard";
@@ -1015,7 +1014,7 @@ function bindGlobalFocus(): void {
     const key = detail?.key || "";
     const changed = Boolean(key) && key !== S.stage.focusKey;
     if (key) S.stage.focusKey = key;
-    if (changed && !pointerFocus) stageFeedback("move");
+    if (changed) stageFeedback("move");
     if (S.stage.route === "library" && key.startsWith("lib:")) stageLibraryFocus(key);
     if (S.stage.route === "home") {
       if (key.startsWith("game:")) stageHomeFocus(key);
@@ -1423,15 +1422,15 @@ function bindStageEvents(root: HTMLElement): void {
     }
   });
 
-  root.addEventListener("pointerover", (event) => {
-    if (!S.stage.active || modalOpen()) return;
-    const target = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-gp-item]") : null;
-    if (!target) return;
-    // Pointer movement moves the ring but must not chirp like a D-pad.
-    pointerFocus = true;
-    setGamepadFocus(target);
-    pointerFocus = false;
-  });
+  // A mouse gets CSS hover and clicks; it does not drag the controller ring
+  // across the shelf. One tiny movement used to swap the Home hero and the
+  // activity cards, which made the mouse feel like a broken D-pad.
+  root.addEventListener("pointermove", () => {
+    if (stageInputMode !== "mouse") {
+      stageInputMode = "mouse";
+      scheduleRender();
+    }
+  }, { passive: true });
 
   // Horizontal mouse wheel scrolling for ribbon and card shelves
   root.addEventListener(

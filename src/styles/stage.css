@@ -38,7 +38,9 @@ body.stage-mode #toasts {
   --stage-radius: 14px;
 
   position: fixed;
-  inset: 0;
+  /* One pixel of bleed covers the sub-pixel gap a scaled WebView can leave at
+     the window edge; it must never show as a black line above the Stage. */
+  inset: -1px;
   z-index: 5000;
   overflow: hidden;
   color: var(--stage-ink);

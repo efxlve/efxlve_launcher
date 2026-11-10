@@ -671,9 +671,9 @@ fn app_is_maximized(app: AppHandle) -> Result<bool, String> {
     window.is_maximized().map_err(|e| e.to_string())
 }
 
-/// Windows 11 draws an accent-colored border on borderless windows. On the
-/// pure-black TV shell that border shows up as a light blue line along the
-/// bottom edge. Paint it black so it disappears into the background.
+/// Windows 11 draws a 1 px border on borderless windows. Painting it black
+/// only hid it on a pure-black edge; over the Stage art it became a visible
+/// black line along the top of the screen. Ask DWM to remove the border.
 #[cfg(windows)]
 fn hide_accent_border(window: &tauri::Window) {
     let Ok(hwnd) = window.hwnd() else {
@@ -689,8 +689,8 @@ fn hide_accent_border(window: &tauri::Window) {
         ) -> i32;
     }
     const DWMWA_BORDER_COLOR: u32 = 34;
-    // COLORREF black (0x00BBGGRR).
-    let color: u32 = 0;
+    // DWMWA_COLOR_NONE (0xFFFFFFFE) removes the border instead of painting it.
+    let color: u32 = 0xFFFF_FFFE;
     unsafe {
         let _ = DwmSetWindowAttribute(
             hwnd.0,
