@@ -94,17 +94,10 @@
 }
 
 /* A 1080p/4K TV is close enough to the wall that the grain is invisible and
-   the extra full-screen texture pass is not worth its cost. The top bar also
-   drops its full-width backdrop blur; the opaque gradient keeps the same
-   contrast over the art without re-blurring the wall on every scroll. */
+   the extra full-screen texture pass is not worth its cost. */
 @media (min-width: 1600px) {
   .stage-home-grain {
     display: none;
-  }
-
-  #stage-root .stage-topbar {
-    backdrop-filter: none;
-    background: linear-gradient(180deg, rgba(6, 8, 14, 0.92) 0%, rgba(6, 8, 14, 0.62) 62%, transparent 100%);
   }
 }
 
@@ -712,7 +705,6 @@
 }
 
 /* A true handheld gets a slightly stronger ring and no expensive glass. */
-html.is-steam-deck #stage-root .stage-topbar,
 html.is-steam-deck #stage-root .stage-hints,
 html.is-steam-deck #stage-root .stage-dock-panel {
   backdrop-filter: blur(12px);

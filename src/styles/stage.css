@@ -191,9 +191,13 @@ body.stage-mode #toasts {
   justify-content: space-between;
   gap: 20px;
   padding-inline: clamp(24px, 3.4vw, 64px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  background: linear-gradient(180deg, rgba(6, 8, 14, 0.8) 0%, rgba(6, 8, 14, 0.3) 70%, transparent 100%);
-  backdrop-filter: blur(16px);
+  /*
+   * No backdrop blur and no bottom border: both left a dark 1 px seam where
+   * the blurred strip ended over the art. The gradient alone gives the bar
+   * its contrast and fades cleanly into the picture.
+   */
+  border-bottom: none;
+  background: linear-gradient(180deg, rgba(6, 8, 14, 0.92) 0%, rgba(6, 8, 14, 0.62) 62%, transparent 100%);
   pointer-events: none;
 }
 
