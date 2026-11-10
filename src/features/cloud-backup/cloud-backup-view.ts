@@ -114,7 +114,7 @@ export function renderCloudBackupSettingsGroup(): string {
       <span class="cs-provider-body">
         <span class="cs-provider-head">
           <span class="cs-provider-name">${t("cloud.providerFolderName")}</span>
-          <span class="cs-provider-badge">${t("cloud.badgeRecommended")}</span>
+          <span class="chip">${t("cloud.badgeRecommended")}</span>
         </span>
         <span class="cs-provider-desc">${t("cloud.providerFolderDesc")}</span>
       </span>
@@ -125,7 +125,7 @@ export function renderCloudBackupSettingsGroup(): string {
       <span class="cs-provider-body">
         <span class="cs-provider-head">
           <span class="cs-provider-name">Google Drive</span>
-          <span class="cs-provider-badge">${t("cloud.badgeDirectOAuth")}</span>
+          <span class="chip">${t("cloud.badgeDirectOAuth")}</span>
         </span>
         <span class="cs-provider-desc">${t("cloud.providerGdriveDesc")}</span>
       </span>
@@ -136,7 +136,7 @@ export function renderCloudBackupSettingsGroup(): string {
       <span class="cs-provider-body">
         <span class="cs-provider-head">
           <span class="cs-provider-name">WebDAV / Nextcloud</span>
-          <span class="cs-provider-badge">${t("cloud.badgeSelfHosted")}</span>
+          <span class="chip">${t("cloud.badgeSelfHosted")}</span>
         </span>
         <span class="cs-provider-desc">${t("cloud.providerWebdavDesc")}</span>
       </span>
@@ -147,7 +147,7 @@ export function renderCloudBackupSettingsGroup(): string {
       <span class="cs-provider-body">
         <span class="cs-provider-head">
           <span class="cs-provider-name">rclone</span>
-          <span class="cs-provider-badge">${t("cloud.badgeAdvanced")}</span>
+          <span class="chip">${t("cloud.badgeAdvanced")}</span>
         </span>
         <span class="cs-provider-desc">${t("cloud.providerRcloneDesc")}</span>
       </span>
@@ -165,7 +165,7 @@ export function renderCloudBackupSettingsGroup(): string {
           </div>
           <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${FOLDER_GUIDE_URL}" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
         </div>
-        <div class="mg-inline" style="flex-direction:column;gap:8px">
+        <div class="cs-config-fields">
           <input id="cloud-folder-path" class="input cloud-field" placeholder="${t("cloud.folderPath")}" value="${esc(st.folderPath)}" spellcheck="false" autocomplete="off" />
           ${detectedFolders
             ? `<div class="cs-detected-bar">
@@ -173,7 +173,7 @@ export function renderCloudBackupSettingsGroup(): string {
                  ${detectedFolders}
                </div>`
             : ""}
-          <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+          <div class="cs-config-actions">
             <button type="button" class="btn ghost small" data-act="cloud-folder-browse">
               ${icon("folder", 13)} ${t("cloud.folderBrowse")}
             </button>
@@ -216,16 +216,16 @@ export function renderCloudBackupSettingsGroup(): string {
                ${icon("info", 14)}
                <div>${t("cloud.gdriveConnectHint")}</div>
              </div>`}
-        <div class="mg-inline" style="flex-direction:column;gap:8px">
-          <div style="display:flex;flex-direction:column;gap:4px">
-            <label style="font-size: 11px; color: var(--text-2); font-weight: 500;">${t("cloud.gdriveClientId")}</label>
+        <div class="cs-config-fields">
+          <div class="cs-field-group">
+            <label class="cs-field-label" for="cloud-gdrive-client-id">${t("cloud.gdriveClientId")}</label>
             <input id="cloud-gdrive-client-id" class="input cloud-field" placeholder="123456789-xxxxxxxx.apps.googleusercontent.com" value="${esc(st.gdriveClientId || "")}" spellcheck="false" autocomplete="off" />
           </div>
-          <div style="display:flex;flex-direction:column;gap:4px">
-            <label style="font-size: 11px; color: var(--text-2); font-weight: 500;">${t("cloud.gdriveClientSecret")}</label>
+          <div class="cs-field-group">
+            <label class="cs-field-label" for="cloud-gdrive-client-secret">${t("cloud.gdriveClientSecret")}</label>
             <input id="cloud-gdrive-client-secret" type="password" class="input cloud-field" placeholder="GOCSPX-xxxxxxxxx (${t("cloud.gdriveClientSecret")})" value="${esc(st.gdriveClientSecret || "")}" spellcheck="false" autocomplete="off" />
           </div>
-          <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-top:4px;flex-wrap:wrap">
+          <div class="cs-config-actions">
             <button type="button" class="btn ghost small" data-act="cloud-gdrive-save">
               ${t("common.save")}
             </button>
@@ -248,17 +248,17 @@ export function renderCloudBackupSettingsGroup(): string {
           </div>
           <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${WEBDAV_GUIDE_URL}" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
         </div>
-        <div class="mg-inline" style="flex-direction:column;gap:8px">
+        <div class="cs-config-fields">
           <input id="cloud-webdav-url" class="input cloud-field" placeholder="https://nextcloud.example.com/remote.php/dav/files/user/" value="${esc(st.webdavUrl)}" spellcheck="false" autocomplete="off" />
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div class="cs-field-row">
             <input id="cloud-webdav-user" class="input cloud-field" placeholder="${t("cloud.username")}" value="${esc(st.webdavUsername)}" spellcheck="false" autocomplete="off" style="flex:1;min-width:140px" />
             <input id="cloud-webdav-pass" type="password" class="input cloud-field" placeholder="${t("cloud.password")}" value="${esc(st.webdavPassword)}" spellcheck="false" autocomplete="off" style="flex:1;min-width:140px" />
           </div>
-          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2);cursor:pointer">
+          <label class="cs-check-row">
             <input type="checkbox" data-act="toggle-webdav-invalid-cert" ${st.webdavAllowInvalidCert ? "checked" : ""} />
             ${t("cloud.webdavAllowInvalidCert")}
           </label>
-          <div style="display:flex;gap:8px;justify-content:flex-end">
+          <div class="cs-config-actions">
             <button type="button" class="btn ghost small" data-act="cloud-webdav-test" ${S.cloudBackupTesting ? "disabled" : ""}>
               ${S.cloudBackupTesting ? t("cloud.testing") : t("cloud.testConnection")}
             </button>
@@ -278,11 +278,11 @@ export function renderCloudBackupSettingsGroup(): string {
           </div>
           <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${RCLONE_GUIDE_URL}" title="${t("cloud.guideOpenTip")}">${icon("info", 13)} ${t("cloud.guideBtn")}</button>
         </div>
-        <div class="mg-inline" style="flex-direction:column;gap:8px">
+        <div class="cs-config-fields">
           <input id="cloud-rclone-remote" class="input cloud-field" placeholder="gdrive:efxlve_saves" value="${esc(st.rcloneRemote)}" spellcheck="false" autocomplete="off" />
-          <div id="cloud-rclone-remotes" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-          <div class="mg-note" style="color:var(--text-3);font-size:11px;line-height:1.5">${icon("info", 12)} ${t("cloud.rcloneHint")}</div>
-          <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+          <div id="cloud-rclone-remotes" class="cs-field-row"></div>
+          <div class="cs-config-note">${icon("info", 12)} ${t("cloud.rcloneHint")}</div>
+          <div class="cs-config-actions">
             <button type="button" class="btn ghost small" data-act="cloud-rclone-remotes">${icon("refresh", 13)} ${t("cloud.rcloneRemotes")}</button>
             <button type="button" class="btn ghost small" data-act="open-external-url" data-url="https://rclone.org/downloads/">${icon("external", 13)} rclone.org</button>
             <button type="button" class="btn ghost small" data-act="cloud-rclone-test" ${S.cloudBackupTesting ? "disabled" : ""}>
@@ -335,27 +335,11 @@ export function renderCloudBackupSettingsGroup(): string {
         <div class="settings-row-title">${t("cloud.retentionTitle")}</div>
         <div class="settings-row-desc">${t("cloud.retentionDesc")}</div>
       </div>
-      <div class="settings-row-control" style="display:flex;gap:8px;align-items:center">
-        <input id="cloud-retention-count" type="number" min="0" max="100" class="input" style="width:84px" value="${Number(st.retentionCount ?? 0)}" />
+      <div class="settings-row-control settings-inline-control">
+        <input id="cloud-retention-count" type="number" min="0" max="100" class="input" style="width:84px" value="${Number(st.retentionCount ?? 0)}" aria-label="${t("cloud.retentionTitle")}" />
         <button type="button" class="btn ghost small" data-act="cloud-retention-save">${t("common.save")}</button>
       </div>
     </div>`;
-
-  const bulkRow = isEnabled ? `
-    <div class="row settings-row">
-      <div class="row-main">
-        <div class="settings-row-title">${t("cloud.bulkTitle")}</div>
-        <div class="settings-row-desc">${t("cloud.bulkDesc")}</div>
-      </div>
-      <div class="settings-row-control">
-        ${S.cloudBulkProgress && !S.cloudBulkProgress.local
-          ? `<span class="settings-value tabular-nums">${S.cloudBulkProgress.done}/${S.cloudBulkProgress.total}</span>`
-          : `<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-              <button type="button" class="btn ghost small" data-act="cloud-bulk-backup">${icon("cloud", 13)} ${t("cloud.bulkBtn")}</button>
-              <button type="button" class="btn ghost small" data-act="cloud-bulk-restore">${icon("download", 13)} ${t("cloud.bulkRestoreBtn")}</button>
-            </div>`}
-      </div>
-    </div>` : "";
 
   const localBackupRow = `
     <div class="row settings-row">
@@ -374,7 +358,7 @@ export function renderCloudBackupSettingsGroup(): string {
         <div class="settings-row-title">${icon("user", 14)} ${t("cloud.profileRowTitle")}</div>
         <div class="settings-row-desc">${t("profile.desc")}</div>
       </div>
-      <div class="mg-inline" style="gap:8px;flex-wrap:wrap;margin-top:8px">
+      <div class="cs-profile-actions">
         <button type="button" class="btn ghost small" data-act="profile-export">${icon("download", 13)} ${t("profile.export")}</button>
         <button type="button" class="btn ghost small" data-act="profile-import">${icon("upload", 13)} ${t("profile.import")}</button>
         ${isEnabled ? `<button type="button" class="btn ghost small" data-act="profile-cloud-upload">${icon("cloud", 13)} ${t("profile.upload")}</button>` : ""}
@@ -382,10 +366,10 @@ export function renderCloudBackupSettingsGroup(): string {
       </div>
       ${isEnabled
         ? latestProfile
-          ? `<div class="mg-note" style="color:var(--text-3);font-size:11px">${t("profile.latest", { date: fmtCloudDate(latestProfile.timestamp) })}</div>`
+          ? `<div class="cs-profile-note">${t("profile.latest", { date: fmtCloudDate(latestProfile.timestamp) })}</div>`
           : S.launcherProfileArchives === null
-            ? `<div class="mg-note" style="color:var(--text-3);font-size:11px">${t("cloud.statusChecking")}</div>`
-            : `<div class="mg-note" style="color:var(--text-3);font-size:11px">${t("cloud.statusNotBackedUp")}</div>`
+            ? `<div class="cs-profile-note">${t("cloud.statusChecking")}</div>`
+            : `<div class="cs-profile-note">${t("cloud.statusNotBackedUp")}</div>`
         : ""}
     </div>`;
 
@@ -401,10 +385,10 @@ export function renderCloudBackupSettingsGroup(): string {
     </div>` : "";
 
   const hero = `
-    <div class="cs-hero card">
+    <div class="cs-hero">
       <div class="cs-hero-head">
         <div class="cs-hero-info">
-          <p class="cs-hero-lead">${t("cloud.heroLead")}</p>
+          <p class="page-sub">${t("cloud.heroLead")}</p>
         </div>
         <button type="button" class="btn ghost small" data-act="open-cloud-guide">${icon("info", 13)} ${t("cloud.heroGuide")}</button>
       </div>
@@ -416,7 +400,7 @@ export function renderCloudBackupSettingsGroup(): string {
               <span class="cs-dest-name">${t("cloud.heroLocal")}</span>
               <span class="cs-dest-sub">${t("cloud.heroLocalSub")}</span>
             </div>
-            <span class="cs-dest-state is-ok">${icon("check", 11)} ${t("cloud.heroReady")}</span>
+            <span class="chip ok">${icon("check", 11)} ${t("cloud.heroReady")}</span>
           </div>
           <div class="cs-dest-path" title="${esc(localRoot.effective)}">
             ${icon("folder", 12)}
@@ -428,8 +412,10 @@ export function renderCloudBackupSettingsGroup(): string {
             ${lastLocal ? `<span class="cs-meta-item">${icon("clock", 12)} ${t("cloud.heroLast", { date: fmtCloudDate(lastLocal) })}</span>` : ""}
           </div>
           <div class="cs-dest-actions">
-            <button type="button" class="btn primary small" data-act="backups-bulk">${icon("package", 13)} ${t("backups.backUpAll")}</button>
-            <button type="button" class="btn ghost small" data-act="cloud-local-open-folder">${icon("folder", 13)} ${t("cloud.openBackupFolder")}</button>
+            ${S.cloudBulkProgress?.local
+              ? `<span class="settings-value tabular-nums">${S.cloudBulkProgress.done}/${S.cloudBulkProgress.total}</span>`
+              : `<button type="button" class="btn ghost small" data-act="backups-bulk">${icon("package", 13)} ${t("backups.backUpAll")}</button>
+                 <button type="button" class="btn ghost small" data-act="cloud-local-open-folder">${icon("folder", 13)} ${t("cloud.openBackupFolder")}</button>`}
           </div>
         </article>
         <article class="cs-dest${isEnabled ? " is-on" : ""}">
@@ -439,7 +425,7 @@ export function renderCloudBackupSettingsGroup(): string {
               <span class="cs-dest-name">${t("cloud.heroCloud")}</span>
               <span class="cs-dest-sub">${isEnabled ? providerLabel : t("cloud.heroCloudDisabledSub")}</span>
             </div>
-            <span class="cs-dest-state">${isEnabled ? `${icon("settings", 11)} ${t("cloud.heroCloudOn")}` : t("cloud.heroCloudOff")}</span>
+            <span class="chip">${isEnabled ? t("cloud.heroCloudOn") : t("cloud.heroCloudOff")}</span>
           </div>
           <div class="cs-dest-path" title="${esc(cloudDestTarget)}">
             ${cloudDestIcon}
@@ -456,35 +442,33 @@ export function renderCloudBackupSettingsGroup(): string {
               : ""}
           </div>
           <div class="cs-dest-actions">
-            ${isEnabled
-              ? `<button type="button" class="btn primary small" data-act="cloud-bulk-backup">${icon("cloud", 13)} ${t("cloud.bulkBtn")}</button>
-                 <button type="button" class="btn ghost small" data-act="cloud-bulk-restore">${icon("download", 13)} ${t("cloud.bulkRestoreBtn")}</button>`
-              : `<button type="button" class="btn primary small" data-act="cloud-hero-enable">${icon("cloud", 13)} ${t("cloud.heroEnable")}</button>`}
+            ${S.cloudBulkProgress && !S.cloudBulkProgress.local
+              ? `<span class="settings-value tabular-nums">${S.cloudBulkProgress.done}/${S.cloudBulkProgress.total}</span>`
+              : isEnabled
+                ? `<button type="button" class="btn ghost small" data-act="cloud-bulk-backup">${icon("cloud", 13)} ${t("cloud.bulkBtn")}</button>
+                   <button type="button" class="btn ghost small" data-act="cloud-bulk-restore">${icon("download", 13)} ${t("cloud.bulkRestoreBtn")}</button>`
+                : `<button type="button" class="btn primary small" data-act="cloud-hero-enable">${icon("cloud", 13)} ${t("cloud.heroEnable")}</button>`}
           </div>
         </article>
       </div>
-      <div class="cs-hero-note">
-        ${icon("shield", 14)}
-        <span><strong>${t("cloud.privacyTitle")}:</strong> ${t("cloud.pageInfo")}</span>
+      <div class="info-box">
+        ${icon("shield", 13)}
+        <span>${t("cloud.pageInfo")}</span>
       </div>
     </div>`;
 
   const localSection = `
     <h3 class="section-title">${t("cloud.localSectionTitle")}</h3>
-    <p class="cs-lead">${t("cloud.localLead")}</p>
     <div class="list settings-group">
-      <div class="row settings-row stacked">
+      <div class="row settings-row">
         <div class="row-main">
           <div class="settings-row-title">${t("cloud.localDirTitle")}</div>
           <div class="settings-row-desc">${t("cloud.localDirDesc")}</div>
         </div>
-        <div class="mg-inline" style="flex-direction:column;gap:8px;margin-top:8px">
-          <input id="local-backup-dir" class="input cloud-field" value="${esc(localRoot.configured)}" placeholder="${esc(localRoot.effective)}" spellcheck="false" autocomplete="off" />
-          <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
-            <button type="button" class="btn ghost small" data-act="cloud-local-open-folder">${icon("folder", 13)} ${t("cloud.openBackupFolder")}</button>
-            <button type="button" class="btn ghost small" data-act="local-backup-browse">${icon("folder", 13)} ${t("cloud.folderBrowse")}</button>
-            <button type="button" class="btn primary small" data-act="local-backup-save">${t("common.save")}</button>
-          </div>
+        <div class="settings-row-control">
+          <input id="local-backup-dir" class="input settings-path-input cs-path-input" value="${esc(localRoot.configured)}" placeholder="${esc(localRoot.effective)}" spellcheck="false" autocomplete="off" aria-label="${t("cloud.localDirTitle")}" />
+          <button type="button" class="btn ghost small" data-act="local-backup-browse">${icon("folder", 13)} ${t("cloud.folderBrowse")}</button>
+          <button type="button" class="btn primary small" data-act="local-backup-save">${t("common.save")}</button>
         </div>
       </div>
       ${localBackupRow}
@@ -492,7 +476,6 @@ export function renderCloudBackupSettingsGroup(): string {
 
   const cloudSection = `
     <h3 class="section-title">${t("cloud.cloudSectionTitle")}</h3>
-    <p class="cs-lead">${t("cloud.cloudLead")}</p>
     <div class="list settings-group">
       ${toggleRow}
       ${isEnabled
@@ -508,12 +491,10 @@ export function renderCloudBackupSettingsGroup(): string {
       ${autoSyncRow}
       ${preLaunchRow}
       ${retentionRow}
-      ${bulkRow}
     </div>`;
 
   const profileSection = `
     <h3 class="section-title">${t("profile.title")}</h3>
-    <p class="cs-lead">${t("cloud.profileLead")}</p>
     <div class="list settings-group">
       ${profileRow}
       ${profileAutoRow}

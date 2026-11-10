@@ -4,15 +4,11 @@
    Fully token-based for 100% theme fidelity across Dark, Light, Scene and Glass.
    ========================================================================== */
 
-/* --- Top Hero Section --- */
+/* --- Top Summary --- */
 .cs-hero {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 18px 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: var(--surface-1);
+  gap: 12px;
 }
 
 .cs-hero-head {
@@ -29,21 +25,6 @@
   max-width: 82ch;
 }
 
-.cs-hero-title {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--text);
-  letter-spacing: -0.01em;
-}
-
-.cs-hero-lead {
-  margin: 0;
-  color: var(--text-2);
-  font-size: 13px;
-  line-height: 1.55;
-}
-
 /* --- Destination Overview Grid --- */
 .cs-dest-grid {
   display: grid;
@@ -56,10 +37,10 @@
   flex-direction: column;
   gap: 10px;
   min-width: 0;
-  padding: 14px 16px;
+  padding: 16px;
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
+  border-radius: var(--r-md);
+  background: var(--surface-1);
   transition: border-color var(--ease), background-color var(--ease);
 }
 
@@ -71,6 +52,10 @@
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.cs-dest-head > .chip {
+  margin-left: auto;
 }
 
 .cs-dest-icon {
@@ -103,27 +88,6 @@
   font-size: 11px;
 }
 
-.cs-dest-state {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-  padding: 2px 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  color: var(--text-3);
-  font-size: 11px;
-  font-weight: 500;
-  background: var(--surface-3);
-  white-space: nowrap;
-}
-
-.cs-dest-state.is-ok {
-  border-color: var(--ok);
-  background: var(--ok-tint);
-  color: var(--ok);
-}
-
 .cs-dest-path {
   display: flex;
   align-items: center;
@@ -131,7 +95,7 @@
   padding: 6px 10px;
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
-  background: var(--surface-1);
+  background: var(--surface-2);
   color: var(--text-2);
   font-family: Consolas, monospace;
   font-size: 11px;
@@ -195,38 +159,71 @@
   border-top: 1px solid var(--line);
 }
 
-/* --- Privacy Notice Banner --- */
-.cs-hero-note {
+/* --- Shared field layout for the provider config cards --- */
+.cs-config-fields {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
+}
+
+.cs-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cs-field-label {
   color: var(--text-2);
   font-size: 12px;
+  font-weight: 500;
+}
+
+.cs-field-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cs-check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cs-config-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.cs-config-note {
+  color: var(--text-3);
+  font-size: 11px;
   line-height: 1.5;
 }
 
-.cs-hero-note svg {
-  flex: none;
-  margin-top: 1px;
-  color: var(--ok);
+.cs-profile-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
 }
 
-.cs-hero-note strong {
-  color: var(--text);
-  font-weight: 600;
-}
-
-/* --- Section Lead Text --- */
-.cs-lead {
-  max-width: 84ch;
-  margin: -2px 0 12px;
+.cs-profile-note {
   color: var(--text-3);
-  font-size: 12.5px;
-  line-height: 1.55;
+  font-size: 11px;
+}
+
+/* The backup folder row keeps the input and both buttons on one line. */
+.cs-path-input {
+  flex: 1 1 120px;
+  width: min(240px, 100%);
 }
 
 /* --- Provider Selection Grid --- */
@@ -246,23 +243,22 @@
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
-  background: var(--surface-2);
+  background: var(--surface-1);
   color: inherit;
   font-family: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background-color var(--ease), border-color var(--ease), box-shadow var(--ease);
+  transition: background-color var(--ease), border-color var(--ease);
 }
 
 .cs-provider:hover {
-  background: var(--surface-3);
+  background: var(--surface-2);
   border-color: var(--line-strong);
 }
 
 .cs-provider.is-active {
   border-color: var(--accent);
-  background: var(--surface-3);
-  box-shadow: 0 0 0 1px var(--accent);
+  background: var(--accent-tint);
 }
 
 .cs-provider-icon {
@@ -273,14 +269,14 @@
   width: 32px;
   height: 32px;
   border-radius: var(--r-sm);
-  background: var(--surface-1);
+  background: var(--surface-2);
   color: var(--text-2);
   transition: background-color var(--ease), color var(--ease);
 }
 
 .cs-provider.is-active .cs-provider-icon {
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--surface-2);
+  color: var(--accent);
 }
 
 .cs-provider-body {
@@ -295,27 +291,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
 }
 
 .cs-provider-name {
   color: var(--text);
   font-size: 13px;
   font-weight: 600;
-}
-
-.cs-provider-badge {
-  padding: 1px 6px;
-  border-radius: var(--r-sm);
-  background: var(--surface-1);
-  border: 1px solid var(--line);
-  color: var(--text-3);
-  font-size: 10px;
-  font-weight: 500;
-}
-
-.cs-provider.is-active .cs-provider-badge {
-  border-color: var(--accent);
-  color: var(--text);
 }
 
 .cs-provider-desc {
