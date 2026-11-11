@@ -31,11 +31,12 @@ import { ensureFullShot, fetchAndRenderScreenshots } from "../screenshots/screen
 import { loadNotes } from "../notes/notes-client";
 import { loadSettingsView } from "../settings/settings-view";
 import { setView } from "../store/store-view";
+import { importStageAudio } from "./stage-audio-library";
 import { stageLaunchGame } from "./stage-launch";
 import { stageBaseSummaries, stageGameByKey, stageHeroSummary, stageLibraryList, stageLibraryStores, stageSearchMatches } from "./stage-model";
 import { stageSearchResultsHtml } from "./stage-search";
 import { stageFeedback } from "./stage-sound";
-import { exitStage, setStageLibrarySort, setStageLibraryView } from "./stage-state";
+import { exitStage, setStageCustomAmbience, setStageGameTrack, setStageLibrarySort, setStageLibraryView } from "./stage-state";
 import { stageCloseBrowserSheet } from "./stage-browser";
 import { stageCloseSpotifySheet } from "./stage-spotify";
 import { stageCloseDiscordSheet } from "./stage-discord";
@@ -641,6 +642,46 @@ export function stageManageConfirmUninstall(key?: string): void {
 }
 
 /** The escape hatch for move, DLC and other advanced management that stays on desktop. */
+export async function stageChooseCustomAmbience(): Promise<void> {
+  try {
+    const file = await importStageAudio();
+    if (!file) return;
+    stageFeedback("select");
+    setStageCustomAmbience(file.name);
+    scheduleRender();
+  } catch (error) {
+    toast(t("stage.settingsMusicFailed", { msg: String(error) }), "err");
+  }
+}
+
+export function stageClearCustomAmbience(): void {
+  stageFeedback("back");
+  setStageCustomAmbience("");
+  scheduleRender();
+}
+
+export async function stageChooseGameTrack(key?: string): Promise<void> {
+  const target = key || S.stage.gameKey || "";
+  if (!target) return;
+  try {
+    const file = await importStageAudio();
+    if (!file) return;
+    stageFeedback("select");
+    setStageGameTrack(target, file.name);
+    scheduleRender();
+  } catch (error) {
+    toast(t("stage.settingsMusicFailed", { msg: String(error) }), "err");
+  }
+}
+
+export function stageClearGameTrack(key?: string): void {
+  const target = key || S.stage.gameKey || "";
+  if (!target) return;
+  stageFeedback("back");
+  setStageGameTrack(target, "");
+  scheduleRender();
+}
+
 export function stageOpenDesktopManage(key?: string): void {
   const target =
     key ||

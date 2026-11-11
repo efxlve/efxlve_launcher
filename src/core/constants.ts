@@ -221,6 +221,9 @@ export const STAGE_AMBIENCE_KEY = "efxlve-stage-ambience";
 export const STAGE_AMBIENCE_VOLUME_KEY = "efxlve-stage-ambience-volume";
 export const STAGE_CINEMATIC_KEY = "efxlve-stage-cinematic";
 export const STAGE_ATTRACT_KEY = "efxlve-stage-attract";
+/** User-supplied Stage music: one global track and one per game. */
+export const STAGE_CUSTOM_AMBIENCE_KEY = "efxlve-stage-custom-ambience";
+export const STAGE_GAME_TRACKS_KEY = "efxlve-stage-game-tracks";
 
 /** Spotify / Discord pages: missing = visible. The overlay follows these. */
 export const SHOW_SPOTIFY_KEY = "efxlve-show-spotify";

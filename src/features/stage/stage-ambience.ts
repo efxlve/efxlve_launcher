@@ -330,6 +330,7 @@ export function setStageAmbienceScene(next: StageAmbienceScene): void {
 
 /** Lower the theme under the launch curtain without stopping the scheduler. */
 export function duckStageAmbience(on: boolean): void {
+  if (ducked === on) return;
   ducked = on;
   if (!running) return;
   rampMaster(targetGain(), on ? 0.5 : 1.4);

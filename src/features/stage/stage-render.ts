@@ -25,7 +25,11 @@ import { activateGamepadFocus, moveGamepadFocus, setGamepadFocus } from "../game
 import {
   stageBack,
   stageCancelSearch,
+  stageChooseCustomAmbience,
+  stageChooseGameTrack,
   stageClearCollection,
+  stageClearCustomAmbience,
+  stageClearGameTrack,
   stageCloseControls,
   stageCloseManage,
   stageCloseStill,
@@ -156,6 +160,8 @@ import {
 } from "./stage-idle";
 import { fullShotSrc } from "../screenshots/screenshots-view";
 import { notesRevision } from "../notes/notes-client";
+import { stageAudioRevision } from "./stage-audio-library";
+import { stageCustomAudioActive, stopStageCustomAudio, updateStageCustomAudio } from "./stage-custom-audio";
 // Side effect: register the button/back contract with the gamepad loop.
 import "./stage-input";
 import { previewStageSound, stageFeedback } from "./stage-sound";
@@ -248,6 +254,7 @@ function stageProgramRevision(): string {
     shots?.length ?? -1,
     S.loadedHltb.has(key) ? "1" : "0",
     S.loadedCritic.has(key) ? "1" : "0",
+    S.stage.gameTracks[key] ?? "",
     S.stage.programTab === "notes" ? notesRevision() : "",
   ].join("\u001f");
 }
@@ -297,6 +304,9 @@ function stageLiveSignature(): string {
     S.stage.haptics ? "1" : "0",
     S.stage.ambience ? "1" : "0",
     String(S.stage.ambienceVolume),
+    S.stage.customAmbience,
+    S.stage.gameTracks[S.stage.gameKey ?? ""] ?? "",
+    stageAudioRevision(),
     S.stage.cinematic ? "1" : "0",
     S.stage.attract ? "1" : "0",
     S.stage.intro ? "1" : "0",
@@ -523,7 +533,7 @@ function patchLiveStage(): void {
   if (!root) return;
 
   paintClock();
-  const ambience = stageAmbienceActive() ? "on" : "off";
+  const ambience = stageAmbienceActive() || stageCustomAudioActive() ? "on" : "off";
   if (root.dataset.ambience !== ambience) root.dataset.ambience = ambience;
 
   const bat = stageBatteryInfo();
@@ -1138,6 +1148,17 @@ function currentBackdropArt(): string | null {
   return null;
 }
 
+/** A custom track replaces the generative room; otherwise the room returns. */
+function syncStageAudio(): void {
+  const custom = updateStageCustomAudio();
+  if (custom) {
+    if (stageAmbienceActive()) stopStageAmbience();
+  } else if (!stageAmbienceActive()) {
+    startStageAmbience();
+  }
+  duckStageAmbience(S.runningGames.size > 0);
+}
+
 function contentForRoute(): string {
   switch (S.stage.route) {
     case "library": return renderStageLibrary();
@@ -1286,12 +1307,10 @@ export function renderStage(): void {
   startClock();
   // The room follows the screen: Home is the full theme, tools step back.
   setStageAmbienceScene(S.stage.route === "home" ? "home" : S.stage.route === "library" ? "library" : "quiet");
-  startStageAmbience();
-  // A running game owns the speakers; the menu only breathes underneath it.
-  duckStageAmbience(S.runningGames.size > 0);
+  syncStageAudio();
   // The equalizer in the top bar is honest: it only moves while the audio
-  // graph is actually running.
-  root.dataset.ambience = stageAmbienceActive() ? "on" : "off";
+  // graph, or a player-imported track, is actually running.
+  root.dataset.ambience = stageAmbienceActive() || stageCustomAudioActive() ? "on" : "off";
   refreshStageIdle();
   // The render may have advanced the library chunk or normalized the query;
   // recompute so the next pass can take the lightweight patch path.
@@ -1363,6 +1382,7 @@ function bindGlobalFocus(): void {
         }
       }
     }
+    syncStageAudio();
   });
   window.addEventListener("stage-mode", (event) => {
     const active = Boolean((event as CustomEvent<{ active?: boolean }>).detail?.active);
@@ -1370,11 +1390,12 @@ function bindGlobalFocus(): void {
     if (active) {
       startClock();
       startStageIntro();
-      startStageAmbience();
+      syncStageAudio();
       resetStageIdleTimer();
     } else {
       stopClock();
       stopStageAmbience();
+      stopStageCustomAudio();
       resetStageIntro();
       refreshStageIdle();
       dragTrack = null;
@@ -1758,11 +1779,16 @@ function bindStageEvents(root: HTMLElement): void {
       case "desktop-settings-section": if (section) stageOpenDesktopSettingsSection(section); break;
       case "set-stage-text": if (Number.isFinite(value)) { stageFeedback("move"); setStageTextScale(value); } break;
       case "set-stage-safe": if (Number.isFinite(value)) { stageFeedback("move"); setStageSafeArea(value); } break;
+      case "choose-stage-ambience": void stageChooseCustomAmbience(); break;
+      case "clear-stage-ambience": stageClearCustomAmbience(); break;
+      case "choose-game-track": void stageChooseGameTrack(key); break;
+      case "clear-game-track": stageClearGameTrack(key); break;
       case "set-stage-volume": if (Number.isFinite(value)) { setStageSoundVolume(value); stageFeedback("select"); } break;
       case "set-stage-ambience-volume": {
         if (Number.isFinite(value)) {
           setStageAmbienceVolume(value);
           applyStageAmbienceSettings();
+          syncStageAudio();
           stageFeedback("select");
         }
         break;
@@ -1772,6 +1798,7 @@ function bindStageEvents(root: HTMLElement): void {
         const next = !S.stage.ambience;
         setStageAmbience(next);
         applyStageAmbienceSettings();
+        syncStageAudio();
         if (next) stageFeedback("select");
         break;
       }
@@ -1782,12 +1809,14 @@ function bindStageEvents(root: HTMLElement): void {
       case "test-stage-ambience": {
         // The settings screen normally runs the quiet scene; lift it for the
         // test burst so the button actually demonstrates the theme.
+        stopStageCustomAudio();
         setStageAmbienceScene("home");
         applyStageAmbienceSettings();
         stageFeedback("select");
         window.setTimeout(() => {
           if (!S.stage.active) return;
           setStageAmbienceScene(S.stage.route === "home" ? "home" : S.stage.route === "library" ? "library" : "quiet");
+          syncStageAudio();
         }, 6000);
         break;
       }

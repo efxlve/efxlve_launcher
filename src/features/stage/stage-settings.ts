@@ -9,6 +9,7 @@ import { S } from "../../core/state";
 import type { StageSettingsTab } from "../../core/types";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
+import { loadStageAudioFiles, stageAudioLabel } from "./stage-audio-library";
 import { stageBatteryLabel, stageKindName } from "./stage-ui";
 
 const TABS: StageSettingsTab[] = ["general", "controller", "appearance", "about"];
@@ -126,6 +127,23 @@ function appearance(): string {
     </div>
 
     <div class="stage-settings-group">
+      <span class="stage-kicker">${esc(t("stage.settingsMusicTitle"))}</span>
+      <div class="stage-setting-row">
+        <span class="stage-setting-copy">
+          <strong>${esc(t("stage.settingsAmbience"))}</strong>
+          <small>${esc(S.stage.customAmbience ? stageAudioLabel(S.stage.customAmbience) : t("stage.settingsMusicBuiltIn"))}</small>
+        </span>
+        <span class="stage-setting-control">
+          <span class="stage-choice-row">
+            <button type="button" class="stage-choice" data-stage-act="choose-stage-ambience" data-gp-item data-gp-key="set:music-choose">${esc(t("stage.settingsMusicChoose"))}</button>
+            ${S.stage.customAmbience ? `<button type="button" class="stage-choice" data-stage-act="clear-stage-ambience" data-gp-item data-gp-key="set:music-clear">${esc(t("stage.settingsMusicClear"))}</button>` : ""}
+          </span>
+        </span>
+      </div>
+      <div class="stage-settings-note">${icon("music", 15)}<span>${esc(t("stage.settingsMusicDesc"))}</span></div>
+    </div>
+
+    <div class="stage-settings-group">
       <span class="stage-kicker">${esc(t("stage.settingsPresentationTitle"))}</span>
       ${stageToggle("cinematic", t("stage.settingsCinematic"), t("stage.settingsCinematicDesc"), S.stage.cinematic, "toggle-stage-cinematic")}
       ${stageToggle("attract", t("stage.settingsAttract"), t("stage.settingsAttractDesc"), S.stage.attract, "toggle-stage-attract")}
@@ -180,6 +198,7 @@ function about(): string {
 }
 
 export function renderStageSettings(): string {
+  void loadStageAudioFiles();
   return `<div class="stage-settings">
     <header class="stage-settings-head">
       <div>

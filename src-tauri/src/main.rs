@@ -40,6 +40,7 @@ mod game_running;
 mod presence;
 mod retroachievements;
 mod shared_library;
+mod stage_audio;
 mod steam;
 mod steam_art;
 mod steam_auth;
@@ -2467,6 +2468,9 @@ fn main() {
             custom_games::custom_games_import_folder,
             custom_games::custom_games_pick_folder,
             file_dialog::pick_file_dialog,
+            stage_audio::stage_audio_import,
+            stage_audio::stage_audio_list,
+            stage_audio::stage_audio_delete,
             custom_games::custom_games_search_steam,
             custom_games::custom_games_steam_details,
             upscalers::upscalers_scan_game,

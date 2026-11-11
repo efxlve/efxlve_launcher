@@ -99,6 +99,8 @@ import {
   STAGE_AMBIENCE_VOLUME_KEY,
   STAGE_CINEMATIC_KEY,
   STAGE_ATTRACT_KEY,
+  STAGE_CUSTOM_AMBIENCE_KEY,
+  STAGE_GAME_TRACKS_KEY,
   isSteamDeckDevice,
   INSTALLED_ICON_KEY,
   HIGHLIGHT_INSTALLED_KEY,
@@ -1057,6 +1059,29 @@ export const S = {
         return true;
       }
     })() as boolean,
+    /** A player-imported track used when no game has its own theme. */
+    customAmbience: (() => {
+      try {
+        return localStorage.getItem(STAGE_CUSTOM_AMBIENCE_KEY) || "";
+      } catch {
+        return "";
+      }
+    })() as string,
+    /** Per-game themes, keyed by the canonical game key. */
+    gameTracks: (() => {
+      try {
+        const raw = localStorage.getItem(STAGE_GAME_TRACKS_KEY);
+        if (!raw) return {} as Record<string, string>;
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+        const out: Record<string, string> = {};
+        for (const [key, value] of Object.entries(parsed)) {
+          if (typeof value === "string" && value) out[key] = value;
+        }
+        return out;
+      } catch {
+        return {} as Record<string, string>;
+      }
+    })() as Record<string, string>,
     /** Transient presentation flags; a render picks them up immediately. */
     intro: false,
     idle: false,

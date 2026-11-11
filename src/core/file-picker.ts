@@ -5,7 +5,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 
-export type FilePickerKind = "executable" | "archive";
+export type FilePickerKind = "executable" | "archive" | "audio";
 
 export const openFileDialog = (
   kind: FilePickerKind,
@@ -15,3 +15,6 @@ export const openFileDialog = (
 
 /** Import dialogs: profile exports and save archives. */
 export const pickArchiveFile = (title?: string) => openFileDialog("archive", title);
+
+/** User-supplied Stage music. */
+export const pickAudioFile = (title?: string) => openFileDialog("audio", title);

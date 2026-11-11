@@ -12,7 +12,9 @@ import {
   STAGE_ATTRACT_KEY,
   STAGE_AUTO_KEY,
   STAGE_CINEMATIC_KEY,
+  STAGE_CUSTOM_AMBIENCE_KEY,
   STAGE_ENABLED_KEY,
+  STAGE_GAME_TRACKS_KEY,
   STAGE_HAPTICS_KEY,
   STAGE_LIBRARY_SORT_KEY,
   STAGE_LIBRARY_VIEW_KEY,
@@ -341,6 +343,29 @@ export function setStageCinematic(on: boolean): void {
   S.stage.cinematic = on;
   try {
     localStorage.setItem(STAGE_CINEMATIC_KEY, String(on));
+  } catch {
+    /* ignore */
+  }
+  scheduleRender();
+}
+
+export function setStageCustomAmbience(name: string): void {
+  S.stage.customAmbience = name;
+  try {
+    if (name) localStorage.setItem(STAGE_CUSTOM_AMBIENCE_KEY, name);
+    else localStorage.removeItem(STAGE_CUSTOM_AMBIENCE_KEY);
+  } catch {
+    /* ignore */
+  }
+  scheduleRender();
+}
+
+export function setStageGameTrack(appName: string, name: string): void {
+  if (!appName) return;
+  if (name) S.stage.gameTracks[appName] = name;
+  else delete S.stage.gameTracks[appName];
+  try {
+    localStorage.setItem(STAGE_GAME_TRACKS_KEY, JSON.stringify(S.stage.gameTracks));
   } catch {
     /* ignore */
   }

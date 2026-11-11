@@ -18,6 +18,7 @@ import { loadNotes, notesForScope, onNotesChanged } from "../notes/notes-client"
 import { shotThumbHtml } from "../screenshots/screenshots-view";
 import { stageEnsureScreenshots } from "./stage-actions";
 import { stageHeroMarkup } from "./stage-art";
+import { loadStageAudioFiles, stageAudioLabel } from "./stage-audio-library";
 import { stageAchievements, stageGameByKey, stageGamePlaytime, stagePrimaryAction } from "./stage-model";
 import { stageMetaLine, stageProgress, stageStoreName } from "./stage-ui";
 
@@ -350,9 +351,11 @@ function notesTab(game: EpicSummary): string {
 }
 
 function extrasTab(game: EpicSummary): string {
+  void loadStageAudioFiles();
   const cloud = Boolean(
     libraryItemOf(game.appName, sourceOfKey(game.appName))?.cloudSavesSupported,
   );
+  const gameTrack = S.stage.gameTracks[game.appName] || "";
   const shots = S.loadedScreenshots.get(game.appName) || [];
   const loadingShots = S.loadingScreenshotsFor.has(game.appName);
   const stills = shots.slice(0, 12);
@@ -363,6 +366,17 @@ function extrasTab(game: EpicSummary): string {
     <div class="stage-extra-row"><span>${icon("package", 18)} ${esc(t("stage.dlc"))}</span><strong class="tabular-nums">${game.dlcCount || 0}</strong></div>
     <div class="stage-extra-row"><span>${icon("cloud", 18)} ${esc(t("stage.cloud"))}</span><strong>${esc(cloud ? t("stage.cloudReady") : t("stage.cloudUnavailable"))}</strong></div>
     <div class="stage-extra-row"><span>${icon("folder", 18)} ${esc(t("stage.installFolder"))}</span><strong class="stage-extra-path">${esc(game.installPath || "—")}</strong></div>
+    <div class="stage-extra-section">
+      <div class="stage-extra-section-head">
+        <span class="stage-kicker">${esc(t("stage.settingsGameMusic"))}</span>
+        <span class="stage-extra-count">${esc(gameTrack ? stageAudioLabel(gameTrack) : t("stage.settingsAmbience"))}</span>
+      </div>
+      <div class="stage-extra-actions">
+        <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="choose-game-track" data-key="${esc(game.appName)}" data-gp-item data-gp-key="extras:music-choose">${icon("music", 16)}<span>${esc(t("stage.settingsMusicChoose"))}</span></button>
+        ${gameTrack ? `<button type="button" class="stage-btn stage-btn-ghost" data-stage-act="clear-game-track" data-key="${esc(game.appName)}" data-gp-item data-gp-key="extras:music-clear">${icon("x", 16)}<span>${esc(t("stage.settingsMusicClear"))}</span></button>` : ""}
+      </div>
+      <div class="stage-extra-empty">${esc(t("stage.settingsGameMusicDesc"))}</div>
+    </div>
     <div class="stage-extra-section">
       <div class="stage-extra-section-head">
         <span class="stage-kicker">${esc(t("stage.stills"))}</span>
