@@ -25,6 +25,7 @@ import type {
 import { localizeMessage, t } from "../../i18n";
 import { uploadGameCloudAction } from "../cloud-backup/cloud-backup-actions";
 import { fetchAndRenderAchievements } from "../drawer/drawer-view";
+import { SMART_COLLECTIONS } from "../library/smart-collections";
 import { openManagePopup } from "../manage/manage-view";
 import { ensureFullShot, fetchAndRenderScreenshots } from "../screenshots/screenshots-view";
 import { loadNotes } from "../notes/notes-client";
@@ -679,11 +680,28 @@ export function stageOpenCollection(id: string): void {
   scheduleRender();
 }
 
+export function stageCycleCollection(forward: boolean): void {
+  if (S.stage.route !== "library") return;
+  const ids: Array<string | null> = [
+    null,
+    ...S.epicCollections.filter((collection) => collection.app_names.length > 0).map((collection) => collection.id),
+    ...SMART_COLLECTIONS.map((collection) => collection.id),
+  ];
+  if (ids.length <= 1) return;
+  const index = Math.max(0, ids.indexOf(S.stage.collectionId));
+  const next = ids[(index + (forward ? 1 : -1) + ids.length) % ids.length];
+  stageFeedback("move");
+  S.stage.collectionId = next;
+  S.stage.query = "";
+  S.stage.focusKey = "tool:collection";
+  scheduleRender();
+}
+
 export function stageClearCollection(): void {
   if (!S.stage.collectionId) return;
   stageFeedback("back");
   S.stage.collectionId = null;
-  S.stage.focusKey = "filter:all";
+  S.stage.focusKey = "tool:collection";
   scheduleRender();
 }
 

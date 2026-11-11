@@ -11,6 +11,7 @@ import type { StageLibraryFilter, StageLibrarySort } from "../../core/types";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 import type { EpicSummary } from "../../epic";
+import { SMART_COLLECTIONS, smartCollection } from "../library/smart-collections";
 import { stageCoverMarkup, stageHeroMarkup, stagePrefetch, stageWideArt } from "./stage-art";
 import { updateStageBackdrop } from "./stage-backdrop";
 import {
@@ -35,6 +36,7 @@ function librarySignature(): string {
   return [
     S.stage.libraryFilter,
     S.stage.libraryStore,
+    S.stage.collectionId ?? "",
     S.stage.query,
     S.stage.librarySort,
     S.stage.libraryView,
@@ -90,11 +92,20 @@ function filterTabs(): string {
 }
 
 function tools(): string {
-  const collection = S.stage.collectionId
-    ? S.epicCollections.find((item) => item.id === S.stage.collectionId)
+  const collectionId = S.stage.collectionId;
+  const manual = collectionId
+    ? S.epicCollections.find((item) => item.id === collectionId)
     : undefined;
-  const collectionChip = collection
-    ? `<button type="button" class="stage-tool stage-query-chip" data-stage-act="clear-collection" data-gp-item data-gp-key="tool:collection">${icon("layers", 14)}<span>${esc(collection.name)}</span>${icon("x", 14)}</button>`
+  const smart = collectionId ? smartCollection(collectionId) : undefined;
+  const collectionName = manual?.name ?? smart?.label() ?? "";
+  const hasCollections =
+    S.epicCollections.some((collection) => collection.app_names.length > 0) ||
+    SMART_COLLECTIONS.length > 0;
+  const collectionChip = collectionName
+    ? `<button type="button" class="stage-tool stage-query-chip" data-stage-act="clear-collection" data-gp-item data-gp-key="tool:collection-clear">${icon("layers", 14)}<span>${esc(collectionName)}</span>${icon("x", 14)}</button>`
+    : "";
+  const collectionTool = hasCollections
+    ? `<button type="button" class="stage-tool" data-stage-act="cycle-collection" data-gp-item data-gp-key="tool:collection">${icon("layers", 16)}<span>${esc(collectionName || t("stage.collections"))}</span></button>`
     : "";
   const queryChip = S.stage.query
     ? `<button type="button" class="stage-tool stage-query-chip" data-stage-act="clear-query" data-gp-item data-gp-key="tool:query">${icon("search", 14)}<span>${esc(S.stage.query)}</span>${icon("x", 14)}</button>`
@@ -102,6 +113,7 @@ function tools(): string {
   return `<div class="stage-library-tools">
     ${collectionChip}
     ${queryChip}
+    ${collectionTool}
     <button type="button" class="stage-tool" data-stage-act="cycle-store" data-gp-item data-gp-key="tool:store">${icon("layers", 16)}<span>${esc(stageStoreFilterLabel())}</span></button>
     <button type="button" class="stage-tool" data-stage-act="cycle-sort" data-gp-item data-gp-key="tool:sort">${icon("arrow-down-a-z", 16)}<span>${esc(sortLabel(S.stage.librarySort))}</span></button>
     <button type="button" class="stage-tool" data-stage-act="random-game" data-gp-item data-gp-key="tool:random" title="${esc(t("library.random"))}">${icon("sparkles", 16)}<span>${esc(t("library.random"))}</span></button>

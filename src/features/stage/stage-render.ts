@@ -30,6 +30,7 @@ import {
   stageCloseManage,
   stageCloseStill,
   stageCloudBackup,
+  stageCycleCollection,
   stageCycleSection,
   stageCycleSettingsTab,
   stageCycleSort,
@@ -1656,6 +1657,7 @@ function bindStageEvents(root: HTMLElement): void {
       case "set-filter": if (filter) stageSetFilter(filter); break;
       case "set-tab": if (tab) stageSetTab(tab); break;
       case "cycle-store": stageCycleStore(true); break;
+      case "cycle-collection": stageCycleCollection(true); break;
       case "cycle-sort": stageCycleSort(); break;
       case "toggle-view": stageToggleView(); break;
       case "random-game": stagePickRandomGame(); break;
