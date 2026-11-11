@@ -981,7 +981,7 @@ function stageManageSheet(appName: string, entered: boolean): string {
         <div class="stage-confirm-copy">
           <span class="stage-kicker is-danger">${esc(t("manage.uninstallTitle"))}</span>
           <h2>${esc(game.title)}</h2>
-          <p>${esc(t("confirm.uninstallBody"))}</p>
+          <p>${esc(t("confirm.uninstallBody", { name: game.title }))}</p>
           ${game.installPath ? `<span class="stage-confirm-path tabular-nums">${esc(game.installPath)}</span>` : ""}
         </div>
         <div class="stage-confirm-actions" data-gp-row>
