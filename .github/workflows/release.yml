@@ -72,15 +72,10 @@ jobs:
           # The hosted image can still be running its own apt jobs at boot.
           sudo systemctl stop apt-daily.service apt-daily-upgrade.service unattended-upgrades.service 2>/dev/null || true
           sudo pkill -9 -f unattended-upgrades 2>/dev/null || true
-          # The hosted image selects its mirror through apt-mirrors.txt; the
-          # Azure mirror sometimes fails DNS while the upstream works.
-          if [ -f /etc/apt/apt-mirrors.txt ]; then
-            sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' /etc/apt/apt-mirrors.txt
-            cat /etc/apt/apt-mirrors.txt
-          fi
-          if [ -f /etc/apt/sources.list ]; then
-            sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' /etc/apt/sources.list
-          fi
+          # Ubuntu's own mirror DNS was failing on the hosted runner; the
+          # kernel.org mirror carries the same archive over HTTPS.
+          printf 'https://mirrors.edge.kernel.org/ubuntu/\tpriority:1\n' | sudo tee /etc/apt/apt-mirrors.txt
+          getent hosts mirrors.edge.kernel.org || true
           sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
             -o DPkg::Lock::Timeout=120 \
