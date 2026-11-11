@@ -12,6 +12,9 @@ type StageRenderer = () => void;
 
 let renderer: StageRenderer | null = null;
 let loading: Promise<boolean> | null = null;
+/** A chunk load is in flight: the boot frame owns the screen even though
+ *  `S.stage.active` is still false, so a desktop repaint must not erase it. */
+let pending = false;
 
 export function isStageChunkReady(): boolean {
   return renderer !== null;
@@ -48,10 +51,28 @@ function paintBootFrame(): void {
   }
 }
 
+/** Show the boot frame before the lazy chunk is available. A cold first
+ *  entry must answer the button press immediately instead of doing nothing. */
+export function beginStageBoot(): void {
+  pending = true;
+  paintBootFrame();
+}
+
+/** The chunk resolved or failed; the normal render branch owns the root now. */
+export function endStageBoot(): void {
+  pending = false;
+}
+
+/** Clear the boot frame after a failed entry. */
+export function clearStageBoot(): void {
+  pending = false;
+  if (!S.stage.active) document.getElementById("stage-root")?.remove();
+}
+
 /** Main's render branch calls this; it never blocks the desktop. */
 export function renderStageBoot(): void {
   if (!S.stage.active) {
-    document.getElementById("stage-root")?.remove();
+    if (!pending) document.getElementById("stage-root")?.remove();
     return;
   }
   if (renderer) {

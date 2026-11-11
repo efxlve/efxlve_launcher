@@ -1375,10 +1375,10 @@ function bindGlobalFocus(): void {
   });
   window.addEventListener("stage:focus", (event) => {
     if (!S.stage.active) return;
-    if (S.stage.intro) {
-      skipStageIntro();
-      return;
-    }
+    // A programmatic focus restore happens on every render. It must not
+    // dismiss the boot mark: only real input does (see stage-input.ts and
+    // onStageKeydown), otherwise the mark flashes for one frame while its
+    // chime keeps playing.
     const detail = (event as CustomEvent<{ key?: string }>).detail;
     const key = detail?.key || "";
     const changed = Boolean(key) && key !== S.stage.focusKey;

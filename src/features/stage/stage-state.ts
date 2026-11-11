@@ -34,7 +34,7 @@ import { t } from "../../i18n";
 import { destroyDiscordPage } from "../discord/discord-view";
 import { hideSpotifyPlayer } from "../music/music-view";
 import { hideStore } from "../store/store-view";
-import { ensureStageChunk, isStageChunkReady } from "./stage-boot";
+import { beginStageBoot, clearStageBoot, endStageBoot, ensureStageChunk, isStageChunkReady } from "./stage-boot";
 
 let pendingDesktopScroll = -1;
 
@@ -80,13 +80,22 @@ export async function enterStage(opts: { route?: StageRoute; gameKey?: string } 
     return false;
   }
 
+  // The first entry pays for the lazy shell chunk. Paint the boot frame first
+  // so the press lands on something instead of a window that ignores it.
+  beginStageBoot();
   const ready = await ensureStageChunk();
-  if (!S.stage.enabled) return false;
+  endStageBoot();
+  if (!S.stage.enabled) {
+    clearStageBoot();
+    return false;
+  }
   if (!ready || !isStageChunkReady()) {
+    clearStageBoot();
     toast(t("stage.loadFailed"), "err");
     return false;
   }
   if (hasOpenDialog()) {
+    clearStageBoot();
     toast(t("stage.closeDialogFirst"), "");
     return false;
   }

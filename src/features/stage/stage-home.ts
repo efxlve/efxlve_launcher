@@ -311,6 +311,7 @@ export function renderStageHome(): string {
 
 /** In-place focus patch for Home: switches hero, backdrop and activities without full rebuild. */
 let warmTimer = 0;
+let roomTimer = 0;
 
 export function stageHomeFocus(key: string): void {
   if (!key.startsWith("game:")) return;
@@ -319,10 +320,7 @@ export function stageHomeFocus(key: string): void {
   if (!game) return;
   S.stage.homeHeroKey = game.appName;
 
-  // 1. Crossfade backdrop
-  updateStageBackdrop(stageWideArt(game));
-
-  // 2. Patch the art and hero copy in place. The first focus lands on the
+  // 1. Patch the art and hero copy in place. The first focus lands on the
   // already-rendered hero, so skip the identical rebuild.
   const heroEl = document.getElementById("stage-home-hero");
   const heroChanged = heroEl?.dataset.key !== game.appName;
@@ -335,18 +333,27 @@ export function stageHomeFocus(key: string): void {
       heroEl.querySelectorAll<HTMLElement>("button, [data-gp-item]").forEach((btn) => {
         if (!btn.closest("[data-gp-skip]")) btn.setAttribute("data-gp-item", "");
       });
-      heroEl.classList.remove("stage-hero-animated");
-      void heroEl.offsetWidth;
-      heroEl.classList.add("stage-hero-animated");
     }
 
-    // 3. Patch Activity Shelf in place
+    // 2. Patch Activity Shelf in place. It stays synchronous: Down moves the
+    // ring straight into these cards, so they must already belong to the hero.
     const actEl = document.getElementById("stage-home-activities");
     if (actEl) {
       actEl.innerHTML = stageHomeActivitiesHtml(game);
       actEl.querySelectorAll<HTMLElement>("button, [data-gp-item]").forEach((el) => el.setAttribute("data-gp-item", ""));
     }
   }
+
+  // 3. The room follows once the sweep settles. A held D-pad moves up to 26
+  // steps a second, and a full-screen crossfade plus a colour extraction per
+  // step is a strobe, not a transition.
+  window.clearTimeout(roomTimer);
+  roomTimer = window.setTimeout(() => {
+    roomTimer = 0;
+    if (!S.stage.active || S.stage.route !== "home") return;
+    if (S.stage.homeHeroKey !== game.appName) return;
+    updateStageBackdrop(stageWideArt(game));
+  }, 140);
 
   // 4. Warm the activity cards only after the focus settles: sweeping across
   // the ribbon must not fire a store request for every card it passes.

@@ -351,10 +351,13 @@ function setFocus(el: HTMLElement | null): void {
       window.dispatchEvent(
         new CustomEvent("stage:focus", { detail: { key: currentFocusedEl.dataset.gpKey || "" } }),
       );
+      // Stage scrolls with the ring, not after it: a held D-pad repeats every
+      // 38 ms, and restarting a smooth scroll at that rate leaves the focused
+      // card off screen and the container sliding on after the stick stops.
       currentFocusedEl.scrollIntoView({
         block: "nearest",
         inline: currentFocusedEl.closest("[data-gp-row]") ? "center" : "nearest",
-        behavior: scrollBehavior,
+        behavior: "auto",
       });
     } else {
       currentFocusedEl.scrollIntoView({ block: "nearest", inline: "nearest", behavior: scrollBehavior });
@@ -889,19 +892,28 @@ function gamepadLoop(): void {
   else if (isPressed(mask, BTN_LEFT)) activeDir = "left";
   else if (isPressed(mask, BTN_RIGHT)) activeDir = "right";
 
-    // Right stick vertical flick jumps 4 items (fast page leap)
+  // Right stick vertical flick walks one step at a time. Four moves in one
+  // frame skipped the side stage and stacked four hero swaps into a single
+  // stutter.
   const ry = gp.axes[3] ?? 0;
-  if (S.stage.active && S.stage.stillIndex === null && Math.abs(ry) > 0.68) {
+  if (S.stage.active && S.stage.stillIndex === null && !activeDir && Math.abs(ry) > 0.68) {
     if (now - lastRsLeapTime > 220) {
       lastRsLeapTime = now;
-      const leapDir = ry > 0 ? "down" : "up";
-      for (let i = 0; i < 4; i++) moveGamepadFocus(leapDir);
+      if (!stageBridge()?.wake?.()) moveGamepadFocus(ry > 0 ? "down" : "up");
     }
   }
 
   if (activeDir) {
     if (S.stage.active) {
       window.dispatchEvent(new CustomEvent("stage-input-mode", { detail: { mode: "gamepad" } }));
+      // The first direction press dismisses the boot mark or the attract
+      // screen; it must not also move the ring behind the overlay.
+      if (stageBridge()?.wake?.()) {
+        prevButtons = mask;
+        repeatDir = null;
+        schedulePoll(mask === 0 ? IDLE_PAD_POLL_MS : 0);
+        return;
+      }
     }
     if (activeDir !== repeatDir) {
       repeatDir = activeDir;

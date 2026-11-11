@@ -512,7 +512,8 @@ body.stage-mode #toasts {
   padding-block-end: 118px;
   scroll-padding-block-start: calc(var(--stage-top) + 16px);
   scroll-padding-block-end: calc(78px + var(--stage-safe, 0px));
-  scroll-behavior: smooth;
+  /* No CSS smooth scroll here: the ring moves instantly and the container has
+     to keep up. Explicit `behavior: "smooth"` calls still animate. */
   scrollbar-width: none;
   z-index: 10;
 }
