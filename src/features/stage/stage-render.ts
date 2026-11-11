@@ -1000,7 +1000,25 @@ function stageManageSheet(appName: string, entered: boolean): string {
           </button>
         ` : ""}
 
-        
+        ${isInstalled ? `
+          <button type="button" class="stage-manage-card" data-stage-act="manage-open-folder" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:folder">
+            <span class="stage-manage-card-icon">${icon("folder", 20)}</span>
+            <div class="stage-manage-card-text">
+              <strong>${esc(t("manage.openFolder"))}</strong>
+              <span>${esc(t("stage.installFolder"))}</span>
+            </div>
+          </button>
+        ` : ""}
+
+        ${isInstalled && (source === "epic" || source === "amazon") ? `
+          <button type="button" class="stage-manage-card" data-stage-act="manage-shortcut" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:shortcut">
+            <span class="stage-manage-card-icon">${icon("monitor", 20)}</span>
+            <div class="stage-manage-card-text">
+              <strong>${esc(t("manage.createShortcut"))}</strong>
+              <span>${esc(t("manage.shortcutTitle"))}</span>
+            </div>
+          </button>
+        ` : ""}
 
         ${cloud ? `
           <button type="button" class="stage-manage-card" data-stage-act="manage-sync-cloud" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:cloud">
@@ -1020,7 +1038,7 @@ function stageManageSheet(appName: string, entered: boolean): string {
           </div>
         </button>
 
-        ${isInstalled ? `
+        ${isInstalled && source !== "custom" ? `
           <button type="button" class="stage-manage-card stage-manage-card-danger" data-stage-act="manage-ask-uninstall" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:uninstall">
             <span class="stage-manage-card-icon is-danger">${icon("trash", 20)}</span>
             <div class="stage-manage-card-text">
