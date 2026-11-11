@@ -165,6 +165,7 @@ import {
   stageHintBar,
   stageKeyGlyph,
   stageMenuGlyph,
+  stageStatus,
   stageStoreName,
   stageTriggerGlyphs,
   stageViewGlyph,
@@ -248,9 +249,33 @@ function stageProgramRevision(): string {
   ].join("\u001f");
 }
 
+/** The topbar chip and dock badge need a full render when a transfer starts or ends. */
+function activeDownloadKey(): string {
+  if (S.activeDlMetrics && !S.activeDlMetrics.done) return S.activeDlMetrics.id;
+  for (const [id, item] of S.downloads) if (!item.done) return id;
+  return "";
+}
+
+function stageDownloadsRevision(): string {
+  if (S.stage.route !== "downloads") return "";
+  const active: string[] = [];
+  for (const [id, item] of S.downloads) if (!item.done) active.push(id);
+  active.sort();
+  return [
+    S.downloads.size,
+    active.join(","),
+    S.activeDlMetrics?.id ?? "",
+    S.dlQueueStatus.active ?? "",
+    S.dlQueueStatus.queue.join(","),
+    S.dlQueueStatus.isPaused ? "1" : "0",
+    S.gogDlPaused ? "1" : "0",
+  ].join("\u001f");
+}
+
 function stageLiveSignature(): string {
   const homeRevision = stageHomeRevision();
   const programRevision = stageProgramRevision();
+  const downloadsRevision = stageDownloadsRevision();
   return [
     stageInputMode,
     S.stage.route,
@@ -308,9 +333,8 @@ function stageLiveSignature(): string {
       : S.stage.route === "downloads"
         ? String(S.libraryDataRev)
         : "",
-    S.stage.route === "downloads"
-      ? `${S.downloads.size}:${S.dlQueueStatus.active ?? ""}:${S.dlQueueStatus.queue.join(",")}:${S.dlQueueStatus.isPaused ? "1" : "0"}:${S.gogDlPaused ? "1" : "0"}`
-      : "",
+    downloadsRevision,
+    activeDownloadKey(),
     S.availableUpdates.size,
     S.gogUpdates.size,
     S.ignoredUpdates.size,
@@ -403,6 +427,24 @@ function patchStageCardsInPlace(): void {
     const s = stageGameByKey(key);
     if (!s) continue;
     patchStageCoverInCard(card, s, "stage-cover-art");
+  }
+}
+
+/** Progress text is the one thing the card patch cannot skip for a whole tick. */
+function patchStageCardStatuses(): void {
+  const root = document.getElementById("stage-root");
+  if (!root) return;
+  const cards = root.querySelectorAll<HTMLElement>(
+    ".stage-cover-card[data-key], .stage-list-row[data-key]",
+  );
+  for (const card of cards) {
+    const key = card.dataset.key;
+    if (!key) continue;
+    const summary = stageGameByKey(key);
+    if (!summary) continue;
+    const next = stageStatus(summary);
+    const status = card.querySelector<HTMLElement>(".stage-status");
+    if (status && status.outerHTML !== next) status.outerHTML = next;
   }
 }
 
@@ -509,6 +551,7 @@ function patchLiveStage(): void {
   if (S.stage.spotifyOpen) patchStageSpotifyProgress();
 
   patchStageCardsInPlace();
+  patchStageCardStatuses();
 
   if (S.stage.route === "home") {
     const heroKey = S.stage.homeHeroKey || root.querySelector<HTMLElement>("#stage-home-hero")?.dataset.key;
