@@ -968,6 +968,7 @@ function stageManageSheet(appName: string, entered: boolean): string {
   if (!game) return "";
   const source = sourceOfKey(game.appName);
   const isInstalled = Boolean(game.installed);
+  const canVerify = source === "epic" || source === "gog" || source === "amazon" || source === "steam";
   const cloud = Boolean(libraryItemOf(game.appName, source)?.cloudSavesSupported);
   const isConfirming = S.stage.manageConfirmUninstall;
 
@@ -1038,7 +1039,7 @@ function stageManageSheet(appName: string, entered: boolean): string {
 
         
 
-        ${isInstalled ? `
+        ${isInstalled && canVerify ? `
           <button type="button" class="stage-manage-card" data-stage-act="manage-verify" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:verify">
             <span class="stage-manage-card-icon">${icon("shield-check", 20)}</span>
             <div class="stage-manage-card-text">
@@ -1086,7 +1087,7 @@ function stageManageSheet(appName: string, entered: boolean): string {
           </div>
         </button>
 
-        ${isInstalled && source !== "custom" ? `
+        ${isInstalled && canVerify ? `
           <button type="button" class="stage-manage-card stage-manage-card-danger" data-stage-act="manage-ask-uninstall" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:uninstall">
             <span class="stage-manage-card-icon is-danger">${icon("trash", 20)}</span>
             <div class="stage-manage-card-text">
