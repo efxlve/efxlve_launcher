@@ -1,10 +1,11 @@
 /**
- * Epic Online Services redistributable install.
+ * Epic Online Services redistributable install and service update.
  *
  * Checked once at startup and again when Settings opens or the user refreshes.
  * The overlay is optional: a notification asks whether to install it. Dismiss
  * or clear the notice to skip; Settings still offers the download later.
- * Nothing installs without that click.
+ * Nothing installs without that click. The update check uses Epic's own host
+ * stage/commit flow and is always a manual click; it can download a build.
  */
 
 import { invoke } from "@tauri-apps/api/core";
@@ -14,7 +15,7 @@ import { render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
-import { eosOverlayStatus } from "../../epic";
+import { eosApplyUpdate, eosCheckUpdate, eosOverlayStatus } from "../../epic";
 import { localizeMessage, t } from "../../i18n";
 import {
   closeNotifPanel,
@@ -30,10 +31,15 @@ const DECLINE_KEY = EOS_OVERLAY_DECLINE_KEY;
 const LEGACY_DISMISS_KEY = "efxlve-eos-notice-dismissed";
 
 type EosPhase = "idle" | "downloading" | "launching";
+type EosUpdatePhase = "idle" | "checking" | "updating";
 
 let started = false;
 let phase: EosPhase = "idle";
 let progress = 0;
+let updatePhase: EosUpdatePhase = "idle";
+let updateChecked = false;
+let updateReady = false;
+let pendingVersion = "";
 
 function eosDescHtml(): string {
   const on = !!S.eosOverlay?.installed;
@@ -50,22 +56,46 @@ function eosDescHtml(): string {
   return html;
 }
 
+function eosBusy(): boolean {
+  return phase !== "idle" || updatePhase !== "idle";
+}
+
 function refreshButton(): string {
-  const busy = phase !== "idle";
+  const busy = eosBusy();
   return `<button type="button" class="btn ghost small${busy ? " disabled" : ""}" data-act="refresh-eos"${busy ? " disabled" : ""}>${t("settings.eosRefresh")}</button>`;
+}
+
+function statusChip(): string {
+  const chip = (kind: "" | "ok" | "warn", label: string, title = ""): string =>
+    `<span id="eos-status-chip" class="chip${kind ? ` ${kind}` : ""}"${title ? ` title="${esc(title)}"` : ""}>${esc(label)}</span>`;
+  if (updatePhase === "checking") return chip("", t("appUpdate.checking"));
+  if (updatePhase === "updating") return chip("", t("settings.eosUpdating"));
+  if (!S.eosOverlay?.installed) return chip("warn", t("settings.eosStatusMissing"));
+  if (updateReady) {
+    const short = pendingVersion.match(/^\d+(?:\.\d+)+/)?.[0] ?? pendingVersion;
+    const label = short
+      ? t("appUpdate.availableShort", { version: short })
+      : t("drawer.updateAvailable");
+    return chip("warn", label, pendingVersion);
+  }
+  if (updateChecked) return chip("ok", t("appUpdate.upToDateShort"));
+  return chip("ok", t("settings.eosStatusInstalled"));
 }
 
 function controlInner(): string {
   const installed = !!S.eosOverlay?.installed && phase === "idle";
-  const chip = `<span id="eos-status-chip" class="chip ${installed ? "ok" : "warn"}">${installed ? t("settings.eosStatusInstalled") : t("settings.eosStatusMissing")}</span>`;
+  const chip = statusChip();
   const refresh = refreshButton();
   if (installed) {
+    const busy = updatePhase !== "idle";
     const open = S.eosOverlay?.path
       ? `<button type="button" class="btn ghost small" data-act="open-eos-folder">${t("settings.eosOpenFolder")}</button>`
       : "";
-    return `${chip}${open}${refresh}`;
+    if (updateReady) {
+      return `${chip}${open}<button type="button" class="btn primary small" data-act="apply-eos-update"${busy ? " disabled" : ""}>${updatePhase === "updating" ? t("settings.eosUpdating") : t("common.update")}</button>${refresh}`;
+    }
+    return `${chip}${open}<button type="button" class="btn ghost small" data-act="check-eos-update"${busy ? " disabled" : ""}>${t("settings.eosCheckUpdate")}</button>${refresh}`;
   }
-  const busy = phase !== "idle";
   const label = phase === "launching"
     ? t("settings.eosLaunching")
     : phase === "downloading"
@@ -74,7 +104,7 @@ function controlInner(): string {
   const bar = phase === "downloading"
     ? `<div class="progress eos-install-bar" aria-hidden="true"><span style="width:${progress}%"></span></div><span class="tabular-nums eos-install-pct">${progress}%</span>`
     : "";
-  return `${chip}${bar}<button type="button" class="btn primary small" data-act="install-eos"${busy ? " disabled" : ""}>${label}</button>${refresh}`;
+  return `${chip}${bar}<button type="button" class="btn primary small" data-act="install-eos"${phase !== "idle" ? " disabled" : ""}>${label}</button>${refresh}`;
 }
 
 /** Settings > Integrations row. Status plus the download control. */
@@ -167,11 +197,75 @@ export async function checkEosOnce(): Promise<void> {
 
 /** Settings refresh. One check, then the row is redrawn with the new status. */
 export async function refreshEosStatus(): Promise<void> {
-  if (!isTauri) return;
+  if (!isTauri || eosBusy()) return;
+  const before = S.eosOverlay?.version ?? "";
   const status = await eosOverlayStatus().catch(() => null);
   if (status) S.eosOverlay = status;
+  // An external update invalidates a staged pending build.
+  if (updateReady && status && status.version !== before) {
+    updateChecked = false;
+    updateReady = false;
+    pendingVersion = "";
+  }
   syncEosNotice();
   render();
+}
+
+/** Manual update check through Epic's host; stage downloads only when needed. */
+export async function checkEosUpdate(): Promise<void> {
+  if (!isTauri || eosBusy()) return;
+  updatePhase = "checking";
+  patchEosControl();
+  try {
+    const result = await eosCheckUpdate();
+    updatePhase = "idle";
+    updateChecked = true;
+    updateReady = result.updateAvailable;
+    pendingVersion = result.pendingVersion;
+    if (S.eosOverlay && result.installedVersion) S.eosOverlay.version = result.installedVersion;
+    paintEosText();
+    patchEosControl();
+    if (!updateReady) toast(t("eos.upToDate"), "ok");
+  } catch (err) {
+    updatePhase = "idle";
+    updateChecked = false;
+    updateReady = false;
+    pendingVersion = "";
+    patchEosControl();
+    eosError(err, t("eos.checkFailed"));
+  }
+}
+
+/** Commits the build that the check staged. */
+export async function applyEosUpdate(): Promise<void> {
+  if (!isTauri || eosBusy()) return;
+  updatePhase = "updating";
+  patchEosControl();
+  try {
+    const result = await eosApplyUpdate();
+    updatePhase = "idle";
+    updateChecked = true;
+    updateReady = false;
+    pendingVersion = "";
+    S.eosOverlay = result.status;
+    paintEosText();
+    patchEosControl();
+    updateNotifBadge();
+    const version = result.status.version;
+    toast(
+      result.updated && version ? t("eos.updated", { version }) : t("eos.upToDate"),
+      result.updated ? "ok" : "",
+    );
+  } catch (err) {
+    updatePhase = "idle";
+    patchEosControl();
+    eosError(err, t("eos.updateFailed"));
+  }
+}
+
+function eosError(err: unknown, fallback: string): void {
+  const raw = String(err);
+  toast(raw.startsWith("@t:") ? localizeMessage(raw) : fallback, "err");
 }
 
 function onProgress(payload: { state: string; progress: number }): void {
@@ -190,6 +284,10 @@ function onProgress(payload: { state: string; progress: number }): void {
 async function markInstalled(): Promise<void> {
   phase = "idle";
   progress = 0;
+  updatePhase = "idle";
+  updateChecked = false;
+  updateReady = false;
+  pendingVersion = "";
   const status = await eosOverlayStatus().catch(() => null);
   if (status) S.eosOverlay = status;
   removeEosNotifications();
@@ -225,8 +323,7 @@ export async function startEosInstall(): Promise<void> {
     phase = "idle";
     progress = 0;
     patchEosControl();
-    const raw = String(err);
-    toast(raw.startsWith("@t:") ? localizeMessage(raw) : t("eos.failed"), "err");
+    eosError(err, t("eos.failed"));
   }
 }
 

@@ -159,6 +159,8 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `egl_launcher_present` | `eglLauncherPresent({ ... })` | `src-tauri/src/egl_removal.rs` |
 | `egl_removal_plan` | `eglRemovalPlan({ ... })` | `src-tauri/src/egl_removal.rs` |
 | `egl_remove` | `eglRemove({ ... })` | `src-tauri/src/egl_removal.rs` |
+| `eos_apply_update` | `eosApplyUpdate({ ... })` | `src-tauri/src/eos.rs` |
+| `eos_check_update` | `eosCheckUpdate({ ... })` | `src-tauri/src/eos.rs` |
 | `eos_install_redistributable` | `eosInstallRedistributable({ ... })` | `src-tauri/src/eos.rs` |
 | `eos_overlay_status` | `eosOverlayStatus({ ... })` | `src-tauri/src/eos.rs` |
 | `epic_add_screenshot_root` | `epicAddScreenshotRoot({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
@@ -446,6 +448,9 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `spotify_player_reload` | `spotifyPlayerReload({ ... })` | `src-tauri/src/spotify_host.rs` |
 | `spotify_player_show` | `spotifyPlayerShow({ ... })` | `src-tauri/src/spotify_host.rs` |
 | `spotify_signed_in` | `spotifySignedIn({ ... })` | `src-tauri/src/spotify_host.rs` |
+| `stage_audio_delete` | `stageAudioDelete({ ... })` | `src-tauri/src/stage_audio.rs` |
+| `stage_audio_import` | `stageAudioImport({ ... })` | `src-tauri/src/stage_audio.rs` |
+| `stage_audio_list` | `stageAudioList({ ... })` | `src-tauri/src/stage_audio.rs` |
 | `steam_achievement_probe` | `steamAchievementProbe({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `steam_anticheat_status` | `steamAnticheatStatus({ ... })` | `src-tauri/src/steam/awacy.rs` |
 | `steam_app_metadata` | `steamAppMetadata({ ... })` | `src-tauri/src/steam/catalog.rs` |

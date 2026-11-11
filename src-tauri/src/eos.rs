@@ -14,10 +14,15 @@
 //! Legendary's `eos-overlay install` is a different, signed-in catalog payload and
 //! does not show Epic's setup window, so it is not used here.
 //!
+//! The installed service updates through Epic's own host modes
+//! (`EpicOnlineServicesHost.exe startandwait --mode=reset|stage|commit`), the
+//! same flow as `EpicOnlineServices - Update.cmd`. A staged pending manifest
+//! that differs from the registry version means an update is ready.
+//!
 //! The installer process is started visibly. Helper probes (`reg`, `tasklist`)
 //! still use CREATE_NO_WINDOW.
 
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::io::AsyncWriteExt;
@@ -36,6 +41,7 @@ const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 const MAX_INSTALLER_BYTES: u64 = 700 * 1024 * 1024;
 
 static INSTALLING: AtomicBool = AtomicBool::new(false);
+static UPDATING: AtomicBool = AtomicBool::new(false);
 
 #[derive(Default, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -44,6 +50,21 @@ pub struct EosOverlayStatus {
     pub path: String,
     pub version: String,
     pub overlay_supported: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EosUpdateStatus {
+    pub installed_version: String,
+    pub pending_version: String,
+    pub update_available: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EosUpdateOutcome {
+    pub status: EosOverlayStatus,
+    pub updated: bool,
 }
 
 #[derive(Clone, Serialize)]
@@ -88,6 +109,27 @@ impl BusyGuard {
 impl Drop for BusyGuard {
     fn drop(&mut self) {
         INSTALLING.store(false, Ordering::SeqCst);
+    }
+}
+
+/// One update stage/commit at a time; the host writes the same `.egstore`.
+struct UpdateGuard;
+
+impl UpdateGuard {
+    fn try_acquire() -> Result<Self, String> {
+        if UPDATING
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
+            return Err("@t:eos.busy".into());
+        }
+        Ok(Self)
+    }
+}
+
+impl Drop for UpdateGuard {
+    fn drop(&mut self) {
+        UPDATING.store(false, Ordering::SeqCst);
     }
 }
 
@@ -282,35 +324,43 @@ fn hidden_command(program: &str) -> std::process::Command {
     cmd
 }
 
+/// Installed service version and overlay flag from the EOS registry key.
+#[cfg(windows)]
+fn registry_eos_state() -> (String, bool) {
+    let mut version = String::new();
+    let mut overlay_supported = false;
+    for key in [
+        r"HKLM\SOFTWARE\WOW6432Node\Epic Games\EOS\MainService",
+        r"HKLM\SOFTWARE\Epic Games\EOS\MainService",
+    ] {
+        let Ok(out) = hidden_command("reg").args(["query", key]).output() else {
+            continue;
+        };
+        let text = String::from_utf8_lossy(&out.stdout);
+        let (ver, overlay) = parse_eos_registry(&text);
+        if overlay {
+            overlay_supported = true;
+        }
+        if !ver.is_empty() {
+            version = ver;
+            break;
+        }
+    }
+    (version, overlay_supported)
+}
+
+#[cfg(not(windows))]
+fn registry_eos_state() -> (String, bool) {
+    (String::new(), false)
+}
+
 fn eos_overlay_status_blocking() -> EosOverlayStatus {
     let found = find_eos_service_install(&program_files_roots());
     let installed = found.is_some();
     let path = found
         .map(|p| p.to_string_lossy().to_string())
         .unwrap_or_default();
-
-    let mut version = String::new();
-    let mut overlay_supported = false;
-    #[cfg(windows)]
-    {
-        for key in [
-            r"HKLM\SOFTWARE\WOW6432Node\Epic Games\EOS\MainService",
-            r"HKLM\SOFTWARE\Epic Games\EOS\MainService",
-        ] {
-            let Ok(out) = hidden_command("reg").args(["query", key]).output() else {
-                continue;
-            };
-            let text = String::from_utf8_lossy(&out.stdout);
-            let (ver, overlay) = parse_eos_registry(&text);
-            if overlay {
-                overlay_supported = true;
-            }
-            if !ver.is_empty() {
-                version = ver;
-                break;
-            }
-        }
-    }
+    let (version, overlay_supported) = registry_eos_state();
 
     EosOverlayStatus {
         installed,
@@ -325,6 +375,139 @@ pub async fn eos_overlay_status() -> EosOverlayStatus {
     tauri::async_runtime::spawn_blocking(eos_overlay_status_blocking)
         .await
         .unwrap_or_default()
+}
+
+fn pending_manifest_path(dir: &Path) -> PathBuf {
+    dir.join(".egstore").join("service.manifest.pending")
+}
+
+/// Epic BuildPatch manifests prefix each string with a little-endian length.
+/// The build version is the first length-prefixed field that starts with a
+/// digit and carries both a dot and a dash.
+pub fn parse_manifest_build_version(bytes: &[u8]) -> Option<String> {
+    let limit = bytes.len().min(4096);
+    for i in 0..limit.saturating_sub(4) {
+        let len = u32::from_le_bytes([bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3]]) as usize;
+        if !(5..=128).contains(&len) || i + 4 + len > bytes.len() {
+            continue;
+        }
+        let Ok(text) = std::str::from_utf8(&bytes[i + 4..i + 4 + len]) else {
+            continue;
+        };
+        if text.as_bytes().first().is_some_and(u8::is_ascii_digit)
+            && text.contains('.')
+            && text.contains('-')
+            && text.bytes().all(|b| b.is_ascii_graphic())
+        {
+            return Some(text.to_string());
+        }
+    }
+    None
+}
+
+fn read_manifest_version(path: &Path) -> Option<String> {
+    let mut file = std::fs::File::open(path).ok()?;
+    let mut buf = vec![0u8; 4096];
+    let read = file.read(&mut buf).ok()?;
+    parse_manifest_build_version(&buf[..read])
+}
+
+/// A pending manifest only means a real update when it differs from the
+/// installed build; an interrupted commit can leave a copy behind.
+pub fn pending_update_available(
+    installed: &str,
+    pending_present: bool,
+    pending_version: &str,
+) -> bool {
+    pending_present && (pending_version.is_empty() || pending_version != installed)
+}
+
+#[cfg(windows)]
+fn run_eos_host_mode(dir: &Path, mode: &str) -> Result<i32, String> {
+    let exe = dir.join("service").join("EpicOnlineServicesHost.exe");
+    if !exe.is_file() {
+        return Err("@t:eos.updateFailed".into());
+    }
+    let out = hidden_command(&exe.to_string_lossy())
+        .arg("startandwait")
+        .arg(format!("--mode={mode}"))
+        .current_dir(dir)
+        .output()
+        .map_err(|err| {
+            eprintln!("eos update {mode}: {err}");
+            "@t:eos.updateFailed".to_string()
+        })?;
+    if !out.status.success() {
+        eprintln!(
+            "eos update {mode}: exit {:?}: {}",
+            out.status.code(),
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
+    }
+    Ok(out.status.code().unwrap_or(-1))
+}
+
+#[cfg(not(windows))]
+fn run_eos_host_mode(_dir: &Path, _mode: &str) -> Result<i32, String> {
+    Err("@t:eos.updateFailed".into())
+}
+
+/// Resets the metadata, stages the newest service build and reports whether
+/// the staged manifest differs from the installed one. Epic's own update
+/// script uses the same three host modes; stage downloads only when needed.
+fn eos_update_check_blocking() -> Result<EosUpdateStatus, String> {
+    let dir = find_eos_service_install(&program_files_roots())
+        .ok_or_else(|| "@t:eos.checkFailed".to_string())?;
+    let (installed, _) = registry_eos_state();
+    let run =
+        |mode: &str| run_eos_host_mode(&dir, mode).map_err(|_| "@t:eos.checkFailed".to_string());
+    if run("reset")? != 0 || run("stage")? != 0 {
+        return Err("@t:eos.checkFailed".into());
+    }
+    let pending_path = pending_manifest_path(&dir);
+    let pending_present = pending_path.is_file();
+    let pending_version = read_manifest_version(&pending_path).unwrap_or_default();
+    Ok(EosUpdateStatus {
+        update_available: pending_update_available(&installed, pending_present, &pending_version),
+        installed_version: installed,
+        pending_version,
+    })
+}
+
+fn eos_update_apply_blocking() -> Result<EosUpdateOutcome, String> {
+    let dir = find_eos_service_install(&program_files_roots())
+        .ok_or_else(|| "@t:eos.updateFailed".to_string())?;
+    let before = registry_eos_state().0;
+    let code = run_eos_host_mode(&dir, "commit")?;
+    // Epic's update script accepts 3 as "nothing left to commit".
+    if code != 0 && code != 3 {
+        return Err("@t:eos.updateFailed".into());
+    }
+    let status = eos_overlay_status_blocking();
+    let updated = !status.version.is_empty() && status.version != before;
+    Ok(EosUpdateOutcome { status, updated })
+}
+
+#[tauri::command]
+pub async fn eos_check_update() -> Result<EosUpdateStatus, String> {
+    let _busy = UpdateGuard::try_acquire()?;
+    tauri::async_runtime::spawn_blocking(eos_update_check_blocking)
+        .await
+        .map_err(|err| {
+            eprintln!("eos update check: {err}");
+            "@t:eos.checkFailed".to_string()
+        })?
+}
+
+#[tauri::command]
+pub async fn eos_apply_update() -> Result<EosUpdateOutcome, String> {
+    let _busy = UpdateGuard::try_acquire()?;
+    tauri::async_runtime::spawn_blocking(eos_update_apply_blocking)
+        .await
+        .map_err(|err| {
+            eprintln!("eos update apply: {err}");
+            "@t:eos.updateFailed".to_string()
+        })?
 }
 
 fn emit(app: &AppHandle, state: &str, progress: u8) {
@@ -940,5 +1123,36 @@ mod tests {
             &bytes[off + data_off..off + data_off + payload.len()],
             payload
         );
+    }
+
+    #[test]
+    fn manifest_parser_reads_the_build_version() {
+        let version = "5.8.1-58751156+++UE5+Release-EOSH-5.5-62c6c8-Windows";
+        let mut bytes = vec![0u8; 16];
+        bytes.extend_from_slice(&(version.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(version.as_bytes());
+        bytes.extend_from_slice(&33u32.to_le_bytes());
+        bytes.extend_from_slice(b"EpicOnlineServicesUserHelper.exe");
+        assert_eq!(
+            parse_manifest_build_version(&bytes).as_deref(),
+            Some(version)
+        );
+        assert_eq!(parse_manifest_build_version(b"no manifest"), None);
+    }
+
+    #[test]
+    fn only_a_different_pending_build_counts_as_an_update() {
+        assert!(!pending_update_available("5.8.1-x", false, ""));
+        assert!(!pending_update_available("5.8.1-x", true, "5.8.1-x"));
+        // An unreadable pending manifest still means stage produced a build.
+        assert!(pending_update_available("5.8.1-x", true, ""));
+        assert!(pending_update_available("5.8.1-x", true, "5.8.2-x"));
+    }
+
+    #[test]
+    #[ignore = "runs Epic's update host against the real EOS service"]
+    fn live_eos_update_check() {
+        let status = eos_update_check_blocking().unwrap();
+        assert!(!status.installed_version.is_empty());
     }
 }

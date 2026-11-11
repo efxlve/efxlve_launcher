@@ -82,7 +82,13 @@ import { applySurface } from "../../core/themes";
 import { applyReduceEffects } from "../../core/effects";
 import { setGameSceneEnabled } from "../../core/game-scene";
 import type { EpicSort, EpicViewMode, View } from "../../core/types";
-import { refreshEosStatus, startEosInstall, declineEosOverlay } from "../eos/eos-install";
+import {
+  applyEosUpdate,
+  checkEosUpdate,
+  declineEosOverlay,
+  refreshEosStatus,
+  startEosInstall,
+} from "../eos/eos-install";
 import { openEpicLauncherDownload } from "../epic-launcher/epic-launcher-notice";
 import { handleWindowResize, updateMaxIcon, appSetAutostart } from "../../core/window";
 import { localizeMessage, setLanguage, t as i18nT } from "../../i18n";
@@ -1377,6 +1383,10 @@ document.addEventListener("click", (e) => {
     render();
   } else if (act === "refresh-eos") {
     void refreshEosStatus();
+  } else if (act === "check-eos-update") {
+    void checkEosUpdate();
+  } else if (act === "apply-eos-update") {
+    void applyEosUpdate();
   } else if (act === "install-eos") {
     void startEosInstall();
   } else if (act === "install-epic-launcher") {

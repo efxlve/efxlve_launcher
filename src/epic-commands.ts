@@ -191,6 +191,21 @@ export interface EosOverlayStatus {
 }
 export const eosOverlayStatus = () => invoke<EosOverlayStatus>("eos_overlay_status");
 
+/** Result of Epic's own host update check. */
+export interface EosUpdateStatus {
+  installedVersion: string;
+  pendingVersion: string;
+  updateAvailable: boolean;
+}
+export const eosCheckUpdate = () => invoke<EosUpdateStatus>("eos_check_update");
+
+/** Applies the staged EOS service update and returns the fresh overlay status. */
+export interface EosUpdateOutcome {
+  status: EosOverlayStatus;
+  updated: boolean;
+}
+export const eosApplyUpdate = () => invoke<EosUpdateOutcome>("eos_apply_update");
+
 /** Whether a game's install directory bundles the EOS SDK runtime. */
 export const epicDetectEos = (installPath: string) =>
   invoke<boolean>("epic_detect_eos", { installPath });

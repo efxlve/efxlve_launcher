@@ -2334,6 +2334,8 @@ fn main() {
             notif_overlay::notif_overlay_act,
             open_folder,
             eos::eos_overlay_status,
+            eos::eos_check_update,
+            eos::eos_apply_update,
             eos::eos_install_redistributable,
             epic_take_pending_launch,
             shared_library::shared_library_index,
