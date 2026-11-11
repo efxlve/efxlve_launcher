@@ -4210,5 +4210,13 @@
   "cloud.preLaunchRestoring": "正在恢复云端存档…",
   "cloud.preLaunchRestored": "云端存档已恢复。",
   "cloud.preLaunchFailed": "无法恢复云端存档：{msg}",
-  "cloud.previewDevice": "保存于 {device}"
+  "cloud.previewDevice": "保存于 {device}",
+  "stage.select": "选择",
+  "stage.noScreenshots": "暂无游戏截图",
+  "stage.readyShelfTitle": "即开即玩",
+  "stage.updatesReady": "{n} 个可用更新",
+  "stage.updateAll": "全部更新",
+  "stage.welcomeBack": "欢迎回来！",
+  "stage.sessionSummary": "你游玩了《{title}》共 {time}。",
+  "stage.controllerBattery": "控制器电量"
 }

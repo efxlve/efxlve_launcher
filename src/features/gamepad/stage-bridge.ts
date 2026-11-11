@@ -11,6 +11,7 @@ export interface StageBridge {
   button(button: StagePadButton): void;
   back(): void;
   go(view: "downloads" | "library"): void;
+  bump?(dir: "up" | "down" | "left" | "right"): void;
   /**
    * Wake attract mode (or dismiss the boot mark). Returns true when the press
    * belongs to the wake-up and must not activate the focused control.

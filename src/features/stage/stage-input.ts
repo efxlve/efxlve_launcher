@@ -1,3 +1,17 @@
+import { stageFeedback } from "./stage-sound";
+let lastBumpTime = 0;
+export function stageEdgeBump(dir: "up" | "down" | "left" | "right"): void {
+  const now = performance.now();
+  if (now - lastBumpTime < 180) return;
+  lastBumpTime = now;
+  stageFeedback("bump");
+  const focused = document.querySelector<HTMLElement>(".stage-focused, .gp-focused");
+  if (focused) {
+    focused.classList.remove("stage-bump-up", "stage-bump-down", "stage-bump-left", "stage-bump-right");
+    void focused.offsetWidth;
+    focused.classList.add(`stage-bump-${dir}`);
+  }
+}
 /**
  * Controller-to-command mapping for Stage. The polling loop stays in
  * `gamepad.ts`; this file only decides what a face button means on the current
@@ -115,6 +129,7 @@ registerStageBridge({
   button: stageButton,
   back: stageBack,
   go: (view) => stageGo(view),
+  bump: (dir) => stageEdgeBump(dir),
   wake: () => {
     if (S.stage.idle) {
       wakeStageIdle();

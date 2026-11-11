@@ -4210,5 +4210,13 @@
   "cloud.preLaunchRestoring": "Bulut kaydı geri yükleniyor…",
   "cloud.preLaunchRestored": "Bulut kaydı geri yüklendi.",
   "cloud.preLaunchFailed": "Bulut kaydı geri yüklenemedi: {msg}",
-  "cloud.previewDevice": "Kaydeden cihaz: {device}"
+  "cloud.previewDevice": "Kaydeden cihaz: {device}",
+  "stage.select": "Seç",
+  "stage.noScreenshots": "Henüz ekran görüntüsü yok",
+  "stage.readyShelfTitle": "Oynamaya Hazır",
+  "stage.updatesReady": "{n} güncelleme hazır",
+  "stage.updateAll": "Tümünü Güncelle",
+  "stage.welcomeBack": "Tekrar hoş geldin!",
+  "stage.sessionSummary": "{title} oyununu {time} oynadın.",
+  "stage.controllerBattery": "Kumanda pili"
 }

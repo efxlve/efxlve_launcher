@@ -4210,5 +4210,13 @@
   "cloud.preLaunchRestoring": "กำลังกู้คืนเซฟคลาวด์…",
   "cloud.preLaunchRestored": "กู้คืนเซฟคลาวด์แล้ว",
   "cloud.preLaunchFailed": "กู้คืนเซฟคลาวด์ไม่ได้: {msg}",
-  "cloud.previewDevice": "บันทึกบน {device}"
+  "cloud.previewDevice": "บันทึกบน {device}",
+  "stage.select": "เลือก",
+  "stage.noScreenshots": "ยังไม่มีภาพหน้าจอ",
+  "stage.readyShelfTitle": "พร้อมเล่น",
+  "stage.updatesReady": "พร้อมอัปเดต {n} รายการ",
+  "stage.updateAll": "อัปเดตทั้งหมด",
+  "stage.welcomeBack": "ยินดีต้อนรับกลับ!",
+  "stage.sessionSummary": "คุณเล่น {title} เป็นเวลา {time}",
+  "stage.controllerBattery": "แบตเตอรี่คอนโทรลเลอร์"
 }

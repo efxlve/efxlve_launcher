@@ -4210,5 +4210,13 @@
   "cloud.preLaunchRestoring": "Restauration de la sauvegarde cloud…",
   "cloud.preLaunchRestored": "Sauvegarde cloud restaurée.",
   "cloud.preLaunchFailed": "Impossible de restaurer la sauvegarde cloud : {msg}",
-  "cloud.previewDevice": "Enregistré sur {device}"
+  "cloud.previewDevice": "Enregistré sur {device}",
+  "stage.select": "Sélectionner",
+  "stage.noScreenshots": "Aucune capture d'écran pour l'instant",
+  "stage.readyShelfTitle": "Prêt à jouer",
+  "stage.updatesReady": "{n} mises à jour prêtes",
+  "stage.updateAll": "Tout mettre à jour",
+  "stage.welcomeBack": "Bon retour !",
+  "stage.sessionSummary": "Vous avez joué à {title} pendant {time}.",
+  "stage.controllerBattery": "Batterie de la manette"
 }

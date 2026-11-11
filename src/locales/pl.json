@@ -4210,5 +4210,13 @@
   "cloud.preLaunchRestoring": "Przywracanie zapisu z chmury…",
   "cloud.preLaunchRestored": "Zapis z chmury przywrócony.",
   "cloud.preLaunchFailed": "Nie udało się przywrócić zapisu z chmury: {msg}",
-  "cloud.previewDevice": "Zapisano na {device}"
+  "cloud.previewDevice": "Zapisano na {device}",
+  "stage.select": "Wybierz",
+  "stage.noScreenshots": "Brak zrzutów ekranu",
+  "stage.readyShelfTitle": "Gotowe do gry",
+  "stage.updatesReady": "{n} aktualizacji gotowych",
+  "stage.updateAll": "Zaktualizuj wszystko",
+  "stage.welcomeBack": "Witaj z powrotem!",
+  "stage.sessionSummary": "Grasz w {title} przez {time}.",
+  "stage.controllerBattery": "Bateria kontrolera"
 }

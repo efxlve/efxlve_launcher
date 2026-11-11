@@ -4210,5 +4210,13 @@
   "cloud.preLaunchRestoring": "正在還原雲端存檔…",
   "cloud.preLaunchRestored": "雲端存檔已還原。",
   "cloud.preLaunchFailed": "無法還原雲端存檔：{msg}",
-  "cloud.previewDevice": "儲存於 {device}"
+  "cloud.previewDevice": "儲存於 {device}",
+  "stage.select": "選擇",
+  "stage.noScreenshots": "暫無遊戲截圖",
+  "stage.readyShelfTitle": "隨時開玩",
+  "stage.updatesReady": "{n} 個可用更新",
+  "stage.updateAll": "全部更新",
+  "stage.welcomeBack": "歡迎回來！",
+  "stage.sessionSummary": "你遊玩了《{title}》共 {time}。",
+  "stage.controllerBattery": "控制器電量"
 }

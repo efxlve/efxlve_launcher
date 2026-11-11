@@ -7,8 +7,10 @@ import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc, fmtBytes, fmtSpeed } from "../../core/utils";
 import { t } from "../../i18n";
-import { stageGameByKey } from "./stage-model";
-import { stageProgress } from "./stage-ui";
+import { stageBaseSummaries, stageGameByKey } from "./stage-model";
+import { stageCoverMarkup } from "./stage-art";
+import { stageProgress, stageStoreName } from "./stage-ui";
+import { sourceOfKey } from "../../core/selectors";
 
 function downloadRow(id: string, title: string, progress: number): string {
   const metrics = S.activeDlMetrics && S.activeDlMetrics.id === id ? S.activeDlMetrics : null;
@@ -40,6 +42,28 @@ function downloadRow(id: string, title: string, progress: number): string {
         ? `<button type="button" class="stage-btn stage-btn-ghost" data-act="dl-resume" data-id="${esc(id)}">${icon("play", 16)}<span>${esc(t("downloads.resume"))}</span></button>`
         : `<button type="button" class="stage-btn stage-btn-ghost" data-act="dl-pause" data-id="${esc(id)}">${icon("pause", 16)}<span>${esc(t("downloads.pause"))}</span></button>`}
       ${amazon ? "" : `<button type="button" class="stage-icon-btn stage-icon-danger" data-act="epic-cancel" data-id="${esc(id)}" aria-label="${esc(t("common.cancel"))}">${icon("x", 18)}</button>`}
+    </div>
+  </div>`;
+}
+
+function updateRow(s: ReturnType<typeof stageBaseSummaries>[number]): string {
+  const store = stageStoreName(sourceOfKey(s.appName));
+  return `<div class="stage-download-row stage-update-available-row" data-key="${esc(s.appName)}">
+    <span class="stage-list-cover">${stageCoverMarkup(s, "stage-cover-art")}</span>
+    <div class="stage-download-main">
+      <div class="stage-download-head">
+        <strong>${esc(s.title)}</strong>
+        <span class="stage-chip is-warn">${esc(t("common.update"))}</span>
+      </div>
+      <div class="stage-download-meta">
+        <span>${esc(store)}</span>
+        ${s.installSize > 0 ? `<span class="tabular-nums">${esc(fmtBytes(s.installSize))}</span>` : ""}
+      </div>
+    </div>
+    <div class="stage-download-actions">
+      <button type="button" class="stage-btn stage-btn-primary" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="dl:update:${esc(s.appName)}">
+        ${icon("download", 16)}<span>${esc(t("common.update"))}</span>
+      </button>
     </div>
   </div>`;
 }

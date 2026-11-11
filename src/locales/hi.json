@@ -4210,5 +4210,13 @@
   "cloud.preLaunchRestoring": "क्लाउड सेव पुनर्स्थापित हो रहा है…",
   "cloud.preLaunchRestored": "क्लाउड सेव पुनर्स्थापित हुआ।",
   "cloud.preLaunchFailed": "क्लाउड सेव पुनर्स्थापित नहीं हो सका: {msg}",
-  "cloud.previewDevice": "{device} पर सहेजा गया"
+  "cloud.previewDevice": "{device} पर सहेजा गया",
+  "stage.select": "चुनें",
+  "stage.noScreenshots": "अभी तक कोई स्क्रीनशॉट नहीं लिया गया",
+  "stage.readyShelfTitle": "खेलने के लिए तैयार",
+  "stage.updatesReady": "{n} अपडेट तैयार हैं",
+  "stage.updateAll": "सभी अपडेट करें",
+  "stage.welcomeBack": "वापसी पर स्वागत है!",
+  "stage.sessionSummary": "आपने {time} तक {title} खेला।",
+  "stage.controllerBattery": "नियंत्रक बैटरी"
 }

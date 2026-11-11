@@ -50,7 +50,9 @@ import {
   stageOpenManage,
   stageOpenProgram,
   stageOpenQuickMenu,
+  stageDismissWelcome,
   stageOpenSearch,
+  stagePickRandomGame,
   stageOpenStill,
   stageQuickPlay,
   stageRefreshAchievements,
@@ -409,6 +411,7 @@ function topbar(): string {
   const isKbd = stageInputMode === "keyboard" || stageInputMode === "mouse";
   const pad = S.stage.controllerConnected;
   const battery = stageBatteryLabel();
+  const controllerBatteryPercent = S.stage.controllerBattery !== null && Number.isFinite(S.stage.controllerBattery) ? Math.round(S.stage.controllerBattery * 100) : null;
   const online = navigator.onLine && !S.offlineMode;
   const kind = S.gamepadKind;
   const lbGlyph = isKbd ? "Q" : (kind === "playstation" ? "L1" : kind === "switch" ? "L" : "LB");
@@ -450,7 +453,7 @@ function topbar(): string {
       ${S.stage.ambience && S.stage.ambienceVolume > 0 ? `<span class="stage-ambient-status" title="${esc(t("stage.ambience"))}" aria-hidden="true">${icon("music", 13)}<span class="stage-ambient-bars"><i></i><i></i><i></i><i></i></span></span>` : ""}
       <span class="stage-net ${online ? "is-online" : "is-offline"}"><span class="stage-net-dot"></span><span class="stage-net-label">${esc(online ? t("nav.online") : t("nav.offline"))}</span></span>
       ${stageBatteryMarkup()}
-      ${pad ? `<span class="stage-pad-status">${icon("gamepad-2", 15)}${battery ? `<span class="tabular-nums">${esc(battery)}</span>` : ""}</span>` : ""}
+      ${pad ? `<span class="stage-pad-status" title="${esc(t("stage.controllerBattery"))}">${icon("gamepad-2", 15)}${controllerBatteryPercent !== null ? `<span class="tabular-nums">${controllerBatteryPercent}%</span>` : ""}</span>` : ""}
       <span class="stage-clock tabular-nums"></span>
       ${stageProfileChip()}
       <button type="button" class="stage-icon-pill" data-stage-act="open-menu" data-gp-item data-gp-key="top:menu" aria-label="${esc(t("stage.quickMenu"))}">${icon("dots", 18)}</button>
@@ -478,28 +481,37 @@ function hints(): string {
   const viewGlyph = isKbd ? stageKeyGlyph("Ctrl+K") : stageViewGlyph();
   const triggerGlyphs = isKbd ? stageKeyGlyph("Tab") : stageTriggerGlyphs();
 
+  if (S.stage.quickMenu) {
+    // Quick menu has integrated dock hints inside its sheet
+    return "";
+  }
+  if (S.stage.manageKey) {
+    return stageHintBar([
+      stageHint(face("a"), t("stage.select")),
+      stageHint(face("b"), t("common.close")),
+    ]);
+  }
+  if (S.stage.controlsOpen) {
+    return stageHintBar([
+      stageHint(face("b"), t("common.close")),
+    ]);
+  }
   if (S.stage.searchOpen) {
     return stageHintBar([
-      stageHint(face("a"), t("gamepad.select")),
+      stageHint(face("a"), t("stage.select")),
       stageHint(face("b"), t("common.close")),
       stageHint(isKbd ? "↑↓" : "↑ ↓", t("gamepad.navigate")),
     ]);
   }
   if (S.stage.powerOpen) {
     return stageHintBar([
-      stageHint(face("a"), t("gamepad.select")),
+      stageHint(face("a"), t("stage.select")),
       stageHint(face("b"), t("common.close")),
-    ]);
-  }
-  if (S.stage.quickMenu) {
-    return stageHintBar([
-      stageHint(face("a"), t("gamepad.select")),
-      stageHint(face("b"), t("stage.closeMenu")),
     ]);
   }
   if (S.stage.route === "program") {
     return stageHintBar([
-      stageHint(face("a"), t("gamepad.select")),
+      stageHint(face("a"), t("stage.select")),
       stageHint(face("x"), t("stage.quickPlay")),
       stageHint(bumpers, t("gamepad.tabs")),
       stageHint(face("b"), t("common.back")),
@@ -519,7 +531,7 @@ function hints(): string {
   }
   if (S.stage.route === "downloads") {
     return stageHintBar([
-      stageHint(face("a"), t("gamepad.select")),
+      stageHint(face("a"), t("stage.select")),
       stageHint(face("b"), t("common.back")),
       stageHint(bumpers, t("gamepad.tabs")),
       stageHint(menuKey, t("stage.quickMenu")),
@@ -527,7 +539,7 @@ function hints(): string {
   }
   if (S.stage.route === "settings") {
     return stageHintBar([
-      stageHint(face("a"), t("gamepad.select")),
+      stageHint(face("a"), t("stage.select")),
       stageHint(bumpers, t("gamepad.tabs")),
       stageHint(face("b"), t("common.back")),
       stageHint(menuKey, t("stage.quickMenu")),
@@ -596,7 +608,7 @@ function quickMenu(entered: boolean): string {
         </button>
       </div>
       <div class="stage-dock-hints">
-        <span>${faceOrKey("a")} ${esc(t("gamepad.select"))}</span>
+        <span>${faceOrKey("a")} ${esc(t("stage.select"))}</span>
         <span>${faceOrKey("b")} ${esc(t("stage.closeMenu"))}</span>
       </div>
     </div>
@@ -611,8 +623,8 @@ function controlsSheet(entered: boolean): string {
     [stageFaceGlyph("y"), t("stage.controlsY")],
     [stageBumperGlyphs(), t("stage.controlsBumpers")],
     ["↑ ↓ ← →", t("stage.controlsDpad")],
-    ["Menu", t("stage.quickMenu")],
-    ["View", t("stage.search")],
+    [stageMenuGlyph(), t("stage.quickMenu")],
+    [stageViewGlyph(), t("stage.search")],
   ];
   return `<div class="stage-overlay stage-controls${entered ? " stage-overlay-enter" : ""}">
     <div class="stage-sheet stage-sheet-narrow" role="dialog" aria-modal="true" aria-label="${esc(t("stage.controls"))}">
@@ -758,15 +770,7 @@ function stageManageSheet(appName: string, entered: boolean): string {
           </button>
         `}
 
-        ${isInstalled ? `
-          <button type="button" class="stage-manage-card" data-stage-act="manage-open-folder" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:folder">
-            <span class="stage-manage-card-icon">${icon("folder", 20)}</span>
-            <div class="stage-manage-card-text">
-              <strong>${esc(t("manage.openFolder"))}</strong>
-              <span>${esc(t("stage.installFolder"))}</span>
-            </div>
-          </button>
-        ` : ""}
+        
 
         ${isInstalled ? `
           <button type="button" class="stage-manage-card" data-stage-act="manage-verify" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:verify">
@@ -778,15 +782,7 @@ function stageManageSheet(appName: string, entered: boolean): string {
           </button>
         ` : ""}
 
-        ${isInstalled ? `
-          <button type="button" class="stage-manage-card" data-stage-act="manage-shortcut" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:shortcut">
-            <span class="stage-manage-card-icon">${icon("monitor", 20)}</span>
-            <div class="stage-manage-card-text">
-              <strong>${esc(t("manage.createShortcut"))}</strong>
-              <span>${esc(t("manage.shortcutTitle"))}</span>
-            </div>
-          </button>
-        ` : ""}
+        
 
         ${cloud ? `
           <button type="button" class="stage-manage-card" data-stage-act="manage-sync-cloud" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:cloud">
@@ -818,7 +814,7 @@ function stageManageSheet(appName: string, entered: boolean): string {
       </div>
 
       <div class="stage-manage-hints">
-        <span>${faceOrKey("a")} ${esc(t("gamepad.select"))}</span>
+        <span>${faceOrKey("a")} ${esc(t("stage.select"))}</span>
         <span>${faceOrKey("b")} ${esc(t("common.close"))}</span>
       </div>
     </div>
@@ -1301,6 +1297,8 @@ function bindStageEvents(root: HTMLElement): void {
       case "cycle-store": stageCycleStore(true); break;
       case "cycle-sort": stageCycleSort(); break;
       case "toggle-view": stageToggleView(); break;
+      case "random-game": stagePickRandomGame(); break;
+      case "dismiss-welcome": stageDismissWelcome(); break;
       case "open-search":
       case "search": stageOpenSearch(); break;
       case "search-close": stageFeedback("back"); stageCancelSearch(); break;

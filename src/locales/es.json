@@ -4210,5 +4210,13 @@
   "cloud.preLaunchRestoring": "Restaurando la partida en la nube…",
   "cloud.preLaunchRestored": "Partida en la nube restaurada.",
   "cloud.preLaunchFailed": "No se pudo restaurar la partida en la nube: {msg}",
-  "cloud.previewDevice": "Guardado en {device}"
+  "cloud.previewDevice": "Guardado en {device}",
+  "stage.select": "Seleccionar",
+  "stage.noScreenshots": "Aún no hay capturas de pantalla",
+  "stage.readyShelfTitle": "Listo para jugar",
+  "stage.updatesReady": "{n} actualizaciones listas",
+  "stage.updateAll": "Actualizar todo",
+  "stage.welcomeBack": "¡De vuelta!",
+  "stage.sessionSummary": "Has jugado a {title} durante {time}.",
+  "stage.controllerBattery": "Batería del mando"
 }

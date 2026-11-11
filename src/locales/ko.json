@@ -4210,5 +4210,13 @@
   "cloud.preLaunchRestoring": "클라우드 세이브를 복원하는 중…",
   "cloud.preLaunchRestored": "클라우드 세이브를 복원했습니다.",
   "cloud.preLaunchFailed": "클라우드 세이브를 복원하지 못했습니다: {msg}",
-  "cloud.previewDevice": "{device}에서 저장됨"
+  "cloud.previewDevice": "{device}에서 저장됨",
+  "stage.select": "선택",
+  "stage.noScreenshots": "아직 스크린샷이 없습니다",
+  "stage.readyShelfTitle": "플레이 준비 완료",
+  "stage.updatesReady": "{n}개의 업데이트 준비됨",
+  "stage.updateAll": "모두 업데이트",
+  "stage.welcomeBack": "다시 오신 것을 환영합니다!",
+  "stage.sessionSummary": "{title}을(를) {time} 동안 플레이했습니다.",
+  "stage.controllerBattery": "컨트롤러 배터리"
 }

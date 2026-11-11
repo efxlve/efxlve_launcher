@@ -259,21 +259,21 @@
 .stage-wall-list {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding-block-end: 42px;
+  gap: 6px;
+  padding-block-end: calc(96px + var(--stage-safe, 0px));
 }
 
 .stage-list-row {
   display: flex;
   align-items: center;
-  gap: 13px;
-  padding: 9px 11px;
-  border: 1px solid transparent;
-  border-radius: 9px;
-  background: transparent;
+  gap: 16px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
   text-align: start;
   cursor: pointer;
-  transition: background 140ms var(--stage-ease), border-color 140ms var(--stage-ease);
+  transition: all 140ms var(--stage-ease);
 }
 .stage-list-row:hover {
   background: rgba(255, 255, 255, 0.045);
@@ -321,15 +321,15 @@
 }
 .stage-list-main strong {
   overflow: hidden;
-  font-size: 13px;
-  font-weight: 550;
+  font-size: 15px;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .stage-list-main span {
   overflow: hidden;
-  color: var(--stage-ink-3);
-  font-size: 10.5px;
+  color: var(--stage-ink-2);
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

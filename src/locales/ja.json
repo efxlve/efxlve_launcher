@@ -4210,5 +4210,13 @@
   "cloud.preLaunchRestoring": "クラウドセーブを復元しています…",
   "cloud.preLaunchRestored": "クラウドセーブを復元しました。",
   "cloud.preLaunchFailed": "クラウドセーブを復元できませんでした: {msg}",
-  "cloud.previewDevice": "保存元: {device}"
+  "cloud.previewDevice": "保存元: {device}",
+  "stage.select": "選択",
+  "stage.noScreenshots": "スクリーンショットはまだありません",
+  "stage.readyShelfTitle": "すぐにプレイ可能",
+  "stage.updatesReady": "{n} 件のアップデートが利用可能",
+  "stage.updateAll": "すべて更新",
+  "stage.welcomeBack": "おかえりなさい！",
+  "stage.sessionSummary": "{title} を {time} プレイしました。",
+  "stage.controllerBattery": "コントローラーのバッテリー"
 }

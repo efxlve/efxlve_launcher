@@ -70,7 +70,7 @@ import { syncInstalledWatch } from "../library/installed-watch";
 import { companionStoreId, loadCompanionLibrary, syncCompanionAccounts } from "../library/companion-library";
 import { loadCustomGamesLibrary } from "../custom-games/custom-games-library";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
-import { patchLibraryCardDom, refreshGameActionUi } from "../../core/game-view";
+import { achSummaryOf, patchLibraryCardDom, refreshGameActionUi } from "../../core/game-view";
 import { recordAchievementUnlocks, attachAchievementScreenshot } from "../../core/achievement-history";
 import { raStatus } from "../../retroachievements";
 import { libraryItemOf, rebuildAllGamesMap, sourceOfKey, summaryOf } from "../../core/selectors";
@@ -884,6 +884,8 @@ export async function initApp(hooks: {
       },
     );
 
+    const sessionStartAchievements = new Map<string, number>();
+
     listenLater<GameStatusEvent>("game-status", (event) => {
       const { id, running, initial, sessionSeconds, totalSeconds, sessionCount, lastPlayed, lastPlayedTimestamp } = event.payload;
       const sum = summaryOf(id);
@@ -899,6 +901,8 @@ export async function initApp(hooks: {
         startStoreAchievementSession(id);
         // Two watchers can see the same game (Steam's flag and the process
         // watch); only the first report announces and acts.
+        const startAch = achSummaryOf(id)?.user_unlocked;
+        if (startAch !== undefined) sessionStartAchievements.set(id, startAch);
         if (S.runningGames.has(id)) return;
         S.runningGames.add(id);
         clearLaunchStatus(id);
@@ -1021,6 +1025,24 @@ export async function initApp(hooks: {
           // GOG hours live in Galaxy's local database (read-only import).
           if (id.startsWith("gog::")) void syncGogPlaytime();
         }
+        const startAch = sessionStartAchievements.get(id);
+        sessionStartAchievements.delete(id);
+        const currentAch = achSummaryOf(id)?.user_unlocked;
+        const achUnlocked = (startAch !== undefined && currentAch !== undefined && currentAch > startAch)
+          ? currentAch - startAch
+          : undefined;
+
+        if (sessionSeconds && sessionSeconds > 0) {
+          S.stage.lastSession = {
+            title,
+            key: id,
+            seconds: sessionSeconds,
+            totalSeconds: totalSeconds !== undefined ? Math.max(totalSeconds, S.playtimeMap.get(id)?.total_seconds ?? 0) : undefined,
+            achUnlocked,
+            timestamp: Date.now(),
+          };
+        }
+
         toast(
           sessionSeconds
             ? t("status.closedSession", { title, time: fmtPlaytime(sessionSeconds) })

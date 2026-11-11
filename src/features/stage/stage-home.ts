@@ -12,7 +12,7 @@ import { icon } from "../../core/icons";
 import { scheduleRender } from "../../core/render";
 import { sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
-import { esc, fmtBytes } from "../../core/utils";
+import { esc, fmtBytes, fmtPlaytime, relativeTime } from "../../core/utils";
 import { t } from "../../i18n";
 import type { EpicSummary, GameCollection } from "../../epic";
 import { fetchAndRenderAchievements } from "../drawer/drawer-view";
@@ -26,7 +26,11 @@ import {
   stageGameByKey,
   stageGamePlaytime,
   stageHeroSummary,
+  stageHasUpdate,
+  stagePlayAction,
   stagePrimaryAction,
+  stageUpdateAction,
+  stageReadyShelf,
   stageRibbonSummaries,
   stageUserCollections,
 } from "./stage-model";
@@ -37,7 +41,7 @@ function ribbonCard(s: EpicSummary, isDefault = false): string {
   const hasDl = epicDlProgress(s.appName) !== null;
   const isUpdating = s.updateAvailable && !S.ignoredUpdates.has(s.appName);
   return `<button type="button" class="stage-ribbon-card${isRunning ? " is-running" : ""}" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="game:${esc(s.appName)}"${isDefault ? " data-gp-default" : ""} aria-label="${esc(s.title)}">
-    <span class="stage-ribbon-art">${stageHeroMarkup(s, "stage-ribbon-image")}</span>
+    <span class="stage-ribbon-art">${stageCoverMarkup(s, "stage-ribbon-image")}</span>
     ${isRunning ? `<span class="stage-ribbon-running"></span>` : hasDl || isUpdating ? `<span class="stage-ribbon-indicator"></span>` : ""}
   </button>`;
 }
@@ -53,9 +57,31 @@ function emptyStage(): string {
   </div>`;
 }
 
+function welcomeBackBannerHtml(): string {
+  const sess = S.stage.lastSession;
+  if (!sess || Date.now() - sess.timestamp > 10 * 60 * 1000) return "";
+  const timeText = fmtPlaytime(sess.seconds);
+  const summaryText = t("stage.sessionSummary", { title: sess.title, time: timeText });
+  const achText = sess.achUnlocked && sess.achUnlocked > 0
+    ? ` · 🏆 ${sess.achUnlocked} ${t("stage.achievements")}`
+    : "";
+  return `<div class="stage-welcome-banner" data-gp-row>
+    <div class="stage-welcome-glow"></div>
+    <div class="stage-welcome-icon">${icon("sparkles", 18)}</div>
+    <div class="stage-welcome-content">
+      <span class="stage-welcome-title">${esc(t("stage.welcomeBack"))}</span>
+      <span class="stage-welcome-desc">${esc(summaryText)}${esc(achText)}</span>
+    </div>
+    <button type="button" class="stage-welcome-dismiss" data-stage-act="dismiss-welcome" data-gp-item data-gp-key="welcome:dismiss" aria-label="${esc(t("common.close"))}">
+      ${icon("x", 14)}
+    </button>
+  </div>`;
+}
+
 export function stageHomeHeroHtml(game: EpicSummary): string {
   const store = stageStoreName(sourceOfKey(game.appName));
   const isFav = S.epicFav.has(game.appName);
+  const hasUpdate = stageHasUpdate(game);
 
   return `<div class="stage-home-copy">
     <div class="stage-home-eyebrow">
@@ -64,7 +90,10 @@ export function stageHomeHeroHtml(game: EpicSummary): string {
     </div>
     <h1 class="stage-home-title">${esc(game.title)}</h1>
     <div class="stage-home-actions">
-      <div class="stage-primary-action">${stagePrimaryAction(game)}</div>
+      ${hasUpdate
+        ? `<div class="stage-primary-action">${stagePlayAction(game)}</div>
+           ${stageUpdateAction(game)}`
+        : `<div class="stage-primary-action">${stagePrimaryAction(game)}</div>`}
       <button type="button" class="stage-home-more" data-stage-act="scroll-to-hub" data-gp-skip aria-label="${esc(t("stage.details"))}">
         <span>${esc(t("stage.details"))}</span>${icon("chevron-down", 15)}
       </button>
@@ -108,7 +137,7 @@ function achievementsActivityCard(game: EpicSummary): string {
       <div class="stage-act-body">
         <span class="stage-kicker">${esc(t("stage.playtimeLabel"))}</span>
         <h3 class="stage-act-title">${play.seconds > 0 ? esc(t("stage.hoursValue", { h: (play.seconds / 3600).toFixed(1) })) : esc(t("playtime.notPlayed"))}</h3>
-        <span class="stage-act-meta">${esc(t("stage.sideHint"))}</span>
+        <span class="stage-act-meta">${esc(play.lastPlayed > 0 ? relativeTime(play.lastPlayed) : t("playtime.notPlayed"))}</span>
       </div>
     </button>`;
   }
@@ -127,8 +156,8 @@ function achievementsActivityCard(game: EpicSummary): string {
     <div class="stage-act-body">
       <span class="stage-kicker">${esc(t("stage.achievements"))} (${percent}%)</span>
       ${stageProgress(percent, "stage-act-progress")}
-      <h3 class="stage-act-title">${esc(nextLocked?.display_name || nextLocked?.name || t("stage.tabAchievements"))}</h3>
-      <span class="stage-act-meta">${esc(nextLocked?.description || t("stage.achUnlockedLabel"))}</span>
+      <h3 class="stage-act-title">${esc(percent === 100 ? "🏆 " + t("stage.achUnlockedLabel") : (nextLocked?.display_name || nextLocked?.name || t("stage.tabAchievements")))}</h3>
+      <span class="stage-act-meta">${esc(percent === 100 ? ach.total_achievements + " / " + ach.total_achievements : (nextLocked?.description || t("stage.achUnlockedLabel")))}</span>
     </div>
   </button>`;
 }
@@ -142,8 +171,8 @@ function capturesActivityCard(game: EpicSummary): string {
       <div class="stage-act-icon-wrap">${icon("image", 26)}</div>
       <div class="stage-act-body">
         <span class="stage-kicker">${esc(t("stage.stills"))}</span>
-        <h3 class="stage-act-title">${esc(t("stage.tabExtras"))}</h3>
-        <span class="stage-act-meta">${esc(t("stage.cloudReady"))}</span>
+        <h3 class="stage-act-title">${esc(t("stage.stills"))}</h3>
+        <span class="stage-act-meta">${esc(t("stage.noScreenshots"))}</span>
       </div>
     </button>`;
   }
@@ -165,7 +194,7 @@ function detailsActivityCard(game: EpicSummary): string {
     <div class="stage-act-body">
       <span class="stage-kicker">${esc(t("stage.installSize"))}</span>
       <h3 class="stage-act-title">${game.installSize > 0 ? esc(fmtBytes(game.installSize)) : "—"}</h3>
-      <span class="stage-act-meta">${esc(stageStoreName(sourceOfKey(game.appName)))} · ${esc(t("stage.details"))}</span>
+      <span class="stage-act-meta">${esc(game.installed ? t("stage.installed") : t("stage.notInstalled"))} · ${esc(stageStoreName(sourceOfKey(game.appName)))}</span>
     </div>
   </button>`;
 }
@@ -201,6 +230,20 @@ function collectionsRow(): string {
   </div>`;
 }
 
+function readyGamesRow(): string {
+  const ready = stageReadyShelf(12);
+  if (ready.length === 0) return "";
+  return `<div class="stage-collection-section">
+    <div class="stage-shelf-header">
+      <h2 class="stage-shelf-title">${esc(t("stage.readyShelfTitle"))}</h2>
+      <span class="stage-shelf-subtitle">${ready.length}</span>
+    </div>
+    <div class="stage-card-row stage-ribbon-track" data-gp-row>
+      ${ready.map((s) => ribbonCard(s, false)).join("")}
+    </div>
+  </div>`;
+}
+
 export function stageHomeActivitiesHtml(game: EpicSummary): string {
   return `<div class="stage-shelf-header">
     <h2 class="stage-shelf-title">${esc(t("stage.details"))}</h2>
@@ -212,6 +255,7 @@ export function stageHomeActivitiesHtml(game: EpicSummary): string {
     ${capturesActivityCard(game)}
     ${detailsActivityCard(game)}
   </div>
+  ${readyGamesRow()}
   ${collectionsRow()}`;
 }
 
@@ -239,6 +283,8 @@ export function renderStageHome(): string {
       <div class="stage-home-scrim"></div>
       <div class="stage-home-ambient" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
       <div class="stage-home-grain" aria-hidden="true"></div>
+
+      ${welcomeBackBannerHtml()}
 
       <div class="stage-home-ribbon">
         <div class="stage-ribbon-track" data-gp-row>

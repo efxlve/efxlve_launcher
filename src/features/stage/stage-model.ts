@@ -1,3 +1,5 @@
+import { icon } from "../../core/icons";
+import { esc } from "../../core/utils";
 /**
  * Stage's read-only view model.
  *
@@ -316,4 +318,28 @@ export function stageAchievements(s: EpicSummary): ReturnType<typeof achSummaryO
 /** Total playtime for the program page, already merged across copies. */
 export function stageGamePlaytime(s: EpicSummary): { seconds: number; lastPlayed: number } {
   return libraryPlaytime(s);
+}
+
+export function stageHasUpdate(s: EpicSummary): boolean {
+  return Boolean(s.installed && (s.updateAvailable || S.availableUpdates.has(s.appName) || S.gogUpdates.has(s.appName)));
+}
+
+export function stagePlayAction(s: EpicSummary): string {
+  if (s.appName.startsWith("amazon::")) {
+    return `<button class="btn play full" data-act="amazon-play" data-id="${esc(s.appName.slice(8))}" data-gp-default data-gp-key="primary">${icon("play", 14)} ${t("common.play")}</button>`;
+  }
+  if (s.appName.startsWith("steam::")) {
+    return `<button class="btn play full" data-act="steam-action" data-id="${esc(s.appName.slice(7))}" data-mode="launch" data-gp-default data-gp-key="primary" title="${t("steam.launch")}">${icon("play", 14)} ${t("common.play")}</button>`;
+  }
+  return `<button class="btn play full" data-act="epic-play" data-id="${esc(s.appName)}" data-gp-default data-gp-key="primary">${icon("play", 14)} ${t("common.play")}</button>`;
+}
+
+export function stageUpdateAction(s: EpicSummary): string {
+  if (s.appName.startsWith("amazon::")) {
+    return `<button type="button" class="stage-btn-update-hero btn update full" data-act="amazon-install" data-id="${esc(s.appName.slice(8))}" data-gp-item data-gp-key="hero:update" title="${esc(t("common.updateDownload"))}">${icon("download", 14)} <span>${esc(t("common.update"))}</span></button>`;
+  }
+  if (s.appName.startsWith("steam::")) {
+    return `<button type="button" class="stage-btn-update-hero btn update full" data-act="steam-action" data-id="${esc(s.appName.slice(7))}" data-mode="update" data-gp-item data-gp-key="hero:update" title="${esc(t("steam.updateRequired"))}">${icon("download", 14)} <span>${esc(t("common.update"))}</span></button>`;
+  }
+  return `<button type="button" class="stage-btn-update-hero btn update full" data-act="epic-install" data-id="${esc(s.appName)}" data-gp-item data-gp-key="hero:update" title="${esc(t("common.updateDownload"))}">${icon("download", 14)} <span>${esc(t("common.update"))}</span></button>`;
 }

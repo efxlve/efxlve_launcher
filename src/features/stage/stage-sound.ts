@@ -9,7 +9,7 @@
 
 import { S } from "../../core/state";
 
-export type StageFeedback = "move" | "select" | "back" | "launch" | "error" | "toggle" | "tab" | "boot";
+export type StageFeedback = "move" | "select" | "back" | "launch" | "error" | "toggle" | "tab" | "boot" | "bump";
 
 let audio: AudioContext | null = null;
 let lastSoundAt = 0;
@@ -106,6 +106,11 @@ export function playStageSound(kind: StageFeedback): void {
   }
   const volume = (S.stage.soundVolume / 100) * 0.22;
   switch (kind) {
+    case "bump":
+      // A soft low-frequency boundary thump
+      tone(context, 130, 80, 0.038, volume * 0.28, "sine");
+      air(context, 0.025, volume * 0.06, 900);
+      break;
     case "move":
       // A quiet wooden tick, not a beep: the high transient does the work.
       tone(context, 690, 640, 0.022, volume * 0.22, "sine");
@@ -210,6 +215,7 @@ function vibrate(kind: StageFeedback): void {
     toggle: { duration: 14, strongMagnitude: 0.15, weakMagnitude: 0.08 },
     tab: { duration: 18, strongMagnitude: 0.18, weakMagnitude: 0.1 },
     boot: { duration: 120, strongMagnitude: 0.2, weakMagnitude: 0.1 },
+    bump: { duration: 25, strongMagnitude: 0.18, weakMagnitude: 0.08 },
   }[kind];
   void actuator.playEffect("dual-rumble", effect).catch(() => undefined);
 }

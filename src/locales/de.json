@@ -4210,5 +4210,13 @@
   "cloud.preLaunchRestoring": "Cloud-Spielstand wird wiederhergestellt…",
   "cloud.preLaunchRestored": "Cloud-Spielstand wiederhergestellt.",
   "cloud.preLaunchFailed": "Cloud-Spielstand konnte nicht wiederhergestellt werden: {msg}",
-  "cloud.previewDevice": "Gespeichert auf {device}"
+  "cloud.previewDevice": "Gespeichert auf {device}",
+  "stage.select": "Auswählen",
+  "stage.noScreenshots": "Noch keine Screenshots aufgenommen",
+  "stage.readyShelfTitle": "Bereit zum Spielen",
+  "stage.updatesReady": "{n} Updates verfügbar",
+  "stage.updateAll": "Alle aktualisieren",
+  "stage.welcomeBack": "Willkommen zurück!",
+  "stage.sessionSummary": "Du hast {title} für {time} gespielt.",
+  "stage.controllerBattery": "Controller-Akku"
 }

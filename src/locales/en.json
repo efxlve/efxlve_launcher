@@ -4210,5 +4210,13 @@
   "cloud.preLaunchRestoring": "Restoring the cloud save…",
   "cloud.preLaunchRestored": "Cloud save restored.",
   "cloud.preLaunchFailed": "Could not restore the cloud save: {msg}",
-  "cloud.previewDevice": "Saved on {device}"
+  "cloud.previewDevice": "Saved on {device}",
+  "stage.select": "Select",
+  "stage.noScreenshots": "No screenshots taken yet",
+  "stage.readyShelfTitle": "Ready to Play",
+  "stage.updatesReady": "{n} updates ready",
+  "stage.updateAll": "Update All",
+  "stage.welcomeBack": "Welcome back!",
+  "stage.sessionSummary": "You played {title} for {time}.",
+  "stage.controllerBattery": "Controller battery"
 }

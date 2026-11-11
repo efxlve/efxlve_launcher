@@ -4210,5 +4210,13 @@
   "cloud.preLaunchRestoring": "Восстановление облачного сохранения…",
   "cloud.preLaunchRestored": "Облачное сохранение восстановлено.",
   "cloud.preLaunchFailed": "Не удалось восстановить облачное сохранение: {msg}",
-  "cloud.previewDevice": "Сохранено на {device}"
+  "cloud.previewDevice": "Сохранено на {device}",
+  "stage.select": "Выбрать",
+  "stage.noScreenshots": "Скриншотов пока нет",
+  "stage.readyShelfTitle": "Готовы к запуску",
+  "stage.updatesReady": "Готово обновлений: {n}",
+  "stage.updateAll": "Обновить все",
+  "stage.welcomeBack": "С возвращением!",
+  "stage.sessionSummary": "Вы играли в {title} в течение {time}.",
+  "stage.controllerBattery": "Батарея контроллера"
 }

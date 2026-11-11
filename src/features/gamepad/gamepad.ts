@@ -564,7 +564,11 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
     bestEl = scan(candidates);
   }
 
-  if (bestEl) setFocus(bestEl);
+  if (bestEl) {
+    setFocus(bestEl);
+  } else if (S.stage.active) {
+    stageBridge()?.bump?.(dir);
+  }
 }
 
 function activateFocused(): void {

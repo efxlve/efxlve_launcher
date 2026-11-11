@@ -4210,5 +4210,13 @@
   "cloud.preLaunchRestoring": "Ripristino del salvataggio cloud…",
   "cloud.preLaunchRestored": "Salvataggio cloud ripristinato.",
   "cloud.preLaunchFailed": "Impossibile ripristinare il salvataggio cloud: {msg}",
-  "cloud.previewDevice": "Salvato su {device}"
+  "cloud.previewDevice": "Salvato su {device}",
+  "stage.select": "Seleziona",
+  "stage.noScreenshots": "Nessuno screenshot ancora acquisito",
+  "stage.readyShelfTitle": "Pronto per giocare",
+  "stage.updatesReady": "{n} aggiornamenti pronti",
+  "stage.updateAll": "Aggiorna tutto",
+  "stage.welcomeBack": "Bentornato!",
+  "stage.sessionSummary": "Hai giocato a {title} per {time}.",
+  "stage.controllerBattery": "Batteria del controller"
 }

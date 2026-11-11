@@ -715,3 +715,56 @@ html.reduce-effects #stage-root .stage-cover-card.gp-focused,
 html.reduce-effects #stage-root .stage-sheet-tile.gp-focused {
   transform: none !important;
 }
+
+/* ---------- Edge bump feedback animations ---------- */
+
+@keyframes stageBumpLeft {
+  0% { transform: translateX(0); }
+  45% { transform: translateX(-6px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes stageBumpRight {
+  0% { transform: translateX(0); }
+  45% { transform: translateX(6px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes stageBumpUp {
+  0% { transform: translateY(0); }
+  45% { transform: translateY(-6px); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes stageBumpDown {
+  0% { transform: translateY(0); }
+  45% { transform: translateY(6px); }
+  100% { transform: translateY(0); }
+}
+
+.stage-bump-left {
+  animation: stageBumpLeft 170ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.stage-bump-right {
+  animation: stageBumpRight 170ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.stage-bump-up {
+  animation: stageBumpUp 170ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.stage-bump-down {
+  animation: stageBumpDown 170ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes stageWelcomeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

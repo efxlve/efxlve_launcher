@@ -121,7 +121,7 @@ import { initialReduceEffects } from "./effects";
 import { loadGameStatus, loadUiScale } from "./game-status";
 import { readCustomCss } from "./custom-css";
 import { normalizeSurface } from "./themes";
-import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, CustomLogoLayout, CustomLogoSize, DlMetrics, DownloadFinishAction, DrawerTab, EpicCopyOverride, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibGroupBy, LibraryItem, LogoAnchor, NotifTab, SavedAccount, SettingsSection, StageAchievementFilter, StageLibraryFilter, StageLibrarySort, StageLibraryView, StageProgramTab, StageRoute, StageRouteSnapshot, StageSettingsTab, View } from "./types";
+import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, CustomLogoLayout, CustomLogoSize, DlMetrics, DownloadFinishAction, DrawerTab, EpicCopyOverride, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibGroupBy, LibraryItem, LogoAnchor, NotifTab, SavedAccount, SettingsSection, StageAchievementFilter, StageLibraryFilter, StageLibrarySort, StageLibraryView, StageProgramTab, StageRoute, StageRouteSnapshot, StageSettingsTab, StageSessionSummary, View } from "./types";
 import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
 
 
@@ -1112,6 +1112,7 @@ export const S = {
     controllerName: "",
     controllerBattery: (null) as number | null,
     stack: ([] as StageRouteSnapshot[]),
+    lastSession: (null) as StageSessionSummary | null,
   },
   gamepadPolling: false,
   lastGamepadActionTime: 0,

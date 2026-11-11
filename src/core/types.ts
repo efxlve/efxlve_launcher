@@ -20,6 +20,16 @@ export type StageLibrarySort = "recent" | "alpha" | "playtime" | "installed";
 export type StageLibraryView = "grid" | "list";
 
 /** One entry of Stage's back stack. */
+/** Summary of a recently ended gameplay session for Stage's welcome card. */
+export interface StageSessionSummary {
+  title: string;
+  key: string;
+  seconds: number;
+  totalSeconds?: number;
+  achUnlocked?: number;
+  timestamp: number;
+}
+
 export interface StageRouteSnapshot {
   route: StageRoute;
   gameKey: string | null;

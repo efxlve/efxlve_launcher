@@ -105,6 +105,7 @@ function tools(): string {
     ${queryChip}
     <button type="button" class="stage-tool" data-stage-act="cycle-store" data-gp-item data-gp-key="tool:store">${icon("layers", 16)}<span>${esc(stageStoreFilterLabel())}</span></button>
     <button type="button" class="stage-tool" data-stage-act="cycle-sort" data-gp-item data-gp-key="tool:sort">${icon("arrow-down-a-z", 16)}<span>${esc(sortLabel(S.stage.librarySort))}</span></button>
+    <button type="button" class="stage-tool" data-stage-act="random-game" data-gp-item data-gp-key="tool:random" title="${esc(t("library.random"))}">${icon("sparkles", 16)}<span>${esc(t("library.random"))}</span></button>
     <button type="button" class="stage-tool" data-stage-act="toggle-view" data-gp-item data-gp-key="tool:view">${icon(S.stage.libraryView === "grid" ? "rows" : "layout-grid", 16)}<span>${esc(S.stage.libraryView === "grid" ? t("stage.viewList") : t("stage.viewGrid"))}</span></button>
     <button type="button" class="stage-tool" data-stage-act="open-search" data-gp-item data-gp-key="tool:search">${icon("search", 16)}<span>${esc(t("stage.search"))}</span></button>
   </div>`;

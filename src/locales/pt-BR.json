@@ -4210,5 +4210,13 @@
   "cloud.preLaunchRestoring": "Restaurando o save da nuvem…",
   "cloud.preLaunchRestored": "Save da nuvem restaurado.",
   "cloud.preLaunchFailed": "Não foi possível restaurar o save da nuvem: {msg}",
-  "cloud.previewDevice": "Salvo em {device}"
+  "cloud.previewDevice": "Salvo em {device}",
+  "stage.select": "Selecionar",
+  "stage.noScreenshots": "Nenhuma captura de tela ainda",
+  "stage.readyShelfTitle": "Pronto para jogar",
+  "stage.updatesReady": "{n} atualizações prontas",
+  "stage.updateAll": "Atualizar tudo",
+  "stage.welcomeBack": "Bem-vindo de volta!",
+  "stage.sessionSummary": "Você jogou {title} por {time}.",
+  "stage.controllerBattery": "Bateria do controle"
 }

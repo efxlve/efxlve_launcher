@@ -816,3 +816,63 @@ html.reduce-effects .stage-intro {
 html.reduce-effects #stage-root.is-idle .stage-home-art-image {
   animation: none !important;
 }
+
+/* ---------- 10-foot UI / 1440p / 4K TV scaling ---------- */
+
+@media (min-width: 1921px) {
+  #stage-root {
+    --stage-top: 86px;
+    --stage-pad: clamp(48px, 3.8vw, 84px);
+    font-size: 16px;
+  }
+  .stage-hints {
+    font-size: 15px;
+    padding: 10px 24px;
+  }
+  .stage-nav-tab {
+    font-size: 20px;
+    height: 48px;
+  }
+  .stage-clock {
+    font-size: 16px;
+  }
+  .stage-shelf-title {
+    font-size: 24px;
+  }
+  .stage-tool {
+    font-size: 15px;
+    padding: 8px 16px;
+  }
+  .stage-activity-card {
+    min-height: 180px;
+  }
+}
+
+@media (min-width: 2560px) {
+  #stage-root {
+    --stage-top: 104px;
+    --stage-pad: clamp(64px, 4.5vw, 120px);
+    font-size: 18px;
+  }
+  .stage-hints {
+    font-size: 17px;
+    padding: 12px 28px;
+  }
+  .stage-nav-tab {
+    font-size: 23px;
+    height: 56px;
+  }
+  .stage-clock {
+    font-size: 18px;
+  }
+  .stage-shelf-title {
+    font-size: 28px;
+  }
+  .stage-tool {
+    font-size: 17px;
+    padding: 10px 22px;
+  }
+  .stage-activity-card {
+    min-height: 210px;
+  }
+}

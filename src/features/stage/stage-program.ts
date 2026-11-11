@@ -19,7 +19,7 @@ import { shotThumbHtml } from "../screenshots/screenshots-view";
 import { stageEnsureScreenshots } from "./stage-actions";
 import { stageHeroMarkup, stageWideArt } from "./stage-art";
 import { updateStageBackdrop } from "./stage-backdrop";
-import { stageAchievements, stageGameByKey, stageGamePlaytime, stagePrimaryAction } from "./stage-model";
+import { stageAchievements, stageGameByKey, stageGamePlaytime, stageHasUpdate, stagePlayAction, stagePrimaryAction, stageUpdateAction } from "./stage-model";
 import { stageMetaLine, stageProgress, stageStoreName } from "./stage-ui";
 
 const TABS: StageProgramTab[] = ["overview", "achievements", "media", "notes", "extras"];
@@ -395,7 +395,10 @@ export function renderStageProgram(): string {
           <div class="stage-program-meta">${stageMetaLine(game, { withStore: false })}</div>
         </div>
         <div class="stage-program-actions" data-gp-default>
-          <div class="stage-primary-action">${stagePrimaryAction(game)}</div>
+          ${stageHasUpdate(game)
+            ? `<div class="stage-primary-action">${stagePlayAction(game)}</div>
+               ${stageUpdateAction(game)}`
+            : `<div class="stage-primary-action">${stagePrimaryAction(game)}</div>`}
           <button type="button" class="stage-btn stage-btn-ghost${favorite ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(game.appName)}" data-gp-item data-gp-key="prog:favorite">${icon("heart", 18)}<span>${esc(favorite ? t("stage.favorited") : t("stage.favorite"))}</span></button>
           <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="manage-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="prog:manage">${icon("settings", 18)}<span>${esc(t("stage.manage"))}</span></button>
         </div>

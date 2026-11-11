@@ -4210,5 +4210,13 @@
   "cloud.preLaunchRestoring": "جارٍ استعادة النسخة السحابية…",
   "cloud.preLaunchRestored": "تم استعادة النسخة السحابية.",
   "cloud.preLaunchFailed": "تعذّرت استعادة النسخة السحابية: {msg}",
-  "cloud.previewDevice": "حُفظت على {device}"
+  "cloud.previewDevice": "حُفظت على {device}",
+  "stage.select": "تحديد",
+  "stage.noScreenshots": "لا توجد لقطات شاشة بعد",
+  "stage.readyShelfTitle": "جاهز للعب",
+  "stage.updatesReady": "{n} تحديثات جاهزة",
+  "stage.updateAll": "تحديث الكل",
+  "stage.welcomeBack": "مرحبًا بعودتك!",
+  "stage.sessionSummary": "لقد لعبت {title} لمدة {time}.",
+  "stage.controllerBattery": "بطارية يد التحكم"
 }

@@ -740,3 +740,19 @@ export function stageCloudBackup(appName: string): void {
     .then(() => scheduleRender())
     .catch(() => scheduleRender());
 }
+
+export function stageDismissWelcome(): void {
+  S.stage.lastSession = null;
+  stageFeedback("back");
+  scheduleRender();
+}
+
+export function stagePickRandomGame(): void {
+  const all = stageLibraryList();
+  const installed = all.filter((s) => s.installed);
+  const pool = installed.length > 0 ? installed : all;
+  if (pool.length === 0) return;
+  const picked = pool[Math.floor(Math.random() * pool.length)];
+  stageFeedback("select");
+  stageOpenProgram(picked.appName);
+}
