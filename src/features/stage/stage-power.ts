@@ -10,6 +10,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { icon } from "../../core/icons";
 import { scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
+import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 import { stageBatteryInfo } from "./stage-battery";
@@ -46,7 +47,7 @@ export function stageCancelShutdown(): void {
 
 export async function stageSleepDevice(): Promise<void> {
   stageFeedback("launch");
-  await invoke("app_power_action", { action: "sleep" }).catch(() => undefined);
+  await invoke("app_power_action", { action: "sleep" }).catch((error) => toast(String(error), "err"));
 }
 
 export async function stageShutdownDevice(): Promise<void> {
@@ -59,7 +60,7 @@ export async function stageShutdownDevice(): Promise<void> {
     return;
   }
   stageFeedback("launch");
-  await invoke("app_power_action", { action: "shutdown" }).catch(() => undefined);
+  await invoke("app_power_action", { action: "shutdown" }).catch((error) => toast(String(error), "err"));
 }
 
 export function stageQuickVolume(delta: number): void {

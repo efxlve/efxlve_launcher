@@ -607,12 +607,17 @@ export function stageManageConfirmUninstall(key?: string): void {
   S.stage.manageConfirmUninstall = false;
   S.stage.focusKey = "prog:back";
   scheduleRender();
+  const done = (): void => scheduleRender();
+  const failed = (error: unknown): void => {
+    toast(String(error), "err");
+    scheduleRender();
+  };
   if (target.startsWith("steam::")) {
-    void steamGameAction(target.slice(7), "uninstall").then(() => scheduleRender());
+    void steamGameAction(target.slice(7), "uninstall").then(done).catch(failed);
   } else if (target.startsWith("amazon::")) {
-    void nileUninstall(target.slice(8)).then(() => scheduleRender());
+    void nileUninstall(target.slice(8)).then(done).catch(failed);
   } else {
-    void epicUninstall(target).then(() => scheduleRender());
+    void epicUninstall(target).then(done).catch(failed);
   }
 }
 
