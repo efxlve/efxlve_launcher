@@ -834,6 +834,7 @@ function hints(): string {
   }
   return stageHintBar([
     stageHint(face("a"), t("stage.open")),
+    stageHint(face("b"), t("common.back")),
     stageHint(face("x"), t("stage.quickPlay")),
     stageHint(isKbd ? stageKeyGlyph("↓ / S") : "↓", t("stage.details")),
     stageHint(bumpers, t("gamepad.tabs")),
@@ -854,7 +855,7 @@ function quickMenu(entered: boolean): string {
         <span class="stage-dock-kicker">${esc(t("stage.quickMenu"))}</span>
         <span class="stage-dock-status tabular-nums">${esc(pad)}</span>
       </div>
-      <div class="stage-dock-items" data-gp-row>
+      <div class="stage-dock-items">
         ${runningGame ? `
           <button type="button" class="stage-dock-item stage-dock-resume" data-stage-act="open-program" data-key="${esc(runningGame.appName)}" data-gp-item data-gp-key="dock:resume" data-gp-default>
             <span class="stage-dock-icon is-running">${icon("play", 22)}</span>
@@ -1717,7 +1718,7 @@ function bindStageEvents(root: HTMLElement): void {
       case "search-close": stageFeedback("back"); stageCancelSearch(); break;
       case "search-key": stageSearchKey(actionEl.dataset.key || ""); break;
       case "search-submit": stageSearchSubmit(); break;
-      case "open-menu": stageOpenQuickMenu("menu:resume"); break;
+      case "open-menu": stageOpenQuickMenu("dock:resume"); break;
       case "close-menu": stageFeedback("back"); S.stage.quickMenu = false; S.stage.controlsOpen = false; S.stage.focusKey = ""; scheduleRender(); break;
       case "open-power-sheet": stageOpenPowerSheet(); break;
       case "close-power-sheet": stageClosePowerSheet(); break;

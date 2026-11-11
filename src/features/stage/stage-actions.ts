@@ -244,8 +244,9 @@ export function stageBack(): void {
     scheduleRender();
     return;
   }
-  // Home is the edge of the stage: the menu is the safe way out.
-  stageOpenQuickMenu("menu:exit");
+  // Home is the edge of the stage: B opens the way out, already on the exit
+  // tile, so leaving is one more press instead of a hunt across the dock.
+  stageOpenQuickMenu("dock:desktop");
 }
 
 export function stageToggleQuickMenu(): void {
@@ -258,10 +259,10 @@ export function stageToggleQuickMenu(): void {
     scheduleRender();
     return;
   }
-  stageOpenQuickMenu("menu:resume");
+  stageOpenQuickMenu("dock:resume");
 }
 
-export function stageOpenQuickMenu(focusKey = "menu:resume"): void {
+export function stageOpenQuickMenu(focusKey = "dock:resume"): void {
   stageFeedback("select");
   S.stage.quickMenu = true;
   S.stage.controlsOpen = false;
@@ -274,7 +275,7 @@ export function stageToggleControls(): void {
   stageFeedback("select");
   S.stage.quickMenu = true;
   S.stage.controlsOpen = !S.stage.controlsOpen;
-  S.stage.focusKey = S.stage.controlsOpen ? "controls:close" : "menu:controls";
+  S.stage.focusKey = S.stage.controlsOpen ? "controls:close" : "dock:controls";
   scheduleRender();
 }
 
@@ -294,7 +295,7 @@ export function stageCloseControls(): void {
   const fromQuickMenu = S.stage.quickMenu;
   S.stage.controlsOpen = false;
   S.stage.focusKey = fromQuickMenu
-    ? "menu:controls"
+    ? "dock:controls"
     : S.stage.route === "settings"
       ? "set:controls"
       : "";
