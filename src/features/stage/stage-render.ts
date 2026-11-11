@@ -702,7 +702,7 @@ function topbar(): string {
         <span class="stage-brand-mode">STAGE</span>
       </div>
       <span class="stage-top-greeting">${esc(stageIdleGreeting())}${S.customProfileName.trim() ? ` · ${esc(S.customProfileName.trim())}` : ""}</span>
-      <nav class="stage-top-nav" aria-label="${esc(t("stage.navHome"))}">
+      <nav class="stage-top-nav" aria-label="${esc(t("stage.title"))}">
         <span class="stage-bumper-hint is-left">${lbGlyph}</span>
         ${navTab("home", t("stage.navHome"))}
         ${navTab("library", t("stage.navLibrary"))}
@@ -859,7 +859,7 @@ function quickMenu(entered: boolean): string {
         <button type="button" class="stage-dock-item" data-stage-act="open-browser-sheet" data-gp-item data-gp-key="dock:browser"><span class="stage-dock-icon">${icon("globe", 22)}</span><span class="stage-dock-text">${esc(t("overlay.tabBrowser"))}</span></button>
         <button type="button" class="stage-dock-item" data-stage-act="open-spotify-sheet" data-gp-item data-gp-key="dock:spotify"><span class="stage-dock-icon">${icon("spotify", 22)}</span><span class="stage-dock-text">Spotify</span></button>
         <button type="button" class="stage-dock-item" data-stage-act="open-discord-sheet" data-gp-item data-gp-key="dock:discord"><span class="stage-dock-icon">${icon("discord", 22)}</span><span class="stage-dock-text">Discord</span></button>
-        <button type="button" class="stage-dock-item" data-stage-act="open-power-sheet" data-gp-item data-gp-key="dock:power"><span class="stage-dock-icon">${icon("zap", 22)}</span><span class="stage-dock-text">${esc(t("settings.finishActionSleep"))}</span></button>
+        <button type="button" class="stage-dock-item" data-stage-act="open-power-sheet" data-gp-item data-gp-key="dock:power"><span class="stage-dock-icon">${icon("zap", 22)}</span><span class="stage-dock-text">${esc(t("stage.power"))}</span></button>
         <button type="button" class="stage-dock-item" data-stage-act="controls" data-gp-item data-gp-key="dock:controls">
           <span class="stage-dock-icon">${icon("gamepad-2", 22)}</span>
           <span class="stage-dock-text">${esc(t("stage.controller"))}</span>
