@@ -14,7 +14,7 @@ import { epicGetCritic, epicGetHltb } from "../../epic-commands";
 import { currentLanguage, t } from "../../i18n";
 import type { EpicSummary } from "../../epic";
 import { renderMarkdownLite } from "../notes/markdown";
-import { loadNotes, notesForScope } from "../notes/notes-client";
+import { loadNotes, notesForScope, onNotesChanged } from "../notes/notes-client";
 import { shotThumbHtml } from "../screenshots/screenshots-view";
 import { stageEnsureScreenshots } from "./stage-actions";
 import { stageHeroMarkup } from "./stage-art";
@@ -22,6 +22,17 @@ import { stageAchievements, stageGameByKey, stageGamePlaytime, stagePrimaryActio
 import { stageMetaLine, stageProgress, stageStoreName } from "./stage-ui";
 
 const TABS: StageProgramTab[] = ["overview", "achievements", "media", "notes", "extras"];
+/** One request per session; the notes client owns the cache after that. */
+let notesRequested = false;
+
+// Another window (the overlay or the desktop notes page) can write a note while
+// Stage is open. Reload its cache and repaint the tab instead of showing stale
+// text until the next route change.
+onNotesChanged(() => {
+  if (S.stage.active && S.stage.route === "program" && S.stage.programTab === "notes") {
+    scheduleRender();
+  }
+});
 
 function tabLabel(tab: StageProgramTab): string {
   switch (tab) {
@@ -303,7 +314,14 @@ function mediaTab(game: EpicSummary): string {
 }
 
 function notesTab(game: EpicSummary): string {
-  void loadNotes();
+  if (!notesRequested) {
+    notesRequested = true;
+    void loadNotes().then(() => {
+      if (S.stage.active && S.stage.route === "program" && S.stage.programTab === "notes") {
+        scheduleRender();
+      }
+    });
+  }
   const notes = notesForScope(game.appName);
 
   if (notes.length === 0) {

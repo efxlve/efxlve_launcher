@@ -35,6 +35,27 @@ let voiceInfo: DiscordVoiceInfo | null = null;
 let isConnected = false;
 let isConnecting = false;
 let pollTimer: number | null = null;
+/** Sheet state without the polling noise; unchanged polls do not repaint. */
+let lastSheetKey = "";
+
+function discordSheetKey(): string {
+  return [
+    isConnected ? "1" : "0",
+    isConnecting ? "1" : "0",
+    voiceInfo?.inCall ? "1" : "0",
+    voiceInfo?.channelName ?? "",
+    voiceInfo?.guildName ?? "",
+    voiceInfo?.muted ? "1" : "0",
+    voiceInfo?.deafened ? "1" : "0",
+    friendsList
+      .map((friend) => `${friend.id}\u001f${friend.username}\u001f${friend.displayName ?? ""}\u001f${friend.status}\u001f${friend.activity ?? ""}\u001f${friend.avatarUrl ?? ""}`)
+      .join("\u001e"),
+  ].join("\u001f");
+}
+
+export function stageDiscordSheetChanged(): boolean {
+  return discordSheetKey() !== lastSheetKey;
+}
 
 export async function refreshStageDiscord(): Promise<void> {
   try {
@@ -91,7 +112,10 @@ export function stageOpenDiscordSheet(): void {
         }
         return;
       }
-      void refreshStageDiscord().then(() => scheduleRender());
+      void refreshStageDiscord().then(() => {
+        if (!S.stage.active || !S.stage.discordOpen) return;
+        if (stageDiscordSheetChanged()) scheduleRender();
+      });
     }, 2500);
   }
   scheduleRender();
@@ -141,6 +165,7 @@ export async function stageDiscordOpenApp(): Promise<void> {
 }
 
 export function renderStageDiscordSheet(entered: boolean): string {
+  lastSheetKey = discordSheetKey();
   const onlineFriends = friendsList.filter((f) => f.status !== "offline");
 
   return `<div class="stage-overlay stage-discord-sheet${entered ? " stage-overlay-enter" : ""}">

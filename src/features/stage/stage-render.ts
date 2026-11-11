@@ -108,6 +108,7 @@ import {
   renderStageSpotifySheet,
   stageCloseSpotifySheet,
   stageOpenSpotifySheet,
+  patchStageSpotifyProgress,
   stageSpotifyAction,
   stageSpotifyPlayPlaylist,
 } from "./stage-spotify";
@@ -151,6 +152,7 @@ import {
   wakeStageIdle,
 } from "./stage-idle";
 import { fullShotSrc } from "../screenshots/screenshots-view";
+import { notesRevision } from "../notes/notes-client";
 // Side effect: register the button/back contract with the gamepad loop.
 import "./stage-input";
 import { previewStageSound, stageFeedback } from "./stage-sound";
@@ -222,8 +224,29 @@ function stageHomeRevision(): string {
   ].join("\u001f");
 }
 
+/** The programme page has no in-place patch; its loaded data is its signature. */
+function stageProgramRevision(): string {
+  if (S.stage.route !== "program") return "";
+  const key = S.stage.gameKey ?? "";
+  const ach = S.loadedAchievements.get(key);
+  const shots = S.loadedScreenshots.get(key);
+  return [
+    key,
+    ach?.user_unlocked ?? -1,
+    ach?.total_achievements ?? -1,
+    ach?.achievements?.length ?? -1,
+    ach?.hidden?.length ?? -1,
+    ach?.is_platinum ? "1" : "0",
+    shots?.length ?? -1,
+    S.loadedHltb.has(key) ? "1" : "0",
+    S.loadedCritic.has(key) ? "1" : "0",
+    S.stage.programTab === "notes" ? notesRevision() : "",
+  ].join("\u001f");
+}
+
 function stageLiveSignature(): string {
   const homeRevision = stageHomeRevision();
+  const programRevision = stageProgramRevision();
   return [
     stageInputMode,
     S.stage.route,
@@ -269,6 +292,7 @@ function stageLiveSignature(): string {
     navigator.onLine ? "1" : "0",
     S.appLanguage,
     homeRevision,
+    programRevision,
     stageLibraryRenderToken(),
     S.stage.route === "downloads" ? String(S.downloads.size) : "",
     S.availableUpdates.size,
@@ -399,7 +423,8 @@ function patchStageHomeHeroInPlace(hero: EpicSummary): void {
     const shots = S.loadedScreenshots.get(hero.appName) || [];
     const play = stageGamePlaytime(hero);
     const isRunning = S.runningGames.has(hero.appName);
-    const actSig = `${ach?.user_unlocked ?? -1}:${ach?.total_achievements ?? -1}:${shots.length}:${play.seconds}:${isRunning ? "1" : "0"}`;
+    const achLoaded = S.loadedAchievements.has(hero.appName) ? "1" : "0";
+    const actSig = `${ach?.user_unlocked ?? -1}:${ach?.total_achievements ?? -1}:${achLoaded}:${shots.length}:${play.seconds}:${isRunning ? "1" : "0"}`;
     if (actEl.dataset.actSig !== actSig) {
       actEl.dataset.actSig = actSig;
       actEl.innerHTML = stageHomeActivitiesHtml(hero);
@@ -461,6 +486,7 @@ function patchLiveStage(): void {
     if (badge && badge.textContent !== text) badge.textContent = text;
   }
   if (S.stage.route === "downloads") patchStageDownloads();
+  if (S.stage.spotifyOpen) patchStageSpotifyProgress();
 
   patchStageCardsInPlace();
 

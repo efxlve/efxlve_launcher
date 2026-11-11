@@ -84,6 +84,12 @@ export function noteGuideUrls(note: Note): string[] {
 
 let cache: Note[] | null = null;
 let loading: Promise<Note[]> | null = null;
+/** Changes whenever the shared cache changes, so a surface can repaint once. */
+let revision = 0;
+
+export function notesRevision(): number {
+  return revision;
+}
 
 type NoteDeleteHandler = (note: Note) => void;
 const deleteHandlers = new Set<NoteDeleteHandler>();
@@ -107,6 +113,7 @@ export async function loadNotes(force = false): Promise<Note[]> {
   loading = invoke<{ notes: Note[] }>("notes_list")
     .then((file) => {
       cache = Array.isArray(file?.notes) ? file.notes : [];
+      revision += 1;
       return cache;
     })
     .catch(() => {
@@ -149,6 +156,7 @@ export async function saveNote(input: NoteInput): Promise<Note | null> {
     });
     if (note) {
       cache = [...(cache ?? []).filter((item) => item.id !== note.id), note];
+      revision += 1;
     }
     return note ?? null;
   } catch {
@@ -162,6 +170,7 @@ export async function deleteNote(id: string): Promise<boolean> {
     const removed = await invoke<boolean>("notes_delete", { id });
     if (removed) {
       cache = (cache ?? []).filter((item) => item.id !== id);
+      revision += 1;
       if (note) {
         for (const handler of deleteHandlers) handler(note);
       }
@@ -175,7 +184,10 @@ export async function deleteNote(id: string): Promise<boolean> {
 /** Brings back the most recently deleted note from its recovery copy. */
 export async function restoreLastNote(): Promise<Note | null> {
   const note = await invoke<Note | null>("notes_restore_last");
-  if (note) cache = [...(cache ?? []).filter((item) => item.id !== note.id), note];
+  if (note) {
+    cache = [...(cache ?? []).filter((item) => item.id !== note.id), note];
+    revision += 1;
+  }
   return note ?? null;
 }
 

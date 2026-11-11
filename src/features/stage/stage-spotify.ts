@@ -29,6 +29,46 @@ let playlists: PlaylistSummary[] = [];
 let status: SpotifyPlaybackStatus | null = null;
 let pollTimer: number | null = null;
 let isLoadingPlaylists = false;
+/** Sheet state without the ticking progressMs; progress is patched in place. */
+let lastSheetKey = "";
+
+function spotifySheetKey(): string {
+  return [
+    nowPlaying?.title ?? "",
+    nowPlaying?.artist ?? "",
+    nowPlaying?.album ?? "",
+    nowPlaying?.artUrl ?? "",
+    nowPlaying?.isPlaying ? "1" : "0",
+    nowPlaying?.shuffle ? "1" : "0",
+    nowPlaying?.repeat ?? "",
+    status?.running ? "1" : "0",
+    status?.deviceName ?? "",
+    playlists.map((item) => `${item.uri}\u001f${item.name}\u001f${item.trackCount}\u001f${item.artUrl ?? ""}`).join("\u001e"),
+  ].join("\u001f");
+}
+
+/** True when the sheet needs a real repaint instead of a progress-only patch. */
+export function stageSpotifySheetChanged(): boolean {
+  return spotifySheetKey() !== lastSheetKey;
+}
+
+/** The one part of the sheet that changes every poll: the timeline. */
+export function patchStageSpotifyProgress(): void {
+  const sheet = document.querySelector<HTMLElement>(".stage-spotify-sheet");
+  if (!sheet) return;
+  const progress = nowPlaying?.progressMs || 0;
+  const duration = nowPlaying?.durationMs || 1;
+  const pct = Math.min(100, Math.round((progress / duration) * 100));
+  const bar = sheet.querySelector<HTMLElement>(".stage-spotify-bar");
+  const width = `${pct}%`;
+  if (bar && bar.style.width !== width) bar.style.width = width;
+  const times = sheet.querySelectorAll<HTMLElement>(".stage-spotify-times span");
+  if (times.length < 2) return;
+  const elapsed = formatTime(progress);
+  const total = formatTime(duration);
+  if (times[0].textContent !== elapsed) times[0].textContent = elapsed;
+  if (times[1].textContent !== total) times[1].textContent = total;
+}
 
 export async function refreshStageSpotify(): Promise<void> {
   try {
@@ -74,7 +114,11 @@ export function stageOpenSpotifySheet(): void {
         }
         return;
       }
-      void refreshStageSpotify().then(() => scheduleRender());
+      void refreshStageSpotify().then(() => {
+        if (!S.stage.active || !S.stage.spotifyOpen) return;
+        if (stageSpotifySheetChanged()) scheduleRender();
+        else patchStageSpotifyProgress();
+      });
     }, 1500);
   }
   scheduleRender();
@@ -126,6 +170,7 @@ export async function stageSpotifyPlayPlaylist(uri: string): Promise<void> {
 export function renderStageSpotifySheet(entered: boolean): string {
   const isRunning = status?.running;
   const isPlaying = nowPlaying?.isPlaying;
+  lastSheetKey = spotifySheetKey();
   const title = nowPlaying?.title || "Spotify";
   const artist = nowPlaying?.artist || (isRunning ? t("settings.connected") : t("accounts.spotifyDesc"));
   const art = nowPlaying?.artUrl;
