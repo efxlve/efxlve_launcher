@@ -48,6 +48,11 @@ function downloadRow(id: string, title: string, progress: number): string {
 
 function updateRow(s: ReturnType<typeof stageBaseSummaries>[number]): string {
   const store = stageStoreName(sourceOfKey(s.appName));
+  const updateAct = s.appName.startsWith("amazon::")
+    ? `data-act="amazon-install" data-id="${esc(s.appName.slice(8))}"`
+    : s.appName.startsWith("steam::")
+      ? `data-act="steam-action" data-id="${esc(s.appName.slice(7))}" data-mode="update"`
+      : `data-act="epic-install" data-id="${esc(s.appName)}"`;
   return `<div class="stage-download-row stage-update-available-row" data-key="${esc(s.appName)}">
     <span class="stage-list-cover">${stageCoverMarkup(s, "stage-cover-art")}</span>
     <div class="stage-download-main">
@@ -61,8 +66,11 @@ function updateRow(s: ReturnType<typeof stageBaseSummaries>[number]): string {
       </div>
     </div>
     <div class="stage-download-actions">
-      <button type="button" class="stage-btn stage-btn-primary" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="dl:update:${esc(s.appName)}">
+      <button type="button" class="stage-btn stage-btn-primary" ${updateAct} data-gp-item data-gp-key="dl:update:run:${esc(s.appName)}" title="${esc(t("common.updateDownload"))}">
         ${icon("download", 16)}<span>${esc(t("common.update"))}</span>
+      </button>
+      <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="dl:update:details:${esc(s.appName)}">
+        <span>${esc(t("stage.details"))}</span>
       </button>
     </div>
   </div>`;
