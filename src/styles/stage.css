@@ -509,6 +509,8 @@ body.stage-mode #toasts {
   overflow-y: auto;
   padding: 0;
   padding-block-end: 118px;
+  scroll-padding-block-start: calc(var(--stage-top) + 16px);
+  scroll-padding-block-end: calc(78px + var(--stage-safe, 0px));
   scroll-behavior: smooth;
   scrollbar-width: none;
   z-index: 10;
@@ -612,6 +614,14 @@ body.stage-mode #toasts {
   font-weight: 750;
   letter-spacing: 0.04em;
   padding: 0 7px;
+  min-width: 22px;
+}
+.stage-glyph-aux {
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  padding: 0 6px;
   min-width: 22px;
 }
 .stage-glyph-a {

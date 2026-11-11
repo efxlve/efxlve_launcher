@@ -26,8 +26,48 @@ export function stageFaceGlyph(button: "a" | "b" | "x" | "y"): string {
 
 /** Shoulder-button glyph for the connected pad. */
 export function stageBumperGlyphs(): string {
-  const [left, right] = S.gamepadKind === "xbox" || S.gamepadKind === "generic" ? ["LB", "RB"] : ["L1", "R1"];
+  const kind = S.gamepadKind;
+  const [left, right] =
+    kind === "playstation"
+      ? ["L1", "R1"]
+      : kind === "switch"
+        ? ["L", "R"]
+        : ["LB", "RB"];
   return `<span class="stage-glyph stage-glyph-bumper">${left}</span><span class="stage-glyph stage-glyph-bumper">${right}</span>`;
+}
+
+/** Trigger-button glyph for the connected pad (L2/R2, LT/RT, ZL/ZR). */
+export function stageTriggerGlyphs(): string {
+  const kind = S.gamepadKind;
+  const [left, right] =
+    kind === "playstation"
+      ? ["L2", "R2"]
+      : kind === "switch"
+        ? ["ZL", "ZR"]
+        : ["LT", "RT"];
+  return `<span class="stage-glyph stage-glyph-bumper">${left}</span><span class="stage-glyph stage-glyph-bumper">${right}</span>`;
+}
+
+/** Menu / Start / Options button glyph for the connected pad. */
+export function stageMenuGlyph(): string {
+  const kind = S.gamepadKind;
+  let label = "Menu";
+  if (kind === "playstation") label = "Options";
+  else if (kind === "switch") label = "+";
+  else if (kind === "steamdeck") label = "Menu";
+  else if (kind === "generic") label = "Start";
+  return `<span class="stage-glyph stage-glyph-aux">${label}</span>`;
+}
+
+/** View / Select / Touchpad / Back button glyph for the connected pad. */
+export function stageViewGlyph(): string {
+  const kind = S.gamepadKind;
+  let label = "View";
+  if (kind === "playstation") label = "Touchpad";
+  else if (kind === "switch") label = "−";
+  else if (kind === "steamdeck") label = "View";
+  else if (kind === "generic") label = "Select";
+  return `<span class="stage-glyph stage-glyph-aux">${label}</span>`;
 }
 
 /** Keyboard keycap glyph. */

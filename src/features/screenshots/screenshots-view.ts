@@ -7,6 +7,7 @@ import { summaryOf } from "../../core/selectors";
  * AVIF/WebP/JPEG. State lives in S; DOM targets are queried per call.
  */
 
+import { isTauri } from "../../core/constants";
 import { modalRoot } from "../../core/dom";
 import { emptyPanel, icon } from "../../core/icons";
 import { scheduleRender } from "../../core/render";
@@ -316,6 +317,10 @@ export function renderMomentsStrip(appName: string): string {
 
 export function fetchAndRenderScreenshots(appName: string, title: string, force = false): void {
   if (!force && S.loadedScreenshots.has(appName)) return;
+  if (!isTauri) {
+    S.loadedScreenshots.set(appName, []);
+    return;
+  }
   S.loadingScreenshotsFor.add(appName);
   const request = isSteamApp(appName)
     ? steamGetGameScreenshots(appName.slice(7))
@@ -354,6 +359,7 @@ export function fetchAndRenderScreenshots(appName: string, title: string, force 
       // Only the request that owns the marker clears it: a failure for another
       // game must not drop the response of the game still loading.
       if (S.loadingScreenshotsFor.has(appName)) S.loadingScreenshotsFor.delete(appName);
+      S.loadedScreenshots.set(appName, []);
       if (S.stage.active && S.stage.gameKey === appName) scheduleRender();
     });
 }

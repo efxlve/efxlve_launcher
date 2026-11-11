@@ -532,6 +532,13 @@
     font-size: 9.5px;
   }
 
+  .stage-glyph-aux {
+    font-size: 8.5px;
+    padding: 0 5px;
+    min-width: 18px;
+    height: 18px;
+  }
+
   .stage-glyph-a,
   .stage-glyph-b,
   .stage-glyph-x,
@@ -653,8 +660,9 @@
 
   /* A thumb browses the shelf, not a mouse: fewer, larger covers. */
   .stage-wall-grid {
-    grid-template-columns: repeat(auto-fill, minmax(126px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(152px, 1fr));
+    gap: 16px;
+    padding-block-end: calc(90px + var(--stage-safe, 0px));
   }
 
   .stage-cover-title {
@@ -665,8 +673,25 @@
     gap: 14px;
   }
 
+  .stage-settings-head {
+    padding-block-end: 10px;
+    gap: 12px;
+  }
+
   .stage-settings-head h1 {
-    font-size: clamp(28px, 3vw, 44px);
+    font-size: clamp(24px, 2.8vw, 36px);
+    margin-block-start: 0;
+  }
+
+  .stage-settings-head p {
+    font-size: 11px;
+    margin-block-start: 2px;
+  }
+
+  .stage-settings-head-actions .stage-back {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 11px;
   }
 
   .stage-setting-row {

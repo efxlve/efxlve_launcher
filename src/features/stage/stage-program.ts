@@ -3,6 +3,7 @@
  * press away; the tabs only change the programme notes underneath it.
  */
 
+import { isTauri } from "../../core/constants";
 import { icon } from "../../core/icons";
 import { scheduleRender } from "../../core/render";
 import { libraryItemOf, sourceOfKey } from "../../core/selectors";
@@ -49,29 +50,41 @@ function ensureStageProgramData(game: EpicSummary): void {
   const year = game.releaseYear ?? null;
 
   if (!S.loadedHltb.has(appName) && !S.loadingHltbFor.has(appName)) {
-    S.loadingHltbFor.add(appName);
-    epicGetHltb(lookupTitle, appName, false, year)
-      .then((data) => {
-        S.loadedHltb.set(appName, data);
-        if (S.stage.active && S.stage.route === "program" && S.stage.gameKey === appName) {
-          scheduleRender();
-        }
-      })
-      .catch(() => {})
-      .finally(() => { S.loadingHltbFor.delete(appName); });
+    if (!isTauri) {
+      S.loadedHltb.set(appName, { app_name: appName, title: lookupTitle, supported: false });
+    } else {
+      S.loadingHltbFor.add(appName);
+      epicGetHltb(lookupTitle, appName, false, year)
+        .then((data) => {
+          S.loadedHltb.set(appName, data);
+          if (S.stage.active && S.stage.route === "program" && S.stage.gameKey === appName) {
+            scheduleRender();
+          }
+        })
+        .catch(() => {
+          S.loadedHltb.set(appName, { app_name: appName, title: lookupTitle, supported: false });
+        })
+        .finally(() => { S.loadingHltbFor.delete(appName); });
+    }
   }
 
   if (!S.loadedCritic.has(appName) && !S.loadingCriticFor.has(appName)) {
-    S.loadingCriticFor.add(appName);
-    epicGetCritic(lookupTitle, appName, false, year)
-      .then((data) => {
-        S.loadedCritic.set(appName, data);
-        if (S.stage.active && S.stage.route === "program" && S.stage.gameKey === appName) {
-          scheduleRender();
-        }
-      })
-      .catch(() => {})
-      .finally(() => { S.loadingCriticFor.delete(appName); });
+    if (!isTauri) {
+      S.loadedCritic.set(appName, { app_name: appName, title: lookupTitle, supported: false });
+    } else {
+      S.loadingCriticFor.add(appName);
+      epicGetCritic(lookupTitle, appName, false, year)
+        .then((data) => {
+          S.loadedCritic.set(appName, data);
+          if (S.stage.active && S.stage.route === "program" && S.stage.gameKey === appName) {
+            scheduleRender();
+          }
+        })
+        .catch(() => {
+          S.loadedCritic.set(appName, { app_name: appName, title: lookupTitle, supported: false });
+        })
+        .finally(() => { S.loadingCriticFor.delete(appName); });
+    }
   }
 
   stageEnsureScreenshots(appName);

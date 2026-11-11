@@ -154,7 +154,10 @@ import {
   stageHint,
   stageHintBar,
   stageKeyGlyph,
+  stageMenuGlyph,
   stageStoreName,
+  stageTriggerGlyphs,
+  stageViewGlyph,
 } from "./stage-ui";
 
 let clockTimer = 0;
@@ -408,8 +411,8 @@ function topbar(): string {
   const battery = stageBatteryLabel();
   const online = navigator.onLine && !S.offlineMode;
   const kind = S.gamepadKind;
-  const lbGlyph = isKbd ? "Q" : (kind === "playstation" ? "L1" : "LB");
-  const rbGlyph = isKbd ? "E" : (kind === "playstation" ? "R1" : "RB");
+  const lbGlyph = isKbd ? "Q" : (kind === "playstation" ? "L1" : kind === "switch" ? "L" : "LB");
+  const rbGlyph = isKbd ? "E" : (kind === "playstation" ? "R1" : kind === "switch" ? "R" : "RB");
 
   const navTab = (route: StageRoute, label: string): string => {
     const active = S.stage.route === route;
@@ -471,7 +474,9 @@ function hints(): string {
   const isKbd = stageInputMode === "keyboard" || stageInputMode === "mouse";
   const face = (b: "a" | "b" | "x" | "y") => faceOrKey(b);
   const bumpers = isKbd ? `${stageKeyGlyph("Q")} ${stageKeyGlyph("E")}` : stageBumperGlyphs();
-  const menuKey = isKbd ? stageKeyGlyph("M") : "Menu";
+  const menuKey = isKbd ? stageKeyGlyph("M") : stageMenuGlyph();
+  const viewGlyph = isKbd ? stageKeyGlyph("Ctrl+K") : stageViewGlyph();
+  const triggerGlyphs = isKbd ? stageKeyGlyph("Tab") : stageTriggerGlyphs();
 
   if (S.stage.searchOpen) {
     return stageHintBar([
@@ -507,8 +512,8 @@ function hints(): string {
       stageHint(face("x"), t("stage.quickPlay")),
       stageHint(face("y"), S.stage.libraryView === "grid" ? t("stage.viewList") : t("stage.viewGrid")),
       stageHint(bumpers, t("gamepad.tabs")),
-      stageHint(isKbd ? stageKeyGlyph("Tab") : "L2 / R2", t("stage.storeFilter")),
-      stageHint(isKbd ? stageKeyGlyph("Ctrl+K") : "View", t("stage.search")),
+      stageHint(triggerGlyphs, t("stage.storeFilter")),
+      stageHint(viewGlyph, t("stage.search")),
       stageHint(menuKey, t("stage.quickMenu")),
     ]);
   }

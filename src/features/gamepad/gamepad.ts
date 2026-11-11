@@ -432,6 +432,11 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
   if (!origin) return;
   const curRect = origin.getBoundingClientRect();
   const curCenter = { x: curRect.left + curRect.width / 2, y: curRect.top + curRect.height / 2 };
+  // Scale directional thresholds with the focused control so transformed
+  // cards in the same shelf row cannot capture an up/down move.
+  const moveX = Math.max(12, curRect.width * 0.35);
+  const moveY = Math.max(12, curRect.height * 0.35);
+  const curRow = origin.closest("[data-gp-row]");
 
   // The desktop shell has three regions. Moving inside one is a geometry
   // contest; crossing to another is a deliberate step. Without this, the
@@ -442,6 +447,7 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
     let bestScore = Infinity;
     for (const el of elements) {
       if (el === origin) continue;
+      if ((dir === "up" || dir === "down") && curRow && curRow === el.closest("[data-gp-row]")) continue;
       const r = el.getBoundingClientRect();
       const c = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
       const dx = c.x - curCenter.x;
@@ -461,12 +467,12 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
         cross = Math.abs(dy);
         gap = Math.max(0, Math.max(curRect.top, r.top) - Math.min(curRect.bottom, r.bottom));
       } else if (dir === "up") {
-        if (dy >= -1) continue;
+        if (dy >= -moveY) continue;
         primary = -dy;
         cross = Math.abs(dx);
         gap = Math.max(0, Math.max(curRect.left, r.left) - Math.min(curRect.right, r.right));
       } else {
-        if (dy <= 1) continue;
+        if (dy <= moveY) continue;
         primary = dy;
         cross = Math.abs(dx);
         gap = Math.max(0, Math.max(curRect.left, r.left) - Math.min(curRect.right, r.right));
@@ -482,6 +488,71 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
     }
     return best;
   };
+
+  // Stage Home is a console home screen with distinct horizontal tiers:
+  // Ribbon (Level 1) -> Hero Actions (Level 2) -> Activity Shelf (Level 3).
+  // Stepping between tiers is deliberate so moving down from a card doesn't
+  // skip the Play button to a card far below.
+  if (S.stage.active && S.stage.route === "home") {
+    const inRibbon = Boolean(origin.closest(".stage-home-ribbon"));
+    const inHero = Boolean(origin.closest("#stage-home-hero"));
+    const inHub = Boolean(origin.closest("#stage-home-activities"));
+
+    if (inRibbon) {
+      if (dir === "down") {
+        const primary = document.querySelector<HTMLElement>("#stage-home-hero [data-gp-key='primary']")
+          ?? document.querySelector<HTMLElement>("#stage-home-hero [data-gp-item]");
+        if (primary && isVisibleEl(primary)) {
+          setFocus(primary);
+          return;
+        }
+      } else if (dir === "left" || dir === "right") {
+        const ribbonCandidates = candidates.filter((el) => el.closest(".stage-home-ribbon"));
+        const best = scan(ribbonCandidates);
+        if (best) {
+          setFocus(best);
+          return;
+        }
+      }
+    } else if (inHero) {
+      if (dir === "up") {
+        const heroKey = S.stage.homeHeroKey;
+        let target: HTMLElement | null = null;
+        if (heroKey) {
+          target = document.querySelector<HTMLElement>(`[data-gp-key="game:${CSS.escape(heroKey)}"]`);
+        }
+        if (!target || !isVisibleEl(target)) {
+          target = document.querySelector<HTMLElement>(".stage-home-ribbon [data-gp-item]");
+        }
+        if (target && isVisibleEl(target)) {
+          setFocus(target);
+          return;
+        }
+      } else if (dir === "down") {
+        const act = document.querySelector<HTMLElement>("#stage-home-activities [data-gp-key='act:resume']")
+          ?? document.querySelector<HTMLElement>("#stage-home-activities [data-gp-item]");
+        if (act && isVisibleEl(act)) {
+          setFocus(act);
+          return;
+        }
+      }
+    } else if (inHub) {
+      if (dir === "up") {
+        const hubCandidates = candidates.filter((el) => el.closest("#stage-home-activities"));
+        const bestHubAbove = scan(hubCandidates);
+        if (bestHubAbove && bestHubAbove.getBoundingClientRect().bottom < curRect.top) {
+          setFocus(bestHubAbove);
+          return;
+        }
+        const primary = document.querySelector<HTMLElement>("#stage-home-hero [data-gp-key='primary']")
+          ?? document.querySelector<HTMLElement>("#stage-home-hero [data-gp-item]");
+        if (primary && isVisibleEl(primary)) {
+          setFocus(primary);
+          return;
+        }
+      }
+    }
+  }
 
   let bestEl: HTMLElement | null = null;
   if (fromRegion) {
