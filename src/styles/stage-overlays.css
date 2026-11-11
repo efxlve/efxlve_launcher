@@ -1041,6 +1041,11 @@
   padding-block-start: 10px;
   border-block-start: 1px solid rgba(255, 255, 255, 0.08);
 }
+.stage-browser-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
 .stage-browser-hints {
   display: flex;

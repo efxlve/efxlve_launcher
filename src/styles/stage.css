@@ -879,6 +879,51 @@ body.stage-mode #toasts {
   background: var(--warn);
 }
 
+/* ---------- Empty state ---------- */
+
+.stage-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 52vh;
+  padding: 48px 24px;
+  text-align: center;
+}
+.stage-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  border: 1px solid var(--stage-line);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--stage-ink-3);
+}
+.stage-empty h1,
+.stage-empty h2 {
+  margin: 0;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: clamp(26px, 3vw, 42px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+.stage-empty p {
+  max-width: 44ch;
+  margin: 0;
+  color: var(--stage-ink-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.stage-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-block-start: 6px;
+}
+
 /* ---------- Typographic poster fallback ---------- */
 
 .stage-poster {
