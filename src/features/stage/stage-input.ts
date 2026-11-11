@@ -26,6 +26,7 @@ import {
   stageBack,
   stageCloseControls,
   stageCloseStill,
+  stageCycleCollection,
   stageCycleSection,
   stageStillStep,
   stageCycleStore,
@@ -132,6 +133,7 @@ registerStageBridge({
   back: stageBack,
   go: (view) => stageGo(view),
   bump: (dir) => stageEdgeBump(dir),
+  cycleCollection: (dir) => stageCycleCollection(dir === "next"),
   wake: () => {
     if (S.stage.idle) {
       wakeStageIdle();

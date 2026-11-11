@@ -414,6 +414,17 @@ function regionOrder(from: FocusRegion, dir: "up" | "down" | "left" | "right"): 
 }
 
 export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
+  // The collection tool is a horizontal picker: left/right cycles the picker
+  // instead of stepping to the neighbouring toolbar buttons.
+  if (
+    S.stage.active &&
+    S.stage.route === "library" &&
+    currentFocusedEl?.dataset.gpKey === "tool:collection" &&
+    (dir === "left" || dir === "right")
+  ) {
+    stageBridge()?.cycleCollection?.(dir === "right" ? "next" : "prev");
+    return;
+  }
   if (S.stage.active && S.stage.stillIndex !== null) {
     const bridge = stageBridge();
     if (dir === "left") {

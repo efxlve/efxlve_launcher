@@ -794,6 +794,7 @@ function hints(): string {
       stageHint(face("y"), S.stage.libraryView === "grid" ? t("stage.viewList") : t("stage.viewGrid")),
       stageHint(bumpers, t("gamepad.tabs")),
       stageHint(triggerGlyphs, t("stage.storeFilter")),
+      stageHint("← →", t("stage.collections")),
       stageHint(viewGlyph, t("stage.search")),
       stageHint(menuKey, t("stage.quickMenu")),
     ]);
@@ -1525,6 +1526,19 @@ function onStageKeydown(event: KeyboardEvent): void {
     event.stopPropagation();
     if (S.stage.route === "program") stageCycleTab(true);
     else stageCycleSection(true);
+    return;
+  }
+
+  // The focused collection tool is a horizontal picker: left/right cycles it
+  // instead of moving the ring to the next toolbar button.
+  if (
+    S.stage.route === "library" &&
+    S.stage.focusKey === "tool:collection" &&
+    (key === "ArrowLeft" || lower === "a" || key === "ArrowRight" || lower === "d")
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+    stageCycleCollection(key === "ArrowRight" || lower === "d");
     return;
   }
 

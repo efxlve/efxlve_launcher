@@ -74,6 +74,8 @@ export {
 const TOP_ROUTES: StageRoute[] = ["home", "library", "downloads"];
 /** The shelf query to restore when the search is cancelled rather than applied. */
 let searchStartQuery = "";
+/** D-pad repeat must not rebuild the wall for every 58ms sample. */
+let lastCollectionCycleAt = 0;
 const TABS: StageProgramTab[] = ["overview", "achievements", "media", "notes", "extras"];
 const SETTINGS_TABS: StageSettingsTab[] = ["general", "controller", "appearance", "about"];
 const SORTS = ["recent", "alpha", "playtime", "installed"] as const;
@@ -682,6 +684,9 @@ export function stageOpenCollection(id: string): void {
 
 export function stageCycleCollection(forward: boolean): void {
   if (S.stage.route !== "library") return;
+  const now = performance.now();
+  if (now - lastCollectionCycleAt < 220) return;
+  lastCollectionCycleAt = now;
   // An empty smart collection is not a stop a couch player can use.
   const base = stageBaseSummaries();
   const smart = SMART_COLLECTIONS.filter((collection) => base.some((summary) => collection.test(summary)));
