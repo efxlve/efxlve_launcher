@@ -417,11 +417,21 @@ export function stageQuickPlay(key?: string): void {
 
 export function stageOpenSearch(): void {
   if (S.stage.searchOpen) return;
+  if (S.stage.launch || S.stage.launchError) return;
   stageFeedback("select");
   searchStartQuery = S.stage.query;
   S.stage.searchOpen = true;
   S.stage.quickMenu = false;
   S.stage.controlsOpen = false;
+  S.stage.browserOpen = false;
+  S.stage.spotifyOpen = false;
+  S.stage.discordOpen = false;
+  S.stage.powerOpen = false;
+  S.stage.powerConfirm = false;
+  S.stage.manageKey = null;
+  S.stage.manageConfirmUninstall = false;
+  S.stage.stillIndex = null;
+  S.stage.stillApp = null;
   // A controller starts on the letter grid; a keyboard starts in the field.
   S.stage.focusKey = S.stage.controllerConnected ? "search:key:q" : "search:input";
   scheduleRender();
