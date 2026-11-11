@@ -38,7 +38,7 @@ import { exitStage, setStageLibrarySort, setStageLibraryView } from "./stage-sta
 import { stageCloseBrowserSheet } from "./stage-browser";
 import { stageCloseSpotifySheet } from "./stage-spotify";
 import { stageCloseDiscordSheet } from "./stage-discord";
-import { stageClosePowerSheet } from "./stage-power";
+import { stageCancelShutdown, stageClosePowerSheet } from "./stage-power";
 
 export {
   stageOpenBrowserSheet,
@@ -63,6 +63,7 @@ export {
 export {
   stageOpenPowerSheet,
   stageClosePowerSheet,
+  stageCancelShutdown,
   stageSleepDevice,
   stageShutdownDevice,
   stageQuickVolume,
@@ -167,6 +168,10 @@ export function stageBack(): void {
     return;
   }
   if (S.stage.powerOpen) {
+    if (S.stage.powerConfirm) {
+      stageCancelShutdown();
+      return;
+    }
     stageClosePowerSheet();
     return;
   }

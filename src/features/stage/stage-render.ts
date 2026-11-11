@@ -125,6 +125,7 @@ import {
 import { initStageBattery, stageBatteryInfo, stageBatteryMarkup } from "./stage-battery";
 import {
   renderStagePowerSheet,
+  stageCancelShutdown,
   stageClosePowerSheet,
   stageOpenPowerSheet,
   stageQuickVolume,
@@ -312,6 +313,7 @@ function stageLiveSignature(): string {
     S.stage.powerOpen ? `${stageBatteryInfo().level}:${stageBatteryInfo().charging ? "1" : "0"}` : "",
     S.stage.quickMenu ? "1" : "0",
     S.stage.powerOpen ? "1" : "0",
+    S.stage.powerConfirm ? "1" : "0",
     S.stage.controlsOpen ? "1" : "0",
     S.stage.browserOpen ? "1" : "0",
     S.stage.spotifyOpen ? "1" : "0",
@@ -1483,6 +1485,32 @@ function onStageKeydown(event: KeyboardEvent): void {
     return;
   }
 
+  // A sheet, the quick menu or the launch curtain owns the keyboard. Escape
+  // already backed out above; arrows, Enter and Backspace drive the focused
+  // control, while page-level shortcuts must not fire behind the overlay.
+  if (
+    S.stage.searchOpen ||
+    S.stage.quickMenu ||
+    S.stage.controlsOpen ||
+    S.stage.powerOpen ||
+    S.stage.browserOpen ||
+    S.stage.spotifyOpen ||
+    S.stage.discordOpen ||
+    S.stage.manageKey ||
+    S.stage.launch ||
+    S.stage.launchError
+  ) {
+    const navigates =
+      key === "ArrowUp" ||
+      key === "ArrowDown" ||
+      key === "ArrowLeft" ||
+      key === "ArrowRight" ||
+      key === "Enter" ||
+      key === " " ||
+      key === "Backspace";
+    if (!navigates) return;
+  }
+
   // Section / Tab cycling: Q and E, or Tab / Shift+Tab, or PageUp / PageDown
   if (lower === "q" || key === "PageUp" || (key === "Tab" && event.shiftKey)) {
     event.preventDefault();
@@ -1644,6 +1672,7 @@ function bindStageEvents(root: HTMLElement): void {
       case "power-sleep": void stageSleepDevice(); break;
       case "power-desktop": stageOpenDesktop(); break;
       case "power-shutdown": void stageShutdownDevice(); break;
+      case "power-cancel-shutdown": stageCancelShutdown(); break;
       case "power-mute": stageToggleQuickMute(); break;
       case "power-vol-down": stageQuickVolume(-10); break;
       case "power-vol-up": stageQuickVolume(10); break;

@@ -19,6 +19,7 @@ import { setStageSound, setStageSoundVolume } from "./stage-state";
 export function stageOpenPowerSheet(): void {
   stageFeedback("select");
   S.stage.powerOpen = true;
+  S.stage.powerConfirm = false;
   S.stage.quickMenu = false;
   S.stage.searchOpen = false;
   S.stage.browserOpen = false;
@@ -31,7 +32,15 @@ export function stageOpenPowerSheet(): void {
 export function stageClosePowerSheet(): void {
   stageFeedback("back");
   S.stage.powerOpen = false;
+  S.stage.powerConfirm = false;
   S.stage.focusKey = "";
+  scheduleRender();
+}
+
+export function stageCancelShutdown(): void {
+  stageFeedback("back");
+  S.stage.powerConfirm = false;
+  S.stage.focusKey = "power:shutdown";
   scheduleRender();
 }
 
@@ -41,6 +50,14 @@ export async function stageSleepDevice(): Promise<void> {
 }
 
 export async function stageShutdownDevice(): Promise<void> {
+  if (!S.stage.powerConfirm) {
+    // A couch session can lose the room; a second press is the confirmation.
+    stageFeedback("select");
+    S.stage.powerConfirm = true;
+    S.stage.focusKey = "power:confirm-shutdown";
+    scheduleRender();
+    return;
+  }
   stageFeedback("launch");
   await invoke("app_power_action", { action: "shutdown" }).catch(() => undefined);
 }
@@ -117,50 +134,83 @@ export function renderStagePowerSheet(entered: boolean): string {
         </div>
       </div>
 
-      <div class="stage-power-grid" data-gp-row>
-        <button
-          type="button"
-          class="stage-power-card is-primary"
-          data-stage-act="power-sleep"
-          data-gp-item
-          data-gp-key="power:sleep"
-          data-gp-default
-        >
-          <span class="stage-power-card-icon">${icon("clock", 24)}</span>
-          <div class="stage-power-card-text">
-            <strong>${esc(t("settings.finishActionSleep"))}</strong>
-            <span>${esc(t("stage.suspendDevice"))}</span>
-          </div>
-        </button>
+      ${S.stage.powerConfirm ? `
+        <div class="stage-power-grid" data-gp-row>
+          <button
+            type="button"
+            class="stage-power-card is-danger"
+            data-stage-act="power-shutdown"
+            data-gp-item
+            data-gp-key="power:confirm-shutdown"
+            data-gp-default
+          >
+            <span class="stage-power-card-icon is-danger">${icon("alert-triangle", 24)}</span>
+            <div class="stage-power-card-text">
+              <strong>${esc(t("settings.finishActionShutdown"))}</strong>
+              <span>${esc(t("stage.shutdownConfirm"))}</span>
+            </div>
+          </button>
 
-        <button
-          type="button"
-          class="stage-power-card"
-          data-stage-act="power-desktop"
-          data-gp-item
-          data-gp-key="power:desktop"
-        >
-          <span class="stage-power-card-icon">${icon("monitor", 24)}</span>
-          <div class="stage-power-card-text">
-            <strong>${esc(t("stage.openDesktop"))}</strong>
-            <span>${esc(t("stage.switchToWindow"))}</span>
-          </div>
-        </button>
+          <button
+            type="button"
+            class="stage-power-card"
+            data-stage-act="power-cancel-shutdown"
+            data-gp-item
+            data-gp-key="power:cancel-shutdown"
+          >
+            <span class="stage-power-card-icon">${icon("x", 24)}</span>
+            <div class="stage-power-card-text">
+              <strong>${esc(t("common.cancel"))}</strong>
+              <span>${esc(t("common.back"))}</span>
+            </div>
+          </button>
+        </div>
+      ` : `
+        <div class="stage-power-grid" data-gp-row>
+          <button
+            type="button"
+            class="stage-power-card is-primary"
+            data-stage-act="power-sleep"
+            data-gp-item
+            data-gp-key="power:sleep"
+            data-gp-default
+          >
+            <span class="stage-power-card-icon">${icon("clock", 24)}</span>
+            <div class="stage-power-card-text">
+              <strong>${esc(t("settings.finishActionSleep"))}</strong>
+              <span>${esc(t("stage.suspendDevice"))}</span>
+            </div>
+          </button>
 
-        <button
-          type="button"
-          class="stage-power-card is-danger"
-          data-stage-act="power-shutdown"
-          data-gp-item
-          data-gp-key="power:shutdown"
-        >
-          <span class="stage-power-card-icon is-danger">${icon("alert-triangle", 24)}</span>
-          <div class="stage-power-card-text">
-            <strong>${esc(t("settings.finishActionShutdown"))}</strong>
-            <span>${esc(t("stage.turnOffDevice"))}</span>
-          </div>
-        </button>
-      </div>
+          <button
+            type="button"
+            class="stage-power-card"
+            data-stage-act="power-desktop"
+            data-gp-item
+            data-gp-key="power:desktop"
+          >
+            <span class="stage-power-card-icon">${icon("monitor", 24)}</span>
+            <div class="stage-power-card-text">
+              <strong>${esc(t("stage.openDesktop"))}</strong>
+              <span>${esc(t("stage.switchToWindow"))}</span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            class="stage-power-card is-danger"
+            data-stage-act="power-shutdown"
+            data-gp-item
+            data-gp-key="power:shutdown"
+          >
+            <span class="stage-power-card-icon is-danger">${icon("alert-triangle", 24)}</span>
+            <div class="stage-power-card-text">
+              <strong>${esc(t("settings.finishActionShutdown"))}</strong>
+              <span>${esc(t("stage.turnOffDevice"))}</span>
+            </div>
+          </button>
+        </div>
+      `}
 
       <div class="stage-power-foot">
         <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="close-power-sheet" data-gp-item data-gp-key="power:cancel">

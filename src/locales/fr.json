@@ -4039,6 +4039,7 @@
   "stage.suspendDevice": "Mettre la console / le PC en veille",
   "stage.switchToWindow": "Passer en mode fenêtre",
   "stage.turnOffDevice": "Éteindre l'appareil",
+  "stage.shutdownConfirm": "Appuyez à nouveau pour éteindre",
   "stage.power": "Alimentation",
   "stage.voiceChannel": "Salon vocal",
   "stage.voiceServer": "Serveur",

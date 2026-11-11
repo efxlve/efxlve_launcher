@@ -4039,6 +4039,7 @@
   "stage.suspendDevice": "ハンドヘルド / PC をスリープ",
   "stage.switchToWindow": "ウィンドウモードに切り替え",
   "stage.turnOffDevice": "デバイスの電源を切る",
+  "stage.shutdownConfirm": "もう一度押すと電源を切ります",
   "stage.power": "電源",
   "stage.voiceChannel": "ボイスチャンネル",
   "stage.voiceServer": "サーバー",

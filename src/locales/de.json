@@ -4039,6 +4039,7 @@
   "stage.suspendDevice": "Handheld / PC in den Ruhezustand versetzen",
   "stage.switchToWindow": "In den Fenstermodus wechseln",
   "stage.turnOffDevice": "Gerät ausschalten",
+  "stage.shutdownConfirm": "Zum Herunterfahren erneut drücken",
   "stage.power": "Energie",
   "stage.voiceChannel": "Sprachkanal",
   "stage.voiceServer": "Server",

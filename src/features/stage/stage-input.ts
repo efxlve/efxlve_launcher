@@ -61,6 +61,11 @@ export function stageButton(button: StagePadButton): void {
   if (document.querySelector(".modal:not(.hidden), .selective-overlay, .confirm-dialog:not(.hidden), .palette-backdrop, #modal-root > div, #install-root > div")) {
     return;
   }
+  if (S.stage.launch || S.stage.launchError) return;
+  if (S.stage.manageKey) {
+    if (button === "start" || button === "select") stageBack();
+    return;
+  }
   if (S.stage.stillIndex !== null) {
     if (button === "start" || button === "select") stageCloseStill();
     if (button === "lb" || button === "lt") stageStillStep(false);
@@ -81,10 +86,8 @@ export function stageButton(button: StagePadButton): void {
     return;
   }
   if (S.stage.powerOpen || S.stage.browserOpen || S.stage.spotifyOpen || S.stage.discordOpen) {
-    if (button === "start" || button === "select") {
-      stageBack();
-      return;
-    }
+    if (button === "start" || button === "select") stageBack();
+    return;
   }
   if (S.stage.quickMenu && button !== "start" && button !== "select") return;
   if (S.stage.route === "downloads" && (button === "x" || button === "y" || button === "lt" || button === "rt")) return;

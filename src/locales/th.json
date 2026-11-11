@@ -4039,6 +4039,7 @@
   "stage.suspendDevice": "พักเครื่อง handheld / PC",
   "stage.switchToWindow": "สลับเป็นโหมดหน้าต่าง",
   "stage.turnOffDevice": "ปิดอุปกรณ์",
+  "stage.shutdownConfirm": "กดอีกครั้งเพื่อปิดเครื่อง",
   "stage.power": "พลังงาน",
   "stage.voiceChannel": "ช่องเสียง",
   "stage.voiceServer": "เซิร์ฟเวอร์",

@@ -4039,6 +4039,7 @@
   "stage.suspendDevice": "핸드헬드 / PC 절전",
   "stage.switchToWindow": "창 모드로 전환",
   "stage.turnOffDevice": "기기 전원 끄기",
+  "stage.shutdownConfirm": "다시 누르면 전원이 꺼집니다",
   "stage.power": "전원",
   "stage.voiceChannel": "음성 채널",
   "stage.voiceServer": "서버",

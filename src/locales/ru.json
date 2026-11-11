@@ -4039,6 +4039,7 @@
   "stage.suspendDevice": "Перевести консоль / ПК в спящий режим",
   "stage.switchToWindow": "Перейти в оконный режим",
   "stage.turnOffDevice": "Выключить устройство",
+  "stage.shutdownConfirm": "Нажмите ещё раз, чтобы выключить",
   "stage.power": "Питание",
   "stage.voiceChannel": "Голосовой канал",
   "stage.voiceServer": "Сервер",

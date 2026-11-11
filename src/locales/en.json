@@ -4039,6 +4039,7 @@
   "stage.suspendDevice": "Suspend handheld / PC",
   "stage.switchToWindow": "Switch to Window Mode",
   "stage.turnOffDevice": "Turn off device",
+  "stage.shutdownConfirm": "Press again to shut down",
   "stage.power": "Power",
   "stage.voiceChannel": "Voice channel",
   "stage.voiceServer": "Server",

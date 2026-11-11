@@ -4039,6 +4039,7 @@
   "stage.suspendDevice": "إسبات الجهاز المحمول / الكمبيوتر",
   "stage.switchToWindow": "التبديل إلى وضع النافذة",
   "stage.turnOffDevice": "إيقاف تشغيل الجهاز",
+  "stage.shutdownConfirm": "اضغط مرة أخرى لإيقاف التشغيل",
   "stage.power": "الطاقة",
   "stage.voiceChannel": "قناة صوتية",
   "stage.voiceServer": "خادم",

@@ -4039,6 +4039,7 @@
   "stage.suspendDevice": "Handheld / PC'yi uyut",
   "stage.switchToWindow": "Pencere moduna geç",
   "stage.turnOffDevice": "Cihazı kapat",
+  "stage.shutdownConfirm": "Kapatmak için tekrar bas",
   "stage.power": "Güç",
   "stage.voiceChannel": "Ses kanalı",
   "stage.voiceServer": "Sunucu",

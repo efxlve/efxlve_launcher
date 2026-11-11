@@ -4039,6 +4039,7 @@
   "stage.suspendDevice": "Suspender handheld / PC",
   "stage.switchToWindow": "Mudar para modo janela",
   "stage.turnOffDevice": "Desligar o dispositivo",
+  "stage.shutdownConfirm": "Pressione novamente para desligar",
   "stage.power": "Energia",
   "stage.voiceChannel": "Canal de voz",
   "stage.voiceServer": "Servidor",

@@ -1069,6 +1069,7 @@ export const S = {
     browserOpen: false,
     browserUrl: "",
     powerOpen: false,
+    powerConfirm: false,
     manageKey: (null) as string | null,
     manageConfirmUninstall: false,
     launch: (null) as { key: string; title: string; art: string | null } | null,

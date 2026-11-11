@@ -4039,6 +4039,7 @@
   "stage.suspendDevice": "Uśpij handheld / PC",
   "stage.switchToWindow": "Przełącz na tryb okna",
   "stage.turnOffDevice": "Wyłącz urządzenie",
+  "stage.shutdownConfirm": "Naciśnij ponownie, aby wyłączyć",
   "stage.power": "Zasilanie",
   "stage.voiceChannel": "Kanał głosowy",
   "stage.voiceServer": "Serwer",

@@ -4039,6 +4039,7 @@
   "stage.suspendDevice": "掌機 / PC 睡眠",
   "stage.switchToWindow": "切換到視窗模式",
   "stage.turnOffDevice": "關閉裝置",
+  "stage.shutdownConfirm": "再按一次以關閉裝置",
   "stage.power": "電源",
   "stage.voiceChannel": "語音頻道",
   "stage.voiceServer": "伺服器",

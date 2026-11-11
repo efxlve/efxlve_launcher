@@ -4039,6 +4039,7 @@
   "stage.suspendDevice": "Suspender consola / PC",
   "stage.switchToWindow": "Cambiar a modo ventana",
   "stage.turnOffDevice": "Apagar el dispositivo",
+  "stage.shutdownConfirm": "Pulsa de nuevo para apagar",
   "stage.power": "Energía",
   "stage.voiceChannel": "Canal de voz",
   "stage.voiceServer": "Servidor",

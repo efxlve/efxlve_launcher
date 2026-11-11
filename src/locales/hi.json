@@ -4039,6 +4039,7 @@
   "stage.suspendDevice": "हैंडहेल्ड / PC स्लीप करें",
   "stage.switchToWindow": "विंडो मोड पर जाएँ",
   "stage.turnOffDevice": "डिवाइस बंद करें",
+  "stage.shutdownConfirm": "बंद करने के लिए फिर से दबाएँ",
   "stage.power": "पावर",
   "stage.voiceChannel": "वॉइस चैनल",
   "stage.voiceServer": "सर्वर",
