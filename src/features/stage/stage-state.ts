@@ -133,7 +133,7 @@ export async function enterStage(opts: { route?: StageRoute; gameKey?: string } 
   hideSpotifyPlayer();
   destroyDiscordPage();
   void applyUiScale(S.stage.textScale);
-  void setStageFullscreen(true);
+  await setStageFullscreen(true);
   window.dispatchEvent(new CustomEvent("stage-mode", { detail: { active: true } }));
   updateStageUi();
   scheduleRender();

@@ -706,6 +706,10 @@ fn hide_accent_border(window: &tauri::Window) {
 fn hide_accent_border(_window: &tauri::Window) {}
 
 #[cfg(windows)]
+static WAS_MAXIMIZED_BEFORE_FULLSCREEN: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+#[cfg(windows)]
 fn set_fullscreen_native(window: &tauri::Window, enabled: bool) {
     let Ok(raw_hwnd) = window.hwnd() else {
         return;
@@ -740,6 +744,10 @@ fn set_fullscreen_native(window: &tauri::Window, enabled: bool) {
             cy: i32,
             flags: u32,
         ) -> i32;
+        fn SetForegroundWindow(hwnd: *mut core::ffi::c_void) -> i32;
+        fn BringWindowToTop(hwnd: *mut core::ffi::c_void) -> i32;
+        fn GetWindowLongW(hwnd: *mut core::ffi::c_void, index: i32) -> i32;
+        fn SetWindowLongW(hwnd: *mut core::ffi::c_void, index: i32, new_long: i32) -> i32;
     }
 
     const MONITOR_DEFAULTTONEAREST: u32 = 2;
@@ -749,9 +757,22 @@ fn set_fullscreen_native(window: &tauri::Window, enabled: bool) {
     const SWP_NOMOVE: u32 = 0x0002;
     const SWP_FRAMECHANGED: u32 = 0x0020;
     const SWP_SHOWWINDOW: u32 = 0x0040;
+    const GWL_STYLE: i32 = -16;
+    const WS_MAXIMIZE: i32 = 0x01000000;
+    const WS_THICKFRAME: i32 = 0x00040000;
+    const WS_POPUP: i32 = -2147483648; // 0x80000000 as i32
 
     unsafe {
         if enabled {
+            // Strip WS_MAXIMIZE and WS_THICKFRAME so DWM / DefWindowProc cannot clamp to rc_work.
+            let mut style = GetWindowLongW(hwnd, GWL_STYLE);
+            if (style & WS_MAXIMIZE) != 0 || (style & WS_THICKFRAME) != 0 {
+                style &= !WS_MAXIMIZE;
+                style &= !WS_THICKFRAME;
+                style |= WS_POPUP;
+                SetWindowLongW(hwnd, GWL_STYLE, style);
+            }
+
             let hmon = MonitorFromWindow(hwnd_isize, MONITOR_DEFAULTTONEAREST);
             if hmon != 0 {
                 let mut mi = MONITORINFO {
@@ -784,9 +805,15 @@ fn set_fullscreen_native(window: &tauri::Window, enabled: bool) {
                         h,
                         SWP_FRAMECHANGED | SWP_SHOWWINDOW,
                     );
+                    SetForegroundWindow(hwnd);
+                    BringWindowToTop(hwnd);
                 }
             }
         } else {
+            let mut style = GetWindowLongW(hwnd, GWL_STYLE);
+            style |= WS_THICKFRAME;
+            SetWindowLongW(hwnd, GWL_STYLE, style);
+
             let _ = SetWindowPos(
                 hwnd,
                 HWND_NOTOPMOST,
@@ -820,6 +847,15 @@ fn set_fullscreen_mode(app: &AppHandle, enabled: bool) -> Result<bool, String> {
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
 
     if enabled {
+        #[cfg(windows)]
+        {
+            let is_max = window.is_maximized().unwrap_or(false);
+            WAS_MAXIMIZED_BEFORE_FULLSCREEN.store(is_max, std::sync::atomic::Ordering::Relaxed);
+            if is_max {
+                let _ = window.unmaximize();
+            }
+        }
+
         window.set_fullscreen(true).map_err(|e| e.to_string())?;
         hide_accent_border(&window);
         set_fullscreen_native(&window, true);
@@ -827,11 +863,21 @@ fn set_fullscreen_mode(app: &AppHandle, enabled: bool) -> Result<bool, String> {
         std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_millis(60));
             set_fullscreen_native(&win, true);
+            std::thread::sleep(std::time::Duration::from_millis(140));
+            set_fullscreen_native(&win, true);
         });
     } else {
         set_fullscreen_native(&window, false);
         window.set_fullscreen(false).map_err(|e| e.to_string())?;
         hide_accent_border(&window);
+
+        #[cfg(windows)]
+        {
+            if WAS_MAXIMIZED_BEFORE_FULLSCREEN.load(std::sync::atomic::Ordering::Relaxed) {
+                let _ = window.maximize();
+            }
+        }
+
         let win = window.clone();
         std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_millis(60));
