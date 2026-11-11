@@ -30,6 +30,36 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.53",
+    date: "2026-11-11",
+    added: [
+      {
+        en: "Stage can now play your own background music: add an MP3, OGG, WAV, M4A, AAC, FLAC, OPUS or WEBM file and it stays on your computer.",
+        tr: "Sahne artık kendi arka plan müziğini çalabiliyor: MP3, OGG, WAV, M4A, AAC, FLAC, OPUS veya WEBM dosyası ekleyin; dosya bilgisayarınızda kalır.",
+      },
+      {
+        en: "Each game can have its own theme, with a menu track as the fallback.",
+        tr: "Her oyunun kendi teması olabilir; oyunun teması yoksa menü parçası çalınır.",
+      },
+      {
+        en: "Stage Settings lists imported tracks with Preview, Use for menu and a two-step Delete.",
+        tr: "Sahne Ayarları, içe aktarılan parçaları Önizle, Menüde kullan ve iki aşamalı Sil ile listeler.",
+      },
+    ],
+    improved: [
+      {
+        en: "Music crossfades between screens and quiets down while a game runs.",
+        tr: "Müzik ekranlar arasında yumuşak geçiş yapıyor ve oyun çalışırken kısılıyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Empty audio files are refused, and deleting a track clears it from the menu and every game that used it.",
+        tr: "Boş ses dosyaları reddediliyor ve bir parça silindiğinde menüden ve onu kullanan tüm oyunlardan kaldırılıyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.52",
     date: "2026-11-10",
     fixed: [
