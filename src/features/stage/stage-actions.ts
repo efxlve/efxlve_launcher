@@ -151,6 +151,12 @@ export function stageOpenProgram(key: string): void {
 
 export function stageBack(): void {
   if (S.stage.launch) return;
+  if (S.stage.launchError) {
+    stageFeedback("back");
+    S.stage.launchError = "";
+    scheduleRender();
+    return;
+  }
   if (S.stage.stillIndex !== null) {
     stageCloseStill();
     return;
