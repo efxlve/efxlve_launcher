@@ -25,11 +25,17 @@ let ready = false;
 let loading: Promise<StageAudioFile[]> | null = null;
 let revision = 0;
 let pendingDelete = "";
+let deleting = "";
 
 function store(list: StageAudioFile[]): StageAudioFile[] {
   files = list;
   ready = true;
   revision += 1;
+  // A pending confirmation for a file that is gone has nothing left to
+  // confirm; the row cannot render it again.
+  if (pendingDelete && !list.some((file) => file.name === pendingDelete)) {
+    pendingDelete = "";
+  }
   return files;
 }
 
@@ -65,11 +71,13 @@ export function stageAudioCancelDelete(): void {
 /** Load once; the Settings screen and a focused game both read this cache. */
 export function loadStageAudioFiles(force = false): Promise<StageAudioFile[]> {
   if (!isTauri) {
-    store([]);
+    // The browser preview calls this on every Settings paint; only the first
+    // call may bump the revision, or each repaint invalidates its own guard.
+    if (!ready) store([]);
     return Promise.resolve(files);
   }
   if (!force && ready) return Promise.resolve(files);
-  if (!force && loading) return loading;
+  if (loading) return loading;
   loading = invoke<StageAudioFile[]>("stage_audio_list")
     .then((list) => {
       store(Array.isArray(list) ? list : []);
@@ -77,7 +85,9 @@ export function loadStageAudioFiles(force = false): Promise<StageAudioFile[]> {
       return files;
     })
     .catch(() => {
-      store([]);
+      // A transient list failure must not silence a track that is already
+      // playing; keep the last good cache.
+      if (!ready) store([]);
       return files;
     })
     .finally(() => {
@@ -117,10 +127,13 @@ export async function importStageAudio(): Promise<StageAudioFile | null> {
 
 /** Remove one file from the Stage audio folder and the cached list. */
 export async function deleteStageAudio(name: string): Promise<void> {
-  if (!isTauri || !name) return;
-  await invoke("stage_audio_delete", { name });
-  pendingDelete = "";
-  store(files.filter((file) => file.name !== name));
+  if (!isTauri || !name || deleting === name) return;
+  deleting = name;
+  try {
+    await invoke("stage_audio_delete", { name });
+    pendingDelete = "";
+    store(files.filter((file) => file.name !== name));
+  } finally {
+    deleting = "";
+  }
 }
-
-

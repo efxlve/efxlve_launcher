@@ -4053,6 +4053,7 @@
   "stage.settingsGameMusicDesc": "Bu oyun Ana ekranda veya sayfasında seçiliyken çalar.",
   "stage.settingsMusicFailed": "Ses dosyası eklenemedi: {msg}",
   "stage.settingsMusicLibrary": "İçe aktarılan sesler",
+  "stage.settingsMusicAdd": "Ses dosyası ekle",
   "stage.settingsMusicLibraryEmpty": "Henüz ses dosyası eklenmedi. Eklemek için yukarıdan ses seçin.",
   "stage.settingsMusicUse": "Menüde kullan",
   "stage.settingsMusicPreview": "Önizle",

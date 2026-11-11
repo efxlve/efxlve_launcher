@@ -122,6 +122,9 @@ fn import_into(dir: &Path, source_path: &Path) -> Result<StageAudioFile, String>
         return Err("Choose an MP3, OGG, WAV, M4A, AAC, FLAC, OPUS or WEBM audio file".into());
     }
     let metadata = std::fs::metadata(source_path).map_err(|error| error.to_string())?;
+    if metadata.len() == 0 {
+        return Err("The audio file is empty".into());
+    }
     if metadata.len() > MAX_AUDIO_BYTES {
         return Err("The audio file must be smaller than 64 MB".into());
     }
@@ -172,7 +175,7 @@ pub fn stage_audio_list(app: AppHandle) -> Result<Vec<StageAudioFile>, String> {
             files.push(file);
         }
     }
-    files.sort_by(|a, b| a.label.to_lowercase().cmp(&b.label.to_lowercase()));
+    files.sort_by_key(|file| file.label.to_lowercase());
     Ok(files)
 }
 
@@ -229,6 +232,24 @@ mod tests {
         assert_eq!(file.label, "My Theme");
         assert!(file.name.ends_with(".mp3"));
         assert!(Path::new(&file.path).is_file());
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn empty_audio_is_rejected() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve-stage-audio-empty-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&root).unwrap();
+        let source = root.join("Empty.mp3");
+        std::fs::write(&source, b"").unwrap();
+        let error = import_into(&root, &source).unwrap_err();
+        assert!(error.contains("empty"), "{error}");
         let _ = std::fs::remove_dir_all(root);
     }
 }

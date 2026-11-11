@@ -4053,6 +4053,7 @@
   "stage.settingsGameMusicDesc": "Plays while this game is focused on Home or its page.",
   "stage.settingsMusicFailed": "Could not add the audio file: {msg}",
   "stage.settingsMusicLibrary": "Imported audio",
+  "stage.settingsMusicAdd": "Add audio file",
   "stage.settingsMusicLibraryEmpty": "No audio files imported yet. Choose audio above to add one.",
   "stage.settingsMusicUse": "Use for menu",
   "stage.settingsMusicPreview": "Preview",

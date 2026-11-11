@@ -4053,6 +4053,7 @@
   "stage.settingsGameMusicDesc": "जब यह गेम होम या उसके पेज पर चयनित होता है तब चलता है।",
   "stage.settingsMusicFailed": "ऑडियो फ़ाइल जोड़ी नहीं जा सकी: {msg}",
   "stage.settingsMusicLibrary": "आयातित ऑडियो",
+  "stage.settingsMusicAdd": "ऑडियो फ़ाइल जोड़ें",
   "stage.settingsMusicLibraryEmpty": "अभी तक कोई ऑडियो फ़ाइल आयात नहीं हुई। जोड़ने के लिए ऊपर ऑडियो चुनें।",
   "stage.settingsMusicUse": "मेन्यू के लिए उपयोग करें",
   "stage.settingsMusicPreview": "पूर्वावलोकन",

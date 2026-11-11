@@ -31,8 +31,8 @@ import { ensureFullShot, fetchAndRenderScreenshots } from "../screenshots/screen
 import { loadNotes } from "../notes/notes-client";
 import { loadSettingsView } from "../settings/settings-view";
 import { setView } from "../store/store-view";
-import { deleteStageAudio, importStageAudio, stageAudioBeginDelete, stageAudioCancelDelete, stageAudioPendingDelete } from "./stage-audio-library";
-import { previewStageCustomAudio, stageAudioPreviewName, stopStageAudioPreview } from "./stage-custom-audio";
+import { deleteStageAudio, importStageAudio, loadStageAudioFiles, stageAudioBeginDelete, stageAudioCancelDelete, stageAudioPendingDelete } from "./stage-audio-library";
+import { previewStageCustomAudio, stageAudioPreviewName, stopStageAudioPreview, stopStageCustomAudio } from "./stage-custom-audio";
 import { stageLaunchGame } from "./stage-launch";
 import { stageBaseSummaries, stageGameByKey, stageHeroSummary, stageLibraryList, stageLibraryStores, stageSearchMatches } from "./stage-model";
 import { stageSearchResultsHtml } from "./stage-search";
@@ -211,6 +211,12 @@ export function stageBack(): void {
     stageCancelSearch();
     return;
   }
+  // A pending music delete is a small inline confirmation; Back cancels it
+  // before it leaves the Settings screen. Overlays above close first.
+  if (S.stage.route === "settings" && stageAudioPendingDelete()) {
+    stageAudioCancelDelete();
+    return;
+  }
   if (S.stage.route === "program") {
     const previous = S.stage.stack.pop();
     if (previous) {
@@ -344,6 +350,7 @@ export function stageCycleSettingsTab(forward: boolean): void {
   const next = (index + (forward ? 1 : -1) + SETTINGS_TABS.length) % SETTINGS_TABS.length;
   S.stage.settingsTab = SETTINGS_TABS[next];
   S.stage.focusKey = `settings-tab:${SETTINGS_TABS[next]}`;
+  if (S.stage.settingsTab === "appearance") void loadStageAudioFiles(true);
   scheduleRender();
 }
 
@@ -352,6 +359,9 @@ export function stageSetSettingsTab(tab: StageSettingsTab): void {
   stageFeedback("select");
   S.stage.settingsTab = tab;
   S.stage.focusKey = `settings-tab:${tab}`;
+  // Opening the audio panel re-reads the folder so a file removed outside the
+  // launcher disappears instead of lingering in the list.
+  if (tab === "appearance") void loadStageAudioFiles(true);
   scheduleRender();
 }
 
@@ -645,9 +655,11 @@ export function stageManageConfirmUninstall(key?: string): void {
 /** The escape hatch for move, DLC and other advanced management that stays on desktop. */
 export async function stageChooseCustomAmbience(): Promise<void> {
   try {
+    stopStageAudioPreview();
     const file = await importStageAudio();
     if (!file) return;
     stageFeedback("select");
+    stopStageCustomAudio();
     setStageCustomAmbience(file.name);
     scheduleRender();
   } catch (error) {
@@ -657,6 +669,8 @@ export async function stageChooseCustomAmbience(): Promise<void> {
 
 export function stageClearCustomAmbience(): void {
   stageFeedback("back");
+  stopStageCustomAudio();
+  stopStageAudioPreview();
   setStageCustomAmbience("");
   scheduleRender();
 }
@@ -665,6 +679,7 @@ export async function stageChooseGameTrack(key?: string): Promise<void> {
   const target = key || S.stage.gameKey || "";
   if (!target) return;
   try {
+    stopStageAudioPreview();
     const file = await importStageAudio();
     if (!file) return;
     stageFeedback("select");
@@ -679,8 +694,21 @@ export function stageClearGameTrack(key?: string): void {
   const target = key || S.stage.gameKey || "";
   if (!target) return;
   stageFeedback("back");
+  stopStageAudioPreview();
   setStageGameTrack(target, "");
   scheduleRender();
+}
+
+export async function stageImportAudioFile(): Promise<void> {
+  try {
+    stopStageAudioPreview();
+    const file = await importStageAudio();
+    if (!file) return;
+    stageFeedback("select");
+    scheduleRender();
+  } catch (error) {
+    toast(t("stage.settingsMusicFailed", { msg: String(error) }), "err");
+  }
 }
 
 /** Sample one imported file from the Settings library. */
@@ -696,6 +724,7 @@ export function stageUseAudioForMenu(name?: string): void {
   const target = name || "";
   if (!target) return;
   stageFeedback("select");
+  stopStageCustomAudio();
   stopStageAudioPreview();
   setStageCustomAmbience(target);
 }

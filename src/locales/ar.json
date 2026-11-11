@@ -4053,6 +4053,7 @@
   "stage.settingsGameMusicDesc": "تُشغَّل أثناء تحديد هذه اللعبة في الشاشة الرئيسية أو صفحتها.",
   "stage.settingsMusicFailed": "تعذر إضافة ملف الصوت: {msg}",
   "stage.settingsMusicLibrary": "الصوت المستورد",
+  "stage.settingsMusicAdd": "إضافة ملف صوت",
   "stage.settingsMusicLibraryEmpty": "لم يتم استيراد ملفات صوت بعد. اختر صوتًا أعلاه لإضافة واحد.",
   "stage.settingsMusicUse": "استخدام في القائمة",
   "stage.settingsMusicPreview": "معاينة",

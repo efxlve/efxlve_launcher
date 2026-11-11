@@ -4053,6 +4053,7 @@
   "stage.settingsGameMusicDesc": "Gra, gdy ta gra jest wyróżniona na ekranie głównym lub na jej stronie.",
   "stage.settingsMusicFailed": "Nie udało się dodać pliku audio: {msg}",
   "stage.settingsMusicLibrary": "Zaimportowane audio",
+  "stage.settingsMusicAdd": "Dodaj plik audio",
   "stage.settingsMusicLibraryEmpty": "Nie zaimportowano jeszcze żadnych plików audio. Wybierz audio powyżej, aby dodać.",
   "stage.settingsMusicUse": "Użyj w menu",
   "stage.settingsMusicPreview": "Odsłuchaj",

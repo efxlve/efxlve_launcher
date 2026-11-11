@@ -44,6 +44,7 @@ import {
   stageCycleStore,
   stageCycleTab,
   stageGo,
+  stageImportAudioFile,
   stageManageAskUninstall,
   stageManageCancelUninstall,
   stageManageConfirmUninstall,
@@ -165,7 +166,7 @@ import {
 } from "./stage-idle";
 import { fullShotSrc } from "../screenshots/screenshots-view";
 import { notesRevision } from "../notes/notes-client";
-import { stageAudioRevision } from "./stage-audio-library";
+import { stageAudioCancelDelete, stageAudioPendingDelete, stageAudioRevision } from "./stage-audio-library";
 import { stageAudioPreviewName, stageCustomAudioActive, stopStageAudioPreview, stopStageCustomAudio, updateStageCustomAudio } from "./stage-custom-audio";
 // Side effect: register the button/back contract with the gamepad loop.
 import "./stage-input";
@@ -1160,6 +1161,8 @@ function syncStageAudio(): void {
   // never leave a preview playing over Home.
   if (S.stage.route !== "settings" || S.stage.settingsTab !== "appearance") {
     stopStageAudioPreview();
+    // Leaving Appearance abandons an unfinished delete confirmation.
+    if (stageAudioPendingDelete()) stageAudioCancelDelete();
   }
   const custom = updateStageCustomAudio();
   if (custom) {
@@ -1796,6 +1799,7 @@ function bindStageEvents(root: HTMLElement): void {
       case "choose-game-track": void stageChooseGameTrack(key); break;
       case "clear-game-track": stageClearGameTrack(key); break;
       case "preview-stage-audio": stagePreviewAudio(name); break;
+      case "import-stage-audio": void stageImportAudioFile(); break;
       case "use-stage-ambience": stageUseAudioForMenu(name); break;
       case "ask-delete-stage-audio": stageAskDeleteAudio(name); break;
       case "cancel-delete-stage-audio": stageCancelDeleteAudio(); break;
@@ -1816,7 +1820,12 @@ function bindStageEvents(root: HTMLElement): void {
         const next = !S.stage.ambience;
         setStageAmbience(next);
         applyStageAmbienceSettings();
-        if (!next) stopStageAudioPreview();
+        if (!next) {
+          // Mark the room inactive before releasing a sample, or it would
+          // resume for a frame on the way to silence.
+          stopStageCustomAudio();
+          stopStageAudioPreview();
+        }
         syncStageAudio();
         if (next) stageFeedback("select");
         break;
@@ -1829,6 +1838,7 @@ function bindStageEvents(root: HTMLElement): void {
         // The settings screen normally runs the quiet scene; lift it for the
         // test burst so the button actually demonstrates the theme.
         stopStageCustomAudio();
+        stopStageAudioPreview();
         setStageAmbienceScene("home");
         applyStageAmbienceSettings();
         stageFeedback("select");

@@ -4053,6 +4053,7 @@
   "stage.settingsGameMusicDesc": "このゲームがホームまたはゲームページで選択されている間に再生されます。",
   "stage.settingsMusicFailed": "オーディオファイルを追加できませんでした: {msg}",
   "stage.settingsMusicLibrary": "インポートしたオーディオ",
+  "stage.settingsMusicAdd": "オーディオファイルを追加",
   "stage.settingsMusicLibraryEmpty": "まだオーディオファイルがありません。上でオーディオを選択して追加してください。",
   "stage.settingsMusicUse": "メニューに使用",
   "stage.settingsMusicPreview": "試聴",

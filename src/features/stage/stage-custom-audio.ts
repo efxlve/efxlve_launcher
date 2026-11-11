@@ -32,6 +32,8 @@ let preview: HTMLAudioElement | null = null;
 let previewName = "";
 let previewTimer = 0;
 let roomPausedForPreview = false;
+let missingName = "";
+let missingAt = 0;
 
 function gameKeyInFocus(): string {
   if (S.stage.route === "home") {
@@ -103,7 +105,7 @@ function bindUnlock(): void {
   if (unlockBound) return;
   unlockBound = true;
   const retry = (): void => {
-    if (!element || !loadedName || !active) return;
+    if (!element || !loadedName || !active || previewName) return;
     if (element.paused) void element.play().catch(() => undefined);
   };
   window.addEventListener("pointerdown", retry, { capture: true });
@@ -152,11 +154,18 @@ export function updateStageCustomAudio(): boolean {
     return false;
   }
   if (!stageAudioPath(name)) {
-    // The list may still be loading; the load schedules another render.
-    void loadStageAudioFiles();
+    // A mapped file can disappear outside the launcher. Re-read the folder,
+    // but not on every focus tick while it is still missing.
+    const now = Date.now();
+    if (missingName !== name || now - missingAt > 20_000) {
+      missingName = name;
+      missingAt = now;
+      void loadStageAudioFiles(true);
+    }
     stopStageCustomAudio();
     return false;
   }
+  missingName = "";
   const audio = ensureElement();
   if (!audio) return false;
   active = true;
@@ -216,11 +225,12 @@ function releasePreview(resumeRoom: boolean, keepRoomDucked = false): void {
     }
   }
   const roomWasPaused = roomPausedForPreview;
-  const resume = resumeRoom && roomWasPaused;
-  // Replacing one sample with another keeps the room parked; only the final
-  // stop hands the speakers back.
+  // A final stop hands the room back even when the track finished loading
+  // while the sample was running. A replacement keeps it parked.
+  const resume =
+    resumeRoom && Boolean(active && element && loadedName && element?.paused && !document.hidden);
   roomPausedForPreview = resumeRoom ? false : roomWasPaused;
-  if (resume && active && element && loadedName) {
+  if (resume && element && loadedName) {
     void element.play().catch(() => undefined);
     rampTo(targetVolume(), 500);
   }
@@ -254,7 +264,7 @@ export function previewStageCustomAudio(name: string): void {
     // The row's path was not in the cache yet; hand the room back and let the
     // refresh render the row again.
     releasePreview(true);
-    void loadStageAudioFiles();
+    void loadStageAudioFiles(true);
     return;
   }
   try {
@@ -297,7 +307,9 @@ if (typeof document !== "undefined") {
     } else if (preview && preview.paused) {
       void preview.play().catch(() => undefined);
     }
-    if (!element || !active) return;
+    // The sample owns the speakers; the room must not wake underneath it when
+    // the window becomes visible again.
+    if (!element || !active || preview) return;
     if (document.hidden) {
       element.pause();
       return;
@@ -311,6 +323,8 @@ if (typeof document !== "undefined") {
 
 window.addEventListener("stage-mode", (event) => {
   if ((event as CustomEvent<{ active?: boolean }>).detail?.active) return;
-  stopStageAudioPreview();
+  // Mark the room inactive first so releasing the sample does not restart it
+  // for a frame on the way out of Stage.
   stopStageCustomAudio();
+  stopStageAudioPreview();
 });

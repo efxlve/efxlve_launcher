@@ -4053,6 +4053,7 @@
   "stage.settingsGameMusicDesc": "Läuft, während dieses Spiel auf Home oder seiner Seite fokussiert ist.",
   "stage.settingsMusicFailed": "Audiodatei konnte nicht hinzugefügt werden: {msg}",
   "stage.settingsMusicLibrary": "Importierte Audiodateien",
+  "stage.settingsMusicAdd": "Audiodatei hinzufügen",
   "stage.settingsMusicLibraryEmpty": "Noch keine Audiodateien importiert. Wähle oben Audio aus, um eine hinzuzufügen.",
   "stage.settingsMusicUse": "Für Menü verwenden",
   "stage.settingsMusicPreview": "Vorhören",

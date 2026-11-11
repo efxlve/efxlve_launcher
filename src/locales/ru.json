@@ -4053,6 +4053,7 @@
   "stage.settingsGameMusicDesc": "Играет, пока эта игра выбрана на главном экране или на её странице.",
   "stage.settingsMusicFailed": "Не удалось добавить аудиофайл: {msg}",
   "stage.settingsMusicLibrary": "Импортированное аудио",
+  "stage.settingsMusicAdd": "Добавить аудиофайл",
   "stage.settingsMusicLibraryEmpty": "Пока нет импортированных аудиофайлов. Выберите аудио выше, чтобы добавить.",
   "stage.settingsMusicUse": "Использовать в меню",
   "stage.settingsMusicPreview": "Прослушать",

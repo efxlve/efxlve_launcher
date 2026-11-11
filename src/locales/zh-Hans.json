@@ -4053,6 +4053,7 @@
   "stage.settingsGameMusicDesc": "当此游戏在主屏幕或其页面被选中时播放。",
   "stage.settingsMusicFailed": "无法添加音频文件：{msg}",
   "stage.settingsMusicLibrary": "导入的音频",
+  "stage.settingsMusicAdd": "添加音频文件",
   "stage.settingsMusicLibraryEmpty": "尚未导入音频文件。请在上方选择音频以添加。",
   "stage.settingsMusicUse": "用于菜单",
   "stage.settingsMusicPreview": "试听",

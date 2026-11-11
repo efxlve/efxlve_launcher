@@ -4053,6 +4053,7 @@
   "stage.settingsGameMusicDesc": "當此遊戲在主畫面或其頁面被選取時播放。",
   "stage.settingsMusicFailed": "無法新增音訊檔案：{msg}",
   "stage.settingsMusicLibrary": "匯入的音訊",
+  "stage.settingsMusicAdd": "新增音訊檔案",
   "stage.settingsMusicLibraryEmpty": "尚未匯入音訊檔案。請在上方選擇音訊以新增。",
   "stage.settingsMusicUse": "用於選單",
   "stage.settingsMusicPreview": "試聽",

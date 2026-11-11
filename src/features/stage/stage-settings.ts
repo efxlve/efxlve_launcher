@@ -133,7 +133,7 @@ function musicLibrary(): string {
       : `<button type="button" class="stage-choice${previewing === file.name ? " active" : ""}" data-stage-act="preview-stage-audio" data-name="${esc(file.name)}" data-gp-item data-gp-key="music-preview:${esc(file.name)}">${esc(previewing === file.name ? t("stage.settingsMusicStop") : t("stage.settingsMusicPreview"))}</button>
          ${assigned ? "" : `<button type="button" class="stage-choice" data-stage-act="use-stage-ambience" data-name="${esc(file.name)}" data-gp-item data-gp-key="music-use:${esc(file.name)}">${esc(t("stage.settingsMusicUse"))}</button>`}
          <button type="button" class="stage-choice" data-stage-act="ask-delete-stage-audio" data-name="${esc(file.name)}" data-gp-item data-gp-key="music-ask-delete:${esc(file.name)}">${esc(t("stage.settingsMusicDelete"))}</button>`;
-    return `<div class="stage-music-row${confirming ? " is-confirming" : ""}" data-gp-item data-gp-key="music:${esc(file.name)}">
+    return `<div class="stage-music-row${confirming ? " is-confirming" : ""}">
       <span class="stage-music-copy">
         <strong>${esc(file.label)}</strong>
         <small class="tabular-nums">${esc(audioSize(file.size))}${assigned ? ` · ${esc(t("stage.settingsMusicAssigned"))}` : ""}</small>
@@ -143,6 +143,9 @@ function musicLibrary(): string {
   }).join("");
   return `<div class="stage-settings-group">
     <span class="stage-kicker">${esc(t("stage.settingsMusicLibrary"))}</span>
+    <div class="stage-settings-actions">
+      <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="import-stage-audio" data-gp-item data-gp-key="set:music-add">${icon("plus", 16)}<span>${esc(t("stage.settingsMusicAdd"))}</span></button>
+    </div>
     ${files.length
       ? `<div class="stage-music-list">${rows}</div>`
       : `<div class="stage-settings-note">${icon("music", 15)}<span>${esc(t("stage.settingsMusicLibraryEmpty"))}</span></div>`}
