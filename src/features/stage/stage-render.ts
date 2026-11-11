@@ -221,11 +221,13 @@ function stageHomeRevision(): string {
 function stageProgramRevision(): string {
   if (S.stage.route !== "program") return "";
   const key = S.stage.gameKey ?? "";
+  const game = stageGameByKey(key);
   const ach = S.loadedAchievements.get(key);
   const shots = S.loadedScreenshots.get(key);
   const playtime = S.playtimeMap.get(key);
   return [
     key,
+    game ? stageWideArt(game) ?? "" : "",
     S.libraryDataRev,
     S.runningGames.has(key) ? "1" : "0",
     S.epicFav.has(key) ? "1" : "0",
@@ -408,7 +410,8 @@ function patchStageHomeHeroInPlace(hero: EpicSummary): void {
     const isRunning = S.runningGames.has(hero.appName);
     const isFav = S.epicFav.has(hero.appName);
     const hasDl = epicDlProgress(hero.appName) !== null;
-    const heroSig = `${hasUpdate ? "1" : "0"}:${isRunning ? "1" : "0"}:${isFav ? "1" : "0"}:${hasDl ? "1" : "0"}`;
+    const heroPlay = stageGamePlaytime(hero);
+    const heroSig = `${hasUpdate ? "1" : "0"}:${isRunning ? "1" : "0"}:${isFav ? "1" : "0"}:${hasDl ? "1" : "0"}:${heroPlay.seconds}:${heroPlay.lastPlayed}:${hero.installed ? "1" : "0"}:${hero.installSize}`;
     if (heroWrap.dataset.heroActionSig !== heroSig) {
       heroWrap.dataset.heroActionSig = heroSig;
       heroWrap.innerHTML = stageHomeHeroHtml(hero);
@@ -425,7 +428,7 @@ function patchStageHomeHeroInPlace(hero: EpicSummary): void {
     const play = stageGamePlaytime(hero);
     const isRunning = S.runningGames.has(hero.appName);
     const achLoaded = S.loadedAchievements.has(hero.appName) ? "1" : "0";
-    const actSig = `${ach?.user_unlocked ?? -1}:${ach?.total_achievements ?? -1}:${achLoaded}:${shots.length}:${play.seconds}:${isRunning ? "1" : "0"}`;
+    const actSig = `${ach?.user_unlocked ?? -1}:${ach?.total_achievements ?? -1}:${achLoaded}:${shots.length}:${play.seconds}:${isRunning ? "1" : "0"}:${hero.installed ? "1" : "0"}:${hero.installSize}`;
     if (actEl.dataset.actSig !== actSig) {
       actEl.dataset.actSig = actSig;
       actEl.innerHTML = stageHomeActivitiesHtml(hero);
@@ -442,7 +445,8 @@ function patchStageLibrarySideInPlace(previewed: EpicSummary): void {
   const isFav = S.epicFav.has(previewed.appName);
   const hasUpdate = stageHasUpdate(previewed) ? "1" : "0";
   const hasDl = epicDlProgress(previewed.appName) !== null ? "1" : "0";
-  const sideSig = `${ach?.user_unlocked ?? -1}:${ach?.total_achievements ?? -1}:${isRunning ? "1" : "0"}:${isFav ? "1" : "0"}:${previewed.installed ? "1" : "0"}:${hasUpdate}:${hasDl}`;
+  const play = stageGamePlaytime(previewed);
+  const sideSig = `${ach?.user_unlocked ?? -1}:${ach?.total_achievements ?? -1}:${isRunning ? "1" : "0"}:${isFav ? "1" : "0"}:${previewed.installed ? "1" : "0"}:${previewed.installSize}:${play.seconds}:${play.lastPlayed}:${hasUpdate}:${hasDl}:${stageWideArt(previewed) ?? ""}`;
   if (side.dataset.sideSig !== sideSig) {
     side.dataset.sideSig = sideSig;
     side.outerHTML = stageLibrarySideHtml(previewed);
