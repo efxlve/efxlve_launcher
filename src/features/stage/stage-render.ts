@@ -214,6 +214,7 @@ function stageHomeRevision(): string {
     S.hiddenGames.size,
     [...S.enabledStores].sort().join(","),
     [...S.epicCopyOverrides.keys()].sort().join(","),
+    S.stage.lastSession?.timestamp ?? 0,
   ].join("\u001f");
 }
 
@@ -291,13 +292,18 @@ function stageLiveSignature(): string {
     S.stage.launch?.key ?? "",
     S.stage.launchError,
     S.stage.controllerConnected ? "1" : "0",
+    S.stage.controllerBattery ?? -1,
+    [...S.runningGames].sort().join(","),
     S.offlineMode ? "1" : "0",
     navigator.onLine ? "1" : "0",
     S.appLanguage,
     homeRevision,
     programRevision,
     stageLibraryRenderToken(),
-    S.stage.route === "downloads" ? String(S.downloads.size) : "",
+    S.stage.route === "library" || S.stage.route === "downloads" ? String(S.libraryDataRev) : "",
+    S.stage.route === "downloads"
+      ? `${S.downloads.size}:${S.dlQueueStatus.active ?? ""}:${S.dlQueueStatus.queue.join(",")}:${S.dlQueueStatus.isPaused ? "1" : "0"}:${S.gogDlPaused ? "1" : "0"}`
+      : "",
     S.availableUpdates.size,
     S.gogUpdates.size,
     S.ignoredUpdates.size,
