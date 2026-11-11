@@ -223,15 +223,21 @@ function stageProgramRevision(): string {
   const key = S.stage.gameKey ?? "";
   const ach = S.loadedAchievements.get(key);
   const shots = S.loadedScreenshots.get(key);
+  const playtime = S.playtimeMap.get(key);
   return [
     key,
     S.libraryDataRev,
     S.runningGames.has(key) ? "1" : "0",
+    S.epicFav.has(key) ? "1" : "0",
+    playtime?.total_seconds ?? 0,
+    playtime?.last_played_timestamp ?? 0,
     ach?.user_unlocked ?? -1,
+    ach?.user_xp ?? -1,
     ach?.total_achievements ?? -1,
     ach?.achievements?.length ?? -1,
     ach?.hidden?.length ?? -1,
     ach?.is_platinum ? "1" : "0",
+    ach?.platinum_rarity?.percent ?? -1,
     shots?.length ?? -1,
     S.loadedHltb.has(key) ? "1" : "0",
     S.loadedCritic.has(key) ? "1" : "0",
@@ -434,7 +440,9 @@ function patchStageLibrarySideInPlace(previewed: EpicSummary): void {
   const ach = stageAchievements(previewed);
   const isRunning = S.runningGames.has(previewed.appName);
   const isFav = S.epicFav.has(previewed.appName);
-  const sideSig = `${ach?.user_unlocked ?? -1}:${ach?.total_achievements ?? -1}:${isRunning ? "1" : "0"}:${isFav ? "1" : "0"}`;
+  const hasUpdate = stageHasUpdate(previewed) ? "1" : "0";
+  const hasDl = epicDlProgress(previewed.appName) !== null ? "1" : "0";
+  const sideSig = `${ach?.user_unlocked ?? -1}:${ach?.total_achievements ?? -1}:${isRunning ? "1" : "0"}:${isFav ? "1" : "0"}:${previewed.installed ? "1" : "0"}:${hasUpdate}:${hasDl}`;
   if (side.dataset.sideSig !== sideSig) {
     side.dataset.sideSig = sideSig;
     side.outerHTML = stageLibrarySideHtml(previewed);
