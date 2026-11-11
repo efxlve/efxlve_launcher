@@ -303,7 +303,11 @@ function stageLiveSignature(): string {
     homeRevision,
     programRevision,
     stageLibraryRenderToken(),
-    S.stage.route === "library" || S.stage.route === "downloads" ? String(S.libraryDataRev) : "",
+    S.stage.route === "library"
+      ? `${S.libraryDataRev}\u001f${S.epicRecent.join(",")}`
+      : S.stage.route === "downloads"
+        ? String(S.libraryDataRev)
+        : "",
     S.stage.route === "downloads"
       ? `${S.downloads.size}:${S.dlQueueStatus.active ?? ""}:${S.dlQueueStatus.queue.join(",")}:${S.dlQueueStatus.isPaused ? "1" : "0"}:${S.gogDlPaused ? "1" : "0"}`
       : "",

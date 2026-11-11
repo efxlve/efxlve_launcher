@@ -141,6 +141,7 @@ export async function saveEditedPlaytime(appName: string): Promise<void> {
   try {
     const updated = await epicSetPlaytime(appName, totalSeconds, lastPlayed);
     S.playtimeMap.set(appName, updated);
+    S.libraryDataRev++;
 
     // Update Overview drawer if open
     const overviewPtVal = document.getElementById("drawer-stat-playtime");

@@ -1019,6 +1019,8 @@ export async function initApp(hooks: {
             last_played_timestamp: lastPlayedTimestamp,
             sessions,
           });
+          // Playtime feeds the library sort, card meta and programme facts.
+          S.libraryDataRev++;
           // Pull Epic's fresh total now; max() keeps it safe if Epic lags behind.
           // GOG and Steam hours come from their own local sources below/at boot.
           if (!id.startsWith("gog::") && !id.startsWith("steam::")) void syncEpicServerPlaytimes(true);
