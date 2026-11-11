@@ -23,7 +23,9 @@ import { esc, fmtBytes } from "../../core/utils";
 import { libraryItemOf, sourceOfKey } from "../../core/selectors";
 import { activateGamepadFocus, moveGamepadFocus, setGamepadFocus } from "../gamepad/gamepad";
 import {
+  stageAskDeleteAudio,
   stageBack,
+  stageCancelDeleteAudio,
   stageCancelSearch,
   stageChooseCustomAmbience,
   stageChooseGameTrack,
@@ -34,6 +36,7 @@ import {
   stageCloseManage,
   stageCloseStill,
   stageCloudBackup,
+  stageConfirmDeleteAudio,
   stageCycleCollection,
   stageCycleSection,
   stageCycleSettingsTab,
@@ -59,6 +62,7 @@ import {
   stageOpenSearch,
   stagePickRandomGame,
   stageOpenStill,
+  stagePreviewAudio,
   stageQuickPlay,
   stageRefreshAchievements,
   stageResetFilters,
@@ -75,6 +79,7 @@ import {
   stageToggleFavorite,
   stageToggleQuickMenu,
   stageToggleView,
+  stageUseAudioForMenu,
 } from "./stage-actions";
 import {
   setStageAmbience,
@@ -161,7 +166,7 @@ import {
 import { fullShotSrc } from "../screenshots/screenshots-view";
 import { notesRevision } from "../notes/notes-client";
 import { stageAudioRevision } from "./stage-audio-library";
-import { stageCustomAudioActive, stopStageCustomAudio, updateStageCustomAudio } from "./stage-custom-audio";
+import { stageAudioPreviewName, stageCustomAudioActive, stopStageAudioPreview, stopStageCustomAudio, updateStageCustomAudio } from "./stage-custom-audio";
 // Side effect: register the button/back contract with the gamepad loop.
 import "./stage-input";
 import { previewStageSound, stageFeedback } from "./stage-sound";
@@ -307,6 +312,7 @@ function stageLiveSignature(): string {
     S.stage.customAmbience,
     S.stage.gameTracks[S.stage.gameKey ?? ""] ?? "",
     stageAudioRevision(),
+    stageAudioPreviewName(),
     S.stage.cinematic ? "1" : "0",
     S.stage.attract ? "1" : "0",
     S.stage.intro ? "1" : "0",
@@ -1150,13 +1156,18 @@ function currentBackdropArt(): string | null {
 
 /** A custom track replaces the generative room; otherwise the room returns. */
 function syncStageAudio(): void {
+  // A library sample only belongs on the Appearance panel. Leaving it must
+  // never leave a preview playing over Home.
+  if (S.stage.route !== "settings" || S.stage.settingsTab !== "appearance") {
+    stopStageAudioPreview();
+  }
   const custom = updateStageCustomAudio();
   if (custom) {
     if (stageAmbienceActive()) stopStageAmbience();
   } else if (!stageAmbienceActive()) {
     startStageAmbience();
   }
-  duckStageAmbience(S.runningGames.size > 0);
+  duckStageAmbience(S.runningGames.size > 0 || Boolean(stageAudioPreviewName()));
 }
 
 function contentForRoute(): string {
@@ -1672,6 +1683,7 @@ function bindStageEvents(root: HTMLElement): void {
     }
     const action = actionEl.dataset.stageAct || "";
     const key = actionEl.dataset.key || "";
+    const name = actionEl.dataset.name || "";
     const route = actionEl.dataset.route as StageRoute | undefined;
     const filter = actionEl.dataset.filter as StageLibraryFilter | undefined;
     const tab = actionEl.dataset.tab as StageProgramTab | undefined;
@@ -1783,11 +1795,17 @@ function bindStageEvents(root: HTMLElement): void {
       case "clear-stage-ambience": stageClearCustomAmbience(); break;
       case "choose-game-track": void stageChooseGameTrack(key); break;
       case "clear-game-track": stageClearGameTrack(key); break;
+      case "preview-stage-audio": stagePreviewAudio(name); break;
+      case "use-stage-ambience": stageUseAudioForMenu(name); break;
+      case "ask-delete-stage-audio": stageAskDeleteAudio(name); break;
+      case "cancel-delete-stage-audio": stageCancelDeleteAudio(); break;
+      case "delete-stage-audio": void stageConfirmDeleteAudio(name); break;
       case "set-stage-volume": if (Number.isFinite(value)) { setStageSoundVolume(value); stageFeedback("select"); } break;
       case "set-stage-ambience-volume": {
         if (Number.isFinite(value)) {
           setStageAmbienceVolume(value);
           applyStageAmbienceSettings();
+          if (value <= 0) stopStageAudioPreview();
           syncStageAudio();
           stageFeedback("select");
         }
@@ -1798,6 +1816,7 @@ function bindStageEvents(root: HTMLElement): void {
         const next = !S.stage.ambience;
         setStageAmbience(next);
         applyStageAmbienceSettings();
+        if (!next) stopStageAudioPreview();
         syncStageAudio();
         if (next) stageFeedback("select");
         break;

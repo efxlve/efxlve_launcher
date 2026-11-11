@@ -9,7 +9,8 @@ import { S } from "../../core/state";
 import type { StageSettingsTab } from "../../core/types";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
-import { loadStageAudioFiles, stageAudioLabel } from "./stage-audio-library";
+import { loadStageAudioFiles, stageAudioFiles, stageAudioLabel, stageAudioPendingDelete } from "./stage-audio-library";
+import { stageAudioPreviewName } from "./stage-custom-audio";
 import { stageBatteryLabel, stageKindName } from "./stage-ui";
 
 const TABS: StageSettingsTab[] = ["general", "controller", "appearance", "about"];
@@ -112,6 +113,42 @@ function levelChoices(current: number): Choice[] {
   ];
 }
 
+function audioSize(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "—";
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** The imported file rows: assign, sample and remove without a file dialog. */
+function musicLibrary(): string {
+  const files = stageAudioFiles();
+  const pending = stageAudioPendingDelete();
+  const previewing = stageAudioPreviewName();
+  const rows = files.map((file) => {
+    const confirming = pending === file.name;
+    const assigned = S.stage.customAmbience === file.name;
+    const actions = confirming
+      ? `<button type="button" class="stage-choice is-danger" data-stage-act="delete-stage-audio" data-name="${esc(file.name)}" data-gp-item data-gp-key="music-delete:${esc(file.name)}">${esc(t("stage.settingsMusicDeleteConfirm"))}</button>
+         <button type="button" class="stage-choice" data-stage-act="cancel-delete-stage-audio" data-gp-item data-gp-key="music-cancel:${esc(file.name)}">${esc(t("stage.settingsMusicCancel"))}</button>`
+      : `<button type="button" class="stage-choice${previewing === file.name ? " active" : ""}" data-stage-act="preview-stage-audio" data-name="${esc(file.name)}" data-gp-item data-gp-key="music-preview:${esc(file.name)}">${esc(previewing === file.name ? t("stage.settingsMusicStop") : t("stage.settingsMusicPreview"))}</button>
+         ${assigned ? "" : `<button type="button" class="stage-choice" data-stage-act="use-stage-ambience" data-name="${esc(file.name)}" data-gp-item data-gp-key="music-use:${esc(file.name)}">${esc(t("stage.settingsMusicUse"))}</button>`}
+         <button type="button" class="stage-choice" data-stage-act="ask-delete-stage-audio" data-name="${esc(file.name)}" data-gp-item data-gp-key="music-ask-delete:${esc(file.name)}">${esc(t("stage.settingsMusicDelete"))}</button>`;
+    return `<div class="stage-music-row${confirming ? " is-confirming" : ""}" data-gp-item data-gp-key="music:${esc(file.name)}">
+      <span class="stage-music-copy">
+        <strong>${esc(file.label)}</strong>
+        <small class="tabular-nums">${esc(audioSize(file.size))}${assigned ? ` · ${esc(t("stage.settingsMusicAssigned"))}` : ""}</small>
+      </span>
+      <span class="stage-choice-row">${actions}</span>
+    </div>`;
+  }).join("");
+  return `<div class="stage-settings-group">
+    <span class="stage-kicker">${esc(t("stage.settingsMusicLibrary"))}</span>
+    ${files.length
+      ? `<div class="stage-music-list">${rows}</div>`
+      : `<div class="stage-settings-note">${icon("music", 15)}<span>${esc(t("stage.settingsMusicLibraryEmpty"))}</span></div>`}
+  </div>`;
+}
+
 function appearance(): string {
   return `<div class="stage-settings-panel">
     <div class="stage-settings-group">
@@ -141,6 +178,7 @@ function appearance(): string {
         </span>
       </div>
       <div class="stage-settings-note">${icon("music", 15)}<span>${esc(t("stage.settingsMusicDesc"))}</span></div>
+      ${musicLibrary()}
     </div>
 
     <div class="stage-settings-group">

@@ -229,6 +229,63 @@
   transform: scale(1.04);
 }
 
+.stage-music-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.stage-music-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 54px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.028);
+  transition: background 160ms ease, border-color 160ms ease;
+}
+.stage-music-row:hover,
+.stage-music-row.gp-focused {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+.stage-music-row.is-confirming {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.08);
+}
+.stage-music-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.stage-music-copy strong {
+  overflow: hidden;
+  color: var(--stage-ink);
+  font-size: 13.5px;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stage-music-copy small {
+  color: var(--stage-ink-4);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.stage-choice.is-danger {
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.14);
+  color: #fecaca;
+}
+.stage-choice.is-danger:hover,
+.stage-choice.is-danger.gp-focused {
+  border-color: rgba(248, 113, 113, 0.7);
+  background: rgba(248, 113, 113, 0.24);
+  color: #ffffff;
+}
+
 .stage-settings-actions {
   display: flex;
   flex-wrap: wrap;
@@ -352,6 +409,11 @@
   }
   .stage-choice-row {
     justify-content: flex-start;
+  }
+  .stage-music-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
   }
   .stage-controller-card {
     align-items: flex-start;

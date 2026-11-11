@@ -204,7 +204,10 @@ mod tests {
     #[test]
     fn labels_drop_import_timestamps_and_unsafe_characters() {
         assert_eq!(label_from_name("My Theme-1712345678901.mp3"), "My Theme");
-        assert_eq!(label_from_name("PS4_Ambient-1712345678901.ogg"), "PS4 Ambient");
+        assert_eq!(
+            label_from_name("PS4_Ambient-1712345678901.ogg"),
+            "PS4 Ambient"
+        );
         assert_eq!(sanitize_label("  a/b:c  "), "a b c");
         assert_eq!(sanitize_label(""), "Stage audio");
     }

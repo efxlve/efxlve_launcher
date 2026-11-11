@@ -24,6 +24,7 @@ let files: StageAudioFile[] = [];
 let ready = false;
 let loading: Promise<StageAudioFile[]> | null = null;
 let revision = 0;
+let pendingDelete = "";
 
 function store(list: StageAudioFile[]): StageAudioFile[] {
   files = list;
@@ -35,6 +36,30 @@ function store(list: StageAudioFile[]): StageAudioFile[] {
 /** A render guard token for the Settings and game page music labels. */
 export function stageAudioRevision(): number {
   return revision;
+}
+
+/** The cached list, for the Settings library rows. */
+export function stageAudioFiles(): StageAudioFile[] {
+  return files;
+}
+
+/** The file waiting for a second, confirming Delete press. */
+export function stageAudioPendingDelete(): string {
+  return pendingDelete;
+}
+
+export function stageAudioBeginDelete(name: string): void {
+  if (!name || pendingDelete === name) return;
+  pendingDelete = name;
+  revision += 1;
+  scheduleRender();
+}
+
+export function stageAudioCancelDelete(): void {
+  if (!pendingDelete) return;
+  pendingDelete = "";
+  revision += 1;
+  scheduleRender();
 }
 
 /** Load once; the Settings screen and a focused game both read this cache. */
@@ -88,6 +113,14 @@ export async function importStageAudio(): Promise<StageAudioFile | null> {
   const file = await invoke<StageAudioFile>("stage_audio_import", { source });
   store([...files.filter((item) => item.name !== file.name), file].sort((a, b) => a.label.localeCompare(b.label)));
   return file;
+}
+
+/** Remove one file from the Stage audio folder and the cached list. */
+export async function deleteStageAudio(name: string): Promise<void> {
+  if (!isTauri || !name) return;
+  await invoke("stage_audio_delete", { name });
+  pendingDelete = "";
+  store(files.filter((file) => file.name !== name));
 }
 
 

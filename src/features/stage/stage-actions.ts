@@ -31,7 +31,8 @@ import { ensureFullShot, fetchAndRenderScreenshots } from "../screenshots/screen
 import { loadNotes } from "../notes/notes-client";
 import { loadSettingsView } from "../settings/settings-view";
 import { setView } from "../store/store-view";
-import { importStageAudio } from "./stage-audio-library";
+import { deleteStageAudio, importStageAudio, stageAudioBeginDelete, stageAudioCancelDelete, stageAudioPendingDelete } from "./stage-audio-library";
+import { previewStageCustomAudio, stageAudioPreviewName, stopStageAudioPreview } from "./stage-custom-audio";
 import { stageLaunchGame } from "./stage-launch";
 import { stageBaseSummaries, stageGameByKey, stageHeroSummary, stageLibraryList, stageLibraryStores, stageSearchMatches } from "./stage-model";
 import { stageSearchResultsHtml } from "./stage-search";
@@ -680,6 +681,56 @@ export function stageClearGameTrack(key?: string): void {
   stageFeedback("back");
   setStageGameTrack(target, "");
   scheduleRender();
+}
+
+/** Sample one imported file from the Settings library. */
+export function stagePreviewAudio(name?: string): void {
+  const target = name || "";
+  if (!target) return;
+  stageFeedback("select");
+  previewStageCustomAudio(target);
+}
+
+/** Assign an already imported file as the global Stage track. */
+export function stageUseAudioForMenu(name?: string): void {
+  const target = name || "";
+  if (!target) return;
+  stageFeedback("select");
+  stopStageAudioPreview();
+  setStageCustomAmbience(target);
+}
+
+export function stageAskDeleteAudio(name?: string): void {
+  const target = name || "";
+  if (!target) return;
+  stageFeedback("select");
+  stageAudioBeginDelete(target);
+}
+
+export function stageCancelDeleteAudio(): void {
+  if (!stageAudioPendingDelete()) return;
+  stageFeedback("back");
+  stageAudioCancelDelete();
+}
+
+export async function stageConfirmDeleteAudio(name?: string): Promise<void> {
+  const target = name || stageAudioPendingDelete();
+  if (!target) return;
+  stageFeedback("select");
+  if (stageAudioPreviewName() === target) stopStageAudioPreview();
+  try {
+    // A deleted file must not stay assigned to the menu or to a game, or the
+    // room would go silent with no row left to explain why.
+    if (S.stage.customAmbience === target) setStageCustomAmbience("");
+    for (const [key, value] of Object.entries(S.stage.gameTracks)) {
+      if (value === target) setStageGameTrack(key, "");
+    }
+    await deleteStageAudio(target);
+    scheduleRender();
+  } catch (error) {
+    stageAudioCancelDelete();
+    toast(t("stage.settingsMusicDeleteFailed", { msg: String(error) }), "err");
+  }
 }
 
 export function stageOpenDesktopManage(key?: string): void {
