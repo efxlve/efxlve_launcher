@@ -305,6 +305,12 @@ export function stageTitleKey(s: EpicSummary): string {
  * marker lets the gamepad layer return here after a dialog closes.
  */
 export function stagePrimaryAction(s: EpicSummary): string {
+  if (s.installed && stageHasUpdate(s) && !S.runningGames.has(s.appName)) {
+    return stageUpdateAction(s).replace(
+      'data-gp-item data-gp-key="hero:update"',
+      'data-gp-default data-gp-key="primary"',
+    );
+  }
   return epicActionButtons(s, "", { primaryOnly: true }).replace(
     "<button ",
     '<button data-gp-default data-gp-key="primary" ',

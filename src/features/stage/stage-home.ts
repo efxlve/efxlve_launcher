@@ -26,10 +26,7 @@ import {
   stageGameByKey,
   stageGamePlaytime,
   stageHeroSummary,
-  stageHasUpdate,
-  stagePlayAction,
   stagePrimaryAction,
-  stageUpdateAction,
   stageReadyShelf,
   stageRibbonSummaries,
   stageUserCollections,
@@ -81,7 +78,6 @@ function welcomeBackBannerHtml(): string {
 export function stageHomeHeroHtml(game: EpicSummary): string {
   const store = stageStoreName(sourceOfKey(game.appName));
   const isFav = S.epicFav.has(game.appName);
-  const hasUpdate = stageHasUpdate(game);
 
   return `<div class="stage-home-copy">
     <div class="stage-home-eyebrow">
@@ -90,10 +86,7 @@ export function stageHomeHeroHtml(game: EpicSummary): string {
     </div>
     <h1 class="stage-home-title">${esc(game.title)}</h1>
     <div class="stage-home-actions">
-      ${hasUpdate
-        ? `<div class="stage-primary-action">${stagePlayAction(game)}</div>
-           ${stageUpdateAction(game)}`
-        : `<div class="stage-primary-action">${stagePrimaryAction(game)}</div>`}
+      <div class="stage-primary-action">${stagePrimaryAction(game)}</div>
       <button type="button" class="stage-home-more" data-stage-act="scroll-to-hub" data-gp-skip aria-label="${esc(t("stage.details"))}">
         <span>${esc(t("stage.details"))}</span>${icon("chevron-down", 15)}
       </button>
