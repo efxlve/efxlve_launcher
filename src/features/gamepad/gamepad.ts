@@ -414,6 +414,21 @@ function regionOrder(from: FocusRegion, dir: "up" | "down" | "left" | "right"): 
 }
 
 export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
+  if (S.stage.active && S.stage.stillIndex !== null) {
+    const bridge = stageBridge();
+    if (dir === "left") {
+      bridge?.button("lb");
+      return;
+    }
+    if (dir === "right") {
+      bridge?.button("rb");
+      return;
+    }
+    if (dir === "up" || dir === "down") {
+      bridge?.back();
+      return;
+    }
+  }
   const candidates = getNavigableElements();
   if (candidates.length === 0) return;
 
@@ -698,6 +713,8 @@ let prevButtons = 0;
 let repeatTimer = 0;
 let repeatDir: "up" | "down" | "left" | "right" | null = null;
 let lastMoveTime = 0;
+let repeatHoldStartTime = 0;
+let lastRsLeapTime = 0;
 
 /** One scheduled poll at a time. A focus change restarts the loop instead of
  *  leaving a second timer to race it. */
@@ -861,19 +878,32 @@ function gamepadLoop(): void {
   else if (isPressed(mask, BTN_LEFT)) activeDir = "left";
   else if (isPressed(mask, BTN_RIGHT)) activeDir = "right";
 
+    // Right stick vertical flick jumps 4 items (fast page leap)
+  const ry = gp.axes[3] ?? 0;
+  if (S.stage.active && S.stage.stillIndex === null && Math.abs(ry) > 0.68) {
+    if (now - lastRsLeapTime > 220) {
+      lastRsLeapTime = now;
+      const leapDir = ry > 0 ? "down" : "up";
+      for (let i = 0; i < 4; i++) moveGamepadFocus(leapDir);
+    }
+  }
+
   if (activeDir) {
     if (S.stage.active) {
       window.dispatchEvent(new CustomEvent("stage-input-mode", { detail: { mode: "gamepad" } }));
     }
     if (activeDir !== repeatDir) {
       repeatDir = activeDir;
+      repeatHoldStartTime = now;
       lastMoveTime = now;
       moveGamepadFocus(activeDir);
     } else {
       const elapsed = now - lastMoveTime;
-      if (elapsed > REPEAT_FIRST_MS) {
+      const totalHeld = now - repeatHoldStartTime;
+      const currentInterval = totalHeld > 1400 ? 38 : totalHeld > 600 ? 58 : REPEAT_NEXT_MS;
+      if (elapsed >= currentInterval) {
         moveGamepadFocus(activeDir);
-        lastMoveTime = now - (REPEAT_FIRST_MS - REPEAT_NEXT_MS);
+        lastMoveTime = now;
       }
     }
   } else {

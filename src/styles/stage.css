@@ -104,7 +104,8 @@ body.stage-mode #toasts {
 .stage-backdrop-glow {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 60% 40%, rgba(100, 160, 255, 0.05), transparent 65%);
+  background: radial-gradient(circle at 65% 35%, rgba(var(--stage-accent-rgb, 86, 140, 255), 0.14), transparent 60%);
+  transition: background 600ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #stage-root *,

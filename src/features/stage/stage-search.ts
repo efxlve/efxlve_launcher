@@ -7,6 +7,7 @@ import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { currentLanguage, t } from "../../i18n";
+import { stageFaceGlyph, stageMenuGlyph } from "./stage-ui";
 import { stageCoverMarkup } from "./stage-art";
 import { stageSearchMatches } from "./stage-model";
 
@@ -90,7 +91,14 @@ export function renderStageSearch(): string {
         </div>
       </div>
       <div id="stage-search-results" class="stage-search-results">${stageSearchResultsHtml()}</div>
-      <div class="stage-search-hint">${esc(t("stage.searchHint"))}</div>
+      <div class="stage-search-hint">
+        <div class="stage-search-shortcuts">
+          <span><kbd class="stage-kbd">${stageFaceGlyph("x")}</kbd> ${esc(t("stage.backspace"))}</span>
+          <span><kbd class="stage-kbd">${stageFaceGlyph("y")}</kbd> ${esc(t("stage.space"))}</span>
+          <span><kbd class="stage-kbd">${stageMenuGlyph()}</kbd> ${esc(t("stage.done"))}</span>
+        </div>
+        <span>${esc(t("stage.searchHint"))}</span>
+      </div>
     </div>
   </div>`;
 }

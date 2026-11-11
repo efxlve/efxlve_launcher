@@ -32,6 +32,8 @@ import {
   stageCycleTab,
   stageGo,
   stageOpenSearch,
+  stageSearchKey,
+  stageSearchSubmit,
   stageQuickPlay,
   stageToggleFavorite,
   stageToggleQuickMenu,
@@ -76,9 +78,10 @@ export function stageButton(button: StagePadButton): void {
     return;
   }
   if (S.stage.searchOpen) {
-    // While typing, View closes the overlay; Start must not open a sheet on
-    // top of the keyboard.
-    if (button === "select") stageBack();
+    if (button === "select") { stageBack(); return; }
+    if (button === "x") { stageSearchKey("backspace"); return; }
+    if (button === "y") { stageSearchKey("space"); return; }
+    if (button === "start") { stageSearchSubmit(); return; }
     return;
   }
   if (S.stage.powerOpen || S.stage.browserOpen || S.stage.spotifyOpen || S.stage.discordOpen) {

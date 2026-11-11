@@ -50,6 +50,10 @@ export function initStageBattery(): void {
           deviceBattery.level !== nextLevel ||
           deviceBattery.charging !== nextCharging;
         deviceBattery = { level: nextLevel, charging: nextCharging };
+        const rootEl = document.getElementById("stage-root");
+        if (rootEl) {
+          rootEl.classList.toggle("is-battery-saver", nextLevel <= 20 && !nextCharging);
+        }
         if (changed && S.stage.active) {
           scheduleRender();
         }

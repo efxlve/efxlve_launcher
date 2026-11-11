@@ -876,3 +876,33 @@ html.reduce-effects #stage-root.is-idle .stage-home-art-image {
     min-height: 210px;
   }
 }
+
+/* ---------- Handheld Battery Saver Mode ---------- */
+
+#stage-root.is-battery-saver .stage-backdrop-canvas {
+  filter: none !important;
+  opacity: 0.15 !important;
+}
+
+#stage-root.is-battery-saver .stage-home-ambient {
+  opacity: 0.25 !important;
+}
+
+#stage-root.is-battery-saver .stage-home-grain {
+  display: none !important;
+}
+
+#stage-root.is-battery-saver .stage-ribbon-card::after {
+  display: none !important;
+}
+
+/* ---------- Dynamic Game Tone in Focus Glow ---------- */
+
+.stage-ribbon-card.gp-focused,
+.stage-cover-card.gp-focused,
+.stage-activity-card.gp-focused {
+  box-shadow:
+    0 0 0 3px #ffffff,
+    0 0 24px rgba(255, 255, 255, 0.65),
+    0 0 45px rgba(var(--stage-accent-rgb, 86, 140, 255), 0.38) !important;
+}
