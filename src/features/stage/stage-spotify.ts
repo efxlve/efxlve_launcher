@@ -43,7 +43,10 @@ function spotifySheetKey(): string {
     nowPlaying?.repeat ?? "",
     status?.running ? "1" : "0",
     status?.deviceName ?? "",
-    playlists.map((item) => `${item.uri}\u001f${item.name}\u001f${item.trackCount}\u001f${item.artUrl ?? ""}`).join("\u001e"),
+    playlists
+      .map((item) => `${item.uri}\u001f${item.name}\u001f${item.trackCount}\u001f${item.artUrl ?? ""}`)
+      .sort()
+      .join("\u001e"),
   ].join("\u001f");
 }
 

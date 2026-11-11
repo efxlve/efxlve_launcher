@@ -49,6 +49,7 @@ function discordSheetKey(): string {
     voiceInfo?.deafened ? "1" : "0",
     friendsList
       .map((friend) => `${friend.id}\u001f${friend.username}\u001f${friend.displayName ?? ""}\u001f${friend.status}\u001f${friend.activity ?? ""}\u001f${friend.avatarUrl ?? ""}`)
+      .sort()
       .join("\u001e"),
   ].join("\u001f");
 }
