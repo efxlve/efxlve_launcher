@@ -365,7 +365,13 @@ export function stageHomeFocus(key: string): void {
     if (!current || current.appName !== game.appName) return;
     if (!S.loadedAchievements.has(game.appName)) {
       void fetchAndRenderAchievements(game.appName).then(() => {
-        if (S.stage.active && S.stage.route === "home") scheduleRender();
+        if (S.stage.active && S.stage.route === "home" && S.stage.homeHeroKey === game.appName) {
+          const actEl = document.getElementById("stage-home-activities");
+          if (actEl) {
+            actEl.innerHTML = stageHomeActivitiesHtml(game);
+            actEl.querySelectorAll<HTMLElement>("button, [data-gp-item]").forEach((el) => el.setAttribute("data-gp-item", ""));
+          }
+        }
       });
     }
     if (!S.loadedScreenshots.has(game.appName)) {

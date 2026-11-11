@@ -83,10 +83,19 @@ import {
   setStageTextScale,
 } from "./stage-state";
 import { stageLaunchGame } from "./stage-launch";
+import type { EpicSummary } from "../../epic";
+import { epicDlProgress } from "../../core/game-view";
 import { patchStageDownloads, renderStageDownloads } from "./stage-downloads";
-import { renderStageHome, stageHomeFocus } from "./stage-home";
-import { renderStageLibrary, stageLibraryFocus, stageLibraryMore, stageLibraryRenderToken } from "./stage-library";
-import { stageGameByKey, stageHeroSummary } from "./stage-model";
+import { renderStageHome, stageHomeActivitiesHtml, stageHomeFocus, stageHomeHeroHtml } from "./stage-home";
+import { renderStageLibrary, stageLibraryFocus, stageLibraryMore, stageLibraryRenderToken, stageLibrarySideHtml } from "./stage-library";
+import {
+  stageAchievements,
+  stageGameByKey,
+  stageGamePlaytime,
+  stageHasUpdate,
+  stageHeroSummary,
+  stageRibbonSummaries,
+} from "./stage-model";
 import { renderStageProgram } from "./stage-program";
 import { renderStageSearch } from "./stage-search";
 import { renderStageSettings } from "./stage-settings";
@@ -125,7 +134,7 @@ import {
   stageToggleQuickMute,
 } from "./stage-power";
 import { resetStageBackdrop, stageBackdropMarkup, updateStageBackdrop } from "./stage-backdrop";
-import { stageCoverMarkup, stageWideArt } from "./stage-art";
+import { stageCoverArt, stageCoverMarkup, stagePoster, stageWideArt } from "./stage-art";
 import { stageIntroMarkup, resetStageIntro, skipStageIntro, startStageIntro } from "./stage-intro";
 import {
   applyStageAmbienceSettings,
@@ -193,12 +202,13 @@ export function setStageGamepadMode(): void {
  * focus event, so moving across a shelf never rebuilds the shelf.
  */
 function stageLiveSignature(): string {
-  const download = stageActiveDownload();
+  const ribbonKeys = S.stage.route === "home"
+    ? stageRibbonSummaries(24).map((s) => s.appName).join(",")
+    : "";
   return [
     stageInputMode,
     S.stage.route,
-    S.stage.gameKey ?? "",
-    S.stage.homeHeroKey ?? "",
+    S.stage.route === "program" ? (S.stage.gameKey ?? "") : "",
     S.stage.programTab,
     S.stage.settingsTab,
     S.stage.achievementFilter,
@@ -235,71 +245,185 @@ function stageLiveSignature(): string {
     S.stage.manageConfirmUninstall ? "1" : "0",
     S.stage.launch?.key ?? "",
     S.stage.launchError,
-    String(S.loadedAchievements.size),
-    String(S.loadingAchFor.size),
-    S.stage.gameKey
-      ? [
-          S.loadedAchievements.get(S.stage.gameKey)?.user_unlocked ?? -1,
-          S.loadedAchievements.get(S.stage.gameKey)?.total_achievements ?? -1,
-          S.loadedAchievements.get(S.stage.gameKey)?.achievements.length ?? -1,
-        ].join("/")
-      : "",
-    String(S.loadedScreenshots.size),
-    String(S.loadingScreenshotsFor.size),
-    String(S.screenshotFullSrc.size),
-    S.stage.gameKey ? (S.loadedScreenshots.get(S.stage.gameKey)?.[0]?.file_path ?? "") : "",
     S.stage.controllerConnected ? "1" : "0",
-    String(Math.round((S.stage.controllerBattery ?? -1) * 100)),
-    String(stageBatteryInfo().level),
-    stageBatteryInfo().charging ? "1" : "0",
     S.offlineMode ? "1" : "0",
     navigator.onLine ? "1" : "0",
     S.appLanguage,
-    String(S.libraryDataRev),
-    [S.epicSummaries.length, S.gogSummaries.length, S.steamSummaries.length, S.amazonSummaries.length, S.companionSummaries.length, S.customSummaries.length].join(","),
-    S.epicRecent.join(","),
-    String(S.epicFav.size),
-    Array.from(S.gameStatus).sort().join(","),
-    String(S.hiddenGames.size),
-    Array.from(S.enabledStores).sort().join(","),
-    S.separateCopies ? "1" : "0",
-    S.showSharedLibrary ? "1" : "0",
-    String(S.epicCopyOverrides.size),
-    String(S.ignoredUpdates.size),
-    String(S.playtimeMap.size),
-    String(S.customGames.length),
-    String(S.epicCollections.length),
-    Array.from(S.runningGames).sort().join(","),
-    String(S.availableUpdates.size),
-    String(S.gogUpdates.size),
-    String(S.downloads.size),
-    download?.title ?? "",
-    S.activeDlMetrics?.done ? "1" : "0",
-    S.dlQueueStatus.isPaused ? "1" : "0",
-    S.gogDlPaused ? "1" : "0",
-    S.dlQueueStatus.active ?? "",
-    S.dlQueueStatus.queue.join(","),
-    S.stage.gameKey ? String(S.playtimeMap.get(S.stage.gameKey)?.total_seconds ?? -1) : "",
+    ribbonKeys,
     stageLibraryRenderToken(),
+    S.stage.route === "downloads" ? String(S.downloads.size) : "",
   ].join("\u001f");
 }
 
-/** Live counters that can update without rebuilding a shelf. */
+function patchStageCoverInCard(card: HTMLElement, s: EpicSummary, className: string): void {
+  const coverNode = card.querySelector<HTMLElement>("[data-cover-key]");
+  if (!coverNode) return;
+  const targetUrl = stageCoverArt(s);
+
+  if (targetUrl) {
+    if (coverNode instanceof HTMLImageElement) {
+      if (coverNode.getAttribute("src") !== targetUrl) {
+        coverNode.src = targetUrl;
+      }
+    } else {
+      const isSteam = s.appName.startsWith("steam::");
+      const steamApp = isSteam ? s.appName.slice(7) : "";
+      const steamAttr = steamApp ? ` data-steam-app="${esc(steamApp)}" data-art-step="resolved"` : "";
+      coverNode.outerHTML = `<img class="${className}" src="${esc(targetUrl)}"${steamAttr} data-cover-key="${esc(s.appName)}" alt="" decoding="async" />`;
+    }
+  } else if (!targetUrl && coverNode instanceof HTMLImageElement) {
+    coverNode.outerHTML = stagePoster(s.title, s.installed ? "" : s.version, s.appName);
+  }
+}
+
+function patchStageCardsInPlace(): void {
+  const root = document.getElementById("stage-root");
+  if (!root) return;
+
+  const ribbonCards = root.querySelectorAll<HTMLElement>(".stage-ribbon-card[data-key]");
+  for (const card of ribbonCards) {
+    const key = card.dataset.key;
+    if (!key) continue;
+    const s = stageGameByKey(key);
+    if (!s) continue;
+    patchStageCoverInCard(card, s, "stage-ribbon-image");
+
+    const isRunning = S.runningGames.has(s.appName);
+    const hasDl = epicDlProgress(s.appName) !== null;
+    const isUpdating = s.updateAvailable && !S.ignoredUpdates.has(s.appName);
+    card.classList.toggle("is-running", isRunning);
+
+    const runDot = card.querySelector(".stage-ribbon-running");
+    if (isRunning && !runDot) {
+      card.insertAdjacentHTML("beforeend", '<span class="stage-ribbon-running"></span>');
+    } else if (!isRunning && runDot) {
+      runDot.remove();
+    }
+
+    const indDot = card.querySelector(".stage-ribbon-indicator");
+    const wantInd = !isRunning && (hasDl || isUpdating);
+    if (wantInd && !indDot) {
+      card.insertAdjacentHTML("beforeend", '<span class="stage-ribbon-indicator"></span>');
+    } else if (!wantInd && indDot) {
+      indDot.remove();
+    }
+  }
+
+  const libCards = root.querySelectorAll<HTMLElement>(".stage-cover-card[data-key], .stage-list-row[data-key]");
+  for (const card of libCards) {
+    const key = card.dataset.key;
+    if (!key) continue;
+    const s = stageGameByKey(key);
+    if (!s) continue;
+    patchStageCoverInCard(card, s, "stage-cover-art");
+  }
+}
+
+function patchStageHomeHeroInPlace(hero: EpicSummary): void {
+  const root = document.getElementById("stage-root");
+  if (!root) return;
+
+  const targetArt = stageWideArt(hero);
+  const heroArtImg = root.querySelector<HTMLImageElement>("#stage-home-art img");
+  if (heroArtImg && targetArt && heroArtImg.getAttribute("src") !== targetArt) {
+    heroArtImg.src = targetArt;
+    updateStageBackdrop(targetArt);
+  }
+
+  const heroWrap = document.getElementById("stage-home-hero");
+  if (heroWrap && heroWrap.dataset.key === hero.appName) {
+    const hasUpdate = stageHasUpdate(hero);
+    const isRunning = S.runningGames.has(hero.appName);
+    const isFav = S.epicFav.has(hero.appName);
+    const hasDl = epicDlProgress(hero.appName) !== null;
+    const heroSig = `${hasUpdate ? "1" : "0"}:${isRunning ? "1" : "0"}:${isFav ? "1" : "0"}:${hasDl ? "1" : "0"}`;
+    if (heroWrap.dataset.heroActionSig !== heroSig) {
+      heroWrap.dataset.heroActionSig = heroSig;
+      heroWrap.innerHTML = stageHomeHeroHtml(hero);
+      heroWrap.querySelectorAll<HTMLElement>("button, [data-gp-item]").forEach((btn) => {
+        if (!btn.closest("[data-gp-skip]")) btn.setAttribute("data-gp-item", "");
+      });
+    }
+  }
+
+  const actEl = document.getElementById("stage-home-activities");
+  if (actEl) {
+    const ach = stageAchievements(hero);
+    const shots = S.loadedScreenshots.get(hero.appName) || [];
+    const play = stageGamePlaytime(hero);
+    const isRunning = S.runningGames.has(hero.appName);
+    const actSig = `${ach?.user_unlocked ?? -1}:${ach?.total_achievements ?? -1}:${shots.length}:${play.seconds}:${isRunning ? "1" : "0"}`;
+    if (actEl.dataset.actSig !== actSig) {
+      actEl.dataset.actSig = actSig;
+      actEl.innerHTML = stageHomeActivitiesHtml(hero);
+      actEl.querySelectorAll<HTMLElement>("button, [data-gp-item]").forEach((el) => el.setAttribute("data-gp-item", ""));
+    }
+  }
+}
+
+function patchStageLibrarySideInPlace(previewed: EpicSummary): void {
+  const side = document.getElementById("stage-library-side");
+  if (!side) return;
+  const ach = stageAchievements(previewed);
+  const isRunning = S.runningGames.has(previewed.appName);
+  const isFav = S.epicFav.has(previewed.appName);
+  const sideSig = `${ach?.user_unlocked ?? -1}:${ach?.total_achievements ?? -1}:${isRunning ? "1" : "0"}:${isFav ? "1" : "0"}`;
+  if (side.dataset.sideSig !== sideSig) {
+    side.dataset.sideSig = sideSig;
+    side.outerHTML = stageLibrarySideHtml(previewed);
+    const nextSide = document.getElementById("stage-library-side");
+    if (nextSide) {
+      nextSide.dataset.sideSig = sideSig;
+      nextSide.querySelectorAll<HTMLElement>("button").forEach((b) => b.setAttribute("data-gp-item", ""));
+    }
+  }
+}
+
+/** Live counters, cards, covers and indicators that update without rebuilding the Stage shell. */
 function patchLiveStage(): void {
+  const root = document.getElementById("stage-root");
+  if (!root) return;
+
+  paintClock();
+  root.dataset.ambience = stageAmbienceActive() ? "on" : "off";
+
+  const bat = stageBatteryInfo();
+  const batEl = root.querySelector<HTMLElement>(".stage-battery");
+  if (batEl) {
+    const batSpan = batEl.querySelector<HTMLElement>("span");
+    if (batSpan) batSpan.textContent = bat.available ? `${bat.level}%` : "";
+    batEl.classList.toggle("is-charging", bat.charging);
+  }
+
   const download = stageActiveDownload();
   if (download) {
     const percent = Math.max(0, Math.min(100, Math.round(download.percent)));
-    const chip = document.querySelector<HTMLElement>(".stage-top-download");
+    const chip = root.querySelector<HTMLElement>(".stage-top-download");
     if (chip) {
       const label = chip.querySelector<HTMLElement>("span");
       if (label) label.textContent = `${percent}%`;
       const bar = chip.querySelector<HTMLElement>("i");
       if (bar) bar.style.width = `${Math.max(2, percent)}%`;
     }
-    const badge = document.querySelector<HTMLElement>(".stage-dock-badge");
+    const badge = root.querySelector<HTMLElement>(".stage-dock-badge");
     if (badge) badge.textContent = `${percent}%`;
   }
   if (S.stage.route === "downloads") patchStageDownloads();
+
+  patchStageCardsInPlace();
+
+  if (S.stage.route === "home") {
+    const heroKey = S.stage.homeHeroKey || root.querySelector<HTMLElement>("#stage-home-hero")?.dataset.key;
+    if (heroKey) {
+      const hero = stageGameByKey(heroKey);
+      if (hero) patchStageHomeHeroInPlace(hero);
+    }
+  }
+
+  if (S.stage.route === "library" && S.stage.previewKey) {
+    const previewed = stageGameByKey(S.stage.previewKey);
+    if (previewed) patchStageLibrarySideInPlace(previewed);
+  }
 }
 
 function clockText(): string {

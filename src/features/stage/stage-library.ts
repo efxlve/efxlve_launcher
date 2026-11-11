@@ -130,7 +130,7 @@ function listRow(s: EpicSummary, index: number): string {
   </button>`;
 }
 
-function sidePanel(s: EpicSummary | undefined): string {
+export function stageLibrarySideHtml(s: EpicSummary | undefined): string {
   if (!s) {
     return `<aside class="stage-library-side" id="stage-library-side"><div class="stage-side-empty">${icon("search", 30)}<strong>${esc(t("stage.noResults"))}</strong><span>${esc(t("stage.noResultsHint"))}</span></div></aside>`;
   }
@@ -163,6 +163,8 @@ function sidePanel(s: EpicSummary | undefined): string {
     </div>
   </aside>`;
 }
+
+const sidePanel = stageLibrarySideHtml;
 
 export function renderStageLibrary(): string {
   ensureRenderedLimit();

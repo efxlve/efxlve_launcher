@@ -6,6 +6,7 @@
  * paints a typographic playbill instead of a grey box.
  */
 
+import { cachedSteamCover, steamCdnPortrait } from "../../core/steam-art-cache";
 import { epicArtUrl } from "../../core/game-view";
 import { epicWideArt } from "../../core/selectors";
 import { esc } from "../../core/utils";
@@ -20,6 +21,13 @@ export function stageWideArt(s: EpicSummary): string | null {
 
 /** Portrait cover: the shelf wall. */
 export function stageCoverArt(s: EpicSummary): string | null {
+  if (s.appName.startsWith("steam::")) {
+    const appId = s.appName.slice(7);
+    const cached = cachedSteamCover(appId);
+    if (cached === "") return null;
+    if (cached) return cached;
+    return steamCdnPortrait(appId);
+  }
   return epicArtUrl(s) || epicWideArt(s) || null;
 }
 
@@ -43,9 +51,10 @@ function posterMonogram(title: string): string {
  * Typographic poster used when a title has no cover and no hero. The title is
  * the picture; the layout rotates through four quiet compositions.
  */
-export function stagePoster(title: string, subtitle = ""): string {
+export function stagePoster(title: string, subtitle = "", appName = ""): string {
   const variant = posterVariant(title);
-  return `<div class="stage-poster stage-poster-${variant}" aria-hidden="true">
+  const keyAttr = appName ? ` data-cover-key="${esc(appName)}"` : "";
+  return `<div class="stage-poster stage-poster-${variant}"${keyAttr} aria-hidden="true">
     <span class="stage-poster-mono">${esc(posterMonogram(title))}</span>
     <span class="stage-poster-rule"></span>
     <span class="stage-poster-title">${esc(title)}</span>
@@ -56,15 +65,21 @@ export function stagePoster(title: string, subtitle = ""): string {
 /** A cover image with the per-game poster fallback kept beside it. */
 export function stageCoverMarkup(s: EpicSummary, className = "stage-cover-art", lazy = false): string {
   const url = stageCoverArt(s);
-  if (!url) return stagePoster(s.title, s.installed ? "" : s.version);
-  return `<img class="${className}" src="${esc(url)}" alt="" decoding="async" loading="${lazy ? "lazy" : "eager"}" />`;
+  const isSteam = s.appName.startsWith("steam::");
+  const steamApp = isSteam ? s.appName.slice(7) : "";
+  const cached = steamApp ? cachedSteamCover(steamApp) : undefined;
+  const step = cached ? "resolved" : "0";
+  const steamAttr = steamApp ? ` data-steam-app="${esc(steamApp)}" data-art-step="${step}"` : "";
+
+  if (!url) return stagePoster(s.title, s.installed ? "" : s.version, s.appName);
+  return `<img class="${className}" src="${esc(url)}"${steamAttr} data-cover-key="${esc(s.appName)}" alt="" decoding="async" loading="${lazy ? "lazy" : "eager"}" />`;
 }
 
 /** A wide image with the same fallback discipline. */
 export function stageHeroMarkup(s: EpicSummary, className = "stage-hero-art"): string {
   const url = stageWideArt(s);
-  if (!url) return stagePoster(s.title, s.version);
-  return `<img class="${className}" src="${esc(url)}" alt="" decoding="async" loading="eager" />`;
+  if (!url) return stagePoster(s.title, s.version, s.appName);
+  return `<img class="${className}" src="${esc(url)}" data-hero-key="${esc(s.appName)}" alt="" decoding="async" loading="eager" />`;
 }
 
 /** Warm a handful of pictures without starting a visible load. */
