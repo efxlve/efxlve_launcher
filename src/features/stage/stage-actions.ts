@@ -25,6 +25,7 @@ import type {
 import { localizeMessage, t } from "../../i18n";
 import { uploadGameCloudAction } from "../cloud-backup/cloud-backup-actions";
 import { fetchAndRenderAchievements } from "../drawer/drawer-view";
+import { openManagePopup } from "../manage/manage-view";
 import { ensureFullShot, fetchAndRenderScreenshots } from "../screenshots/screenshots-view";
 import { loadNotes } from "../notes/notes-client";
 import { loadSettingsView } from "../settings/settings-view";
@@ -608,6 +609,21 @@ export function stageManageConfirmUninstall(key?: string): void {
   } else {
     void epicUninstall(target).then(() => scheduleRender());
   }
+}
+
+/** The escape hatch for move, DLC and other advanced management that stays on desktop. */
+export function stageOpenDesktopManage(key?: string): void {
+  const target =
+    key ||
+    S.stage.manageKey ||
+    S.stage.gameKey ||
+    stageFocusedKey() ||
+    stageHomeKey() ||
+    "";
+  if (!target) return;
+  stageFeedback("back");
+  exitStage();
+  openManagePopup(target);
 }
 
 export function stageResetFilters(): void {

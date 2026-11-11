@@ -44,6 +44,7 @@ import {
   stageManageVerify,
   stageOpenCollection,
   stageOpenDesktop,
+  stageOpenDesktopManage,
   stageOpenDesktopSettings,
   stageOpenDesktopSettingsSection,
   stageOpenManage,
@@ -1094,6 +1095,14 @@ function stageManageSheet(appName: string, entered: boolean): string {
             </div>
           </button>
         ` : ""}
+
+        <button type="button" class="stage-manage-card" data-stage-act="desktop-manage" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:desktop">
+          <span class="stage-manage-card-icon">${icon("external", 20)}</span>
+          <div class="stage-manage-card-text">
+            <strong>${esc(t("stage.manageInDesktop"))}</strong>
+            <span>${esc(t("stage.desktopHint"))}</span>
+          </div>
+        </button>
       </div>
 
       <div class="stage-manage-hints">
@@ -1675,6 +1684,7 @@ function bindStageEvents(root: HTMLElement): void {
         break;
       }
       case "desktop": stageOpenDesktop(); break;
+      case "desktop-manage": stageOpenDesktopManage(key); break;
       case "desktop-settings": stageOpenDesktopSettings(); break;
       case "desktop-game":
       case "manage-game": stageOpenManage(key); break;
