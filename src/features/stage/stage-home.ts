@@ -268,7 +268,6 @@ export function renderStageHome(): string {
   if (hero) S.stage.homeHeroKey = hero.appName;
 
   stagePrefetch([stageWideArt(hero), ...ribbon.slice(0, 4).map((s) => stageWideArt(s))], 5);
-  updateStageBackdrop(stageWideArt(hero));
 
   return `<div class="stage-home">
     <section class="stage-home-stage">

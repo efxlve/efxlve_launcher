@@ -93,7 +93,6 @@ import {
   stageGamePlaytime,
   stageHasUpdate,
   stageHeroSummary,
-  stageRibbonSummaries,
 } from "./stage-model";
 import { renderStageProgram } from "./stage-program";
 import { renderStageSearch } from "./stage-search";
@@ -183,6 +182,7 @@ let wasDiscord = false;
 let wasPower = false;
 let wasSettingsTab = "";
 let lastStageSignature = "";
+let lastCardPatchSig = "";
 let introStarted = false;
 /* Mouse drag-to-scroll state; the window listeners are bound exactly once. */
 let dragTrack: HTMLElement | null = null;
@@ -204,11 +204,26 @@ export function setStageGamepadMode(): void {
  * The shell should repaint when the screen changes, not when a download ticks.
  * Focus changes are deliberately absent: they are patched in place by the
  * focus event, so moving across a shelf never rebuilds the shelf.
+ *
+ * The Home shelf is represented by its inputs, not by a fresh sort of the
+ * whole library: `stageLiveSignature()` runs on every download tick, and a
+ * 600-title `stageRibbonSummaries()` call there was the real cost behind the
+ * "constant re-render" feel.
  */
+function stageHomeRevision(): string {
+  if (S.stage.route !== "home") return "";
+  return [
+    S.libraryDataRev,
+    S.epicRecent.join(","),
+    S.separateCopies ? "1" : "0",
+    S.hiddenGames.size,
+    [...S.enabledStores].sort().join(","),
+    [...S.epicCopyOverrides.keys()].sort().join(","),
+  ].join("\u001f");
+}
+
 function stageLiveSignature(): string {
-  const ribbonKeys = S.stage.route === "home"
-    ? stageRibbonSummaries(24).map((s) => s.appName).join(",")
-    : "";
+  const homeRevision = stageHomeRevision();
   return [
     stageInputMode,
     S.stage.route,
@@ -253,7 +268,7 @@ function stageLiveSignature(): string {
     S.offlineMode ? "1" : "0",
     navigator.onLine ? "1" : "0",
     S.appLanguage,
-    ribbonKeys,
+    homeRevision,
     stageLibraryRenderToken(),
     S.stage.route === "downloads" ? String(S.downloads.size) : "",
     S.availableUpdates.size,
@@ -283,9 +298,34 @@ function patchStageCoverInCard(card: HTMLElement, s: EpicSummary, className: str
   }
 }
 
+/** Cheap inputs for the cover/status patch: progress alone never changes them. */
+function stageCardPatchSignature(): string {
+  const downloads: string[] = [];
+  for (const [id, item] of S.downloads) if (!item.done) downloads.push(id);
+  downloads.sort();
+  const steamDownloads = S.steamSummaries
+    .filter((game) => game.downloading)
+    .map((game) => game.key)
+    .sort();
+  return [
+    S.libraryDataRev,
+    [...S.runningGames].sort().join(","),
+    downloads.join(","),
+    S.dlQueueStatus.active ?? "",
+    S.dlQueueStatus.queue.join(","),
+    steamDownloads.join(","),
+    S.availableUpdates.size,
+    S.gogUpdates.size,
+    S.ignoredUpdates.size,
+  ].join("\u001f");
+}
+
 function patchStageCardsInPlace(): void {
   const root = document.getElementById("stage-root");
   if (!root) return;
+  const sig = stageCardPatchSignature();
+  if (sig === lastCardPatchSig) return;
+  lastCardPatchSig = sig;
 
   const ribbonCards = root.querySelectorAll<HTMLElement>(".stage-ribbon-card[data-key]");
   for (const card of ribbonCards) {
@@ -392,13 +432,15 @@ function patchLiveStage(): void {
   if (!root) return;
 
   paintClock();
-  root.dataset.ambience = stageAmbienceActive() ? "on" : "off";
+  const ambience = stageAmbienceActive() ? "on" : "off";
+  if (root.dataset.ambience !== ambience) root.dataset.ambience = ambience;
 
   const bat = stageBatteryInfo();
   const batEl = root.querySelector<HTMLElement>(".stage-battery");
   if (batEl) {
     const batSpan = batEl.querySelector<HTMLElement>("span");
-    if (batSpan) batSpan.textContent = bat.available ? `${bat.level}%` : "";
+    const batText = bat.available ? `${bat.level}%` : "";
+    if (batSpan && batSpan.textContent !== batText) batSpan.textContent = batText;
     batEl.classList.toggle("is-charging", bat.charging);
   }
 
@@ -408,12 +450,15 @@ function patchLiveStage(): void {
     const chip = root.querySelector<HTMLElement>(".stage-top-download");
     if (chip) {
       const label = chip.querySelector<HTMLElement>("span");
-      if (label) label.textContent = `${percent}%`;
+      const text = `${percent}%`;
+      if (label && label.textContent !== text) label.textContent = text;
       const bar = chip.querySelector<HTMLElement>("i");
-      if (bar) bar.style.width = `${Math.max(2, percent)}%`;
+      const width = `${Math.max(2, percent)}%`;
+      if (bar && bar.style.width !== width) bar.style.width = width;
     }
     const badge = root.querySelector<HTMLElement>(".stage-dock-badge");
-    if (badge) badge.textContent = `${percent}%`;
+    const text = `${percent}%`;
+    if (badge && badge.textContent !== text) badge.textContent = text;
   }
   if (S.stage.route === "downloads") patchStageDownloads();
 
@@ -453,13 +498,14 @@ function stageTimeOfDay(): "morning" | "day" | "evening" | "night" {
 function paintClock(): void {
   const text = clockText();
   const node = document.querySelector<HTMLElement>(".stage-clock");
-  if (node) node.textContent = text;
+  if (node && node.textContent !== text) node.textContent = text;
   const idle = document.querySelector<HTMLElement>(".stage-idle-clock");
-  if (idle) idle.textContent = text;
+  if (idle && idle.textContent !== text) idle.textContent = text;
   const greeting = document.querySelector<HTMLElement>(".stage-idle-greeting");
   if (greeting) {
     const name = S.customProfileName.trim();
-    greeting.textContent = `${stageIdleGreeting()}${name ? ` · ${name}` : ""}`;
+    const next = `${stageIdleGreeting()}${name ? ` · ${name}` : ""}`;
+    if (greeting.textContent !== next) greeting.textContent = next;
   }
   // A Stage left open crosses sunset without a render; move the room with it.
   const root = document.getElementById("stage-root");
@@ -989,6 +1035,7 @@ export function renderStage(): void {
     stopClock();
     resetStageBackdrop();
     lastStageSignature = "";
+    lastCardPatchSig = "";
     introStarted = false;
     return;
   }
@@ -1129,6 +1176,8 @@ export function renderStage(): void {
   // The render may have advanced the library chunk or normalized the query;
   // recompute so the next pass can take the lightweight patch path.
   lastStageSignature = stageLiveSignature();
+  // The fresh markup already carries the current cover/status state.
+  lastCardPatchSig = stageCardPatchSignature();
 }
 
 function bindGlobalFocus(): void {

@@ -183,10 +183,7 @@ export function renderStageLibrary(): string {
   if (selected) S.stage.previewKey = selected.appName;
   // The wall owns the default focus; the filter row stays reachable with Up.
   if (!S.stage.focusKey && selected) S.stage.focusKey = `lib:${selected.appName}`;
-  if (selected) {
-    stagePrefetch([stageWideArt(selected)], 1);
-    updateStageBackdrop(stageWideArt(selected));
-  }
+  if (selected) stagePrefetch([stageWideArt(selected)], 1);
 
   const more = list.length > visible.length
     ? `<div class="stage-wall-more">${esc(t("stage.loadingMore"))}</div>`
