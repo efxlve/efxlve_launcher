@@ -752,6 +752,7 @@
   font-size: 11.5px;
 }
 
+.stage-updates-section,
 .stage-queue-section {
   display: flex;
   flex-direction: column;

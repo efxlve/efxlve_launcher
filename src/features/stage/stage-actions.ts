@@ -611,11 +611,6 @@ export function stageManageConfirmUninstall(key?: string): void {
   }
 }
 
-/** In-stage management is always preferred so the user remains in couch/stage mode. */
-export function stageOpenDesktopGame(key?: string): void {
-  stageOpenManage(key);
-}
-
 export function stageResetFilters(): void {
   stageFeedback("select");
   S.stage.libraryFilter = "all";
@@ -623,11 +618,6 @@ export function stageResetFilters(): void {
   S.stage.libraryStore = "all";
   S.stage.query = "";
   S.stage.focusKey = "";
-  scheduleRender();
-}
-
-export function stageClearQuery(): void {
-  S.stage.query = "";
   scheduleRender();
 }
 

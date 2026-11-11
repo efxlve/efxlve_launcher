@@ -71,12 +71,12 @@ export function renderStagePowerSheet(entered: boolean): string {
   const controllerName = S.stage.controllerConnected ? S.stage.controllerName || t("stage.controller") : t("stage.noController");
 
   return `<div class="stage-overlay stage-power-sheet${entered ? " stage-overlay-enter" : ""}">
-    <div class="stage-power-panel" role="dialog" aria-modal="true" aria-label="${esc(t("stage.navSettings"))}">
+    <div class="stage-power-panel" role="dialog" aria-modal="true" aria-label="${esc(t("stage.power"))}">
       <div class="stage-power-head">
         <div class="stage-power-title-wrap">
           <span class="stage-power-brand">${icon("zap", 24)}</span>
           <div>
-            <h2 class="stage-power-title">${esc(t("stage.navSettings"))}</h2>
+            <h2 class="stage-power-title">${esc(t("stage.power"))}</h2>
             <span class="stage-power-subtitle">${esc(controllerName)}</span>
           </div>
         </div>
@@ -91,7 +91,7 @@ export function renderStagePowerSheet(entered: boolean): string {
             <span class="stage-p-bat-icon ${battery.charging ? "is-charging" : ""}">${icon(battery.charging ? "battery-charging" : "battery", 28)}</span>
             <div>
               <strong class="stage-p-bat-level tabular-nums">${battery.level}%</strong>
-              <small>${battery.charging ? "Charging" : esc(t("common.battery"))}</small>
+              <small>${esc(battery.charging ? t("stage.charging") : t("common.battery"))}</small>
             </div>
           </div>
           <div class="stage-p-bat-meter">
@@ -103,11 +103,11 @@ export function renderStagePowerSheet(entered: boolean): string {
       <div class="stage-power-volume-card">
         <div class="stage-p-vol-head">
           <span class="stage-kicker">${icon(soundOn ? "volume-2" : "volume-x", 14)} ${esc(t("stage.settingsVolume"))}</span>
-          <span class="stage-p-vol-val tabular-nums">${soundOn ? `${vol}%` : "Muted"}</span>
+          <span class="stage-p-vol-val tabular-nums">${soundOn ? `${vol}%` : esc(t("stage.muted"))}</span>
         </div>
         <div class="stage-p-vol-controls" data-gp-row>
           <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="power-mute" data-gp-item data-gp-key="power:mute">
-            ${icon(soundOn ? "volume-x" : "volume-2", 16)} <span>${soundOn ? "Mute" : "Unmute"}</span>
+            ${icon(soundOn ? "volume-x" : "volume-2", 16)} <span>${esc(soundOn ? t("stage.mute") : t("stage.unmute"))}</span>
           </button>
           <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="power-vol-down" data-gp-item data-gp-key="power:voldown">
             <span>- 10%</span>
@@ -130,7 +130,7 @@ export function renderStagePowerSheet(entered: boolean): string {
           <span class="stage-power-card-icon">${icon("clock", 24)}</span>
           <div class="stage-power-card-text">
             <strong>${esc(t("settings.finishActionSleep"))}</strong>
-            <span>Suspend handheld / PC</span>
+            <span>${esc(t("stage.suspendDevice"))}</span>
           </div>
         </button>
 
@@ -144,7 +144,7 @@ export function renderStagePowerSheet(entered: boolean): string {
           <span class="stage-power-card-icon">${icon("monitor", 24)}</span>
           <div class="stage-power-card-text">
             <strong>${esc(t("stage.openDesktop"))}</strong>
-            <span>Switch to Window Mode</span>
+            <span>${esc(t("stage.switchToWindow"))}</span>
           </div>
         </button>
 
@@ -158,7 +158,7 @@ export function renderStagePowerSheet(entered: boolean): string {
           <span class="stage-power-card-icon is-danger">${icon("alert-triangle", 24)}</span>
           <div class="stage-power-card-text">
             <strong>${esc(t("settings.finishActionShutdown"))}</strong>
-            <span>Turn off device</span>
+            <span>${esc(t("stage.turnOffDevice"))}</span>
           </div>
         </button>
       </div>

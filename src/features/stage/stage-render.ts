@@ -44,7 +44,6 @@ import {
   stageManageVerify,
   stageOpenCollection,
   stageOpenDesktop,
-  stageOpenDesktopGame,
   stageOpenDesktopSettings,
   stageOpenDesktopSettingsSection,
   stageOpenManage,
@@ -111,7 +110,6 @@ import {
   stageCloseSpotifySheet,
   stageOpenSpotifySheet,
   stageSpotifyAction,
-  stageSpotifyNowSummary,
   stageSpotifyPlayPlaylist,
 } from "./stage-spotify";
 import {
@@ -186,6 +184,12 @@ let wasPower = false;
 let wasSettingsTab = "";
 let lastStageSignature = "";
 let introStarted = false;
+/* Mouse drag-to-scroll state; the window listeners are bound exactly once. */
+let dragTrack: HTMLElement | null = null;
+let dragStartX = 0;
+let dragStartScroll = 0;
+let dragActive = false;
+let dragMoved = false;
 export type StageInputMode = "gamepad" | "keyboard" | "mouse";
 let stageInputMode: StageInputMode = S.stage.controllerConnected ? "gamepad" : "keyboard";
 
@@ -252,6 +256,9 @@ function stageLiveSignature(): string {
     ribbonKeys,
     stageLibraryRenderToken(),
     S.stage.route === "downloads" ? String(S.downloads.size) : "",
+    S.availableUpdates.size,
+    S.gogUpdates.size,
+    S.ignoredUpdates.size,
   ].join("\u001f");
 }
 
@@ -1129,6 +1136,40 @@ function bindGlobalFocus(): void {
   initStageIdle();
   if (focusBound) return;
   focusBound = true;
+  // These window-level listeners outlive the Stage root. Binding them once
+  // here keeps a re-entry from stacking another copy on the same event.
+  window.addEventListener("pointermove", (event) => {
+    if (!dragTrack) return;
+    const diff = event.clientX - dragStartX;
+    if (!dragActive && Math.abs(diff) > 7) {
+      dragActive = true;
+      dragMoved = true;
+    }
+    if (dragActive) dragTrack.scrollLeft = dragStartScroll - diff;
+  });
+  window.addEventListener("pointerup", () => {
+    if (!dragTrack) return;
+    if (dragMoved) {
+      window.addEventListener(
+        "click",
+        (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        },
+        { capture: true, once: true },
+      );
+    }
+    dragTrack = null;
+    dragActive = false;
+    dragMoved = false;
+  });
+  window.addEventListener("stage-input-mode", (event) => {
+    const mode = (event as CustomEvent<{ mode?: StageInputMode }>).detail?.mode;
+    if (mode && stageInputMode !== mode) {
+      stageInputMode = mode;
+      scheduleRender();
+    }
+  });
   window.addEventListener("stage:focus", (event) => {
     if (!S.stage.active) return;
     if (S.stage.intro) {
@@ -1167,6 +1208,9 @@ function bindGlobalFocus(): void {
       stopStageAmbience();
       resetStageIntro();
       refreshStageIdle();
+      dragTrack = null;
+      dragActive = false;
+      dragMoved = false;
     }
   });
   // A window that moves from a desktop monitor to a handheld panel keeps the
@@ -1582,12 +1626,6 @@ function bindStageEvents(root: HTMLElement): void {
   );
 
   // Mouse drag-to-scroll on horizontal carousels
-  let dragTrack: HTMLElement | null = null;
-  let startX = 0;
-  let startScroll = 0;
-  let isDragging = false;
-  let dragMoved = false;
-
   root.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
     const target = event.target instanceof Element ? event.target : null;
@@ -1596,40 +1634,10 @@ function bindStageEvents(root: HTMLElement): void {
     );
     if (!hRow) return;
     dragTrack = hRow;
-    startX = event.clientX;
-    startScroll = hRow.scrollLeft;
-    isDragging = false;
+    dragStartX = event.clientX;
+    dragStartScroll = hRow.scrollLeft;
+    dragActive = false;
     dragMoved = false;
-  });
-
-  window.addEventListener("pointermove", (event) => {
-    if (!dragTrack) return;
-    const diff = event.clientX - startX;
-    if (!isDragging && Math.abs(diff) > 7) {
-      isDragging = true;
-      dragMoved = true;
-    }
-    if (isDragging) {
-      dragTrack.scrollLeft = startScroll - diff;
-    }
-  });
-
-  window.addEventListener("pointerup", () => {
-    if (dragTrack) {
-      if (dragMoved) {
-        window.addEventListener(
-          "click",
-          (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-          },
-          { capture: true, once: true },
-        );
-      }
-      dragTrack = null;
-      isDragging = false;
-      dragMoved = false;
-    }
   });
 
   // Stage is a controller surface, not a desktop page: the library context
@@ -1666,17 +1674,5 @@ function bindStageEvents(root: HTMLElement): void {
       scheduleRender();
     }
   });
-
-  // Switch dynamically when gamepad inputs are detected
-  window.addEventListener("stage-input-mode", (event) => {
-    const mode = (event as CustomEvent<{ mode?: StageInputMode }>).detail?.mode;
-    if (mode && stageInputMode !== mode) {
-      stageInputMode = mode;
-      scheduleRender();
-    }
-  });
 }
-
-
-
 

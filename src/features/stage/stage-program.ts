@@ -102,7 +102,7 @@ function overview(game: EpicSummary): string {
 
   const hltb = S.loadedHltb.get(game.appName);
   const critic = S.loadedCritic.get(game.appName);
-  const hours = (n?: number | null) => (n ? `${n.toFixed(n >= 100 ? 0 : 1)}h` : "—");
+  const hours = (n?: number | null) => (n ? t("stage.hoursValue", { h: n.toFixed(n >= 100 ? 0 : 1) }) : "—");
 
   const hltbCard = hltb && (hltb.main_story || hltb.main_extra || hltb.completionist)
     ? `<div class="stage-program-card stage-card-hltb">

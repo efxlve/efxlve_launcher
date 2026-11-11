@@ -76,9 +76,3 @@ export function stageLaunchFailed(message: string): void {
   S.stage.launchError = message;
   scheduleRender();
 }
-
-export function stageClearLaunchError(): void {
-  if (!S.stage.launchError) return;
-  S.stage.launchError = "";
-  scheduleRender();
-}

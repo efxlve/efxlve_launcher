@@ -7,7 +7,7 @@ import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc, fmtBytes, fmtSpeed } from "../../core/utils";
 import { t } from "../../i18n";
-import { stageBaseSummaries, stageGameByKey } from "./stage-model";
+import { stageBaseSummaries, stageGameByKey, stageHasUpdate } from "./stage-model";
 import { stageCoverMarkup } from "./stage-art";
 import { stageProgress, stageStoreName } from "./stage-ui";
 import { sourceOfKey } from "../../core/selectors";
@@ -128,11 +128,36 @@ export function renderStageDownloads(): string {
   if (rows.length === 0 && S.activeDlMetrics && !S.activeDlMetrics.done) {
     rows.push(downloadRow(S.activeDlMetrics.id, S.activeDlMetrics.title, S.activeDlMetrics.progress));
   }
+
+  // A title that is already transferring, queued or ignored is not offered
+  // again below its own progress row.
+  const busy = new Set<string>(queue);
+  if (S.dlQueueStatus.active) busy.add(S.dlQueueStatus.active);
+  if (S.activeDlMetrics) busy.add(S.activeDlMetrics.id);
+  for (const [id, item] of S.downloads) if (!item.done) busy.add(id);
+  const updates = stageBaseSummaries().filter(
+    (s) => stageHasUpdate(s) && !S.ignoredUpdates.has(s.appName) && !busy.has(s.appName),
+  );
+  const updatesHtml = updates.length > 0
+    ? `<section class="stage-updates-section">
+        <div class="stage-extra-section-head"><span class="stage-kicker">${esc(t("stage.filterUpdates"))}</span><span class="stage-extra-count tabular-nums">${updates.length}</span></div>
+        <div class="stage-download-list">${updates.map(updateRow).join("")}</div>
+      </section>`
+    : "";
+
   const queueHtml = queue.length > 0
     ? `<section class="stage-queue-section">
         <div class="stage-extra-section-head"><span class="stage-kicker">${esc(t("stage.queue"))}</span><span class="stage-extra-count tabular-nums">${queue.length}</span></div>
         <div class="stage-queue-list">${queue.map((id, index) => queueRow(id, index, queue.length)).join("")}</div>
       </section>`
+    : "";
+  const empty = rows.length === 0 && updates.length === 0 && queue.length === 0
+    ? `<div class="stage-empty">
+        <span class="stage-empty-icon">${icon("download", 42)}</span>
+        <h2>${esc(t("stage.downloadsEmpty"))}</h2>
+        <p>${esc(t("stage.downloadsEmptyHint"))}</p>
+        <button type="button" class="stage-btn stage-btn-primary" data-stage-act="go" data-route="library" data-gp-item data-gp-key="dl:library">${esc(t("stage.navLibrary"))}</button>
+      </div>`
     : "";
   return `<div class="stage-downloads">
     <header class="stage-downloads-head">
@@ -142,14 +167,9 @@ export function renderStageDownloads(): string {
       </div>
       <button type="button" class="stage-tool" data-stage-act="desktop" data-gp-item data-gp-key="dl:desktop">${icon("external", 16)}<span>${esc(t("stage.openDesktop"))}</span></button>
     </header>
-    ${rows.length > 0
-      ? `<div class="stage-download-list">${rows.join("")}</div>`
-      : `<div class="stage-empty">
-          <span class="stage-empty-icon">${icon("download", 42)}</span>
-          <h2>${esc(t("stage.downloadsEmpty"))}</h2>
-          <p>${esc(t("stage.downloadsEmptyHint"))}</p>
-          <button type="button" class="stage-btn stage-btn-primary" data-stage-act="go" data-route="library" data-gp-item data-gp-key="dl:library">${esc(t("stage.navLibrary"))}</button>
-        </div>`}
+    ${rows.length > 0 ? `<div class="stage-download-list">${rows.join("")}</div>` : ""}
+    ${updatesHtml}
     ${queueHtml}
+    ${empty}
   </div>`;
 }

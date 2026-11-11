@@ -123,10 +123,6 @@ export async function stageSpotifyPlayPlaylist(uri: string): Promise<void> {
   scheduleRender();
 }
 
-export function stageSpotifyNowSummary(): NowPlaying | null {
-  return nowPlaying;
-}
-
 export function renderStageSpotifySheet(entered: boolean): string {
   const isRunning = status?.running;
   const isPlaying = nowPlaying?.isPlaying;
@@ -158,7 +154,7 @@ export function renderStageSpotifySheet(entered: boolean): string {
           ${isPlaying ? `<div class="stage-spotify-playing-badge"><span class="stage-spotify-eq-bar"></span><span class="stage-spotify-eq-bar"></span><span class="stage-spotify-eq-bar"></span></div>` : ""}
         </div>
         <div class="stage-spotify-meta">
-          <span class="stage-kicker">${esc(nowPlaying?.album || "Spotify Music")}</span>
+          <span class="stage-kicker">${esc(nowPlaying?.album || t("music.title"))}</span>
           <h3 class="stage-spotify-track">${esc(title)}</h3>
           <span class="stage-spotify-artist">${esc(artist)}</span>
 
@@ -173,19 +169,19 @@ export function renderStageSpotifySheet(entered: boolean): string {
           </div>
 
           <div class="stage-spotify-controls" data-gp-row>
-            <button type="button" class="stage-icon-btn${nowPlaying?.shuffle ? " is-active" : ""}" data-stage-act="spotify-shuffle" data-gp-item data-gp-key="spotify:shuffle" aria-label="Shuffle">
+            <button type="button" class="stage-icon-btn${nowPlaying?.shuffle ? " is-active" : ""}" data-stage-act="spotify-shuffle" data-gp-item data-gp-key="spotify:shuffle" aria-label="${esc(t("music.shuffle"))}">
               ${icon("shuffle", 18)}
             </button>
-            <button type="button" class="stage-icon-btn" data-stage-act="spotify-prev" data-gp-item data-gp-key="spotify:prev" aria-label="Previous">
+            <button type="button" class="stage-icon-btn" data-stage-act="spotify-prev" data-gp-item data-gp-key="spotify:prev" aria-label="${esc(t("music.previous"))}">
               ${icon("skip-back", 20)}
             </button>
-            <button type="button" class="stage-spotify-play-btn" data-stage-act="spotify-toggle" data-gp-item data-gp-key="spotify:play-toggle" data-gp-default aria-label="${isPlaying ? "Pause" : "Play"}">
+            <button type="button" class="stage-spotify-play-btn" data-stage-act="spotify-toggle" data-gp-item data-gp-key="spotify:play-toggle" data-gp-default aria-label="${esc(t("music.playPause"))}">
               ${icon(isPlaying ? "pause" : "play", 24)}
             </button>
-            <button type="button" class="stage-icon-btn" data-stage-act="spotify-next" data-gp-item data-gp-key="spotify:next" aria-label="Next">
+            <button type="button" class="stage-icon-btn" data-stage-act="spotify-next" data-gp-item data-gp-key="spotify:next" aria-label="${esc(t("music.next"))}">
               ${icon("skip-forward", 20)}
             </button>
-            <button type="button" class="stage-icon-btn${nowPlaying?.repeat && nowPlaying.repeat !== "off" ? " is-active" : ""}" data-stage-act="spotify-repeat" data-gp-item data-gp-key="spotify:repeat" aria-label="Repeat">
+            <button type="button" class="stage-icon-btn${nowPlaying?.repeat && nowPlaying.repeat !== "off" ? " is-active" : ""}" data-stage-act="spotify-repeat" data-gp-item data-gp-key="spotify:repeat" aria-label="${esc(t("music.repeat"))}">
               ${icon("repeat", 18)}
             </button>
           </div>

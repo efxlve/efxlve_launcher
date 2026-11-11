@@ -46,8 +46,8 @@ export async function refreshStageDiscord(): Promise<void> {
     if (voice && (voice.inCall || voice.channel_name)) {
       voiceInfo = {
         inCall: true,
-        channelName: voice.channel_name || voice.channelName || "Voice",
-        guildName: voice.guild_name || voice.guildName || "Server",
+        channelName: voice.channel_name || voice.channelName || t("stage.voiceChannel"),
+        guildName: voice.guild_name || voice.guildName || t("stage.voiceServer"),
         muted: Boolean(voice.muted),
         deafened: Boolean(voice.deafened),
       };
@@ -165,8 +165,8 @@ export function renderStageDiscordSheet(entered: boolean): string {
           <div class="stage-voice-info">
             <span class="stage-voice-badge">${icon("mic", 16)}</span>
             <div>
-              <strong>${esc(voiceInfo.channelName || "Ses Kanalı")}</strong>
-              <small>${esc(voiceInfo.guildName || "Sunucu")}</small>
+              <strong>${esc(voiceInfo.channelName || t("stage.voiceChannel"))}</strong>
+              <small>${esc(voiceInfo.guildName || t("stage.voiceServer"))}</small>
             </div>
           </div>
           <div class="stage-voice-actions" data-gp-row>

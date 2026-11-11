@@ -59,15 +59,16 @@ function welcomeBackBannerHtml(): string {
   if (!sess || Date.now() - sess.timestamp > 10 * 60 * 1000) return "";
   const timeText = fmtPlaytime(sess.seconds);
   const summaryText = t("stage.sessionSummary", { title: sess.title, time: timeText });
-  const achText = sess.achUnlocked && sess.achUnlocked > 0
-    ? ` · 🏆 ${sess.achUnlocked} ${t("stage.achievements")}`
+  const achCount = sess.achUnlocked && sess.achUnlocked > 0 ? sess.achUnlocked : 0;
+  const achText = achCount > 0
+    ? ` · ${icon("trophy", 13)} ${achCount} ${esc(t("stage.achievements"))}`
     : "";
   return `<div class="stage-welcome-banner" data-gp-row>
     <div class="stage-welcome-glow"></div>
     <div class="stage-welcome-icon">${icon("sparkles", 18)}</div>
     <div class="stage-welcome-content">
       <span class="stage-welcome-title">${esc(t("stage.welcomeBack"))}</span>
-      <span class="stage-welcome-desc">${esc(summaryText)}${esc(achText)}</span>
+      <span class="stage-welcome-desc">${esc(summaryText)}${achText}</span>
     </div>
     <button type="button" class="stage-welcome-dismiss" data-stage-act="dismiss-welcome" data-gp-item data-gp-key="welcome:dismiss" aria-label="${esc(t("common.close"))}">
       ${icon("x", 14)}
@@ -148,7 +149,7 @@ function achievementsActivityCard(game: EpicSummary): string {
     <div class="stage-act-body">
       <span class="stage-kicker">${esc(t("stage.achievements"))} (${percent}%)</span>
       ${stageProgress(percent, "stage-act-progress")}
-      <h3 class="stage-act-title">${esc(percent === 100 ? "🏆 " + t("stage.achUnlockedLabel") : (nextLocked?.display_name || nextLocked?.name || t("stage.tabAchievements")))}</h3>
+      <h3 class="stage-act-title">${percent === 100 ? `${icon("trophy", 15)} ${esc(t("stage.achUnlockedLabel"))}` : esc(nextLocked?.display_name || nextLocked?.name || t("stage.tabAchievements"))}</h3>
       <span class="stage-act-meta">${esc(percent === 100 ? ach.total_achievements + " / " + ach.total_achievements : (nextLocked?.description || t("stage.achUnlockedLabel")))}</span>
     </div>
   </button>`;
