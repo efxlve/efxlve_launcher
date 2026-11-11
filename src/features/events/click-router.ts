@@ -1387,6 +1387,9 @@ document.addEventListener("click", (e) => {
     void checkEosUpdate();
   } else if (act === "apply-eos-update") {
     void applyEosUpdate();
+  } else if (act === "eos-update-apply") {
+    closeNotifPanel();
+    void applyEosUpdate();
   } else if (act === "install-eos") {
     void startEosInstall();
   } else if (act === "install-epic-launcher") {

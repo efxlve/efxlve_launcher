@@ -176,6 +176,8 @@
   "settings.eosUpdating": "Updating…",
   "notif.eosMissingTitle": "Install the Epic Online Services overlay?",
   "notif.eosMissingBody": "Some Epic games use this overlay for friends and chat. Open this notice to install, or dismiss to skip.",
+  "notif.eosUpdateTitle": "EOS update available",
+  "notif.eosUpdateBody": "EOS {version} is ready to install.",
   "notif.epicLauncherTitle": "Epic Games Launcher required",
   "notif.epicLauncherBody": "{title} can only start through the Epic Games Launcher: Rockstar's launcher hands the start over to it. Install it, sign in, then press Play again.",
   "notif.epicRelayTitle": "Rockstar titles start without the Epic Games Launcher",

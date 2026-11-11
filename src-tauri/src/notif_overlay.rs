@@ -295,6 +295,7 @@ fn overlay_document(panel_html: &str) -> String {
       .notif-item-icon.kind-download { color: var(--ok, #2fb36d); }
       .notif-item-icon.kind-update { color: var(--warn, #e0a32e); }
       .notif-item-icon.kind-app { color: var(--warn, #e0a32e); }
+      .notif-item-icon.kind-eos { color: var(--warn, #e0a32e); }
       .notif-item-icon.kind-error { color: var(--err, #e5484d); }
       .notif-item-icon.kind-social { color: var(--accent, #ffffff); }
       .notif-item-icon.kind-achievement { color: var(--warn, #e0a32e); }

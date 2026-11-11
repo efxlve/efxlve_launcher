@@ -161,6 +161,8 @@
   "settings.eosUpdating": "กำลังอัปเดต…",
   "notif.eosMissingTitle": "ต้องการติดตั้งโอเวอร์เลย์ Epic Online Services หรือไม่?",
   "notif.eosMissingBody": "เกม Epic บางเกมใช้โอเวอร์เลย์นี้สำหรับเพื่อนและการแชท เปิดการแจ้งเตือนนี้เพื่อติดตั้ง หรือปิดเพื่อข้าม",
+  "notif.eosUpdateTitle": "มีอัปเดต EOS",
+  "notif.eosUpdateBody": "EOS {version} พร้อมติดตั้งแล้ว",
   "notif.epicLauncherTitle": "ต้องมี Epic Games Launcher",
   "notif.epicLauncherBody": "{title} เปิดได้ผ่าน Epic Games Launcher เท่านั้น เพราะตัวเปิดของ Rockstar จะส่งการเปิดเกมให้มัน ติดตั้งและลงชื่อเข้าใช้ แล้วกด Play อีกครั้ง",
   "notif.epicRelayTitle": "เกมของ Rockstar เปิดได้โดยไม่ต้องใช้ Epic Games Launcher",

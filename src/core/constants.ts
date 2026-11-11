@@ -104,6 +104,10 @@ export const AUTOSTART_INIT_KEY = "efxlve-autostart-init";
 export const NOTIF_KEY = "efxlve-notifications";
 /** User declined the optional EOS overlay install notice. */
 export const EOS_OVERLAY_DECLINE_KEY = "efxlve-eos-overlay-declined";
+/** Last silent EOS service update check (epoch ms). */
+export const EOS_UPDATE_CHECK_KEY = "efxlve-eos-update-check";
+/** EOS build already announced through the notification center. */
+export const EOS_UPDATE_NOTIFIED_KEY = "efxlve-eos-update-notified";
 /** Hide to the system tray on close instead of quitting. */
 export const MINIMIZE_TRAY_KEY = "efxlve-minimize-to-tray";
 export const REDUCE_EFFECTS_KEY = "efxlve-reduce-effects";

@@ -42,6 +42,7 @@ const KIND_ICON: Record<NotifKind, Parameters<typeof icon>[0]> = {
   download: "download",
   update: "refresh",
   app: "sparkles",
+  eos: "layers",
   error: "alert-triangle",
   info: "info",
   social: "users",
@@ -242,7 +243,7 @@ export function pushNotification(input: NotifInput): void {
   const prefs = getGeneralNotifPrefs();
   if (!prefs.enabled) return;
   if (input.kind === "download" && !prefs.downloads) return;
-  if ((input.kind === "update" || input.kind === "app") && !prefs.updates) return;
+  if ((input.kind === "update" || input.kind === "app" || input.kind === "eos") && !prefs.updates) return;
   if (input.kind === "social" && !prefs.social) return;
   if ((input.kind === "error" || input.kind === "cloud-error") && !prefs.errors) return;
   const storeKey = storeKeyFromAppName(input.appName);
@@ -381,6 +382,12 @@ function notifPanelData(): NotifPanelData {
     .filter((n) => n.kind === "achievement" && n.ts >= SESSION_START)
     .slice(0, 5);
   const launcher = launcherUpdatePending() ? 1 : 0;
+  // The actionable EOS row lives in the System tab next to the launcher row.
+  const eos = S.notifications.some(
+    (n) => n.kind === "eos" && n.action === "eos-update-apply",
+  )
+    ? 1
+    : 0;
   // The live status row says the same thing as the pushed notification.
   const system = S.notifications.filter(
     (n) => notifTabOf(n.kind) === "system" && !(launcher > 0 && n.kind === "app"),
@@ -393,11 +400,11 @@ function notifPanelData(): NotifPanelData {
     cloud,
     system,
     // The chip reports work, not history: games waiting for an update, unlocks
-    // from this session, a launcher update the user can start, and cloud events.
+    // from this session, a launcher or EOS update the user can start, and cloud events.
     counts: {
       updates: pending.length,
       achievements: session.length,
-      system: launcher,
+      system: launcher + eos,
       cloud: cloud.length,
     },
   };
@@ -490,13 +497,14 @@ function notificationMarkup(n: AppNotification): string {
       ? artTile(n.appName, "trophy", "kind-achievement")
       : `<span class="notif-item-icon kind-${n.kind}">${icon(KIND_ICON[n.kind], 14)}</span>`;
   const mark = n.kind === "achievement" && n.appName ? storeMark(n.appName) : "";
+  const actIcon = n.action === "eos-update-apply" ? "refresh" : "external";
   return `
     <button class="notif-item${n.read ? "" : " unread"}" ${action}${actionData} data-nid="${esc(n.id)}">
       ${tile}
       <span class="notif-item-body">
         <span class="notif-item-title">${esc(n.title)}</span>
         ${n.body ? `<span class="notif-item-text">${esc(n.body)}</span>` : ""}
-        ${n.actionLabel ? `<span class="notif-item-act">${esc(n.actionLabel)}${icon("external", 12)}</span>` : ""}
+        ${n.actionLabel ? `<span class="notif-item-act">${esc(n.actionLabel)}${icon(actIcon, 12)}</span>` : ""}
         <span class="notif-item-time">${meta}</span>
       </span>
       ${mark}

@@ -176,6 +176,8 @@
   "settings.eosUpdating": "Güncelleniyor…",
   "notif.eosMissingTitle": "Epic Online Services overlay kurulsun mu?",
   "notif.eosMissingBody": "Bazı Epic oyunları arkadaş ve sohbet için bu overlay'i kullanır. Kurmak için bu bildirimi açın, atlamak için kapatın.",
+  "notif.eosUpdateTitle": "EOS güncellemesi var",
+  "notif.eosUpdateBody": "EOS {version} kurulmaya hazır.",
   "notif.epicLauncherTitle": "Epic Games Launcher gerekli",
   "notif.epicLauncherBody": "{title} yalnızca Epic Games Launcher üzerinden başlatılabiliyor: Rockstar'ın başlatıcısı oyunu ona devrediyor. Kur, giriş yap, sonra Play'e tekrar bas.",
   "notif.epicRelayTitle": "Rockstar oyunları Epic Games Launcher'sız başlatıldı",

@@ -161,6 +161,8 @@
   "settings.eosUpdating": "Обновление…",
   "notif.eosMissingTitle": "Установить оверлей Epic Online Services?",
   "notif.eosMissingBody": "Некоторые игры Epic используют этот оверлей для списка друзей и чата. Откройте уведомление для установки или закройте, чтобы пропустить.",
+  "notif.eosUpdateTitle": "Доступно обновление EOS",
+  "notif.eosUpdateBody": "EOS {version} готов к установке.",
   "notif.epicLauncherTitle": "Требуется Epic Games Launcher",
   "notif.epicLauncherBody": "{title} запускается только через Epic Games Launcher: лаунчер Rockstar передаёт запуск ему. Установите его, войдите и нажмите Play снова.",
   "notif.epicRelayTitle": "Игры Rockstar запускаются без Epic Games Launcher",

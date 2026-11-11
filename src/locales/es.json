@@ -161,6 +161,8 @@
   "settings.eosUpdating": "Actualizando…",
   "notif.eosMissingTitle": "¿Instalar la superposición de Epic Online Services?",
   "notif.eosMissingBody": "Algunos juegos de Epic usan esta superposición para amigos y chat. Abre este aviso para instalar o descártalo para omitir.",
+  "notif.eosUpdateTitle": "Actualización de EOS disponible",
+  "notif.eosUpdateBody": "EOS {version} está listo para instalarse.",
   "notif.epicLauncherTitle": "Se requiere Epic Games Launcher",
   "notif.epicLauncherBody": "{title} solo se inicia a través del Epic Games Launcher: el lanzador de Rockstar le cede el inicio. Instálalo, inicia sesión y pulsa Play de nuevo.",
   "notif.epicRelayTitle": "Los títulos de Rockstar se inician sin el Epic Games Launcher",

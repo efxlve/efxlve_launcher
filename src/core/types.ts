@@ -105,7 +105,7 @@ export type DownloadFinishAction = "none" | "notify" | "sleep" | "shutdown";
 export type ControllerKind = "playstation" | "xbox" | "switch" | "steamdeck" | "generic";
 
 /** Kind of an in-app notification (drives the icon, accent color and tab). */
-export type NotifKind = "download" | "update" | "app" | "error" | "info" | "social" | "achievement" | "cloud" | "cloud-error";
+export type NotifKind = "download" | "update" | "app" | "eos" | "error" | "info" | "social" | "achievement" | "cloud" | "cloud-error";
 
 /** Tab of the notification dropdown; each kind belongs to exactly one. */
 export type NotifTab = "updates" | "achievements" | "system" | "cloud";

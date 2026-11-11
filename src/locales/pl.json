@@ -161,6 +161,8 @@
   "settings.eosUpdating": "Aktualizowanie…",
   "notif.eosMissingTitle": "Zainstalować nakładkę Epic Online Services?",
   "notif.eosMissingBody": "Niektóre gry Epic używają tej nakładki do znajomych i czatu. Otwórz to powiadomienie, aby zainstalować, lub zamknij, aby pominąć.",
+  "notif.eosUpdateTitle": "Dostępna aktualizacja EOS",
+  "notif.eosUpdateBody": "EOS {version} jest gotowy do instalacji.",
   "notif.epicLauncherTitle": "Wymagany Epic Games Launcher",
   "notif.epicLauncherBody": "{title} uruchamia się tylko przez Epic Games Launcher: launcher Rockstara przekazuje mu start. Zainstaluj go, zaloguj się i naciśnij Play ponownie.",
   "notif.epicRelayTitle": "Tytuły Rockstara startują bez Epic Games Launcher",

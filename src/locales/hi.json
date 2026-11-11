@@ -176,6 +176,8 @@
   "settings.eosUpdating": "अपडेट हो रहा है…",
   "notif.eosMissingTitle": "क्या Epic Online Services ओवरले इंस्टॉल करें?",
   "notif.eosMissingBody": "कुछ Epic गेम दोस्तों और चैट के लिए इस ओवरले का उपयोग करते हैं। इंस्टॉल करने के लिए यह सूचना खोलें, या छोड़ दें।",
+  "notif.eosUpdateTitle": "EOS अपडेट उपलब्ध है",
+  "notif.eosUpdateBody": "EOS {version} इंस्टॉल के लिए तैयार है।",
   "notif.epicLauncherTitle": "Epic Games Launcher आवश्यक है",
   "notif.epicLauncherBody": "{title} केवल Epic Games Launcher से ही शुरू हो सकता है: Rockstar का लॉन्चर शुरुआत उसे सौंपता है। इसे इंस्टॉल करें, साइन इन करें, फिर दोबारा Play दबाएँ।",
   "notif.epicRelayTitle": "Rockstar के टाइटल Epic Games Launcher के बिना शुरू होते हैं",

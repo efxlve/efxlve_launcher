@@ -161,6 +161,8 @@
   "settings.eosUpdating": "更新中…",
   "notif.eosMissingTitle": "Epic Online Services オーバーレイをインストールしますか？",
   "notif.eosMissingBody": "一部の Epic ゲームはフレンドやチャットにこのオーバーレイを使用します。インストールするには通知を開き、スキップするには閉じてください。",
+  "notif.eosUpdateTitle": "EOS アップデートがあります",
+  "notif.eosUpdateBody": "EOS {version} をインストールできます。",
   "notif.epicLauncherTitle": "Epic Games Launcher が必要です",
   "notif.epicLauncherBody": "{title} は Epic Games Launcher 経由でのみ起動できます。Rockstar のランチャーが起動を引き渡すためです。インストールしてサインインし、もう一度 Play を押してください。",
   "notif.epicRelayTitle": "Rockstar のタイトルは Epic Games Launcher なしで起動します",

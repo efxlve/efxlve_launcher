@@ -5,12 +5,18 @@
  * The overlay is optional: a notification asks whether to install it. Dismiss
  * or clear the notice to skip; Settings still offers the download later.
  * Nothing installs without that click. The update check uses Epic's own host
- * stage/commit flow and is always a manual click; it can download a build.
+ * stage/commit flow; a silent daily check and the Settings button both
+ * announce a staged build through the notification center.
  */
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { isTauri, EOS_OVERLAY_DECLINE_KEY } from "../../core/constants";
+import {
+  isTauri,
+  EOS_OVERLAY_DECLINE_KEY,
+  EOS_UPDATE_CHECK_KEY,
+  EOS_UPDATE_NOTIFIED_KEY,
+} from "../../core/constants";
 import { render } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -20,6 +26,7 @@ import { localizeMessage, t } from "../../i18n";
 import {
   closeNotifPanel,
   dismissNotification,
+  getGeneralNotifPrefs,
   pushNotification,
   renderNotificationPanel,
   updateNotifBadge,
@@ -29,6 +36,10 @@ const INSTALL_ACT = "install-eos";
 const DECLINE_KEY = EOS_OVERLAY_DECLINE_KEY;
 /** Older builds stored a dismissal here. It no longer suppresses the notice. */
 const LEGACY_DISMISS_KEY = "efxlve-eos-notice-dismissed";
+/** Silent checks stage a build, so they run at most once a day. */
+const UPDATE_CHECK_MS = 24 * 60 * 60 * 1000;
+/** Delay after startup so the EOS host never competes with the library boot. */
+const STARTUP_CHECK_DELAY_MS = 20_000;
 
 type EosPhase = "idle" | "downloading" | "launching";
 type EosUpdatePhase = "idle" | "checking" | "updating";
@@ -60,6 +71,11 @@ function eosBusy(): boolean {
   return phase !== "idle" || updatePhase !== "idle";
 }
 
+/** `5.8.2-...` becomes `5.8.2`; an unknown build stays empty. */
+function shortVersion(version: string): string {
+  return version.match(/^\d+(?:\.\d+)+/)?.[0] ?? version;
+}
+
 function refreshButton(): string {
   const busy = eosBusy();
   return `<button type="button" class="btn ghost small${busy ? " disabled" : ""}" data-act="refresh-eos"${busy ? " disabled" : ""}>${t("settings.eosRefresh")}</button>`;
@@ -72,7 +88,7 @@ function statusChip(): string {
   if (updatePhase === "updating") return chip("", t("settings.eosUpdating"));
   if (!S.eosOverlay?.installed) return chip("warn", t("settings.eosStatusMissing"));
   if (updateReady) {
-    const short = pendingVersion.match(/^\d+(?:\.\d+)+/)?.[0] ?? pendingVersion;
+    const short = shortVersion(pendingVersion);
     const label = short
       ? t("appUpdate.availableShort", { version: short })
       : t("drawer.updateAvailable");
@@ -211,9 +227,50 @@ export async function refreshEosStatus(): Promise<void> {
   render();
 }
 
-/** Manual update check through Epic's host; stage downloads only when needed. */
-export async function checkEosUpdate(): Promise<void> {
-  if (!isTauri || eosBusy()) return;
+/** Whether the silent check may run; the manual Settings button ignores it. */
+function eosUpdateCheckDue(): boolean {
+  const last = Number(localStorage.getItem(EOS_UPDATE_CHECK_KEY) ?? 0);
+  return !Number.isFinite(last) || Date.now() - last >= UPDATE_CHECK_MS;
+}
+
+/** One bell row per build; a newer build notifies again. */
+function announceEosUpdate(version: string): void {
+  const key = version || "unknown";
+  if (localStorage.getItem(EOS_UPDATE_NOTIFIED_KEY) === key) return;
+  const prefs = getGeneralNotifPrefs();
+  if (!prefs.enabled || !prefs.updates) return;
+  localStorage.setItem(EOS_UPDATE_NOTIFIED_KEY, key);
+  const short = shortVersion(version);
+  pushNotification({
+    kind: "eos",
+    title: t("notif.eosUpdateTitle"),
+    body: short ? t("notif.eosUpdateBody", { version: short }) : t("drawer.updateAvailable"),
+    action: "eos-update-apply",
+    actionLabel: t("common.update"),
+    toast: true,
+  });
+  if (S.notifOpen) renderNotificationPanel();
+}
+
+/** The staged build is applied or gone; its action row no longer applies. */
+function clearEosUpdateNotifications(): void {
+  const ids = S.notifications
+    .filter((n) => n.kind === "eos" && n.action === "eos-update-apply")
+    .map((n) => n.id);
+  if (!ids.length) return;
+  for (const id of ids) dismissNotification(id);
+  if (S.notifOpen) renderNotificationPanel();
+}
+
+/**
+ * Runs Epic's host check. The silent startup/focus pass only reports through
+ * the bell; the Settings button also shows toasts and the row state.
+ */
+export async function checkEosUpdate(manual = true): Promise<void> {
+  if (!isTauri || eosBusy() || S.offlineMode) return;
+  if (!S.eosOverlay?.installed) return;
+  if (!manual && !eosUpdateCheckDue()) return;
+  localStorage.setItem(EOS_UPDATE_CHECK_KEY, String(Date.now()));
   updatePhase = "checking";
   patchEosControl();
   try {
@@ -225,14 +282,22 @@ export async function checkEosUpdate(): Promise<void> {
     if (S.eosOverlay && result.installedVersion) S.eosOverlay.version = result.installedVersion;
     paintEosText();
     patchEosControl();
-    if (!updateReady) toast(t("eos.upToDate"), "ok");
+    if (updateReady) {
+      announceEosUpdate(result.pendingVersion);
+    } else if (manual) {
+      toast(t("eos.upToDate"), "ok");
+    }
   } catch (err) {
     updatePhase = "idle";
     updateChecked = false;
     updateReady = false;
     pendingVersion = "";
     patchEosControl();
-    eosError(err, t("eos.checkFailed"));
+    if (manual) {
+      eosError(err, t("eos.checkFailed"));
+    } else {
+      console.warn("EOS update check failed:", err);
+    }
   }
 }
 
@@ -251,6 +316,7 @@ export async function applyEosUpdate(): Promise<void> {
     paintEosText();
     patchEosControl();
     updateNotifBadge();
+    clearEosUpdateNotifications();
     const version = result.status.version;
     toast(
       result.updated && version ? t("eos.updated", { version }) : t("eos.upToDate"),
@@ -327,7 +393,7 @@ export async function startEosInstall(): Promise<void> {
   }
 }
 
-/** One startup check and the progress listener. No timer, no poll. */
+/** One startup check, a daily silent update check and the progress listener. */
 export async function initEosInstall(): Promise<void> {
   if (!isTauri || started) return;
   started = true;
@@ -335,4 +401,14 @@ export async function initEosInstall(): Promise<void> {
     onProgress(event.payload);
   }).catch(() => {});
   await checkEosOnce();
+  if (S.eosOverlay?.installed && eosUpdateCheckDue()) {
+    window.setTimeout(() => {
+      void checkEosUpdate(false);
+    }, STARTUP_CHECK_DELAY_MS);
+  }
+  window.addEventListener("focus", () => {
+    if (S.eosOverlay?.installed && !eosBusy() && eosUpdateCheckDue()) {
+      void checkEosUpdate(false);
+    }
+  });
 }
