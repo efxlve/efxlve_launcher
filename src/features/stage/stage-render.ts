@@ -225,6 +225,8 @@ function stageProgramRevision(): string {
   const shots = S.loadedScreenshots.get(key);
   return [
     key,
+    S.libraryDataRev,
+    S.runningGames.has(key) ? "1" : "0",
     ach?.user_unlocked ?? -1,
     ach?.total_achievements ?? -1,
     ach?.achievements?.length ?? -1,
