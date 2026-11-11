@@ -72,8 +72,12 @@ jobs:
           # The hosted image can still be running its own apt jobs at boot.
           sudo systemctl stop apt-daily.service apt-daily-upgrade.service unattended-upgrades.service 2>/dev/null || true
           sudo pkill -9 -f unattended-upgrades 2>/dev/null || true
-          # The Azure mirror occasionally stalls; archive.ubuntu.com is the
-          # upstream and works from the hosted runners.
+          # The hosted image selects its mirror through apt-mirrors.txt; the
+          # Azure mirror sometimes fails DNS while the upstream works.
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' /etc/apt/apt-mirrors.txt
+            cat /etc/apt/apt-mirrors.txt
+          fi
           if [ -f /etc/apt/sources.list ]; then
             sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' /etc/apt/sources.list
           fi
