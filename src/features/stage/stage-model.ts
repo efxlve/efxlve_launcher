@@ -305,7 +305,7 @@ export function stageTitleKey(s: EpicSummary): string {
  * marker lets the gamepad layer return here after a dialog closes.
  */
 export function stagePrimaryAction(s: EpicSummary): string {
-  return epicActionButtons(s, "full", { primaryOnly: true }).replace(
+  return epicActionButtons(s, "", { primaryOnly: true }).replace(
     "<button ",
     '<button data-gp-default data-gp-key="primary" ',
   );
@@ -326,20 +326,20 @@ export function stageHasUpdate(s: EpicSummary): boolean {
 
 export function stagePlayAction(s: EpicSummary): string {
   if (s.appName.startsWith("amazon::")) {
-    return `<button class="btn play full" data-act="amazon-play" data-id="${esc(s.appName.slice(8))}" data-gp-default data-gp-key="primary">${icon("play", 14)} ${t("common.play")}</button>`;
+    return `<button class="btn play" data-act="amazon-play" data-id="${esc(s.appName.slice(8))}" data-gp-default data-gp-key="primary">${icon("play", 14)} <span>${t("common.play")}</span></button>`;
   }
   if (s.appName.startsWith("steam::")) {
-    return `<button class="btn play full" data-act="steam-action" data-id="${esc(s.appName.slice(7))}" data-mode="launch" data-gp-default data-gp-key="primary" title="${t("steam.launch")}">${icon("play", 14)} ${t("common.play")}</button>`;
+    return `<button class="btn play" data-act="steam-action" data-id="${esc(s.appName.slice(7))}" data-mode="launch" data-gp-default data-gp-key="primary" title="${t("steam.launch")}">${icon("play", 14)} <span>${t("common.play")}</span></button>`;
   }
-  return `<button class="btn play full" data-act="epic-play" data-id="${esc(s.appName)}" data-gp-default data-gp-key="primary">${icon("play", 14)} ${t("common.play")}</button>`;
+  return `<button class="btn play" data-act="epic-play" data-id="${esc(s.appName)}" data-gp-default data-gp-key="primary">${icon("play", 14)} <span>${t("common.play")}</span></button>`;
 }
 
 export function stageUpdateAction(s: EpicSummary): string {
   if (s.appName.startsWith("amazon::")) {
-    return `<button type="button" class="stage-btn-update-hero btn update full" data-act="amazon-install" data-id="${esc(s.appName.slice(8))}" data-gp-item data-gp-key="hero:update" title="${esc(t("common.updateDownload"))}">${icon("download", 14)} <span>${esc(t("common.update"))}</span></button>`;
+    return `<button type="button" class="stage-btn-update-hero btn update" data-act="amazon-install" data-id="${esc(s.appName.slice(8))}" data-gp-item data-gp-key="hero:update" title="${esc(t("common.updateDownload"))}">${icon("download", 14)} <span>${esc(t("common.update"))}</span></button>`;
   }
   if (s.appName.startsWith("steam::")) {
-    return `<button type="button" class="stage-btn-update-hero btn update full" data-act="steam-action" data-id="${esc(s.appName.slice(7))}" data-mode="update" data-gp-item data-gp-key="hero:update" title="${esc(t("steam.updateRequired"))}">${icon("download", 14)} <span>${esc(t("common.update"))}</span></button>`;
+    return `<button type="button" class="stage-btn-update-hero btn update" data-act="steam-action" data-id="${esc(s.appName.slice(7))}" data-mode="update" data-gp-item data-gp-key="hero:update" title="${esc(t("steam.updateRequired"))}">${icon("download", 14)} <span>${esc(t("common.update"))}</span></button>`;
   }
-  return `<button type="button" class="stage-btn-update-hero btn update full" data-act="epic-install" data-id="${esc(s.appName)}" data-gp-item data-gp-key="hero:update" title="${esc(t("common.updateDownload"))}">${icon("download", 14)} <span>${esc(t("common.update"))}</span></button>`;
+  return `<button type="button" class="stage-btn-update-hero btn update" data-act="epic-install" data-id="${esc(s.appName)}" data-gp-item data-gp-key="hero:update" title="${esc(t("common.updateDownload"))}">${icon("download", 14)} <span>${esc(t("common.update"))}</span></button>`;
 }

@@ -198,7 +198,7 @@ body.stage-mode #toasts {
    * its contrast and fades cleanly into the picture.
    */
   border-bottom: none;
-  background: linear-gradient(180deg, rgba(6, 8, 14, 0.92) 0%, rgba(6, 8, 14, 0.62) 62%, transparent 100%);
+  background: linear-gradient(180deg, rgba(6, 8, 14, 0.98) 0%, rgba(6, 8, 14, 0.9) 65%, rgba(6, 8, 14, 0.35) 90%, transparent 100%);
   pointer-events: none;
 }
 

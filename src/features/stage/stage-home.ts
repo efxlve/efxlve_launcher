@@ -97,16 +97,15 @@ export function stageHomeHeroHtml(game: EpicSummary): string {
       <button type="button" class="stage-home-more" data-stage-act="scroll-to-hub" data-gp-skip aria-label="${esc(t("stage.details"))}">
         <span>${esc(t("stage.details"))}</span>${icon("chevron-down", 15)}
       </button>
-    </div>
-  </div>
-  <div class="stage-home-side">
-    <div class="stage-home-utility">
-      <button type="button" class="stage-hero-btn" data-stage-act="manage-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="hero:manage" aria-label="${esc(t("stage.manage"))}">
-        ${icon("dots", 20)}
-      </button>
-      <button type="button" class="stage-hero-btn${isFav ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(game.appName)}" data-gp-item data-gp-key="hero:favorite" aria-label="${esc(t("stage.favorite"))}">
-        ${icon("heart", 20)}
-      </button>
+      <div class="stage-actions-divider" aria-hidden="true"></div>
+      <div class="stage-home-utility">
+        <button type="button" class="stage-hero-btn" data-stage-act="manage-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="hero:manage" aria-label="${esc(t("stage.manage"))}">
+          ${icon("dots", 18)}
+        </button>
+        <button type="button" class="stage-hero-btn${isFav ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(game.appName)}" data-gp-item data-gp-key="hero:favorite" aria-label="${esc(t("stage.favorite"))}">
+          ${icon("heart", 18)}
+        </button>
+      </div>
     </div>
   </div>`;
 }

@@ -55,12 +55,10 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(to right, #06070a 0%, rgba(6, 7, 10, 0.94) 16%, rgba(6, 7, 10, 0.5) 36%, transparent 62%),
-    linear-gradient(to left, #06070a 0%, rgba(6, 7, 10, 0.45) 6%, transparent 22%),
-    linear-gradient(to top, #06070a 0%, rgba(6, 7, 10, 0.98) 16%, rgba(6, 7, 10, 0.6) 32%, transparent 56%),
-    linear-gradient(to bottom, rgba(6, 7, 10, 0.9) 0%, rgba(6, 7, 10, 0.35) 18%, transparent 35%),
-    radial-gradient(ellipse 1300px 900px at 15% 90%, rgba(6, 7, 10, 0.96) 0%, rgba(6, 7, 10, 0.72) 48%, transparent 82%),
-    radial-gradient(circle at 80% 35%, rgba(60, 110, 240, 0.05), transparent 60%);
+    linear-gradient(180deg, #06070a 0%, rgba(6, 7, 10, 0.94) 76px, rgba(6, 7, 10, 0.55) 150px, transparent 260px),
+    linear-gradient(0deg, #06070a 0%, rgba(6, 7, 10, 0.92) 130px, rgba(6, 7, 10, 0.55) 260px, transparent 460px),
+    linear-gradient(90deg, rgba(6, 7, 10, 0.9) 0%, rgba(6, 7, 10, 0.55) 32%, transparent 64%),
+    radial-gradient(ellipse at 80% 35%, rgba(var(--stage-accent-rgb, 80, 130, 255), 0.12), transparent 60%);
   pointer-events: none;
 }
 
@@ -276,12 +274,12 @@
 
 .stage-home-copy {
   position: absolute;
-  inset-block-end: calc(clamp(68px, 8vh, 102px) + var(--stage-safe, 0px));
-  inset-inline-start: clamp(28px, 4vw, 72px);
-  width: min(1000px, 75vw);
+  inset-block-end: calc(clamp(68px, 8.5vh, 108px) + var(--stage-safe, 0px));
+  inset-inline-start: clamp(36px, 4.5vw, 84px);
+  width: min(1000px, 80vw);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   pointer-events: auto;
 }
 
@@ -341,10 +339,21 @@
 
 .stage-home-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: row;
   align-items: center;
   gap: 12px;
-  margin-block-start: 6px;
+  flex-wrap: nowrap;
+  margin-block-start: 10px;
+}
+
+.stage-home-actions > * {
+  flex-shrink: 0;
+}
+
+.stage-primary-action {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .stage-primary-action .btn {
@@ -353,8 +362,10 @@
   justify-content: center;
   gap: 10px;
   height: 48px;
-  min-width: clamp(140px, 11vw, 180px);
-  padding: 0 30px;
+  width: auto !important;
+  min-width: clamp(130px, 9.5vw, 160px);
+  max-width: fit-content;
+  padding: 0 28px;
   border: 1px solid rgba(255, 255, 255, 0.75) !important;
   border-radius: 9999px !important;
   background: linear-gradient(180deg, #ffffff 0%, #edf1f7 100%) !important;
@@ -371,6 +382,8 @@
     transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
     background 220ms ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .stage-primary-action .btn:hover {
@@ -412,6 +425,47 @@
   fill: currentColor;
 }
 
+.stage-btn-update-hero {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  height: 48px;
+  width: auto !important;
+  min-width: clamp(130px, 9.5vw, 160px);
+  max-width: fit-content;
+  padding: 0 24px;
+  border-radius: 9999px !important;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.2) 100%) !important;
+  border: 1.5px solid rgba(245, 158, 11, 0.6) !important;
+  backdrop-filter: blur(14px);
+  color: #fbbf24 !important;
+  font-size: 14px;
+  font-weight: 750;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 16px rgba(245, 158, 11, 0.2);
+  transition: all 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.stage-btn-update-hero:hover,
+.stage-btn-update-hero.gp-focused {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  border-color: #fde68a !important;
+  color: #1a0f00 !important;
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.45), 0 0 28px rgba(245, 158, 11, 0.35);
+  outline: none;
+}
+
+.stage-btn-update-hero svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+}
+
 .stage-home-more {
   display: inline-flex;
   align-items: center;
@@ -434,6 +488,8 @@
     border-color 180ms ease,
     transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 180ms ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .stage-home-more:hover {
@@ -453,28 +509,25 @@
   box-shadow: 0 0 0 2.5px #ffffff, 0 0 24px rgba(255, 255, 255, 0.5) !important;
 }
 
-/* Side utility buttons */
-.stage-home-side {
-  position: absolute;
-  inset-block-end: calc(clamp(68px, 8vh, 102px) + var(--stage-safe, 0px));
-  inset-inline-end: clamp(28px, 4vw, 72px);
-  z-index: 4;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  pointer-events: none;
+.stage-actions-divider {
+  width: 1px;
+  height: 26px;
+  background: rgba(255, 255, 255, 0.16);
+  margin: 0 4px;
+  flex-shrink: 0;
 }
 
 .stage-home-utility {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
-  pointer-events: auto;
+  flex-shrink: 0;
 }
 
 .stage-hero-btn {
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 48px;
   height: 48px;
   padding: 0;
@@ -490,6 +543,7 @@
     transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
     color 180ms ease,
     box-shadow 180ms ease;
+  flex-shrink: 0;
 }
 
 .stage-hero-btn:hover {
@@ -518,6 +572,11 @@
 
 .stage-hero-btn.faved svg {
   fill: currentColor;
+}
+
+/* Side utility buttons fallback */
+.stage-home-side {
+  display: none;
 }
 
 /* Staggered entrance when switching games */
@@ -1184,32 +1243,5 @@
   color: #ffffff;
   border-color: #ffffff;
   transform: scale(1.1);
-  outline: none;
-}
-
-.stage-btn-update-hero {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 48px;
-  padding: 0 24px;
-  border-radius: 12px;
-  background: rgba(245, 158, 11, 0.18);
-  border: 1.5px solid rgba(245, 158, 11, 0.45);
-  color: #fbbf24;
-  font-size: 14.5px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 220ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.stage-btn-update-hero:hover,
-.stage-btn-update-hero.gp-focused {
-  background: rgba(245, 158, 11, 0.35);
-  border-color: #fcd34d;
-  color: #ffffff;
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3);
   outline: none;
 }
