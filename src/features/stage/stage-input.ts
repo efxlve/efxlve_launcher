@@ -40,10 +40,6 @@ import {
   stageToggleView,
 } from "./stage-actions";
 
-export function stageIsActive(): boolean {
-  return S.stage.active;
-}
-
 /** Handle one non-directional pad button while Stage is active. */
 export function stageButton(button: StagePadButton): void {
   if (typeof window !== "undefined") {

@@ -160,17 +160,6 @@ export function stageHeroSummary(): EpicSummary | null {
   return base.find((s) => s.installed) ?? base[0] ?? null;
 }
 
-/** "Up next" is the personal Playing shelf, then favourites, then installed. */
-export function stageUpNext(limit = 10): EpicSummary[] {
-  const base = stageBaseSummaries();
-  const playing = base.filter((s) => s.installed && S.gameStatus.get(s.appName) === "playing");
-  const source = playing.length > 0
-    ? playing
-    : base.filter((s) => s.installed && S.epicFav.has(s.appName));
-  const list = source.length > 0 ? source : base.filter((s) => s.installed);
-  return recentOrder(list).slice(0, limit);
-}
-
 /** Installed-but-not-recent shelf for the Home page. */
 export function stageReadyShelf(limit = 10): EpicSummary[] {
   const recent = new Set(stageRecentSummaries(12).map(stageTitleKey));
@@ -328,16 +317,6 @@ export function stageGamePlaytime(s: EpicSummary): { seconds: number; lastPlayed
 
 export function stageHasUpdate(s: EpicSummary): boolean {
   return Boolean(s.installed && (s.updateAvailable || S.availableUpdates.has(s.appName) || S.gogUpdates.has(s.appName)));
-}
-
-export function stagePlayAction(s: EpicSummary): string {
-  if (s.appName.startsWith("amazon::")) {
-    return `<button class="btn play" data-act="amazon-play" data-id="${esc(s.appName.slice(8))}" data-gp-default data-gp-key="primary">${icon("play", 14)} <span>${t("common.play")}</span></button>`;
-  }
-  if (s.appName.startsWith("steam::")) {
-    return `<button class="btn play" data-act="steam-action" data-id="${esc(s.appName.slice(7))}" data-mode="launch" data-gp-default data-gp-key="primary" title="${t("steam.launch")}">${icon("play", 14)} <span>${t("common.play")}</span></button>`;
-  }
-  return `<button class="btn play" data-act="epic-play" data-id="${esc(s.appName)}" data-gp-default data-gp-key="primary">${icon("play", 14)} <span>${t("common.play")}</span></button>`;
 }
 
 export function stageUpdateAction(s: EpicSummary): string {

@@ -15,7 +15,6 @@ import { t } from "../../i18n";
 import { stageBatteryInfo } from "./stage-battery";
 import { stageFeedback } from "./stage-sound";
 import { setStageSound, setStageSoundVolume } from "./stage-state";
-import { stageOpenDesktop } from "./stage-actions";
 
 export function stageOpenPowerSheet(): void {
   stageFeedback("select");

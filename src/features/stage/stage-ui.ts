@@ -7,7 +7,6 @@
 
 import { psShapeFor, psShapeSvg } from "../../core/controller-glyphs";
 import { epicDlProgress } from "../../core/game-view";
-import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import type { ControllerKind, GameSource } from "../../core/types";
 import { esc, fmtBytes, fmtPlaytime, relativeTime } from "../../core/utils";
@@ -81,13 +80,6 @@ export function stageHint(glyph: string, label: string): string {
 
 export function stageHintBar(items: string[]): string {
   return `<div class="stage-hints" aria-hidden="true">${items.join("")}</div>`;
-}
-
-export function stageSectionLabel(label: string, action = ""): string {
-  return `<div class="stage-row-head">
-    <h2 class="stage-row-title">${esc(label)}</h2>
-    ${action ? `<span class="stage-row-action">${action}</span>` : ""}
-  </div>`;
 }
 
 /** Store wording used in the side stage and the program meta line. */
@@ -168,11 +160,6 @@ export function stageStatus(s: EpicSummary): string {
     return `<span class="stage-status is-installed"><span class="stage-status-dot"></span>${esc(t("stage.installed"))}</span>`;
   }
   return `<span class="stage-status is-muted"><span class="stage-status-dot"></span>${esc(t("stage.notInstalled"))}</span>`;
-}
-
-/** Small text chip for a shelf card. */
-export function stageChip(text: string, tone: "ok" | "warn" | "" = ""): string {
-  return `<span class="stage-chip${tone ? ` is-${tone}` : ""}">${esc(text)}</span>`;
 }
 
 /** Horizontal progress track used by downloads and achievements. */

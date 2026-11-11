@@ -9,7 +9,6 @@
 import { collectionGameCount } from "../../core/game-collections";
 import { epicDlProgress } from "../../core/game-view";
 import { icon } from "../../core/icons";
-import { scheduleRender } from "../../core/render";
 import { sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtBytes, fmtPlaytime, relativeTime } from "../../core/utils";

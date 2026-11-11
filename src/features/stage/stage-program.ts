@@ -240,7 +240,6 @@ function achievementRow(item: import("../../epic").EpicAchievementItem): string 
 }
 
 function achievementsTab(game: EpicSummary): string {
-  const ach = stageAchievements(game);
   if (S.loadingAchFor.has(game.appName) && !S.loadedAchievements.has(game.appName)) {
     return `<div class="stage-program-empty">${icon("refresh", 34)}<h2>${esc(t("stage.achLoading"))}</h2><p>${esc(t("stage.achLoadingHint"))}</p></div>`;
   }

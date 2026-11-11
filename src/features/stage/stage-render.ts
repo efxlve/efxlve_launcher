@@ -195,13 +195,6 @@ let dragMoved = false;
 export type StageInputMode = "gamepad" | "keyboard" | "mouse";
 let stageInputMode: StageInputMode = S.stage.controllerConnected ? "gamepad" : "keyboard";
 
-export function setStageGamepadMode(): void {
-  if (stageInputMode !== "gamepad") {
-    stageInputMode = "gamepad";
-    scheduleRender();
-  }
-}
-
 /**
  * The shell should repaint when the screen changes, not when a download ticks.
  * Focus changes are deliberately absent: they are patched in place by the
@@ -613,7 +606,6 @@ function topbar(): string {
   const dl = stageActiveDownload();
   const isKbd = stageInputMode === "keyboard" || stageInputMode === "mouse";
   const pad = S.stage.controllerConnected;
-  const battery = stageBatteryLabel();
   const controllerBatteryPercent = S.stage.controllerBattery !== null && Number.isFinite(S.stage.controllerBattery) ? Math.round(S.stage.controllerBattery * 100) : null;
   const online = navigator.onLine && !S.offlineMode;
   const kind = S.gamepadKind;
@@ -1603,7 +1595,7 @@ function bindStageEvents(root: HTMLElement): void {
       case "manage-verify": stageManageVerify(key); break;
       case "manage-shortcut": stageManageShortcut(key); break;
       case "manage-sync-cloud": stageCloudBackup(key || S.stage.manageKey || ""); break;
-      case "manage-ask-uninstall": stageManageAskUninstall(key); break;
+      case "manage-ask-uninstall": stageManageAskUninstall(); break;
       case "manage-cancel-uninstall": stageManageCancelUninstall(); break;
       case "manage-confirm-uninstall": stageManageConfirmUninstall(key); break;
       case "reset-filters": stageResetFilters(); break;

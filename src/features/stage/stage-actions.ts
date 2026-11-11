@@ -8,8 +8,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { epicUninstall } from "../../core/epic-actions";
 import { epicCreateDesktopShortcut, epicVerifyGame } from "../../epic";
 import { toggleFav } from "../../core/game-view";
-import { openEpicModal, scheduleRender } from "../../core/render";
-import { summaryOf } from "../../core/selectors";
+import { scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { gogVerifyGame } from "../../gog";
@@ -580,7 +579,7 @@ export function stageManageShortcut(key?: string): void {
   }
 }
 
-export function stageManageAskUninstall(key?: string): void {
+export function stageManageAskUninstall(): void {
   stageFeedback("select");
   S.stage.manageConfirmUninstall = true;
   S.stage.focusKey = "manage:confirm-uninstall";
