@@ -32,7 +32,7 @@ import { loadNotes } from "../notes/notes-client";
 import { loadSettingsView } from "../settings/settings-view";
 import { setView } from "../store/store-view";
 import { stageLaunchGame } from "./stage-launch";
-import { stageGameByKey, stageHeroSummary, stageLibraryList, stageLibraryStores, stageSearchMatches } from "./stage-model";
+import { stageBaseSummaries, stageGameByKey, stageHeroSummary, stageLibraryList, stageLibraryStores, stageSearchMatches } from "./stage-model";
 import { stageSearchResultsHtml } from "./stage-search";
 import { stageFeedback } from "./stage-sound";
 import { exitStage, setStageLibrarySort, setStageLibraryView } from "./stage-state";
@@ -682,10 +682,13 @@ export function stageOpenCollection(id: string): void {
 
 export function stageCycleCollection(forward: boolean): void {
   if (S.stage.route !== "library") return;
+  // An empty smart collection is not a stop a couch player can use.
+  const base = stageBaseSummaries();
+  const smart = SMART_COLLECTIONS.filter((collection) => base.some((summary) => collection.test(summary)));
   const ids: Array<string | null> = [
     null,
     ...S.epicCollections.filter((collection) => collection.app_names.length > 0).map((collection) => collection.id),
-    ...SMART_COLLECTIONS.map((collection) => collection.id),
+    ...smart.map((collection) => collection.id),
   ];
   if (ids.length <= 1) return;
   const index = Math.max(0, ids.indexOf(S.stage.collectionId));
