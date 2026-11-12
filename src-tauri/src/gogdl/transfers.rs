@@ -17,9 +17,31 @@ pub struct GogDlState {
     pub active_game_id: Option<String>,
     pub child_pid: Option<u32>,
     pub paused: bool,
+    /// Set by the cancel command so the monitor does not also report the
+    /// process exit as a failure.
+    pub cancelled: bool,
 }
 
 pub static GOG_DL_STATE: Mutex<Option<GogDlState>> = Mutex::new(None);
+
+/// Ends a gogdl process; the tree flag matters if it ever starts a helper.
+async fn kill_gogdl(pid: u32) {
+    #[cfg(windows)]
+    {
+        let mut kill_cmd = tokio::process::Command::new("taskkill");
+        kill_cmd.args(["/PID", &pid.to_string(), "/T", "/F"]);
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        kill_cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = kill_cmd.output().await;
+    }
+    #[cfg(unix)]
+    {
+        let _ = tokio::process::Command::new("kill")
+            .args(["-9", &pid.to_string()])
+            .output()
+            .await;
+    }
+}
 
 #[derive(serde::Serialize, Clone)]
 struct DlProgressPayload {
@@ -253,18 +275,25 @@ pub async fn gog_install_game(
     let auth_path = auth_json_path(&app);
 
     // Target installation directory: the caller's pick first, then the folder
-    // chosen in Settings → Downloads, then %USERPROFILE%\Games\GOG.
-    let target_dir_str = install_path.unwrap_or_else(|| {
-        let base = crate::load_settings(&app)
-            .gog_install_dir
-            .filter(|p| !p.trim().is_empty())
-            .unwrap_or_else(|| {
-                let home = std::env::var("USERPROFILE").unwrap_or_else(|_| "C:".to_string());
-                format!("{home}\\Games\\GOG")
-            });
-        format!("{}\\{}", base.trim_end_matches(['\\', '/']), clean_id)
-    });
-    let target_dir = PathBuf::from(&target_dir_str);
+    // chosen in Settings → Downloads, then `<home>/Games/GOG`.
+    let target_dir = install_path
+        .filter(|path| !path.trim().is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            let base = crate::load_settings(&app)
+                .gog_install_dir
+                .filter(|path| !path.trim().is_empty())
+                .map(PathBuf::from)
+                .unwrap_or_else(|| {
+                    std::env::var_os("USERPROFILE")
+                        .or_else(|| std::env::var_os("HOME"))
+                        .map(PathBuf::from)
+                        .unwrap_or_else(|| PathBuf::from("."))
+                        .join("Games")
+                        .join("GOG")
+                });
+            base.join(&clean_id)
+        });
     let _ = tokio::fs::create_dir_all(&target_dir).await;
 
     // Reset state and notify UI that download is queued/starting
@@ -274,6 +303,7 @@ pub async fn gog_install_game(
             active_game_id: Some(composite_id.clone()),
             child_pid: None,
             paused: false,
+            cancelled: false,
         });
     }
 
@@ -311,7 +341,8 @@ pub async fn gog_install_game(
             .arg("--platform")
             .arg("windows")
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
+            .stderr(Stdio::piped())
+            .kill_on_drop(true);
         // gogdl uses requests, so the shared cap proxy covers its downloads.
         crate::download_limit::configure_child(&mut cmd);
         if let Some(workers) = workers {
@@ -327,6 +358,16 @@ pub async fn gog_install_game(
         let mut child = match cmd.spawn() {
             Ok(c) => c,
             Err(e) => {
+                // A stale active_game_id would make every later gogdl action
+                // report "another download is running".
+                let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
+                if state_guard
+                    .as_ref()
+                    .is_some_and(|st| st.active_game_id.as_deref() == Some(&comp_id_clone))
+                {
+                    *state_guard = None;
+                }
+                drop(state_guard);
                 let _ = app_clone.emit(
                     "download-failed",
                     DlFailedPayload {
@@ -339,9 +380,31 @@ pub async fn gog_install_game(
         };
 
         if let Some(pid) = child.id() {
-            let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
-            if let Some(ref mut st) = *state_guard {
-                st.child_pid = Some(pid);
+            // The user can cancel between the state claim and this spawn; the
+            // pid has to be seen by that cancel, or the process keeps writing.
+            let cancelled_before_pid = {
+                let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
+                match state_guard.as_mut() {
+                    Some(st) if st.active_game_id.as_deref() == Some(&composite_id) => {
+                        if st.cancelled {
+                            true
+                        } else {
+                            st.child_pid = Some(pid);
+                            false
+                        }
+                    }
+                    _ => false,
+                }
+            };
+            if cancelled_before_pid {
+                kill_gogdl(pid).await;
+                let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
+                if state_guard.as_ref().is_some_and(|st| {
+                    st.active_game_id.as_deref() == Some(comp_id_clone.as_str()) && st.cancelled
+                }) {
+                    *state_guard = None;
+                }
+                return;
             }
         }
 
@@ -403,8 +466,22 @@ pub async fn gog_install_game(
         }
 
         let status = child.wait().await;
-        let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
-        *state_guard = None;
+        let (owns_state, was_cancelled) = {
+            let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
+            let owns = state_guard
+                .as_ref()
+                .is_some_and(|st| st.active_game_id.as_deref() == Some(comp_id_clone.as_str()));
+            let cancelled = owns && state_guard.as_ref().is_some_and(|st| st.cancelled);
+            if owns {
+                *state_guard = None;
+            }
+            (owns, cancelled)
+        };
+        // A newer attempt may already own the state; an old monitor must not
+        // clear it or report a stale failure over the new row.
+        if !owns_state {
+            return;
+        }
 
         match status {
             Ok(s) if s.success() => {
@@ -432,6 +509,11 @@ pub async fn gog_install_game(
                 );
                 installed_map.insert(clean_id_clone.clone(), info);
                 let _ = save_installed_games(&app_clone, &installed_map);
+                // A cancel already removed the row and told the user it stopped;
+                // a late completion must not resurrect it.
+                if was_cancelled {
+                    return;
+                }
 
                 let _ = app_clone.emit(
                     "download-progress",
@@ -450,6 +532,9 @@ pub async fn gog_install_game(
                 );
             }
             Ok(s) => {
+                if was_cancelled {
+                    return;
+                }
                 let _ = app_clone.emit(
                     "download-failed",
                     DlFailedPayload {
@@ -459,6 +544,9 @@ pub async fn gog_install_game(
                 );
             }
             Err(e) => {
+                if was_cancelled {
+                    return;
+                }
                 let _ = app_clone.emit(
                     "download-failed",
                     DlFailedPayload {
@@ -479,11 +567,15 @@ pub async fn gog_cancel_download(app: AppHandle, game_id: String) -> Result<(), 
     let clean_id = game_id.trim().trim_start_matches("gog::").to_string();
     let composite_id = format!("gog::{clean_id}");
 
+    // Set the flag before the kill: the monitor can see the process exit the
+    // moment taskkill lands, and it must already know this was a cancel.
+    // The state stays until the monitor reaps the exit.
     let pid_to_kill = {
-        let state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some(ref st) = *state_guard {
-            if st.active_game_id.as_deref() == Some(&composite_id) {
-                st.child_pid
+        let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(st) = state_guard.as_mut() {
+            if st.active_game_id.as_deref() == Some(composite_id.as_str()) {
+                st.cancelled = true;
+                st.child_pid.take()
             } else {
                 None
             }
@@ -493,19 +585,7 @@ pub async fn gog_cancel_download(app: AppHandle, game_id: String) -> Result<(), 
     };
 
     if let Some(pid) = pid_to_kill {
-        #[cfg(windows)]
-        {
-            let mut kill_cmd = tokio::process::Command::new("taskkill");
-            kill_cmd.args(["/PID", &pid.to_string(), "/T", "/F"]);
-            const CREATE_NO_WINDOW: u32 = 0x08000000;
-            kill_cmd.creation_flags(CREATE_NO_WINDOW);
-            let _ = kill_cmd.output().await;
-        }
-    }
-
-    {
-        let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
-        *state_guard = None;
+        kill_gogdl(pid).await;
     }
 
     let _ = app.emit(
@@ -537,6 +617,20 @@ pub async fn gog_pause_download(app: AppHandle, game_id: String) -> Result<Strin
     }
     #[cfg(windows)]
     super::win_job::suspend_tree(pid)?;
+    #[cfg(unix)]
+    {
+        let status = tokio::process::Command::new("kill")
+            .args(["-STOP", &pid.to_string()])
+            .status()
+            .await
+            .map_err(|e| format!("@t:err.io\u{1f}{e}"))?;
+        if !status.success() {
+            return Err(format!(
+                "@t:err.commandFailed\u{1f}{}\u{1f}kill -STOP",
+                status.code().unwrap_or(-1)
+            ));
+        }
+    }
     {
         let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(ref mut st) = *state_guard {
@@ -561,6 +655,20 @@ pub async fn gog_resume_download(app: AppHandle, game_id: String) -> Result<Stri
     }
     #[cfg(windows)]
     super::win_job::resume_tree(pid)?;
+    #[cfg(unix)]
+    {
+        let status = tokio::process::Command::new("kill")
+            .args(["-CONT", &pid.to_string()])
+            .status()
+            .await
+            .map_err(|e| format!("@t:err.io\u{1f}{e}"))?;
+        if !status.success() {
+            return Err(format!(
+                "@t:err.commandFailed\u{1f}{}\u{1f}kill -CONT",
+                status.code().unwrap_or(-1)
+            ));
+        }
+    }
     {
         let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(ref mut st) = *state_guard {
@@ -736,7 +844,8 @@ pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<(), Stri
             .arg("--platform")
             .arg("windows")
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
+            .stderr(Stdio::piped())
+            .kill_on_drop(true);
         // A repair can download missing files, so it shares the same cap.
         crate::download_limit::configure_child(&mut cmd);
 

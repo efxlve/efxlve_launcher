@@ -507,11 +507,17 @@ pub fn gog_set_install_dir(app: AppHandle, path: Option<String>) -> Result<(), S
     Ok(())
 }
 
-/// Fallback GOG install folder: `%USERPROFILE%\Games\GOG`.
+/// Fallback GOG install folder: `<home>/Games/GOG`.
 #[command]
 pub fn gog_default_install_dir() -> String {
-    let home = std::env::var("USERPROFILE").unwrap_or_else(|_| "C:".to_string());
-    format!("{home}\\Games\\GOG")
+    let home = std::env::var_os("USERPROFILE")
+        .or_else(|| std::env::var_os("HOME"))
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| std::path::PathBuf::from("."));
+    home.join("Games")
+        .join("GOG")
+        .to_string_lossy()
+        .to_string()
 }
 
 /// Imports the user's GOG Galaxy tags as collections (read-only) and returns
