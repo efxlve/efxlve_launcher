@@ -61,8 +61,21 @@ async fn kill_gogdl(pid: u32) {
     #[cfg(unix)]
     {
         // gogdl runs in its own process group, so this reaches its workers.
+        // It also owns a 1 GiB shared-memory segment; its SIGTERM handler
+        // unlinks it, while SIGKILL leaves it in /dev/shm. A stopped (paused)
+        // process needs SIGCONT before it can run that handler.
+        let group = format!("-{pid}");
         let _ = tokio::process::Command::new("kill")
-            .args(["-9", &format!("-{pid}")])
+            .args(["-CONT", &group])
+            .output()
+            .await;
+        let _ = tokio::process::Command::new("kill")
+            .args(["-TERM", &group])
+            .output()
+            .await;
+        tokio::time::sleep(Duration::from_millis(2000)).await;
+        let _ = tokio::process::Command::new("kill")
+            .args(["-KILL", &group])
             .output()
             .await;
     }
