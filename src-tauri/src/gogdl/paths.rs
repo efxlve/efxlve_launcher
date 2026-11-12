@@ -139,6 +139,77 @@ pub fn gog_config_dir(app: &AppHandle) -> PathBuf {
     dir
 }
 
+/// `<app_data>/gogdl` is passed as `GOGDL_CONFIG_PATH`; gogdl appends its own
+/// `heroic_gogdl` folder to it.
+pub fn gogdl_config_root(app: &AppHandle) -> PathBuf {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .unwrap_or_else(|_| std::env::temp_dir())
+        .join("gogdl");
+    let _ = std::fs::create_dir_all(&dir);
+    dir
+}
+
+/// gogdl's actual state directory under the root above.
+pub fn gogdl_state_dir(app: &AppHandle) -> PathBuf {
+    gogdl_config_root(app).join("heroic_gogdl")
+}
+
+/// gogdl stores one build manifest per game; updates diff against it.
+pub fn gogdl_manifest_path(app: &AppHandle, game_id: &str) -> PathBuf {
+    gogdl_state_dir(app).join("manifests").join(game_id)
+}
+
+#[cfg(windows)]
+fn legacy_gogdl_config_dir() -> Option<PathBuf> {
+    std::env::var_os("APPDATA").map(PathBuf::from)
+}
+
+#[cfg(target_os = "macos")]
+fn legacy_gogdl_config_dir() -> Option<PathBuf> {
+    std::env::var_os("HOME").map(|home| {
+        PathBuf::from(home)
+            .join("Library")
+            .join("Application Support")
+    })
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn legacy_gogdl_config_dir() -> Option<PathBuf> {
+    std::env::var_os("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))
+}
+
+/// A manifest written before the launcher pinned `GOGDL_CONFIG_PATH`.
+pub fn legacy_gogdl_manifest_path(game_id: &str) -> Option<PathBuf> {
+    legacy_gogdl_config_dir().map(|dir| {
+        dir.join("heroic_gogdl")
+            .join("manifests")
+            .join(game_id)
+    })
+}
+
+/// Copies an old manifest into the launcher-owned config so the first update
+/// is a diff instead of a full download.
+pub fn migrate_legacy_manifest(app: &AppHandle, game_id: &str) {
+    let target = gogdl_manifest_path(app, game_id);
+    if target.is_file() {
+        return;
+    }
+    let Some(legacy) = legacy_gogdl_manifest_path(game_id) else {
+        return;
+    };
+    if !legacy.is_file() {
+        return;
+    }
+    if let Some(parent) = target.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let _ = std::fs::copy(legacy, target);
+}
+
 /// `<app_data>/gog/auth.json` containing OAuth2 tokens.
 pub fn auth_json_path(app: &AppHandle) -> PathBuf {
     gog_config_dir(app).join("auth.json")

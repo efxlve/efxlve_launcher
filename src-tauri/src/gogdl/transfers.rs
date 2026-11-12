@@ -13,7 +13,10 @@ use super::cache::{
 };
 use super::cmd_error;
 use super::models::GogInstalledInfo;
-use super::paths::{auth_json_path, ensure_binary};
+use super::paths::{
+    auth_json_path, ensure_binary, gogdl_config_root, gogdl_manifest_path,
+    legacy_gogdl_manifest_path, migrate_legacy_manifest,
+};
 
 /// gogdl's progress thread keeps printing the same counters when its workers
 /// wedge, so a repeated line is not movement. Same window as the other stores.
@@ -380,6 +383,19 @@ pub async fn gog_install_game(
                     })
             })
     };
+    // gogdl keeps one manifest per game for update diffs. A fresh install
+    // starts without one: a stale manifest would make gogdl report "Nothing
+    // to do" for files the user already deleted. An update keeps it, copying
+    // the pre-launcher manifest on the first run after this change.
+    if is_update {
+        migrate_legacy_manifest(&app, &clean_id);
+    } else {
+        let _ = std::fs::remove_file(gogdl_manifest_path(&app, &clean_id));
+        if let Some(legacy) = legacy_gogdl_manifest_path(&clean_id) {
+            let _ = std::fs::remove_file(legacy);
+        }
+    }
+    let gogdl_config = gogdl_config_root(&app);
     let _ = tokio::fs::create_dir_all(&target_dir).await;
 
     let _ = app.emit(
@@ -417,6 +433,7 @@ pub async fn gog_install_game(
             .arg(&target_dir_clone)
             .arg("--platform")
             .arg("windows")
+            .env("GOGDL_CONFIG_PATH", &gogdl_config)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .kill_on_drop(true);
@@ -978,6 +995,13 @@ pub async fn gog_uninstall_game(app: AppHandle, game_id: String) -> Result<Strin
         }
     }
 
+    // Without the manifest a reinstall downloads every file; with it gogdl
+    // says "Nothing to do" for the folder this uninstall just removed.
+    let _ = std::fs::remove_file(gogdl_manifest_path(&app, &clean_id));
+    if let Some(legacy) = legacy_gogdl_manifest_path(&clean_id) {
+        let _ = std::fs::remove_file(legacy);
+    }
+
     // Drop GOG Galaxy's registry entry as well, otherwise the official client
     // keeps showing a broken install (same reason we delete Epic `.item`s).
     super::galaxy::remove_galaxy_registry(&clean_id);
@@ -1052,6 +1076,9 @@ pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<(), Stri
 
     let bin_path = ensure_binary(&app).await.map_err(cmd_error)?;
     let auth_path = auth_json_path(&app);
+    // Verify reads the stored manifest; copy a pre-launcher one on first use.
+    migrate_legacy_manifest(&app, &clean_id);
+    let gogdl_config = gogdl_config_root(&app);
     let app_clone = app.clone();
     let id_clone = composite_id.clone();
     let clean_clone = clean_id.clone();
@@ -1069,6 +1096,7 @@ pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<(), Stri
             .arg(&target_clone)
             .arg("--platform")
             .arg("windows")
+            .env("GOGDL_CONFIG_PATH", &gogdl_config)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .kill_on_drop(true);
