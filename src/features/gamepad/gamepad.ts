@@ -642,6 +642,18 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
   }
 
   let bestEl: HTMLElement | null = null;
+  // A data-gp-row is a horizontal shelf or tab strip: left/right stays inside
+  // it and bumps at the edge instead of jumping to the next shelf.
+  if (S.stage.active && curRow && (dir === "left" || dir === "right")) {
+    const rowCandidates = candidates.filter((el) => el.closest("[data-gp-row]") === curRow);
+    const best = scan(rowCandidates);
+    if (best) {
+      setFocus(best);
+      return;
+    }
+    stageBridge()?.bump?.(dir);
+    return;
+  }
   // A test strip is one row of paired actions; left/right stays inside it even
   // when a volume pill above sits closer horizontally.
   const testStrip = origin.closest(".stage-settings-test");
