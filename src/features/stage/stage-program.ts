@@ -459,9 +459,9 @@ function extrasTab(game: EpicSummary): string {
       ${stillsBody}
     </div>
     <div class="stage-extra-actions">
-      ${cloud ? `<button type="button" class="stage-btn stage-btn-ghost" data-stage-act="cloud-backup" data-key="${esc(game.appName)}" data-gp-item data-gp-key="extras:cloud">${icon("cloud", 16)}<span>${esc(t("stage.cloudBackupNow"))}</span></button>` : ""}
-      ${cloud ? `<button type="button" class="stage-btn stage-btn-ghost" data-stage-act="desktop-settings-section" data-section="cloud" data-gp-item data-gp-key="extras:cloud-settings">${icon("cloud", 16)}<span>${esc(t("stage.cloudSettings"))}</span></button>` : ""}
-      <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="manage-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="extras:manage">${icon("settings", 16)}<span>${esc(t("stage.manage"))}</span></button>
+      ${cloud ? `<button type="button" class="stage-stat stage-chip-action" data-stage-act="cloud-backup" data-key="${esc(game.appName)}" data-gp-item data-gp-key="extras:cloud">${icon("cloud", 14)}<span>${esc(t("stage.cloudBackupNow"))}</span></button>` : ""}
+      ${cloud ? `<button type="button" class="stage-stat stage-chip-action" data-stage-act="desktop-settings-section" data-section="cloud" data-gp-item data-gp-key="extras:cloud-settings">${icon("cloud", 14)}<span>${esc(t("stage.cloudSettings"))}</span></button>` : ""}
+      <button type="button" class="stage-stat stage-chip-action" data-stage-act="manage-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="extras:manage">${icon("settings", 14)}<span>${esc(t("stage.manage"))}</span></button>
     </div>
   </div>`;
 }
