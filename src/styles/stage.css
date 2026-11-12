@@ -927,6 +927,36 @@ body.stage-mode #toasts {
   margin-block-start: 6px;
 }
 
+/* Compact labelled facts: downloads idle summary and the library's no-results
+   filter summary. */
+.stage-stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.stage-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--stage-line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--stage-ink-3);
+  font-size: 11.5px;
+}
+.stage-stat i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--stage-ink-4);
+}
+.stage-stat b {
+  color: var(--stage-ink-2);
+  font-weight: 650;
+}
+
 /* ---------- Typographic poster fallback ---------- */
 
 .stage-poster {

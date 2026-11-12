@@ -161,9 +161,9 @@ export function renderStageDownloads(): string {
     : "";
   const idle = rows.length === 0 && queue.length === 0;
   const idleStats = idle
-    ? `<div class="stage-dl-status">
-        <span class="stage-dl-stat"><i aria-hidden="true"></i>${esc(t("downloads.emptyTitle"))}</span>
-        <span class="stage-dl-stat"><i aria-hidden="true"></i>${esc(t("stage.queue"))} <b class="tabular-nums">0</b></span>
+    ? `<div class="stage-stat-row">
+        <span class="stage-stat"><i aria-hidden="true"></i>${esc(t("downloads.emptyTitle"))}</span>
+        <span class="stage-stat"><i aria-hidden="true"></i>${esc(t("stage.queue"))} <b class="tabular-nums">0</b></span>
       </div>`
     : "";
   const empty = rows.length === 0 && updates.length === 0 && queue.length === 0

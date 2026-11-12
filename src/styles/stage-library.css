@@ -178,7 +178,33 @@
 }
 
 .stage-library-wall {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+}
+
+/* The library fills the route so the no-results block can centre in the wall
+   area the way the empty Downloads screen does. */
+#stage-root[data-route="library"] .stage-layer-main {
+  display: flex;
+  flex-direction: column;
+}
+.stage-library {
+  flex: 1;
+}
+.stage-library-body.is-empty {
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+}
+.stage-library-body.is-empty .stage-library-empty {
+  min-height: 0;
+  margin-block: auto;
+}
+.stage-library-empty .stage-stat-row {
+  justify-content: center;
+  margin-block-start: 2px;
 }
 
 .stage-wall-grid {

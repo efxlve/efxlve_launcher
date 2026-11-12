@@ -680,33 +680,10 @@
   color: var(--stage-ink-3);
   font-size: 11.5px;
 }
-/* Compact idle summary: no transfer, nothing queued. */
-.stage-dl-status {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.stage-downloads-head .stage-stat-row {
   margin-block-start: 10px;
 }
-.stage-dl-stat {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 26px;
-  padding: 0 10px;
-  border: 1px solid var(--stage-line);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-}
-.stage-dl-stat i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--stage-ink-4);
-}
-.stage-dl-stat b {
-  color: var(--stage-ink-2);
-  font-weight: 650;
-}
+/* Compact idle summary: no transfer, nothing queued. */
 .stage-downloads-empty {
   display: grid;
   flex: 1;

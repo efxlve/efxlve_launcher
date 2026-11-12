@@ -296,11 +296,17 @@ export function renderStageLibrary(): string {
   const more = list.length > visible.length
     ? `<div class="stage-wall-more">${esc(t("stage.loadingMore"))}</div>`
     : "";
-  const body = list.length === 0
+  const isEmpty = list.length === 0;
+  const body = isEmpty
     ? `<div class="stage-library-empty">
         ${icon("search", 38)}
         <h2>${esc(t("stage.noResults"))}</h2>
         <p>${esc(t("stage.noResultsHint"))}</p>
+        <div class="stage-stat-row">
+          <span class="stage-stat">${icon("sliders", 13)}<span>${esc(filterLabel(S.stage.libraryFilter))}</span></span>
+          <span class="stage-stat">${icon("layers", 13)}<span>${esc(stageStoreFilterLabel())}</span></span>
+          <span class="stage-stat">${icon("layout-grid", 13)}<span class="tabular-nums">${esc(t("stage.libraryCount", { n: list.length }))}</span></span>
+        </div>
         <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="reset-filters" data-gp-item data-gp-key="empty:reset">${esc(t("stage.resetFilters"))}</button>
       </div>`
     : S.stage.libraryView === "grid"
@@ -316,9 +322,9 @@ export function renderStageLibrary(): string {
       ${filterTabs()}
       ${tools()}
     </header>
-    <div class="stage-library-body">
+    <div class="stage-library-body${isEmpty ? " is-empty" : ""}">
       <div class="stage-library-wall">${body}</div>
-      ${stageLibrarySideHtml(selected)}
+      ${isEmpty ? "" : stageLibrarySideHtml(selected)}
     </div>
   </div>`;
 }
