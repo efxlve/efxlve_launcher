@@ -34,7 +34,10 @@ pub async fn epic_launch_game(app: AppHandle, app_name: String) -> Result<String
             entry.title.clone()
         };
         // legendary already appends `installed.json`'s launch_parameters to
-        // its own launch command; adding them here would duplicate every flag.
+        // its own launch command. The game settings keep the same arguments
+        // for durability (an update rewrites installed.json), so only send
+        // the ones that file no longer carries.
+        let installed_args: Vec<&str> = entry.launch_parameters.split_whitespace().collect();
         let mut custom_args: Vec<String> = Vec::new();
         let settings_path = crate::legendary::skip::default_config_dir()
             .join("game_settings")
@@ -43,7 +46,9 @@ pub async fn epic_launch_game(app: AppHandle, app_name: String) -> Result<String
             if let Ok(st_val) = serde_json::from_str::<serde_json::Value>(&st_text) {
                 if let Some(lp) = st_val.get("launchParameters").and_then(|v| v.as_str()) {
                     for arg in lp.split_whitespace() {
-                        if !custom_args.iter().any(|a| a == arg) {
+                        if !installed_args.contains(&arg)
+                            && !custom_args.iter().any(|a| a == arg)
+                        {
                             custom_args.push(arg.to_string());
                         }
                     }
