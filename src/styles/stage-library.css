@@ -599,10 +599,14 @@
 .stage-search-input::placeholder {
   color: var(--stage-ink-4);
 }
-.stage-search-count {
-  color: var(--stage-ink-4);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
+.stage-search-stat {
+  flex: 0 0 auto;
+  max-width: 180px;
+}
+.stage-search-stat > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .stage-keyboard {
   display: flex;
@@ -710,30 +714,97 @@
 .stage-search-title {
   overflow: hidden;
   color: var(--stage-ink-2);
-  font-size: 11px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Installed state is a dot, so the row reads at a glance without a badge. */
 .stage-search-sub {
-  color: var(--stage-ink-4);
-  font-size: 9.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--stage-ink-3);
+  font-size: 10.5px;
+}
+.stage-search-sub i {
+  flex: 0 0 auto;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--stage-ink-4);
+}
+.stage-search-sub.is-ready {
+  color: #4ade80;
+}
+.stage-search-sub.is-ready i {
+  background: #4ade80;
 }
 .stage-search-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 24px;
+  gap: 6px;
+  padding: 22px;
   color: var(--stage-ink-3);
   font-size: 11.5px;
   text-align: center;
+}
+.stage-search-empty .stage-empty-icon {
+  width: 56px;
+  height: 56px;
+  margin-block-end: 2px;
 }
 .stage-search-empty strong {
   color: var(--stage-ink-2);
   font-size: 14px;
 }
+.stage-search-empty-hint {
+  max-width: 46ch;
+  line-height: 1.45;
+}
+.stage-search-empty .stage-stat-row {
+  justify-content: center;
+  margin-block-start: 2px;
+}
+.stage-search-empty .stage-stat > span {
+  overflow: hidden;
+  max-width: 260px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .stage-search-hint {
   padding-block-start: 8px;
-  color: var(--stage-ink-4);
-  font-size: 10.5px;
+  color: var(--stage-ink-3);
+  font-size: 11px;
+}
+
+/* The field owns the ring via its head underline, not a scaled button box. */
+.stage-search-head:has(.stage-search-input.gp-focused) {
+  border-block-end-color: rgba(255, 255, 255, 0.45);
+}
+
+/* A handheld is short. Let the panel use the screen and tighten the keys so
+   at least one full row of results stays visible under them. */
+@media (max-height: 820px) {
+  .stage-search {
+    padding-block: calc(14px + var(--stage-safe, 0px));
+  }
+  .stage-search-panel {
+    max-height: calc(100vh - 28px - var(--stage-safe, 0px));
+    padding-block: 14px;
+  }
+  .stage-key {
+    height: 38px;
+  }
+  .stage-keyboard {
+    gap: 4px;
+    padding-block: 9px;
+  }
+  .stage-keyboard-row {
+    gap: 4px;
+  }
+  .stage-keyboard-row-numbers .stage-key,
+  .stage-keyboard-row-extra .stage-key {
+    height: 31px;
+  }
 }

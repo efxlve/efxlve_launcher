@@ -509,7 +509,7 @@ function searchPatch(): void {
     });
   }
   const count = document.querySelector<HTMLElement>("#stage-search-count");
-  if (count) count.textContent = String(stageSearchMatches(S.stage.query, 999).length);
+  if (count) count.textContent = t("lib.filterResults", { n: stageSearchMatches(S.stage.query, 999).length });
 }
 
 export function stageSearchInput(value: string): void {

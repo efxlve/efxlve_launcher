@@ -59,12 +59,21 @@ function keyboardRow(keys: StageKey[], offset = 0, className = ""): string {
 export function stageSearchResultsHtml(): string {
   const list = stageSearchMatches(S.stage.query, 24);
   if (list.length === 0) {
-    return `<div class="stage-search-empty">${icon("search", 28)}<strong>${esc(t("stage.noResults"))}</strong><span>${esc(t("stage.noResultsHint"))}</span></div>`;
+    const query = S.stage.query.trim();
+    return `<div class="stage-search-empty">
+      <span class="stage-empty-icon">${icon("search", 28)}</span>
+      <strong>${esc(t("stage.noResults"))}</strong>
+      <span class="stage-search-empty-hint">${esc(t("stage.noResultsHint"))}</span>
+      <div class="stage-stat-row">
+        <span class="stage-stat">${icon("search", 13)}<span class="tabular-nums">${esc(t("lib.filterResults", { n: 0 }))}</span></span>
+        ${query ? `<span class="stage-stat">${icon("edit", 13)}<span>${esc(query)}</span></span>` : ""}
+      </div>
+    </div>`;
   }
   return `<div class="stage-search-grid">${list.map((s) => `<button type="button" class="stage-search-card" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="search:game:${esc(s.appName)}">
     <span class="stage-search-art">${stageCoverMarkup(s, "stage-cover-art", true)}</span>
     <span class="stage-search-title">${esc(s.title)}</span>
-    <span class="stage-search-sub">${esc(s.installed ? t("stage.installed") : t("stage.notInstalled"))}</span>
+    <span class="stage-search-sub ${s.installed ? "is-ready" : "is-off"}"><i aria-hidden="true"></i><span>${esc(s.installed ? t("stage.installed") : t("stage.notInstalled"))}</span></span>
   </button>`).join("")}</div>`;
 }
 
@@ -76,7 +85,7 @@ export function renderStageSearch(): string {
       <div class="stage-search-head">
         <span class="stage-search-icon">${icon("search", 20)}</span>
         <input id="stage-search-input" class="stage-search-input" type="text" value="${esc(query)}" placeholder="${esc(t("stage.searchPlaceholder"))}" autocomplete="off" spellcheck="false" data-gp-item data-gp-key="search:input" />
-        <span id="stage-search-count" class="stage-search-count">${stageSearchMatches(S.stage.query, 999).length}</span>
+        <span class="stage-stat stage-search-stat">${icon("search", 13)}<span id="stage-search-count" class="tabular-nums">${esc(t("lib.filterResults", { n: stageSearchMatches(S.stage.query, 999).length }))}</span></span>
         <button type="button" class="stage-icon-btn" data-stage-act="search-close" data-gp-item data-gp-key="search:close" aria-label="${esc(t("common.close"))}">${icon("x", 20)}</button>
       </div>
       <div class="stage-keyboard">

@@ -162,6 +162,22 @@
   background: #fff;
   color: #000;
 }
+/* The search field is text, not a button: scaling it spills past the count and
+   close button, so the head underline carries the focus instead. */
+#stage-root .stage-search-input.gp-focused {
+  outline: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+#stage-root .stage-search-card.gp-focused {
+  outline: none !important;
+  border-color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 18px rgba(255, 255, 255, 0.35) !important;
+  transform: none !important;
+}
 /* ---------- Motion ---------- */
 
 /* Entry animations belong to a transition, not to every data repaint. The
