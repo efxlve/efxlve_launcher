@@ -53,17 +53,42 @@ function ensureRenderedLimit(): void {
   }
 }
 
-/** Append the next shelf chunk when the scrollbar reaches the fold. */
-export function stageLibraryMore(): boolean {
-  const total = stageLibraryList().length;
-  if (renderedLimit >= total) return false;
-  renderedLimit = Math.min(total, renderedLimit + LIBRARY_CHUNK);
+/**
+ * Append the next chunk to the mounted wall.
+ *
+ * The old path bumped a limit and asked for a full stage render, which rebuilt
+ * every cover already on screen and decoded its image again. Only the new cards
+ * are created now; the wall nodes, the scroll anchor and the focused card stay.
+ */
+export function stageLibraryAppend(): boolean {
+  const wall = document.querySelector<HTMLElement>("#stage-main .stage-wall");
+  const list = renderedList.length > 0 ? renderedList : stageLibraryList();
+  if (!wall || renderedLimit >= list.length) return false;
+
+  const from = renderedLimit;
+  renderedLimit = Math.min(list.length, renderedLimit + LIBRARY_CHUNK);
+  const grid = S.stage.libraryView === "grid";
+  const html = list
+    .slice(from, renderedLimit)
+    .map((s, offset) => (grid ? gridCard(s, from + offset) : listRow(s, from + offset)))
+    .join("");
+  if (!html) return false;
+
+  const more = wall.querySelector<HTMLElement>(".stage-wall-more");
+  if (more) more.insertAdjacentHTML("beforebegin", html);
+  else wall.insertAdjacentHTML("beforeend", html);
+  // The last chunk leaves no placeholder to load.
+  if (renderedLimit >= list.length) more?.remove();
   return true;
 }
 
-/** Signature token for the render guard: a new chunk must repaint the shelf. */
+/**
+ * Signature token for the render guard. The chunk limit is deliberately not
+ * part of it: appending a chunk patches the wall in place, so a changed limit
+ * must not force a full repaint that would recreate every cover.
+ */
 export function stageLibraryRenderToken(): string {
-  return `${renderedSignature}:${renderedLimit}`;
+  return renderedSignature;
 }
 
 function filterLabel(filter: StageLibraryFilter): string {

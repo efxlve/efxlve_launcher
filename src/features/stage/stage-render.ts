@@ -104,7 +104,7 @@ import type { EpicSummary } from "../../epic";
 import { epicDlProgress } from "../../core/game-view";
 import { patchStageDownloads, renderStageDownloads } from "./stage-downloads";
 import { renderStageHome, stageHomeActivitiesHtml, stageHomeFocus, stageHomeHeroHtml } from "./stage-home";
-import { patchStageLibrarySide, renderStageLibrary, stageLibraryFocus, stageLibraryMore, stageLibraryRenderToken } from "./stage-library";
+import { patchStageLibrarySide, renderStageLibrary, stageLibraryAppend, stageLibraryFocus, stageLibraryRenderToken } from "./stage-library";
 import {
   stageAchievements,
   stageGameByKey,
@@ -1961,14 +1961,13 @@ function bindStageEvents(root: HTMLElement): void {
   });
 
   // The shelf renders in 96-card chunks. Reaching the fold appends the next
-  // chunk without a visible button, so the controller never hits a dead end.
+  // chunk in place: a full render here would recreate every cover already on
+  // screen, decode its image again and jump the scroll anchor.
   root.addEventListener("scroll", () => {
     if (!S.stage.active || S.stage.route !== "library" || S.stage.searchOpen || S.stage.quickMenu) return;
     const main = document.getElementById("stage-main");
     if (!main) return;
-    if (main.scrollTop + main.clientHeight >= main.scrollHeight - 480 && stageLibraryMore()) {
-      scheduleRender();
-    }
+    if (main.scrollTop + main.clientHeight >= main.scrollHeight - 480) stageLibraryAppend();
   }, true);
 
   // Switch to mouse input mode on pointer interaction
