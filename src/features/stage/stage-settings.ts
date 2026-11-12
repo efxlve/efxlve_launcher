@@ -148,7 +148,15 @@ function musicLibrary(): string {
     </div>
     ${files.length
       ? `<div class="stage-music-list">${rows}</div>`
-      : `<div class="stage-settings-note">${icon("music", 15)}<span>${esc(t("stage.settingsMusicLibraryEmpty"))}</span></div>`}
+      : `<div class="stage-settings-empty">
+          <span class="stage-empty-icon">${icon("music", 30)}</span>
+          <h3>${esc(t("stage.settingsMusicTitle"))}</h3>
+          <p>${esc(t("stage.settingsMusicLibraryEmpty"))}</p>
+          <div class="stage-stat-row">
+            <span class="stage-stat">${icon("music", 13)}<span>${esc(t("stage.settingsMusicLibrary"))}</span><b class="tabular-nums">0</b></span>
+            <span class="stage-stat">${icon("sparkles", 13)}<span>${esc(t("stage.settingsMusicBuiltIn"))}</span></span>
+          </div>
+        </div>`}
   </div>`;
 }
 
