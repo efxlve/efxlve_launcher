@@ -301,7 +301,7 @@ function activeDownload(): DlMetrics | null {
   // queued entry in `S.downloads` to the hero card before its turn.
   const candidates = S.dlQueueStatus.active
     ? [S.dlQueueStatus.active]
-    : [...S.downloads.keys()];
+    : [...S.downloads.keys()].filter((id) => !S.dlQueueStatus.queue.includes(id));
   for (const id of candidates) {
     const d = S.downloads.get(id);
     if (d && !d.done) {

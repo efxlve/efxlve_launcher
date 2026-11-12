@@ -277,7 +277,10 @@ function stageProgramRevision(): string {
 /** The topbar chip and dock badge need a full render when a transfer starts or ends. */
 function activeDownloadKey(): string {
   if (S.activeDlMetrics && !S.activeDlMetrics.done) return S.activeDlMetrics.id;
-  for (const [id, item] of S.downloads) if (!item.done) return id;
+  if (S.dlQueueStatus.active) return S.dlQueueStatus.active;
+  for (const [id, item] of S.downloads) {
+    if (!item.done && !S.dlQueueStatus.queue.includes(id)) return id;
+  }
   return "";
 }
 
