@@ -304,7 +304,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
   max-width: 70%;
   text-align: center;
 }
@@ -312,18 +312,30 @@
   overflow: hidden;
   max-width: 100%;
   color: var(--stage-ink);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.stage-still-caption span {
+.stage-still-caption .stage-stat {
+  max-width: 100%;
+}
+.stage-still-caption .stage-stat > span {
   overflow: hidden;
   max-width: 100%;
-  color: var(--stage-ink-4);
-  font-size: 10.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* Viewer HUD: the stills counter and store, away from the close button. */
+.stage-still-hud {
+  position: absolute;
+  inset-block-start: calc(clamp(18px, 2.6vh, 30px) + var(--stage-safe, 0px));
+  inset-inline-start: calc(clamp(18px, 2.4vw, 36px) + var(--stage-safe, 0px));
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: calc(100% - 140px);
 }
 .stage-still-close {
   position: absolute;
@@ -356,14 +368,6 @@
 }
 .stage-still-nav.is-next {
   inset-inline-end: calc(clamp(12px, 2vw, 30px) + var(--stage-safe, 0px));
-}
-.stage-still-count {
-  position: absolute;
-  inset-block-start: calc(clamp(18px, 2.6vh, 30px) + var(--stage-safe, 0px));
-  inset-inline-start: 50%;
-  transform: translateX(-50%);
-  color: var(--stage-ink-4);
-  font-size: 11px;
 }
 
 /* ---------- Launch curtain ---------- */

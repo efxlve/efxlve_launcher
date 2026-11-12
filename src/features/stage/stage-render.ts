@@ -1013,17 +1013,20 @@ function stillViewer(): string {
   if (!item) return "";
   const title = stageGameByKey(app)?.title || app;
   const total = items.length;
-  return `<div class="stage-overlay stage-still-viewer">
+  return `<div class="stage-overlay stage-still-viewer" role="dialog" aria-modal="true" aria-label="${esc(t("drawer.screenshots"))}">
     <div class="stage-still-frame">
       <img src="${esc(fullShotSrc(item))}" alt="${esc(item.file_name)}" />
+      <div class="stage-still-hud">
+        <span class="stage-stat">${icon("camera", 13)}<span>${esc(t("stage.stills"))}</span><b class="tabular-nums">${index + 1} / ${total}</b></span>
+        <span class="stage-stat">${icon("layers", 13)}<span>${esc(stageStoreName(sourceOfKey(app)))}</span></span>
+      </div>
       <div class="stage-still-caption">
         <strong>${esc(title)}</strong>
-        <span>${esc(item.file_name)}</span>
+        <span class="stage-stat">${icon("image", 13)}<span>${esc(item.file_name)}</span></span>
       </div>
       <button type="button" class="stage-icon-btn stage-still-close" data-stage-act="close-still" data-gp-item data-gp-key="still:close" aria-label="${esc(t("common.close"))}">${icon("x", 22)}</button>
       ${total > 1 ? `<button type="button" class="stage-still-nav is-prev" data-stage-act="still-prev" data-gp-item data-gp-key="still:prev" aria-label="${esc(t("stage.stillsPrev"))}">${icon("chevron-left", 30)}</button>
       <button type="button" class="stage-still-nav is-next" data-stage-act="still-next" data-gp-item data-gp-key="still:next" aria-label="${esc(t("stage.stillsNext"))}">${icon("chevron-right", 30)}</button>` : ""}
-      <span class="stage-still-count tabular-nums">${index + 1} / ${total}</span>
     </div>
   </div>`;
 }
@@ -1566,6 +1569,14 @@ function onStageKeydown(event: KeyboardEvent): void {
       event.preventDefault();
       event.stopPropagation();
       stageStillStep(true);
+      return;
+    }
+    // The viewer's close and nav buttons are focusable, so Enter must press the
+    // focused one instead of being swallowed by the step shortcuts above.
+    if (key === "Enter" || key === " ") {
+      event.preventDefault();
+      event.stopPropagation();
+      activateGamepadFocus();
       return;
     }
     return;
