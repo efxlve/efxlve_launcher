@@ -33,11 +33,9 @@ pub async fn epic_launch_game(app: AppHandle, app_name: String) -> Result<String
         } else {
             entry.title.clone()
         };
-        let mut custom_args: Vec<String> = entry
-            .launch_parameters
-            .split_whitespace()
-            .map(|s| s.to_string())
-            .collect();
+        // legendary already appends `installed.json`'s launch_parameters to
+        // its own launch command; adding them here would duplicate every flag.
+        let mut custom_args: Vec<String> = Vec::new();
         let settings_path = crate::legendary::skip::default_config_dir()
             .join("game_settings")
             .join(format!("{app_name}.json"));
@@ -828,6 +826,12 @@ fn ensure_eos_service_blocking() {
                 if status.dwCurrentState != SERVICE_START_PENDING {
                     break;
                 }
+            }
+            // The host reports RUNNING just before the per-user helper is
+            // ready; give that helper a moment so the game's first social
+            // request does not race it.
+            if status.dwCurrentState == SERVICE_RUNNING {
+                std::thread::sleep(std::time::Duration::from_millis(300));
             }
         }
         let _ = CloseServiceHandle(service);
