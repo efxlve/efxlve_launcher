@@ -279,6 +279,7 @@ pub async fn nile_install(
 
     // Keep the full output for diagnostics: Nile reports some failures only on
     // stderr and still exits zero.
+    let out_text = output_text(&out);
     let log_path = cli::config_dir(&app).join(format!("install-{id}.log"));
     let _ = std::fs::write(
         &log_path,
@@ -293,7 +294,7 @@ pub async fn nile_install(
         return Err(cancelled_or(
             &id,
             generation,
-            cli::failure_message(&out),
+            nile_failure_text(&out_text, &out),
         ));
     }
     // Nile exits zero even when it refuses to install ("Not enough space") and
@@ -302,6 +303,17 @@ pub async fn nile_install(
     if super::library::installed_game(&app, &id).is_none() {
         if nile_download_cancelled(&id, generation) {
             return Err("@t:dl.cancelled".to_string());
+        }
+        if is_out_of_space(&out_text) {
+            return Err("@t:dl.diskFull".to_string());
+        }
+        // Resetting the record only heals "Nile thinks it is current"; every
+        // other zero-exit refusal would repeat until the watchdog fired.
+        if !out_text.contains("Game is up to date") {
+            return Err(format!(
+                "@t:amazon.installFailed\u{1f}{}",
+                cli::failure_message(&out)
+            ));
         }
         reset_install_record(&app, &id);
         let retry = run_install_attempt(&app, &args, &event_id, &id, generation).await;
@@ -312,13 +324,42 @@ pub async fn nile_install(
         }
         if !healed {
             let detail = match retry {
-                Ok(v) => cli::failure_message(&v),
+                Ok(v) => {
+                    let text = output_text(&v);
+                    nile_failure_text(&text, &v)
+                }
                 Err(e) => e,
             };
             return Err(format!("@t:amazon.installFailed\u{1f}{detail}"));
         }
     }
     Ok(())
+}
+
+fn output_text(out: &std::process::Output) -> String {
+    format!(
+        "{}\n{}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    )
+}
+
+/// Nile prints its disk-space refusal to stdout and still exits zero, so the
+/// generic "install failed" wrapper would hide the one actionable cause.
+fn is_out_of_space(text: &str) -> bool {
+    let low = text.to_lowercase();
+    low.contains("no space left")
+        || low.contains("disk full")
+        || low.contains("notenoughspace")
+        || (low.contains("not enough") && low.contains("space"))
+}
+
+fn nile_failure_text(text: &str, out: &std::process::Output) -> String {
+    if is_out_of_space(text) {
+        "@t:dl.diskFull".to_string()
+    } else {
+        cli::failure_message(out)
+    }
 }
 
 async fn run_install_attempt(
@@ -533,6 +574,15 @@ mod tests {
         );
         finish_nile_download("same-product", second);
         assert!(!nile_download_cancelled("same-product", second));
+    }
+
+    #[test]
+    fn a_disk_space_refusal_is_named() {
+        assert!(is_out_of_space("Unable to proceed, Not enough disk space"));
+        assert!(is_out_of_space("OSError: [Errno 28] No space left on device"));
+        assert!(is_out_of_space("NotEnoughSpaceError: 4 GiB needed"));
+        assert!(!is_out_of_space("Unable to load manifest"));
+        assert!(!is_out_of_space("Download complete"));
     }
 
     #[test]
