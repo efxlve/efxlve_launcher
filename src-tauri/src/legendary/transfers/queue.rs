@@ -38,6 +38,24 @@ const STALL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5 * 60
 /// manifest is written, so it gets a much longer window before the same check.
 const FINALIZE_STALL: std::time::Duration = std::time::Duration::from_secs(15 * 60);
 
+/// The same tree kill for a sync caller (the start path cannot await).
+pub(super) fn kill_download_tree_blocking(pid: u32) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        let mut cmd = std::process::Command::new("taskkill");
+        cmd.args(["/PID", &pid.to_string(), "/T", "/F"]);
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output();
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = std::process::Command::new("kill")
+            .args(["-9", &format!("-{pid}")])
+            .output();
+    }
+}
+
 /// Ends a legendary process together with its multiprocessing children.
 /// `kill_on_drop` only signals the direct child; the download workers are
 /// grandchildren and would otherwise keep writing into the game folder.
@@ -337,10 +355,16 @@ pub(super) fn cleanup_partial_install(app: &AppHandle, app_name: &str) {
         }
     }
 
-    // Also check and clean legendary config tmp folder if any partial pieces remained
+    clear_app_temp_files(&config, app_name);
+}
+
+/// Legendary keeps one resume/repair marker per app in `tmp`. Removing the
+/// whole folder would also destroy another paused or failed game's resume
+/// point, so only this app's markers go.
+pub(super) fn clear_app_temp_files(config: &std::path::Path, app_name: &str) {
     let tmp_dir = config.join("tmp");
-    if tmp_dir.is_dir() {
-        let _ = std::fs::remove_dir_all(&tmp_dir);
+    for suffix in [".resume", ".repair"] {
+        let _ = std::fs::remove_file(tmp_dir.join(format!("{app_name}{suffix}")));
     }
 }
 
@@ -427,41 +451,68 @@ pub(super) fn start_download_request(
         }
     };
 
-    let cancelled_during_start = {
+    #[derive(Clone, Copy)]
+    enum StartHalt {
+        Cancelled,
+        Paused,
+    }
+    let halted = {
         let state = app.state::<AppState>();
         let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
         let owns = s.active.as_deref() == Some(request.app_name.as_str())
             && s.active_generation == Some(generation);
-        if owns && !s.cancelled {
-            s.pid = child.id();
-            s.active_meta = Some(request.clone());
-            false
-        } else if owns {
-            s.active = None;
-            s.active_generation = None;
-            s.pid = None;
-            s.active_meta = None;
-            s.cancelled = false;
-            true
-        } else {
+        if !owns {
             // A newer attempt owns the slot. Do not touch its resume record.
             drop(child);
             return Err("@t:dl.anotherStarted".into());
         }
+        if s.cancelled || s.paused {
+            let halt = if s.cancelled {
+                s.cancelled = false;
+                StartHalt::Cancelled
+            } else {
+                StartHalt::Paused
+            };
+            s.active = None;
+            s.active_generation = None;
+            s.pid = None;
+            s.active_meta = None;
+            Some(halt)
+        } else {
+            s.pid = child.id();
+            s.active_meta = Some(request.clone());
+            None
+        }
     };
-    if cancelled_during_start {
-        // The user cancelled while the process was starting. Dropping the child
-        // kills it (`kill_on_drop`) before it can rewrite .egstore.
+    if let Some(halt) = halted {
+        // The user cancelled or paused while the process was starting. Kill the
+        // whole tree rather than leaving a download running behind a paused UI.
+        if let Some(pid) = child.id() {
+            kill_download_tree_blocking(pid);
+        }
         drop(child);
-        finish_stop(
-            app,
-            &request.app_name,
-            crate::legendary::download_resume::DownloadStop::UserCancel {
-                was_installed: game_was_installed(&request.app_name),
-            },
-        );
-        emit_cancelled(app, &request.app_name);
-        return Ok("@t:dl.cancelled".into());
+        match halt {
+            StartHalt::Cancelled => {
+                finish_stop(
+                    app,
+                    &request.app_name,
+                    crate::legendary::download_resume::DownloadStop::UserCancel {
+                        was_installed: game_was_installed(&request.app_name),
+                    },
+                );
+                emit_cancelled(app, &request.app_name);
+                return Ok("@t:dl.cancelled".into());
+            }
+            StartHalt::Paused => {
+                finish_stop(
+                    app,
+                    &request.app_name,
+                    crate::legendary::download_resume::DownloadStop::Pause,
+                );
+                emit_paused(app, &request.app_name);
+                return Ok("@t:dl.paused".into());
+            }
+        }
     }
 
     let stdout = child.stdout.take();

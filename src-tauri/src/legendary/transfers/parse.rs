@@ -214,6 +214,11 @@ pub(super) fn has_hard_error(err_text: &str) -> bool {
         if line.contains("failed, retrying") {
             return false;
         }
+        // No Epic Games Launcher installed is normal and legendary carries on
+        // with EGL sync disabled; this is not a failed install.
+        if line.contains("EGL ProgramData path") && line.contains("Disabling sync") {
+            return false;
+        }
         line.starts_with("Traceback")
             || line.contains("ERROR:")
             || line.contains("CRITICAL:")
@@ -256,7 +261,7 @@ pub(crate) fn short_error(err_text: &str) -> String {
     }
     if low.contains("no space left")
         || low.contains("disk full")
-        || low.contains("not enough space")
+        || (low.contains("not enough") && low.contains("space"))
         || low.contains("spaceerror")
     {
         return "@t:dl.diskFull".to_string();

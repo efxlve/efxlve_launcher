@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use super::guard::*;
 use super::launch::*;
 use super::parse::*;
+use super::queue::*;
 
 #[test]
 fn install_path_does_not_match_a_drive_root_or_a_sibling() {
@@ -146,6 +147,21 @@ fn a_logged_error_beats_a_zero_exit() {
     assert!(!has_hard_error(
         "[DLManager] ERROR: Download for 1234 failed, retrying..."
     ));
+    // No Epic Games Launcher on this PC is normal; legendary disables EGL sync
+    // and installs anyway.
+    assert!(!has_hard_error(
+        "[Core] ERROR: EGL ProgramData path (\"C:\\\\ProgramData\\\\Epic\\\\EpicGamesLauncher\\\\Data\\\\Manifests\") is invalid! Disabling sync..."
+    ));
+}
+
+#[test]
+fn legendary_disk_space_wording_maps_to_the_disk_full_message() {
+    // The exact line from `check_installation_conditions`; "not enough
+    // available disk space" is not the old "not enough space" substring.
+    assert_eq!(
+        short_error(" ! Failure: Not enough available disk space! 12.00 GiB < 30.00 GiB\n[cli] FATAL: Installation cannot proceed, exiting."),
+        "@t:dl.diskFull"
+    );
 }
 
 #[test]
@@ -243,6 +259,27 @@ fn test_is_safe_game_dir() {
     assert!(!is_safe_game_dir(&PathBuf::from(r"C:\Games"), &def));
     assert!(!is_safe_game_dir(&PathBuf::from(r"C:\Windows"), &def));
     assert!(!is_safe_game_dir(&PathBuf::from(r"C:\Program Files"), &def));
+}
+
+#[test]
+fn cancelling_one_game_keeps_another_games_resume_marker() {
+    let root = std::env::temp_dir().join(format!(
+        "efxlve_temp_markers_{}",
+        std::process::id()
+    ));
+    let tmp = root.join("tmp");
+    let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(&tmp).unwrap();
+    std::fs::write(tmp.join("Fortnite.resume"), b"fortnite").unwrap();
+    std::fs::write(tmp.join("Fortnite.repair"), b"repair").unwrap();
+    std::fs::write(tmp.join("RocketLeague.resume"), b"other").unwrap();
+
+    clear_app_temp_files(&root, "Fortnite");
+
+    assert!(!tmp.join("Fortnite.resume").exists());
+    assert!(!tmp.join("Fortnite.repair").exists());
+    assert!(tmp.join("RocketLeague.resume").exists());
+    let _ = std::fs::remove_dir_all(&root);
 }
 
 #[test]
