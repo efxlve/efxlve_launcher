@@ -227,6 +227,14 @@
   flex-direction: column;
   gap: 6px;
 }
+.stage-music-library {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-block-start: 3px;
+  padding-block-start: 12px;
+  border-block-start: 1px solid var(--stage-line);
+}
 .stage-music-row {
   display: flex;
   align-items: center;
@@ -262,10 +270,20 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.stage-music-copy small {
-  color: var(--stage-ink-4);
+.stage-music-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.stage-music-meta > .tabular-nums {
+  color: var(--stage-ink-3);
   font-size: 11px;
-  font-variant-numeric: tabular-nums;
+}
+.stage-music-assigned {
+  height: 22px;
+  padding: 0 8px;
+  font-size: 10px;
 }
 .stage-choice.is-danger {
   border-color: rgba(248, 113, 113, 0.4);

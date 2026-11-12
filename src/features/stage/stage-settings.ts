@@ -136,12 +136,15 @@ function musicLibrary(): string {
     return `<div class="stage-music-row${confirming ? " is-confirming" : ""}">
       <span class="stage-music-copy">
         <strong>${esc(file.label)}</strong>
-        <small class="tabular-nums">${esc(audioSize(file.size))}${assigned ? ` · ${esc(t("stage.settingsMusicAssigned"))}` : ""}</small>
+        <span class="stage-music-meta">
+          <span class="tabular-nums">${esc(audioSize(file.size))}</span>
+          ${assigned ? `<span class="stage-stat stage-music-assigned">${icon("music", 12)}<span>${esc(t("stage.settingsMusicAssigned"))}</span></span>` : ""}
+        </span>
       </span>
       <span class="stage-choice-row">${actions}</span>
     </div>`;
   }).join("");
-  return `<div class="stage-settings-group">
+  return `<div class="stage-music-library">
     <span class="stage-kicker">${esc(t("stage.settingsMusicLibrary"))}</span>
     <div class="stage-settings-actions">
       <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="import-stage-audio" data-gp-item data-gp-key="set:music-add">${icon("plus", 16)}<span>${esc(t("stage.settingsMusicAdd"))}</span></button>
