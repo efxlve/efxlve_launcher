@@ -99,7 +99,7 @@ import {
   setStageStickSensitivity,
   setStageTextScale,
 } from "./stage-state";
-import { stageLaunchGame } from "./stage-launch";
+import { stageLaunchGame, stageSkipLaunchCurtain } from "./stage-launch";
 import type { EpicSummary } from "../../epic";
 import { epicDlProgress } from "../../core/game-view";
 import { patchStageDownloads, renderStageDownloads } from "./stage-downloads";
@@ -1046,14 +1046,20 @@ function controlsSheet(entered: boolean): string {
 function curtain(entered: boolean): string {
   const launch = S.stage.launch;
   if (!launch) return "";
-  return `<div class="stage-overlay stage-curtain${entered ? " stage-overlay-enter" : ""}" aria-live="polite">
+  return `<div class="stage-overlay stage-curtain${entered ? " stage-overlay-enter" : ""}" aria-live="polite" aria-busy="true">
     <div class="stage-curtain-art">${launch.art ? `<img src="${esc(launch.art)}" alt="" />` : ""}</div>
     <div class="stage-curtain-shade"></div>
     <div class="stage-curtain-line"></div>
     <div class="stage-curtain-copy">
       <span class="stage-kicker">${esc(t("stage.launching"))}</span>
       <h1>${esc(launch.title)}</h1>
+      <div class="stage-stat-row stage-curtain-facts">
+        <span class="stage-stat">${icon("layers", 13)}<span>${esc(stageStoreName(sourceOfKey(launch.key)))}</span></span>
+      </div>
       <span class="stage-curtain-dots"><i></i><i></i><i></i></span>
+      <button type="button" class="stage-btn stage-btn-ghost stage-curtain-skip" data-stage-act="skip-launch" data-gp-item data-gp-key="curtain:skip" data-gp-default>
+        ${faceOrKey("b")}<span>${esc(t("stage.skipCurtain"))}</span>
+      </button>
     </div>
   </div>`;
 }
@@ -2018,6 +2024,7 @@ function bindStageEvents(root: HTMLElement): void {
       }
       case "retry": S.stage.launchError = ""; stageLaunchGame(S.stage.gameKey || ""); break;
       case "close-error": stageFeedback("back"); S.stage.launchError = ""; scheduleRender(); break;
+      case "skip-launch": stageSkipLaunchCurtain(); break;
       default: break;
     }
   });

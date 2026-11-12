@@ -3934,6 +3934,7 @@
   "stage.alreadyRunning": "Ta gra jest już uruchomiona.",
   "stage.experimentalNote": "Stage jest eksperymentalny. Pobierania i ustawienia pozostają w trybie pulpitu.",
   "stage.launching": "Uruchamianie",
+  "stage.skipCurtain": "Pomiń",
   "stage.launchFailed": "Nie udało się uruchomić gry",
   "stage.retry": "Spróbuj ponownie",
   "stage.openDesktop": "Otwórz pulpit",

@@ -3934,6 +3934,7 @@
   "stage.alreadyRunning": "Ce jeu est déjà en cours d'exécution.",
   "stage.experimentalNote": "Stage est expérimental. Les téléchargements et les réglages restent sur le bureau.",
   "stage.launching": "Lancement",
+  "stage.skipCurtain": "Passer",
   "stage.launchFailed": "Impossible de démarrer le jeu",
   "stage.retry": "Réessayer",
   "stage.openDesktop": "Ouvrir le bureau",

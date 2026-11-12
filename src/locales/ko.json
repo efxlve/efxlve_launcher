@@ -3934,6 +3934,7 @@
   "stage.alreadyRunning": "이 게임은 이미 실행 중입니다.",
   "stage.experimentalNote": "Stage는 실험 기능입니다. 다운로드와 설정은 데스크톱 모드에 남습니다.",
   "stage.launching": "시작 중",
+  "stage.skipCurtain": "건너뛰기",
   "stage.launchFailed": "게임을 시작할 수 없습니다",
   "stage.retry": "다시 시도",
   "stage.openDesktop": "데스크톱 열기",

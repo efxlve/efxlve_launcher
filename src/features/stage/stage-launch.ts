@@ -17,6 +17,9 @@ import { stageGameByKey } from "./stage-model";
 import { stageFeedback } from "./stage-sound";
 
 let launchToken = 0;
+/** A store launch already handed over cannot be cancelled; the gate stays
+ *  closed even after the curtain is skipped so a second press cannot fire it. */
+let launchInFlight = false;
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -33,13 +36,14 @@ export function stageLaunchGame(key: string): void {
     toast(t("stage.alreadyRunning"), "");
     return;
   }
-  if (S.stage.launch) return;
+  if (S.stage.launch || launchInFlight) return;
 
   stageFeedback("launch");
   // The curtain takes the room down a little; the game's own audio should own
   // the speakers the moment it starts.
   duckStageAmbience(true);
   const token = ++launchToken;
+  launchInFlight = true;
   S.stage.launch = {
     key: summary.appName,
     title: summary.title,
@@ -52,19 +56,33 @@ export function stageLaunchGame(key: string): void {
 
   // Let the curtain finish closing before the store client steals focus.
   void (async () => {
-    await delay(420);
     try {
+      await delay(420);
+      if (token !== launchToken) return;
       const launch = epicPlay(summary.appName);
       await Promise.race([launch, delay(1600)]);
+      if (token !== launchToken) return;
+      S.stage.launch = null;
+      duckStageAmbience(false);
+      scheduleRender();
     } catch (error) {
+      if (token !== launchToken) return;
       stageLaunchFailed(String(error));
-      return;
+    } finally {
+      launchInFlight = false;
     }
-    if (token !== launchToken) return;
-    S.stage.launch = null;
-    duckStageAmbience(false);
-    scheduleRender();
   })();
+}
+
+/**
+ * Dismiss the curtain early. The store launch keeps running behind it; only
+ * the visual transition is skipped, so this can never cancel the launch itself.
+ */
+export function stageSkipLaunchCurtain(): void {
+  if (!S.stage.launch) return;
+  stageFeedback("back");
+  S.stage.launch = null;
+  scheduleRender();
 }
 
 /** A failed launch is reported in place; the curtain never hides the error. */

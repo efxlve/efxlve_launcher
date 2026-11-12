@@ -416,6 +416,8 @@
 }
 .stage-curtain-copy h1 {
   margin: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
   font-size: clamp(40px, 6vw, 94px);
   font-weight: 650;
@@ -423,6 +425,16 @@
   letter-spacing: -0.04em;
   text-wrap: balance;
   text-shadow: 0 2px 40px rgba(0, 0, 0, 0.6);
+}
+/* The store is a fact, not decoration: one chip under the title. */
+.stage-curtain-facts {
+  justify-content: center;
+}
+.stage-curtain-facts .stage-stat {
+  background: rgba(0, 0, 0, 0.45);
+}
+.stage-curtain-skip {
+  margin-block-start: 16px;
 }
 .stage-curtain-dots {
   display: inline-flex;

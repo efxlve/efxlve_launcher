@@ -3934,6 +3934,7 @@
   "stage.alreadyRunning": "यह गेम पहले से चल रहा है।",
   "stage.experimentalNote": "Stage प्रयोगात्मक है। डाउनलोड और सेटिंग्स डेस्कटॉप मोड में रहते हैं।",
   "stage.launching": "शुरू हो रहा है",
+  "stage.skipCurtain": "छोड़ें",
   "stage.launchFailed": "गेम शुरू नहीं हो सका",
   "stage.retry": "फिर कोशिश करें",
   "stage.openDesktop": "डेस्कटॉप खोलें",

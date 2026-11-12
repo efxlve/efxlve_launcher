@@ -3934,6 +3934,7 @@
   "stage.alreadyRunning": "هذه اللعبة قيد التشغيل بالفعل.",
   "stage.experimentalNote": "Stage تجريبي. تبقى التنزيلات والإعدادات في وضع سطح المكتب.",
   "stage.launching": "جارٍ التشغيل",
+  "stage.skipCurtain": "تجاوز",
   "stage.launchFailed": "تعذر بدء اللعبة",
   "stage.retry": "إعادة المحاولة",
   "stage.openDesktop": "فتح سطح المكتب",

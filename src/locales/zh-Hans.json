@@ -3934,6 +3934,7 @@
   "stage.alreadyRunning": "此游戏已在运行。",
   "stage.experimentalNote": "Stage 是实验功能。下载和设置仍在桌面模式中。",
   "stage.launching": "正在启动",
+  "stage.skipCurtain": "跳过",
   "stage.launchFailed": "无法启动游戏",
   "stage.retry": "重试",
   "stage.openDesktop": "打开桌面",

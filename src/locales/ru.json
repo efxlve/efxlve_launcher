@@ -3934,6 +3934,7 @@
   "stage.alreadyRunning": "Эта игра уже запущена.",
   "stage.experimentalNote": "Stage — экспериментальный режим. Загрузки и настройки остаются в режиме рабочего стола.",
   "stage.launching": "Запуск",
+  "stage.skipCurtain": "Пропустить",
   "stage.launchFailed": "Не удалось запустить игру",
   "stage.retry": "Повторить",
   "stage.openDesktop": "Открыть рабочий стол",

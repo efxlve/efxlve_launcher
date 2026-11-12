@@ -3934,6 +3934,7 @@
   "stage.alreadyRunning": "เกมนี้กำลังทำงานอยู่แล้ว",
   "stage.experimentalNote": "Stage เป็นฟีเจอร์ทดลอง การดาวน์โหลดและการตั้งค่ายังอยู่ในโหมดเดสก์ท็อป",
   "stage.launching": "กำลังเปิดเกม",
+  "stage.skipCurtain": "ข้าม",
   "stage.launchFailed": "ไม่สามารถเริ่มเกมได้",
   "stage.retry": "ลองอีกครั้ง",
   "stage.openDesktop": "เปิดเดสก์ท็อป",

@@ -3934,6 +3934,7 @@
   "stage.alreadyRunning": "This game is already running.",
   "stage.experimentalNote": "Stage is experimental. Downloads and settings stay in desktop mode.",
   "stage.launching": "Launching",
+  "stage.skipCurtain": "Skip",
   "stage.launchFailed": "Could not start the game",
   "stage.retry": "Try again",
   "stage.openDesktop": "Open desktop",

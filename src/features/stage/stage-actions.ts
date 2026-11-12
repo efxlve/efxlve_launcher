@@ -34,7 +34,7 @@ import { loadSettingsView } from "../settings/settings-view";
 import { setView } from "../store/store-view";
 import { deleteStageAudio, importStageAudio, loadStageAudioFiles, stageAudioBeginDelete, stageAudioCancelDelete, stageAudioPendingDelete } from "./stage-audio-library";
 import { previewStageCustomAudio, stageAudioPreviewName, stopStageAudioPreview, stopStageCustomAudio } from "./stage-custom-audio";
-import { stageLaunchGame } from "./stage-launch";
+import { stageLaunchGame, stageSkipLaunchCurtain } from "./stage-launch";
 import { stageBaseSummaries, stageGameByKey, stageHeroSummary, stageLibraryList, stageLibraryStores, stageSearchMatches } from "./stage-model";
 import { stageSearchResultsHtml } from "./stage-search";
 import { stageFeedback } from "./stage-sound";
@@ -158,7 +158,12 @@ export function stageOpenProgram(key: string): void {
 }
 
 export function stageBack(): void {
-  if (S.stage.launch) return;
+  // The curtain is a transition, not a dialog: B/Escape skips it while the
+  // store launch keeps running behind.
+  if (S.stage.launch) {
+    stageSkipLaunchCurtain();
+    return;
+  }
   if (S.stage.launchError) {
     stageFeedback("back");
     S.stage.launchError = "";

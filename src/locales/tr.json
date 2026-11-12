@@ -3934,6 +3934,7 @@
   "stage.alreadyRunning": "Bu oyun zaten çalışıyor.",
   "stage.experimentalNote": "Sahne deneysel. İndirmeler ve ayarlar masaüstü modunda kalıyor.",
   "stage.launching": "Başlatılıyor",
+  "stage.skipCurtain": "Atla",
   "stage.launchFailed": "Oyun başlatılamadı",
   "stage.retry": "Tekrar dene",
   "stage.openDesktop": "Masaüstünü aç",
