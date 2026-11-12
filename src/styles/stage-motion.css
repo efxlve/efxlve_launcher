@@ -105,6 +105,14 @@
 #stage-root .stage-list-row.gp-focused {
   background: rgba(255, 255, 255, 0.07);
   border-color: rgba(255, 255, 255, 0.12);
+  /* The shared focus shadow is a 6px spread with a 52px black drop that reads
+     as a band under a full-width row; the list keeps the tight ring instead. */
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 20px rgba(255, 255, 255, 0.35) !important;
+  /* The desktop button rule scales any focused button to 1.04, which makes a
+     full-width list row wider than its column. The list nudges right instead. */
+  transform: translateX(4px) !important;
 }
 #stage-root .stage-filter.gp-focused,
 #stage-root .stage-program-tab.gp-focused,

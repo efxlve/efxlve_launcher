@@ -269,6 +269,9 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  /* The focused row nudges 4px right; this keeps the nudge inside the wall so
+     the list never scrolls horizontally. */
+  padding-inline-end: 4px;
   padding-block-end: calc(96px + var(--stage-safe, 0px));
 }
 
