@@ -86,7 +86,7 @@ export function stageButton(button: StagePadButton): void {
     if (button === "start") { stageSearchSubmit(); return; }
     return;
   }
-  if (S.stage.powerOpen || S.stage.browserOpen || S.stage.spotifyOpen || S.stage.discordOpen) {
+  if (S.stage.powerOpen || S.stage.browserOpen || S.stage.spotifyOpen || S.stage.discordOpen || S.stage.notifOpen) {
     if (button === "start" || button === "select") stageBack();
     return;
   }

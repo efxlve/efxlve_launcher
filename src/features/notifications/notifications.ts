@@ -51,6 +51,11 @@ const KIND_ICON: Record<NotifKind, Parameters<typeof icon>[0]> = {
   "cloud-error": "alert-triangle",
 };
 
+/** Icon for a notification kind, for shells that render their own list. */
+export function notifKindIcon(kind: NotifKind): Parameters<typeof icon>[0] {
+  return KIND_ICON[kind];
+}
+
 /** Every persisted kind; an unknown value from an older build is dropped. */
 const KNOWN_KINDS = new Set<string>(Object.keys(KIND_ICON));
 

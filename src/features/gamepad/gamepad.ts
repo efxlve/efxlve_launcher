@@ -349,7 +349,7 @@ function setFocus(el: HTMLElement | null): void {
         /* A detached node can reject focus; the next render replaces it. */
       }
       window.dispatchEvent(
-        new CustomEvent("stage:focus", { detail: { key: currentFocusedEl.dataset.gpKey || "" } }),
+        new CustomEvent("stage:focus", { detail: { key: stageControlKey(currentFocusedEl) } }),
       );
       // Stage scrolls with the ring, not after it: a held D-pad repeats every
       // 38 ms, and restarting a smooth scroll at that rate leaves the focused
@@ -368,6 +368,20 @@ function setFocus(el: HTMLElement | null): void {
 /** Public entry used by Stage's renderer and pointer hover. */
 export function setGamepadFocus(el: HTMLElement | null): void {
   setFocus(el);
+}
+
+/**
+ * Stable key for a Stage control. An authored `data-gp-key` wins; a button the
+ * markup did not key (download pause, queue actions) still gets one derived
+ * from its action, so a repaint can put the ring back where the player left it.
+ */
+export function stageControlKey(el: HTMLElement): string {
+  if (el.dataset.gpKey) return el.dataset.gpKey;
+  if (el.dataset.act) {
+    const subject = el.dataset.id || el.dataset.mode || el.dataset.key || el.dataset.route || "";
+    return `ctl:${el.dataset.act}:${subject}`;
+  }
+  return el.id ? `ctl:#${el.id}` : "";
 }
 
 /**

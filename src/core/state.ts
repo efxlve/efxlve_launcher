@@ -1091,6 +1091,7 @@ export const S = {
     controlsOpen: false,
     spotifyOpen: false,
     discordOpen: false,
+    notifOpen: false,
     browserOpen: false,
     browserUrl: "",
     powerOpen: false,

@@ -23,6 +23,7 @@ function overlayOpen(): boolean {
     S.stage.searchOpen ||
     S.stage.quickMenu ||
     S.stage.controlsOpen ||
+    S.stage.notifOpen ||
     S.stage.powerOpen ||
     S.stage.browserOpen ||
     S.stage.spotifyOpen ||

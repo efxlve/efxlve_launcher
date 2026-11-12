@@ -121,6 +121,7 @@ export async function enterStage(opts: { route?: StageRoute; gameKey?: string } 
   S.stage.controlsOpen = false;
   S.stage.spotifyOpen = false;
   S.stage.discordOpen = false;
+  S.stage.notifOpen = false;
   S.stage.browserOpen = false;
   S.stage.browserUrl = "";
   S.stage.powerOpen = false;
@@ -166,6 +167,7 @@ export function exitStage(): void {
   S.stage.controlsOpen = false;
   S.stage.spotifyOpen = false;
   S.stage.discordOpen = false;
+  S.stage.notifOpen = false;
   S.stage.browserOpen = false;
   S.stage.browserUrl = "";
   S.stage.powerOpen = false;

@@ -23,6 +23,7 @@ import type {
   StageSettingsTab,
 } from "../../core/types";
 import { localizeMessage, t } from "../../i18n";
+import { clearNotifications, markAllRead } from "../notifications/notifications";
 import { uploadGameCloudAction } from "../cloud-backup/cloud-backup-actions";
 import { fetchAndRenderAchievements } from "../drawer/drawer-view";
 import { SMART_COLLECTIONS } from "../library/smart-collections";
@@ -100,6 +101,7 @@ export function stageGo(route: StageRoute): void {
   S.stage.quickMenu = false;
   S.stage.controlsOpen = false;
   S.stage.searchOpen = false;
+  S.stage.notifOpen = false;
   S.stage.focusKey = "";
   if (route === "program") {
     S.stage.route = "program";
@@ -150,6 +152,7 @@ export function stageOpenProgram(key: string): void {
   S.stage.quickMenu = false;
   S.stage.searchOpen = false;
   S.stage.controlsOpen = false;
+  S.stage.notifOpen = false;
   S.stage.focusKey = "";
   scheduleRender();
 }
@@ -184,6 +187,10 @@ export function stageBack(): void {
       return;
     }
     stageClosePowerSheet();
+    return;
+  }
+  if (S.stage.notifOpen) {
+    stageCloseNotifications();
     return;
   }
   stageFeedback("back");
@@ -267,6 +274,7 @@ export function stageOpenQuickMenu(focusKey = "dock:resume"): void {
   S.stage.quickMenu = true;
   S.stage.controlsOpen = false;
   S.stage.searchOpen = false;
+  S.stage.notifOpen = false;
   S.stage.focusKey = focusKey;
   scheduleRender();
 }
@@ -274,6 +282,7 @@ export function stageOpenQuickMenu(focusKey = "dock:resume"): void {
 export function stageToggleControls(): void {
   stageFeedback("select");
   S.stage.quickMenu = true;
+  S.stage.notifOpen = false;
   S.stage.controlsOpen = !S.stage.controlsOpen;
   S.stage.focusKey = S.stage.controlsOpen ? "controls:close" : "dock:controls";
   scheduleRender();
@@ -445,6 +454,7 @@ export function stageOpenSearch(): void {
   S.stage.searchOpen = true;
   S.stage.quickMenu = false;
   S.stage.controlsOpen = false;
+  S.stage.notifOpen = false;
   S.stage.browserOpen = false;
   S.stage.spotifyOpen = false;
   S.stage.discordOpen = false;
@@ -523,6 +533,41 @@ export function stageSearchSubmit(): void {
   stageFeedback("select");
   applySearchShelf();
   stageCloseSearch();
+}
+
+/** Stage's own notification list: one newest-first sheet, no tabs. */
+export function stageOpenNotifications(): void {
+  if (S.stage.notifOpen) return;
+  if (S.stage.launch || S.stage.launchError) return;
+  stageFeedback("select");
+  S.stage.notifOpen = true;
+  S.stage.quickMenu = false;
+  S.stage.controlsOpen = false;
+  S.stage.searchOpen = false;
+  S.stage.powerOpen = false;
+  S.stage.browserOpen = false;
+  S.stage.spotifyOpen = false;
+  S.stage.discordOpen = false;
+  // Opening the list is the console gesture that clears the badge.
+  markAllRead();
+  const first = S.notifications[0];
+  S.stage.focusKey = first ? `notif:${first.id}` : "notif:close";
+  scheduleRender();
+}
+
+export function stageCloseNotifications(): void {
+  if (!S.stage.notifOpen) return;
+  S.stage.notifOpen = false;
+  S.stage.focusKey = "top:notifications";
+  scheduleRender();
+}
+
+/** Clear the whole history from the couch; the sheet stays open on its empty state. */
+export function stageClearNotifications(): void {
+  stageFeedback("back");
+  clearNotifications();
+  S.stage.focusKey = "notif:close";
+  scheduleRender();
 }
 
 export function stageOpenDesktop(): void {

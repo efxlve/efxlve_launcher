@@ -21,7 +21,9 @@ import type {
 } from "../../core/types";
 import { esc, fmtBytes } from "../../core/utils";
 import { libraryItemOf, sourceOfKey } from "../../core/selectors";
-import { activateGamepadFocus, moveGamepadFocus, setGamepadFocus } from "../gamepad/gamepad";
+import { activateGamepadFocus, moveGamepadFocus, setGamepadFocus, stageControlKey } from "../gamepad/gamepad";
+import { unreadCount } from "../notifications/notifications";
+import { renderStageNotifications } from "./stage-notifications";
 import {
   stageAskDeleteAudio,
   stageBack,
@@ -32,8 +34,10 @@ import {
   stageClearCollection,
   stageClearCustomAmbience,
   stageClearGameTrack,
+  stageClearNotifications,
   stageCloseControls,
   stageCloseManage,
+  stageCloseNotifications,
   stageCloseStill,
   stageCloudBackup,
   stageConfirmDeleteAudio,
@@ -57,6 +61,7 @@ import {
   stageOpenDesktopSettings,
   stageOpenDesktopSettingsSection,
   stageOpenManage,
+  stageOpenNotifications,
   stageOpenProgram,
   stageOpenQuickMenu,
   stageDismissWelcome,
@@ -336,6 +341,11 @@ function stageLiveSignature(): string {
     S.stage.browserOpen ? "1" : "0",
     S.stage.spotifyOpen ? "1" : "0",
     S.stage.discordOpen ? "1" : "0",
+    S.stage.notifOpen ? "1" : "0",
+    String(S.notifications.length),
+    S.notifications[0]?.id ?? "",
+    S.notifications[0]?.read ? "1" : "0",
+    String(unreadCount()),
     S.stage.manageKey ?? "",
     S.stage.manageConfirmUninstall ? "1" : "0",
     S.stage.launch?.key ?? "",
@@ -670,6 +680,24 @@ function restoreFocus(layer: HTMLElement | null): void {
       target = null;
     }
   }
+  // The shell chrome is drawn outside the content container, but it belongs to
+  // the page layer. B on a sheet returns to the bell or the Menu pill there;
+  // with a sheet open the chrome is not marked, so it stays out of scope.
+  if (!target && key && layer.matches('[data-stage-layer="main"]')) {
+    try {
+      target = document.querySelector<HTMLElement>(
+        `#stage-root .stage-topbar [data-gp-key="${CSS.escape(key)}"]`,
+      );
+    } catch {
+      target = null;
+    }
+  }
+  // A control the markup did not key keeps a derived `ctl:` key. The first
+  // lookup only understands authored keys, so match the derived form too.
+  if (!target && key) {
+    target = Array.from(layer.querySelectorAll<HTMLElement>("[data-gp-item]"))
+      .find((el) => stageControlKey(el) === key) ?? null;
+  }
   if (!target) {
     const fallback = layer.querySelector<HTMLElement>("[data-gp-default]");
     target = fallback ? firstFocusable(fallback) : firstFocusable(layer);
@@ -695,6 +723,7 @@ function stageProfileChip(): string {
 
 function topbar(): string {
   const dl = stageActiveDownload();
+  const unread = unreadCount();
   const isKbd = stageInputMode === "keyboard" || stageInputMode === "mouse";
   const pad = S.stage.controllerConnected;
   const controllerBatteryPercent = S.stage.controllerBattery !== null && Number.isFinite(S.stage.controllerBattery) ? Math.round(S.stage.controllerBattery * 100) : null;
@@ -742,6 +771,10 @@ function topbar(): string {
       ${pad ? `<span class="stage-pad-status" title="${esc(t("stage.controllerBattery"))}">${icon("gamepad-2", 15)}${controllerBatteryPercent !== null ? `<span class="tabular-nums">${controllerBatteryPercent}%</span>` : ""}</span>` : ""}
       <span class="stage-clock tabular-nums"></span>
       ${stageProfileChip()}
+      <button type="button" class="stage-icon-pill stage-bell" data-stage-act="open-notifications" data-gp-item data-gp-key="top:notifications" aria-label="${esc(t("notif.title"))}">
+        ${icon("bell", 17)}
+        ${unread > 0 ? `<span class="stage-bell-dot tabular-nums">${unread > 9 ? "9+" : unread}</span>` : ""}
+      </button>
       <button type="button" class="stage-icon-pill" data-stage-act="open-menu" data-gp-item data-gp-key="top:menu" aria-label="${esc(t("stage.quickMenu"))}">${icon("dots", 18)}</button>
     </div>
   </header>`;
@@ -779,6 +812,12 @@ function hints(): string {
   }
   if (S.stage.controlsOpen) {
     return stageHintBar([
+      stageHint(face("b"), t("common.close")),
+    ]);
+  }
+  if (S.stage.notifOpen) {
+    return stageHintBar([
+      stageHint(face("a"), t("stage.select")),
       stageHint(face("b"), t("common.close")),
     ]);
   }
@@ -844,6 +883,7 @@ function hints(): string {
 
 function quickMenu(entered: boolean): string {
   const dl = stageActiveDownload();
+  const unread = unreadCount();
   const pad = S.stage.controllerConnected
     ? `${S.stage.controllerName || t("stage.controller")} · ${stageBatteryLabel()}`
     : t("stage.noController");
@@ -885,6 +925,11 @@ function quickMenu(entered: boolean): string {
         <button type="button" class="stage-dock-item" data-stage-act="controls" data-gp-item data-gp-key="dock:controls">
           <span class="stage-dock-icon">${icon("gamepad-2", 22)}</span>
           <span class="stage-dock-text">${esc(t("stage.controller"))}</span>
+        </button>
+        <button type="button" class="stage-dock-item" data-stage-act="open-notifications" data-gp-item data-gp-key="dock:notifications">
+          <span class="stage-dock-icon">${icon("bell", 22)}</span>
+          <span class="stage-dock-text">${esc(t("notif.title"))}</span>
+          ${unread > 0 ? `<span class="stage-dock-badge tabular-nums">${unread > 9 ? "9+" : unread}</span>` : ""}
         </button>
         <button type="button" class="stage-dock-item" data-stage-act="go" data-route="settings" data-gp-item data-gp-key="dock:settings">
           <span class="stage-dock-icon">${icon("sliders", 22)}</span>
@@ -1236,6 +1281,7 @@ export function renderStage(): void {
   if (search && searchEntered) {
     search = search.replace('class="stage-search"', 'class="stage-search stage-overlay-enter"');
   }
+  const notifications = S.stage.notifOpen ? renderStageNotifications() : "";
   const quick = S.stage.quickMenu ? quickMenu(quickEntered) : "";
   const controls = S.stage.controlsOpen ? controlsSheet(controlsEntered) : "";
   const manage = S.stage.manageKey ? stageManageSheet(S.stage.manageKey, manageEntered) : "";
@@ -1272,6 +1318,7 @@ export function renderStage(): void {
   ${controls}
   ${manage}
   ${search}
+  ${notifications}
   ${still}
   ${browser}
   ${spotify}
@@ -1311,7 +1358,9 @@ export function renderStage(): void {
                     ? ".stage-quick-menu"
                     : search
                       ? ".stage-search"
-                      : '[data-stage-layer="main"]';
+                      : notifications
+                        ? ".stage-notif-overlay"
+                        : '[data-stage-layer="main"]';
   const layer = root.querySelector<HTMLElement>(layerSelector);
   markFocusables(layer);
   // An install/manage dialog owns the focus while it is open. The Stage shell
@@ -1530,6 +1579,7 @@ function onStageKeydown(event: KeyboardEvent): void {
     S.stage.searchOpen ||
     S.stage.quickMenu ||
     S.stage.controlsOpen ||
+    S.stage.notifOpen ||
     S.stage.powerOpen ||
     S.stage.browserOpen ||
     S.stage.spotifyOpen ||
@@ -1719,6 +1769,11 @@ function bindStageEvents(root: HTMLElement): void {
       case "search-key": stageSearchKey(actionEl.dataset.key || ""); break;
       case "search-submit": stageSearchSubmit(); break;
       case "open-menu": stageOpenQuickMenu("dock:resume"); break;
+      case "open-notifications": stageOpenNotifications(); break;
+      case "notif-close": stageCloseNotifications(); break;
+      case "notif-clear": stageClearNotifications(); break;
+      case "notif-done": stageCloseNotifications(); break;
+      case "notif-desktop": stageOpenDesktop(); break;
       case "close-menu": stageFeedback("back"); S.stage.quickMenu = false; S.stage.controlsOpen = false; S.stage.focusKey = ""; scheduleRender(); break;
       case "open-power-sheet": stageOpenPowerSheet(); break;
       case "close-power-sheet": stageClosePowerSheet(); break;

@@ -1,0 +1,212 @@
+/* ==========================================================================
+   Stage notification sheet.
+
+   One newest-first list instead of the desktop's four tabs. The rows are the
+   same weight as a programme card: icon, headline, two clamped lines of body,
+   and the relative time. Everything uses the Stage tokens so the sheet reads
+   as part of the room, not as a desktop panel dropped on top of it.
+   ========================================================================== */
+
+.stage-bell {
+  position: relative;
+}
+
+.stage-bell-dot {
+  position: absolute;
+  inset-block-start: -3px;
+  inset-inline-end: -3px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 50%;
+  background: #e5484d;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+  box-shadow: 0 0 0 2px #08080a;
+  pointer-events: none;
+}
+
+.stage-notif-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.66);
+}
+
+.stage-notif-card {
+  width: min(720px, 92vw);
+}
+
+.stage-notif-card .stage-sheet-head {
+  margin-block-end: 14px;
+}
+
+.stage-notif-head-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.stage-notif-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 21px;
+  margin-inline-start: 10px;
+  padding: 0 7px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--stage-ink-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  vertical-align: 2px;
+}
+
+.stage-notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stage-notif-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+  padding: 13px 15px;
+  border: 1px solid var(--stage-line);
+  border-radius: var(--stage-radius);
+  background: var(--stage-surface);
+  color: var(--stage-ink);
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition:
+    background 160ms var(--stage-ease),
+    border-color 160ms var(--stage-ease);
+}
+
+.stage-notif-row:hover {
+  border-color: var(--stage-line-strong);
+  background: var(--stage-surface-2);
+}
+
+.stage-notif-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--stage-ink-2);
+}
+
+/* Colour means status, on the same palette the desktop centre uses. */
+.stage-notif-icon.kind-download,
+.stage-notif-icon.kind-update {
+  border-color: rgba(90, 140, 255, 0.28);
+  background: rgba(90, 140, 255, 0.14);
+  color: #7fb2ff;
+}
+
+.stage-notif-icon.kind-achievement {
+  border-color: rgba(255, 190, 70, 0.28);
+  background: rgba(255, 190, 70, 0.13);
+  color: #ffd166;
+}
+
+.stage-notif-icon.kind-error,
+.stage-notif-icon.kind-cloud-error {
+  border-color: rgba(229, 72, 77, 0.3);
+  background: rgba(229, 72, 77, 0.14);
+  color: #ff8a8f;
+}
+
+.stage-notif-icon.kind-cloud {
+  border-color: rgba(70, 210, 190, 0.28);
+  background: rgba(70, 210, 190, 0.13);
+  color: #6fe0c8;
+}
+
+.stage-notif-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.stage-notif-copy strong {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.stage-notif-body {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--stage-ink-2);
+  font-size: 12.5px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.stage-notif-meta {
+  color: var(--stage-ink-4);
+  font-size: 11px;
+}
+
+.stage-notif-chip {
+  flex: 0 0 auto;
+  align-self: center;
+  padding: 4px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  color: var(--stage-ink-2);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.stage-notif-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 38px 20px 30px;
+  color: var(--stage-ink-3);
+  text-align: center;
+}
+
+.stage-notif-empty p {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* The handheld pass keeps the same list, only the touch targets grow. */
+@media (max-width: 1366px), (max-height: 820px) {
+  .stage-notif-row {
+    gap: 12px;
+    padding: 15px 16px;
+  }
+
+  .stage-notif-copy strong {
+    font-size: 15px;
+  }
+
+  .stage-notif-body {
+    font-size: 13px;
+  }
+
+  .stage-notif-icon {
+    width: 44px;
+    height: 44px;
+  }
+}
