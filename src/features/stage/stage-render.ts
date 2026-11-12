@@ -1051,11 +1051,11 @@ function stageManageSheet(appName: string, entered: boolean): string {
           ${game.installPath ? `<span class="stage-confirm-path tabular-nums">${esc(game.installPath)}</span>` : ""}
         </div>
         <div class="stage-confirm-actions" data-gp-row>
-          <button type="button" class="stage-btn stage-btn-danger" data-stage-act="manage-confirm-uninstall" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:confirm-uninstall" data-gp-default>
+          <button type="button" class="stage-btn stage-btn-danger" data-stage-act="manage-confirm-uninstall" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:confirm-uninstall">
             ${icon("trash", 18)}
             <span>${esc(t("common.uninstall"))}</span>
           </button>
-          <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="manage-cancel-uninstall" data-gp-item data-gp-key="manage:cancel-uninstall">
+          <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="manage-cancel-uninstall" data-gp-item data-gp-key="manage:cancel-uninstall" data-gp-default>
             <span>${esc(t("common.cancel"))}</span>
           </button>
         </div>
@@ -1070,13 +1070,10 @@ function stageManageSheet(appName: string, entered: boolean): string {
           ${stageCoverMarkup(game)}
         </div>
         <div class="stage-manage-info">
-          <div class="stage-manage-badges">
-            <span class="stage-badge-store">${esc(stageStoreName(source))}</span>
-            <span class="stage-badge-status ${isInstalled ? "is-installed" : "is-not-installed"}">
-              <span class="stage-status-dot"></span>
-              ${esc(isInstalled ? t("common.installed") : t("common.notInstalled"))}
-            </span>
-            ${game.installSize > 0 ? `<span class="stage-badge-size tabular-nums">${esc(fmtBytes(game.installSize))}</span>` : ""}
+          <div class="stage-manage-badges stage-stat-row">
+            <span class="stage-stat">${icon("layers", 13)}<span>${esc(stageStoreName(source))}</span></span>
+            <span class="stage-stat"><i class="${isInstalled ? "is-ready" : "is-off"}" aria-hidden="true"></i><span>${esc(isInstalled ? t("common.installed") : t("common.notInstalled"))}</span></span>
+            ${game.installSize > 0 ? `<span class="stage-stat">${icon("package", 13)}<b class="tabular-nums">${esc(fmtBytes(game.installSize))}</b></span>` : ""}
           </div>
           <h2 class="stage-manage-title">${esc(game.title)}</h2>
           ${game.installPath ? `<div class="stage-manage-path tabular-nums">${icon("folder", 14)}<span>${esc(game.installPath)}</span></div>` : ""}
@@ -1086,7 +1083,7 @@ function stageManageSheet(appName: string, entered: boolean): string {
         </button>
       </div>
 
-      <div class="stage-manage-grid" data-gp-row>
+      <div class="stage-manage-grid">
         ${isInstalled ? `
           <button type="button" class="stage-manage-card stage-manage-card-highlight" data-stage-act="quick-play" data-key="${esc(game.appName)}" data-gp-item data-gp-key="manage:play" data-gp-default>
             <span class="stage-manage-card-icon is-play">${icon("play", 22)}</span>
@@ -1100,7 +1097,7 @@ function stageManageSheet(appName: string, entered: boolean): string {
             <span class="stage-manage-card-icon is-install">${icon("download", 22)}</span>
             <div class="stage-manage-card-text">
               <strong>${esc(t("common.install"))}</strong>
-              <span>${esc(t("stage.installFolder"))}</span>
+              <span>${esc(t("stage.notInstalled"))}</span>
             </div>
           </button>
         `}

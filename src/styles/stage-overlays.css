@@ -505,12 +505,18 @@
 .stage-manage-sheet {
   width: min(880px, 92vw);
   max-height: 88vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
   padding: 26px 32px 30px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 26px;
   background: linear-gradient(165deg, rgba(22, 28, 42, 0.94) 0%, rgba(10, 13, 20, 0.98) 100%);
   box-shadow: 0 32px 100px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08);
   animation: stage-dock-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.stage-manage-sheet::-webkit-scrollbar {
+  display: none;
 }
 
 .stage-manage-header {
@@ -543,55 +549,6 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-}
-
-.stage-manage-badges {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.stage-badge-store {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--stage-ink-2);
-}
-
-.stage-badge-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--stage-ink-3);
-}
-
-.stage-badge-status.is-installed {
-  color: #4ade80;
-}
-
-.stage-badge-status.is-installed .stage-status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 8px #22c55e;
-}
-
-.stage-badge-status.is-not-installed .stage-status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--stage-ink-4);
-}
-
-.stage-badge-size {
-  font-size: 11px;
-  color: var(--stage-ink-3);
-  font-weight: 500;
 }
 
 .stage-manage-title {

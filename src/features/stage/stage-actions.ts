@@ -665,7 +665,8 @@ export function stageManageShortcut(key?: string): void {
 export function stageManageAskUninstall(): void {
   stageFeedback("select");
   S.stage.manageConfirmUninstall = true;
-  S.stage.focusKey = "manage:confirm-uninstall";
+  // The safe choice owns the ring: a stray A press must not wipe the install.
+  S.stage.focusKey = "manage:cancel-uninstall";
   scheduleRender();
 }
 
