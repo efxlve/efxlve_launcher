@@ -357,6 +357,7 @@ function stageLiveSignature(): string {
     S.stage.manageConfirmUninstall ? "1" : "0",
     S.stage.launch?.key ?? "",
     S.stage.launchError,
+    S.stage.launchErrorKey,
     S.stage.controllerConnected ? "1" : "0",
     S.stage.controllerBattery ?? -1,
     [...S.runningGames].sort().join(","),
@@ -1066,12 +1067,16 @@ function curtain(entered: boolean): string {
 
 function launchError(entered: boolean): string {
   if (!S.stage.launchError) return "";
+  const game = S.stage.launchErrorKey ? stageGameByKey(S.stage.launchErrorKey) : undefined;
+  const store = game ? stageStoreName(sourceOfKey(game.appName)) : "";
   return `<div class="stage-overlay stage-error${entered ? " stage-overlay-enter" : ""}">
-    <div class="stage-error-card" role="alertdialog" aria-modal="true">
+    <div class="stage-error-card" role="alertdialog" aria-modal="true" aria-label="${esc(t("stage.launchFailed"))}">
       <span class="stage-error-icon">${icon("alert-triangle", 30)}</span>
       <span class="stage-kicker">${esc(t("stage.launchFailed"))}</span>
-      <h2>${esc(S.stage.launchError)}</h2>
-      <div class="stage-error-actions">
+      ${game ? `<h2>${esc(game.title)}</h2>` : ""}
+      <p class="stage-error-detail">${esc(S.stage.launchError)}</p>
+      ${store ? `<div class="stage-stat-row"><span class="stage-stat">${icon("layers", 13)}<span>${esc(store)}</span></span></div>` : ""}
+      <div class="stage-error-actions" data-gp-row>
         <button type="button" class="stage-btn stage-btn-primary" data-stage-act="retry" data-gp-item data-gp-key="error:retry" data-gp-default>${esc(t("stage.retry"))}</button>
         <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="desktop" data-gp-item data-gp-key="error:desktop">${esc(t("stage.openDesktop"))}</button>
         <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="close-error" data-gp-item data-gp-key="error:close">${esc(t("common.close"))}</button>
@@ -2022,8 +2027,16 @@ function bindStageEvents(root: HTMLElement): void {
         window.setTimeout(() => previewStageIdle(), 300);
         break;
       }
-      case "retry": S.stage.launchError = ""; stageLaunchGame(S.stage.gameKey || ""); break;
-      case "close-error": stageFeedback("back"); S.stage.launchError = ""; scheduleRender(); break;
+      case "retry": {
+        // Retry the game that failed, even when the player hit Play from Home
+        // and the program route still points at another title.
+        const failed = S.stage.launchErrorKey || S.stage.gameKey || "";
+        S.stage.launchError = "";
+        S.stage.launchErrorKey = "";
+        stageLaunchGame(failed);
+        break;
+      }
+      case "close-error": stageFeedback("back"); S.stage.launchError = ""; S.stage.launchErrorKey = ""; scheduleRender(); break;
       case "skip-launch": stageSkipLaunchCurtain(); break;
       default: break;
     }

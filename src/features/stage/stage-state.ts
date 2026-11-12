@@ -131,6 +131,7 @@ export async function enterStage(opts: { route?: StageRoute; gameKey?: string } 
   S.stage.manageConfirmUninstall = false;
   S.stage.launch = null;
   S.stage.launchError = "";
+  S.stage.launchErrorKey = "";
   // Presentation flags are owned by the Stage chunk; the state is reset here
   // so a re-entry never flashes the previous session's idle frame.
   S.stage.intro = false;
@@ -177,6 +178,7 @@ export function exitStage(): void {
   S.stage.manageConfirmUninstall = false;
   S.stage.launch = null;
   S.stage.launchError = "";
+  S.stage.launchErrorKey = "";
   S.stage.intro = false;
   S.stage.idle = false;
   S.stage.focusKey = "";

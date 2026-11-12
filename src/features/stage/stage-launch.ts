@@ -50,6 +50,7 @@ export function stageLaunchGame(key: string): void {
     art: stageWideArt(summary),
   };
   S.stage.launchError = "";
+  S.stage.launchErrorKey = "";
   S.stage.quickMenu = false;
   S.stage.searchOpen = false;
   scheduleRender();
@@ -67,7 +68,7 @@ export function stageLaunchGame(key: string): void {
       scheduleRender();
     } catch (error) {
       if (token !== launchToken) return;
-      stageLaunchFailed(String(error));
+      stageLaunchFailed(String(error), summary.appName);
     } finally {
       launchInFlight = false;
     }
@@ -86,11 +87,12 @@ export function stageSkipLaunchCurtain(): void {
 }
 
 /** A failed launch is reported in place; the curtain never hides the error. */
-export function stageLaunchFailed(message: string): void {
+export function stageLaunchFailed(message: string, key?: string): void {
   launchToken++;
   stageFeedback("error");
   duckStageAmbience(false);
   S.stage.launch = null;
   S.stage.launchError = message;
+  S.stage.launchErrorKey = key || S.stage.launchErrorKey;
   scheduleRender();
 }

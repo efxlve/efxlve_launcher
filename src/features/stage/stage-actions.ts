@@ -167,6 +167,7 @@ export function stageBack(): void {
   if (S.stage.launchError) {
     stageFeedback("back");
     S.stage.launchError = "";
+    S.stage.launchErrorKey = "";
     scheduleRender();
     return;
   }

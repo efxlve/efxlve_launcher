@@ -1115,6 +1115,8 @@ export const S = {
     manageConfirmUninstall: false,
     launch: (null) as { key: string; title: string; art: string | null } | null,
     launchError: "",
+    /** Which game failed, so the error card can name it and Retry has a target. */
+    launchErrorKey: "",
     returnView: ("library") as View,
     returnScroll: 0,
     wasFullscreen: false,
