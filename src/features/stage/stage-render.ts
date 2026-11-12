@@ -974,7 +974,7 @@ function quickMenu(entered: boolean): string {
       </div>
       <div class="stage-dock-items">
         ${runningGame ? `
-          <button type="button" class="stage-dock-item stage-dock-resume" data-stage-act="open-program" data-key="${esc(runningGame.appName)}" data-gp-item data-gp-key="dock:resume" data-gp-default>
+          <button type="button" class="stage-dock-item stage-dock-resume" data-stage-act="open-program" data-key="${esc(runningGame.appName)}" data-gp-item data-gp-key="dock:resume" data-gp-row data-gp-default>
             <span class="stage-dock-icon is-running">${icon("play", 22)}</span>
             <div class="stage-dock-resume-text">
               <strong>${esc(t("stage.continue"))}: ${esc(runningGame.title)}</strong>

@@ -82,6 +82,16 @@
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.6) !important;
 }
 
+/* The resume banner spans the dock's full width; the shared lift would grow it
+   past the panel padding and blur the row above. It keeps a flat green ring. */
+#stage-root .stage-dock-resume.gp-focused {
+  transform: none !important;
+  border-color: rgba(34, 197, 94, 0.9) !important;
+  box-shadow:
+    0 0 0 2px rgba(34, 197, 94, 0.55),
+    0 0 22px rgba(34, 197, 94, 0.28) !important;
+}
+
 #stage-root .stage-cover-card.gp-focused {
   outline: none !important;
   /* The frame owns the shadow. The generic focus shadow would also paint

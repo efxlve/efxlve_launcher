@@ -216,7 +216,8 @@ export function stageBack(): void {
   }
   if (S.stage.quickMenu) {
     S.stage.quickMenu = false;
-    S.stage.focusKey = "";
+    // The dock is a topbar sheet: the ring goes back to the menu button.
+    S.stage.focusKey = "top:menu";
     scheduleRender();
     return;
   }

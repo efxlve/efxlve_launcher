@@ -122,10 +122,16 @@
   position: absolute;
   top: 6px;
   right: 8px;
-  font-size: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 10px;
   font-weight: 800;
-  padding: 2px 5px;
-  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+  border-radius: 5px;
   background: #3b82f6;
   color: #fff;
 }

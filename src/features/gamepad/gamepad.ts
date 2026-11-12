@@ -677,6 +677,32 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
     stageBridge()?.bump?.(dir);
     return;
   }
+  // The quick-menu grid: Left/Right walks the tile rows only. The resume
+  // banner is a full-width row above them, and its centre sits close enough to
+  // the middle tiles that the generic scan would climb into it.
+  const dockItem = origin.closest<HTMLElement>(".stage-dock-items .stage-dock-item:not(.stage-dock-resume)");
+  if (S.stage.active && dockItem && (dir === "left" || dir === "right")) {
+    const tiles = candidates.filter(
+      (el) => el.closest(".stage-dock-items") && !el.closest(".stage-dock-resume"),
+    );
+    const best = scan(tiles);
+    if (best) {
+      setFocus(best);
+      return;
+    }
+    stageBridge()?.bump?.(dir);
+    return;
+  }
+  // The resume banner spans the whole dock. Down enters the tile
+  // grid at its first cell instead of the column that happens to sit under the
+  // banner's centre; Left/Right bump because the banner is a row of its own.
+  if (S.stage.active && dir === "down" && origin.closest(".stage-dock-resume")) {
+    const firstDock = document.querySelector<HTMLElement>('.stage-dock-items [data-gp-key="dock:home"]');
+    if (firstDock && isVisibleEl(firstDock)) {
+      setFocus(firstDock);
+      return;
+    }
+  }
   // The library tools wrap; left/right walks the tool set and bumps at the end
   // instead of jumping to the topbar or the side stage.
   const libraryTools = origin.closest<HTMLElement>(".stage-library-tools");
