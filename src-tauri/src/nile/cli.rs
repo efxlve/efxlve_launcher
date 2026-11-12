@@ -66,7 +66,8 @@ pub async fn run(app: &AppHandle, args: &[&str], timeout_secs: u64) -> Result<Ou
     cmd.args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+        .stderr(Stdio::piped())
+        .kill_on_drop(true);
 
     tokio::time::timeout(Duration::from_secs(timeout_secs), cmd.output())
         .await
@@ -89,7 +90,8 @@ pub async fn run_streaming(
     cmd.args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+        .stderr(Stdio::piped())
+        .kill_on_drop(true);
     // Install, update and verify all download through Nile's requests workers.
     crate::download_limit::configure_child(&mut cmd);
     let mut child = cmd.spawn().map_err(|e| format!("Nile could not run: {e}"))?;
