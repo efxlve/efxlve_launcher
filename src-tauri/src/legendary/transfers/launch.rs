@@ -770,6 +770,71 @@ pub fn epic_launch_support(app_name: String) -> EpicLaunchSupport {
     }
 }
 
+/// The Epic Games Launcher starts the manual `EpicOnlineServices` service
+/// before a title. A direct legendary launch must do the same: with the service
+/// stopped, Fortnite's social/party interfaces fail on the first session and
+/// only recover after the game or a later launch brings the service up.
+async fn ensure_eos_service() {
+    #[cfg(windows)]
+    {
+        let _ = tokio::task::spawn_blocking(ensure_eos_service_blocking).await;
+    }
+}
+
+#[cfg(windows)]
+fn ensure_eos_service_blocking() {
+    use windows::core::PCWSTR;
+    use windows::Win32::System::Services::{
+        CloseServiceHandle, OpenSCManagerW, OpenServiceW, QueryServiceStatus, StartServiceW,
+        SC_MANAGER_CONNECT, SERVICE_QUERY_STATUS, SERVICE_RUNNING, SERVICE_START,
+        SERVICE_START_PENDING, SERVICE_STATUS, SERVICE_STOPPED,
+    };
+
+    let name: Vec<u16> = "EpicOnlineServices\0".encode_utf16().collect();
+    unsafe {
+        let Ok(manager) = OpenSCManagerW(PCWSTR::null(), PCWSTR::null(), SC_MANAGER_CONNECT) else {
+            return;
+        };
+        let service = OpenServiceW(
+            manager,
+            PCWSTR(name.as_ptr()),
+            SERVICE_QUERY_STATUS | SERVICE_START,
+        );
+        let Ok(service) = service else {
+            let _ = CloseServiceHandle(manager);
+            return;
+        };
+        let mut status = SERVICE_STATUS::default();
+        if QueryServiceStatus(service, &mut status).is_err() {
+            let _ = CloseServiceHandle(service);
+            let _ = CloseServiceHandle(manager);
+            return;
+        }
+        if status.dwCurrentState == SERVICE_STOPPED {
+            let _ = StartServiceW(service, None);
+        }
+        if status.dwCurrentState != SERVICE_RUNNING {
+            // A cold start took under two seconds on the field machine; the
+            // cap keeps a broken service from blocking the game forever.
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(4);
+            while std::time::Instant::now() < deadline {
+                std::thread::sleep(std::time::Duration::from_millis(150));
+                if QueryServiceStatus(service, &mut status).is_err() {
+                    break;
+                }
+                if status.dwCurrentState == SERVICE_RUNNING {
+                    break;
+                }
+                if status.dwCurrentState != SERVICE_START_PENDING {
+                    break;
+                }
+            }
+        }
+        let _ = CloseServiceHandle(service);
+        let _ = CloseServiceHandle(manager);
+    }
+}
+
 pub(super) async fn spawn_launched(
     app: &AppHandle,
     bin: &PathBuf,
@@ -888,6 +953,9 @@ pub(super) async fn spawn_launched(
         .stderr(Stdio::null());
     #[cfg(windows)]
     cmd.creation_flags(CREATE_NO_WINDOW);
+    if epic_handoff.is_none() && !extra_args.contains(&"--offline") {
+        ensure_eos_service().await;
+    }
     let mut child = cmd.spawn().map_err(|e| e.to_string())?;
 
     let install_path: Option<PathBuf> = installed_entry
