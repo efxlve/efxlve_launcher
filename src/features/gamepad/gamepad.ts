@@ -642,6 +642,19 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
   }
 
   let bestEl: HTMLElement | null = null;
+  // A test strip is one row of paired actions; left/right stays inside it even
+  // when a volume pill above sits closer horizontally.
+  const testStrip = origin.closest(".stage-settings-test");
+  if (S.stage.active && testStrip && (dir === "left" || dir === "right")) {
+    const stripCandidates = candidates.filter((el) => el.closest(".stage-settings-test") === testStrip);
+    const best = scan(stripCandidates);
+    if (best) {
+      setFocus(best);
+      return;
+    }
+    stageBridge()?.bump?.(dir);
+    return;
+  }
   if (fromRegion) {
     for (const region of regionOrder(fromRegion, dir)) {
       bestEl = scan(candidates.filter((el) => focusRegionOf(el) === region));

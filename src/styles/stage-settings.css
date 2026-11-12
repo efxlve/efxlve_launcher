@@ -300,7 +300,9 @@
 }
 .stage-settings-test-pair {
   display: flex;
+  flex: 1 1 260px;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   min-width: 0;
 }
