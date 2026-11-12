@@ -46,17 +46,21 @@
   margin-block-end: 12px;
   padding-inline: 4px;
 }
+.stage-dock-head .stage-stat {
+  max-width: 60%;
+  min-width: 0;
+}
+.stage-dock-head .stage-stat > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .stage-dock-kicker {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--stage-ink-3);
-}
-
-.stage-dock-status {
-  font-size: 11px;
   color: var(--stage-ink-3);
 }
 

@@ -952,6 +952,12 @@ body.stage-mode #toasts {
   border-radius: 50%;
   background: var(--stage-ink-4);
 }
+.stage-stat i.is-ready {
+  background: #4ade80;
+}
+.stage-stat i.is-off {
+  background: var(--stage-ink-4);
+}
 .stage-stat b {
   color: var(--stage-ink-2);
   font-weight: 650;

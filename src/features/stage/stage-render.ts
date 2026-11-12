@@ -179,7 +179,6 @@ import "./stage-input";
 import { previewStageSound, stageFeedback } from "./stage-sound";
 import {
   stageActiveDownload,
-  stageBatteryLabel,
   stageBumperGlyphs,
   stageFaceGlyph,
   stageHint,
@@ -871,16 +870,17 @@ function hints(): string {
 function quickMenu(entered: boolean): string {
   const dl = stageActiveDownload();
   const unread = unreadCount();
-  const pad = S.stage.controllerConnected
-    ? `${S.stage.controllerName || t("stage.controller")} · ${stageBatteryLabel()}`
-    : t("stage.noController");
+  const batteryPct = S.stage.controllerBattery !== null && Number.isFinite(S.stage.controllerBattery)
+    ? Math.round(S.stage.controllerBattery * 100)
+    : null;
+  const padChip = `<span class="stage-stat">${icon("gamepad-2", 13)}<i class="${S.stage.controllerConnected ? "is-ready" : "is-off"}" aria-hidden="true"></i><span>${esc(S.stage.controllerConnected ? (S.stage.controllerName || t("stage.controller")) : t("stage.noController"))}</span>${S.stage.controllerConnected && batteryPct !== null ? `<b class="tabular-nums">${batteryPct}%</b>` : ""}</span>`;
   const runningAppName = Array.from(S.runningGames)[0];
   const runningGame = runningAppName ? stageGameByKey(runningAppName) : null;
   return `<div class="stage-overlay stage-quick-menu${entered ? " stage-overlay-enter" : ""}">
     <div class="stage-dock-panel" role="dialog" aria-modal="true" aria-label="${esc(t("stage.quickMenu"))}">
       <div class="stage-dock-head">
         <span class="stage-dock-kicker">${esc(t("stage.quickMenu"))}</span>
-        <span class="stage-dock-status tabular-nums">${esc(pad)}</span>
+        ${padChip}
       </div>
       <div class="stage-dock-items">
         ${runningGame ? `
