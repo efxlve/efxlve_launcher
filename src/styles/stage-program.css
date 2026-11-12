@@ -617,6 +617,11 @@
   color: var(--stage-ink-4);
   font-size: 11px;
 }
+.stage-extra-count-chip {
+  height: 24px;
+  padding: 0 9px;
+  font-size: 10.5px;
+}
 .stage-extra-empty {
   padding: 14px 16px;
   border: 1px solid var(--stage-line);
@@ -914,9 +919,31 @@
 .stage-download-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px 13px;
-  color: var(--stage-ink-4);
+  align-items: center;
+  gap: 6px 10px;
+  color: var(--stage-ink-3);
   font-size: 10.5px;
+}
+/* Amber is the updating status, grey the paused one. */
+.stage-download-state {
+  height: 22px;
+  padding: 0 8px;
+  gap: 5px;
+  font-size: 10px;
+  color: #f0c778;
+  border-color: rgba(224, 163, 46, 0.3);
+}
+.stage-download-state.is-paused {
+  color: var(--stage-ink-3);
+  border-color: var(--stage-line);
+}
+.stage-download-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--stage-ink-3);
+  font-size: 10.5px;
+  white-space: nowrap;
 }
 .stage-download-actions {
   display: flex;
@@ -981,6 +1008,13 @@
 .stage-queue-copy small {
   color: var(--stage-ink-4);
   font-size: 10px;
+}
+.stage-queue-state {
+  align-self: flex-start;
+  height: 20px;
+  padding: 0 7px;
+  gap: 4px;
+  font-size: 9.5px;
 }
 .stage-queue-actions {
   display: flex;

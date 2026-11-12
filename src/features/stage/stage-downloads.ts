@@ -31,17 +31,17 @@ function downloadRow(id: string, title: string, progress: number): string {
       </div>
       ${stageProgress(percent, paused ? "stage-progress-paused" : "", `data-stage-dl-bar="${esc(id)}"`)}
       <div class="stage-download-meta">
-        <span>${esc(paused ? t("dl.statusPaused") : t("dl.statusActive"))}</span>
-        ${speed ? `<span data-stage-dl-speed="${esc(id)}">${esc(speed)}</span>` : ""}
-        ${eta ? `<span data-stage-dl-eta="${esc(id)}">${esc(eta)}</span>` : ""}
-        ${size ? `<span class="tabular-nums" data-stage-dl-size="${esc(id)}">${esc(size)}</span>` : ""}
+        <span class="stage-stat stage-download-state${paused ? " is-paused" : ""}">${icon(paused ? "pause" : "download", 12)}<span>${esc(paused ? t("dl.statusPaused") : t("dl.statusActive"))}</span></span>
+        ${speed ? `<span class="stage-download-fact" data-stage-dl-speed="${esc(id)}">${icon("zap", 12)}<span>${esc(speed)}</span></span>` : ""}
+        ${eta ? `<span class="stage-download-fact" data-stage-dl-eta="${esc(id)}">${icon("timer", 12)}<span>${esc(eta)}</span></span>` : ""}
+        ${size ? `<span class="stage-download-fact tabular-nums" data-stage-dl-size="${esc(id)}">${icon("hard-drive", 12)}<span>${esc(size)}</span></span>` : ""}
       </div>
     </div>
-    <div class="stage-download-actions">
+    <div class="stage-download-actions" data-gp-row>
       ${amazon ? "" : paused
-        ? `<button type="button" class="stage-btn stage-btn-ghost" data-act="dl-resume" data-id="${esc(id)}">${icon("play", 16)}<span>${esc(t("downloads.resume"))}</span></button>`
-        : `<button type="button" class="stage-btn stage-btn-ghost" data-act="dl-pause" data-id="${esc(id)}">${icon("pause", 16)}<span>${esc(t("downloads.pause"))}</span></button>`}
-      ${amazon ? "" : `<button type="button" class="stage-icon-btn stage-icon-danger" data-act="epic-cancel" data-id="${esc(id)}" aria-label="${esc(t("common.cancel"))}">${icon("x", 18)}</button>`}
+        ? `<button type="button" class="stage-btn stage-btn-ghost" data-act="dl-resume" data-id="${esc(id)}" data-gp-item data-gp-key="dl:toggle:${esc(id)}">${icon("play", 16)}<span>${esc(t("downloads.resume"))}</span></button>`
+        : `<button type="button" class="stage-btn stage-btn-ghost" data-act="dl-pause" data-id="${esc(id)}" data-gp-item data-gp-key="dl:toggle:${esc(id)}">${icon("pause", 16)}<span>${esc(t("downloads.pause"))}</span></button>`}
+      ${amazon ? "" : `<button type="button" class="stage-icon-btn stage-icon-danger" data-act="epic-cancel" data-id="${esc(id)}" data-gp-item data-gp-key="dl:cancel:${esc(id)}" aria-label="${esc(t("common.cancel"))}">${icon("x", 18)}</button>`}
     </div>
   </div>`;
 }
@@ -82,13 +82,13 @@ function queueRow(id: string, index: number, total: number): string {
     <span class="stage-queue-index tabular-nums">${index + 1}</span>
     <span class="stage-queue-copy">
       <strong>${esc(summary?.title || id)}</strong>
-      <small>${esc(t("stage.queueWaiting"))}</small>
+      <span class="stage-stat stage-queue-state">${icon("clock", 12)}<span>${esc(t("stage.queueWaiting"))}</span></span>
     </span>
-    <span class="stage-queue-actions">
-      <button type="button" class="stage-icon-btn" data-act="dl-reorder-up" data-id="${esc(id)}" ${index === 0 ? "disabled" : ""} aria-label="${esc(t("dl.moveUp"))}">${icon("chevron-up", 16)}</button>
-      <button type="button" class="stage-icon-btn" data-act="dl-reorder-down" data-id="${esc(id)}" ${index === total - 1 ? "disabled" : ""} aria-label="${esc(t("dl.moveDown"))}">${icon("chevron-down", 16)}</button>
-      <button type="button" class="stage-btn stage-btn-ghost" data-act="dl-reorder-now" data-id="${esc(id)}">${icon("play", 14)}<span>${esc(t("dl.downloadNow"))}</span></button>
-      <button type="button" class="stage-icon-btn stage-icon-danger" data-act="dl-reorder-remove" data-id="${esc(id)}" aria-label="${esc(t("dl.removeFromQueue"))}">${icon("x", 16)}</button>
+    <span class="stage-queue-actions" data-gp-row>
+      <button type="button" class="stage-icon-btn" data-act="dl-reorder-up" data-id="${esc(id)}" data-gp-item data-gp-key="dl:up:${esc(id)}" ${index === 0 ? "disabled" : ""} aria-label="${esc(t("dl.moveUp"))}">${icon("chevron-up", 16)}</button>
+      <button type="button" class="stage-icon-btn" data-act="dl-reorder-down" data-id="${esc(id)}" data-gp-item data-gp-key="dl:down:${esc(id)}" ${index === total - 1 ? "disabled" : ""} aria-label="${esc(t("dl.moveDown"))}">${icon("chevron-down", 16)}</button>
+      <button type="button" class="stage-btn stage-btn-ghost" data-act="dl-reorder-now" data-id="${esc(id)}" data-gp-item data-gp-key="dl:now:${esc(id)}">${icon("play", 14)}<span>${esc(t("dl.downloadNow"))}</span></button>
+      <button type="button" class="stage-icon-btn stage-icon-danger" data-act="dl-reorder-remove" data-id="${esc(id)}" data-gp-item data-gp-key="dl:remove:${esc(id)}" aria-label="${esc(t("dl.removeFromQueue"))}">${icon("x", 16)}</button>
     </span>
   </div>`;
 }
@@ -112,7 +112,10 @@ export function patchStageDownloads(): void {
     const speed = metrics.speed || (metrics.speedBytes > 0 ? fmtSpeed(metrics.speedBytes) : "");
     const setText = (name: string, value: string): void => {
       const el = document.querySelector<HTMLElement>(`[data-stage-dl-${name}="${selector}"]`);
-      if (el && value) el.textContent = value;
+      if (!el || !value) return;
+      // The fact keeps its icon; only the text span updates in place.
+      const target = el.querySelector<HTMLElement>("span") ?? el;
+      if (target.textContent !== value) target.textContent = value;
     };
     setText("speed", speed);
     setText("eta", metrics.eta || "");
@@ -148,14 +151,14 @@ export function renderStageDownloads(): string {
   );
   const updatesHtml = updates.length > 0
     ? `<section class="stage-updates-section">
-        <div class="stage-extra-section-head"><span class="stage-kicker">${esc(t("stage.filterUpdates"))}</span><span class="stage-extra-count tabular-nums">${updates.length}</span></div>
+        <div class="stage-extra-section-head"><span class="stage-kicker">${esc(t("stage.filterUpdates"))}</span><span class="stage-stat stage-extra-count-chip"><b class="tabular-nums">${updates.length}</b></span></div>
         <div class="stage-download-list">${updates.map(updateRow).join("")}</div>
       </section>`
     : "";
 
   const queueHtml = queue.length > 0
     ? `<section class="stage-queue-section">
-        <div class="stage-extra-section-head"><span class="stage-kicker">${esc(t("stage.queue"))}</span><span class="stage-extra-count tabular-nums">${queue.length}</span></div>
+        <div class="stage-extra-section-head"><span class="stage-kicker">${esc(t("stage.queue"))}</span><span class="stage-stat stage-extra-count-chip"><b class="tabular-nums">${queue.length}</b></span></div>
         <div class="stage-queue-list">${queue.map((id, index) => queueRow(id, index, queue.length)).join("")}</div>
       </section>`
     : "";
