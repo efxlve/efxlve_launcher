@@ -1112,7 +1112,22 @@
 .stage-notes-panel {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
+}
+.stage-notes-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.stage-notes-head .stage-stat {
+  max-width: 100%;
+}
+.stage-notes-head .stage-stat > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .stage-notes-grid {

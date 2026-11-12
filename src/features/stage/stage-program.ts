@@ -9,7 +9,7 @@ import { scheduleRender } from "../../core/render";
 import { libraryItemOf, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import type { StageProgramTab } from "../../core/types";
-import { esc, fmtAchDate, fmtBytes } from "../../core/utils";
+import { esc, fmtAchDate, fmtBytes, relativeTime } from "../../core/utils";
 import { epicGetCritic, epicGetHltb } from "../../epic-commands";
 import { currentLanguage, t } from "../../i18n";
 import type { EpicSummary } from "../../epic";
@@ -386,7 +386,14 @@ function notesTab(game: EpicSummary): string {
   }
 
   return `<div class="stage-notes-panel">
-    <div class="stage-notes-grid" data-gp-row>
+    <div class="stage-notes-head">
+      <span class="stage-kicker">${esc(t("drawer.notes"))}</span>
+      <div class="stage-stat-row">
+        <span class="stage-stat">${icon("edit", 13)}<span>${esc(t("drawer.notes"))}</span><b class="tabular-nums">${notes.length}</b></span>
+        <span class="stage-stat">${icon("gamepad-2", 13)}<span>${esc(game.title)}</span></span>
+      </div>
+    </div>
+    <div class="stage-notes-grid">
       ${notes.map((note, index) => `
         <div class="stage-note-card${note.pinned ? " is-pinned" : ""}" data-gp-item data-gp-key="note:${index}">
           <div class="stage-note-head">
@@ -396,6 +403,9 @@ function notesTab(game: EpicSummary): string {
           </div>
           <div class="stage-note-body">
             ${renderMarkdownLite(note.body, note.images || []).html}
+          </div>
+          <div class="stage-stat-row">
+            <span class="stage-stat">${icon("clock", 13)}<span>${esc(relativeTime(note.updated))}</span></span>
           </div>
         </div>
       `).join("")}
