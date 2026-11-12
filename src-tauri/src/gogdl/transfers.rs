@@ -204,12 +204,20 @@ fn parse_progress(line: &str) -> Option<i32> {
     Some((parse_progress_value(line)?.round() as i32).clamp(0, 100))
 }
 
-/// Bytes already written, from the `written/total` pair after the percentage.
-fn parse_written_bytes(line: &str) -> Option<u64> {
+/// Written and total bytes from the `written/total` pair after the percentage.
+fn parse_progress_sizes(line: &str) -> Option<(u64, u64)> {
     let idx = line.find("Progress:")? + "Progress:".len();
     let sizes = line[idx..].split_whitespace().nth(1)?;
-    let (done, _total) = sizes.split_once('/')?;
-    done.trim().trim_end_matches(',').parse().ok()
+    let (done, total) = sizes.split_once('/')?;
+    Some((
+        done.trim().trim_end_matches(',').parse().ok()?,
+        total.trim().trim_end_matches(',').parse().ok()?,
+    ))
+}
+
+/// Bytes already written, used to tell movement from a repeated progress line.
+fn parse_written_bytes(line: &str) -> Option<u64> {
+    parse_progress_sizes(line).map(|(done, _)| done)
 }
 
 /// Parses ETA string from `ETA: 00:02:30` lines.
@@ -531,6 +539,8 @@ pub async fn gog_install_game(
         let mut current_disk_speed = "0 B/s".to_string();
         let mut current_disk_bytes = 0u64;
         let mut current_eta = "--".to_string();
+        let mut current_downloaded: Option<u64> = None;
+        let mut current_total: Option<u64> = None;
         // Progress lines churn once a second; keep the last few informative
         // lines so a failure can name its cause instead of an exit code.
         let mut tail: VecDeque<String> = VecDeque::with_capacity(40);
@@ -582,7 +592,10 @@ pub async fn gog_install_game(
                 // are stuck, so movement means either the fraction or the
                 // written byte count changed.
                 if let Some(pct) = parse_progress_value(&line) {
-                    let bytes = parse_written_bytes(&line);
+                    let sizes = parse_progress_sizes(&line);
+                    let bytes = sizes.map(|(done, _)| done);
+                    current_downloaded = sizes.map(|(done, _)| done);
+                    current_total = sizes.map(|(_, total)| total);
                     let moved = last_pct.is_none()
                         || last_pct != Some(pct)
                         || last_bytes.is_some_and(|prev| bytes.is_some_and(|b| b != prev));
@@ -646,8 +659,8 @@ pub async fn gog_install_game(
                             disk_speed: current_disk_speed.clone(),
                             disk_bytes: current_disk_bytes,
                             eta: current_eta.clone(),
-                            downloaded_bytes: None,
-                            total_bytes: None,
+                            downloaded_bytes: current_downloaded,
+                            total_bytes: current_total,
                         },
                     );
                 }
@@ -1295,6 +1308,7 @@ mod tests {
         // The watchdog compares the unrounded fraction and the byte counter.
         let line = "INFO [PROGRESS]:\t = Progress: 42.13 123456/456789, Running for: 00:01:23";
         assert_eq!(parse_progress_value(line), Some(42.13));
+        assert_eq!(parse_progress_sizes(line), Some((123_456, 456_789)));
         assert_eq!(parse_written_bytes(line), Some(123_456));
         assert_eq!(
             parse_written_bytes("[Progress] = Progress: 42.13% (123/456)"),
