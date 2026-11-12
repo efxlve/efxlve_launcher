@@ -701,10 +701,19 @@ function markFocusables(layer: HTMLElement | null): void {
   const target = overlay ?? layer;
   root.querySelectorAll<HTMLElement>("[data-gp-item]").forEach((el) => el.removeAttribute("data-gp-item"));
   if (!target) return;
-  target.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled])").forEach((el) => {
-    if (el.closest("[data-gp-skip]")) return;
-    el.setAttribute("data-gp-item", "");
-  });
+  const mark = (container: HTMLElement): void => {
+    container.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled])").forEach((el) => {
+      if (el.closest("[data-gp-skip]")) return;
+      el.setAttribute("data-gp-item", "");
+    });
+  };
+  mark(target);
+  // The shell chrome is drawn outside the content container but belongs to the
+  // page layer; without this the topbar is unreachable with the D-pad.
+  if (target.matches('[data-stage-layer="main"]')) {
+    const topbar = root.querySelector<HTMLElement>(".stage-topbar");
+    if (topbar) mark(topbar);
+  }
 }
 
 /**
@@ -808,7 +817,7 @@ function topbar(): string {
   // the right. The browser, music, Discord and power panels live one press
   // away in the Quick menu instead of six equal circles competing with the
   // shelf for the same 40 pixels.
-  return `<header class="stage-topbar">
+  return `<header class="stage-topbar" data-gp-row>
     <div class="stage-topbar-left">
       <div class="stage-brand">
         <span class="stage-brand-name">EFXLVE</span>
@@ -830,7 +839,7 @@ function topbar(): string {
       </button>
       ${dl ? `<button type="button" class="stage-top-download" data-stage-act="go" data-route="downloads" data-gp-item data-gp-key="top:downloads">${icon("download", 15)}<span class="tabular-nums">${Math.round(dl.percent)}%</span><i style="width:${Math.max(2, Math.min(100, dl.percent))}%"></i></button>` : ""}
       ${S.stage.ambience && S.stage.ambienceVolume > 0 ? `<span class="stage-ambient-status" title="${esc(t("stage.ambience"))}" aria-hidden="true">${icon("music", 13)}<span class="stage-ambient-bars"><i></i><i></i><i></i><i></i></span></span>` : ""}
-      <span class="stage-net ${online ? "is-online" : "is-offline"}"><span class="stage-net-dot"></span><span class="stage-net-label">${esc(online ? t("nav.online") : t("nav.offline"))}</span></span>
+      <span class="stage-net ${online ? "is-online" : "is-offline"}" role="img" aria-label="${esc(online ? t("nav.online") : t("nav.offline"))}" title="${esc(online ? t("nav.online") : t("nav.offline"))}"><span class="stage-net-dot"></span><span class="stage-net-label">${esc(online ? t("nav.online") : t("nav.offline"))}</span></span>
       ${stageBatteryMarkup()}
       ${pad ? `<span class="stage-pad-status" title="${esc(t("stage.controllerBattery"))}">${icon("gamepad-2", 15)}${controllerBatteryPercent !== null ? `<span class="tabular-nums">${controllerBatteryPercent}%</span>` : ""}</span>` : ""}
       <span class="stage-clock tabular-nums"></span>

@@ -489,7 +489,8 @@ export function stageOpenSearch(): void {
 export function stageCloseSearch(): void {
   if (!S.stage.searchOpen) return;
   S.stage.searchOpen = false;
-  S.stage.focusKey = "";
+  // Search is a topbar sheet: the ring goes back to the icon that opened it.
+  S.stage.focusKey = "top:search";
   scheduleRender();
 }
 
