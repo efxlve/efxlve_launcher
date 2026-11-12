@@ -274,21 +274,16 @@ fn a_download_log_records_the_result_and_tail() {
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("download.log");
-    let lines = std::collections::VecDeque::from([
+    let lines = vec![
         "preparing download".to_string(),
         "[FileWorker] ERROR: sample".to_string(),
-    ]);
-    append_download_log(&path, "Fortnite", &Err("@t:dl.stalled".into()), &lines);
+    ];
+    crate::download_log::append_to(&path, "Fortnite", &Err("@t:dl.stalled".into()), &lines);
     let text = std::fs::read_to_string(&path).unwrap();
     assert!(text.contains("Fortnite"));
     assert!(text.contains("result: failed: @t:dl.stalled"));
     assert!(text.contains("preparing download"));
-    append_download_log(
-        &path,
-        "RocketLeague",
-        &Ok(()),
-        &std::collections::VecDeque::new(),
-    );
+    crate::download_log::append_to(&path, "RocketLeague", &Ok(()), &[]);
     let text = std::fs::read_to_string(&path).unwrap();
     assert!(text.contains("RocketLeague"));
     assert!(text.contains("result: success"));

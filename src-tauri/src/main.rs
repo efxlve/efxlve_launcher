@@ -15,6 +15,7 @@ mod webview_power;
 mod discord_rpc;
 mod discord_sdk;
 mod download_limit;
+mod download_log;
 mod eos;
 mod egl_removal;
 mod file_dialog;

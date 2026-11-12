@@ -733,6 +733,8 @@ pub async fn gog_install_game(
                 if was_cancelled {
                     return;
                 }
+                let lines: Vec<String> = tail.iter().cloned().collect();
+                crate::download_log::append(&app_clone, &comp_id_clone, &Ok(()), &lines);
 
                 let _ = app_clone.emit(
                     "download-progress",
@@ -759,6 +761,13 @@ pub async fn gog_install_game(
                 } else {
                     failure_text(&tail, s.code())
                 };
+                let lines: Vec<String> = tail.iter().cloned().collect();
+                crate::download_log::append(
+                    &app_clone,
+                    &comp_id_clone,
+                    &Err(message.clone()),
+                    &lines,
+                );
                 let _ = app_clone.emit(
                     "download-failed",
                     DlFailedPayload {
@@ -778,6 +787,13 @@ pub async fn gog_install_game(
                 } else {
                     failure_text(&tail, None)
                 };
+                let lines: Vec<String> = tail.iter().cloned().collect();
+                crate::download_log::append(
+                    &app_clone,
+                    &comp_id_clone,
+                    &Err(message.clone()),
+                    &lines,
+                );
                 let _ = app_clone.emit(
                     "download-failed",
                     DlFailedPayload {

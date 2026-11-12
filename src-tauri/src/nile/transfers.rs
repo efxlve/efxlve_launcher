@@ -275,7 +275,11 @@ pub async fn nile_install(
     let event_id = format!("amazon::{id}");
     let out = match run_install_attempt(&app, &args, &event_id, &id, generation).await {
         Ok(out) => out,
-        Err(error) => return Err(cancelled_or(&id, generation, error)),
+        Err(error) => {
+            let message = cancelled_or(&id, generation, error);
+            crate::download_log::append(&app, &event_id, &Err(message.clone()), &[]);
+            return Err(message);
+        }
     };
 
     // Keep the full output for diagnostics: Nile reports some failures only on
@@ -291,12 +295,11 @@ pub async fn nile_install(
         ),
     );
 
+    let out_lines = tail_lines(&out_text);
     if !out.status.success() {
-        return Err(cancelled_or(
-            &id,
-            generation,
-            nile_failure_text(&out_text, &out),
-        ));
+        let message = cancelled_or(&id, generation, nile_failure_text(&out_text, &out));
+        crate::download_log::append(&app, &event_id, &Err(message.clone()), &out_lines);
+        return Err(message);
     }
     // Nile exits zero even when it refuses to install ("Not enough space") and
     // when it only *thinks* the install is current. The installed record plus
@@ -306,15 +309,19 @@ pub async fn nile_install(
             return Err("@t:dl.cancelled".to_string());
         }
         if is_out_of_space(&out_text) {
-            return Err("@t:dl.diskFull".to_string());
+            let message = "@t:dl.diskFull".to_string();
+            crate::download_log::append(&app, &event_id, &Err(message.clone()), &out_lines);
+            return Err(message);
         }
         // Resetting the record only heals "Nile thinks it is current"; every
         // other zero-exit refusal would repeat until the watchdog fired.
         if !out_text.contains("Game is up to date") {
-            return Err(format!(
+            let message = format!(
                 "@t:amazon.installFailed\u{1f}{}",
                 cli::failure_message(&out)
-            ));
+            );
+            crate::download_log::append(&app, &event_id, &Err(message.clone()), &out_lines);
+            return Err(message);
         }
         reset_install_record(&app, &id);
         let retry = run_install_attempt(&app, &args, &event_id, &id, generation).await;
@@ -324,16 +331,20 @@ pub async fn nile_install(
             return Err("@t:dl.cancelled".to_string());
         }
         if !healed {
-            let detail = match retry {
+            let (detail, retry_lines) = match retry {
                 Ok(v) => {
                     let text = output_text(&v);
-                    nile_failure_text(&text, &v)
+                    let lines = tail_lines(&text);
+                    (nile_failure_text(&text, &v), lines)
                 }
-                Err(e) => e,
+                Err(e) => (e, Vec::new()),
             };
-            return Err(format!("@t:amazon.installFailed\u{1f}{detail}"));
+            let message = format!("@t:amazon.installFailed\u{1f}{detail}");
+            crate::download_log::append(&app, &event_id, &Err(message.clone()), &retry_lines);
+            return Err(message);
         }
     }
+    crate::download_log::append(&app, &event_id, &Ok(()), &out_lines);
     Ok(())
 }
 
@@ -343,6 +354,14 @@ fn output_text(out: &std::process::Output) -> String {
         String::from_utf8_lossy(&out.stdout),
         String::from_utf8_lossy(&out.stderr)
     )
+}
+
+/// The attempt's last lines; the shared log caps the count again, but a
+/// multi-hour progress stream must not be copied into a vector first.
+fn tail_lines(text: &str) -> Vec<String> {
+    let mut lines: Vec<String> = text.lines().rev().take(400).map(str::to_string).collect();
+    lines.reverse();
+    lines
 }
 
 /// Nile prints its disk-space refusal to stdout and still exits zero, so the

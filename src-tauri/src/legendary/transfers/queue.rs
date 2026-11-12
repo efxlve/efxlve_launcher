@@ -659,66 +659,6 @@ pub(super) fn emit_phase(app: &AppHandle, id: &str, phase: &str) {
     );
 }
 
-/// Appends one attempt to `logs/download.log`; the feedback report attaches it.
-/// Four hundred lines cover preparation, every retry and the final error.
-fn write_download_log(
-    app: &AppHandle,
-    app_name: &str,
-    result: &Result<(), String>,
-    lines: &VecDeque<String>,
-) {
-    let Ok(data_dir) = app.path().app_data_dir() else {
-        return;
-    };
-    let log_dir = data_dir.join("logs");
-    if std::fs::create_dir_all(&log_dir).is_err() {
-        return;
-    }
-    let path = log_dir.join("download.log");
-    if std::fs::metadata(&path)
-        .map(|meta| meta.len() > 512 * 1024)
-        .unwrap_or(false)
-    {
-        let _ = std::fs::remove_file(&path);
-    }
-    append_download_log(&path, app_name, result, lines);
-}
-
-pub(super) fn append_download_log(
-    path: &std::path::Path,
-    app_name: &str,
-    result: &Result<(), String>,
-    lines: &VecDeque<String>,
-) {
-    use std::io::Write;
-
-    let mut text = format!(
-        "\n===== {} | {} | v{} =====\n",
-        crate::clock::stamp(std::time::SystemTime::now()),
-        app_name,
-        env!("CARGO_PKG_VERSION")
-    );
-    match result {
-        Ok(()) => text.push_str("result: success\n"),
-        Err(error) => {
-            text.push_str("result: failed: ");
-            text.push_str(error);
-            text.push('\n');
-        }
-    }
-    for line in lines {
-        text.push_str(line);
-        text.push('\n');
-    }
-    if let Ok(mut file) = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(path)
-    {
-        let _ = file.write_all(text.as_bytes());
-    }
-}
-
 /// Concurrent chunk download workers per network profile. Higher worker counts
 /// saturate fast connections better (Epic's own launcher uses ChunkDownloads=32).
 /// The mapping is shared with the GOG downloader.
@@ -1298,7 +1238,8 @@ pub(super) async fn monitor_download(
         }
         break Err(short_error(&err_text));
     };
-    write_download_log(&app, &app_name, &result, &log_lines);
+    let log_lines: Vec<String> = log_lines.into_iter().collect();
+    crate::download_log::append(&app, &app_name, &result, &log_lines);
 
     // Release the slot only after this monitor has seen the child exit.
     // An older monitor must not delete a newer transfer's files or resume record.
