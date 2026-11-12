@@ -78,7 +78,11 @@ export async function openInstallDialog(appName: string): Promise<void> {
   if (isGog) {
     // Updates reuse the existing folder; skip the dialog (mirrors the Epic path).
     if (s.installed && s.installPath) {
-      await gogInstallGame(appName, s.installPath);
+      try {
+        await gogInstallGame(appName, s.installPath);
+      } catch (e) {
+        toast(localizeMessage(String(e)), "err");
+      }
       return;
     }
     S.installDialogAppName = appName;
@@ -549,7 +553,11 @@ export async function confirmInstall(): Promise<void> {
   if (appName.startsWith("gog::")) {
     closeInstallDialog();
     const finalDir = dir ? joinPath(dir, S.installDialogFolder) : undefined;
-    await gogInstallGame(appName, finalDir);
+    try {
+      await gogInstallGame(appName, finalDir);
+    } catch (e) {
+      toast(localizeMessage(String(e)), "err");
+    }
     return;
   }
 
