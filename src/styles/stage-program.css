@@ -231,6 +231,16 @@
   background: transparent;
   animation: stage-copy-in 220ms var(--stage-ease) both;
 }
+
+/* An empty tab owns the tab area: centre the block and give it enough room
+   to sit clear of the tab strip and the bottom edge. */
+.stage-program-content:has(> .stage-program-empty) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: clamp(260px, 34vh, 420px);
+  padding-block: 24px;
+}
 .stage-program-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr);
@@ -611,9 +621,23 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 38px;
+  padding: 24px;
   color: var(--stage-ink-3);
   text-align: center;
+}
+.stage-program-empty .stage-empty-icon {
+  width: 72px;
+  height: 72px;
+}
+.stage-program-empty .stage-stat-row {
+  justify-content: center;
+  margin-block-start: 2px;
+}
+.stage-program-stats .stage-stat > span {
+  overflow: hidden;
+  max-width: 220px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .stage-program-empty h2 {
   margin: 0;

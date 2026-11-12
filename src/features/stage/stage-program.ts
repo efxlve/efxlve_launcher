@@ -55,6 +55,32 @@ function fact(label: string, value: string): string {
   return `<div class="stage-fact"><span>${esc(label)}</span><strong>${value}</strong></div>`;
 }
 
+type ProgramStatIcon = Parameters<typeof icon>[0];
+
+/** Compact facts for an empty tab: what the tab is scoped to and what it found. */
+function programStats(items: Array<{ icon: ProgramStatIcon; label: string; value?: string }>): string {
+  return `<div class="stage-stat-row stage-program-stats">
+    ${items.map((item) => `<span class="stage-stat">${icon(item.icon, 13)}<span>${esc(item.label)}</span>${item.value !== undefined ? `<b class="tabular-nums">${esc(item.value)}</b>` : ""}</span>`).join("")}
+  </div>`;
+}
+
+/** One empty-state card for every programme tab, so they share a shape. */
+function programEmpty(opts: {
+  icon: ProgramStatIcon;
+  title: string;
+  hint: string;
+  stats: string;
+  action?: string;
+}): string {
+  return `<div class="stage-program-empty">
+    <span class="stage-empty-icon">${icon(opts.icon, 36)}</span>
+    <h2>${esc(opts.title)}</h2>
+    <p>${esc(opts.hint)}</p>
+    ${opts.stats}
+    ${opts.action ?? ""}
+  </div>`;
+}
+
 function ensureStageProgramData(game: EpicSummary): void {
   const appName = game.appName;
   const lookupTitle = S.allGamesMap.get(appName)?.title ?? game.title;
@@ -241,22 +267,52 @@ function achievementRow(item: import("../../epic").EpicAchievementItem): string 
 }
 
 function achievementsTab(game: EpicSummary): string {
+  const filterLabel = S.stage.achievementFilter === "unlocked"
+    ? t("stage.achUnlocked")
+    : S.stage.achievementFilter === "locked"
+      ? t("stage.achLocked")
+      : t("stage.achAll");
   if (S.loadingAchFor.has(game.appName) && !S.loadedAchievements.has(game.appName)) {
-    return `<div class="stage-program-empty">${icon("refresh", 34)}<h2>${esc(t("stage.achLoading"))}</h2><p>${esc(t("stage.achLoadingHint"))}</p></div>`;
+    return programEmpty({
+      icon: "refresh",
+      title: t("stage.achLoading"),
+      hint: t("stage.achLoadingHint"),
+      stats: programStats([
+        { icon: "sliders", label: filterLabel },
+        { icon: "trophy", label: t("stage.achievements"), value: "—" },
+      ]),
+    });
   }
   const data = S.loadedAchievements.get(game.appName);
   if (!data) {
-    return `<div class="stage-program-empty">${icon("trophy", 34)}<h2>${esc(t("stage.achievements"))}</h2><p>${esc(t("stage.achNotLoaded"))}</p><button type="button" class="stage-btn stage-btn-ghost" data-stage-act="refresh-achievements" data-key="${esc(game.appName)}" data-gp-item data-gp-key="ach:refresh">${icon("refresh", 16)}<span>${esc(t("stage.achRefresh"))}</span></button></div>`;
+    return programEmpty({
+      icon: "trophy",
+      title: t("stage.achievements"),
+      hint: t("stage.achNotLoaded"),
+      stats: programStats([
+        { icon: "sliders", label: filterLabel },
+        { icon: "trophy", label: t("stage.achievements"), value: "—" },
+      ]),
+      action: `<button type="button" class="stage-btn stage-btn-ghost" data-stage-act="refresh-achievements" data-key="${esc(game.appName)}" data-gp-item data-gp-key="ach:refresh">${icon("refresh", 16)}<span>${esc(t("stage.achRefresh"))}</span></button>`,
+    });
   }
   const byName = new Map<string, import("../../epic").EpicAchievementItem>();
   for (const item of [...(data.achievements ?? []), ...(data.hidden ?? [])]) {
     if (!byName.has(item.name)) byName.set(item.name, item);
   }
   const items = [...byName.values()];
-  if (items.length === 0) {
-    return `<div class="stage-program-empty">${icon("trophy", 34)}<h2>${esc(t("stage.noAchievements"))}</h2><p>${esc(t("stage.noAchievementsHint"))}</p></div>`;
-  }
   const total = Math.max(items.length, data.total_achievements);
+  if (items.length === 0) {
+    return programEmpty({
+      icon: "trophy",
+      title: t("stage.noAchievements"),
+      hint: t("stage.noAchievementsHint"),
+      stats: programStats([
+        { icon: "sliders", label: filterLabel },
+        { icon: "trophy", label: t("stage.achievements"), value: `0 / ${total}` },
+      ]),
+    });
+  }
   const unlocked = items.filter((item) => item.unlocked).length;
   const filter = S.stage.achievementFilter;
   const visible = items
@@ -291,11 +347,15 @@ function mediaTab(game: EpicSummary): string {
   const loading = S.loadingScreenshotsFor.has(game.appName);
 
   if (shots.length === 0) {
-    return `<div class="stage-program-empty">
-      <span class="stage-empty-icon">${icon("camera", 36)}</span>
-      <h2>${esc(t("drawer.screenshots"))}</h2>
-      <p>${loading ? esc(t("stage.stillsLoading")) : esc(t("stage.stillsEmpty"))}</p>
-    </div>`;
+    return programEmpty({
+      icon: "camera",
+      title: t("drawer.screenshots"),
+      hint: loading ? t("stage.stillsLoading") : t("stage.stillsEmpty"),
+      stats: programStats([
+        { icon: "camera", label: t("stage.stills"), value: String(shots.length) },
+        { icon: "layers", label: stageStoreName(sourceOfKey(game.appName)) },
+      ]),
+    });
   }
 
   return `<div class="stage-media-gallery">
@@ -325,11 +385,15 @@ function notesTab(game: EpicSummary): string {
   const notes = notesForScope(game.appName);
 
   if (notes.length === 0) {
-    return `<div class="stage-program-empty">
-      <span class="stage-empty-icon">${icon("edit", 36)}</span>
-      <h2>${esc(t("drawer.notes"))}</h2>
-      <p>${esc(t("notes.emptyList"))}</p>
-    </div>`;
+    return programEmpty({
+      icon: "edit",
+      title: t("drawer.notes"),
+      hint: t("notes.emptyList"),
+      stats: programStats([
+        { icon: "edit", label: t("drawer.notes"), value: String(notes.length) },
+        { icon: "gamepad-2", label: game.title },
+      ]),
+    });
   }
 
   return `<div class="stage-notes-panel">
