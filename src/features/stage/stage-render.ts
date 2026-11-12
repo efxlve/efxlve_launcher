@@ -112,7 +112,7 @@ import {
   stageHasUpdate,
   stageHeroSummary,
 } from "./stage-model";
-import { renderStageProgram } from "./stage-program";
+import { renderStageProgram, stageNotesExpandedRevision, toggleStageNote } from "./stage-program";
 import { renderStageSearch } from "./stage-search";
 import { renderStageSettings } from "./stage-settings";
 import {
@@ -267,7 +267,7 @@ function stageProgramRevision(): string {
     S.loadedHltb.has(key) ? "1" : "0",
     S.loadedCritic.has(key) ? "1" : "0",
     S.stage.gameTracks[key] ?? "",
-    S.stage.programTab === "notes" ? notesRevision() : "",
+    S.stage.programTab === "notes" ? `${notesRevision()}:${stageNotesExpandedRevision()}` : "",
   ].join("\u001f");
 }
 
@@ -644,6 +644,19 @@ function markFocusables(layer: HTMLElement | null): void {
   layer.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled])").forEach((el) => {
     if (el.closest("[data-gp-skip]")) return;
     el.setAttribute("data-gp-item", "");
+  });
+}
+
+/**
+ * Note bodies clamp to a few lines. Measure after render so only the notes that
+ * actually overflow advertise the expand chevron.
+ */
+function markNoteOverflow(layer: HTMLElement | null): void {
+  if (!layer) return;
+  layer.querySelectorAll<HTMLElement>(".stage-note-card").forEach((card) => {
+    if (card.dataset.overflow) return;
+    const body = card.querySelector<HTMLElement>(".stage-note-body");
+    if (body && body.scrollHeight > body.clientHeight + 2) card.dataset.overflow = "1";
   });
 }
 
@@ -1348,6 +1361,7 @@ export function renderStage(): void {
                         : '[data-stage-layer="main"]';
   const layer = root.querySelector<HTMLElement>(layerSelector);
   markFocusables(layer);
+  if (S.stage.route === "program") markNoteOverflow(layer);
   // An install/manage dialog owns the focus while it is open. The Stage shell
   // can repaint behind it, but it must not steal the ring back.
   // Attract mode owns the screen: a background repaint (a download tick, a
@@ -1826,6 +1840,7 @@ function bindStageEvents(root: HTMLElement): void {
       case "set-settings-tab": if (settingsTab) stageSetSettingsTab(settingsTab); break;
       case "cycle-settings-tab": stageCycleSettingsTab(true); break;
       case "set-ach-filter": if (achFilter) stageSetAchievementFilter(achFilter); break;
+      case "toggle-note": stageFeedback("select"); toggleStageNote(key); break;
       case "refresh-achievements": stageRefreshAchievements(key); break;
       case "open-still": stageOpenStill(index, key); break;
       case "close-still": stageCloseStill(); break;

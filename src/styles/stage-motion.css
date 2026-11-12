@@ -114,6 +114,13 @@
      full-width list row wider than its column. The list nudges right instead. */
   transform: translateX(4px) !important;
 }
+/* A note's head button is full-width inside the card; the card paints the
+   ring, so the button itself must not scale or draw a second outline. */
+#stage-root .stage-note-toggle.gp-focused {
+  outline: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
 #stage-root .stage-filter.gp-focused,
 #stage-root .stage-program-tab.gp-focused,
 #stage-root .stage-tool.gp-focused {

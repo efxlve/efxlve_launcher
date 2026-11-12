@@ -26,6 +26,24 @@ const TABS: StageProgramTab[] = ["overview", "achievements", "media", "notes", "
 /** One request per session; the notes client owns the cache after that. */
 let notesRequested = false;
 
+/** Notes longer than a few lines stay clamped until the card head is pressed. */
+const expandedNotes = new Set<string>();
+let notesExpandedRev = 0;
+
+/** Bumped on every expand/collapse so the program signature repaints the tab. */
+export function stageNotesExpandedRevision(): number {
+  return notesExpandedRev;
+}
+
+/** Expand or collapse one note card by id; the head button calls this. */
+export function toggleStageNote(id: string): void {
+  if (!id) return;
+  if (expandedNotes.has(id)) expandedNotes.delete(id);
+  else expandedNotes.add(id);
+  notesExpandedRev += 1;
+  scheduleRender();
+}
+
 // Another window (the overlay or the desktop notes page) can write a note while
 // Stage is open. Reload its cache and repaint the tab instead of showing stale
 // text until the next route change.
@@ -394,13 +412,16 @@ function notesTab(game: EpicSummary): string {
       </div>
     </div>
     <div class="stage-notes-grid">
-      ${notes.map((note, index) => `
-        <div class="stage-note-card${note.pinned ? " is-pinned" : ""}" data-gp-item data-gp-key="note:${index}">
-          <div class="stage-note-head">
+      ${notes.map((note, index) => {
+        const expanded = expandedNotes.has(note.id);
+        return `
+        <div class="stage-note-card${note.pinned ? " is-pinned" : ""}${expanded ? " is-expanded" : ""}">
+          <button type="button" class="stage-note-head stage-note-toggle" data-stage-act="toggle-note" data-key="${esc(note.id)}" data-gp-item data-gp-key="note:${index}" aria-expanded="${expanded}">
             <span class="stage-note-icon">${icon("edit", 16)}</span>
-            <h3 class="stage-note-title">${esc(note.title || t("notes.untitled"))}</h3>
-            ${note.pinned ? `<span class="stage-note-pin">${icon("pin", 14)}</span>` : ""}
-          </div>
+            <span class="stage-note-title">${esc(note.title || t("notes.untitled"))}</span>
+            ${note.pinned ? `<span class="stage-note-pin" aria-hidden="true">${icon("pin", 14)}</span>` : ""}
+            <span class="stage-note-chevron" aria-hidden="true">${icon(expanded ? "chevron-up" : "chevron-down", 16)}</span>
+          </button>
           <div class="stage-note-body">
             ${renderMarkdownLite(note.body, note.images || []).html}
           </div>
@@ -408,7 +429,8 @@ function notesTab(game: EpicSummary): string {
             <span class="stage-stat">${icon("clock", 13)}<span>${esc(relativeTime(note.updated))}</span></span>
           </div>
         </div>
-      `).join("")}
+      `;
+      }).join("")}
     </div>
   </div>`;
 }

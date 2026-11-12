@@ -1148,9 +1148,10 @@
   transition: transform 160ms ease, border-color 160ms ease;
 }
 
-.stage-note-card.gp-focused {
+/* The head button owns the focus, so the card wears the ring around it. */
+.stage-note-card:has(.stage-note-toggle.gp-focused) {
   border-color: #ffffff;
-  outline: 2px solid #ffffff;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 20px rgba(255, 255, 255, 0.3);
   transform: translateY(-2px);
 }
 
@@ -1165,6 +1166,19 @@
   gap: 10px;
 }
 
+/* The whole head is the toggle; a note body can contain links, so the body
+   must stay outside the button. */
+.stage-note-toggle {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
 .stage-note-icon {
   color: var(--stage-accent);
 }
@@ -1175,6 +1189,7 @@
   font-weight: 700;
   color: #ffffff;
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1184,10 +1199,42 @@
   color: #facc15;
 }
 
+.stage-note-chevron {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--stage-ink-3);
+  opacity: 0;
+  transition: opacity 140ms var(--stage-ease), transform 140ms var(--stage-ease);
+}
+/* Short notes have nothing to expand, so the chevron only appears once the
+   rendered body is taller than its clamp. */
+.stage-note-card[data-overflow] .stage-note-chevron,
+.stage-note-card.is-expanded .stage-note-chevron {
+  opacity: 1;
+}
+
 .stage-note-body {
   color: var(--stage-ink-2);
   font-size: 13.5px;
   line-height: 1.6;
+  max-height: 132px;
+  overflow: hidden;
+}
+.stage-note-card.is-expanded .stage-note-body {
+  max-height: none;
+  overflow: visible;
+}
+
+/* Fade the last lines only on cards that actually overflow, so the clamp
+   reads as "there is more" instead of a hard cut. */
+.stage-note-card[data-overflow]:not(.is-expanded) .stage-note-body {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+}
+
+.stage-note-body img {
+  max-width: 100%;
+  height: auto;
 }
 
 .stage-note-body input[type="checkbox"] {
