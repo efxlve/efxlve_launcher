@@ -95,6 +95,7 @@ import {
   STAGE_HAPTICS_KEY,
   STAGE_TEXT_SCALE_KEY,
   STAGE_SAFE_AREA_KEY,
+  STAGE_STICK_KEY,
   STAGE_AMBIENCE_KEY,
   STAGE_AMBIENCE_VOLUME_KEY,
   STAGE_CINEMATIC_KEY,
@@ -995,6 +996,20 @@ export const S = {
       // The setting is opt-in: the TV/handheld safe-area inset changes the
       // shell geometry, so the default keeps the stage edge-to-edge.
       return 0;
+    })() as number,
+    /**
+     * Analog stick deadzone as a level, not a raw threshold: the settings row
+     * and the poller share one contract. 0 tight, 1 normal, 2 loose.
+     */
+    stickSensitivity: (() => {
+      try {
+        const raw = localStorage.getItem(STAGE_STICK_KEY);
+        const stored = raw === null ? NaN : Number(raw);
+        if ([0, 1, 2].includes(stored)) return stored;
+      } catch {
+        /* ignore */
+      }
+      return 1;
     })() as number,
     sound: (() => {
       try {

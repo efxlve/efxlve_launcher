@@ -96,6 +96,7 @@ import {
   setStageSafeArea,
   setStageSound,
   setStageSoundVolume,
+  setStageStickSensitivity,
   setStageTextScale,
 } from "./stage-state";
 import { stageLaunchGame } from "./stage-launch";
@@ -310,6 +311,7 @@ function stageLiveSignature(): string {
     S.screenshotFullSrc.size,
     String(S.stage.textScale),
     String(S.stage.safeArea),
+    String(S.stage.stickSensitivity),
     S.stage.sound ? "1" : "0",
     String(S.stage.soundVolume),
     S.stage.haptics ? "1" : "0",
@@ -1850,6 +1852,7 @@ function bindStageEvents(root: HTMLElement): void {
       case "desktop-settings-section": if (section) stageOpenDesktopSettingsSection(section); break;
       case "set-stage-text": if (Number.isFinite(value)) { stageFeedback("move"); setStageTextScale(value); } break;
       case "set-stage-safe": if (Number.isFinite(value)) { stageFeedback("move"); setStageSafeArea(value); } break;
+      case "set-stage-stick": if (Number.isFinite(value)) { stageFeedback("move"); setStageStickSensitivity(value); } break;
       case "choose-stage-ambience": void stageChooseCustomAmbience(); break;
       case "clear-stage-ambience": stageClearCustomAmbience(); break;
       case "choose-game-track": void stageChooseGameTrack(key); break;

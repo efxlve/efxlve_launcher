@@ -210,6 +210,11 @@ function controller(): string {
       </div>
       <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="show-controls" data-gp-item data-gp-key="set:controls">${icon("keyboard", 16)}<span>${esc(t("stage.controls"))}</span></button>
     </div>
+    ${choiceRow("stick", t("stage.settingsStickTitle"), t("stage.settingsStickDesc"), "set-stage-stick", [
+      { label: t("stage.settingsStickTight"), value: 0, selected: S.stage.stickSensitivity === 0 },
+      { label: t("stage.settingsStickNormal"), value: 1, selected: S.stage.stickSensitivity === 1 },
+      { label: t("stage.settingsStickLoose"), value: 2, selected: S.stage.stickSensitivity === 2 },
+    ])}
     ${globalToggle("auto-controller", t("stage.settingsAuto"), t("stage.settingsAutoDesc"), S.stage.autoEnter, "toggle-stage-auto")}
     ${globalToggle("launch-controller", t("stage.settingsOpenAtLaunch"), t("stage.settingsOpenAtLaunchDesc"), S.stage.openAtLaunch, "toggle-stage-open-launch")}
     <div class="stage-settings-actions">

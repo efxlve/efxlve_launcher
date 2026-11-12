@@ -21,6 +21,7 @@ import {
   STAGE_OPEN_AT_LAUNCH_KEY,
   STAGE_SAFE_AREA_KEY,
   STAGE_SOUND_KEY,
+  STAGE_STICK_KEY,
   STAGE_TEXT_SCALE_KEY,
   STAGE_VOLUME_KEY,
   isTauri,
@@ -294,6 +295,18 @@ export function setStageSafeArea(level: number): void {
   S.stage.safeArea = level;
   try {
     localStorage.setItem(STAGE_SAFE_AREA_KEY, String(level));
+  } catch {
+    /* ignore */
+  }
+  scheduleRender();
+}
+
+/** Analog stick deadzone: 0 tight, 1 normal, 2 loose. Applied by the poller. */
+export function setStageStickSensitivity(level: number): void {
+  if (![0, 1, 2].includes(level)) return;
+  S.stage.stickSensitivity = level;
+  try {
+    localStorage.setItem(STAGE_STICK_KEY, String(level));
   } catch {
     /* ignore */
   }

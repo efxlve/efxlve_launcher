@@ -29,7 +29,9 @@ import {
   toggleStage,
 } from "../stage/stage-state";
 
-const STICK_DEADZONE = 0.42;
+/** Deadzone per player choice: tight, normal, loose. */
+const STICK_DEADZONES = [0.3, 0.42, 0.55] as const;
+const STICK_DEADZONE = STICK_DEADZONES[1];
 const REPEAT_FIRST_MS = 260;
 const REPEAT_NEXT_MS = 85;
 const IDLE_POLL_MS = 80;
@@ -391,6 +393,10 @@ export function stageControlKey(el: HTMLElement): string {
  */
 export function refreshGamepadFocus(): void {
   if (!currentFocusedEl && !lastFocusedKey) return;
+  // Stage puts the ring on shell chrome the pad does not traverse (the
+  // status-line bell, the Menu pill). A desktop panel repainting behind the
+  // shell must not drag it back into the page.
+  if (S.stage.active && currentFocusedEl?.isConnected && isVisibleEl(currentFocusedEl)) return;
   const candidates = getNavigableElements();
   if (candidates.length === 0) {
     setFocus(null);
@@ -827,14 +833,16 @@ function padMask(gp: Gamepad): number {
     }
   }
 
+  // Read per sample: a change in Stage settings must apply on the next poll.
+  const deadzone = STICK_DEADZONES[S.stage.stickSensitivity] ?? STICK_DEADZONE;
   const lx = gp.axes[0] ?? 0;
   const ly = gp.axes[1] ?? 0;
 
-  if (lx < -STICK_DEADZONE) mask |= 1 << BTN_LEFT;
-  else if (lx > STICK_DEADZONE) mask |= 1 << BTN_RIGHT;
+  if (lx < -deadzone) mask |= 1 << BTN_LEFT;
+  else if (lx > deadzone) mask |= 1 << BTN_RIGHT;
 
-  if (ly < -STICK_DEADZONE) mask |= 1 << BTN_UP;
-  else if (ly > STICK_DEADZONE) mask |= 1 << BTN_DOWN;
+  if (ly < -deadzone) mask |= 1 << BTN_UP;
+  else if (ly > deadzone) mask |= 1 << BTN_DOWN;
 
   return mask;
 }
