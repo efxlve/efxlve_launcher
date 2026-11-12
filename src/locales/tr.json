@@ -1410,6 +1410,7 @@
   "dl.peak": "Zirve",
   "dl.starting": "Başlatılıyor…",
   "dl.finishing": "Tamamlanıyor…",
+  "dl.stalled": "İndirme yanıt vermeyi durdurdu. Kaydedilen noktadan devam etmek için tekrar deneyin.",
   "selective.checking": "Kurulum seçenekleri denetleniyor…",
   "selective.starting": "Seçici kurulum başlatılıyor…",
   "selective.startFailed": "Kurulum başlatılamadı: {msg}",

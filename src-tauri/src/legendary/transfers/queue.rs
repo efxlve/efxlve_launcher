@@ -29,6 +29,15 @@ const STDERR_POLL: std::time::Duration = std::time::Duration::from_millis(500);
 /// lingers past this grace is reaped instead of leaving the row at 100%.
 const COMPLETION_GRACE: std::time::Duration = std::time::Duration::from_secs(20);
 
+/// Legendary's download manager logs once a second even while the disk is the
+/// bottleneck. Five minutes of complete silence after progress started means
+/// the worker queue deadlocked (upstream legendary issue #574), not a slow disk.
+const STALL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5 * 60);
+
+/// Finalization can be legitimately quiet while files are deleted or the EGL
+/// manifest is written, so it gets a much longer window before the same check.
+const FINALIZE_STALL: std::time::Duration = std::time::Duration::from_secs(15 * 60);
+
 /// Ends a legendary process together with its multiprocessing children.
 /// `kill_on_drop` only signals the direct child; the download workers are
 /// grandchildren and would otherwise keep writing into the game folder.
@@ -42,8 +51,10 @@ pub(super) async fn kill_download_tree(pid: u32) {
     }
     #[cfg(not(windows))]
     {
+        // The child is spawned as its own process-group leader, so the
+        // negative pid also reaches the multiprocessing download workers.
         let _ = tokio::process::Command::new("kill")
-            .args(["-9", &pid.to_string()])
+            .args(["-9", &format!("-{pid}")])
             .output()
             .await;
     }
@@ -651,6 +662,13 @@ pub(super) fn spawn_install_with_tags(
     }
     #[cfg(windows)]
     cmd.creation_flags(CREATE_NO_WINDOW);
+    // A dedicated group lets cancel and pause kill the multiprocessing
+    // children too; `kill -9 <pid>` alone leaves them writing.
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        cmd.as_std_mut().process_group(0);
+    }
     cmd.spawn()
 }
 
@@ -721,20 +739,25 @@ pub(super) async fn monitor_download(
     let mut high_mem = false;
     let mut rate_limit_retried = false;
     let mut timeout_retried = false;
+    let mut stall_retried = false;
     let mut tail: VecDeque<String> = VecDeque::with_capacity(60);
 
     let result: Result<(), String> = loop {
         // stdout carries no progress but is drained so the pipe does not fill.
         let out_task = spawn_drain(stdout.take());
         let mut stopped_after_completion = false;
+        let mut stall_restart = false;
+        let mut stall_error: Option<String> = None;
         let status = if let Some(e) = stderr.take() {
             let mut r = CrlfLines::new(e);
             let mut completion_at: Option<std::time::Instant> = None;
             let mut finishing_sent = false;
             let mut exited: Option<std::process::ExitStatus> = None;
+            let mut last_line_at = std::time::Instant::now();
             loop {
                 match tokio::time::timeout(STDERR_POLL, r.next_line()).await {
                     Ok(Some(line)) => {
+                        last_line_at = std::time::Instant::now();
                         if !finishing_sent && is_install_finishing(&line) {
                             finishing_sent = true;
                             emit_progress_full(
@@ -891,19 +914,82 @@ pub(super) async fn monitor_download(
                             }
                             break;
                         }
+                        // Progress lines arrive every second while the
+                        // download manager is alive. A long silence after real
+                        // progress means its worker queue is deadlocked; a
+                        // restart resumes from legendary's own resume file.
+                        let silent_for = last_line_at.elapsed();
+                        let limit = if finishing_sent || last_pct >= 100 {
+                            FINALIZE_STALL
+                        } else {
+                            STALL_TIMEOUT
+                        };
+                        if last_pct >= 0 && silent_for >= limit {
+                            if let Some(pid) = child.id() {
+                                kill_download_tree(pid).await;
+                            }
+                            if user_halted(&app) {
+                                stall_error = Some("@t:dl.cancelled".into());
+                                break;
+                            }
+                            if stall_retried {
+                                stall_error = Some("@t:dl.stalled".into());
+                                break;
+                            }
+                            stall_retried = true;
+                            stall_restart = true;
+                            break;
+                        }
                     }
                 }
             }
             match exited {
                 Some(exit) => Some(exit),
                 None => {
-                    let _ = child.wait().await;
+                    if !stall_restart {
+                        let _ = child.wait().await;
+                    }
                     None
                 }
             }
         } else {
             child.wait().await.ok()
         };
+        if let Some(error) = stall_error {
+            out_task.abort();
+            let _ = out_task.await;
+            break Err(error);
+        }
+        if stall_restart {
+            // Reap the killed attempt, then start a fresh one. legendary's
+            // resume file skips the files that were already written.
+            let _ = child.wait().await;
+            out_task.abort();
+            let _ = out_task.await;
+            net_rate = None;
+            disk_rate = None;
+            explicit_net = false;
+            explicit_disk = false;
+            match spawn_install_with_tags(&app, &bin, &app_name, &base, high_mem, &install_tags) {
+                Ok(c) => {
+                    child = c;
+                    stdout = child.stdout.take();
+                    stderr = child.stderr.take();
+                    if let Ok(mut s) = app.state::<AppState>().epic_dl.lock() {
+                        let still_ours =
+                            s.active_generation == Some(generation) && !s.cancelled && !s.paused;
+                        if !still_ours {
+                            drop(s);
+                            drop(child);
+                            break Err("@t:dl.cancelled".into());
+                        }
+                        s.pid = child.id();
+                    }
+                    continue;
+                }
+                Err(e) => break Err(format!("@t:dl.restartFailed\u{1f}{e}")),
+            }
+        }
         // A read on stdout can outlive the process for the same inherited-pipe
         // reason as stderr; do not let it hold the monitor open.
         out_task.abort();
@@ -1188,7 +1274,9 @@ pub async fn epic_install_game(
             });
             write_queue_snapshot(&s.queue);
             drop(s);
-            emit_progress(&app, &app_name, 0, false);
+            // The queue row is rendered from the queue snapshot. A 0% progress
+            // event here would replace the active card with a game that has
+            // not started yet.
             return Ok("@t:dl.queuedActive".into());
         }
     }
@@ -1239,7 +1327,6 @@ pub async fn epic_install_with_options(
                 install_dir: install_dir.clone(),
             });
             write_queue_snapshot(&s.queue);
-            emit_progress(&app, &app_name, 0, false);
             return Ok("@t:dl.queuedWithDlc".into());
         }
     }

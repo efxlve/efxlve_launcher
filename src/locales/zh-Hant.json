@@ -1337,6 +1337,7 @@
   "dl.peak": "峰值",
   "dl.starting": "正在開始…",
   "dl.finishing": "正在完成…",
+  "dl.stalled": "下載已停止回應。重試後將從已儲存的位置繼續。",
   "selective.checking": "正在檢查安裝選項…",
   "selective.starting": "正在開始選擇性安裝…",
   "selective.startFailed": "無法開始安裝：{msg}",

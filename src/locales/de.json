@@ -1337,6 +1337,7 @@
   "dl.peak": "Spitze",
   "dl.starting": "Wird gestartet…",
   "dl.finishing": "Wird abgeschlossen…",
+  "dl.stalled": "Der Download reagiert nicht mehr. Versuche es erneut, um am gespeicherten Punkt fortzufahren.",
   "selective.checking": "Installationsoptionen werden geprüft…",
   "selective.starting": "Selektive Installation wird gestartet…",
   "selective.startFailed": "Installation konnte nicht gestartet werden: {msg}",

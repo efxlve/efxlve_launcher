@@ -1337,6 +1337,7 @@
   "dl.peak": "Pic",
   "dl.starting": "Démarrage…",
   "dl.finishing": "Finalisation…",
+  "dl.stalled": "Le téléchargement ne répond plus. Réessayez pour reprendre au point enregistré.",
   "selective.checking": "Vérification des options d'installation…",
   "selective.starting": "Démarrage de l'installation sélective…",
   "selective.startFailed": "Impossible de démarrer l'installation : {msg}",

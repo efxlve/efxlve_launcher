@@ -1410,6 +1410,7 @@
   "dl.peak": "Peak",
   "dl.starting": "Starting…",
   "dl.finishing": "Finishing up…",
+  "dl.stalled": "The download stopped responding. Try again to continue from the saved point.",
   "selective.checking": "Checking install options…",
   "selective.starting": "Starting selective install…",
   "selective.startFailed": "Could not start install: {msg}",

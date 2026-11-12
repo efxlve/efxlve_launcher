@@ -1337,6 +1337,7 @@
   "dl.peak": "Picco",
   "dl.starting": "Avvio…",
   "dl.finishing": "Completamento…",
+  "dl.stalled": "Il download non risponde più. Riprova per continuare dal punto salvato.",
   "selective.checking": "Controllo delle opzioni di installazione…",
   "selective.starting": "Avvio dell'installazione selettiva…",
   "selective.startFailed": "Impossibile avviare l'installazione: {msg}",

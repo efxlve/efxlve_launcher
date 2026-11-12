@@ -1337,6 +1337,7 @@
   "dl.peak": "Szczyt",
   "dl.starting": "Uruchamianie…",
   "dl.finishing": "Kończenie…",
+  "dl.stalled": "Pobieranie przestało odpowiadać. Spróbuj ponownie, aby kontynuować od zapisanego miejsca.",
   "selective.checking": "Sprawdzanie opcji instalacji…",
   "selective.starting": "Uruchamianie instalacji wybiórczej…",
   "selective.startFailed": "Nie udało się rozpocząć instalacji: {msg}",
