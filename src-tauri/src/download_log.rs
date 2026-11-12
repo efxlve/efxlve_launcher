@@ -5,6 +5,7 @@
 //! `logs/download.log` stays small and is attached to feedback reports.
 
 use std::path::Path;
+use std::sync::Mutex;
 
 use tauri::{AppHandle, Manager};
 
@@ -12,10 +13,16 @@ use tauri::{AppHandle, Manager};
 const MAX_LINES: usize = 400;
 /// The file is rolled away once it grows past this.
 const MAX_BYTES: u64 = 512 * 1024;
+/// Two stores can finish at the same moment; one append at a time keeps their
+/// sections from interleaving.
+static APPEND_LOCK: Mutex<()> = Mutex::new(());
 
 /// Appends one attempt with the store CLI tail. Failures are rare enough that
 /// the size check on every call is cheaper than a background rotation task.
 pub fn append(app: &AppHandle, label: &str, result: &Result<(), String>, lines: &[String]) {
+    let _guard = APPEND_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     let Ok(data_dir) = app.path().app_data_dir() else {
         return;
     };
