@@ -50,7 +50,14 @@ export function renderStageNotifications(): string {
         </div>
       </div>
       ${items.length === 0
-        ? `<div class="stage-notif-empty">${icon("bell", 30)}<p>${esc(t("notif.empty"))}</p></div>`
+        ? `<div class="stage-notif-empty">
+            <span class="stage-empty-icon">${icon("bell", 30)}</span>
+            <p>${esc(t("notif.empty"))}</p>
+            <div class="stage-stat-row">
+              <span class="stage-stat">${icon("bell", 13)}<span>${esc(t("notif.title"))}</span><b class="tabular-nums">0</b></span>
+              <span class="stage-stat">${icon("layers", 13)}<span>${esc(t("stage.achAll"))}</span></span>
+            </div>
+          </div>`
         : `<div class="stage-notif-list">${items.map(row).join("")}</div>`}
     </div>
   </div>`;

@@ -177,12 +177,30 @@
 
 .stage-notif-empty {
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 38px 20px 30px;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px 20px;
   color: var(--stage-ink-3);
   text-align: center;
+}
+
+/* With nothing in the history the card holds a centred empty block instead of
+   shrinking to a thin strip under the header. */
+.stage-notif-card:has(> .stage-notif-empty) {
+  display: flex;
+  flex-direction: column;
+  min-height: min(360px, 60vh);
+}
+.stage-notif-empty .stage-empty-icon {
+  width: 72px;
+  height: 72px;
+}
+.stage-notif-empty .stage-stat-row {
+  justify-content: center;
+  margin-block-start: 2px;
 }
 
 .stage-notif-empty p {
