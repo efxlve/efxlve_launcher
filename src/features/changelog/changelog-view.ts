@@ -30,6 +30,24 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.55",
+    date: "2026-11-12",
+    fixed: [
+      {
+        en: "Updating a game directly in the Epic Games Launcher no longer leaves a pending update here; the installed build now follows the launcher's manifest.",
+        tr: "Oyunu doğrudan Epic Games Launcher'dan güncellediğinde bu launcher artık güncelleme beklemeye devam etmiyor; kurulu build, launcher'ın manifestini takip ediyor.",
+      },
+      {
+        en: "The platform suffix EGL appends to a build string no longer looks like a newer build, so a finished update stops offering itself again.",
+        tr: "EGL'nin build metnine eklediği platform eki artık daha yeni bir build gibi görünmüyor; tamamlanan güncelleme kendini tekrar teklif etmiyor.",
+      },
+      {
+        en: "An update that only removes files the Epic Games Launcher already deleted no longer ends with a false download failure.",
+        tr: "Yalnızca Epic Games Launcher'ın zaten sildiği dosyaları temizleyen bir güncelleme artık sahte bir indirme hatasıyla bitmiyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.54",
     date: "2026-11-12",
     improved: [
