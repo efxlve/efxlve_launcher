@@ -36,8 +36,9 @@ async fn kill_gogdl(pid: u32) {
     }
     #[cfg(unix)]
     {
+        // gogdl runs in its own process group, so this reaches its workers.
         let _ = tokio::process::Command::new("kill")
-            .args(["-9", &pid.to_string()])
+            .args(["-9", &format!("-{pid}")])
             .output()
             .await;
     }
@@ -354,6 +355,11 @@ pub async fn gog_install_game(
             const CREATE_NO_WINDOW: u32 = 0x08000000;
             cmd.creation_flags(CREATE_NO_WINDOW);
         }
+        #[cfg(unix)]
+        {
+            use std::os::unix::process::CommandExt;
+            cmd.as_std_mut().process_group(0);
+        }
 
         let mut child = match cmd.spawn() {
             Ok(c) => c,
@@ -620,7 +626,7 @@ pub async fn gog_pause_download(app: AppHandle, game_id: String) -> Result<Strin
     #[cfg(unix)]
     {
         let status = tokio::process::Command::new("kill")
-            .args(["-STOP", &pid.to_string()])
+            .args(["-STOP", &format!("-{pid}")])
             .status()
             .await
             .map_err(|e| format!("@t:err.io\u{1f}{e}"))?;
@@ -658,7 +664,7 @@ pub async fn gog_resume_download(app: AppHandle, game_id: String) -> Result<Stri
     #[cfg(unix)]
     {
         let status = tokio::process::Command::new("kill")
-            .args(["-CONT", &pid.to_string()])
+            .args(["-CONT", &format!("-{pid}")])
             .status()
             .await
             .map_err(|e| format!("@t:err.io\u{1f}{e}"))?;
@@ -853,6 +859,11 @@ pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<(), Stri
         {
             const CREATE_NO_WINDOW: u32 = 0x08000000;
             cmd.creation_flags(CREATE_NO_WINDOW);
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::process::CommandExt;
+            cmd.as_std_mut().process_group(0);
         }
 
         let mut child = match cmd.spawn() {
