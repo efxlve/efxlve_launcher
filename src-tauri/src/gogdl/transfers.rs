@@ -1,5 +1,6 @@
 //! GOG game download, update, and transfer management via `gogdl` CLI.
 
+use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::Mutex;
@@ -169,6 +170,42 @@ fn parse_eta(line: &str) -> Option<String> {
         Some(eta.to_string())
     } else {
         None
+    }
+}
+
+/// Turns the last informative gogdl lines into a message the user can act on.
+/// "exited with code 1" alone says nothing about a full disk or a dead session.
+fn failure_text(tail: &VecDeque<String>, code: Option<i32>) -> String {
+    let joined = tail
+        .iter()
+        .map(String::as_str)
+        .collect::<Vec<_>>()
+        .join("\n")
+        .to_lowercase();
+    if joined.contains("no space left")
+        || joined.contains("disk full")
+        || joined.contains("notenoughspace")
+        || (joined.contains("not enough") && joined.contains("space"))
+    {
+        return "@t:dl.diskFull".to_string();
+    }
+    if joined.contains("permission denied")
+        || joined.contains("permissionerror")
+        || joined.contains("access is denied")
+        || joined.contains("read-only file system")
+    {
+        return "@t:dl.permissionDenied".to_string();
+    }
+    if let Some(line) = tail.iter().rev().find_map(|line| {
+        let low = line.to_lowercase();
+        let cause = low.contains("error") || low.contains("failed") || low.contains("exception");
+        (cause && !line.trim().is_empty()).then(|| line.trim().to_string())
+    }) {
+        return line;
+    }
+    match code {
+        Some(code) => format!("gogdl exited with code {code}"),
+        None => "gogdl stopped".to_string(),
     }
 }
 
@@ -451,31 +488,49 @@ pub async fn gog_install_game(
         let mut current_disk_speed = "0 B/s".to_string();
         let mut current_disk_bytes = 0u64;
         let mut current_eta = "--".to_string();
+        // Progress lines churn once a second; keep the last few informative
+        // lines so a failure can name its cause instead of an exit code.
+        let mut tail: VecDeque<String> = VecDeque::with_capacity(40);
 
         if let Some(err_stream) = stderr {
             let mut lines = CrlfLines::new(err_stream);
             while let Some(line) = lines.next_line().await {
                 let mut dirty = false;
+                let mut informative = true;
 
                 if let Some(p) = parse_progress(&line) {
+                    informative = false;
                     if p != last_progress {
                         last_progress = p;
                         dirty = true;
                     }
                 }
                 if let Some(eta) = parse_eta(&line) {
+                    informative = false;
                     current_eta = eta;
                     dirty = true;
                 }
                 if let Some((sp_str, bytes)) = parse_speed(&line, "Download") {
+                    informative = false;
                     current_speed = sp_str;
                     current_speed_bytes = bytes;
                     dirty = true;
                 }
                 if let Some((disk_str, bytes)) = parse_speed(&line, "Disk") {
+                    informative = false;
                     current_disk_speed = disk_str;
                     current_disk_bytes = bytes;
                     dirty = true;
+                }
+                // The second counter line repeats every second with the first.
+                if line.trim_start().starts_with("= Downloaded:") {
+                    informative = false;
+                }
+                if informative && !line.trim().is_empty() {
+                    if tail.len() >= 40 {
+                        tail.pop_front();
+                    }
+                    tail.push_back(line.clone());
                 }
 
                 // Throttle UI emits to 250ms to prevent DOM thrashing
@@ -574,7 +629,7 @@ pub async fn gog_install_game(
                     "download-failed",
                     DlFailedPayload {
                         id: comp_id_clone,
-                        message: format!("gogdl exited with code {}", s.code().unwrap_or(-1)),
+                        message: failure_text(&tail, s.code()),
                     },
                 );
             }
@@ -582,11 +637,16 @@ pub async fn gog_install_game(
                 if was_cancelled {
                     return;
                 }
+                let message = if tail.is_empty() {
+                    e.to_string()
+                } else {
+                    failure_text(&tail, None)
+                };
                 let _ = app_clone.emit(
                     "download-failed",
                     DlFailedPayload {
                         id: comp_id_clone,
-                        message: e.to_string(),
+                        message,
                     },
                 );
             }
@@ -999,6 +1059,31 @@ mod tests {
             Some(42)
         );
         assert_eq!(parse_eta("ETA: 00:01:22, speed 4 MiB/s"), Some("00:01:22".into()));
+    }
+
+    #[test]
+    fn a_failed_transfer_names_its_cause() {
+        let mut full = VecDeque::new();
+        full.push_back("Starting download".to_string());
+        full.push_back("ERROR: Not enough space available".to_string());
+        assert_eq!(failure_text(&full, Some(1)), "@t:dl.diskFull");
+        let mut full_error = VecDeque::new();
+        full_error.push_back("NotEnoughSpaceError: 4 GiB needed".to_string());
+        assert_eq!(failure_text(&full_error, Some(1)), "@t:dl.diskFull");
+
+        let mut denied = VecDeque::new();
+        denied.push_back("Permission denied while writing chunk".to_string());
+        assert_eq!(failure_text(&denied, Some(1)), "@t:dl.permissionDenied");
+
+        let mut auth = VecDeque::new();
+        auth.push_back("ERROR: Not logged in".to_string());
+        assert_eq!(failure_text(&auth, Some(1)), "ERROR: Not logged in");
+
+        assert_eq!(
+            failure_text(&VecDeque::new(), Some(2)),
+            "gogdl exited with code 2"
+        );
+        assert_eq!(failure_text(&VecDeque::new(), None), "gogdl stopped");
     }
 
     #[test]
