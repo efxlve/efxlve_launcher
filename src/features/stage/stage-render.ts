@@ -104,7 +104,7 @@ import type { EpicSummary } from "../../epic";
 import { epicDlProgress } from "../../core/game-view";
 import { patchStageDownloads, renderStageDownloads } from "./stage-downloads";
 import { renderStageHome, stageHomeActivitiesHtml, stageHomeFocus, stageHomeHeroHtml } from "./stage-home";
-import { renderStageLibrary, stageLibraryFocus, stageLibraryMore, stageLibraryRenderToken, stageLibrarySideHtml } from "./stage-library";
+import { patchStageLibrarySide, renderStageLibrary, stageLibraryFocus, stageLibraryMore, stageLibraryRenderToken } from "./stage-library";
 import {
   stageAchievements,
   stageGameByKey,
@@ -525,27 +525,6 @@ function patchStageHomeHeroInPlace(hero: EpicSummary): void {
   }
 }
 
-function patchStageLibrarySideInPlace(previewed: EpicSummary): void {
-  const side = document.getElementById("stage-library-side");
-  if (!side) return;
-  const ach = stageAchievements(previewed);
-  const isRunning = S.runningGames.has(previewed.appName);
-  const isFav = S.epicFav.has(previewed.appName);
-  const hasUpdate = stageHasUpdate(previewed) ? "1" : "0";
-  const hasDl = epicDlProgress(previewed.appName) !== null ? "1" : "0";
-  const play = stageGamePlaytime(previewed);
-  const sideSig = `${ach?.user_unlocked ?? -1}:${ach?.total_achievements ?? -1}:${isRunning ? "1" : "0"}:${isFav ? "1" : "0"}:${previewed.installed ? "1" : "0"}:${previewed.installSize}:${play.seconds}:${play.lastPlayed}:${hasUpdate}:${hasDl}:${stageWideArt(previewed) ?? ""}`;
-  if (side.dataset.sideSig !== sideSig) {
-    side.dataset.sideSig = sideSig;
-    side.outerHTML = stageLibrarySideHtml(previewed);
-    const nextSide = document.getElementById("stage-library-side");
-    if (nextSide) {
-      nextSide.dataset.sideSig = sideSig;
-      nextSide.querySelectorAll<HTMLElement>("button").forEach((b) => b.setAttribute("data-gp-item", ""));
-    }
-  }
-}
-
 /** Live counters, cards, covers and indicators that update without rebuilding the Stage shell. */
 function patchLiveStage(): void {
   const root = document.getElementById("stage-root");
@@ -596,7 +575,7 @@ function patchLiveStage(): void {
 
   if (S.stage.route === "library" && S.stage.previewKey) {
     const previewed = stageGameByKey(S.stage.previewKey);
-    if (previewed) patchStageLibrarySideInPlace(previewed);
+    if (previewed) patchStageLibrarySide(previewed);
   }
 }
 

@@ -13,11 +13,13 @@ import { t } from "../../i18n";
 import type { EpicSummary } from "../../epic";
 import { SMART_COLLECTIONS, smartCollection } from "../library/smart-collections";
 import { stageCoverMarkup, stageHeroMarkup, stagePrefetch, stageWideArt } from "./stage-art";
+import { swapStageArt } from "./stage-art-swap";
 import { updateStageBackdrop } from "./stage-backdrop";
 import {
   stageAchievements,
   stageFilterCounts,
   stageGameByKey,
+  stageHasUpdate,
   stageLibraryList,
   stagePrimaryAction,
   stageStoreFilterLabel,
@@ -141,41 +143,111 @@ function listRow(s: EpicSummary, index: number): string {
   </button>`;
 }
 
+/** The achievements card's inner content; empty means the card is hidden. */
+function sideAchievementsInner(s: EpicSummary): string {
+  const ach = stageAchievements(s);
+  if (!ach?.supported || ach.total_achievements <= 0) return "";
+  const known = ach.progress_known !== false;
+  const percent = known ? Math.round((ach.user_unlocked / ach.total_achievements) * 100) : 0;
+  return `<span>${icon("trophy", 16)} ${esc(t("stage.achievements"))}</span>
+    <strong class="tabular-nums">${known ? `${ach.user_unlocked} / ${ach.total_achievements}` : String(ach.total_achievements)}</strong>
+    ${known ? stageProgress(percent, "stage-progress-thin") : ""}`;
+}
+
+/** Play/favourite/details row, shared by the first render and the in-place patch. */
+function sideActionsHtml(s: EpicSummary): string {
+  const favorite = S.epicFav.has(s.appName);
+  return `<div class="stage-primary-action">${stagePrimaryAction(s)}</div>
+    <button type="button" class="stage-icon-btn${favorite ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(s.appName)}" data-gp-item data-gp-key="side:favorite" aria-label="${esc(t("stage.favorite"))}">${icon("heart", 18)}</button>
+    <button type="button" class="stage-icon-btn" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="side:details" aria-label="${esc(t("stage.details"))}">${icon("dots", 18)}</button>`;
+}
+
+/**
+ * Everything the side stage shows that can change between two focus stops.
+ * The signature keeps the live patch from rewriting the same panel on every
+ * download tick.
+ */
+function sideSignature(s: EpicSummary): string {
+  const ach = stageAchievements(s);
+  return [
+    s.appName,
+    s.title,
+    stageWideArt(s) ?? "",
+    stageMetaLine(s, { withStore: false }),
+    ach?.supported ? "1" : "0",
+    ach?.progress_known === false ? "0" : "1",
+    ach?.user_unlocked ?? -1,
+    ach?.total_achievements ?? -1,
+    S.epicFav.has(s.appName) ? "1" : "0",
+    S.runningGames.has(s.appName) ? "1" : "0",
+    s.installed ? "1" : "0",
+    s.downloading ? "1" : "0",
+    stageHasUpdate(s) ? "1" : "0",
+  ].join("\u001f");
+}
+
 export function stageLibrarySideHtml(s: EpicSummary | undefined): string {
   if (!s) {
     return `<aside class="stage-library-side" id="stage-library-side"><div class="stage-side-empty">${icon("search", 30)}<strong>${esc(t("stage.noResults"))}</strong><span>${esc(t("stage.noResultsHint"))}</span></div></aside>`;
   }
-  const ach = stageAchievements(s);
-  const favorite = S.epicFav.has(s.appName);
-  const achKnown = ach?.progress_known !== false;
-  const achPercent = ach?.supported && ach.total_achievements > 0 && achKnown
-    ? Math.round((ach.user_unlocked / ach.total_achievements) * 100)
-    : 0;
-  const achLine = ach?.supported && ach.total_achievements > 0
-    ? `<div class="stage-side-ach">
-        <span>${icon("trophy", 16)} ${esc(t("stage.achievements"))}</span>
-        <strong class="tabular-nums">${achKnown ? `${ach.user_unlocked} / ${ach.total_achievements}` : String(ach.total_achievements)}</strong>
-        ${achKnown ? stageProgress(achPercent, "stage-progress-thin") : ""}
-      </div>`
-    : "";
-  return `<aside class="stage-library-side" id="stage-library-side">
-    <div class="stage-side-art">${stageHeroMarkup(s, "stage-side-image")}</div>
+  const achInner = sideAchievementsInner(s);
+  return `<aside class="stage-library-side" id="stage-library-side" data-side-sig="${esc(sideSignature(s))}">
+    <div class="stage-side-art" id="stage-side-art">${stageHeroMarkup(s, "stage-side-image")}</div>
     <div class="stage-side-body">
-      <span class="stage-side-store">${esc(stageStoreName(sourceOfKey(s.appName)))}</span>
-      <h2 class="stage-side-title">${esc(s.title)}</h2>
-      <div class="stage-side-meta">${stageMetaLine(s, { withStore: false })}</div>
-      <div class="stage-side-actions">
-        <div class="stage-primary-action">${stagePrimaryAction(s)}</div>
-        <button type="button" class="stage-icon-btn${favorite ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(s.appName)}" data-gp-item data-gp-key="side:favorite" aria-label="${esc(t("stage.favorite"))}">${icon("heart", 18)}</button>
-        <button type="button" class="stage-icon-btn" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="side:details" aria-label="${esc(t("stage.details"))}">${icon("dots", 18)}</button>
-      </div>
-      ${achLine}
+      <span class="stage-side-store" data-side="store">${esc(stageStoreName(sourceOfKey(s.appName)))}</span>
+      <h2 class="stage-side-title" data-side="title">${esc(s.title)}</h2>
+      <div class="stage-side-meta" data-side="meta">${stageMetaLine(s, { withStore: false })}</div>
+      <div class="stage-side-actions" data-side="actions">${sideActionsHtml(s)}</div>
+      <div class="stage-side-ach" data-side="ach"${achInner ? "" : " hidden"}>${achInner}</div>
       <div class="stage-side-note">${esc(t("stage.sideHint"))}</div>
     </div>
   </aside>`;
 }
 
-const sidePanel = stageLibrarySideHtml;
+/**
+ * Repaint the side stage in place. The panel node, its store/title/meta
+ * elements and the favourite/details buttons survive a focus move; only the
+ * picture is layered and the action row is rewritten (it can change shape
+ * between Play, Install and Update). Rebuilding the whole aside per D-pad step
+ * re-decoded the art and dropped the ring's node identity.
+ */
+export function patchStageLibrarySide(s: EpicSummary | undefined): void {
+  const side = document.getElementById("stage-library-side");
+  if (!side || !s) return;
+  const sig = sideSignature(s);
+  if (side.dataset.sideSig === sig) return;
+  side.dataset.sideSig = sig;
+
+  const artEl = document.getElementById("stage-side-art");
+  if (artEl) {
+    swapStageArt(artEl, {
+      url: stageWideArt(s),
+      key: s.appName,
+      className: "stage-side-image",
+      fallback: stageHeroMarkup(s, "stage-side-image"),
+    });
+  }
+  const text = (name: string, value: string): void => {
+    const el = side.querySelector<HTMLElement>(`[data-side="${name}"]`);
+    if (el) el.textContent = value;
+  };
+  text("store", stageStoreName(sourceOfKey(s.appName)));
+  text("title", s.title);
+  const meta = side.querySelector<HTMLElement>('[data-side="meta"]');
+  if (meta) meta.innerHTML = stageMetaLine(s, { withStore: false });
+
+  const actions = side.querySelector<HTMLElement>('[data-side="actions"]');
+  if (actions) {
+    actions.innerHTML = sideActionsHtml(s);
+    actions.querySelectorAll<HTMLElement>("button").forEach((button) => button.setAttribute("data-gp-item", ""));
+  }
+  const achEl = side.querySelector<HTMLElement>('[data-side="ach"]');
+  if (achEl) {
+    const achInner = sideAchievementsInner(s);
+    achEl.innerHTML = achInner;
+    achEl.hidden = !achInner;
+  }
+}
 
 export function renderStageLibrary(): string {
   ensureRenderedLimit();
@@ -221,33 +293,25 @@ export function renderStageLibrary(): string {
     </header>
     <div class="stage-library-body">
       <div class="stage-library-wall">${body}</div>
-      ${sidePanel(selected)}
+      ${stageLibrarySideHtml(selected)}
     </div>
   </div>`;
 }
 
-/** Focus preview: repaint only the side stage, never the whole wall. */
+/** Focus preview: patch the side stage in place, never the whole wall. */
 export function stageLibraryFocus(key: string): void {
   if (!key.startsWith("lib:")) return;
   const summary = stageGameByKey(key.slice(4));
-  const side = document.getElementById("stage-library-side");
-  if (!summary || !side) return;
+  if (!summary) return;
   S.stage.previewKey = summary.appName;
   updateStageBackdrop(stageWideArt(summary));
-  side.outerHTML = sidePanel(summary);
-  const next = stageGameByKey(key.slice(4));
-  if (next) {
-    // The wall was just rendered from this exact list: sorting and filtering
-    // 600 games again for every D-pad step is wasted work.
-    const all = renderedList.length > 0 ? renderedList : stageLibraryList();
-    const index = all.findIndex((s) => s.appName === next.appName);
-    stagePrefetch(
-      [all[index - 1], all[index + 1], all[index + 2]].map((s) => (s ? stageWideArt(s) : null)),
-      3,
-    );
-  }
-  const panel = document.getElementById("stage-library-side");
-  if (panel) {
-    panel.querySelectorAll<HTMLElement>("button").forEach((button) => button.setAttribute("data-gp-item", ""));
-  }
+  patchStageLibrarySide(summary);
+  // The wall was just rendered from this exact list: sorting and filtering
+  // 600 games again for every D-pad step is wasted work.
+  const all = renderedList.length > 0 ? renderedList : stageLibraryList();
+  const index = all.findIndex((s) => s.appName === summary.appName);
+  stagePrefetch(
+    [all[index - 1], all[index + 1], all[index + 2]].map((s) => (s ? stageWideArt(s) : null)),
+    3,
+  );
 }

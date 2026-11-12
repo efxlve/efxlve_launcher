@@ -359,9 +359,24 @@
   background: var(--stage-surface-2);
 }
 .stage-side-art > * {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* The incoming preview fades in over the painted one; see stage-art-swap.ts. */
+.stage-side-image.stage-art-swap {
+  z-index: 2;
+  opacity: 0;
+  animation: none;
+  will-change: opacity;
+}
+
+.stage-side-image.stage-art-swap.is-active {
+  opacity: 1;
+  transition: opacity 460ms var(--stage-ease);
 }
 .stage-side-body {
   display: flex;
@@ -424,6 +439,12 @@
   backdrop-filter: blur(12px);
   color: var(--stage-ink-3);
   font-size: 11.5px;
+}
+
+/* The card keeps its node across focus moves; `hidden` has to beat the
+   display rule above. */
+.stage-side-ach[hidden] {
+  display: none;
 }
 .stage-side-ach > span:first-child {
   display: flex;

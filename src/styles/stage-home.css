@@ -49,14 +49,14 @@
 
 /* A ribbon sweep keeps the previous frame painted until the next one decodes:
    the incoming layer sits on top at opacity 0 and fades in once loaded. */
-.stage-home-art-image.stage-home-art-swap {
+.stage-home-art-image.stage-art-swap {
   z-index: 2;
   opacity: 0;
   animation: none;
   will-change: opacity;
 }
 
-.stage-home-art-image.stage-home-art-swap.is-active {
+.stage-home-art-image.stage-art-swap.is-active {
   opacity: 1;
   transition: opacity 460ms var(--stage-ease);
 }
