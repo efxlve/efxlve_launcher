@@ -3930,6 +3930,7 @@
   "stage.manageInDesktop": "डेस्कटॉप पर प्रबंधित करें",
   "stage.manage": "प्रबंधित करें",
   "stage.gameMissing": "यह गेम अब आपकी लाइब्रेरी में नहीं है।",
+  "stage.gameMissingHint": "हो सकता है इसे हटा दिया गया हो, छिपा दिया गया हो, या यह किसी दूसरे खाते का हो।",
   "stage.alreadyRunning": "यह गेम पहले से चल रहा है।",
   "stage.experimentalNote": "Stage प्रयोगात्मक है। डाउनलोड और सेटिंग्स डेस्कटॉप मोड में रहते हैं।",
   "stage.launching": "शुरू हो रहा है",

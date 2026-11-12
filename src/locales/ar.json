@@ -3930,6 +3930,7 @@
   "stage.manageInDesktop": "إدارة على سطح المكتب",
   "stage.manage": "إدارة",
   "stage.gameMissing": "هذه اللعبة لم تعد في مكتبتك.",
+  "stage.gameMissingHint": "قد تكون أُزيلت أو أُخفيت أو تخص حسابًا آخر.",
   "stage.alreadyRunning": "هذه اللعبة قيد التشغيل بالفعل.",
   "stage.experimentalNote": "Stage تجريبي. تبقى التنزيلات والإعدادات في وضع سطح المكتب.",
   "stage.launching": "جارٍ التشغيل",

@@ -469,10 +469,13 @@ function content(game: EpicSummary): string {
 export function renderStageProgram(): string {
   const game = stageGameByKey(S.stage.gameKey);
   if (!game) {
-    return `<div class="stage-program-missing" >
-      <span class="stage-empty-icon">${icon("gamepad-2", 42)}</span>
-      <h1>${esc(t("stage.gameMissing"))}</h1>
-      <button type="button" class="stage-btn stage-btn-primary" data-stage-act="back" data-gp-item data-gp-key="missing:back">${esc(t("common.back"))}</button>
+    return `<div class="stage-program-missing">
+      <div class="stage-program-empty">
+        <span class="stage-empty-icon">${icon("gamepad-2", 36)}</span>
+        <h1>${esc(t("stage.gameMissing"))}</h1>
+        <p>${esc(t("stage.gameMissingHint"))}</p>
+        <button type="button" class="stage-btn stage-btn-primary" data-stage-act="back" data-gp-item data-gp-key="missing:back">${icon("arrow-left", 16)}<span>${esc(t("common.back"))}</span></button>
+      </div>
     </div>`;
   }
   const favorite = S.epicFav.has(game.appName);

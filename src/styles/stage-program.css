@@ -639,6 +639,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.stage-program-empty h1,
 .stage-program-empty h2 {
   margin: 0;
   color: var(--stage-ink);
@@ -656,19 +657,21 @@
   color: var(--stage-ink-4);
   font-size: 11px;
 }
-.stage-program-missing {
-  min-height: 70vh;
+/* The programme's missing-game page reuses the empty card and centres it in
+   the route, like the empty tabs. */
+#stage-root[data-route="program"] .stage-layer-main {
   display: flex;
   flex-direction: column;
+}
+.stage-program-missing {
+  display: flex;
+  flex: 1;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  text-align: center;
+  padding: var(--stage-pad);
 }
-.stage-program-missing h1 {
-  margin: 0;
-  font-size: clamp(24px, 3vw, 38px);
-  font-weight: 600;
+.stage-program-missing .stage-program-empty {
+  min-height: 0;
 }
 
 /* ---------- Downloads ---------- */

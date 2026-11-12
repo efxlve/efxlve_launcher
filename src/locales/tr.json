@@ -3930,6 +3930,7 @@
   "stage.manageInDesktop": "Masaüstünde yönet",
   "stage.manage": "Yönet",
   "stage.gameMissing": "Bu oyun artık kütüphanende değil.",
+  "stage.gameMissingHint": "Kaldırılmış, gizlenmiş veya başka bir hesaba ait olabilir.",
   "stage.alreadyRunning": "Bu oyun zaten çalışıyor.",
   "stage.experimentalNote": "Sahne deneysel. İndirmeler ve ayarlar masaüstü modunda kalıyor.",
   "stage.launching": "Başlatılıyor",

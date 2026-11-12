@@ -3930,6 +3930,7 @@
   "stage.manageInDesktop": "Im Desktop verwalten",
   "stage.manage": "Verwalten",
   "stage.gameMissing": "Dieses Spiel ist nicht mehr in deiner Bibliothek.",
+  "stage.gameMissingHint": "Es wurde vielleicht entfernt, ausgeblendet oder gehört zu einem anderen Konto.",
   "stage.alreadyRunning": "Dieses Spiel läuft bereits.",
   "stage.experimentalNote": "Stage ist experimentell. Downloads und Einstellungen bleiben im Desktop-Modus.",
   "stage.launching": "Wird gestartet",

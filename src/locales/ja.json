@@ -3930,6 +3930,7 @@
   "stage.manageInDesktop": "デスクトップで管理",
   "stage.manage": "管理",
   "stage.gameMissing": "このゲームはライブラリにありません。",
+  "stage.gameMissingHint": "削除されたか、非表示になっているか、別のアカウントのゲームかもしれません。",
   "stage.alreadyRunning": "このゲームはすでに実行中です。",
   "stage.experimentalNote": "Stageは試験機能です。ダウンロードと設定はデスクトップモードに残ります。",
   "stage.launching": "起動中",

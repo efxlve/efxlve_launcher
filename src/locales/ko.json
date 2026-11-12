@@ -3930,6 +3930,7 @@
   "stage.manageInDesktop": "데스크톱에서 관리",
   "stage.manage": "관리",
   "stage.gameMissing": "이 게임은 더 이상 라이브러리에 없습니다.",
+  "stage.gameMissingHint": "삭제되었거나 숨겨졌거나 다른 계정의 게임일 수 있습니다.",
   "stage.alreadyRunning": "이 게임은 이미 실행 중입니다.",
   "stage.experimentalNote": "Stage는 실험 기능입니다. 다운로드와 설정은 데스크톱 모드에 남습니다.",
   "stage.launching": "시작 중",

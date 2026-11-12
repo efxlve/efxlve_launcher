@@ -815,6 +815,12 @@ function hints(): string {
       stageHint(face("b"), t("common.close")),
     ]);
   }
+  if (S.stage.route === "program" && !stageGameByKey(S.stage.gameKey)) {
+    // A missing game has no tabs or quick play to offer.
+    return stageHintBar([
+      stageHint(face("b"), t("common.back")),
+    ]);
+  }
   if (S.stage.route === "program") {
     return stageHintBar([
       stageHint(face("a"), t("stage.select")),

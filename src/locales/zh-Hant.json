@@ -3930,6 +3930,7 @@
   "stage.manageInDesktop": "在桌面管理",
   "stage.manage": "管理",
   "stage.gameMissing": "該遊戲已不在你的遊戲庫中。",
+  "stage.gameMissingHint": "可能已被移除、隱藏，或屬於其他帳戶。",
   "stage.alreadyRunning": "此遊戲已在執行中。",
   "stage.experimentalNote": "Stage 是實驗功能。下載與設定仍在桌面模式中。",
   "stage.launching": "正在啟動",

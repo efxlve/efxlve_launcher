@@ -3930,6 +3930,7 @@
   "stage.manageInDesktop": "Zarządzaj na pulpicie",
   "stage.manage": "Zarządzaj",
   "stage.gameMissing": "Tej gry nie ma już w bibliotece.",
+  "stage.gameMissingHint": "Mógł zostać usunięty, ukryty lub należeć do innego konta.",
   "stage.alreadyRunning": "Ta gra jest już uruchomiona.",
   "stage.experimentalNote": "Stage jest eksperymentalny. Pobierania i ustawienia pozostają w trybie pulpitu.",
   "stage.launching": "Uruchamianie",

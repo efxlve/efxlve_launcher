@@ -3930,6 +3930,7 @@
   "stage.manageInDesktop": "Управлять на рабочем столе",
   "stage.manage": "Управлять",
   "stage.gameMissing": "Этой игры больше нет в библиотеке.",
+  "stage.gameMissingHint": "Возможно, игра удалена, скрыта или относится к другой учётной записи.",
   "stage.alreadyRunning": "Эта игра уже запущена.",
   "stage.experimentalNote": "Stage — экспериментальный режим. Загрузки и настройки остаются в режиме рабочего стола.",
   "stage.launching": "Запуск",
