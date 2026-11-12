@@ -584,6 +584,12 @@ pub(super) struct DlCancelled {
     id: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+struct DlPhase {
+    id: String,
+    phase: String,
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn emit_progress_full(
     app: &AppHandle,
@@ -639,6 +645,76 @@ pub(super) fn emit_failed(app: &AppHandle, id: &str, message: String) {
 
 pub(super) fn emit_cancelled(app: &AppHandle, id: &str) {
     let _ = app.emit("download-cancelled", DlCancelled { id: id.to_string() });
+}
+
+pub(super) fn emit_phase(app: &AppHandle, id: &str, phase: &str) {
+    let _ = app.emit(
+        "download-phase",
+        DlPhase {
+            id: id.to_string(),
+            phase: phase.to_string(),
+        },
+    );
+}
+
+/// Appends one attempt to `logs/download.log`; the feedback report attaches it.
+/// Four hundred lines cover preparation, every retry and the final error.
+fn write_download_log(
+    app: &AppHandle,
+    app_name: &str,
+    result: &Result<(), String>,
+    lines: &VecDeque<String>,
+) {
+    let Ok(data_dir) = app.path().app_data_dir() else {
+        return;
+    };
+    let log_dir = data_dir.join("logs");
+    if std::fs::create_dir_all(&log_dir).is_err() {
+        return;
+    }
+    let path = log_dir.join("download.log");
+    if std::fs::metadata(&path)
+        .map(|meta| meta.len() > 512 * 1024)
+        .unwrap_or(false)
+    {
+        let _ = std::fs::remove_file(&path);
+    }
+    append_download_log(&path, app_name, result, lines);
+}
+
+pub(super) fn append_download_log(
+    path: &std::path::Path,
+    app_name: &str,
+    result: &Result<(), String>,
+    lines: &VecDeque<String>,
+) {
+    use std::io::Write;
+
+    let mut text = format!(
+        "\n===== {} | {} | v{} =====\n",
+        crate::clock::stamp(std::time::SystemTime::now()),
+        app_name,
+        env!("CARGO_PKG_VERSION")
+    );
+    match result {
+        Ok(()) => text.push_str("result: success\n"),
+        Err(error) => {
+            text.push_str("result: failed: ");
+            text.push_str(error);
+            text.push('\n');
+        }
+    }
+    for line in lines {
+        text.push_str(line);
+        text.push('\n');
+    }
+    if let Ok(mut file) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+    {
+        let _ = file.write_all(text.as_bytes());
+    }
 }
 
 /// Concurrent chunk download workers per network profile. Higher worker counts
@@ -793,6 +869,9 @@ pub(super) async fn monitor_download(
     let mut timeout_retried = false;
     let mut stall_retried = false;
     let mut tail: VecDeque<String> = VecDeque::with_capacity(60);
+    // A wider window than the error heuristic: the feedback report attaches it,
+    // and the preparation phase usually explains a failed update.
+    let mut log_lines: VecDeque<String> = VecDeque::with_capacity(400);
 
     let result: Result<(), String> = loop {
         // stdout carries no progress but is drained so the pipe does not fill.
@@ -804,6 +883,7 @@ pub(super) async fn monitor_download(
             let mut r = CrlfLines::new(e);
             let mut completion_at: Option<std::time::Instant> = None;
             let mut finishing_sent = false;
+            let mut downloading_sent = false;
             let mut exited: Option<std::process::ExitStatus> = None;
             let mut last_line_at = std::time::Instant::now();
             let mut last_progress_at = std::time::Instant::now();
@@ -816,6 +896,7 @@ pub(super) async fn monitor_download(
                         let before_written = written_mib;
                         if !finishing_sent && is_install_finishing(&line) {
                             finishing_sent = true;
+                            emit_phase(&app, &app_name, "finishing");
                             emit_progress_full(
                                 &app,
                                 &app_name,
@@ -918,6 +999,10 @@ pub(super) async fn monitor_download(
                         // Speed lines arrive before the first `Progress:` line. Publishing 0
                         // here resets a resumed download in the UI.
                         if (pct_changed || time_elapsed) && (new_pct.is_some() || last_pct >= 0) {
+                            if !downloading_sent {
+                                downloading_sent = true;
+                                emit_phase(&app, &app_name, "downloading");
+                            }
                             last_emit = std::time::Instant::now();
                             if let Some(p) = new_pct {
                                 last_pct = p;
@@ -977,6 +1062,10 @@ pub(super) async fn monitor_download(
                             }
                             break;
                         }
+                        if log_lines.len() >= 400 {
+                            log_lines.pop_front();
+                        }
+                        log_lines.push_back(line.clone());
                         tail.push_back(line);
                     }
                     Ok(None) => break,
@@ -1207,6 +1296,7 @@ pub(super) async fn monitor_download(
         }
         break Err(short_error(&err_text));
     };
+    write_download_log(&app, &app_name, &result, &log_lines);
 
     // Release the slot only after this monitor has seen the child exit.
     // An older monitor must not delete a newer transfer's files or resume record.

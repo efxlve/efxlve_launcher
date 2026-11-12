@@ -322,6 +322,13 @@ function renderActiveCard(dl: DlMetrics): string {
   // Nile has no pause and the launcher does not cancel an install, so the
   // Amazon card carries no queue controls.
   const paused = !isAmazon && (dl.id.startsWith("gog::") ? S.gogDlPaused : S.dlQueueStatus.isPaused);
+  const phaseLabel = paused
+    ? t("dl.statusPaused")
+    : dl.phase === "starting"
+      ? t("dl.starting")
+      : dl.phase === "finishing"
+        ? t("dl.finishing")
+        : t("dl.statusActive");
   const pct = Math.round(dl.progress);
   const metric = (label: string, id: string, value: string): string =>
     `<div class="dl-metric"><span class="dl-metric-label">${label}</span><span class="dl-metric-value" id="${id}">${value}</span></div>`;
@@ -333,7 +340,7 @@ function renderActiveCard(dl: DlMetrics): string {
           <div class="dl-active-text dl-active-open" ${detail}>
             <div class="dl-active-title" title="${title}">${title}</div>
             ${storePlate(sourceOfKey(dl.id))}
-            <span class="chip ${paused ? "warn" : "accent"}">${paused ? t("dl.statusPaused") : t("dl.statusActive")}</span>
+            <span class="chip ${paused ? "warn" : "accent"}">${phaseLabel}</span>
           </div>
           <div class="row-actions">
             ${isAmazon

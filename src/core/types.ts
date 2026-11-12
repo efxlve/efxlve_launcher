@@ -145,6 +145,8 @@ export interface DlMetrics {
   eta: string;
   downloadedBytes: number;
   totalBytes: number;
+  /** What the transfer is doing before the first byte or after the last one. */
+  phase?: "starting" | "downloading" | "finishing";
 }
 
 /** Saved Epic Games account for fast switching. */

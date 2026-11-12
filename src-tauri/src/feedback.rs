@@ -248,7 +248,13 @@ fn create_report(
         if let Some(bytes) = read_limited(&perf) {
             add_bytes(&mut archive, options, "perf.log", &bytes, &mut files)?;
         }
-        for name in ["crash.log", "legendary-error.log", "clip.log", "discord-rpc.log"] {
+        for name in [
+            "crash.log",
+            "legendary-error.log",
+            "download.log",
+            "clip.log",
+            "discord-rpc.log",
+        ] {
             let log = data_dir.join("logs").join(name);
             if let Some(bytes) = read_limited(&log) {
                 add_bytes(

@@ -60,6 +60,7 @@ export async function applySelectiveInstall(appName: string, tags: string[], dlc
       eta: t("dl.calculating"),
       downloadedBytes: 0,
       totalBytes: 0,
+      phase: "starting",
     };
   }
   updateBadge();

@@ -597,6 +597,19 @@ export async function initApp(hooks: {
       hooks.scheduleRender();
     });
 
+    // A transfer can spend minutes in Legendary's analysis or finalization
+    // phase with no percentage. The phase event keeps the card honest.
+    listenLater<{ id: string; phase: "starting" | "downloading" | "finishing" }>(
+      "download-phase",
+      (event) => {
+        const metrics = S.activeDlMetrics;
+        if (!metrics || metrics.id !== event.payload.id) return;
+        metrics.phase = event.payload.phase;
+        if (S.view === "downloads") render();
+        else if (S.view === "library") patchLibraryCardDom(metrics.id);
+        if (S.stage.active) render();
+      },
+    );
     listenLater<DlProgressEvent>("download-progress", (event) => {
       const { id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes } = event.payload;
       noteDownloadActivity();
@@ -651,9 +664,11 @@ export async function initApp(hooks: {
             eta: eta ?? t("common.calculating"),
             downloadedBytes: downloadedBytes ?? 0,
             totalBytes: totalBytes ?? 0,
+            phase: "downloading",
           };
         } else {
           S.activeDlMetrics.progress = progress;
+          S.activeDlMetrics.phase = "downloading";
           if (speed) S.activeDlMetrics.speed = speed;
           if (freshNet) S.activeDlMetrics.speedBytes = measuredSpeedBytes;
           if (diskSpeed) S.activeDlMetrics.diskSpeed = diskSpeed;

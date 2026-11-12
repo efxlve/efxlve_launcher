@@ -323,6 +323,7 @@ export async function epicInstall(appName: string, installDir?: string | null): 
       // The installed size is not the update's download size. Leave the total
       // unknown until legendary's first progress line reports the real one.
       totalBytes: 0,
+      phase: "starting",
     };
   }
   updateBadge();
