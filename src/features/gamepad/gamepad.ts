@@ -514,6 +514,15 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
       setFocus(best);
       return;
     }
+    // Nothing above this control: return to the tab that owns the panel, not
+    // the tab that happens to sit closest horizontally.
+    if (dir === "up") {
+      const activeTab = document.querySelector<HTMLElement>(".stage-settings-tab.active");
+      if (activeTab && isVisibleEl(activeTab)) {
+        setFocus(activeTab);
+        return;
+      }
+    }
   }
   // Down from the settings tabs enters the active panel at its first control;
   // the full-width row below would otherwise win and skip the card button.

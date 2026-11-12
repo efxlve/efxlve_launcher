@@ -146,7 +146,7 @@ function musicLibrary(): string {
   }).join("");
   return `<div class="stage-music-library">
     <span class="stage-kicker">${esc(t("stage.settingsMusicLibrary"))}</span>
-    <div class="stage-settings-actions">
+    <div class="stage-settings-actions" data-gp-row>
       <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="import-stage-audio" data-gp-item data-gp-key="set:music-add">${icon("plus", 16)}<span>${esc(t("stage.settingsMusicAdd"))}</span></button>
     </div>
     ${files.length
@@ -205,7 +205,7 @@ function appearance(): string {
       <span class="stage-kicker">${esc(t("stage.settingsPresentationTitle"))}</span>
       ${stageToggle("cinematic", t("stage.settingsCinematic"), t("stage.settingsCinematicDesc"), S.stage.cinematic, "toggle-stage-cinematic")}
       ${stageToggle("attract", t("stage.settingsAttract"), t("stage.settingsAttractDesc"), S.stage.attract, "toggle-stage-attract")}
-      <div class="stage-settings-actions">
+      <div class="stage-settings-actions" data-gp-row>
         <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="preview-stage-idle" data-gp-item data-gp-key="set:idle-preview">${icon("sparkles", 16)}<span>${esc(t("stage.settingsPreviewIdle"))}</span></button>
       </div>
     </div>
@@ -246,7 +246,7 @@ function controller(): string {
     </div>
     ${globalToggle("auto-controller", t("stage.settingsAuto"), t("stage.settingsAutoDesc"), S.stage.autoEnter, "toggle-stage-auto")}
     ${globalToggle("launch-controller", t("stage.settingsOpenAtLaunch"), t("stage.settingsOpenAtLaunchDesc"), S.stage.openAtLaunch, "toggle-stage-open-launch")}
-    <div class="stage-settings-actions">
+    <div class="stage-settings-actions" data-gp-row>
       <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="desktop-settings" data-gp-item data-gp-key="set:desktop-controller">${icon("settings", 16)}<span>${esc(t("stage.settingsDesktopController"))}</span></button>
     </div>
     <div class="stage-settings-note">${icon("info", 15)}<span>${esc(t("stage.settingsControllerNote"))}</span></div>
@@ -268,7 +268,7 @@ function about(): string {
       </div>
     </div>
     <div class="stage-settings-note">${icon("info", 15)}<span>${esc(t("stage.settingsBetaNote"))}</span></div>
-    <div class="stage-settings-actions">
+    <div class="stage-settings-actions" data-gp-row>
       <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="desktop-settings" data-gp-item data-gp-key="about:desktop-settings">${icon("settings", 16)}<span>${esc(t("stage.openDesktopSettings"))}</span></button>
       <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="desktop" data-gp-item data-gp-key="about:desktop">${icon("monitor", 16)}<span>${esc(t("stage.openDesktop"))}</span></button>
     </div>
