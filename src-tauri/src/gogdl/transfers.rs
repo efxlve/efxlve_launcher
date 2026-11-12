@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::Mutex;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use tauri::{command, AppHandle, Emitter};
 use tokio::io::{AsyncRead, AsyncReadExt};
 
@@ -12,6 +12,17 @@ use super::cache::{load_installed_games, save_installed_games};
 use super::cmd_error;
 use super::models::GogInstalledInfo;
 use super::paths::{auth_json_path, ensure_binary};
+
+/// gogdl's progress thread keeps printing the same counters when its workers
+/// wedge, so a repeated line is not movement. Same window as the other stores.
+const STALL_TIMEOUT: Duration = Duration::from_secs(5 * 60);
+/// Before the progress bar starts gogdl only fetches build data. Complete
+/// silence for this long is a dead request, not a slow disk.
+const STARTUP_STALL: Duration = Duration::from_secs(10 * 60);
+/// At the very end gogdl applies patches and removes old files.
+const FINALIZE_STALL: Duration = Duration::from_secs(15 * 60);
+/// How often the reader checks the activity clock while no line arrives.
+const STALL_POLL: Duration = Duration::from_secs(15);
 
 #[derive(Default)]
 pub struct GogDlState {
@@ -24,6 +35,18 @@ pub struct GogDlState {
 }
 
 pub static GOG_DL_STATE: Mutex<Option<GogDlState>> = Mutex::new(None);
+
+/// True while the user has this transfer paused; a suspended process emits no
+/// progress and must not be mistaken for a stalled one.
+fn download_paused(composite_id: &str) -> bool {
+    GOG_DL_STATE
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .as_ref()
+        .is_some_and(|state| {
+            state.active_game_id.as_deref() == Some(composite_id) && state.paused
+        })
+}
 
 /// Ends a gogdl process; the tree flag matters if it ever starts a helper.
 async fn kill_gogdl(pid: u32) {
@@ -146,16 +169,29 @@ impl<R: AsyncRead + Unpin> CrlfLines<R> {
     }
 }
 
-/// Parses progress percentage from `= Progress: 45.20%` lines.
-fn parse_progress(line: &str) -> Option<i32> {
+/// Raw percentage from a `= Progress: 45.20` line. The watchdog needs the
+/// fraction; the UI rounds it.
+fn parse_progress_value(line: &str) -> Option<f64> {
     let idx = line.find("Progress:")? + "Progress:".len();
     let rest = line[idx..].trim_start();
     let end = rest.find(|c: char| !(c.is_ascii_digit() || c == '.'))?;
     if end == 0 {
         return None;
     }
-    let val: f64 = rest[..end].parse().ok()?;
-    Some((val.round() as i32).clamp(0, 100))
+    rest[..end].parse().ok()
+}
+
+/// Parses progress percentage from `= Progress: 45.20%` lines.
+fn parse_progress(line: &str) -> Option<i32> {
+    Some((parse_progress_value(line)?.round() as i32).clamp(0, 100))
+}
+
+/// Bytes already written, from the `written/total` pair after the percentage.
+fn parse_written_bytes(line: &str) -> Option<u64> {
+    let idx = line.find("Progress:")? + "Progress:".len();
+    let sizes = line[idx..].split_whitespace().nth(1)?;
+    let (done, _total) = sizes.split_once('/')?;
+    done.trim().trim_end_matches(',').parse().ok()
 }
 
 /// Parses ETA string from `ETA: 00:02:30` lines.
@@ -481,6 +517,22 @@ pub async fn gog_install_game(
         }
 
         let stderr = child.stderr.take();
+        // Drain stdout too: gogdl prints the disk-space refusal there, and an
+        // unread pipe can block the child once its buffer fills.
+        let mut stdout_pipe = child.stdout.take();
+        let stdout_task = tokio::spawn(async move {
+            let mut text = String::new();
+            if let Some(stdout) = stdout_pipe.as_mut() {
+                let mut lines = CrlfLines::new(stdout);
+                while let Some(line) = lines.next_line().await {
+                    if text.len() < 8192 {
+                        text.push_str(&line);
+                        text.push('\n');
+                    }
+                }
+            }
+            text
+        });
         let mut last_emit = Instant::now();
         let mut last_progress = 0i32;
         let mut current_speed = "0 B/s".to_string();
@@ -491,10 +543,61 @@ pub async fn gog_install_game(
         // Progress lines churn once a second; keep the last few informative
         // lines so a failure can name its cause instead of an exit code.
         let mut tail: VecDeque<String> = VecDeque::with_capacity(40);
+        let mut stalled = false;
 
         if let Some(err_stream) = stderr {
             let mut lines = CrlfLines::new(err_stream);
-            while let Some(line) = lines.next_line().await {
+            let mut last_line = Instant::now();
+            let mut last_moved = Instant::now();
+            let mut last_pct: Option<f64> = None;
+            let mut last_bytes: Option<u64> = None;
+            loop {
+                let line = match tokio::time::timeout(STALL_POLL, lines.next_line()).await {
+                    Ok(Some(line)) => line,
+                    Ok(None) => break,
+                    Err(_) => {
+                        let now = Instant::now();
+                        // A paused transfer is not stalled; restart both
+                        // clocks so resuming gets a fresh window.
+                        if download_paused(&comp_id_clone) {
+                            last_line = now;
+                            last_moved = now;
+                            continue;
+                        }
+                        let (since, limit) = if last_pct.is_none() {
+                            (now.saturating_duration_since(last_line), STARTUP_STALL)
+                        } else if last_pct.is_some_and(|pct| pct >= 99.0) {
+                            (now.saturating_duration_since(last_moved), FINALIZE_STALL)
+                        } else {
+                            (now.saturating_duration_since(last_moved), STALL_TIMEOUT)
+                        };
+                        if since >= limit {
+                            if let Some(pid) = child.id() {
+                                kill_gogdl(pid).await;
+                            }
+                            stalled = true;
+                            break;
+                        }
+                        continue;
+                    }
+                };
+                last_line = Instant::now();
+                // The progress thread repeats the same counters while workers
+                // are stuck, so movement means either the fraction or the
+                // written byte count changed.
+                if let Some(pct) = parse_progress_value(&line) {
+                    let bytes = parse_written_bytes(&line);
+                    let moved = last_pct.is_none()
+                        || last_pct != Some(pct)
+                        || last_bytes.is_some_and(|prev| bytes.is_some_and(|b| b != prev));
+                    if moved {
+                        last_moved = Instant::now();
+                    }
+                    last_pct = Some(pct);
+                    if let Some(b) = bytes {
+                        last_bytes = Some(b);
+                    }
+                }
                 let mut dirty = false;
                 let mut informative = true;
 
@@ -555,7 +658,15 @@ pub async fn gog_install_game(
             }
         }
 
-        let status = child.wait().await;
+        // The stderr pipe closes before the process exits; a killed transfer
+        // must not leave the monitor waiting on a process that ignored the
+        // first kill.
+        let status: Result<std::process::ExitStatus, String> =
+            match tokio::time::timeout(Duration::from_secs(30), child.wait()).await {
+                Ok(Ok(status)) => Ok(status),
+                Ok(Err(error)) => Err(error.to_string()),
+                Err(_) => Err("gogdl did not exit".to_string()),
+            };
         let (owns_state, was_cancelled) = {
             let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
             let owns = state_guard
@@ -571,6 +682,17 @@ pub async fn gog_install_game(
         // clear it or report a stale failure over the new row.
         if !owns_state {
             return;
+        }
+        let stdout_text = tokio::time::timeout(Duration::from_secs(5), stdout_task)
+            .await
+            .ok()
+            .and_then(|task| task.ok())
+            .unwrap_or_default();
+        for line in stdout_text.lines() {
+            if tail.len() >= 40 {
+                tail.pop_front();
+            }
+            tail.push_back(line.trim().to_string());
         }
 
         match status {
@@ -625,11 +747,16 @@ pub async fn gog_install_game(
                 if was_cancelled {
                     return;
                 }
+                let message = if stalled {
+                    "@t:dl.stalled".to_string()
+                } else {
+                    failure_text(&tail, s.code())
+                };
                 let _ = app_clone.emit(
                     "download-failed",
                     DlFailedPayload {
                         id: comp_id_clone,
-                        message: failure_text(&tail, s.code()),
+                        message,
                     },
                 );
             }
@@ -637,8 +764,10 @@ pub async fn gog_install_game(
                 if was_cancelled {
                     return;
                 }
-                let message = if tail.is_empty() {
-                    e.to_string()
+                let message = if stalled {
+                    "@t:dl.stalled".to_string()
+                } else if tail.is_empty() {
+                    e
                 } else {
                     failure_text(&tail, None)
                 };
@@ -1059,6 +1188,15 @@ mod tests {
             Some(42)
         );
         assert_eq!(parse_eta("ETA: 00:01:22, speed 4 MiB/s"), Some("00:01:22".into()));
+
+        // The watchdog compares the unrounded fraction and the byte counter.
+        let line = "INFO [PROGRESS]:\t = Progress: 42.13 123456/456789, Running for: 00:01:23";
+        assert_eq!(parse_progress_value(line), Some(42.13));
+        assert_eq!(parse_written_bytes(line), Some(123_456));
+        assert_eq!(
+            parse_written_bytes("[Progress] = Progress: 42.13% (123/456)"),
+            None
+        );
     }
 
     #[test]
