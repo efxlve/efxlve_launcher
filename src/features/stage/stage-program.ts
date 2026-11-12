@@ -446,8 +446,8 @@ function extrasTab(game: EpicSummary): string {
         <span class="stage-stat">${icon(gameTrack ? "music" : "sparkles", 13)}<span>${esc(gameTrack ? stageAudioLabel(gameTrack) : t("stage.settingsAmbience"))}</span></span>
       </div>
       <div class="stage-extra-actions">
-        <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="choose-game-track" data-key="${esc(game.appName)}" data-gp-item data-gp-key="extras:music-choose">${icon("music", 16)}<span>${esc(t("stage.settingsMusicChoose"))}</span></button>
-        ${gameTrack ? `<button type="button" class="stage-btn stage-btn-ghost" data-stage-act="clear-game-track" data-key="${esc(game.appName)}" data-gp-item data-gp-key="extras:music-clear">${icon("x", 16)}<span>${esc(t("stage.settingsMusicClear"))}</span></button>` : ""}
+        <button type="button" class="stage-stat stage-chip-action" data-stage-act="choose-game-track" data-key="${esc(game.appName)}" data-gp-item data-gp-key="extras:music-choose">${icon("music", 14)}<span>${esc(t("stage.settingsMusicChoose"))}</span></button>
+        ${gameTrack ? `<button type="button" class="stage-stat stage-chip-action" data-stage-act="clear-game-track" data-key="${esc(game.appName)}" data-gp-item data-gp-key="extras:music-clear">${icon("x", 14)}<span>${esc(t("stage.settingsMusicClear"))}</span></button>` : ""}
       </div>
       <div class="stage-extra-empty">${esc(t("stage.settingsGameMusicDesc"))}</div>
     </div>

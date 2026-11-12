@@ -668,6 +668,22 @@
   gap: 9px;
   margin-block-start: 16px;
 }
+/* The game-music actions wear the chip shape so they read with the state chip
+   above them; they stay real buttons for the focus ring. */
+.stage-chip-action {
+  height: 30px;
+  padding: 0 11px;
+  color: var(--stage-ink-2);
+  font-weight: 550;
+  cursor: pointer;
+  transition:
+    background 140ms var(--stage-ease),
+    border-color 140ms var(--stage-ease);
+}
+.stage-chip-action:hover {
+  border-color: var(--stage-line-strong);
+  background: rgba(255, 255, 255, 0.08);
+}
 .stage-program-empty {
   display: flex;
   flex-direction: column;
