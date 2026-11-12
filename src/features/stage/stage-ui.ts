@@ -135,7 +135,7 @@ export function stageMetaLine(s: EpicSummary, opts: StageMetaOptions = {}): stri
   if (!s.installed) parts.push(t("stage.notInstalled"));
   const play = stagePlaytime(s);
   if (play.seconds > 0) parts.push(fmtPlaytime(play.seconds));
-  const last = play.lastPlayed > 946684800000 ? relativeTime(play.lastPlayed) : "";
+  const last = play.lastPlayed > 946684800 ? relativeTime(play.lastPlayed * 1000) : "";
   if (last) parts.push(last);
   return parts.filter(Boolean).map((part) => esc(part)).join(`<span class="stage-dot">·</span>`);
 }

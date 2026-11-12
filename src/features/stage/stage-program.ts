@@ -9,7 +9,7 @@ import { scheduleRender } from "../../core/render";
 import { libraryItemOf, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import type { StageProgramTab } from "../../core/types";
-import { esc, fmtAchDate, fmtBytes, relativeTime } from "../../core/utils";
+import { esc, fmtAchDate, fmtBytes, fmtPlaytime, relativeTime } from "../../core/utils";
 import { epicGetCritic, epicGetHltb } from "../../epic-commands";
 import { currentLanguage, t } from "../../i18n";
 import type { EpicSummary } from "../../epic";
@@ -20,7 +20,7 @@ import { stageEnsureScreenshots } from "./stage-actions";
 import { stageHeroMarkup } from "./stage-art";
 import { loadStageAudioFiles, stageAudioLabel } from "./stage-audio-library";
 import { stageAchievements, stageGameByKey, stageGamePlaytime, stagePrimaryAction } from "./stage-model";
-import { stageMetaLine, stageProgress, stageStoreName } from "./stage-ui";
+import { stageProgress, stageStoreName } from "./stage-ui";
 
 const TABS: StageProgramTab[] = ["overview", "achievements", "media", "notes", "extras"];
 /** One request per session; the notes client owns the cache after that. */
@@ -91,6 +91,19 @@ function fact(label: string, value: string): string {
 }
 
 type ProgramStatIcon = Parameters<typeof icon>[0];
+
+/** Hero facts: install state, size, playtime and the last session. */
+function programFacts(game: EpicSummary): string {
+  const play = stageGamePlaytime(game);
+  const size = game.installSize > 0 ? fmtBytes(game.installSize) : "";
+  const last = play.lastPlayed > 946684800 ? relativeTime(play.lastPlayed * 1000) : "";
+  return `<div class="stage-stat-row stage-program-hero-facts">
+    <span class="stage-stat"><i class="${game.installed ? "is-ready" : "is-off"}" aria-hidden="true"></i><span>${esc(game.installed ? t("stage.installed") : t("stage.notInstalled"))}</span></span>
+    ${size ? `<span class="stage-stat">${icon("package", 13)}<b class="tabular-nums">${esc(size)}</b></span>` : ""}
+    ${play.seconds > 0 ? `<span class="stage-stat">${icon("clock", 13)}<b class="tabular-nums">${esc(fmtPlaytime(play.seconds))}</b></span>` : ""}
+    ${last ? `<span class="stage-stat">${icon("calendar", 13)}<span>${esc(last)}</span></span>` : ""}
+  </div>`;
+}
 
 /** Compact facts for an empty tab: what the tab is scoped to and what it found. */
 function programStats(items: Array<{ icon: ProgramStatIcon; label: string; value?: string }>): string {
@@ -545,7 +558,7 @@ export function renderStageProgram(): string {
         <div class="stage-program-titles">
           <span class="stage-program-kicker">${esc(stageStoreName(sourceOfKey(game.appName)))}</span>
           <h1>${esc(game.title)}</h1>
-          <div class="stage-program-meta">${stageMetaLine(game, { withStore: false })}</div>
+          ${programFacts(game)}
         </div>
         <div class="stage-program-actions" data-gp-default>
           <div class="stage-primary-action">${stagePrimaryAction(game)}</div>
