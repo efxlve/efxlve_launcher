@@ -138,6 +138,7 @@ import {
   stageDiscordHangup,
   stageDiscordOpenApp,
   stageOpenDiscordSheet,
+  stageDiscordSheetSignature,
   stageDiscordToggleMute,
 } from "./stage-discord";
 import { initStageBattery, stageBatteryInfo, stageBatteryMarkup } from "./stage-battery";
@@ -346,6 +347,7 @@ function stageLiveSignature(): string {
     S.stage.spotifyOpen ? "1" : "0",
     stageSpotifySheetSignature(),
     S.stage.discordOpen ? "1" : "0",
+    stageDiscordSheetSignature(),
     S.stage.notifOpen ? "1" : "0",
     String(S.notifications.length),
     S.notifications[0]?.id ?? "",

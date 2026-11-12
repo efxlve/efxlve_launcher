@@ -647,6 +647,44 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
     stageBridge()?.bump?.(dir);
     return;
   }
+  // The Discord friend grid wraps into rows whose last row can start in
+  // another column. Vertical movement goes by row, left/right stays inside.
+  const friendsList = origin.closest<HTMLElement>(".stage-discord-friends-list");
+  if (S.stage.active && friendsList) {
+    const cards = candidates.filter((el) => el.closest(".stage-discord-friends-list") === friendsList);
+    if (dir === "left" || dir === "right") {
+      const best = scan(cards);
+      if (best) {
+        setFocus(best);
+        return;
+      }
+      stageBridge()?.bump?.(dir);
+      return;
+    }
+    let best: HTMLElement | null = null;
+    let bestDy = Infinity;
+    let bestDx = Infinity;
+    for (const el of cards) {
+      if (el === origin) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue;
+      const dy = r.top + r.height / 2 - curCenter.y;
+      if (dir === "down" ? dy <= moveY : dy >= -moveY) continue;
+      const dist = Math.abs(dy);
+      const dx = Math.abs(r.left + r.width / 2 - curCenter.x);
+      if (dist < bestDy - 2 || (Math.abs(dist - bestDy) <= 2 && dx < bestDx)) {
+        best = el;
+        bestDy = dist;
+        bestDx = dx;
+      }
+    }
+    if (best) {
+      setFocus(best);
+      return;
+    }
+    // No card further in that direction; fall through so Down reaches the
+    // open-client action and Up reaches the call controls.
+  }
   // A data-gp-row is a horizontal shelf or tab strip: left/right stays inside
   // it and bumps at the edge instead of jumping to the next shelf.
   if (S.stage.active && curRow && (dir === "left" || dir === "right")) {

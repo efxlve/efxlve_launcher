@@ -58,6 +58,15 @@ export function stageDiscordSheetChanged(): boolean {
   return discordSheetKey() !== lastSheetKey;
 }
 
+/**
+ * The sheet's content key, part of the shell signature. Without it mute,
+ * hang-up and connect change the module state but the signature check skips
+ * the repaint, so the sheet keeps showing the old call.
+ */
+export function stageDiscordSheetSignature(): string {
+  return S.stage.discordOpen ? discordSheetKey() : "";
+}
+
 export async function refreshStageDiscord(): Promise<void> {
   try {
     const sdk = await invoke<{ status: string; user?: { username: string } }>("discord_sdk_state").catch(() => null);
@@ -95,14 +104,27 @@ export async function refreshStageDiscord(): Promise<void> {
   }
 }
 
+/** The control the pad should land on for the current connection/call state. */
+function discordInitialFocus(): string {
+  if (voiceInfo?.inCall) return "discord:mute";
+  return isConnected ? "discord:open-client" : "discord:connect-btn";
+}
+
 export function stageOpenDiscordSheet(): void {
   stageFeedback("select");
   S.stage.discordOpen = true;
   S.stage.browserOpen = false;
   S.stage.spotifyOpen = false;
   S.stage.quickMenu = false;
-  S.stage.focusKey = "discord:connect-btn";
-  void refreshStageDiscord().then(() => scheduleRender());
+  S.stage.focusKey = discordInitialFocus();
+  void refreshStageDiscord().then(() => {
+    // The first refresh can reveal a call or a connection that the cached
+    // state did not know about; move the ring off the fallback close button.
+    if (S.stage.discordOpen && ["discord:connect-btn", "discord:close", ""].includes(S.stage.focusKey)) {
+      S.stage.focusKey = discordInitialFocus();
+    }
+    scheduleRender();
+  });
 
   if (!pollTimer) {
     pollTimer = window.setInterval(() => {
@@ -139,6 +161,8 @@ export async function stageDiscordConnect(): Promise<void> {
   scheduleRender();
   await invoke("discord_sdk_start", { silent: false }).catch(() => undefined);
   await refreshStageDiscord();
+  // The onboarding buttons leave with the card once the SDK is ready.
+  if (isConnected) S.stage.focusKey = "discord:open-client";
   scheduleRender();
 }
 
@@ -155,6 +179,8 @@ export async function stageDiscordHangup(): Promise<void> {
   stageFeedback("back");
   await invoke("discord_sdk_hangup").catch(() => undefined);
   voiceInfo = null;
+  // The call controls leave with the card; keep the ring on a control that stays.
+  S.stage.focusKey = isConnected ? "discord:open-client" : "discord:connect-btn";
   scheduleRender();
 }
 
@@ -176,9 +202,9 @@ export function renderStageDiscordSheet(entered: boolean): string {
           <span class="stage-discord-icon-main">${icon("discord", 26)}</span>
           <div>
             <h2 class="stage-discord-title">Discord</h2>
-            <span class="stage-discord-subtitle">
-              ${isConnected ? `<span class="stage-discord-status-dot is-online"></span> ${esc(t("settings.connected"))}` : isConnecting ? esc(t("overlay.discordConnecting")) : esc(t("overlay.discordNotConnected"))}
-            </span>
+            ${isConnected
+              ? `<span class="stage-stat stage-discord-connect-chip"><span class="stage-discord-status-dot is-online"></span><span>${esc(t("settings.connected"))}</span></span>`
+              : `<span class="stage-discord-subtitle">${isConnecting ? esc(t("overlay.discordConnecting")) : esc(t("overlay.discordNotConnected"))}</span>`}
           </div>
         </div>
         <button type="button" class="stage-icon-btn" data-stage-act="close-discord-sheet" data-gp-item data-gp-key="discord:close" aria-label="${esc(t("common.close"))}">
@@ -224,21 +250,21 @@ export function renderStageDiscordSheet(entered: boolean): string {
         <div class="stage-discord-body">
           <div class="stage-discord-section-head">
             <span class="stage-kicker">${esc(t("overlay.discordFriendsTitle"))}</span>
-            <span class="stage-discord-count tabular-nums">${onlineFriends.length}</span>
+            <span class="stage-stat stage-discord-count">${icon("users", 13)}<b class="tabular-nums">${onlineFriends.length}</b></span>
           </div>
 
-          <div class="stage-discord-friends-list" data-gp-row>
+          <div class="stage-discord-friends-list">
             ${onlineFriends.length > 0 ? onlineFriends.map((f, idx) => `
-              <div class="stage-discord-friend-card" data-gp-item data-gp-key="friend:${idx}">
-                <div class="stage-friend-avatar-wrap">
-                  ${f.avatarUrl ? `<img class="stage-friend-avatar" src="${esc(f.avatarUrl)}" alt="" />` : `<div class="stage-friend-avatar-fallback">${icon("user", 16)}</div>`}
+              <button type="button" class="stage-discord-friend-card" data-stage-act="discord-open-app" data-gp-item data-gp-key="friend:${idx}" aria-label="${esc(f.displayName || f.username)}">
+                <span class="stage-friend-avatar-wrap">
+                  ${f.avatarUrl ? `<img class="stage-friend-avatar" src="${esc(f.avatarUrl)}" alt="" />` : `<span class="stage-friend-avatar-fallback">${icon("user", 16)}</span>`}
                   <span class="stage-friend-dot is-${f.status}"></span>
-                </div>
-                <div class="stage-friend-copy">
+                </span>
+                <span class="stage-friend-copy">
                   <strong class="stage-friend-name">${esc(f.displayName || f.username)}</strong>
                   <span class="stage-friend-activity">${esc(f.activity || `@${f.username}`)}</span>
-                </div>
-              </div>
+                </span>
+              </button>
             `).join("") : `
               <div class="stage-discord-empty">
                 <p>${esc(t("overlay.discordFriendsEmpty"))}</p>

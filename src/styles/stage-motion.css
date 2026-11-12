@@ -226,6 +226,17 @@
     0 0 22px rgba(30, 215, 96, 0.6) !important;
   transform: scale(1.08) !important;
 }
+/* Friend cards are grid cells that also act as buttons: the shared scale would
+   blur the neighbouring card, so the ring stays flat. */
+#stage-root .stage-discord-friend-card.gp-focused {
+  outline: none !important;
+  border-color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 18px rgba(255, 255, 255, 0.3) !important;
+  transform: none !important;
+}
 /* Achievement rows are full-width: the shared button scale and 52px drop would
    overlap the next row, so the tight ring does the work. */
 #stage-root .stage-ach-row.gp-focused {
