@@ -395,6 +395,8 @@ export async function initApp(hooks: {
       const speedBytes = Math.round(speed * 1024 * 1024);
       const diskBytes = Math.round((diskSpeed ?? 0) * 1024 * 1024);
       const etaText = eta && eta !== "00:00:00" ? eta : t("common.calculating");
+      // Nile reports the download; once it is done only cleanup is left.
+      const phase = percent >= 99.9 ? "finishing" : "downloading";
       S.amazonProgress.set(id, { percent, speed });
       dl.progress = percent;
       const title = dl.title || S.amazonGames.find((g) => amazonKey(g.id) === id)?.title || id;
@@ -414,9 +416,11 @@ export async function initApp(hooks: {
           eta: etaText,
           downloadedBytes: downloaded,
           totalBytes: total,
+          phase,
         };
       } else {
         const m = S.activeDlMetrics;
+        m.phase = phase;
         m.progress = percent;
         if (speedBytes > 0) {
           m.speed = `${speed.toFixed(2)} MiB/s`;
@@ -764,6 +768,7 @@ export async function initApp(hooks: {
     listenLater<DownloadFailedEvent>("download-failed", (event) => {
       noteDownloadInterrupted();
       if (event.payload.id.startsWith("gog::")) S.gogDlPaused = false;
+      if (event.payload.id.startsWith("amazon::")) S.amazonProgress.delete(event.payload.id);
       S.downloads.delete(event.payload.id);
       if (S.activeDlMetrics?.id === event.payload.id) S.activeDlMetrics = null;
       S.speedHistory.fill(0);
@@ -787,6 +792,9 @@ export async function initApp(hooks: {
     listenLater<DownloadCancelledEvent>("download-cancelled", (event) => {
       noteDownloadInterrupted();
       if (event.payload.id.startsWith("gog::")) S.gogDlPaused = false;
+      // The Amazon map also locks account changes; a cancelled install must
+      // release it or the sign-in screen stays blocked.
+      if (event.payload.id.startsWith("amazon::")) S.amazonProgress.delete(event.payload.id);
       S.downloads.delete(event.payload.id);
       if (S.activeDlMetrics?.id === event.payload.id) S.activeDlMetrics = null;
       S.speedHistory.fill(0);

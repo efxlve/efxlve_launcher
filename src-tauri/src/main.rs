@@ -2663,6 +2663,7 @@ fn main() {
             nile::accounts::amazon_remove_saved_account,
             nile::library::nile_library,
             nile::transfers::nile_install,
+            nile::transfers::nile_cancel_download,
             nile::transfers::nile_install_info,
             nile::transfers::nile_uninstall,
             nile::transfers::nile_launch,

@@ -31,7 +31,7 @@ function downloadRow(id: string, title: string, progress: number): string {
       </div>
       ${stageProgress(percent, paused ? "stage-progress-paused" : "", `data-stage-dl-bar="${esc(id)}"`)}
       <div class="stage-download-meta">
-        <span class="stage-stat stage-download-state${paused ? " is-paused" : ""}">${icon(paused ? "pause" : "download", 12)}<span>${esc(paused ? t("dl.statusPaused") : t("dl.statusActive"))}</span></span>
+        <span class="stage-stat stage-download-state${paused ? " is-paused" : ""}">${icon(paused ? "pause" : "download", 12)}<span>${esc(paused ? t("dl.statusPaused") : metrics?.phase === "starting" ? t("dl.starting") : metrics?.phase === "finishing" ? t("dl.finishing") : t("dl.statusActive"))}</span></span>
         ${speed ? `<span class="stage-download-fact" data-stage-dl-speed="${esc(id)}">${icon("zap", 12)}<span>${esc(speed)}</span></span>` : ""}
         ${eta ? `<span class="stage-download-fact" data-stage-dl-eta="${esc(id)}">${icon("timer", 12)}<span>${esc(eta)}</span></span>` : ""}
         ${size ? `<span class="stage-download-fact tabular-nums" data-stage-dl-size="${esc(id)}">${icon("hard-drive", 12)}<span>${esc(size)}</span></span>` : ""}
@@ -41,7 +41,7 @@ function downloadRow(id: string, title: string, progress: number): string {
       ${amazon ? "" : paused
         ? `<button type="button" class="stage-btn stage-btn-ghost" data-act="dl-resume" data-id="${esc(id)}" data-gp-item data-gp-key="dl:toggle:${esc(id)}">${icon("play", 16)}<span>${esc(t("downloads.resume"))}</span></button>`
         : `<button type="button" class="stage-btn stage-btn-ghost" data-act="dl-pause" data-id="${esc(id)}" data-gp-item data-gp-key="dl:toggle:${esc(id)}">${icon("pause", 16)}<span>${esc(t("downloads.pause"))}</span></button>`}
-      ${amazon ? "" : `<button type="button" class="stage-icon-btn stage-icon-danger" data-act="epic-cancel" data-id="${esc(id)}" data-gp-item data-gp-key="dl:cancel:${esc(id)}" aria-label="${esc(t("common.cancel"))}">${icon("x", 18)}</button>`}
+      <button type="button" class="stage-icon-btn stage-icon-danger" data-act="epic-cancel" data-id="${esc(id)}" data-gp-item data-gp-key="dl:cancel:${esc(id)}" aria-label="${esc(t("common.cancel"))}">${icon("x", 18)}</button>
     </div>
   </div>`;
 }

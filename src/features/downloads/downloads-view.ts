@@ -344,7 +344,8 @@ function renderActiveCard(dl: DlMetrics): string {
           </div>
           <div class="row-actions">
             ${isAmazon
-              ? `<button class="btn ghost" data-view="library">${t("profile.showAll")}</button>`
+              ? `<button class="icon-btn" data-act="manage-game" data-id="${dl.id}" title="${t("common.manage")}">${icon("settings", 16)}</button>
+            <button class="icon-btn danger" data-act="epic-cancel" data-id="${dl.id}" title="${t("common.cancel")}">${icon("x", 16)}</button>`
               : `${paused
                   ? `<button class="btn primary" data-act="dl-resume" data-id="${dl.id}">${icon("play", 13)} ${t("downloads.resume")}</button>`
                   : `<button class="btn" data-act="dl-pause" data-id="${dl.id}">${icon("pause", 13)} ${t("downloads.pause")}</button>`}

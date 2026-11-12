@@ -339,6 +339,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `net_mtu_fix` | `netMtuFix({ ... })` | `src-tauri/src/net_diag.rs` |
 | `net_mtu_probe` | `netMtuProbe({ ... })` | `src-tauri/src/net_diag.rs` |
 | `nile_auth_status` | `nileAuthStatus({ ... })` | `src-tauri/src/nile/auth.rs` |
+| `nile_cancel_download` | `nileCancelDownload({ ... })` | `src-tauri/src/nile/transfers.rs` |
 | `nile_check_updates` | `nileCheckUpdates({ ... })` | `src-tauri/src/nile/transfers.rs` |
 | `nile_create_desktop_shortcut` | `nileCreateDesktopShortcut({ ... })` | `src-tauri/src/nile/manage.rs` |
 | `nile_game_settings` | `nileGameSettings({ ... })` | `src-tauri/src/nile/manage.rs` |

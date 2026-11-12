@@ -6,7 +6,7 @@
 //! session needs.
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
 
 use serde_json::json;
@@ -95,6 +95,94 @@ fn with_pids<R>(f: impl FnOnce(&mut HashMap<String, u32>) -> R) -> R {
     f(map)
 }
 
+/// One Amazon install in flight. Cancelling has to reach the Nile process tree,
+/// and the install must know the kill was asked for so it reports a cancel
+/// instead of a failure.
+struct NileDlState {
+    id: String,
+    generation: u64,
+    child_pid: Option<u32>,
+    cancelled: bool,
+}
+
+static NILE_DL_STATE: Mutex<Option<NileDlState>> = Mutex::new(None);
+/// Distinguishes two installs of the same product (cancel then retry) so an
+/// older monitor cannot clear or cancel the newer slot.
+static NILE_DL_GENERATION: AtomicU64 = AtomicU64::new(0);
+
+fn begin_nile_download(id: &str) -> u64 {
+    let generation = NILE_DL_GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
+    let mut slot = NILE_DL_STATE
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    *slot = Some(NileDlState {
+        id: id.to_string(),
+        generation,
+        child_pid: None,
+        cancelled: false,
+    });
+    generation
+}
+
+fn with_nile_download<R>(
+    id: &str,
+    generation: u64,
+    f: impl FnOnce(&mut NileDlState) -> R,
+) -> Option<R> {
+    let mut slot = NILE_DL_STATE
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let state = slot.as_mut()?;
+    if state.id != id || state.generation != generation {
+        return None;
+    }
+    Some(f(state))
+}
+
+fn record_nile_child(id: &str, generation: u64, pid: u32) {
+    with_nile_download(id, generation, |state| state.child_pid = Some(pid));
+}
+
+fn clear_nile_child(id: &str, generation: u64) {
+    with_nile_download(id, generation, |state| state.child_pid = None);
+}
+
+fn nile_download_cancelled(id: &str, generation: u64) -> bool {
+    with_nile_download(id, generation, |state| state.cancelled).unwrap_or(false)
+}
+
+fn finish_nile_download(id: &str, generation: u64) {
+    let mut slot = NILE_DL_STATE
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    if slot
+        .as_ref()
+        .is_some_and(|state| state.id == id && state.generation == generation)
+    {
+        *slot = None;
+    }
+}
+
+/// Clears the slot on every exit path of `nile_install`, including `?`.
+struct DownloadSlot {
+    id: String,
+    generation: u64,
+}
+
+impl Drop for DownloadSlot {
+    fn drop(&mut self) {
+        finish_nile_download(&self.id, self.generation);
+    }
+}
+
+fn cancelled_or(id: &str, generation: u64, fallback: String) -> String {
+    if nile_download_cancelled(id, generation) {
+        "@t:dl.cancelled".to_string()
+    } else {
+        fallback
+    }
+}
+
 /// One stderr line handler that forwards download progress as events.
 fn progress_emitter(app: AppHandle, event_id: String) -> impl FnMut(&str) + Send + 'static {
     let mut last_download = 0.0f64;
@@ -162,6 +250,12 @@ pub async fn nile_install(
 ) -> Result<(), String> {
     DL_ACTIVE.store(true, Ordering::SeqCst);
     let _download_guard = ActiveGuard;
+    let generation = begin_nile_download(&id);
+    let _slot = DownloadSlot {
+        id: id.clone(),
+        generation,
+    };
+
     let mut args: Vec<String> = vec!["install".into(), id.clone()];
     if let Some(base) = base_path.filter(|p| !p.trim().is_empty()) {
         // `--base-path` appends the sanitized game title, so the setting reads
@@ -178,13 +272,10 @@ pub async fn nile_install(
     }
 
     let event_id = format!("amazon::{id}");
-    let out = cli::run_streaming(
-        &app,
-        &args,
-        6 * 3600,
-        progress_emitter(app.clone(), event_id.clone()),
-    )
-    .await?;
+    let out = match run_install_attempt(&app, &args, &event_id, &id, generation).await {
+        Ok(out) => out,
+        Err(error) => return Err(cancelled_or(&id, generation, error)),
+    };
 
     // Keep the full output for diagnostics: Nile reports some failures only on
     // stderr and still exits zero.
@@ -199,22 +290,26 @@ pub async fn nile_install(
     );
 
     if !out.status.success() {
-        return Err(cli::failure_message(&out));
+        return Err(cancelled_or(
+            &id,
+            generation,
+            cli::failure_message(&out),
+        ));
     }
     // Nile exits zero even when it refuses to install ("Not enough space") and
     // when it only *thinks* the install is current. The installed record plus
     // its folder is the postcondition.
     if super::library::installed_game(&app, &id).is_none() {
+        if nile_download_cancelled(&id, generation) {
+            return Err("@t:dl.cancelled".to_string());
+        }
         reset_install_record(&app, &id);
-        let retry = cli::run_streaming(
-            &app,
-            &args,
-            6 * 3600,
-            progress_emitter(app.clone(), event_id),
-        )
-        .await;
+        let retry = run_install_attempt(&app, &args, &event_id, &id, generation).await;
         let healed = retry.as_ref().map(|v| v.status.success()).unwrap_or(false)
             && super::library::installed_game(&app, &id).is_some();
+        if nile_download_cancelled(&id, generation) {
+            return Err("@t:dl.cancelled".to_string());
+        }
         if !healed {
             let detail = match retry {
                 Ok(v) => cli::failure_message(&v),
@@ -224,6 +319,60 @@ pub async fn nile_install(
         }
     }
     Ok(())
+}
+
+async fn run_install_attempt(
+    app: &AppHandle,
+    args: &[String],
+    event_id: &str,
+    id: &str,
+    generation: u64,
+) -> Result<std::process::Output, String> {
+    let spawn_id = id.to_string();
+    let on_spawn = move |pid| {
+        record_nile_child(&spawn_id, generation, pid);
+        // A cancel may arrive between the command and this spawn.
+        nile_download_cancelled(&spawn_id, generation)
+    };
+    let result = cli::run_streaming(
+        app,
+        args,
+        6 * 3600,
+        true,
+        progress_emitter(app.clone(), event_id.to_string()),
+        on_spawn,
+    )
+    .await;
+    // The next attempt (or a cancel between attempts) must not see this pid.
+    clear_nile_child(id, generation);
+    result
+}
+
+/// Stops the running Amazon install. The download and its workers are killed;
+/// the install reports the exit as a user cancel, not a failure.
+#[tauri::command]
+pub async fn nile_cancel_download(app: AppHandle, id: String) -> Result<String, String> {
+    let clean_id = id.trim().trim_start_matches("amazon::").to_string();
+    let pid = {
+        let mut slot = NILE_DL_STATE
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        match slot.as_mut() {
+            Some(state) if state.id == clean_id => {
+                state.cancelled = true;
+                state.child_pid.take()
+            }
+            _ => return Err("@t:dl.noActive".to_string()),
+        }
+    };
+    if let Some(pid) = pid {
+        cli::kill_install_tree(pid).await;
+    }
+    let _ = app.emit(
+        "download-cancelled",
+        json!({ "id": format!("amazon::{clean_id}") }),
+    );
+    Ok("@t:dl.cancelled".to_string())
 }
 
 /// Download size for the install dialog, without downloading anything.
@@ -365,6 +514,26 @@ pub async fn nile_check_updates(app: AppHandle) -> Result<Vec<String>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_older_install_cannot_clear_a_newer_cancel() {
+        let first = begin_nile_download("same-product");
+        let second = begin_nile_download("same-product");
+        with_nile_download("same-product", second, |state| state.cancelled = true);
+        // The first monitor is still unwinding; its cleanup must not drop the
+        // slot the user just cancelled.
+        finish_nile_download("same-product", first);
+        clear_nile_child("same-product", first);
+        record_nile_child("same-product", first, 1);
+        record_nile_child("same-product", second, 2);
+        assert!(nile_download_cancelled("same-product", second));
+        assert_eq!(
+            with_nile_download("same-product", second, |state| state.child_pid).unwrap(),
+            Some(2)
+        );
+        finish_nile_download("same-product", second);
+        assert!(!nile_download_cancelled("same-product", second));
+    }
 
     #[test]
     fn progress_and_speed_lines_are_parsed() {

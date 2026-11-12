@@ -58,7 +58,7 @@ import {
   requiresThirdPartyLauncher,
   type EpicSettings,
 } from "../../../epic";
-import { uninstallAmazonGame } from "../../auth/amazon-auth-actions";
+import { cancelAmazonDownload, uninstallAmazonGame } from "../../auth/amazon-auth-actions";
 import { companionGameAction, eaSetInstallDir, ubiSetInstallDir, xboxUninstall, type CompanionStore } from "../../../companion";
 import { loadCompanionLibrary } from "../../library/companion-library";
 import { steamGameAction } from "../../../steam";
@@ -154,6 +154,8 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
         noteDownloadInterrupted();
         if (id.startsWith("gog::")) {
           void gogCancelDownload(id);
+        } else if (id.startsWith("amazon::")) {
+          void cancelAmazonDownload(id.slice(8));
         } else {
           void epicCancel(id);
         }

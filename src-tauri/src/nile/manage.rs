@@ -63,7 +63,8 @@ pub async fn nile_verify(app: AppHandle, id: String) -> Result<(), String> {
     // arrives as the shared `verify-complete` event.
     tokio::spawn(async move {
         let args = vec!["verify".to_string(), id];
-        let outcome = cli::run_streaming(&app, &args, 6 * 3600, emitter).await;
+        // Hashing can be silent for a long time; only the overall cap applies.
+        let outcome = cli::run_streaming(&app, &args, 6 * 3600, false, emitter, |_pid| false).await;
         let (success, message) = match outcome {
             Ok(out) if out.status.success() => (true, "@t:verify.success".to_string()),
             Ok(out) => (false, cli::failure_message(&out)),

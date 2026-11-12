@@ -72,6 +72,10 @@ export const nileInstall = (id: string, basePath?: string | null, maxWorkers?: n
     maxWorkers: maxWorkers ?? null,
   });
 
+/** Stops the running Amazon install and its download workers. */
+export const nileCancelDownload = (id: string) =>
+  invoke<string>("nile_cancel_download", { id });
+
 /** Download size for the install dialog, without downloading anything. */
 export const nileInstallInfo = (id: string) =>
   invoke<number>("nile_install_info", { id });

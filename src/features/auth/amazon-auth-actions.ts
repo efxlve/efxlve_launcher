@@ -26,6 +26,7 @@ import {
   amazonSavedAccounts,
   amazonSwitchAccount,
   nileAuthStatus,
+  nileCancelDownload,
   nileCheckUpdates,
   nileInstall,
   nileLaunch,
@@ -389,6 +390,27 @@ export async function installAmazonGame(id: string): Promise<void> {
   S.amazonProgress.set(key, { percent: 0, speed: 0 });
   // The Downloads page picks the first unfinished entry as the active card.
   S.downloads.set(key, { progress: 0, done: false, title });
+  // Show the card while Nile prepares the install instead of waiting for the
+  // first progress line, and give the cancel button a target immediately.
+  if (!S.activeDlMetrics || S.activeDlMetrics.done || S.activeDlMetrics.id !== key) {
+    S.peakNetSpeedBytes = 0;
+    S.speedHistory.fill(0);
+    S.diskHistory.fill(0);
+    S.activeDlMetrics = {
+      id: key,
+      title,
+      progress: 0,
+      done: false,
+      speed: t("dl.starting"),
+      speedBytes: 0,
+      diskSpeed: "—",
+      diskBytes: 0,
+      eta: t("dl.calculating"),
+      downloadedBytes: 0,
+      totalBytes: 0,
+      phase: "starting",
+    };
+  }
   updateBadge();
   scheduleRender();
   // Nile takes the worker count directly; keep the shared Download speed
@@ -408,9 +430,21 @@ export async function installAmazonGame(id: string): Promise<void> {
     invalidateAmazonUpdateCheck();
     await loadAmazonSession(false);
   } catch (err) {
+    // The cancel command already reported the stop and cleared the row; an
+    // error toast on top of that would call a requested cancel a failure.
+    const cancelled = String(err).includes("@t:dl.cancelled");
     clearAmazonDownload(key);
-    toast(String(err), "err");
+    if (!cancelled) toast(String(err), "err");
     scheduleRender();
+  }
+}
+
+/** Stops the running Amazon install and its download workers. */
+export async function cancelAmazonDownload(id: string): Promise<void> {
+  try {
+    await nileCancelDownload(id);
+  } catch (err) {
+    toast(String(err), "err");
   }
 }
 

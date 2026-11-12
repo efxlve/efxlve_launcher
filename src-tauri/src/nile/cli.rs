@@ -7,9 +7,22 @@
 
 use std::path::{Path, PathBuf};
 use std::process::{Output, Stdio};
-use std::time::Duration;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 use tauri::{AppHandle, Manager};
+
+/// No progress for this long while the percentage can still move means the
+/// transfer is wedged. Same window the Epic watchdog uses.
+const STALL_LIMIT: Duration = Duration::from_secs(5 * 60);
+/// Before the first progress line Nile only prepares the install. Complete
+/// silence for this long is a wedged process, not a slow disk.
+const STARTUP_STALL_LIMIT: Duration = Duration::from_secs(10 * 60);
+/// Once the download is essentially complete Nile removes replaced files; the
+/// percentage keeps repeating while that cleanup runs, so allow more time.
+const FINALIZE_STALL: Duration = Duration::from_secs(15 * 60);
+/// How often the wait loop checks the activity clock.
+const STALL_POLL: Duration = Duration::from_secs(10);
 
 /// `<app_data>`: the parent Nile appends its own `nile` folder to.
 pub fn config_root(app: &AppHandle) -> PathBuf {
@@ -77,11 +90,18 @@ pub async fn run(app: &AppHandle, args: &[&str], timeout_secs: u64) -> Result<Ou
 
 /// Runs one Nile command while streaming its stderr line by line. Nile logs the
 /// download progress there, so the caller can forward it to the UI.
+///
+/// `on_spawn` learns the child pid as soon as it exists; returning `true` kills
+/// it immediately, which closes the window between a cancel command and the
+/// spawn. A transfer with no moving progress is killed instead of holding the
+/// slot until the multi-hour cap.
 pub async fn run_streaming(
     app: &AppHandle,
     args: &[String],
     timeout_secs: u64,
+    stall_watchdog: bool,
     on_stderr_line: impl FnMut(&str) + Send + 'static,
+    on_spawn: impl FnOnce(u32) -> bool + Send + 'static,
 ) -> Result<Output, String> {
     use tokio::io::{AsyncBufReadExt, AsyncReadExt, BufReader};
 
@@ -92,19 +112,38 @@ pub async fn run_streaming(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .kill_on_drop(true);
+    // The install child leads its own process group so a cancel reaches the
+    // download workers too. Launches keep the caller's group.
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        cmd.as_std_mut().process_group(0);
+    }
     // Install, update and verify all download through Nile's requests workers.
     crate::download_limit::configure_child(&mut cmd);
     let mut child = cmd.spawn().map_err(|e| format!("Nile could not run: {e}"))?;
 
+    if let Some(pid) = child.id() {
+        if on_spawn(pid) {
+            kill_install_tree(pid).await;
+        }
+    }
+
     let stdout = child.stdout.take();
     let stderr = child.stderr.take();
 
+    let activity = Arc::new(Mutex::new(StreamActivity::new(Instant::now())));
+    let activity_for_lines = Arc::clone(&activity);
     let mut on_line = on_stderr_line;
     let stderr_task = tokio::spawn(async move {
         let mut text = String::new();
         if let Some(stderr) = stderr {
             let mut lines = BufReader::new(stderr).lines();
             while let Ok(Some(line)) = lines.next_line().await {
+                activity_for_lines
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner())
+                    .note_line(&line, Instant::now());
                 on_line(&line);
                 text.push_str(&line);
                 text.push('\n');
@@ -120,10 +159,35 @@ pub async fn run_streaming(
         bytes
     });
 
-    let status = tokio::time::timeout(Duration::from_secs(timeout_secs), child.wait())
-        .await
-        .map_err(|_| "Nile timed out".to_string())?
-        .map_err(|e| format!("Nile could not finish: {e}"))?;
+    let deadline = tokio::time::sleep(Duration::from_secs(timeout_secs));
+    tokio::pin!(deadline);
+    let mut poll = tokio::time::interval(STALL_POLL);
+    poll.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    let status = loop {
+        tokio::select! {
+            result = child.wait() => {
+                break result.map_err(|e| format!("Nile could not finish: {e}"))?
+            }
+            _ = &mut deadline => {
+                if let Some(pid) = child.id() {
+                    kill_install_tree(pid).await;
+                }
+                return Err("@t:dl.stalled".to_string());
+            }
+            _ = poll.tick(), if stall_watchdog => {
+                let stalled = activity
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner())
+                    .stalled(Instant::now());
+                if stalled {
+                    if let Some(pid) = child.id() {
+                        kill_install_tree(pid).await;
+                    }
+                    return Err("@t:dl.stalled".to_string());
+                }
+            }
+        }
+    };
     let stderr_text = stderr_task.await.unwrap_or_default();
     let stdout_bytes = stdout_task.await.unwrap_or_default();
 
@@ -132,6 +196,76 @@ pub async fn run_streaming(
         stdout: stdout_bytes,
         stderr: stderr_text.into_bytes(),
     })
+}
+
+/// Ends an install child and the workers in its process group. Launches do not
+/// use a separate group, so they must not call this.
+pub async fn kill_install_tree(pid: u32) {
+    #[cfg(windows)]
+    {
+        let mut kill_cmd = tokio::process::Command::new("taskkill");
+        kill_cmd.args(["/PID", &pid.to_string(), "/T", "/F"]);
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        kill_cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = kill_cmd.output().await;
+    }
+    #[cfg(unix)]
+    {
+        let _ = tokio::process::Command::new("kill")
+            .args(["-9", &format!("-{pid}")])
+            .output()
+            .await;
+    }
+}
+
+/// Stderr activity of one Nile transfer. A repeated percentage line does not
+/// count as movement; only a changed one does.
+struct StreamActivity {
+    last_line: Instant,
+    last_progress: Instant,
+    percent: Option<f64>,
+    downloaded: u64,
+}
+
+impl StreamActivity {
+    fn new(now: Instant) -> Self {
+        Self {
+            last_line: now,
+            last_progress: now,
+            percent: None,
+            downloaded: 0,
+        }
+    }
+
+    fn note_line(&mut self, line: &str, now: Instant) {
+        self.last_line = now;
+        if let Some(progress) = super::transfers::parse_progress_line(line) {
+            let advanced = self.percent.is_none()
+                || self.percent != Some(progress.percent)
+                || self.downloaded != progress.downloaded;
+            if advanced {
+                self.last_progress = now;
+            }
+            self.percent = Some(progress.percent);
+            self.downloaded = progress.downloaded;
+        }
+    }
+
+    /// True when the transfer should be killed. The cleanup after a finished
+    /// download keeps repeating the last percentage, so it gets a longer
+    /// window than a transfer that stopped moving.
+    fn stalled(&self, now: Instant) -> bool {
+        if self.percent.is_some() {
+            let limit = if self.percent.is_some_and(|percent| percent >= 99.0) {
+                FINALIZE_STALL
+            } else {
+                STALL_LIMIT
+            };
+            now.saturating_duration_since(self.last_progress) >= limit
+        } else {
+            now.saturating_duration_since(self.last_line) >= STARTUP_STALL_LIMIT
+        }
+    }
 }
 
 /// Trimmed stdout (Nile prints machine-readable payloads there).
@@ -164,6 +298,36 @@ mod tests {
             use std::os::unix::process::ExitStatusExt;
             std::process::ExitStatus::from_raw(0)
         }
+    }
+
+    #[test]
+    fn a_stalled_download_is_detected_but_final_cleanup_is_not() {
+        let now = Instant::now();
+        let mut activity = StreamActivity::new(now);
+        activity.note_line("INFO [PROGRESS]:\t = Progress: 42.13 1/2", now);
+        assert!(!activity.stalled(now + Duration::from_secs(60)));
+        // The same percentage and counters repeating every second is not
+        // movement; upstream Nile can wedge exactly like that.
+        activity.note_line(
+            "INFO [PROGRESS]:\t = Progress: 42.13 1/2",
+            now + Duration::from_secs(60),
+        );
+        assert!(activity.stalled(now + STALL_LIMIT + Duration::from_secs(1)));
+
+        // The download completed; cleanup keeps repeating the last line, so it
+        // gets the longer window instead of being killed as a network stall.
+        activity.note_line("INFO [PROGRESS]:\t = Progress: 100.00 2/2", now);
+        assert!(!activity.stalled(now + FINALIZE_STALL - Duration::from_secs(1)));
+        activity.note_line(
+            "INFO [PROGRESS]:\t = Progress: 100.00 2/2",
+            now + FINALIZE_STALL - Duration::from_secs(1),
+        );
+        assert!(activity.stalled(now + FINALIZE_STALL + Duration::from_secs(1)));
+
+        // Before the first progress line, only total silence counts.
+        let idle = StreamActivity::new(now);
+        assert!(!idle.stalled(now + Duration::from_secs(60)));
+        assert!(idle.stalled(now + STARTUP_STALL_LIMIT + Duration::from_secs(1)));
     }
 
     #[test]
