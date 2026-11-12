@@ -465,6 +465,16 @@ export async function refreshUpdates(): Promise<void> {
         notify({ kind: "update", title: t("notif.updateAvailable", { title }), appName: u.appName });
       }
     }
+    // A summary built before an EGL update can keep the old update flag even
+    // when the backend check is clean. The backend list is authoritative.
+    for (const summary of S.epicSummaries) {
+      const should = S.availableUpdates.has(summary.appName);
+      if (summary.updateAvailable !== should) {
+        summary.updateAvailable = should;
+        const mapped = S.allGamesMap.get(summary.appName);
+        if (mapped) mapped.updateAvailable = should;
+      }
+    }
     S.libraryDataRev++;
     updateBadge();
     if (S.view === "downloads") render();
