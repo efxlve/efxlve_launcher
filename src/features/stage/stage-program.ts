@@ -425,7 +425,15 @@ function extrasTab(game: EpicSummary): string {
   const stills = shots.slice(0, 12);
   const stillsBody = stills.length > 0
     ? `<div class="stage-stills-row" data-gp-row>${stills.map((item, index) => `<button type="button" class="stage-still" data-stage-act="open-still" data-index="${index}" data-gp-item data-gp-key="still:${index}">${shotThumbHtml(item)}<span>${esc(item.file_name)}</span></button>`).join("")}</div>`
-    : `<div class="stage-extra-empty">${loadingShots ? esc(t("stage.stillsLoading")) : esc(t("stage.stillsEmpty"))}</div>`;
+    : `<div class="stage-extra-stills-empty">
+        <span class="stage-empty-icon">${icon("camera", 22)}</span>
+        <div class="stage-extra-stills-copy">
+          <strong>${esc(loadingShots ? t("stage.stillsLoading") : t("stage.stillsEmpty"))}</strong>
+        </div>
+        <div class="stage-stat-row">
+          <span class="stage-stat">${icon("camera", 13)}<span>${esc(t("stage.stills"))}</span><b class="tabular-nums">${shots.length}</b></span>
+        </div>
+      </div>`;
   return `<div class="stage-extras">
     <div class="stage-extra-row"><span>${icon("package", 18)} ${esc(t("stage.dlc"))}</span><strong class="tabular-nums">${game.dlcCount || 0}</strong></div>
     <div class="stage-extra-row"><span>${icon("cloud", 18)} ${esc(t("stage.cloud"))}</span><strong>${esc(cloud ? t("stage.cloudReady") : t("stage.cloudUnavailable"))}</strong></div>
