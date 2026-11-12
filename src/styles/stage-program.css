@@ -538,8 +538,10 @@
 }
 .stage-achievements-head > div {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 .stage-achievements-head strong {
   font-size: 14px;
@@ -548,7 +550,7 @@
 .stage-achievements-head .stage-stat-row {
   margin-block-start: 1px;
 }
-.stage-achievements-pct {
+.stage-achievements-head .stage-achievements-pct {
   margin-inline-start: auto;
   font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
   font-size: 28px;
