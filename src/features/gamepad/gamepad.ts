@@ -533,6 +533,27 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
       return;
     }
   }
+  // The same contract for the programme tabs: Down enters the tab body at its
+  // first control, not the still or card that happens to sit under the tab.
+  if (S.stage.active && dir === "down" && origin.closest(".stage-program-tabs")) {
+    const first = document.querySelector<HTMLElement>(".stage-program-content [data-gp-item]");
+    if (first && isVisibleEl(first)) {
+      setFocus(first);
+      return;
+    }
+  }
+  // Up from the first control in a programme tab returns to the owning tab,
+  // not to the leftmost tab that happens to be closer horizontally.
+  if (S.stage.active && dir === "up" && origin.closest(".stage-program-content")) {
+    const first = document.querySelector<HTMLElement>(".stage-program-content [data-gp-item]");
+    if (first === origin) {
+      const activeTab = document.querySelector<HTMLElement>(".stage-program-tab.active");
+      if (activeTab && isVisibleEl(activeTab)) {
+        setFocus(activeTab);
+        return;
+      }
+    }
+  }
 
   // The desktop shell has three regions. Moving inside one is a geometry
   // contest; crossing to another is a deliberate step. Without this, the
@@ -662,6 +683,19 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
   if (S.stage.active && libraryTools && (dir === "left" || dir === "right")) {
     const tools = candidates.filter((el) => el.closest(".stage-library-tools") === libraryTools);
     const best = scan(tools);
+    if (best) {
+      setFocus(best);
+      return;
+    }
+    stageBridge()?.bump?.(dir);
+    return;
+  }
+  // Extras action groups are chips in a wrapping row: left/right stays in the
+  // group instead of jumping to a still above or the manage sheet below.
+  const extraActions = origin.closest<HTMLElement>(".stage-extra-actions");
+  if (S.stage.active && extraActions && (dir === "left" || dir === "right")) {
+    const actions = candidates.filter((el) => el.closest(".stage-extra-actions") === extraActions);
+    const best = scan(actions);
     if (best) {
       setFocus(best);
       return;

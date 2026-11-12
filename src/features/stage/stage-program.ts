@@ -501,7 +501,7 @@ function extrasTab(game: EpicSummary): string {
     <div class="stage-extra-section">
       <div class="stage-extra-section-head">
         <span class="stage-kicker">${esc(t("stage.stills"))}</span>
-        <span class="stage-extra-count tabular-nums">${shots.length}</span>
+        <span class="stage-stat stage-extra-count-chip"><b class="tabular-nums">${shots.length}</b></span>
       </div>
       ${stillsBody}
     </div>
