@@ -995,10 +995,12 @@ pub async fn gog_import_game(
     install_path: String,
 ) -> Result<GogInstalledInfo, String> {
     let clean_id = game_id.trim().trim_start_matches("gog::").to_string();
-    let target = PathBuf::from(install_path.trim());
-    if !target.is_dir() {
+    let picked = PathBuf::from(install_path.trim());
+    if !picked.is_dir() {
         return Err("@t:settings.importInstalledMissing".to_string());
     }
+    // A parent that contains the game's folder is a common picker mistake.
+    let target = locate_game_folder(&picked, &clean_id).unwrap_or(picked);
 
     let mut info = scan_gog_info(&target, &clean_id).unwrap_or_else(|| GogInstalledInfo {
         game_id: clean_id.clone(),
