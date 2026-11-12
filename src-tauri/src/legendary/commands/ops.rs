@@ -144,7 +144,11 @@ pub fn epic_set_network_profile(app: AppHandle, profile: String) -> Result<(), S
 #[tauri::command]
 pub fn epic_set_download_limit(app: AppHandle, mbps: f64) -> Result<(), String> {
     let mbps = if mbps.is_finite() {
-        mbps.clamp(0.0, 10_000.0)
+        if mbps > 0.0 {
+            mbps.clamp(0.1, 10_000.0)
+        } else {
+            0.0
+        }
     } else {
         0.0
     };

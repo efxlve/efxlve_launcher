@@ -301,7 +301,7 @@ function renderDownloads(): string {
   const limit = row(
     t("settings.bandwidthLimit"),
     t("settings.bandwidthLimitDesc"),
-    `<input id="download-limit" class="input settings-limit-input" type="number" min="0" max="10000" step="0.1" inputmode="decimal" value="${S.downloadLimitMbps > 0 ? S.downloadLimitMbps : 0}" aria-label="${esc(t("settings.bandwidthLimit"))}" /> <span class="settings-value">Mbit/s</span>`,
+    `<input id="download-limit" class="input settings-limit-input" type="number" min="0" max="10000" step="0.1" inputmode="decimal" value="${S.downloadLimitMbps > 0 ? S.downloadLimitMbps : 0}" aria-label="${esc(t("settings.bandwidthLimit"))}" /> <span class="settings-value">Mbit/s</span><span class="settings-value" id="download-limit-mb">${S.downloadLimitMbps > 0 ? `≈ ${(S.downloadLimitMbps / 8).toFixed(2)} MB/s` : ""}</span>`,
   );
 
   const cdnHost = S.preferredCdn ? cdnShortLabel(S.preferredCdn) : "";

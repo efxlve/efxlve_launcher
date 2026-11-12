@@ -53,19 +53,32 @@ pub fn init(mbps: f64) {
 }
 
 /// Sets the cap in Mbit/s. 0 (or a negative value) means unlimited.
+///
+/// A positive value below 0.1 Mbit/s is raised to 0.1: at 16 KiB per relay
+/// chunk a smaller rate can make one chunk wait longer than legendary's 10 s
+/// download timeout, which turns the cap into an endless retry loop.
 pub fn set_rate(mbps: f64) {
-    let bps = (mbps.max(0.0) * BPS_PER_MBPS).round() as u64;
+    let bps = bps_for_rate(mbps);
     RATE_BPS.store(bps, Ordering::Relaxed);
     if let Ok(mut bucket) = BUCKET.lock() {
         bucket.configure(bps);
     }
 }
 
-/// The proxy URL the installer should use, or `None` while no cap is set.
-pub fn proxy_url() -> Option<String> {
-    if RATE_BPS.load(Ordering::Relaxed) == 0 {
-        return None;
+/// Bytes/sec for a user-facing Mbit/s value, with the timeout-safe floor.
+fn bps_for_rate(mbps: f64) -> u64 {
+    if mbps.is_finite() && mbps > 0.0 {
+        (mbps.max(0.1) * BPS_PER_MBPS).round() as u64
+    } else {
+        0
     }
+}
+
+/// The proxy URL every store CLI should use, or `None` if the listener could
+/// not be bound. It is returned even at 0 Mbit/s: routing every transfer
+/// through the relay from the start is what lets a cap set during a running
+/// download take effect on the next chunk instead of the next install.
+pub fn proxy_url() -> Option<String> {
     let port = PORT.load(Ordering::Relaxed);
     (port != 0).then(|| format!("http://127.0.0.1:{port}"))
 }
@@ -75,16 +88,16 @@ pub fn rate_mbps() -> f64 {
     RATE_BPS.load(Ordering::Relaxed) as f64 / BPS_PER_MBPS
 }
 
-/// Points a store CLI at the loopback proxy when a cap is set.
+/// Points a store CLI at the loopback proxy, even while the cap is 0.
 ///
 /// `HTTP_PROXY` matters too: some CDN URLs are plain HTTP, and the proxy
-/// forwards those as well as CONNECT tunnels.
+/// forwards those as well as CONNECT tunnels. A stale NO_PROXY entry would
+/// send store traffic around the cap, so both spellings are cleared.
 pub fn configure_child(cmd: &mut tokio::process::Command) {
     if let Some(proxy) = proxy_url() {
         for key in ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"] {
             cmd.env(key, &proxy);
         }
-        // A stale NO_PROXY entry would send store traffic around the cap.
         cmd.env("NO_PROXY", "").env("no_proxy", "");
     }
 }
@@ -176,15 +189,23 @@ async fn forward(
         return;
     };
     let headers = head.split_once("\r\n").map(|(_, tail)| tail).unwrap_or("");
-    let mut request = String::with_capacity(head.len() + 2);
+    let mut request = String::with_capacity(head.len() + 32);
     request.push_str(request_line);
     request.push_str("\r\n");
-    if headers.is_empty() {
+    // The relay handles exactly one plain-HTTP request. Keep-alive would make
+    // the client send the next request in absolute form down the same socket,
+    // which the origin server rejects. Closing after the response makes the
+    // client reconnect and pass through this rewrite again.
+    for line in headers.split("\r\n").filter(|line| {
+        let lower = line.to_ascii_lowercase();
+        !line.is_empty()
+            && !lower.starts_with("connection:")
+            && !lower.starts_with("proxy-connection:")
+    }) {
+        request.push_str(line);
         request.push_str("\r\n");
-    } else {
-        request.push_str(headers);
-        request.push_str("\r\n\r\n");
     }
+    request.push_str("Connection: close\r\n\r\n");
     if upstream.write_all(request.as_bytes()).await.is_err() {
         return;
     }
@@ -441,6 +462,17 @@ mod tests {
         assert_eq!(bucket.reserve(64 * 1024), Duration::ZERO);
     }
 
+    #[test]
+    fn a_tiny_cap_is_raised_to_the_timeout_safe_floor() {
+        assert_eq!(bps_for_rate(0.0), 0);
+        assert_eq!(bps_for_rate(-1.0), 0);
+        assert_eq!(bps_for_rate(f64::NAN), 0);
+        // Below 0.1 Mbit/s one 16 KiB relay chunk would outlive legendary's
+        // 10 second read timeout.
+        assert_eq!(bps_for_rate(0.01), 12_500);
+        assert_eq!(bps_for_rate(8.0), 1_000_000);
+    }
+
     #[tokio::test]
     async fn tunnels_a_connect_request_and_caps_the_download() {
         use tokio::net::TcpListener as TokioListener;
@@ -502,6 +534,10 @@ mod tests {
             }
             let text = String::from_utf8_lossy(&request);
             assert!(text.starts_with("GET /hello HTTP/1.1\r\n"), "{text:?}");
+            assert!(
+                text.to_ascii_lowercase().contains("connection: close"),
+                "{text:?}"
+            );
             stream
                 .write_all(
                     b"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nConnection: close\r\n\r\nhello",

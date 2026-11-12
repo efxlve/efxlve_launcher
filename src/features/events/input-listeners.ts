@@ -537,9 +537,13 @@ document.addEventListener("change", (e) => {
 
   if (target && target.id === "download-limit") {
     const raw = Number(target.value.replace(",", "."));
-    const mbps = Number.isFinite(raw) ? Math.min(10_000, Math.max(0, raw)) : 0;
+    // A positive cap below 0.1 Mbit/s would make a single relay chunk outlive
+    // Legendary's read timeout, so the backend raises it to this same floor.
+    const mbps = Number.isFinite(raw) ? (raw > 0 ? Math.min(10_000, Math.max(0.1, raw)) : 0) : 0;
     S.downloadLimitMbps = mbps;
     target.value = String(mbps);
+    const hint = document.getElementById("download-limit-mb");
+    if (hint) hint.textContent = mbps > 0 ? `≈ ${(mbps / 8).toFixed(2)} MB/s` : "";
     void epicSetDownloadLimit(mbps).catch(() => undefined);
     return;
   }
