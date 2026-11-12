@@ -365,7 +365,7 @@
   box-shadow: 0 0 0 2px #ffffff, 0 0 14px rgba(255, 255, 255, 0.45) !important;
 }
 .stage-ach-filter.active span {
-  font-size: 9.5px;
+  font-size: 11px;
   color: rgba(255, 255, 255, 0.75) !important;
   opacity: 1 !important;
   font-weight: 700;
@@ -410,6 +410,16 @@
 }
 .stage-ach-row.is-hidden {
   opacity: 0.72;
+}
+.stage-ach-row.is-expanded {
+  align-items: flex-start;
+}
+.stage-ach-row.is-expanded .stage-ach-icon {
+  margin-block-start: 2px;
+}
+.stage-ach-row.is-expanded .stage-ach-copy span {
+  overflow: visible;
+  white-space: normal;
 }
 .stage-ach-icon {
   display: inline-grid;
@@ -457,18 +467,59 @@
 .stage-ach-meta {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
-  gap: 3px 10px;
-  max-width: 36%;
-  color: var(--stage-ink-4);
-  font-size: 10px;
+  gap: 4px 8px;
+  max-width: 42%;
   text-align: end;
 }
-.stage-ach-unlocked {
+.stage-ach-state {
+  height: 24px;
+  padding: 0 9px;
+  font-size: 10.5px;
+}
+.stage-ach-state.is-ready {
+  color: #8fe0b2;
+  border-color: rgba(47, 179, 109, 0.3);
+}
+.stage-ach-state.is-off {
+  color: var(--stage-ink-3);
+}
+.stage-ach-fact {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  color: #8fe0b2;
+  gap: 4px;
+  color: var(--stage-ink-3);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+.stage-ach-chevron {
+  display: inline-flex;
+  color: var(--stage-ink-3);
+  opacity: 0;
+}
+.stage-ach-row[data-overflow] .stage-ach-chevron,
+.stage-ach-row.is-expanded .stage-ach-chevron {
+  opacity: 1;
+}
+.stage-ach-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 22px;
+  border: 1px dashed var(--stage-line);
+  border-radius: 14px;
+  text-align: center;
+}
+.stage-ach-empty .stage-empty-icon {
+  width: 48px;
+  height: 48px;
+}
+.stage-ach-empty p {
+  margin: 0;
+  color: var(--stage-ink-3);
+  font-size: 12px;
 }
 .stage-achievements-head {
   display: flex;
@@ -488,15 +539,14 @@
 .stage-achievements-head > div {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
 }
 .stage-achievements-head strong {
   font-size: 14px;
   font-weight: 600;
 }
-.stage-achievements-head span {
-  color: var(--stage-ink-3);
-  font-size: 11px;
+.stage-achievements-head .stage-stat-row {
+  margin-block-start: 1px;
 }
 .stage-achievements-pct {
   margin-inline-start: auto;

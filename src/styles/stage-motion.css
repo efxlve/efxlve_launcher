@@ -189,6 +189,22 @@
     0 0 18px rgba(255, 255, 255, 0.3) !important;
   transform: none !important;
 }
+/* Achievement rows are full-width: the shared button scale and 52px drop would
+   overlap the next row, so the tight ring does the work. */
+#stage-root .stage-ach-row.gp-focused {
+  outline: none !important;
+  border-color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 18px rgba(255, 255, 255, 0.3) !important;
+  transform: none !important;
+}
+#stage-root .stage-ach-filter:not(.active).gp-focused {
+  outline: 1px solid rgba(255, 255, 255, 0.8) !important;
+  outline-offset: 1px !important;
+  box-shadow: none !important;
+}
 /* ---------- Motion ---------- */
 
 /* Entry animations belong to a transition, not to every data repaint. The

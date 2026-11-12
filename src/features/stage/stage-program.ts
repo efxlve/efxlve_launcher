@@ -30,9 +30,17 @@ let notesRequested = false;
 const expandedNotes = new Set<string>();
 let notesExpandedRev = 0;
 
+/** Achievements with the full description open; A on the row toggles it. */
+const expandedAchievements = new Set<string>();
+let achievementsExpandedRev = 0;
+
 /** Bumped on every expand/collapse so the program signature repaints the tab. */
 export function stageNotesExpandedRevision(): number {
   return notesExpandedRev;
+}
+
+export function stageAchievementsExpandedRevision(): number {
+  return achievementsExpandedRev;
 }
 
 /** Expand or collapse one note card by id; the head button calls this. */
@@ -41,6 +49,15 @@ export function toggleStageNote(id: string): void {
   if (expandedNotes.has(id)) expandedNotes.delete(id);
   else expandedNotes.add(id);
   notesExpandedRev += 1;
+  scheduleRender();
+}
+
+/** Expand or collapse one achievement description; A on the row calls this. */
+export function toggleStageAchievement(id: string): void {
+  if (!id) return;
+  if (expandedAchievements.has(id)) expandedAchievements.delete(id);
+  else expandedAchievements.add(id);
+  achievementsExpandedRev += 1;
   scheduleRender();
 }
 
@@ -246,22 +263,24 @@ function achievementRow(item: import("../../epic").EpicAchievementItem): string 
   const description = hidden ? t("stage.achHiddenDesc") : item.description || "";
   const rarity = item.rarity?.percent;
   const date = item.unlocked ? fmtAchDate(item.unlock_date) : "";
+  const expanded = expandedAchievements.has(item.name);
   const iconMarkup = hidden
     ? icon("lock", 22)
     : item.icon_link
       ? `<img src="${esc(item.icon_link)}" alt="" loading="lazy" decoding="async" />`
       : icon(item.unlocked ? "trophy" : "lock", 22);
-  return `<button type="button" class="stage-ach-row${item.unlocked ? " is-unlocked" : ""}${hidden ? " is-hidden" : ""}" data-gp-item data-gp-key="ach:${esc(item.name)}">
+  return `<button type="button" class="stage-ach-row${item.unlocked ? " is-unlocked" : ""}${hidden ? " is-hidden" : ""}${expanded ? " is-expanded" : ""}" data-stage-act="toggle-ach" data-key="${esc(item.name)}" aria-expanded="${expanded}" data-gp-item data-gp-key="ach:${esc(item.name)}">
     <span class="stage-ach-icon">${iconMarkup}</span>
     <span class="stage-ach-copy">
       <strong>${esc(name)}</strong>
-      <span>${esc(description)}</span>
+      <span class="stage-ach-desc">${esc(description)}</span>
     </span>
     <span class="stage-ach-meta">
-      ${item.unlocked ? `<span class="stage-ach-unlocked">${icon("check", 12)} ${esc(t("stage.achUnlockedLabel"))}</span>` : ""}
-      ${rarity !== undefined ? `<span class="tabular-nums">${rarity.toFixed(1)}%</span>` : ""}
-      ${date ? `<span class="tabular-nums">${esc(date)}</span>` : ""}
-      ${item.xp > 0 ? `<span class="tabular-nums">+${item.xp} XP</span>` : ""}
+      <span class="stage-stat stage-ach-state${item.unlocked ? " is-ready" : " is-off"}">${icon(item.unlocked ? "check" : "lock", 12)}<span>${esc(item.unlocked ? t("stage.achUnlockedLabel") : t("stage.achLocked"))}</span></span>
+      ${rarity !== undefined ? `<span class="stage-ach-fact tabular-nums">${icon("users", 11)}<span>${rarity.toFixed(1)}%</span></span>` : ""}
+      ${date ? `<span class="stage-ach-fact tabular-nums">${icon("calendar", 11)}<span>${esc(date)}</span></span>` : ""}
+      ${item.xp > 0 ? `<span class="stage-ach-fact tabular-nums">${icon("sparkles", 11)}<span>+${item.xp} XP</span></span>` : ""}
+      <span class="stage-ach-chevron" aria-hidden="true">${icon(expanded ? "chevron-up" : "chevron-down", 14)}</span>
     </span>
   </button>`;
 }
@@ -327,13 +346,20 @@ function achievementsTab(game: EpicSummary): string {
       <span class="stage-achievements-medal">${icon(data.is_platinum ? "crown" : "trophy", 30)}</span>
       <div>
         <strong>${esc(data.is_platinum ? t("stage.achPlatinum") : t("stage.achievements"))}</strong>
-        <span class="tabular-nums">${unlocked} / ${total}${data.platinum_rarity?.percent !== undefined ? ` · ${data.platinum_rarity.percent.toFixed(1)}%` : ""}</span>
+        <div class="stage-stat-row">
+          <span class="stage-stat">${icon("check", 13)}<span>${esc(t("stage.achUnlocked"))}</span><b class="tabular-nums">${unlocked} / ${total}</b></span>
+          ${data.platinum_rarity?.percent !== undefined ? `<span class="stage-stat">${icon("users", 13)}<b class="tabular-nums">${data.platinum_rarity.percent.toFixed(1)}%</b></span>` : ""}
+        </div>
       </div>
       <strong class="stage-achievements-pct tabular-nums">${percent}%</strong>
     </div>
     ${stageProgress(percent, "stage-progress-large")}
     ${achievementFilterBar(total, unlocked)}
-    <div class="stage-ach-list">${visible.length > 0 ? visible.map(achievementRow).join("") : `<div class="stage-program-empty"><p>${esc(t("stage.achFilterEmpty"))}</p></div>`}</div>
+    <div class="stage-ach-list">${visible.length > 0 ? visible.map(achievementRow).join("") : `<div class="stage-ach-empty">
+      <span class="stage-empty-icon">${icon("trophy", 22)}</span>
+      <p>${esc(t("stage.achFilterEmpty"))}</p>
+      <span class="stage-stat">${icon("sliders", 13)}<span>${esc(filterLabel)}</span><b class="tabular-nums">0</b></span>
+    </div>`}</div>
     <div class="stage-settings-actions">
       <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="refresh-achievements" data-key="${esc(game.appName)}" data-gp-item data-gp-key="ach:refresh">${icon("refresh", 16)}<span>${esc(t("stage.achRefresh"))}</span></button>
       <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="manage-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="ach:manage">${icon("settings", 16)}<span>${esc(t("stage.manage"))}</span></button>
