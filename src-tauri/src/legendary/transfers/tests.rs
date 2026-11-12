@@ -152,6 +152,10 @@ fn a_logged_error_beats_a_zero_exit() {
     assert!(!has_hard_error(
         "[Core] ERROR: EGL ProgramData path (\"C:\\\\ProgramData\\\\Epic\\\\EpicGamesLauncher\\\\Data\\\\Manifests\") is invalid! Disabling sync..."
     ));
+    // EGL had already removed the file; the file worker treats this as success.
+    assert!(!has_hard_error(
+        "[FileWorker] ERROR: Removing file failed: FileNotFoundError(2, 'The system cannot find the file specified')"
+    ));
 }
 
 #[test]

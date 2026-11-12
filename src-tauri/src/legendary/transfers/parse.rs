@@ -219,6 +219,12 @@ pub(super) fn has_hard_error(err_text: &str) -> bool {
         if line.contains("EGL ProgramData path") && line.contains("Disabling sync") {
             return false;
         }
+        // The file worker treats a missing file as already removed and counts
+        // the task as success. An update that prunes a file the Epic Games
+        // Launcher already deleted must not turn into a failed download.
+        if line.contains("Removing file failed") || line.contains("Removing directory failed") {
+            return false;
+        }
         line.starts_with("Traceback")
             || line.contains("ERROR:")
             || line.contains("CRITICAL:")
