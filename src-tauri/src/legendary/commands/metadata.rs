@@ -467,7 +467,6 @@ pub fn sync_egl_installed() -> Result<u32, String> {
             Err(e) => return Err(e.to_string()),
         };
 
-    let catalog = cache::read_library_snapshot(&config);
     let mut imported_count = 0;
     let mut changed = false;
 
@@ -479,8 +478,7 @@ pub fn sync_egl_installed() -> Result<u32, String> {
             &egl.version,
             "Windows",
         );
-        let latest = cache::catalog_build_version(&config, catalog.as_deref(), &egl.app_name);
-        match cache::merge_egl_record(&mut map, &egl, latest.as_deref()) {
+        match cache::merge_egl_record(&mut map, &egl) {
             cache::EglMerge::Added => {
                 imported_count += 1;
                 changed = true;

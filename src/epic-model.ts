@@ -211,6 +211,27 @@ export function epicVersion(g: EpicGame): string {
   return g.asset_infos?.["Windows"]?.build_version || "—";
 }
 
+/**
+ * Build string without the platform suffix EGL appends to its `.item`
+ * (`...-Windows`) and without a trailing artifact version segment. The same
+ * normalization lives in `cache.rs`; it keeps a suffix difference alone from
+ * showing a permanent update badge.
+ */
+export function epicBuildVersion(raw: string): string {
+  let value = raw.trim();
+  const lower = value.toLowerCase();
+  for (const suffix of ["-windows", "-win64", "-win32", "-mac", "-linux"]) {
+    if (value.length > suffix.length && lower.endsWith(suffix)) {
+      value = value.slice(0, -suffix.length).trimEnd();
+      break;
+    }
+  }
+  if (!value) return "";
+  if (/^[0-9.]+$/.test(value)) return value;
+  const tail = value.split("_").pop() ?? value;
+  return /^[0-9.]+$/.test(tail) ? tail : value;
+}
+
 export function epicDescription(g: EpicGame): string {
   const d = g.metadata?.description;
   return typeof d === "string" && d ? d : NO_DESC;
@@ -635,7 +656,10 @@ export function summarize(
         installPath: ins?.install_path ?? null,
         installSize: ins?.install_size ?? 0,
         installedVersion: ins?.version ?? null,
-        updateAvailable: !!ins && ver !== "—" && ins.version !== ver,
+        updateAvailable:
+          !!ins &&
+          ver !== "—" &&
+          epicBuildVersion(ins.version) !== epicBuildVersion(ver),
         releaseYear: epicReleaseYear(g),
       };
     })

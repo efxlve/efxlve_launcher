@@ -27,77 +27,69 @@ fn check_updates_blocking() -> Result<Vec<GameUpdateInfo>, String> {
     }
 
     let installed_raw = std::fs::read_to_string(&installed_path).map_err(|e| e.to_string())?;
-    let installed_map: serde_json::Value =
+    let mut installed_map: std::collections::HashMap<String, InstalledGame> =
         serde_json::from_str(&installed_raw).map_err(|e| e.to_string())?;
-
+    // Follow a live Epic Games Launcher update without waiting for the next
+    // library refresh. This is a read-only merge; the download path writes it.
+    for egl in cache::read_egl_installed_games() {
+        cache::merge_egl_record(&mut installed_map, &egl);
+    }
     let meta_dir = config.join("metadata");
     let mut updates = Vec::new();
 
-    if let Some(obj) = installed_map.as_object() {
-        for (app_name, val) in obj {
-            // Verify the game files actually exist on disk before checking for updates
-            let install_path = val
-                .get("install_path")
-                .and_then(|v| v.as_str())
-                .unwrap_or("")
-                .trim();
-            if !install_path.is_empty() {
-                let p = std::path::Path::new(install_path);
-                if p.is_absolute() {
-                    let drive_present = p
-                        .components()
-                        .next()
-                        .map(|c| std::path::Path::new(&c).exists())
-                        .unwrap_or(false);
-                    if drive_present && !p.exists() {
-                        continue;
-                    }
-                }
-                let executable = val
-                    .get("executable")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .trim();
-                if !executable.is_empty() && !p.join(executable).exists() {
+    for game in installed_map.into_values() {
+        // Verify the game files actually exist on disk before checking for updates
+        let install_path = game.install_path.trim();
+        if !install_path.is_empty() {
+            let p = std::path::Path::new(install_path);
+            if p.is_absolute() {
+                let drive_present = p
+                    .components()
+                    .next()
+                    .map(|c| std::path::Path::new(&c).exists())
+                    .unwrap_or(false);
+                if drive_present && !p.exists() {
                     continue;
                 }
             }
+            if !game.executable.trim().is_empty() && !p.join(&game.executable).exists() {
+                continue;
+            }
+        }
 
-            let installed_ver =
-                cache::display_version(val.get("version").and_then(|v| v.as_str()).unwrap_or(""));
-            let title = val
-                .get("title")
-                .and_then(|v| v.as_str())
-                .unwrap_or(app_name)
-                .to_string();
+        let installed_ver = cache::display_version(&game.version);
+        let title = if game.title.trim().is_empty() {
+            game.app_name.clone()
+        } else {
+            game.title.clone()
+        };
 
-            let meta_path = meta_dir.join(format!("{app_name}.json"));
-            if meta_path.is_file() {
-                if let Ok(meta_raw) = std::fs::read_to_string(&meta_path) {
-                    if let Ok(meta_val) = serde_json::from_str::<serde_json::Value>(&meta_raw) {
-                        let latest_ver = cache::display_version(
-                            meta_val
-                                .pointer("/asset_infos/Windows/build_version")
-                                .and_then(|v| v.as_str())
-                                .or_else(|| {
-                                    meta_val
-                                        .pointer("/metadata/customAttributes/BuildVersion/value")
-                                        .and_then(|v| v.as_str())
-                                })
-                                .unwrap_or(""),
-                        );
+        let meta_path = meta_dir.join(format!("{}.json", game.app_name));
+        if meta_path.is_file() {
+            if let Ok(meta_raw) = std::fs::read_to_string(&meta_path) {
+                if let Ok(meta_val) = serde_json::from_str::<serde_json::Value>(&meta_raw) {
+                    let latest_ver = cache::display_version(
+                        meta_val
+                            .pointer("/asset_infos/Windows/build_version")
+                            .and_then(|v| v.as_str())
+                            .or_else(|| {
+                                meta_val
+                                    .pointer("/metadata/customAttributes/BuildVersion/value")
+                                    .and_then(|v| v.as_str())
+                            })
+                            .unwrap_or(""),
+                    );
 
-                        if !installed_ver.is_empty()
-                            && !latest_ver.is_empty()
-                            && installed_ver != latest_ver
-                        {
-                            updates.push(GameUpdateInfo {
-                                app_name: app_name.clone(),
-                                title,
-                                installed_version: installed_ver,
-                                latest_version: latest_ver,
-                            });
-                        }
+                    if !installed_ver.is_empty()
+                        && !latest_ver.is_empty()
+                        && installed_ver != latest_ver
+                    {
+                        updates.push(GameUpdateInfo {
+                            app_name: game.app_name.clone(),
+                            title,
+                            installed_version: installed_ver,
+                            latest_version: latest_ver,
+                        });
                     }
                 }
             }
