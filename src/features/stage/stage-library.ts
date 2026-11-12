@@ -111,7 +111,7 @@ function sortLabel(sort: StageLibrarySort): string {
 
 function filterTabs(): string {
   const counts = stageFilterCounts();
-  return `<div class="stage-filter-tabs" role="tablist">
+  return `<div class="stage-filter-tabs" role="tablist" data-gp-row>
     ${FILTERS.map((filter) => `<button type="button" role="tab" aria-selected="${S.stage.libraryFilter === filter}" class="stage-filter${S.stage.libraryFilter === filter ? " active" : ""}" data-stage-act="set-filter" data-filter="${filter}" data-gp-item data-gp-key="filter:${filter}">
       <span>${esc(filterLabel(filter))}</span><span class="stage-filter-count tabular-nums">${counts[filter]}</span>
     </button>`).join("")}

@@ -656,6 +656,52 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
     stageBridge()?.bump?.(dir);
     return;
   }
+  // The library tools wrap; left/right walks the tool set and bumps at the end
+  // instead of jumping to the topbar or the side stage.
+  const libraryTools = origin.closest<HTMLElement>(".stage-library-tools");
+  if (S.stage.active && libraryTools && (dir === "left" || dir === "right")) {
+    const tools = candidates.filter((el) => el.closest(".stage-library-tools") === libraryTools);
+    const best = scan(tools);
+    if (best) {
+      setFocus(best);
+      return;
+    }
+    stageBridge()?.bump?.(dir);
+    return;
+  }
+  // The header is two stacked rows: filters above tools. The generic scan
+  // weighs horizontal distance so heavily that Down from a right-hand filter
+  // would jump past the tool row into the side stage.
+  const filterTabs = origin.closest<HTMLElement>(".stage-filter-tabs");
+  const nearestByX = (selector: string): HTMLElement | null => {
+    const els = Array.from(document.querySelectorAll<HTMLElement>(selector));
+    let best: HTMLElement | null = null;
+    let bestDx = Infinity;
+    for (const el of els) {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue;
+      const dx = Math.abs(r.left + r.width / 2 - curCenter.x);
+      if (dx < bestDx) {
+        best = el;
+        bestDx = dx;
+      }
+    }
+    return best;
+  };
+  if (S.stage.active && dir === "down" && filterTabs) {
+    const tool = nearestByX(".stage-library-tools [data-gp-item]");
+    if (tool) {
+      setFocus(tool);
+      return;
+    }
+  }
+  if (S.stage.active && dir === "up" && libraryTools) {
+    const filter = nearestByX(".stage-filter-tabs [data-gp-item]");
+    if (filter) {
+      setFocus(filter);
+      return;
+    }
+  }
   // The Discord friend grid wraps into rows whose last row can start in
   // another column. Vertical movement goes by row, left/right stays inside.
   const friendsList = origin.closest<HTMLElement>(".stage-discord-friends-list");
