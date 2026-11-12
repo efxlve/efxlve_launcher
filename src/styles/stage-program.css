@@ -555,9 +555,18 @@
 }
 .stage-extra-section-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+.stage-extra-section-head .stage-stat {
+  max-width: 60%;
+  min-width: 0;
+}
+.stage-extra-section-head .stage-stat > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .stage-extra-count {
   color: var(--stage-ink-4);

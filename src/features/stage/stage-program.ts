@@ -443,7 +443,7 @@ function extrasTab(game: EpicSummary): string {
     <div class="stage-extra-section">
       <div class="stage-extra-section-head">
         <span class="stage-kicker">${esc(t("stage.settingsGameMusic"))}</span>
-        <span class="stage-extra-count">${esc(gameTrack ? stageAudioLabel(gameTrack) : t("stage.settingsAmbience"))}</span>
+        <span class="stage-stat">${icon(gameTrack ? "music" : "sparkles", 13)}<span>${esc(gameTrack ? stageAudioLabel(gameTrack) : t("stage.settingsAmbience"))}</span></span>
       </div>
       <div class="stage-extra-actions">
         <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="choose-game-track" data-key="${esc(game.appName)}" data-gp-item data-gp-key="extras:music-choose">${icon("music", 16)}<span>${esc(t("stage.settingsMusicChoose"))}</span></button>
