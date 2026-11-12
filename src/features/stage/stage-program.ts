@@ -341,7 +341,14 @@ function mediaTab(game: EpicSummary): string {
   }
 
   return `<div class="stage-media-gallery">
-    <div class="stage-media-grid" data-gp-row>
+    <div class="stage-media-head">
+      <span class="stage-kicker">${esc(t("stage.stills"))}</span>
+      <div class="stage-stat-row">
+        <span class="stage-stat">${icon("camera", 13)}<span>${esc(t("stage.stills"))}</span><b class="tabular-nums">${shots.length}</b></span>
+        <span class="stage-stat">${icon("layers", 13)}<span>${esc(stageStoreName(sourceOfKey(game.appName)))}</span></span>
+      </div>
+    </div>
+    <div class="stage-media-grid">
       ${shots.map((item, index) => `
         <button type="button" class="stage-still-card" data-stage-act="open-still" data-index="${index}" data-gp-item data-gp-key="still:${index}" aria-label="${esc(item.file_name)}">
           <div class="stage-still-art">${shotThumbHtml(item)}</div>
