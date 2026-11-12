@@ -46,6 +46,8 @@ export function scheduleAutoUpdate(): void {
 
 /** Queues every pending update (skips while a download is already running). */
 async function runAutoUpdate(): Promise<void> {
+  // An offline pass would only fail every store CLI and toast once per game.
+  if (S.offlineMode) return;
   if (S.activeDlMetrics || S.dlQueueStatus.queue.length > 0) return;
   // A cleared update indicator is the user's "not this one": the scheduled
   // pass must respect it, or the bell button does nothing at 03:00.

@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
+import { blockedOffline } from "./core/offline";
 import type { LibraryItem } from "./core/types";
 import type { CollectionImport, EpicAchievementSummary, EpicAchievementsData, GameRequirementsResponse } from "./epic";
+import { t } from "./i18n";
 
 export interface GogAuthStatus {
   logged_in: boolean;
@@ -54,6 +56,8 @@ export async function gogListGames(): Promise<GogGameSummary[]> {
 }
 
 export async function gogInstallGame(gameId: string, installPath?: string): Promise<void> {
+  // Downloads need the network; offline mode says no before any UI spins up.
+  if (blockedOffline(t("net.whatDownload"))) return;
   return invoke<void>("gog_install_game", { gameId, installPath: installPath ?? null });
 }
 

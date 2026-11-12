@@ -10,6 +10,7 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { isTauri } from "../../core/constants";
 import { updateBadge } from "../../core/nav";
+import { blockedOffline } from "../../core/offline";
 import { pushRecentInstall } from "../../core/recent";
 import { scheduleRender } from "../../core/render";
 import { setAmazonSummaries } from "../../core/selectors";
@@ -385,6 +386,8 @@ function clearAmazonDownload(key: string): void {
 
 /** Installs or updates one Amazon game; progress streams in as events. */
 export async function installAmazonGame(id: string): Promise<void> {
+  // Downloads need the network; offline mode says no before any UI spins up.
+  if (blockedOffline(t("net.whatDownload"))) return;
   const key = amazonKey(id);
   const title = S.amazonGames.find((g) => g.id === id)?.title || id;
   S.amazonProgress.set(key, { percent: 0, speed: 0 });
