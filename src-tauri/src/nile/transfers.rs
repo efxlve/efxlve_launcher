@@ -452,6 +452,14 @@ pub async fn nile_install_info(app: AppHandle, id: String) -> Result<u64, String
 /// Removes one installed game and its files.
 #[tauri::command]
 pub async fn nile_uninstall(app: AppHandle, id: String) -> Result<(), String> {
+    {
+        let state = NILE_DL_STATE
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if state.as_ref().is_some_and(|st| st.id == id) {
+            return Err("@t:dl.anotherActive".to_string());
+        }
+    }
     // The title is needed after the uninstall to drop the desktop shortcut.
     let title = super::library::game_title(&app, &id).unwrap_or_else(|| id.clone());
     let out = cli::run(&app, &["uninstall", &id], 300).await?;

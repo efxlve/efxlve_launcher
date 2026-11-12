@@ -387,6 +387,17 @@ pub(super) fn queue_names(queue: &VecDeque<PendingDownload>) -> Vec<String> {
     queue.iter().map(|item| item.app_name.clone()).collect()
 }
 
+/// True when this game is the active download or waiting in the queue; an
+/// uninstall must not delete files a transfer is about to write.
+pub(super) fn download_in_flight(app: &AppHandle, app_name: &str) -> bool {
+    let state = app.state::<AppState>();
+    let Ok(s) = state.epic_dl.lock() else {
+        return false;
+    };
+    s.active.as_deref() == Some(app_name)
+        || s.queue.iter().any(|q| q.app_name == app_name)
+}
+
 pub(super) fn start_download_request(
     app: &AppHandle,
     request: PendingDownload,

@@ -21,6 +21,9 @@ pub async fn epic_uninstall_game(
     app_name: String,
     keep_files: bool,
 ) -> Result<String, String> {
+    if super::queue::download_in_flight(&app, &app_name) {
+        return Err("@t:dl.anotherActive".into());
+    }
     let bin = resolve_bin(&app)?;
     let config = crate::legendary::skip::default_config_dir();
 
