@@ -1336,6 +1336,7 @@
   "dl.cacheCleared": "Cache dei download svuotata",
   "dl.peak": "Picco",
   "dl.starting": "Avvio…",
+  "dl.finishing": "Completamento…",
   "selective.checking": "Controllo delle opzioni di installazione…",
   "selective.starting": "Avvio dell'installazione selettiva…",
   "selective.startFailed": "Impossibile avviare l'installazione: {msg}",

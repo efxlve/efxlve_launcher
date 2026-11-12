@@ -1409,6 +1409,7 @@
   "dl.cacheCleared": "İndirme önbelleği temizlendi",
   "dl.peak": "Zirve",
   "dl.starting": "Başlatılıyor…",
+  "dl.finishing": "Tamamlanıyor…",
   "selective.checking": "Kurulum seçenekleri denetleniyor…",
   "selective.starting": "Seçici kurulum başlatılıyor…",
   "selective.startFailed": "Kurulum başlatılamadı: {msg}",

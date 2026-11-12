@@ -106,6 +106,30 @@ fn test_parse_speed() {
 }
 
 #[test]
+fn recognises_the_end_of_the_transfer() {
+    // The payload is done once the download manager quits, and the install is
+    // committed once the CLI logs the final duration.
+    assert!(is_install_finishing(
+        "[DLManager] INFO: Waiting for installation to finish..."
+    ));
+    assert!(is_install_finishing(
+        "[DLManager] INFO: All done! Download manager quitting..."
+    ));
+    assert!(is_install_finishing(
+        "[cli] INFO: Finished installation process in 758.88 seconds."
+    ));
+    assert!(is_install_finished(
+        "[cli] INFO: Finished installation process in 758.88 seconds."
+    ));
+    assert!(!is_install_finished(
+        "[DLManager] INFO: = Progress: 100.00% (11274/11274), Running for 00:12:37, ETA: 00:00:00"
+    ));
+    assert!(!is_install_finishing(
+        "[DLManager] INFO: = Progress: 100.00% (11274/11274), Running for 00:12:37, ETA: 00:00:00"
+    ));
+}
+
+#[test]
 fn a_logged_error_beats_a_zero_exit() {
     // Legendary can log an error and still exit 0; the monitor must not record
     // that as a completed install.

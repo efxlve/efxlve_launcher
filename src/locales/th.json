@@ -1336,6 +1336,7 @@
   "dl.cacheCleared": "ล้างแคชการดาวน์โหลดแล้ว",
   "dl.peak": "สูงสุด",
   "dl.starting": "กำลังเริ่ม…",
+  "dl.finishing": "กำลังทำให้เสร็จ…",
   "selective.checking": "กำลังตรวจสอบตัวเลือกการติดตั้ง…",
   "selective.starting": "กำลังเริ่มติดตั้งแบบเลือกส่วน…",
   "selective.startFailed": "เริ่มติดตั้งไม่ได้: {msg}",

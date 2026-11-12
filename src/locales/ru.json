@@ -1336,6 +1336,7 @@
   "dl.cacheCleared": "Кэш загрузок очищен",
   "dl.peak": "Пик",
   "dl.starting": "Запуск…",
+  "dl.finishing": "Завершение…",
   "selective.checking": "Проверка параметров установки…",
   "selective.starting": "Запуск выборочной установки…",
   "selective.startFailed": "Не удалось начать установку: {msg}",

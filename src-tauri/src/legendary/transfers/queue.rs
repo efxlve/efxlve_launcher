@@ -19,6 +19,36 @@ use crate::{load_settings, AppState};
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
+/// Legendary prints a progress line at least once a second while it transfers.
+/// After this much silence the pipe alone can no longer tell whether the
+/// process is alive.
+const STDERR_POLL: std::time::Duration = std::time::Duration::from_millis(500);
+
+/// `Finished installation process` is written after installed.json and the EGL
+/// manifest are in place, so only interpreter shutdown remains. A process that
+/// lingers past this grace is reaped instead of leaving the row at 100%.
+const COMPLETION_GRACE: std::time::Duration = std::time::Duration::from_secs(20);
+
+/// Ends a legendary process together with its multiprocessing children.
+/// `kill_on_drop` only signals the direct child; the download workers are
+/// grandchildren and would otherwise keep writing into the game folder.
+pub(super) async fn kill_download_tree(pid: u32) {
+    #[cfg(windows)]
+    {
+        let mut cmd = tokio::process::Command::new("taskkill");
+        cmd.args(["/PID", &pid.to_string(), "/T", "/F"]);
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let _ = cmd.output().await;
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = tokio::process::Command::new("kill")
+            .args(["-9", &pid.to_string()])
+            .output()
+            .await;
+    }
+}
+
 pub struct EpicDlState {
     pub active: Option<String>,
     pub pid: Option<u32>,
@@ -176,7 +206,13 @@ pub(super) fn persist_resume(pending: &PendingDownload) {
 
 /// Cleanup and resume-record updates for a finished attempt.
 /// Partial folders are removed only when the plan says so (user cancel of a
-/// game that was never installed). Failure and pause leave both in place.
+/// game that was never installed). Failure and pause leave the partial folder
+/// and the resume record in place.
+///
+/// The pending marker is the crash-only restart path: it survives only a stop
+/// this process never saw. Every stop classified here clears it, so a later
+/// boot does not silently restart a download the user already watched fail or
+/// pause. The per-app resume record still lets a manual retry continue.
 pub(super) fn finish_stop(
     app: &AppHandle,
     app_name: &str,
@@ -191,9 +227,7 @@ pub(super) fn finish_stop(
         app_name,
         stop,
     );
-    if !plan.keep_resume_record {
-        clear_pending_if_app(app_name);
-    }
+    clear_pending_if_app(app_name);
 }
 
 pub(super) fn user_halted(app: &AppHandle) -> bool {
@@ -692,126 +726,201 @@ pub(super) async fn monitor_download(
     let result: Result<(), String> = loop {
         // stdout carries no progress but is drained so the pipe does not fill.
         let out_task = spawn_drain(stdout.take());
-        if let Some(e) = stderr.take() {
+        let mut stopped_after_completion = false;
+        let status = if let Some(e) = stderr.take() {
             let mut r = CrlfLines::new(e);
-            while let Some(line) = r.next_line().await {
-                if tail.len() >= 60 {
-                    tail.pop_front();
-                }
+            let mut completion_at: Option<std::time::Instant> = None;
+            let mut finishing_sent = false;
+            let mut exited: Option<std::process::ExitStatus> = None;
+            loop {
+                match tokio::time::timeout(STDERR_POLL, r.next_line()).await {
+                    Ok(Some(line)) => {
+                        if !finishing_sent && is_install_finishing(&line) {
+                            finishing_sent = true;
+                            emit_progress_full(
+                                &app,
+                                &app_name,
+                                100,
+                                false,
+                                None,
+                                None,
+                                None,
+                                None,
+                                Some("@t:dl.finishing".into()),
+                                None,
+                                None,
+                                None,
+                            );
+                        }
+                        if is_install_finished(&line) {
+                            completion_at = Some(std::time::Instant::now());
+                        }
 
-                if let Some((eta_s, secs)) = parse_eta(&line) {
-                    current_eta = Some(eta_s);
-                    current_eta_seconds = Some(secs);
-                }
-                if let Some((spd_s, bytes_sec)) = parse_speed(
-                    &line,
-                    &[
-                        "Download speed:",
-                        "Download Speed:",
-                        "Download:",
-                        "Download",
-                        "Speed:",
-                        "Net:",
-                    ],
-                ) {
-                    if bytes_sec > 0 {
-                        explicit_net = true;
-                        current_speed = Some(spd_s);
-                        current_speed_bytes = Some(bytes_sec);
+                        if tail.len() >= 60 {
+                            tail.pop_front();
+                        }
+
+                        if let Some((eta_s, secs)) = parse_eta(&line) {
+                            current_eta = Some(eta_s);
+                            current_eta_seconds = Some(secs);
+                        }
+                        if let Some((spd_s, bytes_sec)) = parse_speed(
+                            &line,
+                            &[
+                                "Download speed:",
+                                "Download Speed:",
+                                "Download:",
+                                "Download",
+                                "Speed:",
+                                "Net:",
+                            ],
+                        ) {
+                            if bytes_sec > 0 {
+                                explicit_net = true;
+                                current_speed = Some(spd_s);
+                                current_speed_bytes = Some(bytes_sec);
+                            }
+                        }
+                        if let Some((d_spd_s, d_bytes_sec)) = parse_speed(
+                            &line,
+                            &[
+                                "Disk speed:",
+                                "Disk Speed:",
+                                "Written speed:",
+                                "Disk write:",
+                                "Disk:",
+                                "Write:",
+                                "Disk",
+                                "Write",
+                            ],
+                        ) {
+                            if d_bytes_sec > 0 {
+                                explicit_disk = true;
+                                current_disk_speed = Some(d_spd_s);
+                                current_disk_bytes = Some(d_bytes_sec);
+                            }
+                        }
+                        if total_mib <= 0.0 {
+                            if let Some(v) = parse_mib_after(&line, "Download size:") {
+                                total_mib = v;
+                            }
+                        }
+                        if let Some(d) = parse_mib_after(&line, "Downloaded:") {
+                            downloaded_mib = d;
+                            // Some legendary builds print only the byte counters, not a MiB/s line.
+                            if !explicit_net {
+                                if let Some(bps) = bytes_per_sec_from_mib(&mut net_rate, d) {
+                                    current_speed_bytes = Some(bps);
+                                    current_speed = Some(format_rate(bps));
+                                }
+                            }
+                        }
+                        if let Some(w) = parse_mib_after(&line, "Written:") {
+                            if !explicit_disk {
+                                if let Some(bps) = bytes_per_sec_from_mib(&mut disk_rate, w) {
+                                    current_disk_bytes = Some(bps);
+                                    current_disk_speed = Some(format_rate(bps));
+                                }
+                            }
+                        }
+
+                        let mut new_pct: Option<i32> = None;
+                        if let Some(pct) = parse_progress_percent(&line) {
+                            new_pct = Some(pct);
+                        } else if total_mib > 0.0 && downloaded_mib > 0.0 {
+                            let pct =
+                                ((downloaded_mib / total_mib * 100.0).round() as i32).clamp(0, 100);
+                            new_pct = Some(pct);
+                        }
+
+                        let pct_changed = new_pct.is_some() && new_pct != Some(last_pct);
+                        let time_elapsed = last_emit.elapsed().as_millis() >= 250;
+                        // Speed lines arrive before the first `Progress:` line. Publishing 0
+                        // here resets a resumed download in the UI.
+                        if (pct_changed || time_elapsed) && (new_pct.is_some() || last_pct >= 0) {
+                            last_emit = std::time::Instant::now();
+                            if let Some(p) = new_pct {
+                                last_pct = p;
+                            }
+                            let p = last_pct as u8;
+                            let dl_bytes = if downloaded_mib > 0.0 {
+                                Some((downloaded_mib * 1024.0 * 1024.0) as u64)
+                            } else {
+                                None
+                            };
+                            let tot_bytes = if total_mib > 0.0 {
+                                Some((total_mib * 1024.0 * 1024.0) as u64)
+                            } else {
+                                None
+                            };
+                            emit_progress_full(
+                                &app,
+                                &app_name,
+                                p,
+                                false,
+                                current_speed.clone(),
+                                current_speed_bytes,
+                                current_disk_speed.clone(),
+                                current_disk_bytes,
+                                current_eta.clone(),
+                                current_eta_seconds,
+                                dl_bytes,
+                                tot_bytes,
+                            );
+                        }
+                        tail.push_back(line);
                     }
-                }
-                if let Some((d_spd_s, d_bytes_sec)) = parse_speed(
-                    &line,
-                    &[
-                        "Disk speed:",
-                        "Disk Speed:",
-                        "Written speed:",
-                        "Disk write:",
-                        "Disk:",
-                        "Write:",
-                        "Disk",
-                        "Write",
-                    ],
-                ) {
-                    if d_bytes_sec > 0 {
-                        explicit_disk = true;
-                        current_disk_speed = Some(d_spd_s);
-                        current_disk_bytes = Some(d_bytes_sec);
-                    }
-                }
-                if total_mib <= 0.0 {
-                    if let Some(v) = parse_mib_after(&line, "Download size:") {
-                        total_mib = v;
-                    }
-                }
-                if let Some(d) = parse_mib_after(&line, "Downloaded:") {
-                    downloaded_mib = d;
-                    // Some legendary builds print only the byte counters, not a MiB/s line.
-                    if !explicit_net {
-                        if let Some(bps) = bytes_per_sec_from_mib(&mut net_rate, d) {
-                            current_speed_bytes = Some(bps);
-                            current_speed = Some(format_rate(bps));
+                    Ok(None) => break,
+                    Err(_) => {
+                        // The main process can exit while a multiprocessing child
+                        // still holds the inherited stderr pipe open. The pipe
+                        // would then never reach EOF, so ask the process itself.
+                        if let Ok(Some(exit)) = child.try_wait() {
+                            exited = Some(exit);
+                            break;
+                        }
+                        // Past the final log line only interpreter shutdown is
+                        // left. Reap a process that never gets there; the install
+                        // record and the game files are already written.
+                        if completion_at
+                            .is_some_and(|started| started.elapsed() >= COMPLETION_GRACE)
+                        {
+                            stopped_after_completion = true;
+                            if let Some(pid) = child.id() {
+                                kill_download_tree(pid).await;
+                            }
+                            break;
                         }
                     }
                 }
-                if let Some(w) = parse_mib_after(&line, "Written:") {
-                    if !explicit_disk {
-                        if let Some(bps) = bytes_per_sec_from_mib(&mut disk_rate, w) {
-                            current_disk_bytes = Some(bps);
-                            current_disk_speed = Some(format_rate(bps));
-                        }
-                    }
-                }
-
-                let mut new_pct: Option<i32> = None;
-                if let Some(pct) = parse_progress_percent(&line) {
-                    new_pct = Some(pct);
-                } else if total_mib > 0.0 && downloaded_mib > 0.0 {
-                    let pct = ((downloaded_mib / total_mib * 100.0).round() as i32).clamp(0, 100);
-                    new_pct = Some(pct);
-                }
-
-                let pct_changed = new_pct.is_some() && new_pct != Some(last_pct);
-                let time_elapsed = last_emit.elapsed().as_millis() >= 250;
-                // Speed lines arrive before the first `Progress:` line. Publishing 0
-                // here resets a resumed download in the UI.
-                if (pct_changed || time_elapsed) && (new_pct.is_some() || last_pct >= 0) {
-                    last_emit = std::time::Instant::now();
-                    if let Some(p) = new_pct {
-                        last_pct = p;
-                    }
-                    let p = last_pct as u8;
-                    let dl_bytes = if downloaded_mib > 0.0 {
-                        Some((downloaded_mib * 1024.0 * 1024.0) as u64)
-                    } else {
-                        None
-                    };
-                    let tot_bytes = if total_mib > 0.0 {
-                        Some((total_mib * 1024.0 * 1024.0) as u64)
-                    } else {
-                        None
-                    };
-                    emit_progress_full(
-                        &app,
-                        &app_name,
-                        p,
-                        false,
-                        current_speed.clone(),
-                        current_speed_bytes,
-                        current_disk_speed.clone(),
-                        current_disk_bytes,
-                        current_eta.clone(),
-                        current_eta_seconds,
-                        dl_bytes,
-                        tot_bytes,
-                    );
-                }
-                tail.push_back(line);
             }
-        }
-        let status = child.wait().await.ok();
+            match exited {
+                Some(exit) => Some(exit),
+                None => {
+                    let _ = child.wait().await;
+                    None
+                }
+            }
+        } else {
+            child.wait().await.ok()
+        };
+        // A read on stdout can outlive the process for the same inherited-pipe
+        // reason as stderr; do not let it hold the monitor open.
+        out_task.abort();
         let _ = out_task.await;
         let err_text: String = tail.iter().cloned().collect::<Vec<_>>().join("\n");
+        if stopped_after_completion {
+            if user_halted(&app) {
+                break Err("@t:dl.cancelled".into());
+            }
+            // legendary already wrote installed.json and the EGL manifest before
+            // logging its final line; a hung interpreter shutdown must not turn
+            // that into an endless "downloading" row.
+            if has_hard_error(&err_text) {
+                break Err(short_error(&err_text));
+            }
+            break Ok(());
+        }
         if status.is_some_and(|s| s.success()) {
             // A zero exit alone is not success: legendary can log a hard error
             // (locked game files, permission denied) and still exit 0, which
@@ -1204,20 +1313,7 @@ pub async fn epic_cancel_download(app: AppHandle, app_name: String) -> Result<St
     // here would delete `.egstore` before that exit is classified, and a
     // mismatched id would wipe a different game's resume record.
     if let Some(pid) = pid {
-        #[cfg(windows)]
-        {
-            let mut cmd = tokio::process::Command::new("taskkill");
-            cmd.args(["/PID", &pid.to_string(), "/T", "/F"]);
-            cmd.creation_flags(CREATE_NO_WINDOW);
-            let _ = cmd.output().await;
-        }
-        #[cfg(not(windows))]
-        {
-            let _ = tokio::process::Command::new("kill")
-                .args(["-9", &pid.to_string()])
-                .output()
-                .await;
-        }
+        kill_download_tree(pid).await;
     }
     Ok("@t:dl.cancelled".into())
 }
@@ -1237,20 +1333,7 @@ pub async fn epic_pause_download(
         }
     };
     if let Some(p) = pid {
-        #[cfg(windows)]
-        {
-            let mut cmd = tokio::process::Command::new("taskkill");
-            cmd.args(["/PID", &p.to_string(), "/T", "/F"]);
-            cmd.creation_flags(CREATE_NO_WINDOW);
-            let _ = cmd.output().await;
-        }
-        #[cfg(not(windows))]
-        {
-            let _ = tokio::process::Command::new("kill")
-                .args(["-9", &p.to_string()])
-                .output()
-                .await;
-        }
+        kill_download_tree(p).await;
     }
     Ok("@t:dl.paused".into())
 }
@@ -1314,20 +1397,7 @@ pub async fn epic_reorder_queue(
             }
         };
         if let Some(p) = prev_pid {
-            #[cfg(windows)]
-            {
-                let mut cmd = tokio::process::Command::new("taskkill");
-                cmd.args(["/PID", &p.to_string(), "/T", "/F"]);
-                cmd.creation_flags(CREATE_NO_WINDOW);
-                let _ = cmd.output().await;
-            }
-            #[cfg(not(windows))]
-            {
-                let _ = tokio::process::Command::new("kill")
-                    .args(["-9", &p.to_string()])
-                    .output()
-                    .await;
-            }
+            kill_download_tree(p).await;
         }
         write_queue_snapshot(&state.epic_dl.lock().map_err(|e| e.to_string())?.queue);
         if let Some(item) = item {

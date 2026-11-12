@@ -1336,6 +1336,7 @@
   "dl.cacheCleared": "Cache de téléchargement vidé",
   "dl.peak": "Pic",
   "dl.starting": "Démarrage…",
+  "dl.finishing": "Finalisation…",
   "selective.checking": "Vérification des options d'installation…",
   "selective.starting": "Démarrage de l'installation sélective…",
   "selective.startFailed": "Impossible de démarrer l'installation : {msg}",

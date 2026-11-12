@@ -1409,6 +1409,7 @@
   "dl.cacheCleared": "डाउनलोड कैश साफ़ किया गया",
   "dl.peak": "चरम",
   "dl.starting": "शुरू हो रहा है…",
+  "dl.finishing": "पूरा किया जा रहा है…",
   "selective.checking": "इंस्टॉल विकल्प जाँचे जा रहे हैं…",
   "selective.starting": "चयनात्मक इंस्टॉलेशन शुरू हो रहा है…",
   "selective.startFailed": "इंस्टॉल शुरू नहीं किया जा सका: {msg}",

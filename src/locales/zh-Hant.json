@@ -1336,6 +1336,7 @@
   "dl.cacheCleared": "已清除下載快取",
   "dl.peak": "峰值",
   "dl.starting": "正在開始…",
+  "dl.finishing": "正在完成…",
   "selective.checking": "正在檢查安裝選項…",
   "selective.starting": "正在開始選擇性安裝…",
   "selective.startFailed": "無法開始安裝：{msg}",

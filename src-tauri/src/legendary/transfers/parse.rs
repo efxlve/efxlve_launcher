@@ -186,6 +186,21 @@ pub(super) fn parse_progress_percent(line: &str) -> Option<i32> {
     Some((v.round() as i32).clamp(0, 100))
 }
 
+/// Lines that mean the payload is complete and only finalization remains. The
+/// UI can say so instead of showing a frozen 100% at zero speed.
+pub(super) fn is_install_finishing(line: &str) -> bool {
+    line.contains("Waiting for installation to finish")
+        || line.contains("All done! Download manager quitting")
+        || is_install_finished(line)
+}
+
+/// Legendary writes this after installed.json and the EGL manifest are in
+/// place. Only interpreter shutdown follows, so a process still alive after a
+/// grace period has finished its work.
+pub(super) fn is_install_finished(line: &str) -> bool {
+    line.contains("Finished installation process")
+}
+
 /// True when legendary's own log shows a hard error. Legendary can log a hard
 /// error (locked game files, permission denied) and still exit with code 0, so
 /// a zero exit alone must not be treated as a completed install.

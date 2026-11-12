@@ -1409,6 +1409,7 @@
   "dl.cacheCleared": "Download cache cleared",
   "dl.peak": "Peak",
   "dl.starting": "Starting…",
+  "dl.finishing": "Finishing up…",
   "selective.checking": "Checking install options…",
   "selective.starting": "Starting selective install…",
   "selective.startFailed": "Could not start install: {msg}",

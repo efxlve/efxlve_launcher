@@ -1336,6 +1336,7 @@
   "dl.cacheCleared": "已清除下载缓存",
   "dl.peak": "峰值",
   "dl.starting": "正在开始…",
+  "dl.finishing": "正在完成…",
   "selective.checking": "正在检查安装选项…",
   "selective.starting": "正在开始选择性安装…",
   "selective.startFailed": "无法开始安装：{msg}",

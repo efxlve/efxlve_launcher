@@ -1336,6 +1336,7 @@
   "dl.cacheCleared": "مُسحت ذاكرة التخزين المؤقت للتنزيل",
   "dl.peak": "الذروة",
   "dl.starting": "جارٍ البدء…",
+  "dl.finishing": "جارٍ الإنهاء…",
   "selective.checking": "جارٍ التحقق من خيارات التثبيت…",
   "selective.starting": "جارٍ بدء التثبيت الانتقائي…",
   "selective.startFailed": "تعذر بدء التثبيت: {msg}",

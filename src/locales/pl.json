@@ -1336,6 +1336,7 @@
   "dl.cacheCleared": "Wyczyszczono pamięć podręczną pobierania",
   "dl.peak": "Szczyt",
   "dl.starting": "Uruchamianie…",
+  "dl.finishing": "Kończenie…",
   "selective.checking": "Sprawdzanie opcji instalacji…",
   "selective.starting": "Uruchamianie instalacji wybiórczej…",
   "selective.startFailed": "Nie udało się rozpocząć instalacji: {msg}",

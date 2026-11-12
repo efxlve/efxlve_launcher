@@ -1336,6 +1336,7 @@
   "dl.cacheCleared": "다운로드 캐시를 지웠습니다",
   "dl.peak": "최고",
   "dl.starting": "시작 중…",
+  "dl.finishing": "마무리 중…",
   "selective.checking": "설치 옵션 확인 중…",
   "selective.starting": "선택 설치 시작 중…",
   "selective.startFailed": "설치를 시작할 수 없습니다: {msg}",
