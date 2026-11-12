@@ -205,6 +205,24 @@
   outline-offset: 1px !important;
   box-shadow: none !important;
 }
+/* Choice pills sit 6px apart; the shared 3px outline and 1.04 scale overlap
+   their neighbours, so the row uses the same clean focus as the filters. */
+#stage-root .stage-choice:not(.active).gp-focused {
+  outline: 1px solid rgba(255, 255, 255, 0.85) !important;
+  outline-offset: 1px !important;
+  box-shadow: none !important;
+}
+/* A toggle is a full-width row with one control; the shared button scale grows
+   it past the panel and right could jump to the previous row's pills. */
+#stage-root .stage-setting-row.is-button.gp-focused {
+  outline: none !important;
+  border-color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 18px rgba(255, 255, 255, 0.3) !important;
+  transform: none !important;
+}
 /* ---------- Motion ---------- */
 
 /* Entry animations belong to a transition, not to every data repaint. The

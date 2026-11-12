@@ -50,14 +50,14 @@ function toggleControl(on: boolean): string {
 }
 
 function stageToggle(key: string, title: string, desc: string, on: boolean, act: string): string {
-  return `<button type="button" class="stage-setting-row is-button" role="switch" aria-checked="${on}" data-stage-act="${esc(act)}" data-gp-item data-gp-key="set:${esc(key)}">
+  return `<button type="button" class="stage-setting-row is-button" role="switch" aria-checked="${on}" data-gp-row data-stage-act="${esc(act)}" data-gp-item data-gp-key="set:${esc(key)}">
     <span class="stage-setting-copy"><strong>${esc(title)}</strong><small>${esc(desc)}</small></span>
     <span class="stage-setting-control">${toggleControl(on)}</span>
   </button>`;
 }
 
 function globalToggle(key: string, title: string, desc: string, on: boolean, act: string): string {
-  return `<button type="button" class="stage-setting-row is-button" role="switch" aria-checked="${on}" data-act="${esc(act)}" data-gp-item data-gp-key="set:${esc(key)}">
+  return `<button type="button" class="stage-setting-row is-button" role="switch" aria-checked="${on}" data-gp-row data-act="${esc(act)}" data-gp-item data-gp-key="set:${esc(key)}">
     <span class="stage-setting-copy"><strong>${esc(title)}</strong><small>${esc(desc)}</small></span>
     <span class="stage-setting-control">${toggleControl(on)}</span>
   </button>`;
@@ -80,7 +80,7 @@ function choiceRow(
     key,
     title,
     desc,
-    `<span class="stage-choice-row">${choices.map((choice) => `<button type="button" class="stage-choice${choice.selected ? " active" : ""}" data-stage-act="${esc(act)}" data-value="${choice.value}" data-gp-item data-gp-key="set:${esc(key)}:${choice.value}">${esc(choice.label)}</button>`).join("")}</span>`,
+    `<span class="stage-choice-row" data-gp-row>${choices.map((choice) => `<button type="button" class="stage-choice${choice.selected ? " active" : ""}" data-stage-act="${esc(act)}" data-value="${choice.value}" data-gp-item data-gp-key="set:${esc(key)}:${choice.value}">${esc(choice.label)}</button>`).join("")}</span>`,
   );
 }
 
@@ -141,7 +141,7 @@ function musicLibrary(): string {
           ${assigned ? `<span class="stage-stat stage-music-assigned">${icon("music", 12)}<span>${esc(t("stage.settingsMusicAssigned"))}</span></span>` : ""}
         </span>
       </span>
-      <span class="stage-choice-row">${actions}</span>
+      <span class="stage-choice-row" data-gp-row>${actions}</span>
     </div>`;
   }).join("");
   return `<div class="stage-music-library">
@@ -191,7 +191,7 @@ function appearance(): string {
           <small>${esc(S.stage.customAmbience ? stageAudioLabel(S.stage.customAmbience) : t("stage.settingsMusicBuiltIn"))}</small>
         </span>
         <span class="stage-setting-control">
-          <span class="stage-choice-row">
+          <span class="stage-choice-row" data-gp-row>
             <button type="button" class="stage-choice" data-stage-act="choose-stage-ambience" data-gp-item data-gp-key="set:music-choose">${esc(t("stage.settingsMusicChoose"))}</button>
             ${S.stage.customAmbience ? `<button type="button" class="stage-choice" data-stage-act="clear-stage-ambience" data-gp-item data-gp-key="set:music-clear">${esc(t("stage.settingsMusicClear"))}</button>` : ""}
           </span>
