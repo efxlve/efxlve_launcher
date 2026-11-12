@@ -159,12 +159,21 @@ export function renderStageDownloads(): string {
         <div class="stage-queue-list">${queue.map((id, index) => queueRow(id, index, queue.length)).join("")}</div>
       </section>`
     : "";
+  const idle = rows.length === 0 && queue.length === 0;
+  const idleStats = idle
+    ? `<div class="stage-dl-status">
+        <span class="stage-dl-stat"><i aria-hidden="true"></i>${esc(t("downloads.emptyTitle"))}</span>
+        <span class="stage-dl-stat"><i aria-hidden="true"></i>${esc(t("stage.queue"))} <b class="tabular-nums">0</b></span>
+      </div>`
+    : "";
   const empty = rows.length === 0 && updates.length === 0 && queue.length === 0
-    ? `<div class="stage-empty">
-        <span class="stage-empty-icon">${icon("download", 42)}</span>
-        <h2>${esc(t("stage.downloadsEmpty"))}</h2>
-        <p>${esc(t("stage.downloadsEmptyHint"))}</p>
-        <button type="button" class="stage-btn stage-btn-primary" data-stage-act="go" data-route="library" data-gp-item data-gp-key="dl:library">${esc(t("stage.navLibrary"))}</button>
+    ? `<div class="stage-downloads-empty">
+        <div class="stage-empty">
+          <span class="stage-empty-icon">${icon("download", 42)}</span>
+          <h2>${esc(t("stage.downloadsEmpty"))}</h2>
+          <p>${esc(t("stage.downloadsEmptyHint"))}</p>
+          <button type="button" class="stage-btn stage-btn-primary" data-stage-act="go" data-route="library" data-gp-item data-gp-key="dl:library">${esc(t("stage.navLibrary"))}</button>
+        </div>
       </div>`
     : "";
   return `<div class="stage-downloads">
@@ -172,6 +181,7 @@ export function renderStageDownloads(): string {
       <div>
         <h1>${esc(t("stage.navDownloads"))}</h1>
         <span>${esc(t("stage.downloadsHint"))}</span>
+        ${idleStats}
       </div>
     </header>
     ${rows.length > 0 ? `<div class="stage-download-list">${rows.join("")}</div>` : ""}

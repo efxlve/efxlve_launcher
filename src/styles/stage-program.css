@@ -649,8 +649,15 @@
 
 /* ---------- Downloads ---------- */
 
+/* The downloads screen fills the layer so the empty state can centre in what
+   is left under the header instead of hanging from it. */
+#stage-root[data-route="downloads"] .stage-layer-main {
+  display: flex;
+  flex-direction: column;
+}
 .stage-downloads {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 20px;
 }
@@ -672,6 +679,41 @@
 .stage-downloads-head span {
   color: var(--stage-ink-3);
   font-size: 11.5px;
+}
+/* Compact idle summary: no transfer, nothing queued. */
+.stage-dl-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block-start: 10px;
+}
+.stage-dl-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--stage-line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.stage-dl-stat i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--stage-ink-4);
+}
+.stage-dl-stat b {
+  color: var(--stage-ink-2);
+  font-weight: 650;
+}
+.stage-downloads-empty {
+  display: grid;
+  flex: 1;
+  place-items: center;
+}
+.stage-downloads-empty .stage-empty {
+  min-height: 0;
 }
 .stage-download-list {
   display: flex;
