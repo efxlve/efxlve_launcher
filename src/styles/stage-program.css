@@ -259,10 +259,13 @@
   font-size: 14px;
   line-height: 1.65;
   white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 .stage-program-facts {
   display: flex;
   flex-direction: column;
+  align-self: start;
+  min-width: 0;
   padding: 20px 24px;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.035);
@@ -275,10 +278,16 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
+  min-width: 0;
   padding: 10px 0;
   border-block-end: 1px solid rgba(255, 255, 255, 0.06);
   color: var(--stage-ink-3);
   font-size: 12.5px;
+}
+.stage-fact strong {
+  min-width: 0;
+  text-align: end;
+  overflow-wrap: anywhere;
 }
 .stage-fact:last-child {
   border-block-end: none;
