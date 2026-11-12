@@ -642,6 +642,11 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
   }
 
   let bestEl: HTMLElement | null = null;
+  // The power sheet's cards are a vertical stack; left/right has no neighbour.
+  if (S.stage.active && origin.closest(".stage-power-grid") && (dir === "left" || dir === "right")) {
+    stageBridge()?.bump?.(dir);
+    return;
+  }
   // A data-gp-row is a horizontal shelf or tab strip: left/right stays inside
   // it and bumps at the edge instead of jumping to the next shelf.
   if (S.stage.active && curRow && (dir === "left" || dir === "right")) {

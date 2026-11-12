@@ -223,6 +223,31 @@
     0 0 18px rgba(255, 255, 255, 0.3) !important;
   transform: none !important;
 }
+/* Power cards are full-width rows in a vertical stack. The shared 1.04 scale
+   overflows the 463px grid and the blue/red meaning must survive the ring. */
+#stage-root .stage-power-card.gp-focused {
+  outline: none !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 10px 24px rgba(0, 0, 0, 0.5) !important;
+  transform: none !important;
+}
+#stage-root .stage-power-card.is-primary.gp-focused {
+  border-color: #38bdf8 !important;
+  box-shadow:
+    0 0 0 2px #38bdf8,
+    0 0 18px rgba(56, 189, 248, 0.35),
+    0 10px 24px rgba(0, 0, 0, 0.5) !important;
+}
+#stage-root .stage-power-card.is-danger.gp-focused {
+  border-color: #f87171 !important;
+  box-shadow:
+    0 0 0 2px #f87171,
+    0 0 18px rgba(248, 113, 113, 0.35),
+    0 10px 24px rgba(0, 0, 0, 0.5) !important;
+}
 /* ---------- Motion ---------- */
 
 /* Entry animations belong to a transition, not to every data repaint. The

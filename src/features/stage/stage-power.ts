@@ -136,7 +136,7 @@ export function renderStagePowerSheet(entered: boolean): string {
       </div>
 
       ${S.stage.powerConfirm ? `
-        <div class="stage-power-grid" data-gp-row>
+        <div class="stage-power-grid">
           <button
             type="button"
             class="stage-power-card is-danger"
@@ -167,7 +167,7 @@ export function renderStagePowerSheet(entered: boolean): string {
           </button>
         </div>
       ` : `
-        <div class="stage-power-grid" data-gp-row>
+        <div class="stage-power-grid">
           <button
             type="button"
             class="stage-power-card is-primary"
