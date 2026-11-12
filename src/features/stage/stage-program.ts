@@ -181,12 +181,12 @@ function overview(game: EpicSummary): string {
         <div class="stage-card-head">
           <span class="stage-card-icon">${icon(loadedAch?.is_platinum ? "crown" : "trophy", 16)}</span>
           <span class="stage-card-title">${esc(t("stage.achievements"))}</span>
-          <span class="stage-card-badge tabular-nums">${achPercent}%</span>
         </div>
         ${stageProgress(achPercent, "stage-progress-hub")}
-        <div class="stage-trophy-stats">
-          <span class="tabular-nums">${ach.user_unlocked} / ${ach.total_achievements}</span>
-          ${nextLocked ? `<span class="stage-trophy-next">${icon("lock", 12)} ${esc(nextLocked.display_name || nextLocked.name)}</span>` : ""}
+        <div class="stage-stat-row">
+          <span class="stage-stat">${icon("trophy", 13)}<span>${esc(t("stage.achievements"))}</span><b class="tabular-nums">${achPercent}%</b></span>
+          <span class="stage-stat">${icon("check", 13)}<span>${esc(t("stage.achUnlocked"))}</span><b class="tabular-nums">${ach.user_unlocked} / ${ach.total_achievements}</b></span>
+          ${nextLocked ? `<span class="stage-stat">${icon("lock", 13)}<span>${esc(nextLocked.display_name || nextLocked.name)}</span></span>` : ""}
         </div>
       </div>`
     : "";

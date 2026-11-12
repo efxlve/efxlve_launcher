@@ -993,16 +993,10 @@
   letter-spacing: 0.02em;
 }
 
-.stage-card-badge {
-  margin-inline-start: auto;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--stage-accent);
-}
-
-/* HLTB and critic values sit in the shared chip strip under each card head. */
+/* HLTB, critic and trophy values share the chip strip under each card head. */
 .stage-card-hltb .stage-stat-row,
-.stage-card-critic .stage-stat-row {
+.stage-card-critic .stage-stat-row,
+.stage-card-trophy .stage-stat-row {
   margin-block-start: 10px;
 }
 .stage-card-critic .stage-stat b.score-good {
@@ -1025,22 +1019,10 @@
   background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
-
-.stage-trophy-stats {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 12.5px;
-  color: var(--stage-ink-2);
+.stage-card-trophy .stage-stat {
+  max-width: 100%;
 }
-
-.stage-trophy-next {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--stage-ink);
-  font-weight: 600;
+.stage-card-trophy .stage-stat > span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
