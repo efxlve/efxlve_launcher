@@ -169,6 +169,21 @@
   box-shadow: none !important;
   transform: none !important;
 }
+/* The browser address is text too: the omnibox focus-within ring carries it. */
+#stage-root .stage-browser-input.gp-focused {
+  outline: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+#stage-root .stage-browser-chip.gp-focused {
+  outline: none !important;
+  border-color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 18px rgba(255, 255, 255, 0.3) !important;
+  transform: none !important;
+}
 #stage-root .stage-search-card.gp-focused {
   outline: none !important;
   border-color: #ffffff !important;

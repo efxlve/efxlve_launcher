@@ -115,7 +115,7 @@ export function renderStageBrowserSheet(entered: boolean): string {
           <span>${icon("star", 14)}</span>
           <strong>${esc(t("overlay.browserBookmarksTitle"))}</strong>
         </div>
-        <div class="stage-browser-bookmarks" data-gp-row>
+        <div class="stage-browser-bookmarks">
           ${DEFAULT_BOOKMARKS.map((bm) => `
             <button
               type="button"

@@ -301,6 +301,26 @@ let roomTimer = 0;
 
 export function stageHomeFocus(key: string): void {
   if (!key.startsWith("game:")) return;
+  // An overlay owns the screen: a late focus event from the Home shelf behind
+  // it must not re-mark the hero/activity buttons and break the focus trap.
+  if (
+    S.stage.quickMenu ||
+    S.stage.powerOpen ||
+    S.stage.browserOpen ||
+    S.stage.spotifyOpen ||
+    S.stage.discordOpen ||
+    S.stage.notifOpen ||
+    S.stage.controlsOpen ||
+    S.stage.searchOpen ||
+    S.stage.manageKey ||
+    S.stage.launch ||
+    S.stage.launchError ||
+    S.stage.stillIndex !== null
+  ) {
+    return;
+  }
+  // The flags can lag a render by a tick; the painted overlay is authoritative.
+  if (document.querySelector("#stage-root .stage-overlay")) return;
   const appName = key.slice(5);
   const game = stageGameByKey(appName);
   if (!game) return;

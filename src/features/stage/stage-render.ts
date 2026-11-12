@@ -485,6 +485,25 @@ function patchStageCardStatuses(): void {
 function patchStageHomeHeroInPlace(hero: EpicSummary): void {
   const root = document.getElementById("stage-root");
   if (!root) return;
+  // An overlay owns the ring; a live Home patch behind it must not re-mark the
+  // hero or the activity shelf.
+  if (
+    S.stage.quickMenu ||
+    S.stage.powerOpen ||
+    S.stage.browserOpen ||
+    S.stage.spotifyOpen ||
+    S.stage.discordOpen ||
+    S.stage.notifOpen ||
+    S.stage.controlsOpen ||
+    S.stage.searchOpen ||
+    S.stage.manageKey ||
+    S.stage.launch ||
+    S.stage.launchError ||
+    S.stage.stillIndex !== null ||
+    document.querySelector("#stage-root .stage-overlay")
+  ) {
+    return;
+  }
 
   const targetArt = stageWideArt(hero);
   const heroArtImg = root.querySelector<HTMLImageElement>("#stage-home-art img");
@@ -640,6 +659,24 @@ function firstFocusable(container: HTMLElement): HTMLElement | null {
 function markFocusables(layer: HTMLElement | null): void {
   const root = document.getElementById("stage-root");
   if (!root) return;
+  // An overlay owns the ring. If a main-layer pass lands after the overlay was
+  // painted, keep the overlay's marks instead of re-marking the shelf behind it.
+  const overlayOpen = Boolean(
+    S.stage.quickMenu ||
+    S.stage.powerOpen ||
+    S.stage.browserOpen ||
+    S.stage.spotifyOpen ||
+    S.stage.discordOpen ||
+    S.stage.notifOpen ||
+    S.stage.controlsOpen ||
+    S.stage.searchOpen ||
+    S.stage.manageKey ||
+    S.stage.launch ||
+    S.stage.launchError ||
+    S.stage.stillIndex !== null ||
+    document.querySelector("#stage-root .stage-overlay"),
+  );
+  if (layer && layer.matches('[data-stage-layer="main"]') && overlayOpen) return;
   root.querySelectorAll<HTMLElement>("[data-gp-item]").forEach((el) => el.removeAttribute("data-gp-item"));
   if (!layer) return;
   layer.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled])").forEach((el) => {
@@ -1382,6 +1419,39 @@ export function renderStage(): void {
   // Attract mode owns the screen: a background repaint (a download tick, a
   // store refresh) must not restore the ring and wake the room.
   if (!modalOpen() && !S.stage.idle) restoreFocus(layer);
+  // An overlay owns the ring even when the render selected the main layer; any
+  // marks left on the shelf behind it are stripped after the paint.
+  const overlaySelector = S.stage.launchError
+    ? ".stage-error"
+    : S.stage.launch
+      ? ".stage-curtain"
+      : S.stage.stillIndex !== null
+        ? ".stage-still-viewer"
+        : S.stage.powerOpen
+          ? ".stage-power-sheet"
+          : S.stage.browserOpen
+            ? ".stage-browser-sheet"
+            : S.stage.spotifyOpen
+              ? ".stage-spotify-sheet"
+              : S.stage.discordOpen
+                ? ".stage-discord-sheet"
+                : S.stage.manageKey
+                  ? ".stage-manage-overlay"
+                  : S.stage.controlsOpen
+                    ? ".stage-controls"
+                    : S.stage.quickMenu
+                      ? ".stage-quick-menu"
+                      : S.stage.searchOpen
+                        ? ".stage-search"
+                        : S.stage.notifOpen
+                          ? ".stage-notif-overlay"
+                          : "";
+  const activeOverlay = overlaySelector ? root.querySelector<HTMLElement>(overlaySelector) : null;
+  if (activeOverlay) {
+    root.querySelectorAll<HTMLElement>("[data-gp-item]").forEach((el) => {
+      if (!activeOverlay.contains(el)) el.removeAttribute("data-gp-item");
+    });
+  }
   startClock();
   // The room follows the screen: Home is the full theme, tools step back.
   setStageAmbienceScene(S.stage.route === "home" ? "home" : S.stage.route === "library" ? "library" : "quiet");
@@ -1549,6 +1619,11 @@ function onStageKeydown(event: KeyboardEvent): void {
     } else if (key === "Enter") {
       event.preventDefault();
       void stageLaunchBrowser(input.value);
+    } else if (key === "ArrowRight" && input.selectionStart === input.value.length) {
+      // At the end of the address the next stop is the Go button, not a
+      // caret move the field cannot perform.
+      event.preventDefault();
+      moveGamepadFocus("right");
     }
     return;
   }
