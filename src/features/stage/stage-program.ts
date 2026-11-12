@@ -435,8 +435,10 @@ function extrasTab(game: EpicSummary): string {
         </div>
       </div>`;
   return `<div class="stage-extras">
-    <div class="stage-extra-row"><span>${icon("package", 18)} ${esc(t("stage.dlc"))}</span><strong class="tabular-nums">${game.dlcCount || 0}</strong></div>
-    <div class="stage-extra-row"><span>${icon("cloud", 18)} ${esc(t("stage.cloud"))}</span><strong>${esc(cloud ? t("stage.cloudReady") : t("stage.cloudUnavailable"))}</strong></div>
+    <div class="stage-extra-facts">
+      <span class="stage-stat">${icon("package", 13)}<span>${esc(t("stage.dlc"))}</span><b class="tabular-nums">${game.dlcCount || 0}</b></span>
+      <span class="stage-stat"><i class="${cloud ? "is-ready" : "is-off"}" aria-hidden="true"></i><span>${esc(t("stage.cloud"))}</span><b>${esc(cloud ? t("stage.cloudReady") : t("stage.cloudUnavailable"))}</b></span>
+    </div>
     <div class="stage-extra-row"><span>${icon("folder", 18)} ${esc(t("stage.installFolder"))}</span><strong class="stage-extra-path">${esc(game.installPath || "—")}</strong></div>
     <div class="stage-extra-section">
       <div class="stage-extra-section-head">

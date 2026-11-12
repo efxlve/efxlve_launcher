@@ -518,6 +518,18 @@
   color: var(--stage-ink-2);
   font-size: 13px;
 }
+/* DLC and cloud saves as chips; the cloud dot carries the status colour. */
+.stage-extra-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.stage-extra-facts .stage-stat i.is-ready {
+  background: #4ade80;
+}
+.stage-extra-facts .stage-stat i.is-off {
+  background: var(--stage-ink-4);
+}
 .stage-extra-row > span {
   display: inline-flex;
   align-items: center;
