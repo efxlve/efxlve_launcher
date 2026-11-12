@@ -387,6 +387,29 @@ pub(super) fn queue_names(queue: &VecDeque<PendingDownload>) -> Vec<String> {
     queue.iter().map(|item| item.app_name.clone()).collect()
 }
 
+/// Drops the snapshot and remembered request for a game that no longer
+/// exists; the next start must not queue it again.
+pub(super) fn forget_pending(app_name: &str) {
+    let pending_path = pending_download_path();
+    if let Ok(text) = std::fs::read_to_string(&pending_path) {
+        if let Ok(pending) = serde_json::from_str::<PendingDownload>(&text) {
+            if pending.app_name == app_name {
+                let _ = std::fs::remove_file(&pending_path);
+            }
+        }
+    }
+    let queue_path = queued_downloads_path();
+    if let Ok(text) = std::fs::read_to_string(&queue_path) {
+        if let Ok(mut queue) = serde_json::from_str::<VecDeque<PendingDownload>>(&text) {
+            let before = queue.len();
+            queue.retain(|item| item.app_name != app_name);
+            if queue.len() != before {
+                write_queue_snapshot(&queue);
+            }
+        }
+    }
+}
+
 /// True when this game is the active download or waiting in the queue; an
 /// uninstall must not delete files a transfer is about to write.
 pub(super) fn download_in_flight(app: &AppHandle, app_name: &str) -> bool {

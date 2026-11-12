@@ -99,22 +99,26 @@ pub async fn epic_uninstall_game(
     crate::legendary::cache::remove_game_from_installed_json(&config, &app_name);
     crate::legendary::cache::remove_game_manifests(&config, &app_name);
 
-    if out.status.success() {
+    let err = String::from_utf8_lossy(&out.stderr);
+    let low = err.to_lowercase();
+    // If legendary reported it wasn't installed in its own database, but our
+    // cleanup completed (e.g. for EGL-imported games), treat it as uninstalled.
+    let uninstalled = out.status.success()
+        || low.contains("not installed")
+        || resolved_install_path
+            .as_ref()
+            .map(|p| !p.exists())
+            .unwrap_or(false);
+    if uninstalled {
+        // A paused or crashed transfer leaves a resume record and a queue
+        // snapshot; deleting the game must not resurrect them on restart.
+        super::queue::forget_pending(&app_name);
+        crate::legendary::download_resume::remove_resume(
+            &crate::legendary::download_resume::resumes_path(),
+            &app_name,
+        );
         Ok(format!("@t:dl.uninstalled\u{1f}{resolved_title}"))
     } else {
-        let err = String::from_utf8_lossy(&out.stderr);
-        let low = err.to_lowercase();
-        // If legendary reported it wasn't installed in its own database, but our
-        // cleanup completed (e.g. for EGL-imported games), treat it as uninstalled.
-        if low.contains("not installed")
-            || resolved_install_path
-                .as_ref()
-                .map(|p| !p.exists())
-                .unwrap_or(false)
-        {
-            Ok(format!("@t:dl.uninstalled\u{1f}{resolved_title}"))
-        } else {
-            Err(short_error(&err))
-        }
+        Err(short_error(&err))
     }
 }
