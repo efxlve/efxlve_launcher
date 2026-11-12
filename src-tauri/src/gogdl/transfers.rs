@@ -271,8 +271,43 @@ pub async fn gog_install_game(
     let clean_id = game_id.trim().trim_start_matches("gog::").to_string();
     let composite_id = format!("gog::{clean_id}");
 
-    // Ensure gogdl binary is present, downloading from releases if missing
-    let bin_path = ensure_binary(&app).await.map_err(cmd_error)?;
+    // One gogdl at a time. A second start would replace the state, and the
+    // first monitor would then drop its completion without recording the
+    // install, so the next launch would download the same game again.
+    {
+        let state = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
+        if state
+            .as_ref()
+            .is_some_and(|st| st.active_game_id.is_some() && !st.cancelled)
+        {
+            return Err("@t:dl.anotherActive".into());
+        }
+    }
+
+    // Claim the single GOG slot before the binary check; a second caller must
+    // not slip past the guard while the first is still preparing.
+    {
+        let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
+        *state_guard = Some(GogDlState {
+            active_game_id: Some(composite_id.clone()),
+            child_pid: None,
+            paused: false,
+            cancelled: false,
+        });
+    }
+    let bin_path = match ensure_binary(&app).await {
+        Ok(path) => path,
+        Err(e) => {
+            let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
+            if state_guard
+                .as_ref()
+                .is_some_and(|st| st.active_game_id.as_deref() == Some(composite_id.as_str()))
+            {
+                *state_guard = None;
+            }
+            return Err(cmd_error(e));
+        }
+    };
     let auth_path = auth_json_path(&app);
 
     // Target installation directory: the caller's pick first, then the folder
@@ -296,17 +331,6 @@ pub async fn gog_install_game(
             base.join(&clean_id)
         });
     let _ = tokio::fs::create_dir_all(&target_dir).await;
-
-    // Reset state and notify UI that download is queued/starting
-    {
-        let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
-        *state_guard = Some(GogDlState {
-            active_game_id: Some(composite_id.clone()),
-            child_pid: None,
-            paused: false,
-            cancelled: false,
-        });
-    }
 
     let _ = app.emit(
         "download-progress",
