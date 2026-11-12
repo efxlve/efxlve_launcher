@@ -1824,6 +1824,13 @@ function bindStageEvents(root: HTMLElement): void {
       case "close-controls": stageFeedback("back"); stageCloseControls(); break;
       case "scroll-to-hub": {
         stageFeedback("select");
+        // A mouse click here must hand the ring to the shelf it just revealed;
+        // otherwise the next D-pad press acts on the hero and scrolls back up.
+        const first = document.querySelector<HTMLElement>('#stage-home-activities [data-gp-key^="act:"]');
+        if (first) {
+          setGamepadFocus(first);
+          break;
+        }
         const hub = document.getElementById("stage-home-activities");
         if (hub) hub.scrollIntoView({ behavior: "smooth", block: "start" });
         break;

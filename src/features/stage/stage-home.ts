@@ -87,7 +87,7 @@ export function stageHomeHeroHtml(game: EpicSummary): string {
     <h1 class="stage-home-title">${esc(game.title)}</h1>
     <div class="stage-home-actions">
       <div class="stage-primary-action">${stagePrimaryAction(game)}</div>
-      <button type="button" class="stage-home-more" data-stage-act="scroll-to-hub" data-gp-skip aria-label="${esc(t("stage.details"))}">
+      <button type="button" class="stage-home-more" data-stage-act="scroll-to-hub" data-gp-key="hero:details" aria-label="${esc(t("stage.details"))}">
         <span>${esc(t("stage.details"))}</span>${icon("chevron-down", 15)}
       </button>
       <div class="stage-actions-divider" aria-hidden="true"></div>
@@ -214,7 +214,7 @@ function collectionsRow(): string {
   return `<div class="stage-collection-section">
     <div class="stage-shelf-header">
       <h2 class="stage-shelf-title">${esc(t("stage.collections"))}</h2>
-      <span class="stage-shelf-subtitle">${collections.length}</span>
+      <span class="stage-stat">${icon("layers", 13)}<span>${esc(t("stage.collections"))}</span><b class="tabular-nums">${collections.length}</b></span>
     </div>
     <div class="stage-card-row stage-collection-row" data-gp-row>
       ${collections.map(collectionCard).join("")}
@@ -225,7 +225,7 @@ function collectionsRow(): string {
 export function stageHomeActivitiesHtml(game: EpicSummary): string {
   return `<div class="stage-shelf-header">
     <h2 class="stage-shelf-title">${esc(t("stage.details"))}</h2>
-    <span class="stage-shelf-subtitle">${esc(game.title)}</span>
+    <span class="stage-stat">${icon("gamepad-2", 13)}<span>${esc(game.title)}</span></span>
   </div>
   <div class="stage-card-row stage-activity-row" data-gp-row>
     ${resumeActivityCard(game)}
