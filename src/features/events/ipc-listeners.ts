@@ -943,7 +943,8 @@ export async function initApp(hooks: {
         if (S.pauseOnPlay && !S.autoPausedDl && !pausedNow) {
           const activeId = S.activeDlMetrics && !S.activeDlMetrics.done
             ? S.activeDlMetrics.id
-            : [...S.downloads.entries()].find(([, d]) => !d.done)?.[0];
+            : S.dlQueueStatus.active
+              ?? [...S.downloads.entries()].find(([, d]) => !d.done)?.[0];
           if (activeId) {
             const isGog = activeId.startsWith("gog::");
             void (isGog ? gogPauseDownload(activeId) : epicPauseDownload(activeId))

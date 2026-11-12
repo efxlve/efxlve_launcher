@@ -397,6 +397,9 @@ export function gogToEpicSummary(g: LibraryItem): EpicSummary {
  */
 export function pendingGameUpdates(): EpicSummary[] {
   const downloading = (id: string): boolean => {
+    // A queued game has no S.downloads entry until its turn starts, but it
+    // must not be offered again by the bell or the sidebar badge.
+    if (S.dlQueueStatus.active === id || S.dlQueueStatus.queue.includes(id)) return true;
     const entry = S.downloads.get(id);
     return Boolean(entry && !entry.done);
   };
