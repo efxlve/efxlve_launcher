@@ -180,6 +180,7 @@ import { previewStageSound, stageFeedback } from "./stage-sound";
 import {
   stageActiveDownload,
   stageBumperGlyphs,
+  stageControllerChip,
   stageFaceGlyph,
   stageHint,
   stageHintBar,
@@ -870,10 +871,7 @@ function hints(): string {
 function quickMenu(entered: boolean): string {
   const dl = stageActiveDownload();
   const unread = unreadCount();
-  const batteryPct = S.stage.controllerBattery !== null && Number.isFinite(S.stage.controllerBattery)
-    ? Math.round(S.stage.controllerBattery * 100)
-    : null;
-  const padChip = `<span class="stage-stat">${icon("gamepad-2", 13)}<i class="${S.stage.controllerConnected ? "is-ready" : "is-off"}" aria-hidden="true"></i><span>${esc(S.stage.controllerConnected ? (S.stage.controllerName || t("stage.controller")) : t("stage.noController"))}</span>${S.stage.controllerConnected && batteryPct !== null ? `<b class="tabular-nums">${batteryPct}%</b>` : ""}</span>`;
+  const padChip = stageControllerChip();
   const runningAppName = Array.from(S.runningGames)[0];
   const runningGame = runningAppName ? stageGameByKey(runningAppName) : null;
   return `<div class="stage-overlay stage-quick-menu${entered ? " stage-overlay-enter" : ""}">

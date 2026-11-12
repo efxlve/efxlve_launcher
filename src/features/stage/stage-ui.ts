@@ -7,6 +7,7 @@
 
 import { psShapeFor, psShapeSvg } from "../../core/controller-glyphs";
 import { epicDlProgress } from "../../core/game-view";
+import { icon } from "../../core/icons";
 import { S } from "../../core/state";
 import type { ControllerKind, GameSource } from "../../core/types";
 import { esc, fmtBytes, fmtPlaytime, relativeTime } from "../../core/utils";
@@ -191,6 +192,19 @@ export function stageBatteryLabel(): string {
   const level = S.stage.controllerBattery;
   if (level === null || !Number.isFinite(level)) return "";
   return t("stage.battery", { p: Math.round(level * 100) });
+}
+
+/**
+ * Controller status chip: the connection dot, the pad name and its battery.
+ * Shared by the quick menu head and the idle screen so both report the same
+ * thing in the same shape.
+ */
+export function stageControllerChip(): string {
+  const connected = S.stage.controllerConnected;
+  const battery = S.stage.controllerBattery;
+  const percent = battery !== null && Number.isFinite(battery) ? Math.round(battery * 100) : null;
+  const name = connected ? (S.stage.controllerName || t("stage.controller")) : t("stage.noController");
+  return `<span class="stage-stat">${icon("gamepad-2", 13)}<i class="${connected ? "is-ready" : "is-off"}" aria-hidden="true"></i><span>${esc(name)}</span>${connected && percent !== null ? `<b class="tabular-nums">${percent}%</b>` : ""}</span>`;
 }
 
 

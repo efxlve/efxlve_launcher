@@ -8,7 +8,9 @@
  */
 
 import { scheduleRender } from "../../core/render";
+import { icon } from "../../core/icons";
 import { S } from "../../core/state";
+import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 import { stageFeedback } from "./stage-sound";
 
@@ -66,6 +68,10 @@ export function stageIntroMarkup(): string {
       <span class="stage-intro-mode">STAGE</span>
       <span class="stage-intro-rule"></span>
       <span class="stage-intro-note">${t("stage.introNote")}</span>
+    <div class="stage-stat-row">
+      <span class="stage-stat">${icon("package", 13)}<span>${esc(t("stage.settingsVersion", { v: S.appVersion }))}</span></span>
+      <span class="stage-stat">${icon("sparkles", 13)}<span>BETA</span></span>
+    </div>
     </div>
   </div>`;
 }

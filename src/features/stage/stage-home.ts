@@ -30,7 +30,7 @@ import {
   stageRibbonSummaries,
   stageUserCollections,
 } from "./stage-model";
-import { stageMetaLine, stageProgress, stageStoreName } from "./stage-ui";
+import { stageMetaLine, stageControllerChip, stageProgress, stageStoreName } from "./stage-ui";
 
 function ribbonCard(s: EpicSummary, isDefault = false): string {
   const isRunning = S.runningGames.has(s.appName);
@@ -285,6 +285,7 @@ export function renderStageHome(): string {
       <div class="stage-idle-top">
         <span class="stage-idle-brand">EFXLVE <b>STAGE</b></span>
         <span class="stage-idle-greeting">${esc(stageIdleGreeting())}${profileName ? ` · ${esc(profileName)}` : ""}</span>
+        ${stageControllerChip()}
       </div>
       <div class="stage-idle-bottom">
         <span class="stage-idle-clock tabular-nums"></span>

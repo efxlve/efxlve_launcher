@@ -233,8 +233,13 @@
 
 .stage-idle-top {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 18px;
+}
+.stage-idle-top .stage-stat {
+  margin-inline-start: auto;
+  letter-spacing: normal;
 }
 
 .stage-idle-brand {
@@ -418,6 +423,14 @@
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.3);
+}
+.stage-intro-mark .stage-stat-row {
+  justify-content: center;
+  margin-block-start: 8px;
+}
+/* The mark animates letter-spacing; the chips keep their own tracking. */
+.stage-intro-mark .stage-stat {
+  letter-spacing: normal;
 }
 
 /* ---------- Settings groups ---------- */
