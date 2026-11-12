@@ -552,9 +552,9 @@ export async function confirmInstall(): Promise<void> {
 
   if (appName.startsWith("gog::")) {
     closeInstallDialog();
-    const finalDir = dir ? joinPath(dir, S.installDialogFolder) : undefined;
+    // gogdl appends the game's own install folder to this base.
     try {
-      await gogInstallGame(appName, finalDir);
+      await gogInstallGame(appName, dir ?? undefined);
     } catch (e) {
       toast(localizeMessage(String(e)), "err");
     }

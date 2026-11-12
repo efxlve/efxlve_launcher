@@ -8,7 +8,9 @@ use std::time::{Duration, Instant};
 use tauri::{command, AppHandle, Emitter};
 use tokio::io::{AsyncRead, AsyncReadExt};
 
-use super::cache::{load_installed_games, save_installed_games};
+use super::cache::{
+    load_installed_games, locate_game_folder, save_installed_games, scan_gog_info,
+};
 use super::cmd_error;
 use super::models::GogInstalledInfo;
 use super::paths::{auth_json_path, ensure_binary};
@@ -297,61 +299,6 @@ fn parse_speed(line: &str, keyword: &str) -> Option<(String, u64)> {
     Some((part.to_string(), bytes))
 }
 
-/// Parses `goggame-<id>.info` in target directory if it exists to extract executable path.
-pub fn scan_gog_info(target_dir: &Path, game_id: &str) -> Option<GogInstalledInfo> {
-    let info_path = target_dir.join(format!("goggame-{game_id}.info"));
-    if !info_path.is_file() {
-        return None;
-    }
-    let text = std::fs::read_to_string(&info_path).ok()?;
-    let val: serde_json::Value = serde_json::from_str(&text).ok()?;
-
-    let title = val
-        .get("name")
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string();
-    let version = val
-        .get("version")
-        .and_then(|v| v.as_str())
-        .unwrap_or("1.0.0")
-        .to_string();
-    let build_id = val
-        .get("buildId")
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string();
-    let mut exe: Option<String> = None;
-
-    if let Some(tasks) = val.get("playTasks").and_then(|v| v.as_array()) {
-        for t in tasks {
-            let is_primary = t
-                .get("isPrimary")
-                .and_then(|v| v.as_bool())
-                .unwrap_or(false);
-            let path = t.get("path").and_then(|v| v.as_str());
-            if let Some(p) = path {
-                if is_primary || exe.is_none() {
-                    exe = Some(p.to_string());
-                    if is_primary {
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    Some(GogInstalledInfo {
-        game_id: game_id.to_string(),
-        title,
-        install_path: target_dir.to_string_lossy().to_string(),
-        version,
-        install_size: 0,
-        executable: exe,
-        build_id,
-    })
-}
-
 /// Initiates downloading and installing a GOG game.
 #[command]
 pub async fn gog_install_game(
@@ -401,26 +348,38 @@ pub async fn gog_install_game(
     };
     let auth_path = auth_json_path(&app);
 
-    // Target installation directory: the caller's pick first, then the folder
-    // chosen in Settings → Downloads, then `<home>/Games/GOG`.
-    let target_dir = install_path
-        .filter(|path| !path.trim().is_empty())
-        .map(PathBuf::from)
-        .unwrap_or_else(|| {
-            let base = crate::load_settings(&app)
-                .gog_install_dir
-                .filter(|path| !path.trim().is_empty())
-                .map(PathBuf::from)
-                .unwrap_or_else(|| {
-                    std::env::var_os("USERPROFILE")
-                        .or_else(|| std::env::var_os("HOME"))
-                        .map(PathBuf::from)
-                        .unwrap_or_else(|| PathBuf::from("."))
-                        .join("Games")
-                        .join("GOG")
-                });
-            base.join(&clean_id)
-        });
+    // gogdl's `download` appends the game's own install folder to `--path`;
+    // `update` takes the game folder as-is. A fresh install therefore passes
+    // the base, while an update uses the recorded folder.
+    let installed = load_installed_games(&app);
+    let is_update = installed.contains_key(&clean_id);
+    let target_dir = if let Some(existing) = installed.get(&clean_id) {
+        let candidate = install_path
+            .filter(|path| !path.trim().is_empty())
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from(existing.install_path.trim()));
+        // A record written before gogdl's append was understood points one
+        // level above the game folder; heal it here too.
+        locate_game_folder(&candidate, &clean_id).unwrap_or(candidate)
+    } else {
+        install_path
+            .filter(|path| !path.trim().is_empty())
+            .map(PathBuf::from)
+            .unwrap_or_else(|| {
+                crate::load_settings(&app)
+                    .gog_install_dir
+                    .filter(|path| !path.trim().is_empty())
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| {
+                        std::env::var_os("USERPROFILE")
+                            .or_else(|| std::env::var_os("HOME"))
+                            .map(PathBuf::from)
+                            .unwrap_or_else(|| PathBuf::from("."))
+                            .join("Games")
+                            .join("GOG")
+                    })
+            })
+    };
     let _ = tokio::fs::create_dir_all(&target_dir).await;
 
     let _ = app.emit(
@@ -452,7 +411,7 @@ pub async fn gog_install_game(
         let mut cmd = tokio::process::Command::new(&bin_path);
         cmd.arg("--auth-config-path")
             .arg(&auth_path)
-            .arg("download")
+            .arg(if is_update { "update" } else { "download" })
             .arg(&clean_id_clone)
             .arg("--path")
             .arg(&target_dir_clone)
@@ -717,13 +676,16 @@ pub async fn gog_install_game(
 
         match status {
             Ok(s) if s.success() => {
-                // Record local install entry
+                // gogdl put the files in `<target>/<install folder>` for a
+                // fresh download and directly in `<target>` for an update.
+                let actual_dir = locate_game_folder(&target_dir_clone, &clean_id_clone)
+                    .unwrap_or_else(|| target_dir_clone.clone());
                 let mut installed_map = load_installed_games(&app_clone);
                 let info =
-                    scan_gog_info(&target_dir_clone, &clean_id_clone).unwrap_or(GogInstalledInfo {
+                    scan_gog_info(&actual_dir, &clean_id_clone).unwrap_or(GogInstalledInfo {
                         game_id: clean_id_clone.clone(),
                         title: clean_id_clone.clone(),
-                        install_path: target_dir_clone.to_string_lossy().to_string(),
+                        install_path: actual_dir.to_string_lossy().to_string(),
                         version: "1.0.0".to_string(),
                         install_size: 0,
                         executable: None,
@@ -1206,7 +1168,6 @@ pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<(), Stri
 mod tests {
     use super::*;
     use std::fs::{self, File};
-    use std::io::Write;
 
     #[test]
     fn speed_parser_ignores_cumulative_sizes() {
@@ -1295,35 +1256,4 @@ mod tests {
         let _ = fs::remove_dir_all(&temp);
     }
 
-    #[test]
-    fn test_scan_gog_info() {
-        let temp = std::env::temp_dir().join("efxlve_test_gog_info");
-        let _ = fs::remove_dir_all(&temp);
-        fs::create_dir_all(&temp).unwrap();
-
-        let info_content = r#"{
-            "gameId": "123456",
-            "name": "Test Game",
-            "version": "1.0.3",
-            "playTasks": [
-                {
-                    "isPrimary": true,
-                    "path": "bin\\TestGame.exe",
-                    "type": "FileTask"
-                }
-            ]
-        }"#;
-
-        let mut f = File::create(temp.join("goggame-123456.info")).unwrap();
-        f.write_all(info_content.as_bytes()).unwrap();
-
-        let info = scan_gog_info(&temp, "123456");
-        assert!(info.is_some());
-        let val = info.unwrap();
-        assert_eq!(val.title, "Test Game");
-        assert_eq!(val.version, "1.0.3");
-        assert_eq!(val.executable.as_deref(), Some("bin\\TestGame.exe"));
-
-        let _ = fs::remove_dir_all(&temp);
-    }
 }

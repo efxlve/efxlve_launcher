@@ -155,7 +155,7 @@ pub fn sync_galaxy_installed(app: &AppHandle) -> Result<u32, String> {
         let dir = Path::new(&g.install_path);
         // Prefer the real `goggame-<id>.info` (play tasks, build id); fall back
         // to the registry values so Galaxy installs are usable immediately.
-        let info = super::transfers::scan_gog_info(dir, &g.game_id).unwrap_or(GogInstalledInfo {
+        let info = super::cache::scan_gog_info(dir, &g.game_id).unwrap_or(GogInstalledInfo {
             game_id: g.game_id.clone(),
             title: if g.title.is_empty() {
                 g.game_id.clone()
