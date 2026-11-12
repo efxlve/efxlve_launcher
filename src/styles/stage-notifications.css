@@ -52,19 +52,9 @@
 }
 
 .stage-notif-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 26px;
-  height: 21px;
   margin-inline-start: 10px;
-  padding: 0 7px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--stage-ink-2);
-  font-size: 11.5px;
-  font-weight: 600;
-  vertical-align: 2px;
+  vertical-align: 3px;
+  letter-spacing: normal;
 }
 
 .stage-notif-list {
@@ -160,18 +150,37 @@
 }
 
 .stage-notif-meta {
-  color: var(--stage-ink-4);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--stage-ink-3);
   font-size: 11px;
+}
+.stage-notif-meta > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stage-notif-meta > i {
+  flex: 0 0 auto;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--stage-ink-4);
+}
+.stage-notif-context {
+  color: var(--stage-ink-2);
+  font-weight: 550;
 }
 
 .stage-notif-chip {
   flex: 0 0 auto;
   align-self: center;
-  padding: 4px 9px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 6px;
-  color: var(--stage-ink-2);
+  height: 24px;
+  padding: 0 9px;
   font-size: 10.5px;
+  font-weight: 600;
   white-space: nowrap;
 }
 

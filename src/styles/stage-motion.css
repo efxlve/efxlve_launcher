@@ -178,6 +178,17 @@
     0 0 18px rgba(255, 255, 255, 0.35) !important;
   transform: none !important;
 }
+/* Notification rows are full-width list items; the shared button focus scale
+   and 52px drop make a row overlap its neighbours, so they keep a tight ring. */
+#stage-root .stage-notif-row.gp-focused {
+  outline: none !important;
+  border-color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 18px rgba(255, 255, 255, 0.3) !important;
+  transform: none !important;
+}
 /* ---------- Motion ---------- */
 
 /* Entry animations belong to a transition, not to every data repaint. The

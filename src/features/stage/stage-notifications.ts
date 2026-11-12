@@ -19,7 +19,10 @@ import { notifKindIcon } from "../notifications/notifications";
 const LIMIT = 14;
 
 function row(n: AppNotification): string {
-  const meta = esc([n.context, relativeTime(n.ts)].filter(Boolean).join(" · "));
+  const when = relativeTime(n.ts);
+  const meta = n.context || when
+    ? `<span class="stage-notif-meta">${icon(n.context ? (n.appName ? "gamepad-2" : "info") : "clock", 12)}${n.context ? `<span class="stage-notif-context">${esc(n.context)}</span><i aria-hidden="true"></i>` : ""}<span>${esc(when)}</span></span>`
+    : "";
   // A game row opens the programme; an app/EOS notice can only be acted on in
   // the desktop shell, so it leaves Stage instead of pretending to do something.
   const act = n.appName ? "open-program" : n.action ? "notif-desktop" : "notif-done";
@@ -28,9 +31,9 @@ function row(n: AppNotification): string {
     <span class="stage-notif-copy">
       <strong>${esc(n.title)}</strong>
       ${n.body ? `<span class="stage-notif-body">${esc(n.body)}</span>` : ""}
-      ${meta ? `<span class="stage-notif-meta">${meta}</span>` : ""}
+      ${meta}
     </span>
-    ${n.actionLabel ? `<span class="stage-notif-chip">${esc(n.actionLabel)}</span>` : ""}
+    ${n.actionLabel ? `<span class="stage-stat stage-notif-chip">${esc(n.actionLabel)}</span>` : ""}
   </button>`;
 }
 
@@ -42,7 +45,7 @@ export function renderStageNotifications(): string {
       <div class="stage-sheet-head">
         <div>
           <span class="stage-kicker">${esc(t("notif.title"))}</span>
-          <h2>${esc(t("notif.title"))}${total > 0 ? `<span class="stage-notif-count tabular-nums">${total}</span>` : ""}</h2>
+          <h2>${esc(t("notif.title"))}${total > 0 ? `<span class="stage-stat stage-notif-count">${icon("bell", 13)}<b class="tabular-nums">${total}</b></span>` : ""}</h2>
         </div>
         <div class="stage-notif-head-actions">
           ${total > 0 ? `<button type="button" class="stage-btn stage-btn-ghost" data-stage-act="notif-clear" data-gp-item data-gp-key="notif:clear">${icon("trash", 16)}<span>${esc(t("notif.clear"))}</span></button>` : ""}
