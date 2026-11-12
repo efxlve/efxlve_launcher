@@ -395,6 +395,14 @@
   gap: 3px;
   min-width: 0;
 }
+.stage-controller-copy .stage-stat {
+  max-width: 100%;
+}
+.stage-controller-copy .stage-stat > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .stage-controller-copy strong {
   font-size: 17px;
   font-weight: 600;

@@ -964,6 +964,7 @@ function controlsSheet(entered: boolean): string {
     [stageFaceGlyph("x"), t("stage.controlsX")],
     [stageFaceGlyph("y"), t("stage.controlsY")],
     [stageBumperGlyphs(), t("stage.controlsBumpers")],
+    [stageTriggerGlyphs(), t("stage.storeFilter")],
     ["↑ ↓ ← →", t("stage.controlsDpad")],
     [stageMenuGlyph(), t("stage.quickMenu")],
     [stageViewGlyph(), t("stage.search")],
@@ -1920,6 +1921,7 @@ function bindStageEvents(root: HTMLElement): void {
       case "toggle-stage-cinematic": { stageFeedback("select"); setStageCinematic(!S.stage.cinematic); break; }
       case "toggle-stage-attract": { stageFeedback("select"); setStageAttract(!S.stage.attract); break; }
       case "toggle-stage-haptics": { stageFeedback("select"); setStageHaptics(!S.stage.haptics); } break;
+      case "test-stage-haptics": stageFeedback("select"); break;
       case "test-stage-sound": previewStageSound(); break;
       case "test-stage-ambience": {
         // The settings screen normally runs the quiet scene; lift it for the

@@ -487,6 +487,44 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
   const moveY = Math.max(12, curRect.height * 0.35);
   const curRow = origin.closest("[data-gp-row]");
 
+  // Settings panels read top to bottom. The generic scan weighs a horizontal
+  // gap 8x, so a right-aligned control loses to a full-width row two rows
+  // below. Inside a Stage settings panel, vertical movement goes to the
+  // nearest control by row and x only breaks a tie.
+  const settingsPanel = origin.closest<HTMLElement>(".stage-settings-panel");
+  if (S.stage.active && settingsPanel && (dir === "up" || dir === "down")) {
+    let best: HTMLElement | null = null;
+    let bestDy = Infinity;
+    let bestDx = Infinity;
+    for (const el of candidates) {
+      if (el === origin || el.closest(".stage-settings-panel") !== settingsPanel) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue;
+      const dy = r.top + r.height / 2 - curCenter.y;
+      if (dir === "down" ? dy <= moveY : dy >= -moveY) continue;
+      const dist = Math.abs(dy);
+      const dx = Math.abs(r.left + r.width / 2 - curCenter.x);
+      if (dist < bestDy - 2 || (Math.abs(dist - bestDy) <= 2 && dx < bestDx)) {
+        best = el;
+        bestDy = dist;
+        bestDx = dx;
+      }
+    }
+    if (best) {
+      setFocus(best);
+      return;
+    }
+  }
+  // Down from the settings tabs enters the active panel at its first control;
+  // the full-width row below would otherwise win and skip the card button.
+  if (S.stage.active && dir === "down" && origin.closest(".stage-settings-tabs")) {
+    const first = document.querySelector<HTMLElement>(".stage-settings-panel [data-gp-item]");
+    if (first && isVisibleEl(first)) {
+      setFocus(first);
+      return;
+    }
+  }
+
   // The desktop shell has three regions. Moving inside one is a geometry
   // contest; crossing to another is a deliberate step. Without this, the
   // nearest neighbour of a card's right side is often a top-bar button.

@@ -205,7 +205,6 @@ function appearance(): string {
       <div class="stage-settings-actions">
         <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="preview-stage-idle" data-gp-item data-gp-key="set:idle-preview">${icon("sparkles", 16)}<span>${esc(t("stage.settingsPreviewIdle"))}</span></button>
       </div>
-      ${stageToggle("haptics", t("stage.settingsHaptics"), t("stage.settingsHapticsDesc"), S.stage.haptics, "toggle-stage-haptics")}
     </div>
 
     <div class="stage-settings-note">${icon("sliders", 15)}<span>${esc(t("stage.settingsAppearanceNote"))}</span></div>
@@ -214,13 +213,19 @@ function appearance(): string {
 
 function controller(): string {
   const connected = S.stage.controllerConnected;
+  const battery = stageBatteryLabel();
   return `<div class="stage-settings-panel">
     <div class="stage-controller-card">
       <span class="stage-controller-icon">${icon("gamepad-2", 34)}</span>
       <div class="stage-controller-copy">
         <span class="stage-kicker">${esc(t("stage.controller"))}</span>
         <strong>${esc(connected ? (S.stage.controllerName || t("stage.controller")) : t("stage.noController"))}</strong>
-        <small>${esc(connected ? `${stageKindName(S.gamepadKind)}${stageBatteryLabel() ? ` · ${stageBatteryLabel()}` : ""}` : t("stage.settingsControllerHint"))}</small>
+        ${connected
+          ? `<div class="stage-stat-row">
+               <span class="stage-stat">${icon("gamepad-2", 13)}<span>${esc(stageKindName(S.gamepadKind))}</span></span>
+               ${battery ? `<span class="stage-stat">${icon("battery", 13)}<span>${esc(battery)}</span></span>` : ""}
+             </div>`
+          : `<small>${esc(t("stage.settingsControllerHint"))}</small>`}
       </div>
       <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="show-controls" data-gp-item data-gp-key="set:controls">${icon("keyboard", 16)}<span>${esc(t("stage.controls"))}</span></button>
     </div>
@@ -229,6 +234,13 @@ function controller(): string {
       { label: t("stage.settingsStickNormal"), value: 1, selected: S.stage.stickSensitivity === 1 },
       { label: t("stage.settingsStickLoose"), value: 2, selected: S.stage.stickSensitivity === 2 },
     ])}
+    ${stageToggle("haptics", t("stage.settingsHaptics"), t("stage.settingsHapticsDesc"), S.stage.haptics, "toggle-stage-haptics")}
+    <div class="stage-settings-test">
+      <div class="stage-settings-test-pair">
+        <span class="stage-stat">${icon("zap", 13)}<span>${esc(t("stage.settingsHaptics"))}</span><b>${esc(S.stage.haptics ? t("stage.settingsOn") : t("stage.settingsOff"))}</b></span>
+        <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="test-stage-haptics" data-gp-item data-gp-key="set:haptics-test"${S.stage.haptics ? "" : " disabled"}>${icon("play", 14)}<span>${esc(t("stage.settingsTestHaptics"))}</span></button>
+      </div>
+    </div>
     ${globalToggle("auto-controller", t("stage.settingsAuto"), t("stage.settingsAutoDesc"), S.stage.autoEnter, "toggle-stage-auto")}
     ${globalToggle("launch-controller", t("stage.settingsOpenAtLaunch"), t("stage.settingsOpenAtLaunchDesc"), S.stage.openAtLaunch, "toggle-stage-open-launch")}
     <div class="stage-settings-actions">
