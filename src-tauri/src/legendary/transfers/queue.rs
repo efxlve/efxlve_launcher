@@ -775,6 +775,7 @@ pub(super) async fn monitor_download(
 ) {
     let mut total_mib = 0.0f64;
     let mut downloaded_mib = 0.0f64;
+    let mut written_mib = 0.0f64;
     let mut current_speed: Option<String> = None;
     let mut current_speed_bytes: Option<u64> = None;
     let mut current_disk_speed: Option<String> = None;
@@ -805,10 +806,14 @@ pub(super) async fn monitor_download(
             let mut finishing_sent = false;
             let mut exited: Option<std::process::ExitStatus> = None;
             let mut last_line_at = std::time::Instant::now();
+            let mut last_progress_at = std::time::Instant::now();
             loop {
                 match tokio::time::timeout(STDERR_POLL, r.next_line()).await {
                     Ok(Some(line)) => {
                         last_line_at = std::time::Instant::now();
+                        let previous_pct = last_pct;
+                        let before_downloaded = downloaded_mib;
+                        let before_written = written_mib;
                         if !finishing_sent && is_install_finishing(&line) {
                             finishing_sent = true;
                             emit_progress_full(
@@ -890,6 +895,7 @@ pub(super) async fn monitor_download(
                             }
                         }
                         if let Some(w) = parse_mib_after(&line, "Written:") {
+                            written_mib = w;
                             if !explicit_disk {
                                 if let Some(bps) = bytes_per_sec_from_mib(&mut disk_rate, w) {
                                     current_disk_bytes = Some(bps);
@@ -941,6 +947,35 @@ pub(super) async fn monitor_download(
                                 dl_bytes,
                                 tot_bytes,
                             );
+                        }
+                        // The download manager can keep logging the same
+                        // percentage and counters forever when its worker queue
+                        // deadlocks (upstream #574). Silence alone would miss
+                        // that, so require the counters to move as well.
+                        let pct_advanced = new_pct.is_some_and(|p| p != previous_pct);
+                        let bytes_advanced = downloaded_mib > before_downloaded + 0.001
+                            || written_mib > before_written + 0.001;
+                        if pct_advanced || bytes_advanced {
+                            last_progress_at = std::time::Instant::now();
+                        }
+                        let stall_limit = if finishing_sent || last_pct >= 100 {
+                            FINALIZE_STALL
+                        } else {
+                            STALL_TIMEOUT
+                        };
+                        if last_pct >= 0 && last_progress_at.elapsed() >= stall_limit {
+                            if let Some(pid) = child.id() {
+                                kill_download_tree(pid).await;
+                            }
+                            if user_halted(&app) {
+                                stall_error = Some("@t:dl.cancelled".into());
+                            } else if stall_retried {
+                                stall_error = Some("@t:dl.stalled".into());
+                            } else {
+                                stall_retried = true;
+                                stall_restart = true;
+                            }
+                            break;
                         }
                         tail.push_back(line);
                     }
