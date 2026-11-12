@@ -929,7 +929,7 @@ function hints(): string {
       stageHint(face("y"), S.stage.libraryView === "grid" ? t("stage.viewList") : t("stage.viewGrid")),
       stageHint(bumpers, t("gamepad.tabs")),
       stageHint(triggerGlyphs, t("stage.storeFilter")),
-      stageHint("← →", t("stage.collections")),
+      stageHint(isKbd ? `${stageKeyGlyph("←")}${stageKeyGlyph("→")}` : "← →", t("stage.collections")),
       stageHint(viewGlyph, t("stage.search")),
       stageHint(menuKey, t("stage.quickMenu")),
     ]);

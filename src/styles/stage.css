@@ -558,12 +558,15 @@ body.stage-mode #toasts {
   inset-inline-start: calc(var(--stage-pad) + var(--stage-safe, 0px));
   z-index: 26;
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: clamp(12px, 1.6vw, 22px);
+  gap: 6px clamp(12px, 1.6vw, 22px);
+  max-width: calc(100vw - 2 * (var(--stage-pad) + var(--stage-safe, 0px)));
+  box-sizing: border-box;
   min-height: 38px;
   padding: 6px 18px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 9999px;
+  border-radius: 22px;
   background: rgba(8, 10, 16, 0.65);
   backdrop-filter: blur(20px);
   color: rgba(255, 255, 255, 0.72);
