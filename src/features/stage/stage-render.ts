@@ -103,7 +103,7 @@ import { stageLaunchGame, stageSkipLaunchCurtain } from "./stage-launch";
 import type { EpicSummary } from "../../epic";
 import { epicDlProgress } from "../../core/game-view";
 import { patchStageDownloads, renderStageDownloads } from "./stage-downloads";
-import { renderStageHome, stageHomeActivitiesHtml, stageHomeFocus, stageHomeHeroHtml } from "./stage-home";
+import { renderStageHome, stageHomeActivitiesHtml, stageHomeFocus, stageHomeHeroHtml, stageHomeIdleMarkup } from "./stage-home";
 import { patchStageLibrarySide, renderStageLibrary, stageLibraryAppend, stageLibraryFocus, stageLibraryRenderToken } from "./stage-library";
 import {
   stageAchievements,
@@ -1393,6 +1393,7 @@ export function renderStage(): void {
     </main>
     ${hints()}
   </div>
+  ${S.stage.route === "home" ? stageHomeIdleMarkup() : ""}
   ${quick}
   ${controls}
   ${manage}

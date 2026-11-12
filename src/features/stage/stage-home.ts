@@ -280,17 +280,25 @@ export function renderStageHome(): string {
     <section id="stage-home-activities" class="stage-home-hub">
       ${stageHomeActivitiesHtml(hero)}
     </section>
+  </div>`;
+}
 
-    <div id="stage-home-idle" class="stage-home-idle" aria-hidden="true">
-      <div class="stage-idle-top">
-        <span class="stage-idle-brand">EFXLVE <b>STAGE</b></span>
-        <span class="stage-idle-greeting">${esc(stageIdleGreeting())}${profileName ? ` · ${esc(profileName)}` : ""}</span>
-        ${stageControllerChip()}
-      </div>
-      <div class="stage-idle-bottom">
-        <span class="stage-idle-clock tabular-nums"></span>
-        <span class="stage-idle-hint">${esc(t("stage.idleHint"))}</span>
-      </div>
+/**
+ * Attract-mode overlay. It lives outside the page layer on purpose: the layer
+ * carries a transform for its entrance, which would turn `position: fixed`
+ * into a box the height of the whole Home page and push the clock off screen.
+ */
+export function stageHomeIdleMarkup(): string {
+  const profileName = S.customProfileName.trim();
+  return `<div id="stage-home-idle" class="stage-home-idle" aria-hidden="true">
+    <div class="stage-idle-top">
+      <span class="stage-idle-brand">EFXLVE <b>STAGE</b></span>
+      <span class="stage-idle-greeting">${esc(stageIdleGreeting())}${profileName ? ` · ${esc(profileName)}` : ""}</span>
+      ${stageControllerChip()}
+    </div>
+    <div class="stage-idle-bottom">
+      <span class="stage-idle-clock tabular-nums"></span>
+      <span class="stage-idle-hint">${esc(t("stage.idleHint"))}</span>
     </div>
   </div>`;
 }
