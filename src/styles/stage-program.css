@@ -1000,79 +1000,22 @@
   color: var(--stage-accent);
 }
 
-/* HLTB Grid */
-.stage-hltb-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+/* HLTB and critic values sit in the shared chip strip under each card head. */
+.stage-card-hltb .stage-stat-row,
+.stage-card-critic .stage-stat-row {
+  margin-block-start: 10px;
 }
-
-.stage-hltb-item {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.stage-card-label {
-  color: var(--stage-ink-3);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.stage-card-value {
-  color: #ffffff;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-/* Critic Grid */
-.stage-critic-grid {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.stage-critic-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.stage-critic-score {
-  display: grid;
-  place-items: center;
-  min-width: 38px;
-  height: 38px;
-  padding: 0 8px;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.score-good {
-  background: rgba(34, 197, 94, 0.2);
+.stage-card-critic .stage-stat b.score-good {
   color: #4ade80;
-  border: 1px solid rgba(34, 197, 94, 0.4);
 }
-
-.score-avg {
-  background: rgba(234, 179, 8, 0.2);
+.stage-card-critic .stage-stat b.score-avg {
   color: #facc15;
-  border: 1px solid rgba(234, 179, 8, 0.4);
 }
-
-.score-bad {
-  background: rgba(239, 68, 68, 0.2);
+.stage-card-critic .stage-stat b.score-bad {
   color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.4);
 }
-
-.score-steam {
-  background: rgba(100, 160, 255, 0.18);
+.stage-card-critic .stage-stat b.score-steam {
   color: #93c5fd;
-  border: 1px solid rgba(100, 160, 255, 0.35);
 }
 
 /* Trophy Spotlight Card */

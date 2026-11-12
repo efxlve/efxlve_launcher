@@ -147,19 +147,10 @@ function overview(game: EpicSummary): string {
           <span class="stage-card-icon">${icon("clock", 16)}</span>
           <span class="stage-card-title">${esc(t("settings.storeAugmentedSteamOptHltb"))}</span>
         </div>
-        <div class="stage-hltb-grid">
-          <div class="stage-hltb-item">
-            <span class="stage-card-label">${esc(t("hltb.mainStory"))}</span>
-            <strong class="stage-card-value tabular-nums">${hours(hltb.main_story)}</strong>
-          </div>
-          <div class="stage-hltb-item">
-            <span class="stage-card-label">${esc(t("hltb.mainExtra"))}</span>
-            <strong class="stage-card-value tabular-nums">${hours(hltb.main_extra)}</strong>
-          </div>
-          <div class="stage-hltb-item">
-            <span class="stage-card-label">${esc(t("hltb.completionist"))}</span>
-            <strong class="stage-card-value tabular-nums">${hours(hltb.completionist)}</strong>
-          </div>
+        <div class="stage-stat-row">
+          ${hltb.main_story ? `<span class="stage-stat"><span>${esc(t("hltb.mainStory"))}</span><b class="tabular-nums">${hours(hltb.main_story)}</b></span>` : ""}
+          ${hltb.main_extra ? `<span class="stage-stat"><span>${esc(t("hltb.mainExtra"))}</span><b class="tabular-nums">${hours(hltb.main_extra)}</b></span>` : ""}
+          ${hltb.completionist ? `<span class="stage-stat"><span>${esc(t("hltb.completionist"))}</span><b class="tabular-nums">${hours(hltb.completionist)}</b></span>` : ""}
         </div>
       </div>`
     : "";
@@ -174,19 +165,10 @@ function overview(game: EpicSummary): string {
           <span class="stage-card-icon">${icon("star", 16)}</span>
           <span class="stage-card-title">${esc(t("drawer.statReview"))}</span>
         </div>
-        <div class="stage-critic-grid">
-          ${meta ? `<div class="stage-critic-item">
-            <div class="stage-critic-score ${meta >= 75 ? "score-good" : meta >= 50 ? "score-avg" : "score-bad"} tabular-nums">${meta}</div>
-            <span class="stage-card-label">Metacritic</span>
-          </div>` : ""}
-          ${open ? `<div class="stage-critic-item">
-            <div class="stage-critic-score ${open >= 75 ? "score-good" : open >= 50 ? "score-avg" : "score-bad"} tabular-nums">${open}</div>
-            <span class="stage-card-label">OpenCritic</span>
-          </div>` : ""}
-          ${igdb ? `<div class="stage-critic-item">
-            <div class="stage-critic-score score-steam tabular-nums">${igdb}%</div>
-            <span class="stage-card-label">IGDB</span>
-          </div>` : ""}
+        <div class="stage-stat-row">
+          ${meta ? `<span class="stage-stat"><span>Metacritic</span><b class="tabular-nums ${meta >= 75 ? "score-good" : meta >= 50 ? "score-avg" : "score-bad"}">${meta}</b></span>` : ""}
+          ${open ? `<span class="stage-stat"><span>OpenCritic</span><b class="tabular-nums ${open >= 75 ? "score-good" : open >= 50 ? "score-avg" : "score-bad"}">${open}</b></span>` : ""}
+          ${igdb ? `<span class="stage-stat"><span>IGDB</span><b class="tabular-nums score-steam">${igdb}%</b></span>` : ""}
         </div>
       </div>`
     : "";
