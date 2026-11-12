@@ -29,9 +29,11 @@ body.stage-mode #toasts {
   --stage-line: rgba(255, 255, 255, 0.08);
   --stage-line-strong: rgba(255, 255, 255, 0.16);
   --stage-ink: #ffffff;
-  --stage-ink-2: rgba(255, 255, 255, 0.68);
-  --stage-ink-3: rgba(255, 255, 255, 0.44);
-  --stage-ink-4: rgba(255, 255, 255, 0.28);
+  --stage-ink-2: rgba(255, 255, 255, 0.72);
+  --stage-ink-3: rgba(255, 255, 255, 0.54);
+  /* Tertiary copy sits at 11-12 px on a TV; 28% white was ~2.3:1 on the stage
+     background and read as a smudge from the couch. */
+  --stage-ink-4: rgba(255, 255, 255, 0.4);
   --stage-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --stage-pad: clamp(24px, 3.2vw, 72px);
   --stage-top: 76px;

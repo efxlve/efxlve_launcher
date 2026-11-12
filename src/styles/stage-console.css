@@ -703,10 +703,11 @@
     padding: 14px 18px;
   }
 
-  /* Two rows of thumb-sized tiles beat nine 74 px columns on a handheld. */
+  /* Two full rows of thumb-sized tiles beat eleven 74 px columns on a
+     handheld: 12 tiles read as 6 + 6, and the no-game dock as 6 + 5. */
   .stage-dock-items {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 8px;
   }
 
