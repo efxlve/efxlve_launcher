@@ -145,6 +145,21 @@ export function stagePlaytime(s: EpicSummary): { seconds: number; lastPlayed: nu
   return libraryPlaytime(s);
 }
 
+/**
+ * The shared game facts: install state, size, playtime and the last session.
+ * The programme hero and the library side stage both read this so the chips
+ * never drift apart.
+ */
+export function stageGameFactChips(s: EpicSummary): string {
+  const play = stagePlaytime(s);
+  const size = s.installSize > 0 ? fmtBytes(s.installSize) : "";
+  const last = play.lastPlayed > 946684800 ? relativeTime(play.lastPlayed * 1000) : "";
+  return `<span class="stage-stat"><i class="${s.installed ? "is-ready" : "is-off"}" aria-hidden="true"></i><span>${esc(s.installed ? t("stage.installed") : t("stage.notInstalled"))}</span></span>
+    ${size ? `<span class="stage-stat">${icon("package", 13)}<b class="tabular-nums">${esc(size)}</b></span>` : ""}
+    ${play.seconds > 0 ? `<span class="stage-stat">${icon("clock", 13)}<b class="tabular-nums">${esc(fmtPlaytime(play.seconds))}</b></span>` : ""}
+    ${last ? `<span class="stage-stat">${icon("calendar", 13)}<span>${esc(last)}</span></span>` : ""}`;
+}
+
 /** Status dot + word; colour never carries the meaning alone. */
 export function stageStatus(s: EpicSummary): string {
   if (S.runningGames.has(s.appName)) {

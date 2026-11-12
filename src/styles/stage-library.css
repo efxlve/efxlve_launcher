@@ -423,8 +423,8 @@
   padding: clamp(15px, 1.7vw, 21px);
 }
 .stage-side-store {
-  color: var(--stage-ink-4);
-  font-size: 9.5px;
+  color: var(--stage-ink-3);
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -442,9 +442,19 @@
   letter-spacing: -0.025em;
 }
 .stage-side-meta {
+  gap: 6px;
   color: var(--stage-ink-3);
   font-size: 11px;
   line-height: 1.45;
+}
+.stage-side-meta .stage-stat {
+  height: 24px;
+  padding: 0 8px;
+  gap: 5px;
+  font-size: 10.5px;
+}
+.stage-side-meta .stage-stat b {
+  font-size: 10.5px;
 }
 .stage-side-status {
   margin-block: 2px;
@@ -484,20 +494,29 @@
 .stage-side-ach[hidden] {
   display: none;
 }
-.stage-side-ach > span:first-child {
+.stage-side-ach > .stage-side-ach-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.stage-side-ach-head > span:first-child {
   display: flex;
   align-items: center;
   gap: 6px;
 }
-.stage-side-ach strong {
-  color: var(--stage-ink-2);
-  font-size: 11px;
-  font-weight: 500;
+.stage-side-ach-count {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 10.5px;
+}
+.stage-side-ach-count b {
+  font-size: 10.5px;
 }
 .stage-side-note {
   margin-block-start: 3px;
-  color: var(--stage-ink-4);
-  font-size: 10px;
+  color: var(--stage-ink-3);
+  font-size: 10.5px;
   line-height: 1.4;
 }
 .stage-side-empty {

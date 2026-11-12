@@ -24,7 +24,7 @@ import {
   stagePrimaryAction,
   stageStoreFilterLabel,
 } from "./stage-model";
-import { stageMetaLine, stageProgress, stageStatus, stageStoreName } from "./stage-ui";
+import { stageGameFactChips, stageMetaLine, stageProgress, stageStatus, stageStoreName } from "./stage-ui";
 
 const FILTERS: StageLibraryFilter[] = ["all", "installed", "favorites", "updates"];
 const LIBRARY_CHUNK = 96;
@@ -174,9 +174,11 @@ function sideAchievementsInner(s: EpicSummary): string {
   if (!ach?.supported || ach.total_achievements <= 0) return "";
   const known = ach.progress_known !== false;
   const percent = known ? Math.round((ach.user_unlocked / ach.total_achievements) * 100) : 0;
-  return `<span>${icon("trophy", 16)} ${esc(t("stage.achievements"))}</span>
-    <strong class="tabular-nums">${known ? `${ach.user_unlocked} / ${ach.total_achievements}` : String(ach.total_achievements)}</strong>
-    ${known ? stageProgress(percent, "stage-progress-thin") : ""}`;
+  return `<div class="stage-side-ach-head">
+    <span>${icon("trophy", 16)} ${esc(t("stage.achievements"))}</span>
+    <span class="stage-stat stage-side-ach-count"><b class="tabular-nums">${known ? `${ach.user_unlocked} / ${ach.total_achievements}` : String(ach.total_achievements)}</b></span>
+  </div>
+  ${known ? stageProgress(percent, "stage-progress-thin") : ""}`;
 }
 
 /** Play/favourite/details row, shared by the first render and the in-place patch. */
@@ -221,7 +223,7 @@ export function stageLibrarySideHtml(s: EpicSummary | undefined): string {
     <div class="stage-side-body">
       <span class="stage-side-store" data-side="store">${esc(stageStoreName(sourceOfKey(s.appName)))}</span>
       <h2 class="stage-side-title" data-side="title">${esc(s.title)}</h2>
-      <div class="stage-side-meta" data-side="meta">${stageMetaLine(s, { withStore: false })}</div>
+      <div class="stage-side-meta stage-stat-row" data-side="meta">${stageGameFactChips(s)}</div>
       <div class="stage-side-actions" data-side="actions">${sideActionsHtml(s)}</div>
       <div class="stage-side-ach" data-side="ach"${achInner ? "" : " hidden"}>${achInner}</div>
       <div class="stage-side-note">${esc(t("stage.sideHint"))}</div>
@@ -259,7 +261,7 @@ export function patchStageLibrarySide(s: EpicSummary | undefined): void {
   text("store", stageStoreName(sourceOfKey(s.appName)));
   text("title", s.title);
   const meta = side.querySelector<HTMLElement>('[data-side="meta"]');
-  if (meta) meta.innerHTML = stageMetaLine(s, { withStore: false });
+  if (meta) meta.innerHTML = stageGameFactChips(s);
 
   const actions = side.querySelector<HTMLElement>('[data-side="actions"]');
   if (actions) {
