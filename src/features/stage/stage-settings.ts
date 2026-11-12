@@ -251,9 +251,6 @@ export function renderStageSettings(): string {
         <h1>${esc(t("stage.navSettings"))}</h1>
         <p>${esc(t("stage.settingsSubtitle"))}</p>
       </div>
-      <div class="stage-settings-head-actions">
-        <button type="button" class="stage-back" data-stage-act="back" data-gp-item data-gp-key="settings:back">${icon("arrow-left", 18)}<span>${esc(t("common.back"))}</span></button>
-      </div>
     </header>
     ${tabs()}
     ${S.stage.settingsTab === "controller"

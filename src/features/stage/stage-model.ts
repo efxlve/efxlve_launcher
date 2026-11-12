@@ -160,14 +160,6 @@ export function stageHeroSummary(): EpicSummary | null {
   return base.find((s) => s.installed) ?? base[0] ?? null;
 }
 
-/** Installed-but-not-recent shelf for the Home page. */
-export function stageReadyShelf(limit = 10): EpicSummary[] {
-  const recent = new Set(stageRecentSummaries(12).map(stageTitleKey));
-  return recentOrder(
-    stageBaseSummaries().filter((s) => s.installed && !recent.has(stageTitleKey(s))),
-  ).slice(0, limit);
-}
-
 function hasUpdate(s: EpicSummary): boolean {
   if (S.ignoredUpdates.has(s.appName)) return false;
   return Boolean(s.updateAvailable || S.availableUpdates.has(s.appName) || S.gogUpdates.has(s.appName));
@@ -282,11 +274,6 @@ export function stageSearchMatches(query: string, limit = 24): EpicSummary[] {
 export function stageGameByKey(key: string | null): EpicSummary | undefined {
   if (!key) return undefined;
   return summaryOf(key) ?? stageBaseSummaries().find((s) => s.appName === key);
-}
-
-/** Dedupe key for shelves: one title when copies are combined. */
-export function stageTitleKey(s: EpicSummary): string {
-  return S.separateCopies ? s.appName : canonicalGameTitle(s.title) || s.appName;
 }
 
 /**

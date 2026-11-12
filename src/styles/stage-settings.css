@@ -32,13 +32,6 @@
   font-size: 12.5px;
   line-height: 1.5;
 }
-.stage-settings-head-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
 .stage-settings-tabs {
   display: inline-flex;
   align-items: center;

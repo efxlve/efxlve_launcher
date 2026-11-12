@@ -27,7 +27,6 @@ import {
   stageGamePlaytime,
   stageHeroSummary,
   stagePrimaryAction,
-  stageReadyShelf,
   stageRibbonSummaries,
   stageUserCollections,
 } from "./stage-model";
@@ -223,20 +222,6 @@ function collectionsRow(): string {
   </div>`;
 }
 
-function readyGamesRow(): string {
-  const ready = stageReadyShelf(12);
-  if (ready.length === 0) return "";
-  return `<div class="stage-collection-section">
-    <div class="stage-shelf-header">
-      <h2 class="stage-shelf-title">${esc(t("stage.readyShelfTitle"))}</h2>
-      <span class="stage-shelf-subtitle">${ready.length}</span>
-    </div>
-    <div class="stage-card-row stage-ribbon-track" data-gp-row>
-      ${ready.map((s) => ribbonCard(s, false)).join("")}
-    </div>
-  </div>`;
-}
-
 export function stageHomeActivitiesHtml(game: EpicSummary): string {
   return `<div class="stage-shelf-header">
     <h2 class="stage-shelf-title">${esc(t("stage.details"))}</h2>
@@ -248,7 +233,6 @@ export function stageHomeActivitiesHtml(game: EpicSummary): string {
     ${capturesActivityCard(game)}
     ${detailsActivityCard(game)}
   </div>
-  ${readyGamesRow()}
   ${collectionsRow()}`;
 }
 

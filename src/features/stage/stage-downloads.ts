@@ -173,7 +173,6 @@ export function renderStageDownloads(): string {
         <h1>${esc(t("stage.navDownloads"))}</h1>
         <span>${esc(t("stage.downloadsHint"))}</span>
       </div>
-      <button type="button" class="stage-tool" data-stage-act="desktop" data-gp-item data-gp-key="dl:desktop">${icon("external", 16)}<span>${esc(t("stage.openDesktop"))}</span></button>
     </header>
     ${rows.length > 0 ? `<div class="stage-download-list">${rows.join("")}</div>` : ""}
     ${updatesHtml}
