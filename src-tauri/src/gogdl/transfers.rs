@@ -177,33 +177,38 @@ fn parse_speed(line: &str, keyword: &str) -> Option<(String, u64)> {
     let idx = line.find(keyword)? + keyword.len();
     let rest = line[idx..].trim_start();
     let clean = rest.trim_start_matches('-').trim_start();
+    // The slash belongs to the unit (`MiB/s`); only a parenthesis or comma
+    // starts the next field.
     let end = clean
-        .find(|c: char| c == '(' || c == '/' || c == ',')
+        .find(|c: char| c == '(' || c == ',')
         .unwrap_or(clean.len());
     let part = clean[..end].trim();
     if part.is_empty() {
         return None;
     }
 
-    let speed_str = part.to_string();
-    let mut bytes = 0u64;
     let tokens: Vec<&str> = part.split_whitespace().collect();
-    if tokens.len() >= 2 {
-        if let Ok(num) = tokens[0].parse::<f64>() {
-            let unit = tokens[1].to_lowercase();
-            if unit.starts_with("gib") || unit.starts_with("gb") {
-                bytes = (num * 1024.0 * 1024.0 * 1024.0) as u64;
-            } else if unit.starts_with("mib") || unit.starts_with("mb") {
-                bytes = (num * 1024.0 * 1024.0) as u64;
-            } else if unit.starts_with("kib") || unit.starts_with("kb") {
-                bytes = (num * 1024.0) as u64;
-            } else {
-                bytes = num as u64;
-            }
-        }
+    if tokens.len() < 2 {
+        return None;
     }
+    let num = tokens[0].parse::<f64>().ok()?;
+    let unit = tokens[1].to_lowercase();
+    // gogdl may log cumulative sizes (`Downloaded: 1.2 GiB`); only a rate is
+    // a speed, otherwise the card would show that size as the live rate.
+    if !unit.contains("/s") {
+        return None;
+    }
+    let bytes = if unit.starts_with("gib") || unit.starts_with("gb") {
+        (num * 1024.0 * 1024.0 * 1024.0) as u64
+    } else if unit.starts_with("mib") || unit.starts_with("mb") {
+        (num * 1024.0 * 1024.0) as u64
+    } else if unit.starts_with("kib") || unit.starts_with("kb") {
+        (num * 1024.0) as u64
+    } else {
+        num as u64
+    };
 
-    Some((speed_str, bytes))
+    Some((part.to_string(), bytes))
 }
 
 /// Parses `goggame-<id>.info` in target directory if it exists to extract executable path.
@@ -975,6 +980,26 @@ mod tests {
     use super::*;
     use std::fs::{self, File};
     use std::io::Write;
+
+    #[test]
+    fn speed_parser_ignores_cumulative_sizes() {
+        assert_eq!(
+            parse_speed("+ Download\t- 12.50 MiB/s", "Download"),
+            Some(("12.50 MiB/s".to_string(), 13_107_200))
+        );
+        // A size, not a rate: the card must not show "1.20 GiB" as the speed.
+        assert_eq!(parse_speed("Downloaded: 1.20 GiB", "Download"), None);
+        assert_eq!(parse_speed("= Progress: 10.00%", "Download"), None);
+    }
+
+    #[test]
+    fn progress_and_eta_lines_parse() {
+        assert_eq!(
+            parse_progress("[Progress] = Progress: 42.13% (123/456)"),
+            Some(42)
+        );
+        assert_eq!(parse_eta("ETA: 00:01:22, speed 4 MiB/s"), Some("00:01:22".into()));
+    }
 
     #[test]
     fn test_calculate_dir_size() {
