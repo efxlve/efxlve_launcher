@@ -207,7 +207,7 @@
 .stage-cover-card:hover .stage-cover-frame {
   transform: translateY(-4px) scale(1.03);
   border-color: rgba(255, 255, 255, 0.4);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55), 0 0 20px rgba(255, 255, 255, 0.15);
 }
 .stage-cover-card.gp-focused .stage-cover-frame {
   transform: translateY(-6px) scale(1.06) !important;
@@ -215,8 +215,8 @@
   box-shadow:
     0 0 0 2.5px #ffffff,
     0 0 26px rgba(255, 255, 255, 0.55),
-    0 0 55px rgba(80, 140, 255, 0.28),
-    0 24px 56px rgba(0, 0, 0, 0.85) !important;
+    0 0 42px rgba(var(--stage-accent-rgb, 86, 140, 255), 0.3),
+    0 10px 22px rgba(0, 0, 0, 0.45) !important;
   z-index: 10 !important;
 }
 .stage-cover-art,

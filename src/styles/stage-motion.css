@@ -84,6 +84,9 @@
 
 #stage-root .stage-cover-card.gp-focused {
   outline: none !important;
+  /* The frame owns the shadow. The generic focus shadow would also paint
+     behind the title row, where a second near-black band reads as a slab. */
+  box-shadow: none !important;
   transform: translateY(-5px) !important;
 }
 #stage-root .stage-cover-card.gp-focused .stage-cover-frame {
@@ -91,8 +94,9 @@
   border-color: #ffffff !important;
   box-shadow:
     0 0 0 2.5px #ffffff,
-    0 0 22px rgba(255, 255, 255, 0.6),
-    0 20px 48px rgba(0, 0, 0, 0.85) !important;
+    0 0 22px rgba(255, 255, 255, 0.55),
+    0 0 42px rgba(var(--stage-accent-rgb, 86, 140, 255), 0.3),
+    0 10px 22px rgba(0, 0, 0, 0.45) !important;
 }
 #stage-root .stage-sheet-tile.gp-focused {
   transform: translateY(-2px) !important;
