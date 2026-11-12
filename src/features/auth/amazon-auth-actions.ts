@@ -17,8 +17,9 @@ import { setAmazonSummaries } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { LibraryItem } from "../../core/types";
-import { t } from "../../i18n";
+import { localizeMessage, t } from "../../i18n";
 import { stopSpeedChartTimer } from "../downloads/downloads-view";
+import { pushNotification } from "../notifications/notifications";
 import {
   amazonDefaultInstallDir,
   amazonGetInstallDir,
@@ -437,7 +438,17 @@ export async function installAmazonGame(id: string): Promise<void> {
     // error toast on top of that would call a requested cancel a failure.
     const cancelled = String(err).includes("@t:dl.cancelled");
     clearAmazonDownload(key);
-    if (!cancelled) toast(String(err), "err");
+    if (!cancelled) {
+      toast(String(err), "err");
+      // An install started from the background must leave a trace after the
+      // toast is gone, like the Epic and GOG failure events do.
+      pushNotification({
+        kind: "error",
+        title: t("notif.downloadFailed", { title }),
+        body: localizeMessage(String(err)),
+        appName: key,
+      });
+    }
     scheduleRender();
   }
 }
