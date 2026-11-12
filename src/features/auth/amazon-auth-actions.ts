@@ -391,8 +391,11 @@ export async function installAmazonGame(id: string): Promise<void> {
   S.downloads.set(key, { progress: 0, done: false, title });
   updateBadge();
   scheduleRender();
+  // Nile takes the worker count directly; keep the shared Download speed
+  // profile meaningful for Amazon too.
+  const workers = S.networkProfile === "max" ? 32 : S.networkProfile === "low" ? 2 : 8;
   try {
-    await nileInstall(id, S.amazonInstallDir || S.amazonDefaultDir || null);
+    await nileInstall(id, S.amazonInstallDir || S.amazonDefaultDir || null, workers);
     const finished = S.activeDlMetrics?.id === key ? S.activeDlMetrics : null;
     // Nile streams progress on its own event; without this record a finished
     // Amazon install vanished instead of moving into the Completed list.
