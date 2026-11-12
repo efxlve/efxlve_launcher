@@ -1131,30 +1131,102 @@ pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<(), Stri
 
         let stderr = child.stderr.take();
         let mut last_progress = 0i32;
+        let mut last_moved = Instant::now();
+        let mut last_pct: Option<f64> = None;
+        let mut last_bytes: Option<u64> = None;
+        let mut tail: VecDeque<String> = VecDeque::with_capacity(40);
+        let mut stalled = false;
         if let Some(err_stream) = stderr {
             let mut lines = CrlfLines::new(err_stream);
-            while let Some(line) = lines.next_line().await {
-                if let Some(p) = parse_progress(&line) {
-                    if p == last_progress {
+            loop {
+                let line = match tokio::time::timeout(STALL_POLL, lines.next_line()).await {
+                    Ok(Some(line)) => line,
+                    Ok(None) => break,
+                    Err(_) => {
+                        // Hashing before the progress bar starts is silent on
+                        // purpose; only a repair that showed progress can stall.
+                        if let Some(pct) = last_pct {
+                            let limit = if pct >= 99.0 {
+                                FINALIZE_STALL
+                            } else {
+                                STALL_TIMEOUT
+                            };
+                            if last_moved.elapsed() >= limit {
+                                if let Some(pid) = child.id() {
+                                    kill_gogdl(pid).await;
+                                }
+                                stalled = true;
+                                break;
+                            }
+                        }
                         continue;
                     }
-                    last_progress = p;
-                    let _ = app_clone.emit(
-                        "verify-progress",
-                        VerifyProgressPayload {
-                            id: id_clone.clone(),
-                            current: p as u64,
-                            total: 100,
-                            percent: p as f64,
-                            speed: String::new(),
-                            detail: format!("{p}%"),
-                        },
-                    );
+                };
+                let mut informative = true;
+                if let Some(pct) = parse_progress_value(&line) {
+                    informative = false;
+                    let bytes = parse_written_bytes(&line);
+                    let moved = last_pct.is_none()
+                        || last_pct != Some(pct)
+                        || last_bytes.is_some_and(|prev| bytes.is_some_and(|b| b != prev));
+                    if moved {
+                        last_moved = Instant::now();
+                    }
+                    last_pct = Some(pct);
+                    if let Some(b) = bytes {
+                        last_bytes = Some(b);
+                    }
+                }
+                if let Some(p) = parse_progress(&line) {
+                    if p != last_progress {
+                        last_progress = p;
+                        let _ = app_clone.emit(
+                            "verify-progress",
+                            VerifyProgressPayload {
+                                id: id_clone.clone(),
+                                current: p as u64,
+                                total: 100,
+                                percent: p as f64,
+                                speed: String::new(),
+                                detail: format!("{p}%"),
+                            },
+                        );
+                    }
+                }
+                if parse_eta(&line).is_some()
+                    || parse_speed(&line, "Download").is_some()
+                    || parse_speed(&line, "Disk").is_some()
+                    || line.trim_start().starts_with("= Downloaded:")
+                {
+                    informative = false;
+                }
+                if informative && !line.trim().is_empty() {
+                    if tail.len() >= 40 {
+                        tail.pop_front();
+                    }
+                    tail.push_back(line.clone());
                 }
             }
         }
 
-        match child.wait().await {
+        let status: Result<std::process::ExitStatus, String> =
+            match tokio::time::timeout(Duration::from_secs(30), child.wait()).await {
+                Ok(Ok(status)) => Ok(status),
+                Ok(Err(error)) => Err(error.to_string()),
+                Err(_) => Err("gogdl did not exit".to_string()),
+            };
+        if stalled {
+            let _ = app_clone.emit(
+                "verify-complete",
+                VerifyCompletePayload {
+                    id: id_clone,
+                    success: false,
+                    message: "@t:dl.stalled".to_string(),
+                },
+            );
+            return;
+        }
+        match status {
             Ok(status) if status.success() => {
                 let _ = app_clone.emit(
                     "verify-complete",
@@ -1171,20 +1243,22 @@ pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<(), Stri
                     VerifyCompletePayload {
                         id: id_clone,
                         success: false,
-                        message: format!(
-                            "gogdl repair exited with code {}",
-                            status.code().unwrap_or(-1)
-                        ),
+                        message: failure_text(&tail, status.code()),
                     },
                 );
             }
-            Err(e) => {
+            Err(error) => {
+                let message = if tail.is_empty() {
+                    error
+                } else {
+                    failure_text(&tail, None)
+                };
                 let _ = app_clone.emit(
                     "verify-complete",
                     VerifyCompletePayload {
                         id: id_clone,
                         success: false,
-                        message: e.to_string(),
+                        message,
                     },
                 );
             }
