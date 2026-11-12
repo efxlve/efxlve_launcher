@@ -30,6 +30,34 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.54",
+    date: "2026-11-12",
+    improved: [
+      {
+        en: "The bandwidth limit now applies immediately while a download is running, and the field shows the equivalent in MB/s.",
+        tr: "Bant genişliği sınırı indirme sürerken anında uygulanıyor ve alanın yanında MB/s karşılığı görünüyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Epic downloads no longer freeze at 100% or at a stalled percentage: the launcher restarts the transfer once and keeps the saved progress.",
+        tr: "Epic indirmeleri artık %100'de veya ilerleme durduğunda takılı kalmıyor; launcher indirmeyi bir kez yeniden başlatıyor ve kaydedilen ilerlemeyi koruyor.",
+      },
+      {
+        en: "Fortnite now starts Epic Online Services before launch, so parties and social features work on the first session instead of after a match.",
+        tr: "Fortnite artık açılmadan önce Epic Online Services hizmetini başlatıyor; parti ve sosyal özellikler ilk oturumda çalışıyor, bir maç atmayı beklemiyor.",
+      },
+      {
+        en: "Cancelling a GOG download no longer reports a false failure, pause and resume work on Linux and macOS, and only one GOG download runs at a time.",
+        tr: "GOG indirmesi iptal edildiğinde artık sahte bir hata gösterilmiyor; Linux ve macOS'ta duraklat/devam çalışıyor ve aynı anda yalnızca bir GOG indirmesi çalışıyor.",
+      },
+      {
+        en: "Queued downloads no longer take over the active download card, update list or Stage status, and custom launch arguments reach the game only once.",
+        tr: "Kuyruğa alınan indirmeler artık aktif indirme kartını, güncelleme listesini veya Sahne durumunu ele geçirmiyor; özel başlatma parametreleri oyuna yalnızca bir kez gönderiliyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.53",
     date: "2026-11-11",
     added: [
