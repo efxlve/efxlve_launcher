@@ -129,6 +129,7 @@ import {
   patchStageSpotifyProgress,
   stageSpotifyAction,
   stageSpotifyPlayPlaylist,
+  stageSpotifySheetSignature,
 } from "./stage-spotify";
 import {
   renderStageDiscordSheet,
@@ -343,6 +344,7 @@ function stageLiveSignature(): string {
     S.stage.controlsOpen ? "1" : "0",
     S.stage.browserOpen ? "1" : "0",
     S.stage.spotifyOpen ? "1" : "0",
+    stageSpotifySheetSignature(),
     S.stage.discordOpen ? "1" : "0",
     S.stage.notifOpen ? "1" : "0",
     String(S.notifications.length),
@@ -655,31 +657,48 @@ function firstFocusable(container: HTMLElement): HTMLElement | null {
   return container.querySelector<HTMLElement>("button:not([disabled]), input:not([disabled]), [data-gp-item]");
 }
 
+/** The overlay that owns the ring, if one is open, in stacking order. */
+function activeStageOverlay(root: HTMLElement): HTMLElement | null {
+  const selector = S.stage.launchError
+    ? ".stage-error"
+    : S.stage.launch
+      ? ".stage-curtain"
+      : S.stage.stillIndex !== null
+        ? ".stage-still-viewer"
+        : S.stage.powerOpen
+          ? ".stage-power-sheet"
+          : S.stage.browserOpen
+            ? ".stage-browser-sheet"
+            : S.stage.spotifyOpen
+              ? ".stage-spotify-sheet"
+              : S.stage.discordOpen
+                ? ".stage-discord-sheet"
+                : S.stage.manageKey
+                  ? ".stage-manage-overlay"
+                  : S.stage.controlsOpen
+                    ? ".stage-controls"
+                    : S.stage.quickMenu
+                      ? ".stage-quick-menu"
+                      : S.stage.searchOpen
+                        ? ".stage-search"
+                        : S.stage.notifOpen
+                          ? ".stage-notif-overlay"
+                          : "";
+  const painted = selector ? root.querySelector<HTMLElement>(selector) : null;
+  return painted ?? root.querySelector<HTMLElement>(".stage-overlay");
+}
+
 /** Only the top overlay participates in controller navigation. */
 function markFocusables(layer: HTMLElement | null): void {
   const root = document.getElementById("stage-root");
   if (!root) return;
-  // An overlay owns the ring. If a main-layer pass lands after the overlay was
-  // painted, keep the overlay's marks instead of re-marking the shelf behind it.
-  const overlayOpen = Boolean(
-    S.stage.quickMenu ||
-    S.stage.powerOpen ||
-    S.stage.browserOpen ||
-    S.stage.spotifyOpen ||
-    S.stage.discordOpen ||
-    S.stage.notifOpen ||
-    S.stage.controlsOpen ||
-    S.stage.searchOpen ||
-    S.stage.manageKey ||
-    S.stage.launch ||
-    S.stage.launchError ||
-    S.stage.stillIndex !== null ||
-    document.querySelector("#stage-root .stage-overlay"),
-  );
-  if (layer && layer.matches('[data-stage-layer="main"]') && overlayOpen) return;
+  // An overlay owns the ring: a late main-layer pass marks the overlay itself,
+  // never the shelf behind it.
+  const overlay = activeStageOverlay(root);
+  const target = overlay ?? layer;
   root.querySelectorAll<HTMLElement>("[data-gp-item]").forEach((el) => el.removeAttribute("data-gp-item"));
-  if (!layer) return;
-  layer.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled])").forEach((el) => {
+  if (!target) return;
+  target.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled])").forEach((el) => {
     if (el.closest("[data-gp-skip]")) return;
     el.setAttribute("data-gp-item", "");
   });
@@ -1421,32 +1440,7 @@ export function renderStage(): void {
   if (!modalOpen() && !S.stage.idle) restoreFocus(layer);
   // An overlay owns the ring even when the render selected the main layer; any
   // marks left on the shelf behind it are stripped after the paint.
-  const overlaySelector = S.stage.launchError
-    ? ".stage-error"
-    : S.stage.launch
-      ? ".stage-curtain"
-      : S.stage.stillIndex !== null
-        ? ".stage-still-viewer"
-        : S.stage.powerOpen
-          ? ".stage-power-sheet"
-          : S.stage.browserOpen
-            ? ".stage-browser-sheet"
-            : S.stage.spotifyOpen
-              ? ".stage-spotify-sheet"
-              : S.stage.discordOpen
-                ? ".stage-discord-sheet"
-                : S.stage.manageKey
-                  ? ".stage-manage-overlay"
-                  : S.stage.controlsOpen
-                    ? ".stage-controls"
-                    : S.stage.quickMenu
-                      ? ".stage-quick-menu"
-                      : S.stage.searchOpen
-                        ? ".stage-search"
-                        : S.stage.notifOpen
-                          ? ".stage-notif-overlay"
-                          : "";
-  const activeOverlay = overlaySelector ? root.querySelector<HTMLElement>(overlaySelector) : null;
+  const activeOverlay = activeStageOverlay(root);
   if (activeOverlay) {
     root.querySelectorAll<HTMLElement>("[data-gp-item]").forEach((el) => {
       if (!activeOverlay.contains(el)) el.removeAttribute("data-gp-item");

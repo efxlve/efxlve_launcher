@@ -55,6 +55,15 @@ export function stageSpotifySheetChanged(): boolean {
   return spotifySheetKey() !== lastSheetKey;
 }
 
+/**
+ * The sheet's content key, part of the shell signature. Without it a track or
+ * play-state change asks for a render that the signature check skips, leaving
+ * the sheet on the old track until something else repaints the shell.
+ */
+export function stageSpotifySheetSignature(): string {
+  return S.stage.spotifyOpen ? spotifySheetKey() : "";
+}
+
 /** The one part of the sheet that changes every poll: the timeline. */
 export function patchStageSpotifyProgress(): void {
   const sheet = document.querySelector<HTMLElement>(".stage-spotify-sheet");
@@ -188,7 +197,9 @@ export function renderStageSpotifySheet(entered: boolean): string {
           <span class="stage-spotify-brand">${icon("spotify", 24)}</span>
           <div>
             <h2 class="stage-spotify-title">Spotify</h2>
-            <span class="stage-spotify-subtitle">${isRunning ? `${icon("check", 12)} ${esc(status?.deviceName || "Connect")}` : esc(t("accounts.spotifyDesc"))}</span>
+            ${isRunning
+              ? `<span class="stage-stat stage-spotify-device">${icon("check", 12)}<span>${esc(status?.deviceName || "Connect")}</span></span>`
+              : `<span class="stage-spotify-subtitle">${esc(t("accounts.spotifyDesc"))}</span>`}
           </div>
         </div>
         <button type="button" class="stage-icon-btn" data-stage-act="close-spotify-sheet" data-gp-item data-gp-key="spotify:close" aria-label="${esc(t("common.close"))}">
@@ -252,7 +263,7 @@ export function renderStageSpotifySheet(entered: boolean): string {
       ${playlists.length > 0 ? `
         <div class="stage-spotify-playlists-section">
           <span class="stage-kicker">${esc(t("overlay.tabMusic"))}</span>
-          <div class="stage-spotify-playlists-row" data-gp-row>
+          <div class="stage-spotify-playlists-row">
             ${playlists.map((pl, idx) => `
               <button
                 type="button"
@@ -268,7 +279,7 @@ export function renderStageSpotifySheet(entered: boolean): string {
                 </div>
                 <div class="stage-spotify-pl-copy">
                   <strong>${esc(pl.name)}</strong>
-                  <span class="tabular-nums">${pl.trackCount} ${esc(t("overlay.tracks"))}</span>
+                  <span class="stage-stat stage-spotify-pl-count">${icon("music", 11)}<b class="tabular-nums">${pl.trackCount}</b><span>${esc(t("overlay.tracks"))}</span></span>
                 </div>
               </button>
             `).join("")}

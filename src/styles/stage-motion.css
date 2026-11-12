@@ -204,6 +204,28 @@
     0 0 18px rgba(255, 255, 255, 0.3) !important;
   transform: none !important;
 }
+/* Playlist cards are grid cells: the shared scale blurs the neighbouring
+   column's border, so the card keeps a flat 2px ring. */
+#stage-root .stage-spotify-pl-card.gp-focused {
+  outline: none !important;
+  border-color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 18px rgba(255, 255, 255, 0.3) !important;
+  transform: none !important;
+}
+/* The play button is the one green control; the ring stays white and the glow
+   stays green instead of the shared accent shadow. */
+#stage-root .stage-spotify-play-btn.gp-focused {
+  background: #22e267 !important;
+  color: #060810 !important;
+  outline: none !important;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 22px rgba(30, 215, 96, 0.6) !important;
+  transform: scale(1.08) !important;
+}
 /* Achievement rows are full-width: the shared button scale and 52px drop would
    overlap the next row, so the tight ring does the work. */
 #stage-root .stage-ach-row.gp-focused {

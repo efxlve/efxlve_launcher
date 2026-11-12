@@ -299,11 +299,9 @@ export function renderStageHome(): string {
 let warmTimer = 0;
 let roomTimer = 0;
 
-export function stageHomeFocus(key: string): void {
-  if (!key.startsWith("game:")) return;
-  // An overlay owns the screen: a late focus event from the Home shelf behind
-  // it must not re-mark the hero/activity buttons and break the focus trap.
-  if (
+/** An overlay owns the ring; the Home shelf behind it must not be re-marked. */
+function homeOverlayOpen(): boolean {
+  return Boolean(
     S.stage.quickMenu ||
     S.stage.powerOpen ||
     S.stage.browserOpen ||
@@ -315,12 +313,16 @@ export function stageHomeFocus(key: string): void {
     S.stage.manageKey ||
     S.stage.launch ||
     S.stage.launchError ||
-    S.stage.stillIndex !== null
-  ) {
-    return;
-  }
-  // The flags can lag a render by a tick; the painted overlay is authoritative.
-  if (document.querySelector("#stage-root .stage-overlay")) return;
+    S.stage.stillIndex !== null ||
+    document.querySelector("#stage-root .stage-overlay"),
+  );
+}
+
+export function stageHomeFocus(key: string): void {
+  if (!key.startsWith("game:")) return;
+  // An overlay owns the screen: a late focus event from the Home shelf behind
+  // it must not re-mark the hero/activity buttons and break the focus trap.
+  if (homeOverlayOpen()) return;
   const appName = key.slice(5);
   const game = stageGameByKey(appName);
   if (!game) return;
@@ -377,12 +379,14 @@ export function stageHomeFocus(key: string): void {
     if (!current || current.appName !== game.appName) return;
     if (!S.loadedAchievements.has(game.appName)) {
       void fetchAndRenderAchievements(game.appName).then(() => {
-        if (S.stage.active && S.stage.route === "home" && S.stage.homeHeroKey === game.appName) {
-          const actEl = document.getElementById("stage-home-activities");
-          if (actEl) {
-            actEl.innerHTML = stageHomeActivitiesHtml(game);
-            actEl.querySelectorAll<HTMLElement>("button, [data-gp-item]").forEach((el) => el.setAttribute("data-gp-item", ""));
-          }
+        if (!S.stage.active || S.stage.route !== "home" || S.stage.homeHeroKey !== game.appName) return;
+        // The sheet may have opened while the achievements request was in
+        // flight; never re-mark the shelf under it.
+        if (homeOverlayOpen()) return;
+        const actEl = document.getElementById("stage-home-activities");
+        if (actEl) {
+          actEl.innerHTML = stageHomeActivitiesHtml(game);
+          actEl.querySelectorAll<HTMLElement>("button, [data-gp-item]").forEach((el) => el.setAttribute("data-gp-item", ""));
         }
       });
     }
