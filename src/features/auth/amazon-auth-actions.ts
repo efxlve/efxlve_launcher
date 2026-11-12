@@ -18,6 +18,7 @@ import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import type { LibraryItem } from "../../core/types";
 import { localizeMessage, t } from "../../i18n";
+import { noteDownloadInterrupted } from "../downloads/finish-action";
 import { stopSpeedChartTimer } from "../downloads/downloads-view";
 import { pushNotification } from "../notifications/notifications";
 import {
@@ -439,6 +440,9 @@ export async function installAmazonGame(id: string): Promise<void> {
     const cancelled = String(err).includes("@t:dl.cancelled");
     clearAmazonDownload(key);
     if (!cancelled) {
+      // A failed transfer is not the end of a queue; it must not trigger the
+      // sleep/shutdown choice armed by an earlier download.
+      noteDownloadInterrupted();
       toast(String(err), "err");
       // An install started from the background must leave a trace after the
       // toast is gone, like the Epic and GOG failure events do.
