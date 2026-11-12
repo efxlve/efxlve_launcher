@@ -285,6 +285,34 @@
   gap: 8px;
   margin-block-start: 2px;
 }
+
+/* Sound and ambience test strip: each source shows its live level next to its
+   test action, and the test is disabled while that source is off. */
+.stage-settings-test {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--stage-line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.022);
+}
+.stage-settings-test-pair {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.stage-settings-test .stage-btn {
+  height: 30px;
+  padding: 0 11px;
+  font-size: 11px;
+}
+.stage-settings-test .stage-btn[disabled] {
+  opacity: 0.45;
+  cursor: default;
+}
 .stage-settings-note {
   display: flex;
   align-items: flex-start;

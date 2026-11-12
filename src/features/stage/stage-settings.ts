@@ -168,9 +168,15 @@ function appearance(): string {
       ${choiceRow("volume", t("stage.settingsVolume"), t("stage.settingsVolumeDesc"), "set-stage-volume", levelChoices(S.stage.soundVolume))}
       ${stageToggle("ambience", t("stage.settingsAmbience"), t("stage.settingsAmbienceDesc"), S.stage.ambience, "toggle-stage-ambience")}
       ${S.stage.ambience ? choiceRow("ambience-volume", t("stage.settingsAmbienceVolume"), t("stage.settingsAmbienceVolumeDesc"), "set-stage-ambience-volume", levelChoices(S.stage.ambienceVolume)) : ""}
-      <div class="stage-settings-actions">
-        <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="test-stage-sound" data-gp-item data-gp-key="set:sound-test">${icon("volume-2", 16)}<span>${esc(t("stage.settingsTestSound"))}</span></button>
-        <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="test-stage-ambience" data-gp-item data-gp-key="set:ambience-test">${icon("music", 16)}<span>${esc(t("stage.settingsTestAmbience"))}</span></button>
+      <div class="stage-settings-test">
+        <div class="stage-settings-test-pair">
+          <span class="stage-stat">${icon("volume-2", 13)}<span>${esc(t("stage.settingsSound"))}</span><b class="tabular-nums">${esc(S.stage.sound ? `${S.stage.soundVolume}%` : t("stage.settingsVolumeOff"))}</b></span>
+          <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="test-stage-sound" data-gp-item data-gp-key="set:sound-test"${S.stage.sound ? "" : " disabled"}>${icon("play", 14)}<span>${esc(t("stage.settingsTestSound"))}</span></button>
+        </div>
+        <div class="stage-settings-test-pair">
+          <span class="stage-stat">${icon("music", 13)}<span>${esc(t("stage.settingsAmbience"))}</span><b class="tabular-nums">${esc(S.stage.ambience ? `${S.stage.ambienceVolume}%` : t("stage.settingsVolumeOff"))}</b></span>
+          <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="test-stage-ambience" data-gp-item data-gp-key="set:ambience-test"${S.stage.ambience ? "" : " disabled"}>${icon("play", 14)}<span>${esc(t("stage.settingsTestAmbience"))}</span></button>
+        </div>
       </div>
     </div>
 
