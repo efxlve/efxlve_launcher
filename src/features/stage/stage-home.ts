@@ -312,6 +312,70 @@ export function renderStageHome(): string {
 /** In-place focus patch for Home: switches hero, backdrop and activities without full rebuild. */
 let warmTimer = 0;
 let roomTimer = 0;
+/** Must match the fade in stage-home.css. */
+const HERO_FADE_MS = 460;
+let heroArtToken = 0;
+
+/**
+ * Swap the hero art without blanking it. The incoming picture is appended at
+ * opacity 0, fades in once it has decoded, and the outgoing layer is dropped
+ * after the fade, so a ribbon sweep always keeps one painted frame. A poster
+ * has nothing to decode, so it still replaces in place.
+ */
+function swapStageHeroArt(artEl: HTMLElement, game: EpicSummary): void {
+  const url = stageWideArt(game);
+  if (!url) {
+    heroArtToken += 1;
+    artEl.innerHTML = stageHeroMarkup(game, "stage-home-art-image");
+    return;
+  }
+  const token = ++heroArtToken;
+  // A layer from an earlier sweep that never became visible is dead weight;
+  // drop it so a fast ribbon sweep cannot stack invisible pictures.
+  for (const stale of Array.from(artEl.querySelectorAll(".stage-home-art-swap:not(.is-active)"))) {
+    stale.remove();
+  }
+  const next = document.createElement("img");
+  next.className = "stage-home-art-image stage-home-art-swap";
+  next.alt = "";
+  next.decoding = "async";
+  next.loading = "eager";
+  next.dataset.heroKey = game.appName;
+
+  let settled = false;
+  const settle = (): void => {
+    if (settled || token !== heroArtToken) return;
+    settled = true;
+    // A picture already in the image cache completes immediately; force the
+    // 0-opacity frame to be calculated so the fade still runs instead of
+    // snapping to the new art.
+    void next.offsetWidth;
+    next.classList.add("is-active");
+    // Only the frame that is currently painted has to stay for the fade; a
+    // fast sweep would otherwise stack one full-screen image per press.
+    const previous = Array.from(artEl.children).filter((el) => el !== next).pop();
+    for (const old of Array.from(artEl.children)) {
+      if (old === next) continue;
+      if (old === previous) window.setTimeout(() => old.remove(), HERO_FADE_MS);
+      else old.remove();
+    }
+  };
+
+  next.addEventListener("load", settle, { once: true });
+  next.addEventListener(
+    "error",
+    () => {
+      // A broken picture must not replace a working one.
+      if (token === heroArtToken) next.remove();
+    },
+    { once: true },
+  );
+  next.src = url;
+  artEl.appendChild(next);
+  // A cached picture is already decoded, so its load event may have been
+  // queued for later; settle now and let the queued event be a no-op.
+  if (next.complete && next.naturalWidth > 0) settle();
+}
 
 export function stageHomeFocus(key: string): void {
   if (!key.startsWith("game:")) return;
@@ -326,7 +390,7 @@ export function stageHomeFocus(key: string): void {
   const heroChanged = heroEl?.dataset.key !== game.appName;
   if (heroChanged) {
     const artEl = document.getElementById("stage-home-art");
-    if (artEl) artEl.innerHTML = stageHeroMarkup(game, "stage-home-art-image");
+    if (artEl) swapStageHeroArt(artEl, game);
     if (heroEl) {
       heroEl.dataset.key = game.appName;
       heroEl.innerHTML = stageHomeHeroHtml(game);
