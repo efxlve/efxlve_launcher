@@ -207,6 +207,13 @@ pub(super) fn is_install_finished(line: &str) -> bool {
 pub(super) fn has_hard_error(err_text: &str) -> bool {
     err_text.lines().any(|line| {
         let line = line.trim();
+        // A chunk that failed and was requeued is routine; the install only
+        // fails if the retry never succeeds, and that path logs a different
+        // error. Counting this line would turn a completed update into a
+        // failure whenever the last retry happened near the end.
+        if line.contains("failed, retrying") {
+            return false;
+        }
         line.starts_with("Traceback")
             || line.contains("ERROR:")
             || line.contains("CRITICAL:")

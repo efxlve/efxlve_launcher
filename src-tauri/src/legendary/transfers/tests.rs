@@ -141,6 +141,11 @@ fn a_logged_error_beats_a_zero_exit() {
     assert!(!has_hard_error(
         "[Core] WARNING: Chunk download failed, retrying"
     ));
+    // The download manager retries a chunk after an ERROR line. That retry is
+    // routine and must not turn a completed install into a failure.
+    assert!(!has_hard_error(
+        "[DLManager] ERROR: Download for 1234 failed, retrying..."
+    ));
 }
 
 #[test]
