@@ -31,6 +31,7 @@ mod notes;
 mod net_diag;
 mod igdb;
 mod image_cache;
+mod keep_awake;
 mod perf;
 mod pc_check;
 mod power;

@@ -525,6 +525,8 @@ pub(super) fn start_download_request(
     }
     let app2 = app.clone();
     tauri::async_runtime::spawn(async move {
+        // A queued transfer keeps the machine awake from spawn to exit.
+        let _awake = crate::keep_awake::keep_awake();
         monitor_download(
             app2,
             bin,

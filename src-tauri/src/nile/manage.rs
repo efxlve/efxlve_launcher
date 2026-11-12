@@ -62,6 +62,8 @@ pub async fn nile_verify(app: AppHandle, id: String) -> Result<(), String> {
     // background so the manage dialog stays responsive and the completion
     // arrives as the shared `verify-complete` event.
     tokio::spawn(async move {
+        // A verify that repairs files is still a transfer.
+        let _awake = crate::keep_awake::keep_awake();
         let args = vec!["verify".to_string(), id];
         // Hashing can be silent for a long time; only the overall cap applies.
         let outcome = cli::run_streaming(&app, &args, 6 * 3600, false, emitter, |_pid| false).await;

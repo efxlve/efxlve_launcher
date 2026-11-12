@@ -434,6 +434,8 @@ pub async fn gog_install_game(
     let workers = crate::profile_workers(crate::load_settings(&app).network_profile.as_deref());
 
     tokio::spawn(async move {
+        // A paused transfer releases the sleep request until it resumes.
+        let mut awake = Some(crate::keep_awake::keep_awake());
         let mut cmd = tokio::process::Command::new(&bin_path);
         cmd.arg("--auth-config-path")
             .arg(&auth_path)
@@ -558,11 +560,16 @@ pub async fn gog_install_game(
                     Err(_) => {
                         let now = Instant::now();
                         // A paused transfer is not stalled; restart both
-                        // clocks so resuming gets a fresh window.
+                        // clocks so resuming gets a fresh window, and let the
+                        // machine sleep while nothing is moving.
                         if download_paused(&comp_id_clone) {
+                            awake = None;
                             last_line = now;
                             last_moved = now;
                             continue;
+                        }
+                        if awake.is_none() {
+                            awake = Some(crate::keep_awake::keep_awake());
                         }
                         let (since, limit) = if last_pct.is_none() {
                             (now.saturating_duration_since(last_line), STARTUP_STALL)
@@ -1058,6 +1065,8 @@ pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<(), Stri
     let target_clone = target_dir.clone();
 
     tokio::spawn(async move {
+        // A repair that downloads missing files is still a transfer.
+        let _awake = crate::keep_awake::keep_awake();
         let mut cmd = tokio::process::Command::new(&bin_path);
         cmd.arg("--auth-config-path")
             .arg(&auth_path)

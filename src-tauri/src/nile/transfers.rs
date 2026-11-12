@@ -250,6 +250,7 @@ pub async fn nile_install(
 ) -> Result<(), String> {
     DL_ACTIVE.store(true, Ordering::SeqCst);
     let _download_guard = ActiveGuard;
+    let _awake = crate::keep_awake::keep_awake();
     let generation = begin_nile_download(&id);
     let _slot = DownloadSlot {
         id: id.clone(),
