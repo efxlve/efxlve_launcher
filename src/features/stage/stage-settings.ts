@@ -246,7 +246,10 @@ function about(): string {
         <span class="stage-kicker">Efxlve Launcher</span>
         <h2>${esc(t("stage.settingsAboutTitle"))}</h2>
         <p>${esc(t("stage.settingsAboutBody"))}</p>
-        <small class="tabular-nums">${esc(t("stage.settingsVersion", { v: S.appVersion }))}</small>
+        <div class="stage-stat-row">
+          <span class="stage-stat">${icon("package", 13)}<span>${esc(t("stage.settingsVersion", { v: S.appVersion }))}</span></span>
+          <span class="stage-stat">${icon("sparkles", 13)}<span>BETA</span></span>
+        </div>
       </div>
     </div>
     <div class="stage-settings-note">${icon("info", 15)}<span>${esc(t("stage.settingsBetaNote"))}</span></div>

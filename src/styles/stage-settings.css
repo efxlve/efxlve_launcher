@@ -442,11 +442,11 @@
   font-size: 12.5px;
   line-height: 1.55;
 }
-.stage-about-card small {
-  display: block;
+.stage-about-card > div {
+  min-width: 0;
+}
+.stage-about-card .stage-stat-row {
   margin-block-start: 10px;
-  color: var(--stage-ink-4);
-  font-size: 11px;
 }
 
 #stage-root .stage-setting-row.is-button.gp-focused,
