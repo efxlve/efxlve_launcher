@@ -4309,5 +4309,7 @@
   "couch.stageDesc": "Otwiera salonowy interfejs Stage.",
   "couch.exitDesc": "Wraca do launchera w trybie okienkowym.",
   "downloads.activeDownloads": "Pobierania: {count}",
-  "downloads.updatesReady": "Gotowe aktualizacje: {count}"
+  "downloads.updatesReady": "Gotowe aktualizacje: {count}",
+  "col.moveLeft": "Przesuń w lewo",
+  "col.moveRight": "Przesuń w prawo"
 }

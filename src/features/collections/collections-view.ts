@@ -903,7 +903,7 @@ export function updateCollectionPinUi(colId: string): void {
     btn.classList.toggle("is-pinned", pinned);
     btn.setAttribute("aria-pressed", String(pinned));
     btn.title = pinned ? t("col.unpinFromTabs") : t("col.pinToTabs");
-    const span = btn.querySelector("span");
+    const span = btn.querySelector<HTMLElement>(".lib-col-banner-pin-text") || btn.querySelector<HTMLElement>("span:not(.lib-col-banner-pin-icon)");
     if (span) span.textContent = pinned ? t("col.unpinFromTabs") : t("col.pinToTabs");
   });
 }

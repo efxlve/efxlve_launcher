@@ -13,7 +13,7 @@ import { formatGenreLabel, genreSearchTokens } from "../../core/genres";
 import { achSummaryOf, epicActionButtons, epicArt, epicArtUrl, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardElement } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
 import { collectionGames, collectionMatch, matchCollectionGame, type CollectionMatch } from "../../core/game-collections";
-import { isCollectionPinned, pinnedCollectionsForTabs } from "../../core/collection-pins";
+import { isCollectionPinned, pinnedCollectionsForTabs, reorderPinnedCollections } from "../../core/collection-pins";
 import { allStoreSummaries, canonicalGameTitle, compareLibraryRecent, libraryItemToSummary, libraryPlaytime, rawOf, sourceOfKey, storeKeysForTitle, summaryOf, totalLibraryGamesCount } from "../../core/selectors";
 import { collectionMarker, isCollectionIcon } from "../../core/collection-icons";
 import { ensureGameRatingsLoaded, gameRatingOf } from "../../core/game-ratings";
@@ -775,8 +775,8 @@ function renderCollectionBanner(inCollection: boolean): string {
       </div>
       <div class="lib-col-banner-actions">
         ${activeCol ? `
-          <button type="button" class="btn ghost small col-card-action-btn${isCollectionPinned(activeCol.id) ? " is-pinned" : ""}" data-act="toggle-pinned-collection" data-col-id="${esc(activeCol.id)}" title="${esc(isCollectionPinned(activeCol.id) ? t("col.unpinFromTabs") : t("col.pinToTabs"))}" aria-pressed="${isCollectionPinned(activeCol.id)}">
-            ${icon("pin", 13)} <span>${esc(isCollectionPinned(activeCol.id) ? t("col.unpinFromTabs") : t("col.pinToTabs"))}</span>
+          <button type="button" class="btn ghost small lib-col-banner-pin${isCollectionPinned(activeCol.id) ? " is-pinned" : ""}" data-act="toggle-pinned-collection" data-col-id="${esc(activeCol.id)}" title="${esc(isCollectionPinned(activeCol.id) ? t("col.unpinFromTabs") : t("col.pinToTabs"))}" aria-pressed="${isCollectionPinned(activeCol.id)}">
+            <span class="lib-col-banner-pin-icon">${icon("pin", 13)}</span> <span class="lib-col-banner-pin-text">${esc(isCollectionPinned(activeCol.id) ? t("col.unpinFromTabs") : t("col.pinToTabs"))}</span>
           </button>
           <button type="button" class="btn ghost small" data-act="edit-collection" data-col-id="${esc(activeCol.id)}" title="${esc(t("col.edit"))}">
             ${icon("settings", 13)} <span>${esc(t("col.edit"))}</span>
@@ -1678,58 +1678,211 @@ export function consumeCollectionDragClick(): boolean {
   return true;
 }
 
-/** Hold-and-drag reorder inside the collections dropdown list. A moved pointer
- *  must not also select the collection, so the follow-up click is consumed. */
+/** Hold-and-drag reorder for pinned collection tabs, gallery cards, and dropdown items.
+ *  A moved pointer must not also select the collection, so the follow-up click is consumed. */
 export function initCollectionTabs(): void {
-  let tab: HTMLElement | null = null;
+  let draggedEl: HTMLElement | null = null;
+  let dragMode: "pinned-tab" | "dropdown-item" | "gallery-card" | null = null;
+  let startX = 0;
   let startY = 0;
   let moved = false;
 
   document.addEventListener("mousedown", (e) => {
     if (e.button !== 0) return;
-    const hit = (e.target as HTMLElement).closest<HTMLElement>(".lib-col-tab");
-    if (!hit?.dataset.colId || !hit.closest(".col-dropdown-list")) return;
-    collectionDragged = false;
-    tab = hit;
-    startY = e.clientY;
-    moved = false;
+    const target = e.target as HTMLElement;
+
+    // Check if pinned tab in filter strip
+    const pinnedTab = target.closest<HTMLElement>(".lib-pinned-col");
+    if (pinnedTab?.dataset.colId && pinnedTab.closest(".lib-filters")) {
+      collectionDragged = false;
+      draggedEl = pinnedTab;
+      dragMode = "pinned-tab";
+      startX = e.clientX;
+      startY = e.clientY;
+      moved = false;
+      return;
+    }
+
+    // Check if gallery card in collections modal
+    const galleryCard = target.closest<HTMLElement>(".col-gallery-card");
+    if (galleryCard?.dataset.colId && galleryCard.closest(".col-gallery-grid")) {
+      if (target.closest("button") || target.closest(".col-card-actions")) return;
+      collectionDragged = false;
+      draggedEl = galleryCard;
+      dragMode = "gallery-card";
+      startX = e.clientX;
+      startY = e.clientY;
+      moved = false;
+      return;
+    }
+
+    // Check legacy dropdown item
+    const dropdownTab = target.closest<HTMLElement>(".lib-col-tab");
+    if (dropdownTab?.dataset.colId && dropdownTab.closest(".col-dropdown-list")) {
+      collectionDragged = false;
+      draggedEl = dropdownTab;
+      dragMode = "dropdown-item";
+      startX = e.clientX;
+      startY = e.clientY;
+      moved = false;
+      return;
+    }
   });
 
   document.addEventListener("mousemove", (e) => {
-    if (!tab) return;
+    if (!draggedEl || !dragMode) return;
+
     if (!moved) {
-      if (Math.abs(e.clientY - startY) < 5) return;
+      const dist = dragMode === "pinned-tab"
+        ? Math.abs(e.clientX - startX)
+        : Math.hypot(e.clientX - startX, e.clientY - startY);
+      if (dist < 5) return;
       moved = true;
       collectionDragged = true;
-      tab.classList.add("dragging");
+      draggedEl.classList.add(dragMode === "gallery-card" ? "col-card-dragging" : "dragging");
     }
-    const bar = tab.parentElement;
-    if (!bar) return;
-    let before: Element | null = null;
-    for (const other of bar.querySelectorAll<HTMLElement>(".lib-col-tab")) {
-      if (other === tab) continue;
-      const rect = other.getBoundingClientRect();
-      if (e.clientY < rect.top + rect.height / 2) {
-        before = other;
-        break;
+
+    const container = draggedEl.parentElement;
+    if (!container) return;
+
+    if (dragMode === "pinned-tab") {
+      let before: Element | null = null;
+      const pinnedTabs = [...container.querySelectorAll<HTMLElement>(".lib-pinned-col")];
+      for (const other of pinnedTabs) {
+        if (other === draggedEl) continue;
+        const rect = other.getBoundingClientRect();
+        if (e.clientX < rect.left + rect.width / 2) {
+          before = other;
+          break;
+        }
       }
+      if (!before && pinnedTabs.length > 0) {
+        const last = pinnedTabs[pinnedTabs.length - 1];
+        if (last !== draggedEl) before = last.nextElementSibling;
+      }
+      if (draggedEl.nextElementSibling !== before) slidePinnedTabs(container, draggedEl, before);
+      return;
     }
-    if (tab.nextElementSibling !== before) slideCollectionTabs(bar, tab, before);
+
+    if (dragMode === "gallery-card") {
+      const cards = [...container.querySelectorAll<HTMLElement>(".col-gallery-card")];
+      for (const other of cards) {
+        if (other === draggedEl) continue;
+        const rect = other.getBoundingClientRect();
+        if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+          const isAfter = e.clientX > rect.left + rect.width / 2;
+          const target = isAfter ? other.nextElementSibling : other;
+          if (draggedEl.nextElementSibling !== target && target !== draggedEl) {
+            slideGalleryCards(container, draggedEl, target);
+          }
+          break;
+        }
+      }
+      return;
+    }
+
+    if (dragMode === "dropdown-item") {
+      let before: Element | null = null;
+      for (const other of container.querySelectorAll<HTMLElement>(".lib-col-tab")) {
+        if (other === draggedEl) continue;
+        const rect = other.getBoundingClientRect();
+        if (e.clientY < rect.top + rect.height / 2) {
+          before = other;
+          break;
+        }
+      }
+      if (draggedEl.nextElementSibling !== before) slideCollectionTabs(container, draggedEl, before);
+      return;
+    }
   });
 
   document.addEventListener("mouseup", () => {
-    if (!tab) return;
-    tab.classList.remove("dragging");
+    if (!draggedEl || !dragMode) return;
+    draggedEl.classList.remove("dragging", "col-card-dragging");
+    const mode = dragMode;
     const didMove = moved;
-    const bar = tab.parentElement;
-    tab = null;
+    const container = draggedEl.parentElement;
+    draggedEl = null;
+    dragMode = null;
     moved = false;
-    if (!didMove || !bar) return;
-    const ids = [...bar.querySelectorAll<HTMLElement>(".lib-col-tab")]
-      .map((el) => el.dataset.colId)
-      .filter((id): id is string => Boolean(id));
-    void persistCollectionOrder(ids);
+
+    if (!didMove || !container) return;
+
+    if (mode === "pinned-tab") {
+      const ids = [...container.querySelectorAll<HTMLElement>(".lib-pinned-col")]
+        .map((el) => el.dataset.colId)
+        .filter((id): id is string => Boolean(id));
+      reorderPinnedCollections(ids);
+      return;
+    }
+
+    if (mode === "gallery-card") {
+      const ids = [...container.querySelectorAll<HTMLElement>(".col-gallery-card")]
+        .map((el) => el.dataset.colId)
+        .filter((id): id is string => Boolean(id));
+      void persistCollectionOrder(ids);
+      return;
+    }
+
+    if (mode === "dropdown-item") {
+      const ids = [...container.querySelectorAll<HTMLElement>(".lib-col-tab")]
+        .map((el) => el.dataset.colId)
+        .filter((id): id is string => Boolean(id));
+      void persistCollectionOrder(ids);
+      return;
+    }
   });
+}
+
+/** Slide pinned tabs horizontally into their new position. */
+function slidePinnedTabs(bar: HTMLElement, dragged: HTMLElement, before: Element | null): void {
+  const tabs = [...bar.querySelectorAll<HTMLElement>(".lib-pinned-col")];
+  const from = new Map(tabs.map((el) => [el, el.getBoundingClientRect().left]));
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  bar.insertBefore(dragged, before);
+  if (reduce) return;
+  for (const el of tabs) {
+    const dx = (from.get(el) ?? 0) - el.getBoundingClientRect().left;
+    if (dx === 0) continue;
+    el.style.transition = "none";
+    el.style.transform = `translateX(${dx}px)`;
+    requestAnimationFrame(() => {
+      el.style.transition = "transform 140ms ease-out";
+      el.style.transform = "";
+      el.addEventListener("transitionend", () => {
+        el.style.transition = "";
+      }, { once: true });
+    });
+  }
+}
+
+/** Slide gallery grid cards into their new order with a 2D FLIP animation. */
+function slideGalleryCards(grid: HTMLElement, dragged: HTMLElement, before: Element | null): void {
+  const cards = [...grid.querySelectorAll<HTMLElement>(".col-gallery-card")];
+  const from = new Map(cards.map((el) => {
+    const r = el.getBoundingClientRect();
+    return [el, { x: r.left, y: r.top }];
+  }));
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  grid.insertBefore(dragged, before);
+  if (reduce) return;
+  for (const el of cards) {
+    const prev = from.get(el);
+    if (!prev) continue;
+    const curr = el.getBoundingClientRect();
+    const dx = prev.x - curr.x;
+    const dy = prev.y - curr.y;
+    if (dx === 0 && dy === 0) continue;
+    el.style.transition = "none";
+    el.style.transform = `translate(${dx}px, ${dy}px)`;
+    requestAnimationFrame(() => {
+      el.style.transition = "transform 160ms cubic-bezier(0.2, 0, 0, 1)";
+      el.style.transform = "";
+      el.addEventListener("transitionend", () => {
+        el.style.transition = "";
+      }, { once: true });
+    });
+  }
 }
 
 /** Slide list items from their previous y into the new order. One shot, no idle loop. */
@@ -1754,13 +1907,15 @@ function slideCollectionTabs(bar: HTMLElement, dragged: HTMLElement, before: Ele
   }
 }
 
-async function persistCollectionOrder(ids: string[]): Promise<void> {
+export async function persistCollectionOrder(ids: string[]): Promise<void> {
   const byId = new Map(S.epicCollections.map((c) => [c.id, c]));
   S.epicCollections = ids.flatMap((id) => {
     const col = byId.get(id);
     return col ? [col] : [];
   });
+  reorderPinnedCollections(ids);
   S.libraryDataRev++;
+  syncPinnedCollectionTabs();
   try {
     await epicReorderCollections(ids);
   } catch (err) {

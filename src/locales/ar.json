@@ -4309,5 +4309,7 @@
   "couch.stageDesc": "يفتح واجهة Stage المخصصة لغرفة المعيشة.",
   "couch.exitDesc": "يعود إلى المشغّل في وضع النافذة.",
   "downloads.activeDownloads": "التنزيلات: {count}",
-  "downloads.updatesReady": "تحديثات جاهزة: {count}"
+  "downloads.updatesReady": "تحديثات جاهزة: {count}",
+  "col.moveLeft": "تحريك لليسار",
+  "col.moveRight": "تحريك لليمين"
 }

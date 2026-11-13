@@ -4309,5 +4309,7 @@
   "couch.stageDesc": "Открывает интерфейс Stage для гостиной.",
   "couch.exitDesc": "Возвращает лаунчер в оконный режим.",
   "downloads.activeDownloads": "Загрузки: {count}",
-  "downloads.updatesReady": "Готовые обновления: {count}"
+  "downloads.updatesReady": "Готовые обновления: {count}",
+  "col.moveLeft": "Переместить влево",
+  "col.moveRight": "Переместить вправо"
 }

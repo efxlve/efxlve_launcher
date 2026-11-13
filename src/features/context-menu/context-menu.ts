@@ -227,10 +227,17 @@ function showCollectionTabMenu(x: number, y: number, colId: string): void {
   const col = S.epicCollections.find((c) => c.id === colId);
   if (!col) return;
   const pinned = isCollectionPinned(colId);
+  const pinnedList = [...S.pinnedCollections];
+  const pinIdx = pinnedList.indexOf(colId);
+  const canMoveLeft = pinIdx > 0;
+  const canMoveRight = pinIdx >= 0 && pinIdx < pinnedList.length - 1;
+
   const menu = document.createElement("div");
   menu.className = "ctx-menu";
   menu.setAttribute("role", "menu");
   menu.innerHTML = `<button class="ctx-item" role="menuitem" data-act="edit-collection" data-col-id="${esc(colId)}">${icon("edit", 15)}<span>${t("col.edit")}</span></button>
+    ${canMoveLeft ? `<button class="ctx-item" role="menuitem" data-act="move-pinned-collection" data-col-id="${esc(colId)}" data-dir="-1">${icon("arrow-left", 15)}<span>${t("col.moveLeft")}</span></button>` : ""}
+    ${canMoveRight ? `<button class="ctx-item" role="menuitem" data-act="move-pinned-collection" data-col-id="${esc(colId)}" data-dir="1">${icon("arrow-right", 15)}<span>${t("col.moveRight")}</span></button>` : ""}
     <button class="ctx-item" role="menuitem" data-act="toggle-pinned-collection" data-col-id="${esc(colId)}" aria-pressed="${pinned}">${icon("pin", 15)}<span>${esc(pinned ? t("col.unpinFromTabs") : t("col.pinToTabs"))}</span></button>`;
   const root = ctxRoot || document.body;
   root.appendChild(menu);
@@ -247,7 +254,7 @@ export function initContextMenu(): void {
     (e) => {
       // Disables default Chromium/Edge context menu across the desktop app.
       e.preventDefault();
-      const colTab = (e.target as HTMLElement).closest<HTMLElement>(".lib-col-tab");
+      const colTab = (e.target as HTMLElement).closest<HTMLElement>(".lib-col-tab, .col-gallery-card");
       if (colTab?.dataset.colId) {
         showCollectionTabMenu(e.clientX, e.clientY, colTab.dataset.colId);
         return;

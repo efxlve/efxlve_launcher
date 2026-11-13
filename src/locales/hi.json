@@ -4309,5 +4309,7 @@
   "couch.stageDesc": "लिविंग रूम के लिए Stage शेल खोलता है।",
   "couch.exitDesc": "लॉन्चर को विंडो मोड में लौटाता है।",
   "downloads.activeDownloads": "डाउनलोड: {count}",
-  "downloads.updatesReady": "तैयार अपडेट: {count}"
+  "downloads.updatesReady": "तैयार अपडेट: {count}",
+  "col.moveLeft": "बाएं ले जाएं",
+  "col.moveRight": "दाएं ले जाएं"
 }

@@ -4309,5 +4309,7 @@
   "couch.stageDesc": "Opens the Stage living-room shell.",
   "couch.exitDesc": "Returns to the windowed launcher.",
   "downloads.activeDownloads": "Downloads: {count}",
-  "downloads.updatesReady": "Updates ready: {count}"
+  "downloads.updatesReady": "Updates ready: {count}",
+  "col.moveLeft": "Move left",
+  "col.moveRight": "Move right"
 }

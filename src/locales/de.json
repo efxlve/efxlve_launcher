@@ -4309,5 +4309,7 @@
   "couch.stageDesc": "Öffnet die Wohnzimmer-Oberfläche Stage.",
   "couch.exitDesc": "Kehrt zum Launcher im Fenstermodus zurück.",
   "downloads.activeDownloads": "Downloads: {count}",
-  "downloads.updatesReady": "Updates bereit: {count}"
+  "downloads.updatesReady": "Updates bereit: {count}",
+  "col.moveLeft": "Nach links verschieben",
+  "col.moveRight": "Nach rechts verschieben"
 }

@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { GameCollection } from "../epic-model";
-import { isCollectionPinned, pinnedCollectionsForTabs, toggleCollectionPin } from "./collection-pins";
+import {
+  isCollectionPinned,
+  movePinnedCollection,
+  pinnedCollectionsForTabs,
+  reorderPinnedCollections,
+  toggleCollectionPin,
+} from "./collection-pins";
 import { S } from "./state";
 
 function collection(id: string): GameCollection {
@@ -29,5 +35,19 @@ describe("collection pins", () => {
     S.epicCollections = [collection("story")];
     expect(toggleCollectionPin("story")).toBe(true);
     expect(pinnedCollectionsForTabs().map((col) => col.id)).toEqual(["story"]);
+  });
+
+  it("reorders pinned collections", () => {
+    S.pinnedCollections = new Set(["a", "b", "c"]);
+    reorderPinnedCollections(["c", "a", "b"]);
+    expect([...S.pinnedCollections]).toEqual(["c", "a", "b"]);
+  });
+
+  it("moves a pinned collection left and right", () => {
+    S.pinnedCollections = new Set(["a", "b", "c"]);
+    expect(movePinnedCollection("c", -1)).toBe(true);
+    expect([...S.pinnedCollections]).toEqual(["a", "c", "b"]);
+    expect(movePinnedCollection("a", -1)).toBe(false);
+    expect(movePinnedCollection("b", 1)).toBe(false);
   });
 });

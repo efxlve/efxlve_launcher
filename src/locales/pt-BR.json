@@ -4309,5 +4309,7 @@
   "couch.stageDesc": "Abre a interface de sala Stage.",
   "couch.exitDesc": "Volta ao launcher em modo janela.",
   "downloads.activeDownloads": "Downloads: {count}",
-  "downloads.updatesReady": "Atualizações prontas: {count}"
+  "downloads.updatesReady": "Atualizações prontas: {count}",
+  "col.moveLeft": "Mover para a esquerda",
+  "col.moveRight": "Mover para a direita"
 }

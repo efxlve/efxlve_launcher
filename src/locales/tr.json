@@ -4309,5 +4309,7 @@
   "couch.stageDesc": "Salon için Sahne kabuğunu açar.",
   "couch.exitDesc": "Launcher'ı pencereli görünüme döndürür.",
   "downloads.activeDownloads": "İndirmeler: {count}",
-  "downloads.updatesReady": "Hazır güncelleme: {count}"
+  "downloads.updatesReady": "Hazır güncelleme: {count}",
+  "col.moveLeft": "Sola taşı",
+  "col.moveRight": "Sağa taşı"
 }

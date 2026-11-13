@@ -9,7 +9,7 @@ import { S } from "../../../core/state";
 import { closeModal } from "../../../core/dom";
 import { render } from "../../../core/render";
 import { collectionGameCount } from "../../../core/game-collections";
-import { toggleCollectionPin, forgetCollectionPin } from "../../../core/collection-pins";
+import { toggleCollectionPin, forgetCollectionPin, movePinnedCollection } from "../../../core/collection-pins";
 import { allStoreSummaries } from "../../../core/selectors";
 import { resetCardChunk, syncPinnedCollectionTabs } from "../../library/library-view";
 import { loadSettingsView } from "../../settings/settings-view";
@@ -74,6 +74,17 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
       updateCollectionPinUi(colId);
       syncPinnedCollectionTabs(colId);
       toast(i18nT(pinned ? "col.pinnedToTabs" : "col.unpinnedFromTabs"), "ok");
+      return true;
+    }
+
+    case "move-pinned-collection": {
+      const colId = t.dataset.colId;
+      const dir = Number(t.dataset.dir || 0);
+      if (colId && dir !== 0) {
+        if (movePinnedCollection(colId, dir)) {
+          syncPinnedCollectionTabs(colId);
+        }
+      }
       return true;
     }
 

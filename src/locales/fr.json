@@ -4309,5 +4309,7 @@
   "couch.stageDesc": "Ouvre l'interface de salon Stage.",
   "couch.exitDesc": "Revient au lanceur en mode fenêtré.",
   "downloads.activeDownloads": "Téléchargements : {count}",
-  "downloads.updatesReady": "Mises à jour prêtes : {count}"
+  "downloads.updatesReady": "Mises à jour prêtes : {count}",
+  "col.moveLeft": "Déplacer vers la gauche",
+  "col.moveRight": "Déplacer vers la droite"
 }

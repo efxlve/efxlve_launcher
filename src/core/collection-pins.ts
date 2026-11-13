@@ -30,6 +30,32 @@ export function forgetCollectionPin(id: string): void {
   saveStrSet(PINNED_COLLECTIONS_KEY, S.pinnedCollections);
 }
 
+/** Reorder pinned collections to a new sequence of ids and persist it. */
+export function reorderPinnedCollections(ids: string[]): void {
+  const newSet = new Set<string>();
+  for (const id of ids) {
+    if (S.pinnedCollections.has(id)) newSet.add(id);
+  }
+  for (const id of S.pinnedCollections) {
+    if (!newSet.has(id)) newSet.add(id);
+  }
+  S.pinnedCollections = newSet;
+  saveStrSet(PINNED_COLLECTIONS_KEY, S.pinnedCollections);
+}
+
+/** Move a pinned collection left (-1) or right (+1) in tab order. */
+export function movePinnedCollection(id: string, delta: number): boolean {
+  const list = [...S.pinnedCollections];
+  const idx = list.indexOf(id);
+  if (idx === -1) return false;
+  const target = idx + delta;
+  if (target < 0 || target >= list.length) return false;
+  list.splice(idx, 1);
+  list.splice(target, 0, id);
+  reorderPinnedCollections(list);
+  return true;
+}
+
 /** Pinned collections in pin order, without ids that no longer resolve. */
 export function pinnedCollectionsForTabs(): GameCollection[] {
   const byId = new Map(S.epicCollections.map((col) => [col.id, col]));

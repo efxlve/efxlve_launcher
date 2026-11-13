@@ -4309,5 +4309,7 @@
   "couch.stageDesc": "打开客厅用的 Stage 界面。",
   "couch.exitDesc": "返回窗口模式的启动器。",
   "downloads.activeDownloads": "下载：{count}",
-  "downloads.updatesReady": "待更新：{count}"
+  "downloads.updatesReady": "待更新：{count}",
+  "col.moveLeft": "向左移动",
+  "col.moveRight": "向右移动"
 }

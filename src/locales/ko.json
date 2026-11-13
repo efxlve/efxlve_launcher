@@ -4309,5 +4309,7 @@
   "couch.stageDesc": "거실용 Stage 셸을 엽니다.",
   "couch.exitDesc": "창 모드 런처로 돌아갑니다.",
   "downloads.activeDownloads": "다운로드: {count}",
-  "downloads.updatesReady": "준비된 업데이트: {count}"
+  "downloads.updatesReady": "준비된 업데이트: {count}",
+  "col.moveLeft": "왼쪽으로 이동",
+  "col.moveRight": "오른쪽으로 이동"
 }

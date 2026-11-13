@@ -4309,5 +4309,7 @@
   "couch.stageDesc": "Apre l'interfaccia da salotto Stage.",
   "couch.exitDesc": "Torna al launcher in modalità finestra.",
   "downloads.activeDownloads": "Download: {count}",
-  "downloads.updatesReady": "Aggiornamenti pronti: {count}"
+  "downloads.updatesReady": "Aggiornamenti pronti: {count}",
+  "col.moveLeft": "Sposta a sinistra",
+  "col.moveRight": "Sposta a destra"
 }
