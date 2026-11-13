@@ -421,6 +421,15 @@ pub(crate) fn download_in_flight(app: &AppHandle, app_name: &str) -> bool {
         || s.queue.iter().any(|q| q.app_name == app_name)
 }
 
+/// True while any Epic transfer is running or queued.
+pub(crate) fn any_download_in_flight(app: &AppHandle) -> bool {
+    let state = app.state::<AppState>();
+    let Ok(s) = state.epic_dl.lock() else {
+        return false;
+    };
+    s.active.is_some() || !s.queue.is_empty()
+}
+
 pub(super) fn start_download_request(
     app: &AppHandle,
     request: PendingDownload,

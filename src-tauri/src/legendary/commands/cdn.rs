@@ -118,6 +118,9 @@ pub fn epic_set_preferred_cdn(app: AppHandle, host: Option<String>) -> Result<()
 /// Removes legendary's temporary, metadata and manifest files.
 #[tauri::command]
 pub async fn epic_cleanup_cache(app: AppHandle) -> Result<String, String> {
+    if crate::legendary::transfers::any_download_in_flight(&app) {
+        return Err("@t:dl.anotherActive".to_string());
+    }
     let bin = resolve_or_err(&app)?;
     client::run_unit(&bin, &["cleanup"])
         .await
