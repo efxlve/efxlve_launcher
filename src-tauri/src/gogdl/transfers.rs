@@ -322,21 +322,16 @@ pub async fn gog_install_game(
 
     // One gogdl at a time. A second start would replace the state, and the
     // first monitor would then drop its completion without recording the
-    // install, so the next launch would download the same game again.
+    // install, so the next launch would download the same game again. Claim
+    // the slot in the same lock so two callers cannot both pass the check.
     {
-        let state = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
-        if state
+        let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
+        if state_guard
             .as_ref()
-            .is_some_and(|st| st.active_game_id.is_some() && !st.cancelled)
+            .is_some_and(|st| st.active_game_id.is_some())
         {
             return Err("@t:dl.anotherActive".into());
         }
-    }
-
-    // Claim the single GOG slot before the binary check; a second caller must
-    // not slip past the guard while the first is still preparing.
-    {
-        let mut state_guard = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
         *state_guard = Some(GogDlState {
             active_game_id: Some(composite_id.clone()),
             child_pid: None,
