@@ -16,7 +16,6 @@ import {
   spotifyPageVisible,
 } from "../../core/page-visibility";
 import { S } from "../../core/state";
-import { getActiveAppIconUrl } from "../../core/app-icon";
 import { downloadBadgeCounts } from "../../core/download-badge";
 import { esc } from "../../core/utils";
 import { currentLanguage, t } from "../../i18n";
@@ -133,9 +132,7 @@ export function refreshCouchBar(): void {
     else store.removeAttribute("aria-current");
     store.removeAttribute("data-gp-default");
   }
-  const brandIcon = el.querySelector<HTMLImageElement>("[data-couch-brand-icon]");
-  const brandUrl = getActiveAppIconUrl();
-  if (brandIcon && brandIcon.getAttribute("src") !== brandUrl) brandIcon.src = brandUrl;
+
   // Entering a non-library page should start on its tab, not on the Back
   // button. The library keeps its first cover as the default stop.
   if (S.view !== "library") {
@@ -235,7 +232,12 @@ function mountBar(): void {
   el.className = "couch-bar";
   el.innerHTML = `
     <div class="couch-brand" aria-hidden="true">
-      <span class="couch-brand-mark"><img class="couch-brand-icon" data-couch-brand-icon src="${esc(getActiveAppIconUrl())}" alt="" /></span>
+      <span class="couch-brand-mark">
+        <svg class="couch-brand-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5.5 5.5h8M5.5 12h6.5M5.5 18.5h8"/>
+          <path d="m15 8.5 4 3.5-4 3.5z" fill="currentColor" stroke="none"/>
+        </svg>
+      </span>
       <span class="couch-brand-name">EFXLVE</span>
       <span class="couch-brand-sep"></span>
       <span class="couch-page-title" data-couch-title></span>
@@ -368,14 +370,16 @@ export function openCouchMenu(): void {
   controlsLayer()?.remove();
   holdOverlay();
   menuLayer()?.remove();
+  const hasPad = S.gamepadPolling && Boolean(S.gamepadName);
+  const menuTitle = hasPad ? t("couch.menu") : t("couch.menuButton");
   const layer = document.createElement("div");
   layer.id = "couch-menu-layer";
   layer.className = "couch-layer couch-menu-layer";
   layer.innerHTML = `
     <button type="button" class="couch-backdrop" data-act="close-couch-menu" tabindex="-1" aria-hidden="true"></button>
-    <div class="couch-sheet couch-menu" role="dialog" aria-modal="true" aria-label="${esc(t("couch.menu"))}">
+    <div class="couch-sheet couch-menu" role="dialog" aria-modal="true" aria-label="${esc(menuTitle)}">
       <header class="couch-sheet-head">
-        <span class="couch-sheet-title">${icon("menu", 20)}<span>${esc(t("couch.menu"))}</span></span>
+        <span class="couch-sheet-title">${icon("menu", 20)}<span>${esc(menuTitle)}</span></span>
         <span class="couch-sheet-sub">${esc(clockText())}</span>
       </header>
       <div class="couch-menu-body">
@@ -383,7 +387,7 @@ export function openCouchMenu(): void {
           <div class="couch-menu-group-title">${esc(t("couch.actions"))}</div>
           <div class="couch-menu-grid">
             ${menuItem({ label: t("palette.searchGames"), desc: t("couch.searchHint"), iconName: "search", act: "open-palette", gpKey: "search", defaultFocus: S.runningGames.size === 0 })}
-            ${menuItem({ label: t("couch.controls"), desc: t("couch.controlsHint"), iconName: "keyboard", act: "open-couch-controls", attrs: `data-return-menu="1"`, gpKey: "controls" })}
+            ${hasPad ? menuItem({ label: t("couch.controls"), desc: t("couch.controlsHint"), iconName: "keyboard", act: "open-couch-controls", attrs: `data-return-menu="1"`, gpKey: "controls" }) : ""}
             ${menuItem({ label: t("palette.cmdOffline"), desc: S.offlineMode ? t("nav.offline") : t("nav.online"), iconName: S.offlineMode ? "wifi" : "wifi-off", act: "toggle-offline-mode", gpKey: "offline" })}
             ${menuItem({ label: t("fullscreen.exit"), desc: t("couch.exitDesc"), iconName: "minimize-2", act: "toggle-fullscreen-mode", gpKey: "exit" })}
           </div>
@@ -393,12 +397,12 @@ export function openCouchMenu(): void {
           <div class="couch-menu-grid couch-menu-pages">${menuPages()}</div>
         </div>
       </div>
-      <footer class="couch-sheet-foot">
+      ${hasPad ? `<footer class="couch-sheet-foot">
         ${hudItem(faceGlyph(S.gamepadKind, S.fullscreenSwapAB ? "b" : "a"), t("gamepad.select"))}
         ${hudItem(faceGlyph(S.gamepadKind, S.fullscreenSwapAB ? "a" : "b"), t("common.close"))}
         ${hudItem(systemGlyph("D-Pad"), t("gamepad.navigate"))}
         <span class="couch-sheet-hint">${esc(t("couch.menuHint"))}</span>
-      </footer>
+      </footer>` : ""}
     </div>`;
   root.appendChild(layer);
 }

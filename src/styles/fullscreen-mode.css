@@ -206,16 +206,14 @@ html.pad-input body.fullscreen-mode * {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
   color: var(--text);
 }
 
-.couch-brand-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  object-fit: contain;
+.couch-brand-glyph {
+  width: 22px;
+  height: 22px;
   display: block;
 }
 
