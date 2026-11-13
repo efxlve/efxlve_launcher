@@ -24,6 +24,11 @@ export function gameStoreKeys(appName: string, title?: string): string[] {
 /**
  * One representative key per game in a collection. Counts, covers and random
  * picks use this so a title owned on three stores still counts once.
+ *
+ * The stored member is the copy the collection was built from, which is not
+ * necessarily the copy the player installed later. Resolving the title's other
+ * loaded copies keeps the collection's installed count in step with the library
+ * card instead of reporting the stored copy's stale flag.
  */
 export function collectionGames(col: GameCollection): string[] {
   const best = new Map<string, { key: string; installed: boolean }>();
@@ -33,13 +38,22 @@ export function collectionGames(col: GameCollection): string[] {
     const title = summary?.title;
     const canon = title ? canonicalGameTitle(title) : "";
     const id = canon || `key:${name.toLowerCase()}`;
-    const installed = Boolean(summary?.installed);
+    let key = name;
+    let installed = Boolean(summary?.installed);
+    if (!installed && title) {
+      for (const copy of storeKeysForTitle(title)) {
+        if (copy === name || !summaryOf(copy)?.installed) continue;
+        key = copy;
+        installed = true;
+        break;
+      }
+    }
     const current = best.get(id);
     if (!current) {
-      best.set(id, { key: name, installed });
+      best.set(id, { key, installed });
       order.push(id);
     } else if (!current.installed && installed) {
-      best.set(id, { key: name, installed });
+      best.set(id, { key, installed });
     }
   }
   return order.map((id) => best.get(id)!.key);
