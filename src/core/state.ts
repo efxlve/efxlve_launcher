@@ -114,6 +114,7 @@ import {
   CONTRAST_TITLES_KEY,
   LIB_PAGE_SIZE_KEY,
   STARTUP_TAB_KEY,
+  PINNED_COLLECTIONS_KEY,
   PREFERRED_VERSION_KEY,
   SOURCE_FILTER_KEY,
   LIB_PAGINATION_KEY,
@@ -631,6 +632,8 @@ export const S = {
   /** Local backup folder override and the folder in use; null until loaded. */
   localBackupRoot: (null) as { configured: string; effective: string } | null,
   epicFav: (loadStrSet(FAV_KEY)) as Set<string>,
+  /** Collection ids with their own tab in the library filter strip. */
+  pinnedCollections: (loadStrSet(PINNED_COLLECTIONS_KEY)) as Set<string>,
   hiddenGames: (loadStrSet(HIDDEN_KEY)) as Set<string>,
   ignoredUpdates: (loadStrSet(IGNORED_UPDATES_KEY)) as Set<string>,
   hiddenAchievements: (loadStrSet(HIDDEN_ACH_KEY)) as Set<string>,

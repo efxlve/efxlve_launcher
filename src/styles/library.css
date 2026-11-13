@@ -30,6 +30,8 @@
 .lib-filters { flex: 1 1 0; min-width: 0; margin-bottom: 0; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; padding-bottom: 1px; }
 .lib-filters::-webkit-scrollbar { display: none; }
 .lib-col-tab { flex-shrink: 0; }
+.lib-pinned-col { min-width: 0; }
+.lib-pinned-col-name { display: block; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .col-dropdown-list .lib-col-tab { cursor: pointer; touch-action: none; }
 .lib-col-tab.dragging { cursor: grabbing; opacity: 0.45; }
 .lib-error-code {
@@ -2368,6 +2370,10 @@ html.reduce-effects .lib-filter-panel { animation: none !important; }
 }
 .col-card-action-btn:hover {
   background: rgba(0, 0, 0, 0.9); color: var(--accent);
+}
+.col-card-action-btn.is-pinned {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
 /* Add New Collection Card */

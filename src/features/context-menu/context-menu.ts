@@ -8,6 +8,7 @@
 
 import { ctxRoot } from "../../core/dom";
 import { icon } from "../../core/icons";
+import { isCollectionPinned } from "../../core/collection-pins";
 import { IS_WINDOWS } from "../../core/platform";
 import { gameVersionsOf, sourceOfKey, summaryOf, sharedOwnerOf } from "../../core/selectors";
 import { storeVersionLabel } from "../drawer/external-versions";
@@ -220,15 +221,17 @@ const isRiot = source === "riot";
   menu.querySelector<HTMLElement>(".ctx-item")?.focus({ preventScroll: true });
 }
 
-/** Right-click a collection tab to edit it. All and Favorites have no menu. */
+/** Right-click a collection tab to edit it or pin it to the strip. */
 function showCollectionTabMenu(x: number, y: number, colId: string): void {
   hideContextMenu();
   const col = S.epicCollections.find((c) => c.id === colId);
   if (!col) return;
+  const pinned = isCollectionPinned(colId);
   const menu = document.createElement("div");
   menu.className = "ctx-menu";
   menu.setAttribute("role", "menu");
-  menu.innerHTML = `<button class="ctx-item" role="menuitem" data-act="edit-collection" data-col-id="${esc(colId)}">${icon("edit", 15)}<span>${t("col.edit")}</span></button>`;
+  menu.innerHTML = `<button class="ctx-item" role="menuitem" data-act="edit-collection" data-col-id="${esc(colId)}">${icon("edit", 15)}<span>${t("col.edit")}</span></button>
+    <button class="ctx-item" role="menuitem" data-act="toggle-pinned-collection" data-col-id="${esc(colId)}" aria-pressed="${pinned}">${icon("pin", 15)}<span>${esc(pinned ? t("col.unpinFromTabs") : t("col.pinToTabs"))}</span></button>`;
   const root = ctxRoot || document.body;
   root.appendChild(menu);
   S.ctxMenuEl = menu;

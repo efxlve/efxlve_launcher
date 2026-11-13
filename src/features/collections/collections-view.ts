@@ -7,6 +7,7 @@
  */
 
 import { COLLECTION_ICONS, collectionMarker, isCollectionIcon } from "../../core/collection-icons";
+import { isCollectionPinned, forgetCollectionPin } from "../../core/collection-pins";
 import { isTauri } from "../../core/constants";
 import { collectionRoot } from "../../core/dom";
 import { cachedImage, warmImages, IMAGE_COVER_WIDTH } from "../../core/picture-cache";
@@ -528,6 +529,7 @@ export async function deleteCollectionFromModal(colId: string): Promise<boolean>
   const name = col ? col.name : t("col.defaultName");
   try {
     await epicDeleteCollection(colId);
+    forgetCollectionPin(colId);
     if (S.activeCollectionId === colId) S.activeCollectionId = null;
     toast(t("col.deleted", { name }), "ok");
     closeCollectionModal();
@@ -792,6 +794,7 @@ export function openCollectionGallery(): void {
     }
 
     const markerHtml = collectionMarker(col.emoji, 15);
+    const pinned = isCollectionPinned(col.id);
 
     return `
       <div class="col-gallery-card${S.activeCollectionId === col.id ? " active" : ""}" role="button" tabindex="0" data-act="select-col-filter" data-col-id="${esc(col.id)}" data-col-name="${esc(col.name)}">
@@ -809,6 +812,9 @@ export function openCollectionGallery(): void {
           </div>
         </div>
         <div class="col-card-actions">
+          <button type="button" class="col-card-action-btn${pinned ? " is-pinned" : ""}" data-act="toggle-pinned-collection" data-col-id="${esc(col.id)}" title="${esc(pinned ? t("col.unpinFromTabs") : t("col.pinToTabs"))}" aria-pressed="${pinned}">
+            ${icon("pin", 13)}
+          </button>
           <button type="button" class="col-card-action-btn" data-act="col-play-random" data-col-id="${esc(col.id)}" title="${esc(t("library.random"))}" aria-label="${esc(t("library.random"))}">
             ${icon("shuffle", 13)}
           </button>
@@ -887,4 +893,15 @@ export function openCollectionGallery(): void {
 
 export function closeCollectionGallery(): void {
   if (collectionRoot) collectionRoot.innerHTML = "";
+}
+
+/** Repaint one gallery card's pin button; the cover fan stays mounted. */
+export function updateCollectionPinUi(colId: string): void {
+  const pinned = isCollectionPinned(colId);
+  document.querySelectorAll<HTMLElement>('[data-act="toggle-pinned-collection"]').forEach((btn) => {
+    if (btn.dataset.colId !== colId) return;
+    btn.classList.toggle("is-pinned", pinned);
+    btn.setAttribute("aria-pressed", String(pinned));
+    btn.title = pinned ? t("col.unpinFromTabs") : t("col.pinToTabs");
+  });
 }

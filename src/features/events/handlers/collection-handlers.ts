@@ -9,8 +9,9 @@ import { S } from "../../../core/state";
 import { closeModal } from "../../../core/dom";
 import { render } from "../../../core/render";
 import { collectionGameCount } from "../../../core/game-collections";
+import { toggleCollectionPin, forgetCollectionPin } from "../../../core/collection-pins";
 import { allStoreSummaries } from "../../../core/selectors";
-import { resetCardChunk } from "../../library/library-view";
+import { resetCardChunk, syncPinnedCollectionTabs } from "../../library/library-view";
 import { loadSettingsView } from "../../settings/settings-view";
 import { epicDeleteCollection, epicImportEglCollections, epicSaveCollection } from "../../../epic";
 import { gogImportGalaxyTags } from "../../../gog";
@@ -32,6 +33,7 @@ import {
   toggleCoverGame,
   updateCedHeroDeckInPlace,
   updateColGamesListInPlace,
+  updateCollectionPinUi,
   updateMarkerUi,
 } from "../../collections/collections-view";
 
@@ -64,6 +66,16 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
     case "close-col-gallery":
       closeCollectionGallery();
       return true;
+
+    case "toggle-pinned-collection": {
+      const colId = t.dataset.colId;
+      if (!colId) return true;
+      const pinned = toggleCollectionPin(colId);
+      updateCollectionPinUi(colId);
+      syncPinnedCollectionTabs();
+      toast(i18nT(pinned ? "col.pinnedToTabs" : "col.unpinnedFromTabs"), "ok");
+      return true;
+    }
 
     case "col-gallery-panel":
       return true;
@@ -319,6 +331,7 @@ async function mergeCollectionsInto(sourceId?: string, targetId?: string): Promi
   try {
     await epicSaveCollection(target.name, merged, target.id);
     await epicDeleteCollection(source.id);
+    forgetCollectionPin(source.id);
     toast(i18nT("col.merged", { count: collectionGameCount(source), name: target.name }), "ok");
     await loadEpicCollections();
     if (S.view === "settings") void loadSettingsView();

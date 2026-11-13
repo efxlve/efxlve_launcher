@@ -13,6 +13,7 @@ import { formatGenreLabel, genreSearchTokens } from "../../core/genres";
 import { achSummaryOf, epicActionButtons, epicArt, epicArtUrl, epicDlProgress, isAppPlatinum, libraryCardBadge, libraryCoverStats, libraryDlBar, libraryInstalledIcon, libraryListDimmed, listAchievementCell, patchLibraryCardElement } from "../../core/game-view";
 import { emptyState, icon } from "../../core/icons";
 import { collectionGames, collectionMatch, matchCollectionGame, type CollectionMatch } from "../../core/game-collections";
+import { isCollectionPinned, pinnedCollectionsForTabs } from "../../core/collection-pins";
 import { allStoreSummaries, canonicalGameTitle, compareLibraryRecent, libraryItemToSummary, libraryPlaytime, rawOf, sourceOfKey, storeKeysForTitle, summaryOf, totalLibraryGamesCount } from "../../core/selectors";
 import { collectionMarker } from "../../core/collection-icons";
 import { ensureGameRatingsLoaded, gameRatingOf } from "../../core/game-ratings";
@@ -1367,6 +1368,52 @@ function filterTab(tab: string, label: string): string {
   return `<button class="tab lib-filter ${isFilterActive(tab) ? "active" : ""}" data-act="quick-tab" data-tab="${tab}">${label}</button>`;
 }
 
+function pinnedCollectionTab(col: { id: string; name: string }): string {
+  return `<button class="tab lib-filter lib-pinned-col lib-col-tab${isFilterActive("collection", col.id) ? " active" : ""}" data-act="quick-tab" data-tab="collection" data-col-id="${esc(col.id)}" title="${esc(col.name)}"><span class="lib-pinned-col-name">${esc(col.name)}</span></button>`;
+}
+
+/** Label of the trailing Collections tab. A pinned collection already owns a
+ *  tab of its own, so the dropdown keeps the generic label instead of repeating
+ *  the active name twice in one strip. */
+function collectionsTabLabel(): string {
+  const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
+  const activeCol = isColActive && !isSmartCollection(S.activeCollectionId)
+    ? S.epicCollections.find((c) => c.id === S.activeCollectionId)
+    : null;
+  const activeSmart = isSmartCollection(S.activeCollectionId) ? smartCollection(S.activeCollectionId) : undefined;
+  if (activeCol && !isCollectionPinned(activeCol.id)) return activeCol.name;
+  return activeSmart ? activeSmart.label() : t("col.allCollections");
+}
+
+/** The library filter strip: fixed tabs, then pinned collections, then the
+ *  Collections gallery entry. Rebuilt in place when a pin changes. */
+function libraryFilterTabsHtml(): string {
+  const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
+  const pinnedTabs = pinnedCollectionsForTabs().map(pinnedCollectionTab).join("");
+  const colDropdown = `
+      <button class="tab lib-filter lib-col-dropdown-btn lib-col-tab ${isColActive ? "active" : ""}" data-act="open-col-gallery" title="${esc(t("col.allCollections"))}">
+        <span>${esc(collectionsTabLabel())}</span>
+        ${icon("layers", 14)}
+      </button>`;
+  return [
+    filterTab("all", t("library.all")),
+    filterTab("installed", t("library.installed")),
+    filterTab("fav", t("library.favorites")),
+    pinnedTabs,
+    colDropdown,
+  ].join("");
+}
+
+/** Repaint only the filter strip after a pin toggle; the results did not move. */
+export function syncPinnedCollectionTabs(): void {
+  if (S.view !== "library") return;
+  const strip = document.querySelector<HTMLElement>(".lib-filters");
+  if (!strip) return;
+  const scroll = strip.scrollLeft;
+  strip.innerHTML = libraryFilterTabsHtml();
+  strip.scrollLeft = scroll;
+}
+
 export function renderEpic(): string {
   lastCollectionsSig = collectionsSignature();
   if (!isTauri) {
@@ -1491,25 +1538,7 @@ export function renderEpic(): string {
     <button class="icon-btn lib-hide-btn" data-act="open-hide-games" title="${esc(t("lib.hideGamesTip"))}" aria-label="${esc(t("lib.hideGamesTip"))}">${icon("eye-off", 16)}</button>
     <button class="icon-btn lib-refresh-btn ${S.epicSyncing || S.gogSyncing ? "spinning" : ""}" data-act="epic-refresh" title="${t("lib.refreshTip")}">${icon("refresh", 16)}</button>`;
 
-  const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
-  const activeCol = isColActive && !isSmartCollection(S.activeCollectionId)
-    ? S.epicCollections.find((c) => c.id === S.activeCollectionId)
-    : null;
-  const activeSmart = isSmartCollection(S.activeCollectionId) ? smartCollection(S.activeCollectionId) : undefined;
-  const colBtnLabel = activeCol ? activeCol.name : activeSmart ? activeSmart.label() : t("col.allCollections");
-
-  const colDropdown = `
-      <button class="tab lib-filter lib-col-dropdown-btn lib-col-tab ${isColActive ? "active" : ""}" data-act="open-col-gallery" title="${esc(t("col.allCollections"))}">
-        <span>${esc(colBtnLabel)}</span>
-        ${icon("layers", 14)}
-      </button>`;
-
-  const filters = [
-    filterTab("all", t("library.all")),
-    filterTab("installed", t("library.installed")),
-    filterTab("fav", t("library.favorites")),
-    colDropdown,
-  ].join("");
+  const filters = libraryFilterTabsHtml();
 
   if (S.isFilterPanelOpen) {
     requestAnimationFrame(() => repaintLibFilterPanel());
@@ -1537,15 +1566,10 @@ export function updateLibraryFilterInPlace(): boolean {
   if (colDropdownBtn) {
     const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
     colDropdownBtn.classList.toggle("active", isColActive);
-    const activeCol = isColActive ? S.epicCollections.find((c) => c.id === S.activeCollectionId) : null;
     // Smart collections are not in `epicCollections`: the in-place path used
     // to label them "All collections" while the grid was filtered.
-    const activeSmart = isColActive && isSmartCollection(S.activeCollectionId)
-      ? smartCollection(S.activeCollectionId)
-      : undefined;
     const labelSpan = colDropdownBtn.querySelector("span");
-    if (labelSpan) labelSpan.textContent = activeCol ? activeCol.name : activeSmart ? activeSmart.label() : t("col.allCollections");
-    colDropdownBtn.dataset.colId = activeCol?.id ?? "";
+    if (labelSpan) labelSpan.textContent = collectionsTabLabel();
   }
 
   invalidateLibraryVisibleCache();

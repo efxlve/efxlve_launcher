@@ -334,6 +334,8 @@ export const CUSTOM_PROFILE_BANNERS_KEY = "efxlve-custom-profile-banners";
 export const PROFILE_VIEW_MODE_KEY = "efxlve-profile-view-mode";
 /** Favorited game ids. */
 export const FAV_KEY = "efxlve-favorites";
+/** Collection ids pinned as their own tabs in the library filter strip. */
+export const PINNED_COLLECTIONS_KEY = "efxlve-pinned-collections";
 /** App names hidden from the library, sidebar and search. */
 export const HIDDEN_KEY = "efxlve-hidden-games";
 /** Games whose pending update indicators/badges have been cleared/dismissed by the user. */
