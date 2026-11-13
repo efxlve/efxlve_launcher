@@ -4302,5 +4302,7 @@
   "couch.favoriteDesc": "เพิ่มเกมที่เลือกลงรายการโปรด",
   "couch.menuDesc": "เปิดเมนูคอนโทรลเลอร์",
   "couch.stageDesc": "เปิดเปลือก Stage สำหรับห้องนั่งเล่น",
-  "couch.exitDesc": "กลับสู่ตัวเปิดเกมในโหมดหน้าต่าง"
+  "couch.exitDesc": "กลับสู่ตัวเปิดเกมในโหมดหน้าต่าง",
+  "downloads.activeDownloads": "ดาวน์โหลด: {count}",
+  "downloads.updatesReady": "อัปเดตพร้อม: {count}"
 }

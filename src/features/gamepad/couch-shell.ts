@@ -16,6 +16,7 @@ import {
   spotifyPageVisible,
 } from "../../core/page-visibility";
 import { S } from "../../core/state";
+import { downloadBadgeCounts } from "../../core/download-badge";
 import { esc } from "../../core/utils";
 import { currentLanguage, t } from "../../i18n";
 import { releaseStoreOverlay, holdStoreOverlay } from "../store/store-view";
@@ -93,7 +94,7 @@ function navButton(
   badge = false,
 ): string {
   return `<button type="button" class="couch-nav-item" data-view="${view}" data-couch-view="${view}" data-gp-item data-gp-key="couch:nav:${gpKey}">
-    ${icon(iconName, 17)}<span>${esc(label)}</span>${badge ? `<span class="couch-badge hidden" data-couch-dl></span>` : ""}
+    ${icon(iconName, 17)}<span>${esc(label)}</span>${badge ? `<span class="couch-badge hidden" data-couch-dl></span><span class="couch-update-pill hidden" data-couch-update></span>` : ""}
   </button>`;
 }
 
@@ -140,8 +141,33 @@ export function refreshCouchBar(): void {
     activeNav?.setAttribute("data-gp-default", "");
   }
 
-  // The hidden sidebar still owns the counters; the bar mirrors them so
-  // downloads and notifications stay visible with the rail gone.
+  // The hidden sidebar counts downloads and waiting updates together. The top
+  // bar separates them: a number badge only for moving/queued work, and an
+  // amber refresh chip for a pending update so "1" never means "no download".
+  const counts = downloadBadgeCounts("progress");
+  const dlBadge = el.querySelector<HTMLElement>("[data-couch-dl]");
+  if (dlBadge) {
+    dlBadge.textContent = counts.downloads > 0 ? String(counts.downloads) : "";
+    dlBadge.classList.toggle("hidden", counts.downloads === 0);
+  }
+  const dlUpdate = el.querySelector<HTMLElement>("[data-couch-update]");
+  if (dlUpdate) {
+    dlUpdate.classList.toggle("hidden", counts.updates === 0);
+    if (counts.updates > 0) {
+      dlUpdate.innerHTML = `${icon("refresh", 9)}<b>${counts.updates}</b>`;
+    }
+  }
+  const downloadsNav = el.querySelector<HTMLElement>('[data-gp-key="couch:nav:downloads"]');
+  if (downloadsNav) {
+    const parts: string[] = [];
+    if (counts.downloads > 0) parts.push(t("downloads.activeDownloads", { count: counts.downloads }));
+    if (counts.updates > 0) parts.push(t("downloads.updatesReady", { count: counts.updates }));
+    const title = parts.join(" · ");
+    downloadsNav.title = title || t("nav.downloadsTitle");
+    downloadsNav.setAttribute("aria-label", [t("nav.downloads"), title].filter(Boolean).join(" · "));
+  }
+
+  // The hidden sidebar still owns the notification counter.
   const mirror = (sourceId: string, targetSelector: string): void => {
     const source = document.getElementById(sourceId);
     const target = el.querySelector<HTMLElement>(targetSelector);
@@ -151,7 +177,6 @@ export function refreshCouchBar(): void {
     target.textContent = count;
     target.classList.toggle("hidden", hidden || !count);
   };
-  mirror("dl-badge", "[data-couch-dl]");
   mirror("notif-badge", "[data-couch-notif]");
 
   const controller = el.querySelector<HTMLElement>("[data-couch-controller]");

@@ -4302,5 +4302,7 @@
   "couch.favoriteDesc": "Ajoute le jeu sélectionné aux favoris.",
   "couch.menuDesc": "Ouvre le menu du contrôleur.",
   "couch.stageDesc": "Ouvre l'interface de salon Stage.",
-  "couch.exitDesc": "Revient au lanceur en mode fenêtré."
+  "couch.exitDesc": "Revient au lanceur en mode fenêtré.",
+  "downloads.activeDownloads": "Téléchargements : {count}",
+  "downloads.updatesReady": "Mises à jour prêtes : {count}"
 }

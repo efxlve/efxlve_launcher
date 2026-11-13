@@ -10,7 +10,8 @@ import { CircleUserRound, createIcons } from "lucide";
 import { invoke } from "@tauri-apps/api/core";
 import { dlBadge, syncSidebarGameActive } from "./dom";
 import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from "./render";
-import { canonicalGameTitle, compareLibraryRecent, pendingGameUpdates, rawOf, totalLibraryGamesCount } from "./selectors";
+import { canonicalGameTitle, compareLibraryRecent, rawOf, totalLibraryGamesCount } from "./selectors";
+import { downloadBadgeCounts } from "./download-badge";
 import { hasConnection } from "./offline";
 import { cachedSteamCover } from "./steam-art-cache";
 import { currentProfileName, globalAvatar, S } from "./state";
@@ -36,11 +37,6 @@ export function updateSidebarActive(): void {
   syncSidebarGameActive();
 }
 
-/** Installed games that have a newer build waiting and have not been ignored. */
-function pendingUpdateCount(): number {
-  return pendingGameUpdates().length;
-}
-
 /** Game count sits in the page header, and only on the library itself. */
 function syncPageGameCount(): void {
   const el = document.getElementById("lib-heading-count");
@@ -52,31 +48,24 @@ function syncPageGameCount(): void {
   el.hidden = !show;
 }
 
-/** Last pending-update total. Download progress must not rescan the library to recompute it. */
-let lastPendingUpdates = -1;
-
 /**
  * Refresh the download counter next to the Downloads sidebar entry.
  * `progress` skips the library scan: byte updates do not change which games
  * are installed or which updates are waiting.
  */
 export function updateBadge(scope: "full" | "progress" = "full"): void {
-  let active = 0;
-  // `S.downloads` holds queued installs too; the queue length is added below,
-  // so counting those here showed two badges for one queued game.
-  const queued = new Set(S.dlQueueStatus.queue);
-  for (const [id, d] of S.downloads) {
-    if (!d.done && !queued.has(id)) active++;
-  }
-  let steamDl = 0;
-  for (const g of S.steamGames) if (g.downloading) steamDl++;
-  if (scope === "full" || lastPendingUpdates < 0) lastPendingUpdates = pendingUpdateCount();
-  const count = active + S.dlQueueStatus.queue.length + lastPendingUpdates + steamDl;
-  const label = count > 0 ? String(count) : "";
+  const counts = downloadBadgeCounts(scope);
+  const label = counts.total > 0 ? String(counts.total) : "";
   if (dlBadge.textContent !== label) dlBadge.textContent = label;
-  dlBadge.classList.toggle("hidden", count === 0);
-  if (count > 0) dlBadge.title = label;
-  else dlBadge.removeAttribute("title");
+  dlBadge.classList.toggle("hidden", counts.total === 0);
+  if (counts.total > 0) {
+    const parts: string[] = [];
+    if (counts.downloads > 0) parts.push(t("downloads.activeDownloads", { count: counts.downloads }));
+    if (counts.updates > 0) parts.push(t("downloads.updatesReady", { count: counts.updates }));
+    dlBadge.title = parts.join(" · ");
+  } else {
+    dlBadge.removeAttribute("title");
+  }
   if (scope === "full") updateSidebarGames();
   // The couch top bar mirrors the hidden badge and has no render of its own
   // while a download ticks.

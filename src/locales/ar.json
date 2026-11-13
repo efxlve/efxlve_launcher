@@ -4302,5 +4302,7 @@
   "couch.favoriteDesc": "يضيف اللعبة المحددة إلى المفضلة.",
   "couch.menuDesc": "يفتح قائمة وحدة التحكم.",
   "couch.stageDesc": "يفتح واجهة Stage المخصصة لغرفة المعيشة.",
-  "couch.exitDesc": "يعود إلى المشغّل في وضع النافذة."
+  "couch.exitDesc": "يعود إلى المشغّل في وضع النافذة.",
+  "downloads.activeDownloads": "التنزيلات: {count}",
+  "downloads.updatesReady": "تحديثات جاهزة: {count}"
 }

@@ -4302,5 +4302,7 @@
   "couch.favoriteDesc": "चयनित गेम को पसंदीदा में जोड़ता है।",
   "couch.menuDesc": "कंट्रोलर मेन्यू खोलता है।",
   "couch.stageDesc": "लिविंग रूम के लिए Stage शेल खोलता है।",
-  "couch.exitDesc": "लॉन्चर को विंडो मोड में लौटाता है।"
+  "couch.exitDesc": "लॉन्चर को विंडो मोड में लौटाता है।",
+  "downloads.activeDownloads": "डाउनलोड: {count}",
+  "downloads.updatesReady": "तैयार अपडेट: {count}"
 }

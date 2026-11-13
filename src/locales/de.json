@@ -4302,5 +4302,7 @@
   "couch.favoriteDesc": "Fügt das gewählte Spiel zu den Favoriten hinzu.",
   "couch.menuDesc": "Öffnet das Controller-Menü.",
   "couch.stageDesc": "Öffnet die Wohnzimmer-Oberfläche Stage.",
-  "couch.exitDesc": "Kehrt zum Launcher im Fenstermodus zurück."
+  "couch.exitDesc": "Kehrt zum Launcher im Fenstermodus zurück.",
+  "downloads.activeDownloads": "Downloads: {count}",
+  "downloads.updatesReady": "Updates bereit: {count}"
 }

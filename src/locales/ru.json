@@ -4302,5 +4302,7 @@
   "couch.favoriteDesc": "Добавляет выбранную игру в избранное.",
   "couch.menuDesc": "Открывает меню контроллера.",
   "couch.stageDesc": "Открывает интерфейс Stage для гостиной.",
-  "couch.exitDesc": "Возвращает лаунчер в оконный режим."
+  "couch.exitDesc": "Возвращает лаунчер в оконный режим.",
+  "downloads.activeDownloads": "Загрузки: {count}",
+  "downloads.updatesReady": "Готовые обновления: {count}"
 }

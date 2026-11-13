@@ -4302,5 +4302,7 @@
   "couch.favoriteDesc": "Seçili oyunu favorilere ekler.",
   "couch.menuDesc": "Kontrolcü menüsünü açar.",
   "couch.stageDesc": "Salon için Sahne kabuğunu açar.",
-  "couch.exitDesc": "Launcher'ı pencereli görünüme döndürür."
+  "couch.exitDesc": "Launcher'ı pencereli görünüme döndürür.",
+  "downloads.activeDownloads": "İndirmeler: {count}",
+  "downloads.updatesReady": "Hazır güncelleme: {count}"
 }

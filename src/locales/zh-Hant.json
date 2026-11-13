@@ -4302,5 +4302,7 @@
   "couch.favoriteDesc": "將選取的遊戲加入收藏。",
   "couch.menuDesc": "開啟控制器選單。",
   "couch.stageDesc": "開啟客廳用的 Stage 介面。",
-  "couch.exitDesc": "返回視窗模式的啟動器。"
+  "couch.exitDesc": "返回視窗模式的啟動器。",
+  "downloads.activeDownloads": "下載：{count}",
+  "downloads.updatesReady": "待更新：{count}"
 }

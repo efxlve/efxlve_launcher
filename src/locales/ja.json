@@ -4302,5 +4302,7 @@
   "couch.favoriteDesc": "選択中のゲームをお気に入りに追加します。",
   "couch.menuDesc": "コントローラーメニューを開きます。",
   "couch.stageDesc": "リビング向けのStageシェルを開きます。",
-  "couch.exitDesc": "ウィンドウ表示のランチャーに戻ります。"
+  "couch.exitDesc": "ウィンドウ表示のランチャーに戻ります。",
+  "downloads.activeDownloads": "ダウンロード: {count}",
+  "downloads.updatesReady": "更新の準備: {count}"
 }
