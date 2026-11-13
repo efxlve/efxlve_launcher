@@ -396,7 +396,7 @@ export async function initApp(hooks: {
       const diskBytes = Math.round((diskSpeed ?? 0) * 1024 * 1024);
       const etaText = eta && eta !== "00:00:00" ? eta : t("common.calculating");
       // Nile reports the download; once it is done only cleanup is left.
-      const phase = percent >= 99.9 ? "finishing" : "downloading";
+      const phase = percent >= 99.9 ? "finishing" : percent <= 0 ? "starting" : "downloading";
       S.amazonProgress.set(id, { percent, speed });
       dl.progress = percent;
       const title = dl.title || S.amazonGames.find((g) => amazonKey(g.id) === id)?.title || id;
