@@ -110,18 +110,21 @@ static NILE_DL_STATE: Mutex<Option<NileDlState>> = Mutex::new(None);
 /// older monitor cannot clear or cancel the newer slot.
 static NILE_DL_GENERATION: AtomicU64 = AtomicU64::new(0);
 
-fn begin_nile_download(id: &str) -> u64 {
+fn begin_nile_download(id: &str) -> Result<u64, String> {
     let generation = NILE_DL_GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
     let mut slot = NILE_DL_STATE
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
+    if slot.is_some() {
+        return Err("@t:dl.anotherActive".to_string());
+    }
     *slot = Some(NileDlState {
         id: id.to_string(),
         generation,
         child_pid: None,
         cancelled: false,
     });
-    generation
+    Ok(generation)
 }
 
 fn with_nile_download<R>(
@@ -256,10 +259,12 @@ pub async fn nile_install(
     base_path: Option<String>,
     max_workers: Option<u32>,
 ) -> Result<(), String> {
+    // Nile writes its library and manifest files; a second install would
+    // overwrite the slot and let both processes write the same config.
+    let generation = begin_nile_download(&id)?;
     DL_ACTIVE.store(true, Ordering::SeqCst);
     let _download_guard = ActiveGuard;
     let _awake = crate::keep_awake::keep_awake();
-    let generation = begin_nile_download(&id);
     let _slot = DownloadSlot {
         id: id.clone(),
         generation,
@@ -595,23 +600,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn an_older_install_cannot_clear_a_newer_cancel() {
-        let first = begin_nile_download("same-product");
-        let second = begin_nile_download("same-product");
-        with_nile_download("same-product", second, |state| state.cancelled = true);
-        // The first monitor is still unwinding; its cleanup must not drop the
-        // slot the user just cancelled.
-        finish_nile_download("same-product", first);
-        clear_nile_child("same-product", first);
-        record_nile_child("same-product", first, 1);
-        record_nile_child("same-product", second, 2);
-        assert!(nile_download_cancelled("same-product", second));
+    fn a_second_amazon_install_is_refused() {
+        let first = begin_nile_download("first-product").expect("first install");
         assert_eq!(
-            with_nile_download("same-product", second, |state| state.child_pid).unwrap(),
-            Some(2)
+            begin_nile_download("second-product").unwrap_err(),
+            "@t:dl.anotherActive"
         );
-        finish_nile_download("same-product", second);
-        assert!(!nile_download_cancelled("same-product", second));
+        record_nile_child("first-product", first, 7);
+        assert_eq!(
+            with_nile_download("first-product", first, |state| state.child_pid).unwrap(),
+            Some(7)
+        );
+        finish_nile_download("first-product", first);
+
+        let second = begin_nile_download("second-product").expect("after the first ends");
+        // An older monitor's cleanup must not drop the newer slot.
+        finish_nile_download("first-product", first);
+        assert!(!nile_download_cancelled("second-product", second));
+        finish_nile_download("second-product", second);
     }
 
     #[test]
