@@ -102,8 +102,6 @@
 .store-option-logo img { width: 16px; height: 16px; object-fit: contain; }
 .store-option-logo svg { width: 15px; height: 15px; color: var(--text); }
 .store-menu-item:hover .store-option-logo svg { color: var(--text); }
-.lib-store-btn-icon { display: inline-flex; align-items: center; justify-content: center; color: var(--text); }
-.lib-store-btn-icon svg { width: 13px; height: 13px; color: var(--text); }
 .lib-store-btn-logo { width: 14px; height: 14px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
 .lib-store-btn-logo img { width: 14px; height: 14px; object-fit: contain; }
 .lib-store-btn-logo svg { width: 13px; height: 13px; color: var(--text); }
