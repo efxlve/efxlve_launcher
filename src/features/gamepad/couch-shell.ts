@@ -16,6 +16,7 @@ import {
   spotifyPageVisible,
 } from "../../core/page-visibility";
 import { S } from "../../core/state";
+import { getActiveAppIconUrl } from "../../core/app-icon";
 import { downloadBadgeCounts } from "../../core/download-badge";
 import { esc } from "../../core/utils";
 import { currentLanguage, t } from "../../i18n";
@@ -132,6 +133,9 @@ export function refreshCouchBar(): void {
     else store.removeAttribute("aria-current");
     store.removeAttribute("data-gp-default");
   }
+  const brandIcon = el.querySelector<HTMLImageElement>("[data-couch-brand-icon]");
+  const brandUrl = getActiveAppIconUrl();
+  if (brandIcon && brandIcon.getAttribute("src") !== brandUrl) brandIcon.src = brandUrl;
 
   // Entering a non-library page should start on its tab, not on the Back
   // button. The library keeps its first cover as the default stop.
@@ -232,12 +236,7 @@ function mountBar(): void {
   el.className = "couch-bar";
   el.innerHTML = `
     <div class="couch-brand" aria-hidden="true">
-      <span class="couch-brand-mark">
-        <svg class="couch-brand-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5.5 5.5h8M5.5 12h6.5M5.5 18.5h8"/>
-          <path d="m15 8.5 4 3.5-4 3.5z" fill="currentColor" stroke="none"/>
-        </svg>
-      </span>
+      <span class="couch-brand-mark"><img class="couch-brand-icon" data-couch-brand-icon src="${esc(getActiveAppIconUrl())}" alt="" /></span>
       <span class="couch-brand-name">EFXLVE</span>
       <span class="couch-brand-sep"></span>
       <span class="couch-page-title" data-couch-title></span>
