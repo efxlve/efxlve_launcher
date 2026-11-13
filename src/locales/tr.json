@@ -1806,6 +1806,7 @@
   "col.unpinFromTabs": "Kütüphane sekmelerinden kaldır",
   "col.pinnedToTabs": "Kütüphane sekmelerine sabitlendi",
   "col.unpinnedFromTabs": "Kütüphane sekmelerinden kaldırıldı",
+  "col.pinLimit": "En fazla {count} koleksiyon sabitleyebilirsin. Önce birini kaldır.",
   "col.deleteHint": "Oyunlar kütüphanede kalır. Yalnızca bu koleksiyon silinir.",
   "col.needName": "Lütfen koleksiyon adı girin.",
   "col.saved": "\"{name}\" koleksiyonu kaydedildi",

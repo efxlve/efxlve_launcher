@@ -1706,6 +1706,7 @@
   "col.unpinFromTabs": "Désépingler des onglets de la bibliothèque",
   "col.pinnedToTabs": "Épinglée aux onglets de la bibliothèque",
   "col.unpinnedFromTabs": "Retirée des onglets de la bibliothèque",
+  "col.pinLimit": "Vous pouvez épingler jusqu'à {count} collections. Détachez-en une d'abord.",
   "col.deleteHint": "Les jeux restent dans la bibliothèque. Seule cette collection est retirée.",
   "col.needName": "Saisis un nom de collection.",
   "col.saved": "Collection \"{name}\" enregistrée",

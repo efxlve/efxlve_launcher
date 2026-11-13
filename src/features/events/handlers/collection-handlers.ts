@@ -9,7 +9,7 @@ import { S } from "../../../core/state";
 import { closeModal } from "../../../core/dom";
 import { render } from "../../../core/render";
 import { collectionGameCount } from "../../../core/game-collections";
-import { toggleCollectionPin, forgetCollectionPin } from "../../../core/collection-pins";
+import { toggleCollectionPin, forgetCollectionPin, MAX_PINNED_COLLECTIONS } from "../../../core/collection-pins";
 import { allStoreSummaries } from "../../../core/selectors";
 import { resetCardChunk, syncPinnedCollectionTabs } from "../../library/library-view";
 import { loadSettingsView } from "../../settings/settings-view";
@@ -70,10 +70,14 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
     case "toggle-pinned-collection": {
       const colId = t.dataset.colId;
       if (!colId) return true;
-      const pinned = toggleCollectionPin(colId);
+      const result = toggleCollectionPin(colId);
+      if (result === "limit") {
+        toast(i18nT("col.pinLimit", { count: String(MAX_PINNED_COLLECTIONS) }), "");
+        return true;
+      }
       updateCollectionPinUi(colId);
-      syncPinnedCollectionTabs();
-      toast(i18nT(pinned ? "col.pinnedToTabs" : "col.unpinnedFromTabs"), "ok");
+      syncPinnedCollectionTabs(colId);
+      toast(i18nT(result === "pinned" ? "col.pinnedToTabs" : "col.unpinnedFromTabs"), "ok");
       return true;
     }
 

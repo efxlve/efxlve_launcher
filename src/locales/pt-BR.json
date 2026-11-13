@@ -1706,6 +1706,7 @@
   "col.unpinFromTabs": "Desafixar das abas da biblioteca",
   "col.pinnedToTabs": "Fixada nas abas da biblioteca",
   "col.unpinnedFromTabs": "Removida das abas da biblioteca",
+  "col.pinLimit": "Você pode fixar até {count} coleções. Desafixe uma primeiro.",
   "col.deleteHint": "Os jogos permanecem na biblioteca. Só esta coleção é removida.",
   "col.needName": "Informe um nome para a coleção.",
   "col.saved": "Coleção \"{name}\" salva",

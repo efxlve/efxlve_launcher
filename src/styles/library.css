@@ -31,7 +31,7 @@
 .lib-filters::-webkit-scrollbar { display: none; }
 .lib-col-tab { flex-shrink: 0; }
 .lib-pinned-col { min-width: 0; }
-.lib-pinned-col-name { display: block; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lib-pinned-col-name { display: block; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .col-dropdown-list .lib-col-tab { cursor: pointer; touch-action: none; }
 .lib-col-tab.dragging { cursor: grabbing; opacity: 0.45; }
 .lib-error-code {

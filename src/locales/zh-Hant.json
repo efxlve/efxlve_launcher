@@ -1706,6 +1706,7 @@
   "col.unpinFromTabs": "從媒體庫分頁取消固定",
   "col.pinnedToTabs": "已固定到媒體庫分頁",
   "col.unpinnedFromTabs": "已從媒體庫分頁移除",
+  "col.pinLimit": "最多可固定 {count} 個收藏。請先取消固定一個。",
   "col.deleteHint": "遊戲仍留在遊戲庫中。只會移除此收藏集。",
   "col.needName": "請輸入收藏集名稱。",
   "col.saved": "已儲存「{name}」收藏集",

@@ -1806,6 +1806,7 @@
   "col.unpinFromTabs": "Unpin from library tabs",
   "col.pinnedToTabs": "Pinned to library tabs",
   "col.unpinnedFromTabs": "Removed from library tabs",
+  "col.pinLimit": "You can pin up to {count} collections. Unpin one first.",
   "col.deleteHint": "Games stay in the library. Only this collection is removed.",
   "col.needName": "Please enter a collection name.",
   "col.saved": "\"{name}\" collection saved",

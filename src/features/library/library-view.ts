@@ -1428,19 +1428,47 @@ function libraryFilterTabsHtml(): string {
     filterTab("all", t("library.all")),
     filterTab("installed", t("library.installed")),
     filterTab("fav", t("library.favorites")),
-    pinnedTabs,
+    // The gallery entry stays before the pinned tabs: a strip full of pins must
+    // never push the way to manage them off the edge.
     colDropdown,
+    pinnedTabs,
   ].join("");
 }
 
-/** Repaint only the filter strip after a pin toggle; the results did not move. */
-export function syncPinnedCollectionTabs(): void {
+/** Keep one tab visible inside the strip without scrolling the page. */
+function scrollTabIntoView(strip: HTMLElement, tab: HTMLElement): void {
+  const stripRect = strip.getBoundingClientRect();
+  const tabRect = tab.getBoundingClientRect();
+  const edge = 6;
+  if (tabRect.left < stripRect.left + edge) {
+    strip.scrollLeft = Math.max(0, strip.scrollLeft - (stripRect.left + edge - tabRect.left));
+  } else if (tabRect.right > stripRect.right - edge) {
+    strip.scrollLeft += tabRect.right - (stripRect.right - edge);
+  }
+}
+
+/** Keep the active tab visible when the strip has more tabs than width. */
+function scrollActiveFilterTabIntoView(): void {
+  const strip = document.querySelector<HTMLElement>(".lib-filters");
+  const active = strip?.querySelector<HTMLElement>(".lib-filter.active");
+  if (!strip || !active) return;
+  scrollTabIntoView(strip, active);
+}
+
+/** Repaint only the filter strip after a pin toggle; the results did not move.
+ *  A just-pinned collection is revealed even when it is not active yet. */
+export function syncPinnedCollectionTabs(revealId?: string): void {
   if (S.view !== "library") return;
   const strip = document.querySelector<HTMLElement>(".lib-filters");
   if (!strip) return;
   const scroll = strip.scrollLeft;
   strip.innerHTML = libraryFilterTabsHtml();
   strip.scrollLeft = scroll;
+  const revealed = revealId
+    ? [...strip.querySelectorAll<HTMLElement>(".lib-pinned-col")].find((el) => el.dataset.colId === revealId)
+    : undefined;
+  if (revealed) scrollTabIntoView(strip, revealed);
+  else scrollActiveFilterTabIntoView();
 }
 
 export function renderEpic(): string {
@@ -1572,6 +1600,7 @@ export function renderEpic(): string {
   if (S.isFilterPanelOpen) {
     requestAnimationFrame(() => repaintLibFilterPanel());
   }
+  requestAnimationFrame(scrollActiveFilterTabIntoView);
 
   return `
     <div class="page lib-page">
@@ -1600,6 +1629,7 @@ export function updateLibraryFilterInPlace(): boolean {
     const labelSpan = colDropdownBtn.querySelector("span");
     if (labelSpan) labelSpan.textContent = collectionsTabLabel();
   }
+  scrollActiveFilterTabIntoView();
 
   invalidateLibraryVisibleCache();
   resultsEl.innerHTML = renderEpicItems();

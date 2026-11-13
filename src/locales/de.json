@@ -1706,6 +1706,7 @@
   "col.unpinFromTabs": "Von Bibliotheks-Tabs lösen",
   "col.pinnedToTabs": "An Bibliotheks-Tabs angeheftet",
   "col.unpinnedFromTabs": "Von Bibliotheks-Tabs entfernt",
+  "col.pinLimit": "Du kannst bis zu {count} Sammlungen anheften. Löse zuerst eine.",
   "col.deleteHint": "Die Spiele bleiben in der Bibliothek. Nur diese Sammlung wird entfernt.",
   "col.needName": "Gib einen Sammlungsnamen ein.",
   "col.saved": "Sammlung \"{name}\" gespeichert",
