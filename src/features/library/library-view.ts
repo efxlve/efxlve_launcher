@@ -1413,21 +1413,27 @@ function collectionsTabLabel(): string {
   return activeSmart ? activeSmart.label() : t("col.allCollections");
 }
 
-/** The library filter strip: fixed tabs, a scrollable pin rail, then the
- *  Collections gallery entry. The rail shrinks before the fixed tabs do, so
- *  collections never push the way to manage them off the row. */
+/** Pinned collections live on their own shelf under the main tabs: the main
+ *  row never has to choose between a pin and the Collections entry, and the
+ *  shelf always has room for the arrows to reveal the rest. */
+function pinnedCollectionsRowHtml(): string {
+  const pins = pinnedCollectionsForTabs();
+  if (pins.length === 0) return "";
+  return `<div class="lib-pin-row" role="group" aria-label="${esc(t("col.pinnedCollections"))}">
+    <button type="button" class="lib-pin-arrow" data-act="pin-scroll" data-dir="-1" hidden aria-label="${esc(t("col.pinnedCollections"))}">${icon("chevron-left", 14)}</button>
+    <div class="lib-pin-scroll" data-pin-scroll>
+      ${pins.map(pinnedCollectionTab).join("")}
+    </div>
+    <button type="button" class="lib-pin-arrow" data-act="pin-scroll" data-dir="1" hidden aria-label="${esc(t("col.pinnedCollections"))}">${icon("chevron-right", 14)}</button>
+  </div>`;
+}
+
+/** The main filter strip: fixed tabs, then the Collections gallery entry.
+ *  Pinned collections get their own shelf (see `pinnedCollectionsRowHtml`). */
 function libraryFilterTabsHtml(): string {
   const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
   const pins = pinnedCollectionsForTabs();
   const pinnedActive = pins.some((col) => col.id === S.activeCollectionId);
-  const pinRail = pins.length > 0 ? `
-      <div class="lib-pin-rail" role="group" aria-label="${esc(t("col.pinnedCollections"))}">
-        <button type="button" class="lib-pin-arrow" data-act="pin-scroll" data-dir="-1" hidden aria-label="${esc(t("col.pinnedCollections"))}">${icon("chevron-left", 14)}</button>
-        <div class="lib-pin-scroll" data-pin-scroll>
-          ${pins.map(pinnedCollectionTab).join("")}
-        </div>
-        <button type="button" class="lib-pin-arrow" data-act="pin-scroll" data-dir="1" hidden aria-label="${esc(t("col.pinnedCollections"))}">${icon("chevron-right", 14)}</button>
-      </div>` : "";
   const colDropdown = `
       <button class="tab lib-filter lib-col-dropdown-btn lib-col-tab ${isColActive && !pinnedActive ? "active" : ""}" data-act="open-col-gallery" title="${esc(t("col.allCollections"))}">
         <span>${esc(collectionsTabLabel())}</span>
@@ -1437,7 +1443,6 @@ function libraryFilterTabsHtml(): string {
     filterTab("all", t("library.all")),
     filterTab("installed", t("library.installed")),
     filterTab("fav", t("library.favorites")),
-    pinRail,
     colDropdown,
   ].join("");
 }
@@ -1526,18 +1531,22 @@ function observePinnedRail(): void {
   pinRailObserver.observe(scroll);
 }
 
-/** Repaint only the filter strip after a pin toggle; the results did not move. */
+/** Repaint only the filter strip and pin shelf after a pin toggle; the results
+ *  did not move. */
 export function syncPinnedCollectionTabs(revealId?: string): void {
   if (S.view !== "library") return;
   const strip = document.querySelector<HTMLElement>(".lib-filters");
-  if (!strip) return;
-  const scroll = strip.scrollLeft;
-  strip.innerHTML = libraryFilterTabsHtml();
-  strip.scrollLeft = scroll;
+  if (strip) {
+    const scroll = strip.scrollLeft;
+    strip.innerHTML = libraryFilterTabsHtml();
+    strip.scrollLeft = scroll;
+  }
+  const row = document.getElementById("lib-pin-row");
+  if (row) row.innerHTML = pinnedCollectionsRowHtml();
   syncPinnedRail();
   observePinnedRail();
   const revealed = revealId
-    ? [...strip.querySelectorAll<HTMLElement>(".lib-pinned-col")].find((el) => el.dataset.colId === revealId)
+    ? [...(row?.querySelectorAll<HTMLElement>(".lib-pinned-col") ?? [])].find((el) => el.dataset.colId === revealId)
     : undefined;
   if (revealed) scrollPinIntoView(revealed);
   else scrollActivePinIntoView();
@@ -1681,6 +1690,7 @@ export function renderEpic(): string {
   return `
     <div class="page lib-page">
       ${libraryHeader(tools, filters)}
+      <div id="lib-pin-row">${pinnedCollectionsRowHtml()}</div>
       ${S.epicSyncNote ? `<p class="page-sub" id="lib-sync-note">${esc(S.epicSyncNote)}</p>` : ""}
       <div id="lib-results">${renderEpicItems()}</div>
     </div>`;
@@ -1694,6 +1704,9 @@ export function updateLibraryFilterInPlace(): boolean {
 
   filters.querySelectorAll<HTMLElement>(".lib-filter[data-act='quick-tab']").forEach((tabEl) => {
     tabEl.classList.toggle("active", isFilterActive(tabEl.dataset.tab, tabEl.dataset.colId));
+  });
+  document.querySelectorAll<HTMLElement>("#lib-pin-row .lib-pinned-col").forEach((tabEl) => {
+    tabEl.classList.toggle("active", isFilterActive("collection", tabEl.dataset.colId));
   });
 
   const colDropdownBtn = filters.querySelector<HTMLElement>(".lib-col-dropdown-btn");

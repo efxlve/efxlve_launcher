@@ -161,17 +161,22 @@
    escapes the strip's clipping. */
 .col-dropdown-menu.show { position: fixed; top: 0; left: 0; right: auto; z-index: 120; }
 
-/* Pinned collection rail: the pins scroll here, never the fixed tabs or the
-   Collections entry. Arrows appear only while the rail can still move. */
-.lib-pin-rail { display: flex; align-items: center; gap: 4px; min-width: 0; flex: 0 1 auto; }
+/* Pinned collection shelf: its own row under the main tabs, so the main row
+   never chooses between a pin and the Collections entry and the arrows always
+   have a real viewport to scroll. */
+#lib-pin-row { margin: -8px 0 16px; }
+#lib-pin-row:empty { display: none; }
+.lib-pin-row { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; }
 .lib-pin-scroll {
-  display: flex; align-items: center; gap: clamp(14px, 2vw, 28px);
+  display: flex; align-items: center; gap: clamp(16px, 2vw, 24px);
   min-width: 0; flex: 1 1 auto; overflow-x: auto; overflow-y: hidden;
   scrollbar-width: none;
 }
 .lib-pin-scroll::-webkit-scrollbar { display: none; }
+.lib-pin-row .lib-pinned-col { height: 38px; font-size: 14px; color: var(--text-2); }
+.lib-pin-row .lib-pinned-col.active { color: var(--text); }
 .lib-pin-arrow {
-  flex: none; width: 22px; height: 30px; display: grid; place-items: center;
+  flex: none; width: 24px; height: 30px; display: grid; place-items: center;
   border: 0; border-radius: 6px; background: transparent; color: var(--text-3);
   cursor: pointer; transition: color 0.14s ease-out, background-color 0.14s ease-out;
 }
