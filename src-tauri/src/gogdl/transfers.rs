@@ -358,32 +358,36 @@ pub async fn gog_install_game(
     // `update` takes the game folder as-is. A fresh install therefore passes
     // the base, while an update uses the recorded folder.
     let installed = load_installed_games(&app);
-    let is_update = installed.contains_key(&clean_id);
+    let picked = install_path
+        .filter(|path| !path.trim().is_empty())
+        .map(PathBuf::from);
+    // A caller that already points at the game folder (a stale record or an
+    // older dialog) must not get another folder appended.
+    let picked_is_game = picked
+        .as_ref()
+        .is_some_and(|path| path.join(format!("goggame-{clean_id}.info")).is_file());
+    let is_update = installed.contains_key(&clean_id) || picked_is_game;
     let target_dir = if let Some(existing) = installed.get(&clean_id) {
-        let candidate = install_path
-            .filter(|path| !path.trim().is_empty())
-            .map(PathBuf::from)
+        let candidate = picked
+            .clone()
             .unwrap_or_else(|| PathBuf::from(existing.install_path.trim()));
         // A record written before gogdl's append was understood points one
         // level above the game folder; heal it here too.
         locate_game_folder(&candidate, &clean_id).unwrap_or(candidate)
+    } else if let Some(picked) = picked {
+        picked
     } else {
-        install_path
+        crate::load_settings(&app)
+            .gog_install_dir
             .filter(|path| !path.trim().is_empty())
             .map(PathBuf::from)
             .unwrap_or_else(|| {
-                crate::load_settings(&app)
-                    .gog_install_dir
-                    .filter(|path| !path.trim().is_empty())
+                std::env::var_os("USERPROFILE")
+                    .or_else(|| std::env::var_os("HOME"))
                     .map(PathBuf::from)
-                    .unwrap_or_else(|| {
-                        std::env::var_os("USERPROFILE")
-                            .or_else(|| std::env::var_os("HOME"))
-                            .map(PathBuf::from)
-                            .unwrap_or_else(|| PathBuf::from("."))
-                            .join("Games")
-                            .join("GOG")
-                    })
+                    .unwrap_or_else(|| PathBuf::from("."))
+                    .join("Games")
+                    .join("GOG")
             })
     };
     // gogdl keeps one manifest per game for update diffs. A fresh install
