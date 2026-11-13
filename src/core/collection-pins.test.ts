@@ -1,11 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { GameCollection } from "../epic-model";
-import {
-  MAX_PINNED_COLLECTIONS,
-  isCollectionPinned,
-  pinnedCollectionsForTabs,
-  toggleCollectionPin,
-} from "./collection-pins";
+import { isCollectionPinned, pinnedCollectionsForTabs, toggleCollectionPin } from "./collection-pins";
 import { S } from "./state";
 
 function collection(id: string): GameCollection {
@@ -21,28 +16,18 @@ describe("collection pins", () => {
   it("pins and unpins one collection", () => {
     S.epicCollections = [collection("story")];
 
-    expect(toggleCollectionPin("story")).toBe("pinned");
+    expect(toggleCollectionPin("story")).toBe(true);
     expect(isCollectionPinned("story")).toBe(true);
-    expect(toggleCollectionPin("story")).toBe("unpinned");
+    expect(toggleCollectionPin("story")).toBe(false);
     expect(isCollectionPinned("story")).toBe(false);
   });
 
-  it("stops at the strip's cap", () => {
-    for (let i = 0; i < MAX_PINNED_COLLECTIONS; i++) {
-      S.epicCollections.push(collection(`c${i}`));
-      expect(toggleCollectionPin(`c${i}`)).toBe("pinned");
-    }
-    S.epicCollections.push(collection("extra"));
-
-    expect(toggleCollectionPin("extra")).toBe("limit");
-    expect(pinnedCollectionsForTabs()).toHaveLength(MAX_PINNED_COLLECTIONS);
-  });
-
-  it("does not let a deleted collection hold a pin slot", () => {
+  it("skips a pin whose collection is gone", () => {
     S.pinnedCollections.add("gone");
 
     expect(pinnedCollectionsForTabs()).toEqual([]);
     S.epicCollections = [collection("story")];
-    expect(toggleCollectionPin("story")).toBe("pinned");
+    expect(toggleCollectionPin("story")).toBe(true);
+    expect(pinnedCollectionsForTabs().map((col) => col.id)).toEqual(["story"]);
   });
 });

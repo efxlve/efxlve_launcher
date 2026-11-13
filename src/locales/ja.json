@@ -1706,7 +1706,7 @@
   "col.unpinFromTabs": "ライブラリのタブからピン留めを解除",
   "col.pinnedToTabs": "ライブラリのタブにピン留めしました",
   "col.unpinnedFromTabs": "ライブラリのタブから削除しました",
-  "col.pinLimit": "ピン留めできるコレクションは最大 {count} 件です。先に1つ解除してください。",
+  "col.pinnedCollections": "ピン留めしたコレクション",
   "col.deleteHint": "ゲームはライブラリに残ります。削除されるのはこのコレクションだけです。",
   "col.needName": "コレクション名を入力してください。",
   "col.saved": "コレクション「{name}」を保存しました",

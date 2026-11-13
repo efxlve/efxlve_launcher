@@ -1706,7 +1706,7 @@
   "col.unpinFromTabs": "Odepnij od kart biblioteki",
   "col.pinnedToTabs": "Przypięto do kart biblioteki",
   "col.unpinnedFromTabs": "Usunięto z kart biblioteki",
-  "col.pinLimit": "Możesz przypiąć maksymalnie {count} kolekcje. Najpierw odepnij jedną.",
+  "col.pinnedCollections": "Przypięte kolekcje",
   "col.deleteHint": "Gry zostają w bibliotece. Usuwana jest tylko ta kolekcja.",
   "col.needName": "Wpisz nazwę kolekcji.",
   "col.saved": "Zapisano kolekcję „{name}”",

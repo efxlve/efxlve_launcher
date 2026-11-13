@@ -1706,7 +1706,7 @@
   "col.unpinFromTabs": "Rimuovi dalle schede della libreria",
   "col.pinnedToTabs": "Fissata alle schede della libreria",
   "col.unpinnedFromTabs": "Rimossa dalle schede della libreria",
-  "col.pinLimit": "Puoi fissare fino a {count} collezioni. Rimuovine prima una.",
+  "col.pinnedCollections": "Collezioni fissate",
   "col.deleteHint": "I giochi restano nella libreria. Si rimuove solo questa collezione.",
   "col.needName": "Inserisci un nome per la collezione.",
   "col.saved": "Collezione \"{name}\" salvata",

@@ -9,9 +9,9 @@ import { S } from "../../../core/state";
 import { closeModal } from "../../../core/dom";
 import { render } from "../../../core/render";
 import { collectionGameCount } from "../../../core/game-collections";
-import { toggleCollectionPin, forgetCollectionPin, MAX_PINNED_COLLECTIONS } from "../../../core/collection-pins";
+import { toggleCollectionPin, forgetCollectionPin } from "../../../core/collection-pins";
 import { allStoreSummaries } from "../../../core/selectors";
-import { resetCardChunk, syncPinnedCollectionTabs } from "../../library/library-view";
+import { resetCardChunk, syncPinnedCollectionTabs, togglePinOverflowMenu } from "../../library/library-view";
 import { loadSettingsView } from "../../settings/settings-view";
 import { epicDeleteCollection, epicImportEglCollections, epicSaveCollection } from "../../../epic";
 import { gogImportGalaxyTags } from "../../../gog";
@@ -41,6 +41,10 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
   if (!act) return false;
 
   switch (act) {
+    case "toggle-pin-overflow":
+      togglePinOverflowMenu();
+      return true;
+
     case "select-collection": {
       const colId = t.dataset.colId;
       if (colId === "all") {
@@ -70,14 +74,10 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
     case "toggle-pinned-collection": {
       const colId = t.dataset.colId;
       if (!colId) return true;
-      const result = toggleCollectionPin(colId);
-      if (result === "limit") {
-        toast(i18nT("col.pinLimit", { count: String(MAX_PINNED_COLLECTIONS) }), "");
-        return true;
-      }
+      const pinned = toggleCollectionPin(colId);
       updateCollectionPinUi(colId);
       syncPinnedCollectionTabs(colId);
-      toast(i18nT(result === "pinned" ? "col.pinnedToTabs" : "col.unpinnedFromTabs"), "ok");
+      toast(i18nT(pinned ? "col.pinnedToTabs" : "col.unpinnedFromTabs"), "ok");
       return true;
     }
 

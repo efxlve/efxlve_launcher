@@ -1706,7 +1706,7 @@
   "col.unpinFromTabs": "Quitar de las pestañas de la biblioteca",
   "col.pinnedToTabs": "Fijada en las pestañas de la biblioteca",
   "col.unpinnedFromTabs": "Quitada de las pestañas de la biblioteca",
-  "col.pinLimit": "Puedes fijar hasta {count} colecciones. Quita una primero.",
+  "col.pinnedCollections": "Colecciones fijadas",
   "col.deleteHint": "Los juegos siguen en la biblioteca. Solo se quita esta colección.",
   "col.needName": "Introduce un nombre de colección.",
   "col.saved": "Colección \"{name}\" guardada",
