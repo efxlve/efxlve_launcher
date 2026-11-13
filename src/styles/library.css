@@ -30,8 +30,10 @@
 .lib-filters { flex: 1 1 0; min-width: 0; margin-bottom: 0; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; padding-bottom: 1px; }
 .lib-filters::-webkit-scrollbar { display: none; }
 .lib-col-tab { flex-shrink: 0; }
-.lib-pinned-col { min-width: 0; }
+.lib-pinned-col { min-width: 0; flex-shrink: 0; display: inline-flex; align-items: center; }
 .lib-pinned-col-name { display: block; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lib-pinned-col .col-tab-marker { display: inline-flex; align-items: center; margin-right: 4px; color: var(--text-2); }
+.lib-pinned-col.active .col-tab-marker { color: var(--text); }
 .col-dropdown-list .lib-col-tab { cursor: pointer; touch-action: none; }
 .lib-col-tab.dragging { cursor: grabbing; opacity: 0.45; }
 .lib-error-code {
@@ -161,28 +163,6 @@
    escapes the strip's clipping. */
 .col-dropdown-menu.show { position: fixed; top: 0; left: 0; right: auto; z-index: 120; }
 
-/* Pinned collection shelf: its own row under the main tabs, so the main row
-   never chooses between a pin and the Collections entry and the arrows always
-   have a real viewport to scroll. */
-#lib-pin-row { margin: -8px 0 16px; }
-#lib-pin-row:empty { display: none; }
-.lib-pin-row { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; }
-.lib-pin-scroll {
-  display: flex; align-items: center; gap: clamp(16px, 2vw, 24px);
-  min-width: 0; flex: 1 1 auto; overflow-x: auto; overflow-y: hidden;
-  scrollbar-width: none;
-}
-.lib-pin-scroll::-webkit-scrollbar { display: none; }
-.lib-pin-row .lib-pinned-col { height: 38px; font-size: 14px; color: var(--text-2); }
-.lib-pin-row .lib-pinned-col.active { color: var(--text); }
-.lib-pin-arrow {
-  flex: none; width: 24px; height: 30px; display: grid; place-items: center;
-  border: 0; border-radius: 6px; background: transparent; color: var(--text-3);
-  cursor: pointer; transition: color 0.14s ease-out, background-color 0.14s ease-out;
-}
-.lib-pin-arrow:hover:not(:disabled) { color: var(--text); background: rgba(255, 255, 255, 0.06); }
-.lib-pin-arrow:disabled { opacity: 0.3; cursor: default; }
-.lib-pin-arrow[hidden] { display: none; }
 .col-dropdown-divider {
   height: 1px; margin: 5px 0; background: rgba(255, 255, 255, 0.08);
 }
