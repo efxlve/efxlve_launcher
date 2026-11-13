@@ -98,7 +98,7 @@ export function storeFilterButtonContent(): string {
   let body = "";
   if (isAll) {
     body = `
-      <span class="lib-sort-icon">${icon("store", 13)}</span>
+      <span class="lib-store-btn-icon">${icon("store", 13)}</span>
       <span class="sort-btn-label">${esc(t("source.all"))}</span>
     `;
   } else if (on.length === 1) {
