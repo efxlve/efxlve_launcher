@@ -16,6 +16,7 @@ import {
   spotifyPageVisible,
 } from "../../core/page-visibility";
 import { S } from "../../core/state";
+import { getActiveAppIconUrl } from "../../core/app-icon";
 import { downloadBadgeCounts } from "../../core/download-badge";
 import { esc } from "../../core/utils";
 import { currentLanguage, t } from "../../i18n";
@@ -132,6 +133,9 @@ export function refreshCouchBar(): void {
     else store.removeAttribute("aria-current");
     store.removeAttribute("data-gp-default");
   }
+  const brandIcon = el.querySelector<HTMLImageElement>("[data-couch-brand-icon]");
+  const brandUrl = getActiveAppIconUrl();
+  if (brandIcon && brandIcon.getAttribute("src") !== brandUrl) brandIcon.src = brandUrl;
   // Entering a non-library page should start on its tab, not on the Back
   // button. The library keeps its first cover as the default stop.
   if (S.view !== "library") {
@@ -231,7 +235,7 @@ function mountBar(): void {
   el.className = "couch-bar";
   el.innerHTML = `
     <div class="couch-brand" aria-hidden="true">
-      <span class="couch-brand-mark">${icon("gamepad-2", 18)}</span>
+      <span class="couch-brand-mark"><img class="couch-brand-icon" data-couch-brand-icon src="${esc(getActiveAppIconUrl())}" alt="" /></span>
       <span class="couch-brand-name">EFXLVE</span>
       <span class="couch-brand-sep"></span>
       <span class="couch-page-title" data-couch-title></span>
@@ -381,7 +385,6 @@ export function openCouchMenu(): void {
             ${menuItem({ label: t("palette.searchGames"), desc: t("couch.searchHint"), iconName: "search", act: "open-palette", gpKey: "search", defaultFocus: S.runningGames.size === 0 })}
             ${menuItem({ label: t("couch.controls"), desc: t("couch.controlsHint"), iconName: "keyboard", act: "open-couch-controls", attrs: `data-return-menu="1"`, gpKey: "controls" })}
             ${menuItem({ label: t("palette.cmdOffline"), desc: S.offlineMode ? t("nav.offline") : t("nav.online"), iconName: S.offlineMode ? "wifi" : "wifi-off", act: "toggle-offline-mode", gpKey: "offline" })}
-            ${S.stage.enabled ? menuItem({ label: t("stage.enter"), iconName: "clapperboard", act: "toggle-stage", gpKey: "stage" }) : ""}
             ${menuItem({ label: t("fullscreen.exit"), desc: t("couch.exitDesc"), iconName: "minimize-2", act: "toggle-fullscreen-mode", gpKey: "exit" })}
           </div>
         </div>
@@ -430,9 +433,6 @@ function controlsMarkup(): string {
     controlRow(`${triggerGlyph(kind, "l")}${triggerGlyph(kind, "r")}`, t("couch.pages"), t("couch.pageHint")),
     controlRow(systemGlyph("Menu"), t("couch.menuButton"), t("couch.menuDesc")),
   ];
-  if (S.stage.enabled) {
-    rows.push(controlRow(systemGlyph("Guide"), t("stage.title"), t("couch.stageDesc")));
-  }
   return rows.join("");
 }
 

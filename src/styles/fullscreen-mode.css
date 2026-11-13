@@ -211,6 +211,14 @@ html.pad-input body.fullscreen-mode * {
   color: var(--text);
 }
 
+.couch-brand-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: contain;
+  display: block;
+}
+
 .couch-brand-name {
   font-size: 13px;
   font-weight: 800;
@@ -264,14 +272,6 @@ html.pad-input body.fullscreen-mode * {
 .couch-nav-item svg {
   width: 17px;
   height: 17px;
-  flex-shrink: 0;
-}
-
-.couch-nav-item .couch-app-icon {
-  width: 17px;
-  height: 17px;
-  border-radius: 4px;
-  object-fit: contain;
   flex-shrink: 0;
 }
 
@@ -616,13 +616,6 @@ button.couch-status-chip:hover {
 .couch-menu-icon svg {
   width: 20px;
   height: 20px;
-}
-
-.couch-menu-icon .couch-app-icon {
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
-  object-fit: contain;
 }
 
 .couch-menu-label {
@@ -1267,11 +1260,6 @@ body.stage-mode #couch-root {
   }
 
   .couch-nav-item svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  .couch-nav-item .couch-app-icon {
     width: 18px;
     height: 18px;
   }

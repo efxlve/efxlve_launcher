@@ -76,6 +76,10 @@ async function setStageFullscreen(on: boolean): Promise<void> {
 export async function enterStage(opts: { route?: StageRoute; gameKey?: string } = {}): Promise<boolean> {
   if (!S.stage.enabled) return false;
   if (S.stage.active) return true;
+  // Full Screen Mode and Stage both own the whole window. Entering Stage from
+  // the couch shell leaves two full-screen owners fighting over focus, so the
+  // two entry points stay separate.
+  if (S.isFullscreen) return false;
   if (hasOpenDialog()) {
     toast(t("stage.closeDialogFirst"), "");
     return false;

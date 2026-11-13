@@ -853,11 +853,15 @@ function renderController(): string {
     (S.stage.enabled
       ? row(t("stage.settingsAuto"), t("stage.settingsAutoDesc"), toggle("toggle-stage-auto", S.stage.autoEnter)) +
         row(t("stage.settingsOpenAtLaunch"), t("stage.settingsOpenAtLaunchDesc"), toggle("toggle-stage-open-launch", S.stage.openAtLaunch)) +
-        row(
-          t("stage.settingsOpenNow"),
-          t("stage.settingsOpenNowDesc"),
-          `<div class="settings-inline-control"><button class="btn ghost small" data-act="toggle-stage">${icon("clapperboard", 14)} ${t("stage.enter")}</button><button class="btn ghost small" data-act="open-stage-settings">${icon("sliders", 14)} ${t("stage.navSettings")}</button></div>`,
-        )
+        // Stage has its own fullscreen presentation; opening it from inside
+        // Full Screen Mode leaves two shells competing for the window.
+        (S.isFullscreen
+          ? ""
+          : row(
+              t("stage.settingsOpenNow"),
+              t("stage.settingsOpenNowDesc"),
+              `<div class="settings-inline-control"><button class="btn ghost small" data-act="toggle-stage">${icon("clapperboard", 14)} ${t("stage.enter")}</button><button class="btn ghost small" data-act="open-stage-settings">${icon("sliders", 14)} ${t("stage.navSettings")}</button></div>`,
+            ))
       : "") +
     infoBox("stage.settingsBetaNote");
   const stageGroup = group(stageRows, t("stage.settingsTitle"));
