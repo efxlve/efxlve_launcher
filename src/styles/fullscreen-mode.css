@@ -267,6 +267,14 @@ html.pad-input body.fullscreen-mode * {
   flex-shrink: 0;
 }
 
+.couch-nav-item .couch-app-icon {
+  width: 17px;
+  height: 17px;
+  border-radius: 4px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .couch-nav-item:hover {
   background: var(--surface-2);
   color: var(--text);
@@ -597,6 +605,13 @@ html.pad-input body.fullscreen-mode * {
 .couch-menu-icon svg {
   width: 20px;
   height: 20px;
+}
+
+.couch-menu-icon .couch-app-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  object-fit: contain;
 }
 
 .couch-menu-label {
@@ -1240,6 +1255,11 @@ body.stage-mode #couch-root {
   }
 
   .couch-nav-item svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .couch-nav-item .couch-app-icon {
     width: 18px;
     height: 18px;
   }

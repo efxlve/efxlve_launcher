@@ -9,17 +9,17 @@
 export type CouchPage = "library" | "downloads" | "store" | "profile" | "settings";
 
 export const COUCH_PAGES: readonly CouchPage[] = [
+  "store",
   "library",
   "downloads",
-  "store",
   "profile",
   "settings",
 ];
 
-/** Next page in the ring. Unknown views (notes, media, Spotify, Discord) start from Library. */
+/** Next page in the ring. Unknown views (notes, media, Spotify, Discord) start at an edge. */
 export function stepCouchPage(current: string, direction: -1 | 1): CouchPage {
   const index = COUCH_PAGES.indexOf(current as CouchPage);
-  if (index < 0) return direction > 0 ? "downloads" : "settings";
+  if (index < 0) return direction > 0 ? COUCH_PAGES[0] : COUCH_PAGES[COUCH_PAGES.length - 1];
   const next = (index + direction + COUCH_PAGES.length) % COUCH_PAGES.length;
   return COUCH_PAGES[next];
 }
