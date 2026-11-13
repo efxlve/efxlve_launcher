@@ -951,6 +951,7 @@ button.gp-focused,
 /* The couch bar is fixed: scaling its children wobbles the whole strip. */
 .couch-nav-item.gp-focused,
 .couch-icon-btn.gp-focused,
+.couch-status-chip.gp-focused,
 .couch-key.gp-focused,
 .couch-keyboard-close.gp-focused {
   transform: none !important;
