@@ -150,7 +150,7 @@ export type StoreFilterCounts = Record<GameSource, number> & { all: number };
 export function storeFilterMenuHtml(counts: StoreFilterCounts): string {
   const row = (value: GameSource | "all", label: string, count: number, on: boolean): string => {
     const mark = `<span class="store-option-mark">${on ? icon("check", 14) : ""}</span>`;
-    const logo = value === "all" ? `<span class="store-option-logo"></span>` : `<span class="store-option-logo">${storeLogo(value, 16) || icon("gamepad-2", 16)}</span>`;
+    const logo = value === "all" ? `<span class="store-option-logo">${icon("store", 15)}</span>` : `<span class="store-option-logo">${storeLogo(value, 16) || icon("gamepad-2", 16)}</span>`;
     return `<button type="button" class="sort-menu-item-btn store-menu-item${on ? " is-on" : ""}" role="menuitemcheckbox" aria-checked="${on}" data-act="source-filter" data-val="${value}">${mark}${logo}<span class="store-option-label">${esc(label)}</span><span class="store-option-count tabular-nums">${count}</span></button>`;
   };
   const available = availableStores();
@@ -163,6 +163,7 @@ export function storeFilterMenuHtml(counts: StoreFilterCounts): string {
   return `
     <div class="store-dropdown-container">
       <button class="btn lib-sort-btn lib-store-btn" data-act="toggle-store-dropdown" title="${esc(t("filter.source"))}">
+        <span class="lib-sort-icon">${icon("store", 13)}</span>
         <span class="sort-btn-label">${esc(storeFilterLabel())}</span>
         ${icon(S.isStoreDropdownOpen ? "chevron-up" : "chevron-down", 14)}
       </button>
