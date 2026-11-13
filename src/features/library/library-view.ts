@@ -1406,47 +1406,59 @@ function pinnedCollectionTab(col: { id: string; name: string; emoji?: string | n
   return `<button class="tab lib-filter lib-pinned-col lib-col-tab${active ? " active" : ""}" data-act="quick-tab" data-tab="collection" data-col-id="${esc(col.id)}" title="${esc(col.name)}">${marker}<span class="lib-pinned-col-name">${esc(col.name)}</span></button>`;
 }
 
-/** Label of the trailing Collections tab. A pinned collection has its own tab,
- *  so the dropdown keeps the generic label instead of repeating the name. */
+function isCompactFilterStrip(): boolean {
+  return typeof window !== "undefined" && typeof window.matchMedia === "function"
+    ? window.matchMedia("(max-width: 1280px)").matches
+    : false;
+}
+
+let filterStripMediaQueryWired = false;
+function wireFilterStripMediaQuery(): void {
+  if (filterStripMediaQueryWired || typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+  filterStripMediaQueryWired = true;
+  const mql = window.matchMedia("(max-width: 1280px)");
+  const onChange = (): void => {
+    if (S.view === "library") syncPinnedCollectionTabs();
+  };
+  if (typeof mql.addEventListener === "function") mql.addEventListener("change", onChange);
+  else if (typeof (mql as unknown as { addListener?: (fn: () => void) => void }).addListener === "function") {
+    (mql as unknown as { addListener: (fn: () => void) => void }).addListener(onChange);
+  }
+}
+
+/** Label of the Collections tab. A pinned collection owns its own tab on wide
+ *  screens, so the dropdown keeps the generic label; when pinned tabs fold away
+ *  on narrow screens, the dropdown represents the active collection. */
 function collectionsTabLabel(): string {
   const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
   const activeCol = isColActive && !isSmartCollection(S.activeCollectionId)
     ? S.epicCollections.find((c) => c.id === S.activeCollectionId)
     : null;
   const activeSmart = isSmartCollection(S.activeCollectionId) ? smartCollection(S.activeCollectionId) : undefined;
-  if (activeCol && !isCollectionPinned(activeCol.id)) return activeCol.name;
+  if (activeCol) {
+    if (isCompactFilterStrip() || !isCollectionPinned(activeCol.id)) return activeCol.name;
+    return t("col.allCollections");
+  }
   return activeSmart ? activeSmart.label() : t("col.allCollections");
 }
 
-/** In compact view (when pinned tabs fold away), the Collections tab represents
- *  whichever collection is active, even if that collection is pinned. */
-function compactCollectionsTabLabel(): string {
-  const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
-  const activeCol = isColActive && !isSmartCollection(S.activeCollectionId)
-    ? S.epicCollections.find((c) => c.id === S.activeCollectionId)
-    : null;
-  const activeSmart = isSmartCollection(S.activeCollectionId) ? smartCollection(S.activeCollectionId) : undefined;
-  if (activeCol) return activeCol.name;
-  return activeSmart ? activeSmart.label() : t("col.allCollections");
-}
-
-/** The library filter strip: fixed tabs, pinned collections, then the Collections gallery entry. */
+/** The library filter strip: fixed tabs, then Collections gallery, then pinned collections. */
 function libraryFilterTabsHtml(): string {
+  wireFilterStripMediaQuery();
   const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
   const pins = pinnedCollectionsForTabs();
-  const pinnedActive = pins.some((col) => col.id === S.activeCollectionId);
+  const pinnedActive = !isCompactFilterStrip() && pins.some((col) => col.id === S.activeCollectionId);
   const colDropdown = `
-      <button class="tab lib-filter lib-col-dropdown-btn lib-col-tab ${isColActive && !pinnedActive ? "active" : ""}${isColActive && pinnedActive ? " active-when-narrow" : ""}" data-act="open-col-gallery" title="${esc(t("col.allCollections"))}">
-        <span class="lib-col-dropdown-label-full">${esc(collectionsTabLabel())}</span>
-        <span class="lib-col-dropdown-label-compact">${esc(compactCollectionsTabLabel())}</span>
+      <button class="tab lib-filter lib-col-dropdown-btn lib-col-tab ${isColActive && !pinnedActive ? "active" : ""}" data-act="open-col-gallery" title="${esc(t("col.allCollections"))}">
+        <span>${esc(collectionsTabLabel())}</span>
         ${icon("layers", 14)}
       </button>`;
   return [
     filterTab("all", t("library.all")),
     filterTab("installed", t("library.installed")),
     filterTab("fav", t("library.favorites")),
-    ...pins.map(pinnedCollectionTab),
     colDropdown,
+    ...pins.map(pinnedCollectionTab),
   ].join("");
 }
 
@@ -1619,13 +1631,10 @@ export function updateLibraryFilterInPlace(): boolean {
   const colDropdownBtn = filters.querySelector<HTMLElement>(".lib-col-dropdown-btn");
   if (colDropdownBtn) {
     const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
-    const pinnedActive = S.activeCollectionId ? isCollectionPinned(S.activeCollectionId) : false;
+    const pinnedActive = !isCompactFilterStrip() && (S.activeCollectionId ? isCollectionPinned(S.activeCollectionId) : false);
     colDropdownBtn.classList.toggle("active", isColActive && !pinnedActive);
-    colDropdownBtn.classList.toggle("active-when-narrow", isColActive && pinnedActive);
-    const fullSpan = colDropdownBtn.querySelector<HTMLElement>(".lib-col-dropdown-label-full");
-    if (fullSpan) fullSpan.textContent = collectionsTabLabel();
-    const compactSpan = colDropdownBtn.querySelector<HTMLElement>(".lib-col-dropdown-label-compact");
-    if (compactSpan) compactSpan.textContent = compactCollectionsTabLabel();
+    const labelSpan = colDropdownBtn.querySelector("span");
+    if (labelSpan) labelSpan.textContent = collectionsTabLabel();
   }
   const activeTab = filters.querySelector<HTMLElement>(".lib-filter.active");
   if (activeTab) activeTab.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
