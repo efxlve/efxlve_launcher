@@ -1053,7 +1053,14 @@ pub(super) async fn monitor_download(
                         log_lines.push_back(line.clone());
                         tail.push_back(line);
                     }
-                    Ok(None) => break,
+                    Ok(None) => {
+                        // EOF: take the exit status now when the process is
+                        // already gone, instead of discarding the wait below.
+                        if let Ok(Some(exit)) = child.try_wait() {
+                            exited = Some(exit);
+                        }
+                        break;
+                    }
                     Err(_) => {
                         // The main process can exit while a multiprocessing child
                         // still holds the inherited stderr pipe open. The pipe
@@ -1106,10 +1113,27 @@ pub(super) async fn monitor_download(
             match exited {
                 Some(exit) => Some(exit),
                 None => {
-                    if !stall_restart {
-                        let _ = child.wait().await;
+                    if stall_restart {
+                        None
+                    } else {
+                        // stderr can close before the interpreter finishes.
+                        // Capture the status but never wait forever for it.
+                        match tokio::time::timeout(COMPLETION_GRACE, child.wait()).await {
+                            Ok(Ok(status)) => Some(status),
+                            Ok(Err(_)) => None,
+                            Err(_) => {
+                                if let Some(pid) = child.id() {
+                                    kill_download_tree(pid).await;
+                                }
+                                if completion_at.is_some() {
+                                    stopped_after_completion = true;
+                                } else {
+                                    stall_error = Some("@t:dl.stalled".into());
+                                }
+                                None
+                            }
+                        }
                     }
-                    None
                 }
             }
         } else {
