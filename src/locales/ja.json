@@ -4311,5 +4311,6 @@
   "downloads.activeDownloads": "ダウンロード: {count}",
   "downloads.updatesReady": "更新の準備: {count}",
   "col.moveLeft": "左へ移動",
-  "col.moveRight": "右へ移動"
+  "col.moveRight": "右へ移動",
+  "col.pinLimitReached": "最大{max}個のコレクションをピン留めできます"
 }

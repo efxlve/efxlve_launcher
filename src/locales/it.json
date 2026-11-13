@@ -4311,5 +4311,6 @@
   "downloads.activeDownloads": "Download: {count}",
   "downloads.updatesReady": "Aggiornamenti pronti: {count}",
   "col.moveLeft": "Sposta a sinistra",
-  "col.moveRight": "Sposta a destra"
+  "col.moveRight": "Sposta a destra",
+  "col.pinLimitReached": "Puoi fissare fino a {max} collezioni"
 }

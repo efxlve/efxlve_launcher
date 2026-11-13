@@ -4311,5 +4311,6 @@
   "downloads.activeDownloads": "Downloads: {count}",
   "downloads.updatesReady": "Updates bereit: {count}",
   "col.moveLeft": "Nach links verschieben",
-  "col.moveRight": "Nach rechts verschieben"
+  "col.moveRight": "Nach rechts verschieben",
+  "col.pinLimitReached": "Sie können bis zu {max} Sammlungen anheften"
 }

@@ -4311,5 +4311,6 @@
   "downloads.activeDownloads": "下载：{count}",
   "downloads.updatesReady": "待更新：{count}",
   "col.moveLeft": "向左移动",
-  "col.moveRight": "向右移动"
+  "col.moveRight": "向右移动",
+  "col.pinLimitReached": "最多只能固定 {max} 个收藏夹"
 }

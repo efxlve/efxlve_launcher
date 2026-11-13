@@ -4311,5 +4311,6 @@
   "downloads.activeDownloads": "डाउनलोड: {count}",
   "downloads.updatesReady": "तैयार अपडेट: {count}",
   "col.moveLeft": "बाएं ले जाएं",
-  "col.moveRight": "दाएं ले जाएं"
+  "col.moveRight": "दाएं ले जाएं",
+  "col.pinLimitReached": "आप अधिकतम {max} संग्रह पिन कर सकते हैं"
 }

@@ -4311,5 +4311,6 @@
   "downloads.activeDownloads": "ดาวน์โหลด: {count}",
   "downloads.updatesReady": "อัปเดตพร้อม: {count}",
   "col.moveLeft": "ย้ายไปทางซ้าย",
-  "col.moveRight": "ย้ายไปทางขวา"
+  "col.moveRight": "ย้ายไปทางขวา",
+  "col.pinLimitReached": "คุณสามารถปักหมุดได้สูงสุด {max} คอลเลกชัน"
 }

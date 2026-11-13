@@ -4311,5 +4311,6 @@
   "downloads.activeDownloads": "다운로드: {count}",
   "downloads.updatesReady": "준비된 업데이트: {count}",
   "col.moveLeft": "왼쪽으로 이동",
-  "col.moveRight": "오른쪽으로 이동"
+  "col.moveRight": "오른쪽으로 이동",
+  "col.pinLimitReached": "최대 {max}개의 컬렉션을 고정할 수 있습니다"
 }

@@ -4311,5 +4311,6 @@
   "downloads.activeDownloads": "Загрузки: {count}",
   "downloads.updatesReady": "Готовые обновления: {count}",
   "col.moveLeft": "Переместить влево",
-  "col.moveRight": "Переместить вправо"
+  "col.moveRight": "Переместить вправо",
+  "col.pinLimitReached": "Можно закрепить до {max} коллекций"
 }

@@ -4311,5 +4311,6 @@
   "downloads.activeDownloads": "Pobierania: {count}",
   "downloads.updatesReady": "Gotowe aktualizacje: {count}",
   "col.moveLeft": "Przesuń w lewo",
-  "col.moveRight": "Przesuń w prawo"
+  "col.moveRight": "Przesuń w prawo",
+  "col.pinLimitReached": "Możesz przypiąć maksymalnie {max} kolekcje"
 }

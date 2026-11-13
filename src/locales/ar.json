@@ -4311,5 +4311,6 @@
   "downloads.activeDownloads": "التنزيلات: {count}",
   "downloads.updatesReady": "تحديثات جاهزة: {count}",
   "col.moveLeft": "تحريك لليسار",
-  "col.moveRight": "تحريك لليمين"
+  "col.moveRight": "تحريك لليمين",
+  "col.pinLimitReached": "يمكنك تثبيت ما يصل إلى {max} مجموعات"
 }

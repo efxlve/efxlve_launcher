@@ -4311,5 +4311,6 @@
   "downloads.activeDownloads": "Téléchargements : {count}",
   "downloads.updatesReady": "Mises à jour prêtes : {count}",
   "col.moveLeft": "Déplacer vers la gauche",
-  "col.moveRight": "Déplacer vers la droite"
+  "col.moveRight": "Déplacer vers la droite",
+  "col.pinLimitReached": "Vous pouvez épingler jusqu'à {max} collections"
 }

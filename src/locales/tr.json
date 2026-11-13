@@ -4311,5 +4311,6 @@
   "downloads.activeDownloads": "İndirmeler: {count}",
   "downloads.updatesReady": "Hazır güncelleme: {count}",
   "col.moveLeft": "Sola taşı",
-  "col.moveRight": "Sağa taşı"
+  "col.moveRight": "Sağa taşı",
+  "col.pinLimitReached": "En fazla {max} koleksiyon sabitleyebilirsiniz"
 }
