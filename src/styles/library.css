@@ -156,6 +156,29 @@
 .lib-col-dropdown-btn {
   display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
 }
+.lib-col-dropdown-btn span {
+  display: inline-block; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lib-col-dropdown-label-compact { display: none; }
+
+@media (max-width: 1280px) {
+  /* On narrower screens, fold pinned collections so core tabs + Collections always fit */
+  .lib-pinned-col { display: none !important; }
+  .lib-col-dropdown-label-full { display: none !important; }
+  .lib-col-dropdown-label-compact { display: inline-block !important; }
+  .lib-col-dropdown-btn.active-when-narrow {
+    color: var(--text);
+  }
+  .lib-col-dropdown-btn.active-when-narrow::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: var(--accent);
+  }
+}
 .col-dropdown-menu {
   left: 0; right: auto; min-width: 220px; max-width: 280px; max-height: 320px; overflow-y: auto;
 }

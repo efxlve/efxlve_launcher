@@ -1418,14 +1418,27 @@ function collectionsTabLabel(): string {
   return activeSmart ? activeSmart.label() : t("col.allCollections");
 }
 
+/** In compact view (when pinned tabs fold away), the Collections tab represents
+ *  whichever collection is active, even if that collection is pinned. */
+function compactCollectionsTabLabel(): string {
+  const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
+  const activeCol = isColActive && !isSmartCollection(S.activeCollectionId)
+    ? S.epicCollections.find((c) => c.id === S.activeCollectionId)
+    : null;
+  const activeSmart = isSmartCollection(S.activeCollectionId) ? smartCollection(S.activeCollectionId) : undefined;
+  if (activeCol) return activeCol.name;
+  return activeSmart ? activeSmart.label() : t("col.allCollections");
+}
+
 /** The library filter strip: fixed tabs, pinned collections, then the Collections gallery entry. */
 function libraryFilterTabsHtml(): string {
   const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
   const pins = pinnedCollectionsForTabs();
   const pinnedActive = pins.some((col) => col.id === S.activeCollectionId);
   const colDropdown = `
-      <button class="tab lib-filter lib-col-dropdown-btn lib-col-tab ${isColActive && !pinnedActive ? "active" : ""}" data-act="open-col-gallery" title="${esc(t("col.allCollections"))}">
-        <span>${esc(collectionsTabLabel())}</span>
+      <button class="tab lib-filter lib-col-dropdown-btn lib-col-tab ${isColActive && !pinnedActive ? "active" : ""}${isColActive && pinnedActive ? " active-when-narrow" : ""}" data-act="open-col-gallery" title="${esc(t("col.allCollections"))}">
+        <span class="lib-col-dropdown-label-full">${esc(collectionsTabLabel())}</span>
+        <span class="lib-col-dropdown-label-compact">${esc(compactCollectionsTabLabel())}</span>
         ${icon("layers", 14)}
       </button>`;
   return [
@@ -1608,10 +1621,11 @@ export function updateLibraryFilterInPlace(): boolean {
     const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
     const pinnedActive = S.activeCollectionId ? isCollectionPinned(S.activeCollectionId) : false;
     colDropdownBtn.classList.toggle("active", isColActive && !pinnedActive);
-    // Smart collections are not in `epicCollections`: the in-place path used
-    // to label them "All collections" while the grid was filtered.
-    const labelSpan = colDropdownBtn.querySelector("span");
-    if (labelSpan) labelSpan.textContent = collectionsTabLabel();
+    colDropdownBtn.classList.toggle("active-when-narrow", isColActive && pinnedActive);
+    const fullSpan = colDropdownBtn.querySelector<HTMLElement>(".lib-col-dropdown-label-full");
+    if (fullSpan) fullSpan.textContent = collectionsTabLabel();
+    const compactSpan = colDropdownBtn.querySelector<HTMLElement>(".lib-col-dropdown-label-compact");
+    if (compactSpan) compactSpan.textContent = compactCollectionsTabLabel();
   }
   const activeTab = filters.querySelector<HTMLElement>(".lib-filter.active");
   if (activeTab) activeTab.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
