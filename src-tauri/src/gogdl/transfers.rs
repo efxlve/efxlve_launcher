@@ -1157,6 +1157,22 @@ pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<(), Stri
         };
 
         let stderr = child.stderr.take();
+        // gogdl prints a disk-space refusal on stdout; drain the pipe so it
+        // cannot block and so the failure can name the cause.
+        let mut stdout_pipe = child.stdout.take();
+        let stdout_task = tokio::spawn(async move {
+            let mut text = String::new();
+            if let Some(stdout) = stdout_pipe.as_mut() {
+                let mut lines = CrlfLines::new(stdout);
+                while let Some(line) = lines.next_line().await {
+                    if text.len() < 8192 {
+                        text.push_str(&line);
+                        text.push('\n');
+                    }
+                }
+            }
+            text
+        });
         let mut last_progress = 0i32;
         let mut last_moved = Instant::now();
         let mut last_pct: Option<f64> = None;
@@ -1234,6 +1250,17 @@ pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<(), Stri
                     tail.push_back(line.clone());
                 }
             }
+        }
+        let stdout_text = tokio::time::timeout(Duration::from_secs(5), stdout_task)
+            .await
+            .ok()
+            .and_then(|task| task.ok())
+            .unwrap_or_default();
+        for line in stdout_text.lines() {
+            if tail.len() >= 40 {
+                tail.pop_front();
+            }
+            tail.push_back(line.trim().to_string());
         }
 
         let status: Result<std::process::ExitStatus, String> =
