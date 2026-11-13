@@ -154,12 +154,12 @@ fn nile_download_cancelled(id: &str, generation: u64) -> bool {
     with_nile_download(id, generation, |state| state.cancelled).unwrap_or(false)
 }
 
-/// True while this product has an install in flight.
-pub(super) fn download_in_flight(id: &str) -> bool {
-    let slot = NILE_DL_STATE
+/// True while any Amazon install is writing Nile's shared config.
+pub(super) fn install_in_flight() -> bool {
+    NILE_DL_STATE
         .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner());
-    slot.as_ref().is_some_and(|state| state.id == id)
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .is_some()
 }
 
 fn finish_nile_download(id: &str, generation: u64) {
@@ -465,7 +465,7 @@ pub async fn nile_install_info(app: AppHandle, id: String) -> Result<u64, String
 /// Removes one installed game and its files.
 #[tauri::command]
 pub async fn nile_uninstall(app: AppHandle, id: String) -> Result<(), String> {
-    if download_in_flight(&id) {
+    if install_in_flight() {
         return Err("@t:dl.anotherActive".to_string());
     }
     // The title is needed after the uninstall to drop the desktop shortcut.

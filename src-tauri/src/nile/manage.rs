@@ -53,7 +53,7 @@ fn verify_emitter(app: AppHandle, event_id: String) -> impl FnMut(&str) + Send +
 /// Verifies (and repairs) one installed Amazon game through Nile.
 #[tauri::command]
 pub async fn nile_verify(app: AppHandle, id: String) -> Result<(), String> {
-    if super::transfers::download_in_flight(&id) {
+    if super::transfers::install_in_flight() {
         return Err("@t:dl.anotherActive".to_string());
     }
     if library::installed_game(&app, &id).is_none() {
@@ -114,8 +114,7 @@ pub async fn nile_move_game(
     if !app_name.starts_with("amazon::") {
         return Err(format!("@t:move.noInstallRecord\u{1f}{app_name}"));
     }
-    let product_id = app_name.trim_start_matches("amazon::");
-    if super::transfers::download_in_flight(product_id) {
+    if super::transfers::install_in_flight() {
         return Err("@t:dl.anotherActive".to_string());
     }
     let config = cli::config_dir(&app);

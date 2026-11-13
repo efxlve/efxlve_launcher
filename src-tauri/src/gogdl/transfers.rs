@@ -989,7 +989,7 @@ pub async fn gog_uninstall_game(app: AppHandle, game_id: String) -> Result<Strin
         let state = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
         if state
             .as_ref()
-            .is_some_and(|st| st.active_game_id.as_deref() == Some(composite_id.as_str()))
+            .is_some_and(|st| st.active_game_id.is_some())
         {
             return Err("@t:dl.anotherActive".to_string());
         }
