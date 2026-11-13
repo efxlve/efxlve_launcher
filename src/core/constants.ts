@@ -204,6 +204,13 @@ export const FULLSCREEN_AUTO_KEY = "efxlve-fullscreen-auto";
 export const FULLSCREEN_DISABLED_KEY = "efxlve-fullscreen-disabled";
 /** Saved full screen state. */
 export const FULLSCREEN_MODE_KEY = "efxlve-fullscreen-mode";
+/** Couch-shell preferences; all are opt-in except the two enabled defaults. */
+export const FULLSCREEN_SWAP_AB_KEY = "efxlve-fullscreen-swap-ab";
+export const FULLSCREEN_HAPTICS_KEY = "efxlve-fullscreen-haptics";
+export const FULLSCREEN_KEYBOARD_KEY = "efxlve-fullscreen-keyboard";
+export const FULLSCREEN_HINTS_KEY = "efxlve-fullscreen-hints";
+/** One-time "B goes back" hint after the first controller entry. */
+export const FULLSCREEN_HINT_KEY = "efxlve-fullscreen-hint-seen";
 
 /** Stage is the experimental controller-first shell; this is its master switch. */
 export const STAGE_ENABLED_KEY = "efxlve-stage-enabled";

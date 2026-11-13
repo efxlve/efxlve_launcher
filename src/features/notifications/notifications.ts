@@ -333,6 +333,12 @@ export function updateNotifBadge(): void {
   badge.textContent = n > 9 ? "9+" : String(n);
   badge.classList.toggle("warn", eosMissing);
   badge.classList.toggle("hidden", !eosMissing && n === 0);
+  // The couch top bar mirrors the hidden sidebar badge.
+  const couch = document.getElementById("couch-root")?.querySelector<HTMLElement>("[data-couch-notif]");
+  if (couch) {
+    couch.textContent = badge.textContent;
+    couch.classList.toggle("hidden", badge.classList.contains("hidden"));
+  }
 }
 
 /** Signature of the last painted panel; renders stay no-op while nothing changes. */
@@ -573,8 +579,13 @@ function panelMarkup(data: NotifPanelData, unread: number): string {
     </div>`;
 }
 
+function notifAnchor(): DOMRect | undefined {
+  return document.getElementById("couch-notif-btn")?.getBoundingClientRect()
+    ?? document.getElementById("notif-btn")?.getBoundingClientRect();
+}
+
 function overlayOrigin(width: number, height: number): { x: number; y: number } {
-  const anchor = document.getElementById("notif-btn")?.getBoundingClientRect();
+  const anchor = notifAnchor();
   let x = anchor ? anchor.left : 8;
   let y = anchor ? anchor.bottom + 8 : 40;
   if (x + width > window.innerWidth - 8) x = window.innerWidth - width - 8;
@@ -694,7 +705,7 @@ export function positionNotifPanel(): void {
     return;
   }
   const panel = document.querySelector<HTMLElement>("#notif-root .notif-panel");
-  const anchor = document.getElementById("notif-btn")?.getBoundingClientRect();
+  const anchor = notifAnchor();
   if (!panel || !anchor) return;
   panel.style.width = "";
   const left = Math.min(anchor.left, Math.max(8, window.innerWidth - panel.offsetWidth - 8));

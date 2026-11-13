@@ -45,6 +45,10 @@ import {
   APP_ICON_KEY,
   FULLSCREEN_AUTO_KEY,
   FULLSCREEN_DISABLED_KEY,
+  FULLSCREEN_SWAP_AB_KEY,
+  FULLSCREEN_HAPTICS_KEY,
+  FULLSCREEN_KEYBOARD_KEY,
+  FULLSCREEN_HINTS_KEY,
   CONTROLLER_BRIDGE_KEY,
   MINIMIZE_ON_GAME_KEY,
   AUTOSTART_INIT_KEY,
@@ -139,6 +143,8 @@ import { switchAccount } from "../auth/account-switcher";
 import { switchGogAccount } from "../auth/gog-account-switcher";
 import { openPalette } from "../palette/palette";
 import { setFullscreenMode, toggleFullscreenMode, updateFullscreenUi } from "../gamepad/fullscreen-mode";
+import { closeCouchControls, closeCouchMenu, openCouchControls, openCouchMenu } from "../gamepad/couch-shell";
+import { closeControllerKeyboard, controllerKeyboardPress } from "../gamepad/on-screen-keyboard";
 import { stageBridge } from "../gamepad/stage-bridge";
 import { enterStage, setStageAutoEnter, setStageEnabled, setStageOpenAtLaunch, toggleStage } from "../stage/stage-state";
 import { applyPresenceSettings } from "../presence/presence";
@@ -284,6 +290,22 @@ document.addEventListener("click", (e) => {
 
   // Capture the target before any re-render detaches it from the DOM.
   const t = targetEl.closest<HTMLElement>("[data-act], [data-view]");
+
+  // Couch surfaces close before the action they carry runs. The map transition
+  // is the exception: it replaces the menu and keeps the store parking hold.
+  if (targetEl.closest("#couch-root .couch-menu-layer, #couch-root .couch-controls-layer")) {
+    const couchAct = t?.dataset.act;
+    if (couchAct === "open-couch-controls") {
+      // openCouchControls replaces the menu and keeps the store hold.
+    } else if (couchAct === "close-couch-controls") {
+      closeCouchControls();
+    } else if (couchAct === "close-couch-menu") {
+      closeCouchMenu();
+    } else if (t?.dataset.view || couchAct) {
+      closeCouchMenu();
+      closeCouchControls();
+    }
+  }
 
   // Close the notification dropdown when clicking anywhere outside it.
   if (S.notifOpen && !targetEl.closest("#notif-root") && !targetEl.closest('[data-act="toggle-notifications"]')) {
@@ -778,6 +800,35 @@ document.addEventListener("click", (e) => {
     openPalette();
   } else if (act === "toggle-fullscreen-mode") {
     void toggleFullscreenMode();
+  } else if (act === "open-couch-menu") {
+    openCouchMenu();
+  } else if (act === "close-couch-menu") {
+    closeCouchMenu();
+  } else if (act === "open-couch-controls") {
+    openCouchControls(t.dataset.returnMenu === "1");
+  } else if (act === "close-couch-controls") {
+    closeCouchControls();
+  } else if (act === "close-controller-keyboard") {
+    closeControllerKeyboard();
+  } else if (act === "couch-key" && t.dataset.key) {
+    controllerKeyboardPress(t.dataset.key);
+  } else if (act === "toggle-fullscreen-swap-ab") {
+    S.fullscreenSwapAB = !S.fullscreenSwapAB;
+    localStorage.setItem(FULLSCREEN_SWAP_AB_KEY, String(S.fullscreenSwapAB));
+    render();
+  } else if (act === "toggle-fullscreen-haptics") {
+    S.fullscreenHaptics = !S.fullscreenHaptics;
+    localStorage.setItem(FULLSCREEN_HAPTICS_KEY, String(S.fullscreenHaptics));
+    render();
+  } else if (act === "toggle-fullscreen-keyboard") {
+    S.fullscreenKeyboard = !S.fullscreenKeyboard;
+    localStorage.setItem(FULLSCREEN_KEYBOARD_KEY, String(S.fullscreenKeyboard));
+    if (!S.fullscreenKeyboard) closeControllerKeyboard();
+    render();
+  } else if (act === "toggle-fullscreen-hints") {
+    S.fullscreenHints = !S.fullscreenHints;
+    localStorage.setItem(FULLSCREEN_HINTS_KEY, String(S.fullscreenHints));
+    render();
   } else if (act === "toggle-stage") {
     void toggleStage();
   } else if (act === "open-stage-settings") {

@@ -14,7 +14,7 @@ import { syncCaseCustomStoreColors } from "../library/case-colors";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
 import { cancelFinishCountdown, setDownloadFinishAction } from "../downloads/finish-action";
 import { epicSetDownloadLimit } from "../../epic-commands";
-import { closeModal, collectionRoot, manageRoot, playtimeRoot, viewEl } from "../../core/dom";
+import { closeModal, collectionRoot, manageRoot, modalRoot, playtimeRoot, viewEl } from "../../core/dom";
 import { cancelChoice, cancelConfirm } from "../../core/confirm-dialog";
 import { answerPassword, cancelPassword } from "../../core/password-dialog";
 import { answerText, cancelText } from "../../core/text-dialog";
@@ -58,6 +58,8 @@ import { readCoverFile } from "../cover/cover-file";
 import { setLogoScale, stopLogoHeroAdjust } from "../cover/logo-layout";
 import { closeSortNameModal } from "../library/sort-name";
 import { closeLibFilterPanel } from "../library/library-filters";
+import { couchBack } from "../gamepad/couch-shell";
+import { setFullscreenMode } from "../gamepad/fullscreen-mode";
 import {
   enrichAchievementsData,
   renderDrawerDlcs,
@@ -260,6 +262,9 @@ document.addEventListener("keydown", (e) => {
   }
 
   if (e.key === "Escape") {
+    // The couch keyboard, controller map and menu sit above every page and own
+    // Escape before the dialog stack.
+    if (couchBack()) return;
     // The restore preview sits above every page and owns Escape first.
     if (cancelRestorePreview()) return;
     // The password prompt sits above every page and owns Escape while it is open.
@@ -393,7 +398,11 @@ document.addEventListener("keydown", (e) => {
     }
     // The achievements detail no longer has its own dismissal level: Escape
     // closes the game page, as it does on every other tab.
+    const hadModal = Boolean(modalRoot.firstElementChild);
     closeModal();
+    // Escape at the root of the classic couch shell is a second exit route for
+    // keyboard users; an open page must consume the press first.
+    if (!hadModal && S.isFullscreen && !S.stage.active) void setFullscreenMode(false);
   }
   if (e.key === "Enter") {
     const activeEl = document.activeElement as HTMLElement | null;

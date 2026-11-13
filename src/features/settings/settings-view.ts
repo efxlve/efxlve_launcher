@@ -827,6 +827,17 @@ function renderController(): string {
         toggle("toggle-fullscreen-auto", S.fullscreenAutoEnter),
       )
     : "";
+  const fullscreenOptions = S.fullscreenModeEnabled
+    ? row(t("couch.swapAB"), t("couch.swapABDesc"), toggle("toggle-fullscreen-swap-ab", S.fullscreenSwapAB)) +
+      row(t("couch.haptics"), t("couch.hapticsDesc"), toggle("toggle-fullscreen-haptics", S.fullscreenHaptics)) +
+      row(t("couch.keyboardToggle"), t("couch.keyboardToggleDesc"), toggle("toggle-fullscreen-keyboard", S.fullscreenKeyboard)) +
+      row(t("couch.hints"), t("couch.hintsDesc"), toggle("toggle-fullscreen-hints", S.fullscreenHints)) +
+      row(
+        t("couch.controls"),
+        t("couch.controlsHint"),
+        `<button class="btn ghost small" data-act="open-couch-controls">${icon("gamepad-2", 14)} ${t("couch.controls")}</button>`,
+      )
+    : "";
   const bridge = row(
     t("controller.bridgeTitle"),
     t("controller.bridgeDesc"),
@@ -850,7 +861,7 @@ function renderController(): string {
       : "") +
     infoBox("stage.settingsBetaNote");
   const stageGroup = group(stageRows, t("stage.settingsTitle"));
-  return group(padRows, t("controller.padsTitle")) + virtualNote + group(fullscreenMaster + fullscreenAuto, t("fullscreen.mode")) + stageGroup + deckNote + (IS_WINDOWS ? group(bridge, t("settings.secController")) : "");
+  return group(padRows, t("controller.padsTitle")) + virtualNote + group(fullscreenMaster + fullscreenAuto + fullscreenOptions, t("fullscreen.mode")) + stageGroup + deckNote + (IS_WINDOWS ? group(bridge, t("settings.secController")) : "");
 }
 
 /** Steam card: the optional Web API key. Behavior toggles live in After playing. */

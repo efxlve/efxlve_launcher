@@ -28,6 +28,7 @@ import {
 import { holdStoreForPalette, releaseStoreForPalette } from "../store/store-view";
 import { sharedSummaries } from "../library/shared-library";
 import { openReleaseCalendarSearch, releaseDateLabel } from "../library/release-calendar";
+import { closeControllerKeyboard, isControllerKeyboardOpen } from "../gamepad/on-screen-keyboard";
 
 const MAX_GAMES = 8;
 const MAX_UPCOMING = 4;
@@ -241,6 +242,9 @@ export function openPalette(): void {
   // Start parking the store child before the palette paints. A native webview
   // ignores z-index, so the palette would otherwise open underneath it.
   const held = holdStoreForPalette();
+  // The couch sheets are a different layer; close them after the palette has
+  // its own hold, so the store child is never restored between the two.
+  window.dispatchEvent(new CustomEvent("palette-open"));
   r.innerHTML = `
     <div class="palette-backdrop" data-palette-close>
       <div class="palette" role="dialog" aria-label="${esc(t("palette.open"))}">
@@ -257,6 +261,14 @@ export function openPalette(): void {
 }
 
 function onKey(e: KeyboardEvent): void {
+  // The controller keyboard sits above the palette. Escape closes the keys
+  // first and leaves the palette (and its query) in place.
+  if (isControllerKeyboardOpen() && e.key === "Escape") {
+    e.preventDefault();
+    e.stopPropagation();
+    closeControllerKeyboard();
+    return;
+  }
   if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "k") {
     e.preventDefault();
     if (isPaletteOpen()) closePalette();

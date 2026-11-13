@@ -78,6 +78,13 @@ export function updateBadge(scope: "full" | "progress" = "full"): void {
   if (count > 0) dlBadge.title = label;
   else dlBadge.removeAttribute("title");
   if (scope === "full") updateSidebarGames();
+  // The couch top bar mirrors the hidden badge and has no render of its own
+  // while a download ticks.
+  try {
+    window.dispatchEvent(new CustomEvent("couch-refresh"));
+  } catch {
+    /* A non-window host (unit tests) has no event bus. */
+  }
 }
 
 /* ---------- Discord sidebar badge ---------- */

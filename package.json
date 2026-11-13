@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "locales": "node scripts/check-locales.mjs",
+    "test": "vitest run",
     "preview": "vite preview",
     "tauri": "tauri"
   },

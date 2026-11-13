@@ -85,6 +85,10 @@ import {
   FULLSCREEN_AUTO_KEY,
   FULLSCREEN_DISABLED_KEY,
   FULLSCREEN_MODE_KEY,
+  FULLSCREEN_SWAP_AB_KEY,
+  FULLSCREEN_HAPTICS_KEY,
+  FULLSCREEN_KEYBOARD_KEY,
+  FULLSCREEN_HINTS_KEY,
   STAGE_ENABLED_KEY,
   STAGE_AUTO_KEY,
   STAGE_OPEN_AT_LAUNCH_KEY,
@@ -831,6 +835,14 @@ export const S = {
     }
     return isSteamDeckDevice();
   })() as boolean,
+  /** Swap the physical A/B pair for players used to a Nintendo layout. */
+  fullscreenSwapAB: (localStorage.getItem(FULLSCREEN_SWAP_AB_KEY) === "true") as boolean,
+  /** A short rumble on focus moves and presses while the couch shell is open. */
+  fullscreenHaptics: (localStorage.getItem(FULLSCREEN_HAPTICS_KEY) !== "false") as boolean,
+  /** Open the on-screen keyboard when a controller selects a text field. */
+  fullscreenKeyboard: (localStorage.getItem(FULLSCREEN_KEYBOARD_KEY) !== "false") as boolean,
+  /** Show the controller hint bar in Full Screen Mode. */
+  fullscreenHints: (localStorage.getItem(FULLSCREEN_HINTS_KEY) !== "false") as boolean,
   showInstalledIcon: (localStorage.getItem(INSTALLED_ICON_KEY) === "true") as boolean,
   /** Games from other saved accounts (Steam family-sharing style). Default ON. */
   sharedOwners: new Map<string, import("../epic").SharedGame>(),

@@ -35,6 +35,8 @@ import "./features/events/input-listeners";
 import { initApp } from "./features/events/ipc-listeners";
 import { refreshGamepadFocus, updateGamepadHud } from "./features/gamepad/gamepad";
 import { updateFullscreenUi } from "./features/gamepad/fullscreen-mode";
+import { closeCouchControls, closeCouchMenu, refreshCouchBar } from "./features/gamepad/couch-shell";
+import { closeControllerKeyboard } from "./features/gamepad/on-screen-keyboard";
 import { renderStageBoot } from "./features/stage/stage-boot";
 import { enterStage, updateStageUi } from "./features/stage/stage-state";
 import { closeHideGamesModal } from "./features/library/hide-games";
@@ -190,6 +192,7 @@ function render(): void {
     // previous page's DOM, under the store tabs.
     if (!S.storeShown) paintStoreLoadingScreen(viewEl);
     updateChrome();
+    refreshCouchBar();
     renderNotificationPanel();
     presenceSync();
     return;
@@ -204,6 +207,7 @@ function render(): void {
     updateChrome();
     updateNavHistoryUi();
     updateGamepadHud(S.gamepadPolling);
+    refreshCouchBar();
     renderNotificationPanel();
     presenceSync();
     return;
@@ -242,6 +246,7 @@ function render(): void {
   updateChrome();
   updateNavHistoryUi();
   updateGamepadHud(S.gamepadPolling);
+  refreshCouchBar();
   refreshGamepadFocus();
   renderNotificationPanel();
   presenceSync();
@@ -249,6 +254,9 @@ function render(): void {
 
 /** Close every modal/drawer root. */
 function closeAllModals(): void {
+  closeControllerKeyboard();
+  closeCouchMenu();
+  closeCouchControls();
   closeModal();
   closeScreenshotLightbox();
   closeScreenshotMoveConfirm();

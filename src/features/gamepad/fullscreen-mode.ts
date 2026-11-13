@@ -7,12 +7,14 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
-import { isTauri } from "../../core/constants";
+import { FULLSCREEN_HINT_KEY, isTauri } from "../../core/constants";
 import { S } from "../../core/state";
 import { handleWindowResize } from "../../core/window";
 import { t } from "../../i18n";
 import { icon } from "../../core/icons";
+import { toast } from "../../core/toast";
 import { initGamepadFocus, updateGamepadHud } from "./gamepad";
+import { setCouchUiActive } from "./couch-shell";
 
 export function isFullscreenMode(): boolean {
   return S.isFullscreen;
@@ -54,10 +56,21 @@ export async function setFullscreenMode(on: boolean): Promise<void> {
   }
 
   document.body.classList.toggle("fullscreen-mode", on);
+  setCouchUiActive(on);
   updateFullscreenUi();
 
   if (on) {
     initGamepadFocus();
+    // The top bar and hint strip teach the mode after this; one toast on the
+    // first controller entry explains the Back button without repeating it.
+    try {
+      if (S.gamepadPolling && localStorage.getItem(FULLSCREEN_HINT_KEY) !== "1") {
+        localStorage.setItem(FULLSCREEN_HINT_KEY, "1");
+        toast(t("couch.entered"), "ok");
+      }
+    } catch {
+      /* A private profile can reject storage; the hint is optional. */
+    }
   }
   updateGamepadHud(S.gamepadPolling);
 }
@@ -93,6 +106,7 @@ export function updateFullscreenUi(): void {
 // of an active Stage.
 window.addEventListener("keydown", (e: KeyboardEvent) => {
   if (e.key === "F11") {
+    if (e.repeat) return;
     if (S.stage.active) return;
     e.preventDefault();
     void toggleFullscreenMode();
