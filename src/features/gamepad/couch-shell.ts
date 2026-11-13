@@ -17,7 +17,6 @@ import {
 } from "../../core/page-visibility";
 import { S } from "../../core/state";
 import { downloadBadgeCounts } from "../../core/download-badge";
-import { getActiveAppIconUrl } from "../../core/app-icon";
 import { esc } from "../../core/utils";
 import { currentLanguage, t } from "../../i18n";
 import { releaseStoreOverlay, holdStoreOverlay } from "../store/store-view";
@@ -132,9 +131,6 @@ export function refreshCouchBar(): void {
     if (active) store.setAttribute("aria-current", "page");
     else store.removeAttribute("aria-current");
     store.removeAttribute("data-gp-default");
-    const icon = store.querySelector<HTMLImageElement>(".couch-app-icon");
-    const iconUrl = getActiveAppIconUrl();
-    if (icon && icon.getAttribute("src") !== iconUrl) icon.src = iconUrl;
   }
   // Entering a non-library page should start on its tab, not on the Back
   // button. The library keeps its first cover as the default stop.
@@ -242,7 +238,7 @@ function mountBar(): void {
     </div>
     <nav class="couch-nav" aria-label="${esc(t("couch.pages"))}">
       <button type="button" class="couch-nav-item" data-act="open-store" data-couch-store data-gp-item data-gp-key="couch:nav:store">
-        <img class="couch-app-icon" src="${esc(getActiveAppIconUrl())}" alt="" /> <span>${esc(t("nav.store"))}</span>
+        ${icon("store", 17)}<span>${esc(t("nav.store"))}</span>
       </button>
       ${navButton("library", "layout-grid", t("nav.library"), "library")}
       ${navButton("downloads", "download", t("nav.downloads"), "downloads", true)}
@@ -312,7 +308,6 @@ function menuItem(opts: {
   label: string;
   desc?: string;
   iconName: IconName;
-  image?: string;
   view?: string;
   act?: string;
   attrs?: string;
@@ -322,7 +317,7 @@ function menuItem(opts: {
 }): string {
   const target = opts.view ? `data-view="${opts.view}"` : `data-act="${opts.act ?? ""}"`;
   return `<button type="button" class="couch-menu-item${opts.active ? " is-active" : ""}" ${target} ${opts.attrs ?? ""} data-gp-item data-gp-key="couch:menu:${opts.gpKey}"${opts.defaultFocus ? " data-gp-default" : ""}>
-    <span class="couch-menu-icon">${opts.image ? `<img class="couch-app-icon" src="${esc(opts.image)}" alt="" />` : icon(opts.iconName, 20)}</span>
+    <span class="couch-menu-icon">${icon(opts.iconName, 20)}</span>
     <span class="couch-menu-label"><b>${esc(opts.label)}</b>${opts.desc ? `<small>${esc(opts.desc)}</small>` : ""}</span>
     ${opts.active ? `<span class="couch-menu-active">${icon("check", 14)}</span>` : ""}
   </button>`;
@@ -330,7 +325,7 @@ function menuItem(opts: {
 
 function menuPages(): string {
   const items = [
-    menuItem({ label: t("nav.store"), iconName: "external", image: getActiveAppIconUrl(), act: "open-store", gpKey: "store", active: S.view === "store" }),
+    menuItem({ label: t("nav.store"), iconName: "store", act: "open-store", gpKey: "store", active: S.view === "store" }),
     menuItem({ label: t("nav.library"), iconName: "layout-grid", view: "library", gpKey: "library", active: S.view === "library" }),
     menuItem({ label: t("nav.downloads"), iconName: "download", view: "downloads", gpKey: "downloads", active: S.view === "downloads" }),
     menuItem({ label: t("palette.cmdProfile"), iconName: "user", view: "profile", gpKey: "profile", active: S.view === "profile" }),
