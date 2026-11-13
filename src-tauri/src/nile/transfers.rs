@@ -466,6 +466,13 @@ pub async fn nile_uninstall(app: AppHandle, id: String) -> Result<(), String> {
     if !out.status.success() {
         return Err(cli::failure_message(&out));
     }
+    // Nile compares its stored manifest, so a reinstall would report "Game is
+    // up to date" and need the reset-and-retry path. Start clean instead.
+    let _ = std::fs::remove_file(
+        cli::config_dir(&app)
+            .join("manifests")
+            .join(format!("{id}.raw")),
+    );
     super::manage::remove_shortcut_for_title(&title);
     Ok(())
 }
