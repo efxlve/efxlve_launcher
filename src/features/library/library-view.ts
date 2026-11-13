@@ -30,7 +30,7 @@ import type { GameSource } from "../../core/types";
 import { t } from "../../i18n";
 import { sharedSummaries } from "./shared-library";
 import { steamAppOsList } from "./steam-library";
-import { allStoresMenuCount, enabledStoreKey, pickShownCopy, storeFilterLabel, storeFilterMenuHtml, storeFilterRowOn } from "./store-filter";
+import { allStoresMenuCount, enabledStoreKey, pickShownCopy, storeFilterLabel, storeFilterMenuHtml, storeFilterRowOn, storeFilterButtonContent, storeFilterTooltip } from "./store-filter";
 import { coverSizeMenuHtml, listDensityMenuHtml, syncDensityMenu } from "./library-options";
 import { closeLibFilterPanel, effectiveInstallSize, genresOf, libFiltersActiveCount, matchesLibFilters, mountLibFilterPanel, primaryGenreOf, renderActiveFilterChips, studioOf, syncLibFilterHeaderBtn } from "./library-filters";
 import { registerAlphaJumpHandler, syncLibraryAlphaRail } from "./library-alpha";
@@ -1217,13 +1217,16 @@ export function refreshLibraryResultsInPlace(): boolean {
 
 /** Store-menu checks and the button label. The menu itself stays open. */
 function syncStoreFilterMenu(): void {
-  const label = document.querySelector<HTMLElement>(".lib-store-btn .sort-btn-label");
-  if (label) label.textContent = storeFilterLabel();
-  document.querySelectorAll<HTMLElement>('#store-dropdown-menu [data-act="source-filter"]').forEach((btn) => {
-    const on = storeFilterRowOn(btn.dataset.val || "");
-    btn.classList.toggle("is-on", on);
-    btn.setAttribute("aria-checked", on ? "true" : "false");
-    const mark = btn.querySelector(".store-option-mark");
+  const btn = document.querySelector<HTMLElement>(".lib-store-btn");
+  if (btn) {
+    btn.innerHTML = storeFilterButtonContent();
+    btn.title = storeFilterTooltip();
+  }
+  document.querySelectorAll<HTMLElement>('#store-dropdown-menu [data-act="source-filter"]').forEach((b) => {
+    const on = storeFilterRowOn(b.dataset.val || "");
+    b.classList.toggle("is-on", on);
+    b.setAttribute("aria-checked", on ? "true" : "false");
+    const mark = b.querySelector(".store-option-mark");
     if (mark) mark.innerHTML = on ? icon("check", 14) : "";
   });
 }

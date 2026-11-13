@@ -75,6 +75,50 @@ function storeName(id: GameSource, short: boolean): string {
   }
 }
 
+/** Tooltip describing the current storefront filter state. */
+export function storeFilterTooltip(): string {
+  const available = availableStores();
+  const on = available.filter((id) => S.enabledStores.has(id));
+  if (available.length === 0 || on.length === available.length || on.length === 0) {
+    return t("source.all");
+  }
+  return on.map((id) => storeName(id, false)).join(", ");
+}
+
+/** Inner markup for the library storefront filter trigger button.
+ *  - Scenario 1 (All Stores): generic store icon + "All Stores"
+ *  - Scenario 2 (Single store): that store's logo + store name
+ *  - Scenario 3 (Multiple stores): only the logos of the selected stores
+ */
+export function storeFilterButtonContent(): string {
+  const available = availableStores();
+  const on = available.filter((id) => S.enabledStores.has(id));
+  const isAll = available.length === 0 || on.length === available.length || on.length === 0;
+
+  let body = "";
+  if (isAll) {
+    body = `
+      <span class="lib-sort-icon">${icon("store", 13)}</span>
+      <span class="sort-btn-label">${esc(t("source.all"))}</span>
+    `;
+  } else if (on.length === 1) {
+    const id = on[0];
+    const logo = storeLogo(id, 14, "lib-store-btn-logo-img") || icon("gamepad-2", 14);
+    body = `
+      <span class="store-option-logo lib-store-btn-logo">${logo}</span>
+      <span class="sort-btn-label">${esc(storeName(id, false))}</span>
+    `;
+  } else {
+    const logos = on.map((id) => {
+      const logo = storeLogo(id, 14, "lib-store-btn-logo-img") || icon("gamepad-2", 14);
+      return `<span class="store-option-logo lib-store-btn-logo" title="${esc(storeName(id, false))}">${logo}</span>`;
+    }).join("");
+    body = `<span class="lib-store-icons-row">${logos}</span>`;
+  }
+
+  return `${body}<span class="lib-store-chevron">${icon("chevron-down", 14)}</span>`;
+}
+
 /** Button label: "All Stores", one store's name, or "Epic, Steam". */
 export function storeFilterLabel(): string {
   const available = availableStores();
@@ -162,10 +206,8 @@ export function storeFilterMenuHtml(counts: StoreFilterCounts): string {
     .join("");
   return `
     <div class="store-dropdown-container">
-      <button class="btn lib-sort-btn lib-store-btn" data-act="toggle-store-dropdown" title="${esc(t("filter.source"))}">
-        <span class="lib-sort-icon">${icon("store", 13)}</span>
-        <span class="sort-btn-label">${esc(storeFilterLabel())}</span>
-        ${icon(S.isStoreDropdownOpen ? "chevron-up" : "chevron-down", 14)}
+      <button class="btn lib-sort-btn lib-store-btn" data-act="toggle-store-dropdown" title="${esc(storeFilterTooltip())}">
+        ${storeFilterButtonContent()}
       </button>
       <div id="store-dropdown-menu" class="sort-dropdown-menu store-dropdown-menu ${S.isStoreDropdownOpen ? "show" : ""}">
         ${row("all", t("source.all"), counts.all, allOn)}

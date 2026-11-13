@@ -102,6 +102,13 @@
 .store-option-logo img { width: 16px; height: 16px; object-fit: contain; }
 .store-option-logo svg { width: 15px; height: 15px; color: var(--text-2); }
 .store-menu-item:hover .store-option-logo svg { color: var(--text); }
+.lib-store-btn-logo { width: 14px; height: 14px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
+.lib-store-btn-logo img { width: 14px; height: 14px; object-fit: contain; }
+.lib-store-btn-logo svg { width: 13px; height: 13px; color: var(--text); }
+.lib-store-icons-row { display: inline-flex; align-items: center; gap: 5px; flex-wrap: nowrap; }
+.lib-store-chevron { display: inline-flex; align-items: center; justify-content: center; color: var(--text-3); margin-left: 2px; }
+.lib-store-chevron svg { transition: transform 0.18s ease; }
+:where(.store-dropdown-container:has(> .store-dropdown-menu.show)) .lib-store-chevron svg { transform: rotate(180deg); }
 .store-option-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .store-option-count { color: var(--text-3); font-size: 12px; margin-left: auto; min-width: 2.6em; text-align: right; font-variant-numeric: tabular-nums; }
 
