@@ -45,8 +45,17 @@ function enabled(source: GameSource): boolean {
 /**
  * The unified shelf. It deliberately reads the same raw stores as the desktop
  * grid; no IPC call and no per-card lookup is involved.
+ *
+ * `mergeCopies` is off only in the split-copies view; a manual collection is a
+ * list of games, so its shelf asks for one card per title regardless of the
+ * library-wide setting. `prefer` is that collection's representative key per
+ * game, favouring the copy the player installed.
  */
-export function stageBaseSummaries(onlyStore: GameSource | "all" = "all"): EpicSummary[] {
+export function stageBaseSummaries(
+  onlyStore: GameSource | "all" = "all",
+  mergeCopies = !S.separateCopies,
+  prefer?: ReadonlySet<string>,
+): EpicSummary[] {
   const groups = new Map<string, EpicSummary[]>();
   const copies: EpicSummary[] = [];
   const primaryTitles = new Set<string>();
@@ -65,7 +74,7 @@ export function stageBaseSummaries(onlyStore: GameSource | "all" = "all"): EpicS
     if (S.hiddenGames.has(s.appName)) return;
     if (!allow(sourceOfKey(s.appName))) return;
     const copy = withOverride(s);
-    if (S.separateCopies) {
+    if (!mergeCopies) {
       copies.push(copy);
       return;
     }
@@ -93,10 +102,18 @@ export function stageBaseSummaries(onlyStore: GameSource | "all" = "all"): EpicS
     push(libraryItemToSummary(s));
   }
 
-  if (S.separateCopies) return copies;
+  if (!mergeCopies) return copies;
   const out: EpicSummary[] = [];
   for (const list of groups.values()) {
-    if (list.length > 0) out.push(pickShownCopy(list));
+    if (list.length === 0) continue;
+    if (prefer) {
+      const chosen = list.find((item) => prefer.has(item.appName));
+      if (chosen) {
+        out.push(chosen);
+        continue;
+      }
+    }
+    out.push(pickShownCopy(list));
   }
   return out;
 }
@@ -201,7 +218,11 @@ export function stageLibraryList(): EpicSummary[] {
     ? S.epicCollections.find((collection) => collection.id === collectionId) ?? null
     : null;
   const match = manual ? collectionMatch(manual) : null;
-  let list = stageBaseSummaries(S.stage.libraryStore).filter((s) => {
+  let list = stageBaseSummaries(
+    S.stage.libraryStore,
+    !S.separateCopies || Boolean(manual),
+    manual ? new Set(collectionGames(manual)) : undefined,
+  ).filter((s) => {
     if (S.stage.libraryStore !== "all" && sourceOfKey(s.appName) !== S.stage.libraryStore) return false;
     if (S.stage.libraryFilter === "installed" && !s.installed) return false;
     if (S.stage.libraryFilter === "favorites" && !S.epicFav.has(s.appName)) return false;

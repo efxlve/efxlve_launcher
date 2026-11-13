@@ -139,7 +139,7 @@ export function libraryFilteredList(): EpicSummary[] {
     }
   }
 
-  const baseItems = libraryBaseItems();
+  const baseItems = libraryBaseItems(activeCol ? new Set(collectionGames(activeCol)) : undefined);
 
   const list = baseItems.filter((s) => {
     if (query.source && sourceOfKey(s.appName) !== query.source) return false;
@@ -290,11 +290,24 @@ function primaryPurchaseTitles(): Set<string> {
 /**
  * One row per title, limited to the storefronts that are checked.
  * A saved store choice supplies the playtime and trophies on that card.
+ *
+ * A manual collection is a list of games, not of store copies: its counter and
+ * editor dedupe by title, so the grid keeps one card per title even when the
+ * player split copies in the rest of the library. `prefer` holds that
+ * collection's representative key per game, so the copy the player installed
+ * wins over an uninstalled one.
  */
-function libraryBaseItems(): EpicSummary[] {
+function libraryBaseItems(prefer?: ReadonlySet<string>): EpicSummary[] {
   const groups = new Map<string, EpicSummary[]>();
   const copies: EpicSummary[] = [];
   const primaryTitles = primaryPurchaseTitles();
+  const perGameCollection = Boolean(
+    S.activeCollectionId &&
+    S.activeCollectionId !== "all" &&
+    S.activeCollectionId !== "fav" &&
+    !isSmartCollection(S.activeCollectionId),
+  );
+  const splitCopies = S.separateCopies && !perGameCollection;
   const withOverride = (s: EpicSummary): EpicSummary => {
     const override = S.epicCopyOverrides.get(s.appName);
     return override ? { ...s, ...override } : s;
@@ -303,7 +316,7 @@ function libraryBaseItems(): EpicSummary[] {
     if (S.hiddenGames.has(s.appName)) return;
     // Separate mode lists every store copy as its own card; combined mode keeps
     // one card per canonical title.
-    if (S.separateCopies) {
+    if (splitCopies) {
       copies.push(s);
       return;
     }
@@ -341,9 +354,18 @@ function libraryBaseItems(): EpicSummary[] {
     if (g.source === "ea" && primaryTitles.has(canonicalGameTitle(g.title))) continue;
     push(libraryItemToSummary(g));
   }
-  if (S.separateCopies) return copies;
+  if (splitCopies) return copies;
   const out: EpicSummary[] = [];
-  for (const list of groups.values()) out.push(pickShownCopy(list));
+  for (const list of groups.values()) {
+    if (prefer) {
+      const chosen = list.find((item) => prefer.has(item.appName));
+      if (chosen) {
+        out.push(chosen);
+        continue;
+      }
+    }
+    out.push(pickShownCopy(list));
+  }
   return out;
 }
 
