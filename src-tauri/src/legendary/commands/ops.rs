@@ -530,6 +530,9 @@ pub async fn epic_move_game(
     app_name: String,
     target_base_path: String,
 ) -> Result<crate::legendary::move_game::MoveGameResult, String> {
+    if crate::legendary::transfers::download_in_flight(&app, &app_name) {
+        return Err("@t:dl.anotherActive".to_string());
+    }
     let config = skip::default_config_dir();
     crate::legendary::move_game::move_game_folder(app, &config, app_name, target_base_path).await
 }

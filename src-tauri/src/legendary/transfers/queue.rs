@@ -412,7 +412,7 @@ pub(super) fn forget_pending(app_name: &str) {
 
 /// True when this game is the active download or waiting in the queue; an
 /// uninstall must not delete files a transfer is about to write.
-pub(super) fn download_in_flight(app: &AppHandle, app_name: &str) -> bool {
+pub(crate) fn download_in_flight(app: &AppHandle, app_name: &str) -> bool {
     let state = app.state::<AppState>();
     let Ok(s) = state.epic_dl.lock() else {
         return false;

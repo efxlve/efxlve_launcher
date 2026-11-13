@@ -155,6 +155,9 @@ fn strip_log_prefix(line: &str) -> &str {
 
 #[tauri::command]
 pub async fn epic_verify_game(app: AppHandle, app_name: String) -> Result<String, String> {
+    if crate::legendary::transfers::download_in_flight(&app, &app_name) {
+        return Err("@t:dl.anotherActive".to_string());
+    }
     let bin = resolve_or_err(&app)?;
 
     // EGL ile kurulu oyunlarda manifest eksikse otomatik .egstore'dan kopyala
