@@ -1036,6 +1036,15 @@ pub async fn gog_import_game(
     game_id: String,
     install_path: String,
 ) -> Result<GogInstalledInfo, String> {
+    {
+        let state = GOG_DL_STATE.lock().unwrap_or_else(|e| e.into_inner());
+        if state
+            .as_ref()
+            .is_some_and(|st| st.active_game_id.is_some())
+        {
+            return Err("@t:dl.anotherActive".to_string());
+        }
+    }
     let clean_id = game_id.trim().trim_start_matches("gog::").to_string();
     let picked = PathBuf::from(install_path.trim());
     if !picked.is_dir() {

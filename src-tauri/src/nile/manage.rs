@@ -90,6 +90,9 @@ pub async fn nile_verify(app: AppHandle, id: String) -> Result<(), String> {
 /// Imports an Amazon game installed outside Nile (an older client's folder).
 #[tauri::command]
 pub async fn nile_import(app: AppHandle, id: String, path: String) -> Result<(), String> {
+    if super::transfers::install_in_flight() {
+        return Err("@t:dl.anotherActive".to_string());
+    }
     if library::installed_game(&app, &id).is_some() {
         return Err("@t:amazon.alreadyInstalled".to_string());
     }
