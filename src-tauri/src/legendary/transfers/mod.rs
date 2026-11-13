@@ -19,7 +19,8 @@ mod paths;
 mod queue;
 mod uninstall;
 
-// guard.rs — helpers stay in that file (no crate-level re-export).
+// guard.rs: delete-safety checks shared with the GOG uninstall.
+pub(crate) use guard::{force_remove_dir_all, is_safe_game_dir};
 
 // launch.rs: epic_launch_game, epic_stop_game, stop_game_at_path, discover_game_executables, image_inside_install, wake_main_window, game_process_pids, is_game_process_running
 #[allow(unused_imports)]

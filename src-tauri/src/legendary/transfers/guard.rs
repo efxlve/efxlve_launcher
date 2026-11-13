@@ -17,7 +17,7 @@ pub(super) fn plain_folder_name(name: &str) -> bool {
         && !name.contains(['/', '\\', ':', '*', '?', '"', '<', '>', '|'])
 }
 
-pub(super) fn is_safe_game_dir(path: &Path, default_install: &Path) -> bool {
+pub(crate) fn is_safe_game_dir(path: &Path, default_install: &Path) -> bool {
     if !path.is_absolute() {
         return false;
     }
@@ -88,13 +88,25 @@ pub(super) fn is_safe_game_dir(path: &Path, default_install: &Path) -> bool {
             return false;
         }
     }
+    // Unix has no USERPROFILE; the home folder and its documents/downloads
+    // children are just as destructive to remove.
+    if let Ok(home) = std::env::var("HOME") {
+        let h = home.to_lowercase();
+        if s == h
+            || s == format!("{}/desktop", h)
+            || s == format!("{}/documents", h)
+            || s == format!("{}/downloads", h)
+        {
+            return false;
+        }
+    }
 
     true
 }
 
 /// Recursively removes a directory on Windows, stripping any read-only attributes
 /// that would otherwise cause `ERROR_ACCESS_DENIED` during deletion.
-pub(super) fn force_remove_dir_all(path: &Path) -> std::io::Result<()> {
+pub(crate) fn force_remove_dir_all(path: &Path) -> std::io::Result<()> {
     if !path.exists() {
         return Ok(());
     }

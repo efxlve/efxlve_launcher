@@ -310,6 +310,22 @@ fn parse_speed(line: &str, keyword: &str) -> Option<(String, u64)> {
     Some((part.to_string(), bytes))
 }
 
+/// The base folder for GOG games: Settings first, then `<home>/Games/GOG`.
+fn default_install_base(app: &AppHandle) -> PathBuf {
+    crate::load_settings(app)
+        .gog_install_dir
+        .filter(|path| !path.trim().is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            std::env::var_os("USERPROFILE")
+                .or_else(|| std::env::var_os("HOME"))
+                .map(PathBuf::from)
+                .unwrap_or_else(|| PathBuf::from("."))
+                .join("Games")
+                .join("GOG")
+        })
+}
+
 /// Initiates downloading and installing a GOG game.
 #[command]
 pub async fn gog_install_game(
@@ -377,18 +393,7 @@ pub async fn gog_install_game(
     } else if let Some(picked) = picked {
         picked
     } else {
-        crate::load_settings(&app)
-            .gog_install_dir
-            .filter(|path| !path.trim().is_empty())
-            .map(PathBuf::from)
-            .unwrap_or_else(|| {
-                std::env::var_os("USERPROFILE")
-                    .or_else(|| std::env::var_os("HOME"))
-                    .map(PathBuf::from)
-                    .unwrap_or_else(|| PathBuf::from("."))
-                    .join("Games")
-                    .join("GOG")
-            })
+        default_install_base(&app)
     };
     // gogdl keeps one manifest per game for update diffs. A fresh install
     // starts without one: a stale manifest would make gogdl report "Nothing
@@ -1007,14 +1012,33 @@ pub async fn gog_uninstall_game(app: AppHandle, game_id: String) -> Result<Strin
         .remove(&clean_id)
         .ok_or_else(|| "@t:dl.notInstalled".to_string())?;
 
-    let path_str = info.install_path.trim();
-    if !path_str.is_empty() {
-        let p = Path::new(path_str);
-        if p.exists() && p.is_dir() {
-            if let Err(e) = tokio::fs::remove_dir_all(p).await {
-                eprintln!("Could not delete GOG install dir '{}': {}", path_str, e);
-            }
+    let recorded = PathBuf::from(info.install_path.trim());
+    let target = locate_game_folder(&recorded, &clean_id).unwrap_or_else(|| recorded.clone());
+    let owns_info = target.join(format!("goggame-{clean_id}.info")).is_file();
+    if owns_info
+        && target.is_dir()
+        && crate::legendary::transfers::is_safe_game_dir(&target, &default_install_base(&app))
+    {
+        let target_clone = target.clone();
+        let removed = tokio::task::spawn_blocking(move || {
+            crate::legendary::transfers::force_remove_dir_all(&target_clone).is_ok()
+        })
+        .await
+        .unwrap_or(false);
+        if !removed {
+            eprintln!("Could not delete GOG install dir '{}'", target.display());
         }
+        if target != recorded {
+            // A legacy record pointed at the parent; drop it when empty.
+            let _ = std::fs::remove_dir(&recorded);
+        }
+    } else if target.is_dir() {
+        // Deleting a folder without the game's own marker could remove a
+        // shared base directory; leave it and drop only the record.
+        eprintln!(
+            "Not removing GOG install dir '{}': goggame-{clean_id}.info is missing",
+            target.display()
+        );
     }
 
     // Without the manifest a reinstall downloads every file; with it gogdl
