@@ -74,7 +74,11 @@ function focusKeyOf(el: HTMLElement): string {
 }
 
 export function isVisibleEl(el: HTMLElement): boolean {
-  return el.getClientRects().length > 0 && !el.classList.contains("hidden");
+  if (el.classList.contains("hidden")) return false;
+  // A visually hidden checkbox inside a switch reports a 0×0 box. It is not a
+  // useful focus stop; the switch label around it is. One rect read is enough.
+  const box = el.getBoundingClientRect();
+  return box.width >= 2 || box.height >= 2;
 }
 
 export function visibleIn(root: ParentNode, selector: string): HTMLElement[] {
@@ -166,7 +170,7 @@ export function getNavigableElements(): HTMLElement[] {
     }
     const controls = visibleIn(
       overlay,
-      "button:not([disabled]), [role='button'], input:not([disabled]), select:not([disabled]), a[href]",
+      "button:not([disabled]), [role='button'], input:not([disabled]), select:not([disabled]), a[href], .switch, [data-act]",
     );
     // The game page opens on its main action, not on the Back button. A Stop
     // button is deliberately left out: a running session should not sit under
@@ -200,7 +204,7 @@ export function getNavigableElements(): HTMLElement[] {
     "#couch-bar [data-gp-item], " +
     ".sb-account, .sb-notif, .sb-item, .sb-game, #sb-toggle, " +
     "#page-header button:not([disabled]), " +
-    "#view button:not([disabled]), #view [role='button'], #view a[href], #view .switch, " +
+    "#view button:not([disabled]), #view [role='button'], #view a[href], #view .switch, #view [data-act], " +
     "#view input:not([type='hidden']):not([disabled]), " +
     "#view select:not([disabled]), #view textarea:not([disabled])";
   const withoutCardInternals = (el: HTMLElement): boolean =>
