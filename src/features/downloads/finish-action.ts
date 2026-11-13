@@ -44,6 +44,9 @@ export function launcherTransfersBusy(): boolean {
     if (!entry.done) return true;
   }
   if (S.amazonProgress.size > 0) return true;
+  // Moving an install is a launcher-owned file copy; sleeping mid-copy is
+  // just as disruptive as sleeping mid-download.
+  if (S.isMovingGame) return true;
   if (S.ubiDirectInstalling.size > 0) return true;
   if (S.eaContentInstalling.size > 0) return true;
   // A finished download can hand over to a verify pass before the game is
