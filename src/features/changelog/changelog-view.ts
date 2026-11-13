@@ -30,6 +30,36 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.56",
+    date: "2026-11-13",
+    added: [
+      {
+        en: "Full Screen Mode is now a couch shell: a controller top bar, a Start menu, an on-screen keyboard in any text field, and shoulder buttons for pages and tabs.",
+        tr: "Tam Ekran Modu artık bir koltuk kabuğu: kontrolcü için üst çubuk, Başlat menüsü, her metin alanında ekran klavyesi ve sayfalar ile sekmeler için omuz tuşları.",
+      },
+      {
+        en: "Collections can be pinned to the library tab strip. Three stay visible, the rest fold into a menu, and dragging reorders them.",
+        tr: "Koleksiyonlar kitaplık sekme çubuğuna sabitlenebiliyor. Üç tanesi görünür kalıyor, kalanlar bir menüde toplanıyor ve sürükleyerek sıralanabiliyor.",
+      },
+    ],
+    improved: [
+      {
+        en: "Download cards now show the current phase and keep a support log, and the launcher keeps your PC awake until the transfer finishes.",
+        tr: "İndirme kartları artık geçerli aşamayı gösteriyor ve destek için bir günlük tutuyor; launcher indirme bitene kadar bilgisayarı uyanık tutuyor.",
+      },
+      {
+        en: "The store filter button shows the selected store's logo in the same muted tone as the rest of the bar.",
+        tr: "Mağaza filtresi düğmesi seçili mağazanın logosunu çubuğun geri kalanıyla aynı soluk tonda gösteriyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "A GOG or Amazon download that stalls or is cancelled now recovers cleanly, names a full disk, and refuses a second install, verify or uninstall of the same game.",
+        tr: "Takılan veya iptal edilen GOG ve Amazon indirmeleri artık temiz toparlanıyor, dolu diski açıkça söylüyor ve aynı oyun indirilirken ikinci bir kurulum, doğrulama veya kaldırmayı reddediyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.55",
     date: "2026-11-12",
     fixed: [
