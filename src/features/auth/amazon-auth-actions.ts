@@ -393,7 +393,10 @@ export async function installAmazonGame(id: string): Promise<void> {
   const key = amazonKey(id);
   // A second click while this game is downloading would clear the live row,
   // and the late progress lines are ignored once the row is gone.
-  if (S.amazonProgress.has(key)) return;
+  if (S.amazonProgress.has(key)) {
+    toast(t("dl.alreadyQueued"), "");
+    return;
+  }
   const title = S.amazonGames.find((g) => g.id === id)?.title || id;
   S.amazonProgress.set(key, { percent: 0, speed: 0 });
   // The Downloads page picks the first unfinished entry as the active card.
