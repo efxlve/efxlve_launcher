@@ -105,7 +105,7 @@ export function storeFilterButtonContent(): string {
     const id = on[0];
     const logo = storeLogo(id, 14, "lib-store-btn-logo-img") || icon("gamepad-2", 14);
     body = `
-      <span class="store-option-logo lib-store-btn-logo">${logo}</span>
+      <span class="store-option-logo lib-store-btn-logo lib-store-single-logo">${logo}</span>
       <span class="sort-btn-label">${esc(storeName(id, false))}</span>
     `;
   } else {

@@ -15,7 +15,7 @@
 .lib-filters .tab { height: 48px; font-size: 16px; padding-inline: 4px; }
 .lib-filters.tabs { gap: clamp(14px, 2vw, 28px); }
 .lib-tools .lib-hide-btn { width: 40px; height: 40px; }
-.lib-sort-icon { display: inline-flex; color: var(--text-3); }
+.lib-sort-icon { display: inline-flex; color: var(--text-3); transition: color var(--ease); }
 /* Stepped on purpose: a smooth 60 fps rotation repaints the header every frame
    (measured ~70% of a core plus the GPU). Twelve steps per turn keeps the
    "working" hint for a fraction of that. */
@@ -105,8 +105,34 @@
 .lib-store-btn-logo { width: 14px; height: 14px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
 .lib-store-btn-logo img { width: 14px; height: 14px; object-fit: contain; }
 .lib-store-btn-logo svg { width: 13px; height: 13px; color: var(--text); }
+.lib-store-single-logo svg { color: var(--text-3); transition: color var(--ease); }
+.lib-store-single-logo img { opacity: 0.48; transition: opacity var(--ease); }
+.lib-sort-btn:hover .lib-store-single-logo svg,
+:where(.store-dropdown-container:has(> .store-dropdown-menu.show)) .lib-store-single-logo svg {
+  color: var(--text-2);
+}
+.lib-sort-btn:hover .lib-store-single-logo img,
+:where(.store-dropdown-container:has(> .store-dropdown-menu.show)) .lib-store-single-logo img {
+  opacity: 0.75;
+}
+.lib-sort-btn:hover .lib-sort-icon,
+:where(.sort-dropdown-container:has(> .sort-dropdown-menu.show), .store-dropdown-container:has(> .store-dropdown-menu.show)) .lib-sort-icon {
+  color: var(--text-2);
+}
+.lib-sort-btn:hover .lib-store-chevron,
+:where(.store-dropdown-container:has(> .store-dropdown-menu.show)) .lib-store-chevron {
+  color: var(--text-2);
+}
+:root[data-surface="white"] .lib-sort-btn .lib-store-single-logo img,
+:root[data-surface="gloss"] .lib-sort-btn .lib-store-single-logo img {
+  opacity: 0.48;
+}
+:root[data-surface="white"] :is(.lib-sort-btn:hover, :where(.store-dropdown-container:has(> .store-dropdown-menu.show)) > .lib-sort-btn) .lib-store-single-logo img,
+:root[data-surface="gloss"] :is(.lib-sort-btn:hover, :where(.store-dropdown-container:has(> .store-dropdown-menu.show)) > .lib-sort-btn) .lib-store-single-logo img {
+  opacity: 0.75;
+}
 .lib-store-icons-row { display: inline-flex; align-items: center; gap: 5px; flex-wrap: nowrap; }
-.lib-store-chevron { display: inline-flex; align-items: center; justify-content: center; color: var(--text-3); margin-left: 2px; }
+.lib-store-chevron { display: inline-flex; align-items: center; justify-content: center; color: var(--text-3); margin-left: 2px; transition: color var(--ease); }
 .lib-store-chevron svg { transition: transform 0.18s ease; }
 :where(.store-dropdown-container:has(> .store-dropdown-menu.show)) .lib-store-chevron svg { transform: rotate(180deg); }
 .store-option-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
