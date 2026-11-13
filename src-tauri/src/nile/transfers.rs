@@ -262,13 +262,15 @@ pub async fn nile_install(
     // Nile writes its library and manifest files; a second install would
     // overwrite the slot and let both processes write the same config.
     let generation = begin_nile_download(&id)?;
-    DL_ACTIVE.store(true, Ordering::SeqCst);
-    let _download_guard = ActiveGuard;
-    let _awake = crate::keep_awake::keep_awake();
+    // Declared before the active flag so the flag drops first; a new install
+    // cannot start until the slot is released.
     let _slot = DownloadSlot {
         id: id.clone(),
         generation,
     };
+    DL_ACTIVE.store(true, Ordering::SeqCst);
+    let _download_guard = ActiveGuard;
+    let _awake = crate::keep_awake::keep_awake();
 
     let mut args: Vec<String> = vec!["install".into(), id.clone()];
     if let Some(base) = base_path.filter(|p| !p.trim().is_empty()) {
