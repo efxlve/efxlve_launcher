@@ -264,7 +264,7 @@ function mountBar(): void {
         ${icon("bell", 18)}<span class="couch-badge hidden" data-couch-notif></span>
       </button>
       <button type="button" class="couch-icon-btn couch-menu-btn" data-act="open-couch-menu" data-gp-item data-gp-key="couch:menu" title="${esc(t("couch.menu"))}" aria-label="${esc(t("couch.menu"))}">
-        ${icon("gamepad-2", 17)}<span>${esc(t("couch.menuButton"))}</span>
+        ${icon("menu", 17)}<span>${esc(t("couch.menuButton"))}</span>
       </button>
       <button type="button" class="couch-icon-btn couch-exit-btn" data-act="toggle-fullscreen-mode" data-gp-item data-gp-key="couch:exit" title="${esc(t("fullscreen.exit"))}" aria-label="${esc(t("fullscreen.exit"))}">
         ${icon("minimize-2", 16)}
@@ -375,7 +375,7 @@ export function openCouchMenu(): void {
     <button type="button" class="couch-backdrop" data-act="close-couch-menu" tabindex="-1" aria-hidden="true"></button>
     <div class="couch-sheet couch-menu" role="dialog" aria-modal="true" aria-label="${esc(t("couch.menu"))}">
       <header class="couch-sheet-head">
-        <span class="couch-sheet-title">${icon("gamepad-2", 20)}<span>${esc(t("couch.menu"))}</span></span>
+        <span class="couch-sheet-title">${icon("menu", 20)}<span>${esc(t("couch.menu"))}</span></span>
         <span class="couch-sheet-sub">${esc(clockText())}</span>
       </header>
       <div class="couch-menu-body">
