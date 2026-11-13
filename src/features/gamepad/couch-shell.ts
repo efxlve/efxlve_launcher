@@ -251,9 +251,9 @@ function mountBar(): void {
     </nav>
     <div class="couch-status">
       <span class="couch-status-chip couch-running hidden" data-couch-running></span>
-      <span class="couch-status-chip couch-net online" data-couch-net>
+      <button type="button" class="couch-status-chip couch-net online" data-couch-net data-act="toggle-offline-mode" data-gp-item data-gp-key="couch:net">
         <span class="couch-net-dot" aria-hidden="true"></span><span data-couch-net-label>${esc(t("nav.online"))}</span>
-      </span>
+      </button>
       <span class="couch-status-chip couch-controller hidden" data-couch-controller>
         ${icon("gamepad-2", 14)}
         <span class="couch-pad-name" data-couch-pad-name></span>
@@ -385,6 +385,7 @@ export function openCouchMenu(): void {
           <div class="couch-menu-grid">
             ${menuItem({ label: t("palette.searchGames"), desc: t("couch.searchHint"), iconName: "search", act: "open-palette", gpKey: "search", defaultFocus: S.runningGames.size === 0 })}
             ${menuItem({ label: t("couch.controls"), desc: t("couch.controlsHint"), iconName: "keyboard", act: "open-couch-controls", attrs: `data-return-menu="1"`, gpKey: "controls" })}
+            ${menuItem({ label: t("palette.cmdOffline"), desc: S.offlineMode ? t("nav.offline") : t("nav.online"), iconName: S.offlineMode ? "wifi" : "wifi-off", act: "toggle-offline-mode", gpKey: "offline" })}
             ${S.stage.enabled ? menuItem({ label: t("stage.enter"), iconName: "clapperboard", act: "toggle-stage", gpKey: "stage" }) : ""}
             ${menuItem({ label: t("fullscreen.exit"), desc: t("couch.exitDesc"), iconName: "minimize-2", act: "toggle-fullscreen-mode", gpKey: "exit" })}
           </div>
