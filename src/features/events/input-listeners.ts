@@ -122,7 +122,7 @@ document.addEventListener("click", (e) => {
 // Vertical wheel scrolls a horizontal tab strip when it overflows.
 document.addEventListener("wheel", (e) => {
   const target = e.target as HTMLElement;
-  const bar = target?.closest<HTMLElement>(".gp-tabs, .lib-filters");
+  const bar = target?.closest<HTMLElement>(".gp-tabs, .lib-pin-scroll, .lib-filters");
   if (!bar || target?.closest(".col-dropdown-menu")) return;
   if (e.deltaY !== 0 && bar.scrollWidth > bar.clientWidth) {
     e.preventDefault();

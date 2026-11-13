@@ -118,7 +118,6 @@ import { clearAchievementHistory } from "../../core/achievement-history";
 import { removeAchievementPin } from "../../core/achievement-pins";
 import {
   consumeCollectionDragClick,
-  closePinOverflowMenu,
   positionColDropdownMenu,
   libraryFilteredList,
   libraryFiltersFavorites,
@@ -239,7 +238,6 @@ document.addEventListener("click", (e) => {
     const menu = document.getElementById("col-dropdown-menu");
     if (menu) menu.classList.remove("show");
   }
-  if (!targetEl.closest(".lib-pin-overflow")) closePinOverflowMenu();
 
   // Close the game page store dropdown when clicking outside it.
   if (S.isGameMoreMenuOpen && !targetEl.closest(".gp-more-wrap")) {
@@ -730,7 +728,6 @@ document.addEventListener("click", (e) => {
     if (consumeCollectionDragClick()) return;
     const colId = t.dataset.colId;
     S.isColDropdownOpen = false;
-    closePinOverflowMenu();
     const menu = document.getElementById("col-dropdown-menu");
     if (menu) menu.classList.remove("show");
     closeCollectionGallery();

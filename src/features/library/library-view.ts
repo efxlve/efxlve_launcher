@@ -1401,49 +1401,32 @@ function pinnedCollectionTab(col: { id: string; name: string }): string {
   return `<button class="tab lib-filter lib-pinned-col lib-col-tab${isFilterActive("collection", col.id) ? " active" : ""}" data-act="quick-tab" data-tab="collection" data-col-id="${esc(col.id)}" title="${esc(col.name)}"><span class="lib-pinned-col-name">${esc(col.name)}</span></button>`;
 }
 
-/** Menu rows behind the strip's chevron; every pin stays reachable there. */
-function pinnedMenuHtml(pins: { id: string; name: string; emoji?: string | null }[]): string {
-  return pins.map((col) => {
-    const active = isFilterActive("collection", col.id);
-    return `<button type="button" class="sort-menu-item-btn lib-pin-menu-item${active ? " selected" : ""}" role="menuitem" data-act="select-col-filter" data-col-id="${esc(col.id)}" title="${esc(col.name)}">
-      ${collectionMarker(col.emoji, 14)}
-      <span class="lib-pin-menu-name">${esc(col.name)}</span>
-    </button>`;
-  }).join("");
-}
-
-/** Label of the trailing Collections tab. A pinned collection already owns a
- *  tab of its own, so the dropdown keeps the generic label instead of repeating
- *  the active name twice in one strip. When that pinned tab is folded away,
- *  `showPinnedName` puts the name back on the Collections tab for orientation. */
-function collectionsTabLabel(showPinnedName = false): string {
+/** Label of the trailing Collections tab. A pinned collection has its own tab,
+ *  so the dropdown keeps the generic label instead of repeating the name. */
+function collectionsTabLabel(): string {
   const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
   const activeCol = isColActive && !isSmartCollection(S.activeCollectionId)
     ? S.epicCollections.find((c) => c.id === S.activeCollectionId)
     : null;
   const activeSmart = isSmartCollection(S.activeCollectionId) ? smartCollection(S.activeCollectionId) : undefined;
-  if (activeCol && (showPinnedName || !isCollectionPinned(activeCol.id))) return activeCol.name;
+  if (activeCol && !isCollectionPinned(activeCol.id)) return activeCol.name;
   return activeSmart ? activeSmart.label() : t("col.allCollections");
 }
 
-/** The library filter strip: fixed tabs, pinned collections, then the
- *  Collections gallery entry. Pins that do not fit fold under the chevron;
- *  `layoutFilterTabs` decides which ones stay visible. */
+/** The library filter strip: fixed tabs, a scrollable pin rail, then the
+ *  Collections gallery entry. The rail shrinks before the fixed tabs do, so
+ *  collections never push the way to manage them off the row. */
 function libraryFilterTabsHtml(): string {
   const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
   const pins = pinnedCollectionsForTabs();
   const pinnedActive = pins.some((col) => col.id === S.activeCollectionId);
-  const pinnedTabs = pins.map(pinnedCollectionTab).join("");
-  const pinOverflow = pins.length > 0 ? `
-      <div class="lib-pin-overflow" hidden>
-        <button type="button" class="tab lib-filter lib-pin-overflow-btn" data-act="toggle-pin-overflow" title="${esc(t("col.pinnedCollections"))}" aria-label="${esc(t("col.pinnedCollections"))}" aria-haspopup="menu" aria-expanded="false">
-          <span class="lib-pin-overflow-count" aria-hidden="true"></span>
-          ${icon("chevron-down", 13)}
-        </button>
-        <div id="lib-pin-overflow-menu" class="sort-dropdown-menu lib-pin-overflow-menu" role="menu" aria-label="${esc(t("col.pinnedCollections"))}">
-          <div class="sort-menu-section-label">${esc(t("col.pinnedCollections"))}</div>
-          ${pinnedMenuHtml(pins)}
+  const pinRail = pins.length > 0 ? `
+      <div class="lib-pin-rail" role="group" aria-label="${esc(t("col.pinnedCollections"))}">
+        <button type="button" class="lib-pin-arrow" data-act="pin-scroll" data-dir="-1" hidden aria-label="${esc(t("col.pinnedCollections"))}">${icon("chevron-left", 14)}</button>
+        <div class="lib-pin-scroll" data-pin-scroll>
+          ${pins.map(pinnedCollectionTab).join("")}
         </div>
+        <button type="button" class="lib-pin-arrow" data-act="pin-scroll" data-dir="1" hidden aria-label="${esc(t("col.pinnedCollections"))}">${icon("chevron-right", 14)}</button>
       </div>` : "";
   const colDropdown = `
       <button class="tab lib-filter lib-col-dropdown-btn lib-col-tab ${isColActive && !pinnedActive ? "active" : ""}" data-act="open-col-gallery" title="${esc(t("col.allCollections"))}">
@@ -1454,183 +1437,96 @@ function libraryFilterTabsHtml(): string {
     filterTab("all", t("library.all")),
     filterTab("installed", t("library.installed")),
     filterTab("fav", t("library.favorites")),
-    pinnedTabs,
-    pinOverflow,
+    pinRail,
     colDropdown,
   ].join("");
 }
 
-/** Keep one tab visible inside the strip without scrolling the page. */
-function scrollTabIntoView(strip: HTMLElement, tab: HTMLElement): void {
-  const stripRect = strip.getBoundingClientRect();
-  const tabRect = tab.getBoundingClientRect();
-  const edge = 6;
-  if (tabRect.left < stripRect.left + edge) {
-    strip.scrollLeft = Math.max(0, strip.scrollLeft - (stripRect.left + edge - tabRect.left));
-  } else if (tabRect.right > stripRect.right - edge) {
-    strip.scrollLeft += tabRect.right - (stripRect.right - edge);
-  }
+type PinRailParts = {
+  scroll: HTMLElement;
+  prev: HTMLButtonElement;
+  next: HTMLButtonElement;
+};
+
+function pinRailParts(): PinRailParts | null {
+  const scroll = document.querySelector<HTMLElement>("[data-pin-scroll]");
+  const rail = scroll?.parentElement;
+  const prev = rail?.querySelector<HTMLButtonElement>('[data-act="pin-scroll"][data-dir="-1"]');
+  const next = rail?.querySelector<HTMLButtonElement>('[data-act="pin-scroll"][data-dir="1"]');
+  return scroll && prev && next ? { scroll, prev, next } : null;
 }
 
-/** Keep the active tab visible when the strip has more tabs than width. */
-function scrollActiveFilterTabIntoView(): void {
-  const strip = document.querySelector<HTMLElement>(".lib-filters");
-  const active = strip
-    ? [...strip.querySelectorAll<HTMLElement>(".lib-filter.active")].find((el) => !el.hidden)
-    : undefined;
-  if (!strip || !active) return;
-  scrollTabIntoView(strip, active);
+/** Arrows exist only while the rail can move; the ends disable themselves. */
+export function syncPinnedRail(): void {
+  const parts = pinRailParts();
+  if (!parts) return;
+  const { scroll, prev, next } = parts;
+  const overflow = scroll.scrollWidth > scroll.clientWidth + 1;
+  prev.hidden = next.hidden = !overflow;
+  prev.disabled = !overflow || scroll.scrollLeft <= 1;
+  next.disabled = !overflow || scroll.scrollLeft >= scroll.scrollWidth - scroll.clientWidth - 1;
+  if (!overflow) scroll.scrollLeft = 0;
 }
 
-/** Collections is the active tab only when no visible pinned tab already is.
- *  The label follows: a folded active pin hands its name back to this tab. */
-function syncCollectionsTabActive(strip: HTMLElement, pins: HTMLElement[]): void {
-  const btn = strip.querySelector<HTMLElement>(".lib-col-dropdown-btn");
-  if (!btn) return;
-  const colActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
-  const pinnedVisible = pins.some((pin) => !pin.hidden && pin.classList.contains("active"));
-  const fallback = colActive && !pinnedVisible;
-  btn.classList.toggle("active", fallback);
-  const label = btn.querySelector("span");
-  if (label) label.textContent = collectionsTabLabel(fallback);
+/** One arrow step: most of the visible rail, so the next tab is not cut off. */
+export function scrollPinnedRail(direction: number): void {
+  const scroll = document.querySelector<HTMLElement>("[data-pin-scroll]");
+  if (!scroll) return;
+  const step = Math.max(120, Math.round(scroll.clientWidth * 0.8));
+  scroll.scrollBy({ left: direction < 0 ? -step : step, behavior: "smooth" });
 }
 
-/** Measure the strip and hide the pins that no longer fit. The active
- *  collection always stays visible; the rest wait behind the chevron. */
-function layoutFilterTabs(): void {
-  const strip = document.querySelector<HTMLElement>(".lib-filters");
-  if (!strip) return;
-  const pins = [...strip.querySelectorAll<HTMLElement>(".lib-pinned-col")];
-  const overflow = strip.querySelector<HTMLElement>(".lib-pin-overflow");
-  const overflowBtn = overflow?.querySelector<HTMLElement>(".lib-pin-overflow-btn");
-  const count = overflow?.querySelector<HTMLElement>(".lib-pin-overflow-count");
-  if (!overflow || !overflowBtn || !count || pins.length === 0) {
-    syncCollectionsTabActive(strip, []);
-    return;
+/** Bring a pin to the near edge of the rail without scrolling the page. */
+function scrollPinIntoView(pin: HTMLElement): void {
+  const scroll = pin.closest<HTMLElement>("[data-pin-scroll]");
+  if (!scroll) return;
+  const scrollRect = scroll.getBoundingClientRect();
+  const pinRect = pin.getBoundingClientRect();
+  if (pinRect.left < scrollRect.left) {
+    scroll.scrollLeft -= scrollRect.left - pinRect.left;
+  } else if (pinRect.right > scrollRect.right) {
+    scroll.scrollLeft += pinRect.right - scrollRect.right;
   }
-
-  // Measure every pin while it still has its natural width.
-  for (const pin of pins) pin.hidden = false;
-  const gap = parseFloat(getComputedStyle(strip).columnGap || "0") || 0;
-  const widths = pins.map((pin) => pin.offsetWidth + gap);
-  const total = widths.reduce((sum, width) => sum + width, 0);
-
-  // Natural width of the fixed tabs alone: All, Installed, Favorites, Collections.
-  overflow.hidden = true;
-  for (const pin of pins) pin.hidden = true;
-  const plainBase = strip.scrollWidth;
-  if (total <= strip.clientWidth - plainBase - gap + 0.5) {
-    for (const pin of pins) pin.hidden = false;
-    syncCollectionsTabActive(strip, pins);
-    closePinOverflowMenu();
-    return;
-  }
-
-  // The pins overflow: the chevron needs its own slot. Reserve the widest
-  // count label while measuring so filling it in cannot push a pin over.
-  overflow.hidden = false;
-  count.textContent = `+${pins.length}`;
-  const base = strip.scrollWidth;
-  const pinSpace = strip.clientWidth - base - gap;
-  let available = pinSpace;
-
-  const active = pins.findIndex((pin) => pin.classList.contains("active"));
-  const visible = new Set<number>();
-  for (let i = 0; i < pins.length; i++) {
-    if (widths[i] > available + 0.5) break;
-    visible.add(i);
-    available -= widths[i];
-  }
-  if (active >= 0 && !visible.has(active) && widths[active] <= pinSpace + 0.5) {
-    // Reserve the current collection first; earlier pins fill the room that is
-    // left, in strip order. A pin too wide for the slot stays in the menu so
-    // the fixed tabs and Collections never get pushed out.
-    let budget = pinSpace - widths[active];
-    const next = new Set<number>([active]);
-    for (let i = 0; i < active; i++) {
-      if (widths[i] > budget + 0.5) break;
-      next.add(i);
-      budget -= widths[i];
-    }
-    visible.clear();
-    for (const i of next) visible.add(i);
-  }
-  for (let i = 0; i < pins.length; i++) pins[i].hidden = !visible.has(i);
-  const hidden = pins.length - visible.size;
-  count.textContent = hidden > 0 ? `+${hidden}` : "";
-  syncCollectionsTabActive(strip, pins);
-  if (overflow.querySelector("#lib-pin-overflow-menu.show")) positionPinOverflowMenu();
+  syncPinnedRail();
 }
 
-let filterLayoutFrame = 0;
-let filterLayoutObserver: ResizeObserver | null = null;
-let pinMenuScrollWired = false;
-
-/** Coalesce resize bursts into one layout pass and keep the active tab in view. */
-function scheduleFilterLayout(): void {
-  if (filterLayoutFrame) return;
-  filterLayoutFrame = requestAnimationFrame(() => {
-    filterLayoutFrame = 0;
-    layoutFilterTabs();
-    scrollActiveFilterTabIntoView();
-  });
+/** Follow the active collection when it lives in the rail. */
+function scrollActivePinIntoView(): void {
+  const scroll = document.querySelector<HTMLElement>("[data-pin-scroll]");
+  const active = scroll?.querySelector<HTMLElement>(".lib-pinned-col.active");
+  if (active) scrollPinIntoView(active);
 }
 
-/** Rebuild the observer around the current header (a full render replaces it). */
-function observeFilterLayout(): void {
-  if (!pinMenuScrollWired) {
-    pinMenuScrollWired = true;
-    window.addEventListener("scroll", (e) => {
+let pinRailObserver: ResizeObserver | null = null;
+let pinRailEventsWired = false;
+
+/** Re-observe the current rail; a full render replaces it. */
+function observePinnedRail(): void {
+  if (!pinRailEventsWired) {
+    pinRailEventsWired = true;
+    document.addEventListener("scroll", (e) => {
       const target = e.target;
-      if (target instanceof Element && target.closest("#lib-pin-overflow-menu")) return;
-      closePinOverflowMenu();
+      if (target instanceof Element && target.matches("[data-pin-scroll]")) syncPinnedRail();
     }, { capture: true, passive: true });
   }
   if (typeof ResizeObserver === "undefined") return;
-  const head = document.querySelector<HTMLElement>(".lib-head");
-  if (!head) return;
-  if (!filterLayoutObserver) {
-    filterLayoutObserver = new ResizeObserver(() => scheduleFilterLayout());
-  } else {
-    filterLayoutObserver.disconnect();
+  const scroll = document.querySelector<HTMLElement>("[data-pin-scroll]");
+  if (!scroll) {
+    pinRailObserver?.disconnect();
+    return;
   }
-  filterLayoutObserver.observe(head);
-  // The tools' width can change the strip's own width without resizing the
-  // header; watch it too so the pin count follows the sort/store labels.
-  const strip = head.querySelector<HTMLElement>(".lib-filters");
-  if (strip) filterLayoutObserver.observe(strip);
+  if (!pinRailObserver) {
+    pinRailObserver = new ResizeObserver(() => {
+      syncPinnedRail();
+      scrollActivePinIntoView();
+    });
+  } else {
+    pinRailObserver.disconnect();
+  }
+  pinRailObserver.observe(scroll);
 }
 
-function positionPinOverflowMenu(): void {
-  const menu = document.getElementById("lib-pin-overflow-menu");
-  const btn = document.querySelector<HTMLElement>(".lib-pin-overflow-btn");
-  if (!menu || !btn) return;
-  const rect = btn.getBoundingClientRect();
-  const width = menu.offsetWidth || 248;
-  const left = Math.min(Math.max(8, rect.right - width), Math.max(8, window.innerWidth - width - 8));
-  menu.style.left = `${Math.round(left)}px`;
-  menu.style.top = `${Math.round(rect.bottom + 6)}px`;
-}
-
-export function togglePinOverflowMenu(): void {
-  const menu = document.getElementById("lib-pin-overflow-menu");
-  const btn = document.querySelector<HTMLElement>(".lib-pin-overflow-btn");
-  if (!menu || !btn) return;
-  const open = !menu.classList.contains("show");
-  menu.classList.toggle("show", open);
-  btn.setAttribute("aria-expanded", String(open));
-  if (open) positionPinOverflowMenu();
-}
-
-export function closePinOverflowMenu(): void {
-  const menu = document.getElementById("lib-pin-overflow-menu");
-  if (!menu?.classList.contains("show")) return;
-  menu.classList.remove("show");
-  document.querySelector<HTMLElement>(".lib-pin-overflow-btn")?.setAttribute("aria-expanded", "false");
-}
-
-/** Repaint only the filter strip after a pin toggle; the results did not move.
- *  A just-pinned collection is revealed when it fits. */
+/** Repaint only the filter strip after a pin toggle; the results did not move. */
 export function syncPinnedCollectionTabs(revealId?: string): void {
   if (S.view !== "library") return;
   const strip = document.querySelector<HTMLElement>(".lib-filters");
@@ -1638,13 +1534,13 @@ export function syncPinnedCollectionTabs(revealId?: string): void {
   const scroll = strip.scrollLeft;
   strip.innerHTML = libraryFilterTabsHtml();
   strip.scrollLeft = scroll;
-  layoutFilterTabs();
-  observeFilterLayout();
+  syncPinnedRail();
+  observePinnedRail();
   const revealed = revealId
     ? [...strip.querySelectorAll<HTMLElement>(".lib-pinned-col")].find((el) => el.dataset.colId === revealId)
     : undefined;
-  if (revealed && !revealed.hidden) scrollTabIntoView(strip, revealed);
-  else scrollActiveFilterTabIntoView();
+  if (revealed) scrollPinIntoView(revealed);
+  else scrollActivePinIntoView();
 }
 
 export function renderEpic(): string {
@@ -1777,9 +1673,9 @@ export function renderEpic(): string {
     requestAnimationFrame(() => repaintLibFilterPanel());
   }
   requestAnimationFrame(() => {
-    layoutFilterTabs();
-    observeFilterLayout();
-    scrollActiveFilterTabIntoView();
+    syncPinnedRail();
+    observePinnedRail();
+    scrollActivePinIntoView();
   });
 
   return `
@@ -1800,12 +1696,18 @@ export function updateLibraryFilterInPlace(): boolean {
     tabEl.classList.toggle("active", isFilterActive(tabEl.dataset.tab, tabEl.dataset.colId));
   });
 
-  document.querySelectorAll<HTMLElement>("#lib-pin-overflow-menu .lib-pin-menu-item").forEach((item) => {
-    item.classList.toggle("selected", item.dataset.colId === S.activeCollectionId);
-  });
-  closePinOverflowMenu();
-  layoutFilterTabs();
-  scrollActiveFilterTabIntoView();
+  const colDropdownBtn = filters.querySelector<HTMLElement>(".lib-col-dropdown-btn");
+  if (colDropdownBtn) {
+    const isColActive = S.activeCollectionId !== null && S.activeCollectionId !== "all" && S.activeCollectionId !== "fav";
+    const pinnedActive = S.activeCollectionId ? isCollectionPinned(S.activeCollectionId) : false;
+    colDropdownBtn.classList.toggle("active", isColActive && !pinnedActive);
+    // Smart collections are not in `epicCollections`: the in-place path used
+    // to label them "All collections" while the grid was filtered.
+    const labelSpan = colDropdownBtn.querySelector("span");
+    if (labelSpan) labelSpan.textContent = collectionsTabLabel();
+  }
+  syncPinnedRail();
+  scrollActivePinIntoView();
 
   invalidateLibraryVisibleCache();
   resultsEl.innerHTML = renderEpicItems();

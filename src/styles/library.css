@@ -161,21 +161,23 @@
    escapes the strip's clipping. */
 .col-dropdown-menu.show { position: fixed; top: 0; left: 0; right: auto; z-index: 120; }
 
-/* Pinned collection tabs that do not fit fold under this chevron. */
-.lib-pin-overflow { position: relative; display: inline-flex; align-items: center; flex-shrink: 0; }
-.lib-pin-overflow[hidden] { display: none; }
-.lib-pin-overflow-btn { gap: 3px; padding-inline: 4px; }
-.lib-pin-overflow-count {
-  min-width: 18px; text-align: right; font-size: 12px; font-weight: 500;
-  font-variant-numeric: tabular-nums; color: var(--text-2);
+/* Pinned collection rail: the pins scroll here, never the fixed tabs or the
+   Collections entry. Arrows appear only while the rail can still move. */
+.lib-pin-rail { display: flex; align-items: center; gap: 4px; min-width: 0; flex: 0 1 auto; }
+.lib-pin-scroll {
+  display: flex; align-items: center; gap: clamp(14px, 2vw, 28px);
+  min-width: 0; flex: 1 1 auto; overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none;
 }
-.lib-pin-overflow-menu { min-width: 220px; max-width: 300px; }
-/* The strip clips its content, so the open menu escapes to the viewport. */
-.lib-pin-overflow-menu.show { position: fixed; top: 0; left: 0; right: auto; z-index: 120; }
-.lib-pin-menu-item { display: flex; align-items: center; gap: 8px; }
-.lib-pin-menu-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* A tab's inline-flex display beats the browser's [hidden] rule. */
-.lib-filters .tab[hidden] { display: none; }
+.lib-pin-scroll::-webkit-scrollbar { display: none; }
+.lib-pin-arrow {
+  flex: none; width: 22px; height: 30px; display: grid; place-items: center;
+  border: 0; border-radius: 6px; background: transparent; color: var(--text-3);
+  cursor: pointer; transition: color 0.14s ease-out, background-color 0.14s ease-out;
+}
+.lib-pin-arrow:hover:not(:disabled) { color: var(--text); background: rgba(255, 255, 255, 0.06); }
+.lib-pin-arrow:disabled { opacity: 0.3; cursor: default; }
+.lib-pin-arrow[hidden] { display: none; }
 .col-dropdown-divider {
   height: 1px; margin: 5px 0; background: rgba(255, 255, 255, 0.08);
 }

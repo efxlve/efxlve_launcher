@@ -11,7 +11,7 @@ import { render } from "../../../core/render";
 import { collectionGameCount } from "../../../core/game-collections";
 import { toggleCollectionPin, forgetCollectionPin } from "../../../core/collection-pins";
 import { allStoreSummaries } from "../../../core/selectors";
-import { resetCardChunk, syncPinnedCollectionTabs, togglePinOverflowMenu } from "../../library/library-view";
+import { resetCardChunk, scrollPinnedRail, syncPinnedCollectionTabs } from "../../library/library-view";
 import { loadSettingsView } from "../../settings/settings-view";
 import { epicDeleteCollection, epicImportEglCollections, epicSaveCollection } from "../../../epic";
 import { gogImportGalaxyTags } from "../../../gog";
@@ -41,8 +41,8 @@ export function handleCollectionAction(act: string | undefined, t: HTMLElement, 
   if (!act) return false;
 
   switch (act) {
-    case "toggle-pin-overflow":
-      togglePinOverflowMenu();
+    case "pin-scroll":
+      scrollPinnedRail(Number(t.dataset.dir) || 1);
       return true;
 
     case "select-collection": {
