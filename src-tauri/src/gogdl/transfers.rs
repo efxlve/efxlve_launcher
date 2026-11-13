@@ -1269,7 +1269,9 @@ pub async fn gog_verify_game(app: AppHandle, game_id: String) -> Result<(), Stri
                 Ok(Err(error)) => Err(error.to_string()),
                 Err(_) => Err("gogdl did not exit".to_string()),
             };
-        if stalled {
+        // A kill can race a completion that already wrote its result.
+        let succeeded = matches!(&status, Ok(status) if status.success());
+        if stalled && !succeeded {
             let _ = app_clone.emit(
                 "verify-complete",
                 VerifyCompletePayload {
