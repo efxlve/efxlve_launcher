@@ -535,6 +535,11 @@ export function epicActionButtons(
     }
     return `<button class="btn stop${btn}" data-act="epic-stop" data-id="${esc(s.appName)}" title="${t("common.stop")}">${icon("x", 12)} ${t("common.stop")}</button>`;
   }
+  // Manage verification reads and writes the files a download would touch;
+  // the card must not offer install, update or play while it runs.
+  if (S.verifyingMap.has(s.appName)) {
+    return `<button class="btn ghost${btn} is-unavailable" disabled title="${esc(t("manage.verifying"))}">${icon("shield", 14)} ${t("manage.verifying")}</button>`;
+  }
   if (installPathIssue(s)) {
     return `<button class="btn danger${btn} is-unavailable" disabled title="${esc(t("sys.copyHealthTip"))}">${icon("alert-triangle", 14)} ${t("lib.copyMissing")}</button>`;
   }
