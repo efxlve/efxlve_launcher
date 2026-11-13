@@ -109,6 +109,13 @@ export function invalidateLibraryVisibleCache(): void {
   S.libraryVisibleCount = -1;
 }
 
+/** True when the current result set excludes a game the moment it is unfavorited. */
+export function libraryFiltersFavorites(): boolean {
+  if (S.activeCollectionId === "fav" || S.epicFilter === "fav") return true;
+  const query = S.query.trim().toLowerCase();
+  return query.split(/\s+/).some((token) => token === "is:fav" || token === "is:favorite");
+}
+
 /** Base list after query, tab, collection and store filters; facets excluded. */
 export function libraryFilteredList(): EpicSummary[] {
   const q = S.query.trim().toLowerCase();

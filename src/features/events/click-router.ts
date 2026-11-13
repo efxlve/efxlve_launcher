@@ -120,6 +120,7 @@ import {
   consumeCollectionDragClick,
   positionColDropdownMenu,
   libraryFilteredList,
+  libraryFiltersFavorites,
   jumpToLibraryLetter,
   refreshLibraryForStoreFilter,
   refreshLibraryResultsInPlace,
@@ -907,6 +908,9 @@ document.addEventListener("click", (e) => {
     unhideGameIds(ids);
   } else if (act === "epic-fav" && id) {
     toggleFav(id);
+    // A game removed from a favorites-only view must leave the grid now; on any
+    // other tab the heart changes state without moving its card.
+    if (libraryFiltersFavorites()) refreshLibraryResultsInPlace();
   } else if (act === "epic-detail" && id) {
     openEpicModal(id);
   } else if (act === "companion-open" && id) {

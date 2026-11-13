@@ -21,6 +21,7 @@ import { closePalette, isPaletteOpen, openPalette } from "../palette/palette";
 import { setView } from "../store/store-view";
 import { stageBridge } from "./stage-bridge";
 import { currentFocusedEl, getNavigableElements, initGamepadFocus, isVisibleEl, lastFocusedKey, moveGamepadFocus, refreshGamepadFocus, setFocus, topOverlay, visibleIn } from "./focus-engine";
+import { libraryFiltersFavorites, refreshLibraryResultsInPlace } from "../library/library-view";
 export { initGamepadFocus, moveGamepadFocus, refreshGamepadFocus, setGamepadFocus, stageControlKey } from "./focus-engine";
 import { isCouchControlsOpen, isCouchMenuOpen, couchBack, openCouchMenu, closeCouchMenu, closeCouchControls, refreshCouchBar } from "./couch-shell";
 import { isControllerKeyboardOpen, openControllerKeyboard, closeControllerKeyboard, controllerKeyboardPress, syncControllerKeyboard, controllerKeyboardRecentlyClosed } from "./on-screen-keyboard";
@@ -265,6 +266,12 @@ function quickFavoriteAction(): void {
   const appName = currentFocusedEl.dataset.id || currentFocusedEl.dataset.libItem || currentFocusedEl.dataset.app;
   if (appName) {
     toggleFav(appName);
+    // The card leaves a favorites-only grid; a stale focus ring would point at
+    // the node that just disappeared.
+    if (libraryFiltersFavorites()) {
+      refreshLibraryResultsInPlace();
+      refreshGamepadFocus();
+    }
     toast(t("gamepad.favorite"), "ok");
   }
 }
