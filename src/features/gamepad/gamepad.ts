@@ -919,7 +919,7 @@ export function initGamepadSupport(): void {
   let lastMouseY = -1;
   window.addEventListener("mousemove", (event) => {
     if (S.stage.active) return;
-    const threshold = S.isFullscreen ? 14 : 4;
+    const threshold = S.isFullscreen ? 6 : 4;
     if (lastMouseX >= 0 && Math.hypot(event.clientX - lastMouseX, event.clientY - lastMouseY) < threshold) return;
     lastMouseX = event.clientX;
     lastMouseY = event.clientY;
@@ -928,6 +928,11 @@ export function initGamepadSupport(): void {
       setFocus(null);
     }
   }, { passive: true });
+  // A click attempt always brings the pointer back, even if the mouse barely
+  // moved after the pad hid it.
+  window.addEventListener("pointerdown", () => {
+    document.documentElement.classList.remove("pad-input");
+  }, { capture: true, passive: true });
   window.addEventListener("keydown", () => {
     document.documentElement.classList.remove("pad-input");
   }, { passive: true });

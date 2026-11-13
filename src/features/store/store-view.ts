@@ -185,19 +185,32 @@ export function holdStoreForCover(): void {
 export function releaseStoreOverlay(reason: string): void {
   if (reason === "palette" && paletteDomOpen()) return;
   if (!storeHoldReasons.delete(reason) || storeHoldReasons.size > 0 || storeRestoreInFlight) return;
-  if (S.view === "store" && S.storeShown && coveringStore()) {
-    storeHoldReasons.add("cover");
-    watchCoversThenRelease();
-    return;
-  }
   stopCoverWatch();
   if (!isTauri) return;
-  const restore = S.view === "store" && S.storeShown;
-  const rect = restore ? storeRect() : { x: 0, y: 0, width: 100, height: 100, bottom: 0 };
+  // A click can close a covering sheet and change the page in the same event
+  // (couch menu -> Library). Restoring the child before that page change lands
+  // would leave an empty native storefront over the new page, which swallows
+  // every mouse click. Decide on the next task, once S.view is settled.
   storeRestoreInFlight = true;
-  void invoke("set_store_palette_hold", { hold: false, restore, ...rect }).finally(() => {
-    storeRestoreInFlight = false;
-  });
+  window.setTimeout(() => {
+    if (storeHoldReasons.size > 0) {
+      storeRestoreInFlight = false;
+      return;
+    }
+    if (S.view === "store" && S.storeShown && coveringStore()) {
+      storeHoldReasons.add("cover");
+      storeRestoreInFlight = false;
+      watchCoversThenRelease();
+      return;
+    }
+    const restore = S.view === "store" && S.storeShown;
+    const rect = restore ? storeRect() : { x: 0, y: 0, width: 100, height: 100, bottom: 0 };
+    void invoke("set_store_palette_hold", { hold: false, restore, ...rect })
+      .catch(() => undefined)
+      .finally(() => {
+        storeRestoreInFlight = false;
+      });
+  }, 0);
 }
 
 export function releaseStoreForPalette(): void {
