@@ -648,6 +648,9 @@ export async function initApp(hooks: {
       if (!done) startSpeedChartTimer();
 
       if (!done) {
+        // The first line is often 0% while the CLI reads manifests; say
+        // "Starting…" instead of "Downloading" until bytes actually move.
+        const phase = progress >= 99.9 ? "finishing" : progress <= 0 ? "starting" : "downloading";
         const cur = S.downloads.get(id);
         if (cur) cur.progress = progress;
         else S.downloads.set(id, { progress, done: false, title });
@@ -668,11 +671,11 @@ export async function initApp(hooks: {
             eta: eta ?? t("common.calculating"),
             downloadedBytes: downloadedBytes ?? 0,
             totalBytes: totalBytes ?? 0,
-            phase: "downloading",
+            phase,
           };
         } else {
           S.activeDlMetrics.progress = progress;
-          S.activeDlMetrics.phase = "downloading";
+          S.activeDlMetrics.phase = phase;
           if (speed) S.activeDlMetrics.speed = speed;
           if (freshNet) S.activeDlMetrics.speedBytes = measuredSpeedBytes;
           if (diskSpeed) S.activeDlMetrics.diskSpeed = diskSpeed;
