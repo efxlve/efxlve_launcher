@@ -505,6 +505,10 @@ export async function stopAmazonGame(id: string): Promise<void> {
 /** Removes one installed game and refreshes the installed state. */
 export async function uninstallAmazonGame(id: string): Promise<void> {
   try {
+    // Nile cannot replace files a running game still has open.
+    if (S.runningGames.has(amazonKey(id))) {
+      await nileStop(id).catch(() => undefined);
+    }
     await nileUninstall(id);
     toast(t("amazon.uninstalled"), "ok");
     invalidateAmazonUpdateCheck();
