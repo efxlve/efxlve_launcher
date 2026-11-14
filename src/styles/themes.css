@@ -330,10 +330,10 @@
   background: var(--text);
   color: var(--bg);
 }
-:root[data-surface="white"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+:root[data-surface="white"] .pgrid > .pcard:not(.pcard-hovering, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
 }
-:root[data-surface="white"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="white"] .pgrid > .pcard:is(.pcard-hovering, :focus-visible) .pcard-art {
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(15, 23, 42, 0.1);
 }
 :root[data-surface="white"] .pcard-play-btn {
@@ -1210,10 +1210,10 @@
 
 /* Library covers: a soft drop shadow at rest; on hover a cyan halo and a
    diagonal glass reflection, the way Windows 7 lit a taskbar button. */
-:root[data-surface="gloss"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+:root[data-surface="gloss"] .pgrid > .pcard:not(.pcard-hovering, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 4px 12px rgba(8, 60, 110, 0.2);
 }
-:root[data-surface="gloss"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="gloss"] .pgrid > .pcard:is(.pcard-hovering, :focus-visible) .pcard-art {
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.9),
     0 0 22px rgba(120, 210, 255, 0.6),
@@ -1832,10 +1832,10 @@
 :root[data-surface="blades"] :is(.btn.primary, .btn.install, .btn.play, .btn.update) svg { color: currentColor; }
 
 /* Library game cards: 360 jewel-case hover halo & diagonal glass reflection */
-:root[data-surface="blades"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+:root[data-surface="blades"] .pgrid > .pcard:not(.pcard-hovering, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 4px 14px rgba(0, 16, 4, 0.45), 0 0 0 1px rgba(155, 212, 74, 0.1);
 }
-:root[data-surface="blades"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="blades"] .pgrid > .pcard:is(.pcard-hovering, :focus-visible) .pcard-art {
   box-shadow:
     0 0 0 1px rgba(155, 212, 74, 0.75),
     0 0 22px rgba(155, 212, 74, 0.45),
@@ -2227,11 +2227,11 @@
 }
 
 /* Neon Grid: Library Game Cards */
-:root[data-surface="neongrid"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+:root[data-surface="neongrid"] .pgrid > .pcard:not(.pcard-hovering, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(252, 238, 10, 0.18);
   border-radius: 3px;
 }
-:root[data-surface="neongrid"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="neongrid"] .pgrid > .pcard:is(.pcard-hovering, :focus-visible) .pcard-art {
   box-shadow:
     0 0 0 2px #fcee0a,
     0 0 22px rgba(252, 238, 10, 0.45),
@@ -2760,11 +2760,11 @@ html[data-game-scene="on"][data-surface] .col-gallery {
 }
 
 /* Quarantine Protocol: Library Game Cards */
-:root[data-surface="quarantine"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+:root[data-surface="quarantine"] .pgrid > .pcard:not(.pcard-hovering, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(220, 38, 38, 0.2);
   border-radius: 4px;
 }
-:root[data-surface="quarantine"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="quarantine"] .pgrid > .pcard:is(.pcard-hovering, :focus-visible) .pcard-art {
   box-shadow:
     0 0 0 2px #dc2626,
     0 0 22px rgba(220, 38, 38, 0.5),
@@ -3048,11 +3048,11 @@ html[data-game-scene="on"][data-surface] .col-gallery {
 }
 
 /* Synthetic Soul: Library Game Cards */
-:root[data-surface="sentience"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+:root[data-surface="sentience"] .pgrid > .pcard:not(.pcard-hovering, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(0, 162, 255, 0.2);
   border-radius: 4px;
 }
-:root[data-surface="sentience"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="sentience"] .pgrid > .pcard:is(.pcard-hovering, :focus-visible) .pcard-art {
   box-shadow:
     0 0 0 2px #00a2ff,
     0 0 22px rgba(0, 162, 255, 0.5),
@@ -3359,11 +3359,11 @@ html[data-game-scene="on"][data-surface] .col-gallery {
 }
 
 /* Ashen Sanctum: Library Game Cards */
-:root[data-surface="sanctum"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+:root[data-surface="sanctum"] .pgrid > .pcard:not(.pcard-hovering, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(229, 169, 60, 0.22);
   border-radius: 4px;
 }
-:root[data-surface="sanctum"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="sanctum"] .pgrid > .pcard:is(.pcard-hovering, :focus-visible) .pcard-art {
   box-shadow:
     0 0 0 2px #e5a93c,
     0 0 22px rgba(229, 169, 60, 0.5),
@@ -3670,11 +3670,11 @@ html[data-game-scene="on"][data-surface] .col-gallery {
 }
 
 /* Resonance Core: Library Game Cards */
-:root[data-surface="resonance"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+:root[data-surface="resonance"] .pgrid > .pcard:not(.pcard-hovering, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(249, 115, 22, 0.22);
   border-radius: 4px;
 }
-:root[data-surface="resonance"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="resonance"] .pgrid > .pcard:is(.pcard-hovering, :focus-visible) .pcard-art {
   box-shadow:
     0 0 0 2px #f97316,
     0 0 22px rgba(249, 115, 22, 0.5),
@@ -3960,11 +3960,11 @@ html[data-game-scene="on"][data-surface] .col-gallery {
 }
 
 /* Autumn Homestead: Library Game Cards */
-:root[data-surface="homestead"] .pgrid > .pcard:not(:hover, :focus-visible, .is-case) .pcard-art {
+:root[data-surface="homestead"] .pgrid > .pcard:not(.pcard-hovering, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(234, 179, 8, 0.2);
   border-radius: 5px;
 }
-:root[data-surface="homestead"] .pgrid > .pcard:is(:hover, :focus-visible) .pcard-art {
+:root[data-surface="homestead"] .pgrid > .pcard:is(.pcard-hovering, :focus-visible) .pcard-art {
   box-shadow:
     0 0 0 2px #eab308,
     0 0 22px rgba(234, 179, 8, 0.45),

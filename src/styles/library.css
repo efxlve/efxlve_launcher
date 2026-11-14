@@ -307,28 +307,34 @@
   container-type: inline-size;
   background: var(--surface-2); outline: 1px solid var(--line); outline-offset: -1px;
   transform-origin: center center;
-  /* Smooth spring settle when leaving; fast tracking while moving the pointer. */
-  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  /* Smooth settle when leaving; fast tracking while moving the pointer. */
+  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .pgrid > .pcard.pcard-tilting .pcard-art,
 .pgrid > .pcard.pcard-tilting .pcard-caption {
   transition: transform 65ms ease-out;
 }
+/* The lift shadow and the theme ring settle with the cover; switching them in
+   one frame while the cover slides back reads as a jump. */
+.pcard.pcard-settling .pcard-art {
+  transition:
+    transform 240ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 240ms cubic-bezier(0.4, 0, 0.2, 1),
+    outline-color 240ms ease;
+}
 /* Normal covers: the artwork and its caption lift as one piece, and the cover
    scales up from its bottom edge so the gap to the title never changes. */
 .pcard:not(.is-case) .pcard-art { transform-origin: center bottom; }
 .pcard:not(.is-case) .pcard-caption {
-  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
 }
-.pgrid > .pcard:not(.is-case):hover .pcard-art,
-.pgrid > .pcard:not(.is-case):focus-visible .pcard-art {
+.pgrid > .pcard:not(.is-case):is(.pcard-hovering, :focus-visible) .pcard-art {
   transform: translateY(-3px) perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(1.03);
   box-shadow:
     0 0 18px 1px rgba(255, 255, 255, 0.08),
     calc(var(--nx, 0) * -8px) calc(14px - var(--ny, 0) * 5px) 30px rgba(0, 0, 0, 0.5);
 }
-.pgrid > .pcard:not(.is-case):hover .pcard-caption,
-.pgrid > .pcard:not(.is-case):focus-visible .pcard-caption {
+.pgrid > .pcard:not(.is-case):is(.pcard-hovering, :focus-visible) .pcard-caption {
   transform: translateY(-3px);
 }
 /* A soft light follows the cursor across normal covers, like the case glare but
@@ -349,19 +355,19 @@
   opacity: 0;
   transition: opacity 180ms ease-out;
 }
-:root:not([data-surface="gloss"]):not([data-surface="blades"]) .pcard:not(.is-case):is(:hover, :focus-visible) .pcard-art::before {
+:root:not([data-surface="gloss"]):not([data-surface="blades"]) .pcard:not(.is-case):is(.pcard-hovering, :focus-visible) .pcard-art::before {
   opacity: 1;
 }
 .pcard-art > img, .pcover { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pcover { display: grid; place-items: center; color: var(--text-3); }
 .pgrid.highlight-installed .pcard.not-installed .pcard-art > img,
 .pgrid.dim-uninstalled .pcard.not-installed .pcard-art > img { opacity: 0.52; transition: opacity var(--ease), filter var(--ease); }
-.pcard:hover .pcard-art > img, .pcard:focus-visible .pcard-art > img { opacity: 1; filter: brightness(1.04); }
-.pcard:hover .pcard-art, .pcard:focus-visible .pcard-art { outline-color: var(--line-strong); }
+.pcard.pcard-hovering .pcard-art > img, .pcard:focus-visible .pcard-art > img { opacity: 1; filter: brightness(1.04); }
+.pcard.pcard-hovering .pcard-art, .pcard:focus-visible .pcard-art { outline-color: var(--line-strong); }
 @media (prefers-reduced-motion: reduce) {
-  .pgrid > .pcard:hover .pcard-art, .pgrid > .pcard:focus-visible .pcard-art { transform: none; }
-  .pgrid > .pcard:not(.is-case):hover .pcard-caption,
-  .pgrid > .pcard:not(.is-case):focus-visible .pcard-caption { transform: none; }
+  .pgrid > .pcard:is(.pcard-hovering, :focus-visible) .pcard-art { transform: none; }
+  .pgrid > .pcard:not(.is-case):is(.pcard-hovering, :focus-visible) .pcard-caption { transform: none; }
+  .pcard.pcard-settling .pcard-art { transition: none; }
   .pcard-play-btn { transition: none !important; }
   .pcard-play-btn:hover, .pcard-play-btn.is-running:hover { transform: none; }
 }

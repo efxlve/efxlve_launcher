@@ -1023,14 +1023,19 @@ let cachedCardRect: DOMRect | null = null;
 let lastRectCard: HTMLElement | null = null;
 
 function clearCardTilt(card: HTMLElement): void {
-  card.classList.remove("pcard-tilting");
+  card.classList.remove("pcard-tilting", "pcard-hovering");
   card.style.removeProperty("--rx");
   card.style.removeProperty("--ry");
-  card.style.removeProperty("--mx");
-  card.style.removeProperty("--my");
+  // Keep the normal cover's cursor light position through the settle so it
+  // fades out where the pointer left it instead of snapping to the centre.
+  // Physical cases keep their idle reflection at the default position.
+  if (card.classList.contains("is-case")) {
+    card.style.removeProperty("--mx");
+    card.style.removeProperty("--my");
+    card.style.removeProperty("--glare-angle");
+  }
   card.style.removeProperty("--nx");
   card.style.removeProperty("--ny");
-  card.style.removeProperty("--glare-angle");
   card.classList.add("pcard-settling");
   cachedCardRect = null;
   lastRectCard = null;
@@ -1052,6 +1057,19 @@ function wireCardSettle(): void {
     if (S.isCoverSizeOpen) syncDensityMenu();
   }, { passive: true });
 
+  // The lifted/tilted cover is driven by this class, not :hover. The browser
+  // can drop :hover before pointerout runs, which used to start the leave
+  // transition with the 65ms tracking duration and snap the cover back.
+  document.addEventListener(
+    "pointerover",
+    (e) => {
+      if (e.pointerType === "touch" || S.view !== "library") return;
+      const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(".pgrid > .pcard");
+      card?.classList.add("pcard-hovering");
+    },
+    { passive: true },
+  );
+
   document.addEventListener(
     "pointermove",
     (e) => {
@@ -1071,6 +1089,7 @@ function wireCardSettle(): void {
         activeTiltCard = null;
       }
       if (!card) return;
+      card.classList.add("pcard-hovering");
       activeTiltCard = card;
       lastPointerX = e.clientX;
       lastPointerY = e.clientY;
