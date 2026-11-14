@@ -924,6 +924,8 @@
   "controller.none": "Aucune manette connectée",
   "controller.noneDesc": "Connectez une manette en USB ou Bluetooth ; le launcher la détecte automatiquement.",
   "controller.refresh": "Vérifier à nouveau",
+  "controller.pressToActivate": "Appuyez sur un bouton",
+  "controller.pressToActivateDesc": "Appuyez une fois sur n'importe quel bouton ou bougez un stick de la manette : le launcher l'utilise aussitôt. Jusque-là, Windows masque une manette connectée aux applications.",
   "controller.checking": "Vérification…",
   "controller.kindPlaystation": "Manette PlayStation",
   "controller.kindXbox": "Manette Xbox",

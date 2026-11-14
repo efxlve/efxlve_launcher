@@ -924,6 +924,8 @@
   "controller.none": "연결된 컨트롤러 없음",
   "controller.noneDesc": "USB 또는 Bluetooth로 컨트롤러를 연결하세요. 런처가 자동으로 감지합니다.",
   "controller.refresh": "다시 확인",
+  "controller.pressToActivate": "버튼을 누르세요",
+  "controller.pressToActivateDesc": "컨트롤러의 아무 버튼이나 누르거나 스틱을 한 번 움직이면 런처가 바로 사용합니다. 그전까지 Windows는 연결된 컨트롤러를 앱에서 숨깁니다.",
   "controller.checking": "확인 중…",
   "controller.kindPlaystation": "PlayStation 컨트롤러",
   "controller.kindXbox": "Xbox 컨트롤러",

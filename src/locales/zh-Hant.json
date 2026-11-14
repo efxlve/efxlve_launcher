@@ -924,6 +924,8 @@
   "controller.none": "未連接控制器",
   "controller.noneDesc": "透過 USB 或藍牙連接控制器，啟動器會自動偵測。",
   "controller.refresh": "重新檢查",
+  "controller.pressToActivate": "按一個按鈕",
+  "controller.pressToActivateDesc": "按下控制器上的任意按鈕或推動一次搖桿，啟動器就會立即開始使用它。在此之前，Windows 會對應用程式隱藏已連接的控制器。",
   "controller.checking": "檢查中…",
   "controller.kindPlaystation": "PlayStation 控制器",
   "controller.kindXbox": "Xbox 控制器",

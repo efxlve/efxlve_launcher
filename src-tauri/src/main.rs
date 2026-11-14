@@ -2341,6 +2341,7 @@ fn main() {
             epic_take_pending_launch,
             shared_library::shared_library_index,
             controller::controller_support_status,
+            controller::controller_connected_pads,
             controller_bridge::controller_bridge_start,
             controller_bridge::controller_bridge_stop,
             steam::steam_status,

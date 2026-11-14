@@ -114,7 +114,7 @@ import { loadGameStatus, loadUiScale } from "./game-status";
 import { readCustomCss } from "./custom-css";
 import { normalizeSurface } from "./themes";
 import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, CustomLogoLayout, CustomLogoSize, DlMetrics, DownloadFinishAction, DrawerTab, EpicCopyOverride, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibGroupBy, LibraryItem, LogoAnchor, NotifTab, SavedAccount, SettingsSection, View } from "./types";
-import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
+import type { CriticData, ConnectedController, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
 
 
 const ALL_STORES: readonly GameSource[] = ["epic", "gog", "amazon", "steam", "ea", "ubisoft", "xbox", "battlenet", "riot", "custom"];
@@ -947,6 +947,8 @@ export const S = {
   /** Battery level 0–1 of the connected pad, when the browser reports one. */
   gamepadBattery: (null) as number | null,
   controllerBridge: (null) as ControllerSupportStatus | null,
+  /** Pads the OS reports; the Gamepad API only lists them after a button press. */
+  connectedControllers: [] as ConnectedController[],
   steamStatus: (null) as import("../steam").SteamStatus | null,
   steamGames: [] as import("../steam").SteamGame[],
   /** Accounts already present in the client's loginusers.vdf. */

@@ -924,6 +924,8 @@
   "controller.none": "لا يوجد ذراع تحكم متصل",
   "controller.noneDesc": "وصّل ذراع التحكم عبر USB أو Bluetooth؛ سيكتشفه المشغّل تلقائيًا.",
   "controller.refresh": "إعادة الفحص",
+  "controller.pressToActivate": "اضغط زرًا",
+  "controller.pressToActivateDesc": "اضغط أي زر أو حرّك عصا ذراع التحكم مرة واحدة ليبدأ المشغّل في استخدامه. حتى ذلك الحين يخفي Windows ذراع التحكم المتصل عن التطبيقات.",
   "controller.checking": "جارٍ الفحص…",
   "controller.kindPlaystation": "ذراع تحكم PlayStation",
   "controller.kindXbox": "ذراع تحكم Xbox",

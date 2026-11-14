@@ -924,6 +924,8 @@
   "controller.none": "コントローラーが接続されていません",
   "controller.noneDesc": "USBまたはBluetoothでコントローラーを接続してください。ランチャーが自動で検出します。",
   "controller.refresh": "再確認",
+  "controller.pressToActivate": "ボタンを押してください",
+  "controller.pressToActivateDesc": "コントローラーのいずれかのボタンを押すか、スティックを一度動かすと、ランチャーがすぐに使えるようになります。それまでは Windows が接続中のコントローラーをアプリから隠します。",
   "controller.checking": "確認中…",
   "controller.kindPlaystation": "PlayStationコントローラー",
   "controller.kindXbox": "Xboxコントローラー",

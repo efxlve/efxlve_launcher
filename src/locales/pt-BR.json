@@ -924,6 +924,8 @@
   "controller.none": "Nenhum controle conectado",
   "controller.noneDesc": "Conecte um controle por USB ou Bluetooth; o launcher detecta automaticamente.",
   "controller.refresh": "Verificar novamente",
+  "controller.pressToActivate": "Pressione um botão",
+  "controller.pressToActivateDesc": "Pressione qualquer botão ou mova um analógico do controle uma vez e o launcher passa a usá-lo. Até lá, o Windows esconde um controle conectado dos aplicativos.",
   "controller.checking": "Verificando…",
   "controller.kindPlaystation": "Controle PlayStation",
   "controller.kindXbox": "Controle Xbox",

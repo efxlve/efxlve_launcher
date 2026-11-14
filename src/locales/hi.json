@@ -971,6 +971,8 @@
   "controller.none": "कोई कंट्रोलर कनेक्ट नहीं है",
   "controller.noneDesc": "USB या Bluetooth पर एक कंट्रोलर कनेक्ट करें; लॉन्चर इसे स्वचालित रूप से पहचान लेता है।",
   "controller.refresh": "पुनः जांचें",
+  "controller.pressToActivate": "कोई बटन दबाएँ",
+  "controller.pressToActivateDesc": "कंट्रोलर पर कोई भी बटन दबाएँ या स्टिक एक बार हिलाएँ, फिर लॉन्चर उसे तुरंत इस्तेमाल करने लगेगा। तब तक Windows जुड़ा हुआ कंट्रोलर ऐप्स से छिपाए रखता है।",
   "controller.checking": "जांच हो रही है…",
   "controller.kindPlaystation": "PlayStation कंट्रोलर",
   "controller.kindXbox": "Xbox कंट्रोलर",

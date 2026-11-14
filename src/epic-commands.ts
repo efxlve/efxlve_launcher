@@ -14,6 +14,7 @@ import type {
   CachedLibrary,
   SavedAccount,
 } from "./epic-model";
+import type { ControllerKind } from "./core/types";
 
 /* ---------- Command wrappers ---------- */
 
@@ -118,6 +119,17 @@ export interface ControllerSupportStatus {
 }
 export const controllerSupportStatus = () =>
   invoke<ControllerSupportStatus>("controller_support_status");
+
+/**
+ * A pad the OS reports, before Chromium exposes it to the page. The Gamepad API
+ * withholds a connected pad until one of its buttons is pressed.
+ */
+export interface ConnectedController {
+  name: string;
+  kind: ControllerKind;
+}
+export const controllerConnectedPads = () =>
+  invoke<ConnectedController[]>("controller_connected_pads");
 
 /** XInput bridge state: running plus the pad it currently bridges. */
 export interface ControllerBridgeStatus {

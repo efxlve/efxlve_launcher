@@ -103,6 +103,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `compat_tools_dir` | `compatToolsDir({ ... })` | `src-tauri/src/compat/install.rs` |
 | `controller_bridge_start` | `controllerBridgeStart({ ... })` | `src-tauri/src/controller_bridge.rs` |
 | `controller_bridge_stop` | `controllerBridgeStop({ ... })` | `src-tauri/src/controller_bridge.rs` |
+| `controller_connected_pads` | `controllerConnectedPads({ ... })` | `src-tauri/src/controller.rs` |
 | `controller_support_status` | `controllerSupportStatus({ ... })` | `src-tauri/src/controller.rs` |
 | `custom_games_add` | `customGamesAdd({ ... })` | `src-tauri/src/custom_games.rs` |
 | `custom_games_edit` | `customGamesEdit({ ... })` | `src-tauri/src/custom_games.rs` |

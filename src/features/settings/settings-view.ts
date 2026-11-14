@@ -53,6 +53,7 @@ import { loadSavedAccounts } from "../auth/account-switcher";
 import { appUpdateBlockedBy, appUpdateInstallBlocked } from "../updates/update-manager";
 import { renderEosSettingsRow, syncEosNotice } from "../eos/eos-install";
 import {
+  controllerConnectedPads,
   controllerSupportStatus,
   launchersStatus,
   eosOverlayStatus,
@@ -81,6 +82,7 @@ import {
   epicGetAllScreenshots,
   epicDeleteGameScreenshot,
   type EglDetectedGame,
+  type ConnectedController,
   type GameScreenshotItem,
   type ScreenshotMoveInfo,
 } from "../../epic";
@@ -780,22 +782,39 @@ function renderController(): string {
   const pads = (navigator.getGamepads ? navigator.getGamepads() : []).filter(
     (g): g is Gamepad => g !== null && g.connected,
   );
-  const padRows = pads.length > 0
-    ? pads.map((g) => {
-        const name = g.id.split("(")[0].trim();
-        return row(
-          esc(name),
-          t(CONTROLLER_KIND_KEYS[controllerKind(g.id)]),
-          `<span class="chip ok">${t("controller.connected")}</span>`,
-        );
-      }).join("")
+  const status = S.controllerBridge;
+  // A running bridge presents the physical pad to the WebView as a virtual
+  // Xbox pad, so the PlayStation pad behind it is active too.
+  const activeKinds = new Set(pads.map((g) => controllerKind(g.id)));
+  if (status?.bridgeRunning) activeKinds.add("playstation");
+  // Chromium hides a connected pad from the Gamepad API until one of its
+  // buttons is pressed; the HID list still shows it, one press short of active.
+  const pendingPads = S.connectedControllers.filter((pad) => !activeKinds.has(pad.kind));
+  const rows = [
+    ...pads.map((g) => {
+      const name = g.id.split("(")[0].trim();
+      return row(
+        esc(name),
+        t(CONTROLLER_KIND_KEYS[controllerKind(g.id)]),
+        `<span class="chip ok">${t("controller.connected")}</span>`,
+      );
+    }),
+    ...pendingPads.map((pad) =>
+      row(
+        esc(pad.name || t(CONTROLLER_KIND_KEYS[pad.kind])),
+        t(CONTROLLER_KIND_KEYS[pad.kind]),
+        `<span class="chip">${t("controller.pressToActivate")}</span>`,
+      ),
+    ),
+  ];
+  const padRows = rows.length > 0
+    ? rows.join("")
     : row(
         t("controller.none"),
         t("controller.noneDesc"),
         `<button class="btn ghost small" data-act="controller-refresh">${t("controller.refresh")}</button>`,
       );
 
-  const status = S.controllerBridge;
   const bridgeRunning = status?.bridgeRunning ?? false;
   const bridgeChip = status === null
     ? `<span class="chip">${t("controller.checking")}</span>`
@@ -848,7 +867,8 @@ function renderController(): string {
   const virtualNote = IS_WINDOWS && status?.bridgeRunning
     ? infoBox("controller.bridgeVirtualNote")
     : "";
-  return group(padRows, t("controller.padsTitle")) + virtualNote + group(fullscreenMaster + fullscreenAuto + fullscreenOptions, t("fullscreen.mode")) + deckNote + (IS_WINDOWS ? group(bridge, t("settings.secController")) : "");
+  const pendingNote = pendingPads.length > 0 ? infoBox("controller.pressToActivateDesc") : "";
+  return group(padRows, t("controller.padsTitle")) + pendingNote + virtualNote + group(fullscreenMaster + fullscreenAuto + fullscreenOptions, t("fullscreen.mode")) + deckNote + (IS_WINDOWS ? group(bridge, t("settings.secController")) : "");
 }
 
 /** Steam card: the optional Web API key. Behavior toggles live in After playing. */
@@ -2497,8 +2517,8 @@ export async function loadSettingsView(): Promise<void> {
 }
 
 /**
- * Refreshes the controller section: connected pads are read synchronously and
- * the XInput bridge probe is one cheap registry query.
+ * Refreshes the controller section: the HID pad list (what the OS reports) and
+ * the XInput bridge probe, which is one cheap registry query.
  */
 export async function loadControllerView(force = false): Promise<void> {
   if (!isTauri) {
@@ -2507,15 +2527,78 @@ export async function loadControllerView(force = false): Promise<void> {
   }
   if (S.controllerBridge && !force) {
     render();
+    startControllerPoll();
     return;
   }
-  try {
-    S.controllerBridge = await controllerSupportStatus();
-  } catch {
-    S.controllerBridge = { viEmBus: false, steam: false, steamPath: "", bridgeRunning: false, bridgeDevice: "" };
-  }
+  const [status, pads] = await Promise.all([
+    controllerSupportStatus().catch(() => ({
+      viEmBus: false,
+      steam: false,
+      steamPath: "",
+      bridgeRunning: false,
+      bridgeDevice: "",
+    })),
+    controllerConnectedPads().catch(() => [] as ConnectedController[]),
+  ]);
+  S.controllerBridge = status;
+  S.connectedControllers = pads;
   render();
+  startControllerPoll();
 }
+
+/**
+ * Re-reads the HID pad list; only a change repaints, so the poll below cannot
+ * cost a frame when nothing was plugged in or out.
+ */
+async function refreshConnectedPads(): Promise<void> {
+  try {
+    const pads = await controllerConnectedPads();
+    const changed = JSON.stringify(pads) !== JSON.stringify(S.connectedControllers);
+    S.connectedControllers = pads;
+    if (changed) render();
+  } catch {
+    /* Keep the last list; the Gamepad API rows still work. */
+  }
+}
+
+let controllerPollTimer: number | null = null;
+
+function stopControllerPoll(): void {
+  if (controllerPollTimer !== null) {
+    window.clearInterval(controllerPollTimer);
+    controllerPollTimer = null;
+  }
+}
+
+/**
+ * Keeps the section live while it is open, so a pad plugged in after it was
+ * opened shows up without pressing Check again. The timer stops itself once
+ * the user leaves the section.
+ */
+function startControllerPoll(): void {
+  stopControllerPoll();
+  controllerPollTimer = window.setInterval(() => {
+    if (S.view !== "settings" || S.settingsSection !== "controller") {
+      stopControllerPoll();
+      return;
+    }
+    void refreshConnectedPads();
+  }, 2000);
+}
+
+/**
+ * Chromium only lists a connected pad once one of its buttons is pressed, and
+ * this is the moment it does: repaint so a "press a button" row turns into an
+ * active pad without a manual refresh.
+ */
+function onControllerListChanged(): void {
+  if (S.view !== "settings" || S.settingsSection !== "controller") return;
+  render();
+  void refreshConnectedPads();
+}
+
+window.addEventListener("gamepadconnected", onControllerListChanged);
+window.addEventListener("gamepaddisconnected", onControllerListChanged);
 
 /** Loads the store client rows for Settings > Launchers. */
 export async function loadLaunchersView(force = false): Promise<void> {

@@ -924,6 +924,8 @@
   "controller.none": "No hay ningún mando conectado",
   "controller.noneDesc": "Conecta un mando por USB o Bluetooth; el launcher lo detecta automáticamente.",
   "controller.refresh": "Comprobar de nuevo",
+  "controller.pressToActivate": "Pulsa un botón",
+  "controller.pressToActivateDesc": "Pulsa cualquier botón o mueve un stick del mando una vez y el launcher empezará a usarlo. Hasta entonces, Windows oculta un mando conectado a las aplicaciones.",
   "controller.checking": "Comprobando…",
   "controller.kindPlaystation": "Mando de PlayStation",
   "controller.kindXbox": "Mando de Xbox",

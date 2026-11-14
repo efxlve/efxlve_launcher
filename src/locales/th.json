@@ -924,6 +924,8 @@
   "controller.none": "ไม่มีคอนโทรลเลอร์ที่เชื่อมต่อ",
   "controller.noneDesc": "เชื่อมต่อคอนโทรลเลอร์ผ่าน USB หรือ Bluetooth ตัวเรียกใช้งานจะตรวจจับอัตโนมัติ",
   "controller.refresh": "ตรวจสอบอีกครั้ง",
+  "controller.pressToActivate": "กดปุ่มใดก็ได้",
+  "controller.pressToActivateDesc": "กดปุ่มใดก็ได้บนคอนโทรลเลอร์หรือขยับสติกหนึ่งครั้ง แล้วตัวเรียกใช้งานจะเริ่มใช้ทันที จนถึงตอนนั้น Windows จะซ่อนคอนโทรลเลอร์ที่เชื่อมต่ออยู่จากแอป",
   "controller.checking": "กำลังตรวจสอบ…",
   "controller.kindPlaystation": "คอนโทรลเลอร์ PlayStation",
   "controller.kindXbox": "คอนโทรลเลอร์ Xbox",

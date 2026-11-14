@@ -971,6 +971,8 @@
   "controller.none": "Bağlı kontrolcü yok",
   "controller.noneDesc": "Kontrolcüyü USB veya Bluetooth ile bağlayın; başlatıcı otomatik algılar.",
   "controller.refresh": "Yeniden kontrol et",
+  "controller.pressToActivate": "Bir tuşa basın",
+  "controller.pressToActivateDesc": "Kontrolcüdeki herhangi bir tuşa basın veya çubuğu bir kez hareket ettirin; başlatıcı hemen kullanmaya başlar. O ana kadar Windows, bağlı kontrolcüyü uygulamalardan gizler.",
   "controller.checking": "Kontrol ediliyor…",
   "controller.kindPlaystation": "PlayStation kontrolcüsü",
   "controller.kindXbox": "Xbox kontrolcüsü",

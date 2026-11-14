@@ -924,6 +924,8 @@
   "controller.none": "Геймпад не подключён",
   "controller.noneDesc": "Подключите геймпад по USB или Bluetooth; лаунчер определит его автоматически.",
   "controller.refresh": "Проверить снова",
+  "controller.pressToActivate": "Нажмите кнопку",
+  "controller.pressToActivateDesc": "Нажмите любую кнопку или один раз сдвиньте стик на геймпаде, и лаунчер сразу начнёт его использовать. До этого Windows скрывает подключённый геймпад от приложений.",
   "controller.checking": "Проверка…",
   "controller.kindPlaystation": "Геймпад PlayStation",
   "controller.kindXbox": "Геймпад Xbox",
