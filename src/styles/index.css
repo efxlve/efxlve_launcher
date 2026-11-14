@@ -17,16 +17,9 @@
 @import "./music.css";
 @import "./discord.css";
 @import "./fullscreen-mode.css";
-@import "./stage.css";
-@import "./stage-home.css";
-@import "./stage-library.css";
-@import "./stage-program.css";
-@import "./stage-settings.css";
-@import "./stage-overlays.css";
-@import "./stage-notifications.css";
-@import "./stage-console.css";
+
 @import "./theme-system.css";
 @import "./themes.css";
-@import "./stage-motion.css";
+
 @import "./performance.css";
 @import "./handheld.css";

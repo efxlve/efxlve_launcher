@@ -8,7 +8,6 @@
  */
 
 import { icon } from "../../core/icons";
-import { esc } from "../../core/utils";
 import {
   cachedSteamCover,
   cachedSteamHero,
@@ -48,14 +47,6 @@ function applyResolved(appId: string, url: string): void {
     img.dataset.artStep = "resolved";
     img.removeAttribute("data-art-pending");
     if (img.getAttribute("src") !== url) img.src = url;
-  });
-  const posters = document.querySelectorAll<HTMLElement>(
-    `[data-cover-key="steam::${appId}"].stage-poster, .stage-ribbon-card[data-key="steam::${appId}"] .stage-poster, .stage-cover-card[data-key="steam::${appId}"] .stage-poster, .stage-list-row[data-key="steam::${appId}"] .stage-poster`
-  );
-  posters.forEach((poster) => {
-    const isRibbon = poster.closest(".stage-ribbon-card");
-    const cls = isRibbon ? "stage-ribbon-image" : "stage-cover-art";
-    poster.outerHTML = `<img class="${cls}" src="${esc(url)}" data-steam-app="${esc(appId)}" data-art-step="resolved" data-cover-key="steam::${esc(appId)}" alt="" decoding="async" />`;
   });
 }
 

@@ -1,8 +1,9 @@
 /* ==========================================================================
    Handheld pass for the desktop shell.
 
-   Stage owns the couch experience; this file only makes the window behind it
-   thumb-friendly when the launcher runs on a Steam Deck or a touch handheld.
+   Full Screen Mode owns the couch experience; this file only makes the window
+   behind it thumb-friendly when the launcher runs on a Steam Deck or a touch
+   handheld.
    It never changes the layout, only the size of the targets and the smallest
    text, so a 1280 x 800 panel stays readable without turning the desktop into
    a different application.

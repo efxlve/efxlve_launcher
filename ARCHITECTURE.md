@@ -14,7 +14,7 @@ graph TD
         UI["Hydra Console Dark UI (#000000)"]
         Router["View Router (Library / Stores / Downloads / Profile / Settings)"]
         PChunk["Progressive Chunk Renderer & Virtual Sentinel"]
-        GamepadMgr["Stage Mode (Experimental) & Full Screen Mode (DualSense / Xbox)"]
+        GamepadMgr["Full Screen Mode (DualSense / Xbox)"]
         State["O(1) In-Memory Reactive State (rawOf, summaryOf)"]
     end
 
@@ -117,29 +117,16 @@ page per game.
   - A native `IntersectionObserver` detects when the user scrolls near the end and seamlessly appends chunks of **36 cards** via `sentinel.insertAdjacentHTML("beforebegin", ...)`.
   - Search keystrokes are protected by a **120ms debounce**, guaranteeing snappy input feedback.
 
-### 3.2 Stage Mode, Full Screen Mode & Gamepad Navigation
-- Two controller surfaces share one gamepad poller: **Stage** (`src/features/stage/`) is the experimental controller-first shell, and **Full Screen Mode** (`src/features/gamepad/fullscreen-mode.ts`) is the classic desktop pages presented as a couch surface. Both stay available; Stage is labelled EXPERIMENTAL wherever it is offered.
+### 3.2 Full Screen Mode & Gamepad Navigation
+- **Full Screen Mode** (`src/features/gamepad/fullscreen-mode.ts`) presents the classic desktop pages as a couch surface.
 - Full Screen Mode adds a couch shell on top of the desktop pages: `couch-shell.ts` owns the fixed top bar (pages, controller/battery, notifications, downloads, clock, exit), the Start menu, and the controller map. The desktop winbar and sidebar are hidden while the mode is on; every button keeps using the normal `data-view` / `data-act` router.
 - `on-screen-keyboard.ts` is the text surface for a pad. Any text input selected with A opens a 49-key controller keyboard (digits, QWERTY, locale letters, symbols, shift, caret moves, space, backspace, Done). The real input keeps DOM focus, the keyboard writes through `setSelectionRange` + an `input` event, and `focusin`/scope rules close it when the field or dialog goes away.
 - The focus engine remembers the last control per `View` and per dialog (`focusMemory`), so closing a confirm returns to the button that opened it and revisiting a page resumes where the player left it. The couch bar is its own focus region: Down enters the page, Up climbs back to the bar.
 - LT/RT walk the five couch pages (`couch-pages.ts`), LB/RB switch the visible tab strip, Start opens the controller menu, Y/Select opens the palette, X favorites, Guide is a second menu key, and A/B can be swapped for a Nintendo-style controller. The hint bar hides while a menu, map or keyboard owns the pad and mirrors the active controller's glyphs.
 - Controller vibration is a short `vibrationActuator` pulse on focus moves and presses; the same toggle is in Settings. The couch menu parks the native store child while it is open, so the sheet is never painted underneath a store front. Closing a sheet and leaving the store in the same click defers the child restore until `S.view` settles; otherwise an empty native storefront could cover the next page and swallow every click.
-- Stage is a **mode, not a `View`**: `S.stage.active` switches the render branch, the desktop DOM stays alive underneath, and exit restores the page and scroll position. Its screens (Home, Library, Downloads, Settings, Programme) live in `S.stage.route`, so desktop navigation history never sees them.
-- The Stage shell is a lazy chunk (`stage-boot.ts` imports `stage-render.ts` once); the desktop bundle keeps only the mode state, the boot frame and the gamepad bridge (`stage-bridge.ts`).
-- The focus engine lives in `focus-engine.ts`: it owns the ring, the scoped candidate lists, the remembered control per `View`/dialog and the geometry search. Stage adds `[data-gp-item]` inside `#stage-root`; the renderer marks only the top overlay, and focus changes patch the Home hero/activity cards or the library side stage instead of rebuilding the route. The spatial engine scales its direction threshold with the focused control so a transformed card in the same row cannot capture an up/down move.
+- The focus engine lives in `focus-engine.ts`: it owns the ring, the scoped candidate lists, the remembered control per `View`/dialog and the geometry search. The spatial engine scales its direction threshold with the focused control so a transformed card in the same row cannot capture an up/down move.
 - Polling runs at requestAnimationFrame cadence with deadzone handling (axes: ±0.55) and falls back to a 40 ms idle timer for a connected but untouched pad.
 - Supports Xbox, DualSense, Switch and generic DirectInput controllers through the standard Web Gamepad API; the glyphs follow the detected family, and haptics use `vibrationActuator` when the browser exposes it.
-
-### 3.2.1 The Stage room: ambience, boot and attract mode
-
-- `stage-ambience.ts` is an original generative theme, not a recording: a four-chord pad, a sparse pentatonic bell line and a generated impulse reverb. It is synthesised only while Stage is active, ducks under the launch curtain and closes with the mode. No sampled or third-party audio ships with the launcher; the licence-safe rule is "compose the feeling, never sample it".
-- `stage-custom-audio.ts` lets a player replace that room with their own music: one global track and one per game, chosen in Settings and on the game's Extras tab. Settings can import a file on its own, then lists every imported file with preview, menu assignment and a two-step delete; deleting a file clears any game that pointed at it. The focused game's track wins; changes crossfade and a running game ducks the room. `stage_audio.rs` copies imports into `<app data>/stage-audio/` (64 MB, audio extensions only, non-empty) and the asset protocol serves them. Nothing is fetched from the network and no third-party track is bundled.
-- `stage-intro.ts` paints one short boot mark with its own chime. It is dismissible with any input and skipped when reduced effects or the Console intro setting is off.
-- `stage-idle.ts` owns attract mode. It is a class on `#stage-root`, not a re-render: after 75 quiet seconds on Home the chrome fades, the key art gets a slow pan and the clock/greeting stay legible. The first input wakes and is consumed, so waking never launches the item that happened to own the ring.
-- `stage-console.css` holds the time-of-day light field, the film grain, the boot mark, the attract layout and the 1280 × 800 handheld pass. The light palette follows the local hour (`stage-tod-*`), so a TV at night is cool and a TV at sunset is warm. The light field is one static multi-gradient paint: no full-screen blur filter, no blend mode and no transform animation, because four animated 110 px blurs under a backdrop-filtered top bar were the one part of the room that could drop frames on a TV. The gradients are full-screen ellipses with a transparent tail; an earlier per-gradient `background-size` box clipped the colour at the box edge and left a visible vertical line through the art. The grain and the top-bar backdrop blur are dropped at 1600 px and above.
-- The top bar is intentionally small: navigation on the left, status and the Quick menu on the right. Browser, music, Discord and power remain one press away in the Quick menu instead of competing with the shelf for header space.
-- A handheld boots into Stage by default (`isSteamDeckDevice()` decides both `openAtLaunch` and `autoEnter` when no stored preference exists), and `handheld.css` enlarges the desktop shell's thumb targets without changing its layout. The Guide button opens Stage from desktop; inside Stage it opens the Quick menu.
-- The TV/handheld safe area is a **content inset**, not a window inset: it moves the hero copy, hint bar and page padding while the art stays edge-to-edge. Shrinking `.stage-shell` instead left the root background visible as a black border around the picture.
 
 ### 3.3 Embedded Child Webviews (Multi-Storefront)
 - 8 embedded store views: Epic Games, GOG.COM, Steam, Xbox (PC-filtered), Battle.net, Ubisoft, EA, and Amazon Games (Luna claims).

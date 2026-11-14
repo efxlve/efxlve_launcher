@@ -435,7 +435,7 @@ document.addEventListener("keydown", (e) => {
     closeModal();
     // Escape at the root of the classic couch shell is a second exit route for
     // keyboard users; an open page must consume the press first.
-    if (!hadModal && S.isFullscreen && !S.stage.active) void setFullscreenMode(false);
+    if (!hadModal && S.isFullscreen) void setFullscreenMode(false);
   }
   if (e.key === "Enter") {
     const activeEl = document.activeElement as HTMLElement | null;

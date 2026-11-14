@@ -70,7 +70,7 @@ import { syncInstalledWatch } from "../library/installed-watch";
 import { companionStoreId, loadCompanionLibrary, syncCompanionAccounts } from "../library/companion-library";
 import { loadCustomGamesLibrary } from "../custom-games/custom-games-library";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
-import { achSummaryOf, patchLibraryCardDom, refreshGameActionUi } from "../../core/game-view";
+import { patchLibraryCardDom, refreshGameActionUi } from "../../core/game-view";
 import { recordAchievementUnlocks, attachAchievementScreenshot } from "../../core/achievement-history";
 import { raStatus } from "../../retroachievements";
 import { libraryItemOf, rebuildAllGamesMap, sourceOfKey, summaryOf } from "../../core/selectors";
@@ -188,9 +188,6 @@ function scheduleDlDomUpdate(id: string): void {
   dlDomRaf = requestAnimationFrame(() => {
     dlDomRaf = 0;
     applyDlDomUpdate(dlDomId);
-    // The desktop nodes were patched in place; Stage has its own tree and its
-    // render guard decides whether this is a chip patch or a downloads repaint.
-    if (S.stage.active) render();
   });
 }
 
@@ -611,7 +608,6 @@ export async function initApp(hooks: {
         metrics.phase = event.payload.phase;
         if (S.view === "downloads") render();
         else if (S.view === "library") patchLibraryCardDom(metrics.id);
-        if (S.stage.active) render();
       },
     );
     listenLater<DlProgressEvent>("download-progress", (event) => {
@@ -910,8 +906,6 @@ export async function initApp(hooks: {
       },
     );
 
-    const sessionStartAchievements = new Map<string, number>();
-
     listenLater<GameStatusEvent>("game-status", (event) => {
       const { id, running, initial, sessionSeconds, totalSeconds, sessionCount, lastPlayed, lastPlayedTimestamp } = event.payload;
       const sum = summaryOf(id);
@@ -927,8 +921,6 @@ export async function initApp(hooks: {
         startStoreAchievementSession(id);
         // Two watchers can see the same game (Steam's flag and the process
         // watch); only the first report announces and acts.
-        const startAch = achSummaryOf(id)?.user_unlocked;
-        if (startAch !== undefined) sessionStartAchievements.set(id, startAch);
         if (S.runningGames.has(id)) return;
         S.runningGames.add(id);
         clearLaunchStatus(id);
@@ -958,7 +950,7 @@ export async function initApp(hooks: {
           }
           // Opt-in: get the launcher out of the way when a game starts. Full
           // Screen Mode is a couch UI and stays where it is.
-          if (S.minimizeOnGame && (!S.isFullscreen || S.stage.active)) {
+          if (S.minimizeOnGame && !S.isFullscreen) {
             void appMinimize().catch(() => {});
           }
         }
@@ -1054,24 +1046,6 @@ export async function initApp(hooks: {
           // GOG hours live in Galaxy's local database (read-only import).
           if (id.startsWith("gog::")) void syncGogPlaytime();
         }
-        const startAch = sessionStartAchievements.get(id);
-        sessionStartAchievements.delete(id);
-        const currentAch = achSummaryOf(id)?.user_unlocked;
-        const achUnlocked = (startAch !== undefined && currentAch !== undefined && currentAch > startAch)
-          ? currentAch - startAch
-          : undefined;
-
-        if (sessionSeconds && sessionSeconds > 0) {
-          S.stage.lastSession = {
-            title,
-            key: id,
-            seconds: sessionSeconds,
-            totalSeconds: totalSeconds !== undefined ? Math.max(totalSeconds, S.playtimeMap.get(id)?.total_seconds ?? 0) : undefined,
-            achUnlocked,
-            timestamp: Date.now(),
-          };
-        }
-
         toast(
           sessionSeconds
             ? t("status.closedSession", { title, time: fmtPlaytime(sessionSeconds) })
@@ -1117,10 +1091,6 @@ export async function initApp(hooks: {
 
       // The action row is repainted by refreshGameActionUi above: the game page
       // draws Stop for a running title and the library patches its own cards.
-
-      // Stage is a separate shell: the desktop card patch above cannot reach
-      // it, and a session that just ended must stop saying "Running".
-      if (S.stage.active) hooks.scheduleRender();
 
       if (S.view === "library") {
         patchLibraryCardDom(id);

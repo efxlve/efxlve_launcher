@@ -1184,14 +1184,6 @@ body.controller-keyboard-open .gamepad-hud-bar {
 }
 
 /* ==========================================================================
-   Stage owns its own shell; the couch bar must not paint through it.
-   ========================================================================== */
-
-body.stage-mode #couch-root {
-  display: none !important;
-}
-
-/* ==========================================================================
    Large-screen pass and small-window fallback
    ========================================================================== */
 

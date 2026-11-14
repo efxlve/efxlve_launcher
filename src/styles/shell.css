@@ -87,16 +87,8 @@
 .net-chip.offline .net-dot { background: var(--warn); }
 #btn-fullscreen-mode { margin-left: 2px; }
 #btn-fullscreen-mode[hidden] { display: none !important; }
-#btn-stage-mode { margin-left: 2px; gap: 7px; }
-#btn-stage-mode[hidden] { display: none !important; }
-.stage-winbar-beta { height: 14px; padding: 0 5px; font-size: 8px; letter-spacing: 0.08em; }
-.stage-winbar-btn.active { background: var(--surface-3); color: var(--text); }
 @media (max-width: 900px) {
-  #btn-stage-mode > span:not(.stage-winbar-icon):not(.stage-winbar-beta),
   #btn-fullscreen-mode > span[data-i18n] {
-    display: none;
-  }
-  #btn-stage-mode .stage-winbar-beta {
     display: none;
   }
 }

@@ -8,14 +8,12 @@
 pub enum FilePickerKind {
     Executable,
     Archive,
-    Audio,
 }
 
 impl FilePickerKind {
     fn parse(value: Option<&str>) -> Self {
         match value.map(str::trim) {
             Some("archive") => Self::Archive,
-            Some("audio") => Self::Audio,
             _ => Self::Executable,
         }
     }
@@ -24,7 +22,6 @@ impl FilePickerKind {
         match self {
             Self::Executable => "Select Executable",
             Self::Archive => "Select Backup Archive",
-            Self::Audio => "Select Audio File",
         }
     }
 }
@@ -44,9 +41,6 @@ pub async fn pick_file_dialog(
             }
             FilePickerKind::Archive => {
                 r"Launcher backups (*.efxprofile;*.tar.gz;*.zip)|*.efxprofile;*.tar.gz;*.zip|All files (*.*)|*.*"
-            }
-            FilePickerKind::Audio => {
-                r"Audio (*.mp3;*.ogg;*.wav;*.m4a;*.aac;*.flac;*.opus;*.webm)|*.mp3;*.ogg;*.wav;*.m4a;*.aac;*.flac;*.opus;*.webm|All files (*.*)|*.*"
             }
         };
         let picker_title = title
@@ -89,7 +83,6 @@ if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {{
         let filter = match kind {
             FilePickerKind::Archive => "*.efxprofile *.tar.gz *.zip",
             FilePickerKind::Executable => "*.exe *.bat *.cmd *.lnk",
-            FilePickerKind::Audio => "*.mp3 *.ogg *.wav *.m4a *.aac *.flac *.opus *.webm",
         };
         if cfg!(target_os = "macos") {
             let escaped = picked_title.replace('\\', "\\\\").replace('"', "\\\"");

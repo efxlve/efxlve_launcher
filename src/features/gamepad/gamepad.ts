@@ -3,7 +3,7 @@
  *
  * Provides smooth, natural controller navigation for the entire launcher,
  * with spatial 2D D-pad/stick movement, quick actions (Play, Back, Favorite,
- * Filter tabs), and the Stage shell.
+ * Filter tabs) and the Full Screen shell.
  */
 
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -19,26 +19,17 @@ import { closeAllModals } from "../../core/render";
 import { toggleFav } from "../../core/game-view";
 import { closePalette, isPaletteOpen, openPalette } from "../palette/palette";
 import { setView } from "../store/store-view";
-import { stageBridge } from "./stage-bridge";
 import { currentFocusedEl, getNavigableElements, initGamepadFocus, isVisibleEl, lastFocusedKey, moveGamepadFocus, refreshGamepadFocus, setFocus, topOverlay, visibleIn } from "./focus-engine";
 import { libraryFiltersFavorites, refreshLibraryResultsInPlace } from "../library/library-view";
-export { initGamepadFocus, moveGamepadFocus, refreshGamepadFocus, setGamepadFocus, stageControlKey } from "./focus-engine";
-import { isCouchControlsOpen, isCouchMenuOpen, couchBack, openCouchMenu, closeCouchMenu, closeCouchControls, refreshCouchBar } from "./couch-shell";
+export { initGamepadFocus, moveGamepadFocus, refreshGamepadFocus, setGamepadFocus } from "./focus-engine";
+import { isCouchControlsOpen, isCouchMenuOpen, couchBack, openCouchMenu, refreshCouchBar } from "./couch-shell";
 import { isControllerKeyboardOpen, openControllerKeyboard, closeControllerKeyboard, controllerKeyboardPress, syncControllerKeyboard, controllerKeyboardRecentlyClosed } from "./on-screen-keyboard";
 import { faceGlyph, bumperGlyphs, triggerGlyphs, systemGlyph, hudItem } from "./pad-hints";
 import { stepCouchPage } from "./couch-pages";
 import { isTextEntryTarget } from "./text-entry";
-import {
-  enterStage,
-  stageControllerBattery,
-  stageControllerConnected,
-  stageControllerDisconnected,
-  toggleStage,
-} from "../stage/stage-state";
 
-/** Deadzone per player choice: tight, normal, loose. */
-const STICK_DEADZONES = [0.3, 0.42, 0.55] as const;
-const STICK_DEADZONE = STICK_DEADZONES[1];
+/** Analog stick deadzone used by the poller. */
+const STICK_DEADZONE = 0.42;
 const REPEAT_FIRST_MS = 260;
 const REPEAT_NEXT_MS = 85;
 const IDLE_POLL_MS = 80;
@@ -124,7 +115,6 @@ export function updateGamepadHud(active = true): void {
   if (
     !active ||
     !S.gamepadPolling ||
-    S.stage.active ||
     isCouchMenuOpen() ||
     isCouchControlsOpen() ||
     isControllerKeyboardOpen() ||
@@ -136,7 +126,7 @@ export function updateGamepadHud(active = true): void {
 
   hud.classList.remove("hidden");
   const kind = S.gamepadKind;
-  const hudKey = `${S.isFullscreen ? "f" : "w"}|${S.fullscreenModeEnabled ? "on" : "off"}|${S.stage.enabled ? "stage" : ""}|${S.view}|${S.appLanguage}|${kind}|${S.fullscreenSwapAB ? "swap" : ""}|${S.fullscreenHints ? "hints" : ""}`;
+  const hudKey = `${S.isFullscreen ? "f" : "w"}|${S.fullscreenModeEnabled ? "on" : "off"}|${S.view}|${S.appLanguage}|${kind}|${S.fullscreenSwapAB ? "swap" : ""}|${S.fullscreenHints ? "hints" : ""}`;
   if (hudKey === lastHudKey) return;
   lastHudKey = hudKey;
 
@@ -152,8 +142,6 @@ export function updateGamepadHud(active = true): void {
   if (S.isFullscreen) {
     items.push(hudItem(triggerGlyphs(kind), t("couch.pages")));
     items.push(hudItem(systemGlyph("Menu"), t("couch.menuButton")));
-  } else if (S.stage.enabled) {
-    items.push(hudItem(systemGlyph("Menu"), t("stage.title")));
   } else if (S.fullscreenModeEnabled) {
     items.push(hudItem(systemGlyph("Menu"), t("fullscreen.mode")));
   }
@@ -162,9 +150,6 @@ export function updateGamepadHud(active = true): void {
 }
 
 function activateFocused(): void {
-  // Stage's attract mode owns the first press; the bridge reports whether it
-  // swallowed it. Desktop mode has no bridge, so this is a no-op there.
-  if (S.stage.active && stageBridge()?.wake?.()) return;
   const candidates = getNavigableElements();
   if (candidates.length === 0) return;
   // Never click a control that a newly opened dialog has covered; the first
@@ -177,20 +162,17 @@ function activateFocused(): void {
   target.click();
   // Selecting a text field is how a couch player types: the field keeps DOM
   // focus and the on-screen keyboard becomes the active pad scope.
-  if (S.isFullscreen && !S.stage.active && S.fullscreenKeyboard && isTextEntryTarget(target)) {
+  if (S.isFullscreen && S.fullscreenKeyboard && isTextEntryTarget(target)) {
     openControllerKeyboard(target);
   }
 }
 
-/** Public keyboard/Stage entry: activate whatever currently owns the ring. */
+/** Public keyboard entry: activate whatever currently owns the ring. */
 export function activateGamepadFocus(): void {
   activateFocused();
 }
 
 function backAction(): void {
-  // Attract mode uses the first Back press to wake, not to leave the screen.
-  if (S.stage.active && stageBridge()?.wake?.()) return;
-
   // 0. The on-screen keyboard, controller map and couch menu stack above the
   // page; Back closes the top one only.
   if (couchBack()) return;
@@ -232,11 +214,6 @@ function backAction(): void {
         )
         ?.click();
     }
-    return;
-  }
-
-  if (S.stage.active) {
-    stageBridge()?.back();
     return;
   }
 
@@ -312,7 +289,7 @@ function switchFilterTab(forward: boolean): void {
 
 /** LT/RT walk the five pages the couch top bar offers. */
 function cycleCouchPage(direction: -1 | 1): void {
-  if (topOverlay() || S.stage.active) return;
+  if (topOverlay()) return;
   const next = stepCouchPage(S.view, direction);
   const selector = next === "store"
     ? "#couch-bar [data-couch-store]"
@@ -332,7 +309,6 @@ let repeatTimer = 0;
 let repeatDir: "up" | "down" | "left" | "right" | null = null;
 let lastMoveTime = 0;
 let repeatHoldStartTime = 0;
-let lastRsLeapTime = 0;
 
 /** One scheduled poll at a time. A focus change restarts the loop instead of
  *  leaving a second timer to race it. */
@@ -417,8 +393,7 @@ function padMask(gp: Gamepad): number {
     }
   }
 
-  // Read per sample: a change in Stage settings must apply on the next poll.
-  const deadzone = STICK_DEADZONES[S.stage.stickSensitivity] ?? STICK_DEADZONE;
+  const deadzone = STICK_DEADZONE;
   const lx = gp.axes[0] ?? 0;
   const ly = gp.axes[1] ?? 0;
 
@@ -458,9 +433,9 @@ function padWasLastInput(maxAge = 1500): boolean {
   return performance.now() - lastPadInputAt < maxAge;
 }
 
-/** A short pulse for couch navigation; never while Stage owns feedback. */
+/** A short pulse for couch navigation. */
 function pulse(gp: Gamepad, kind: "move" | "select" | "back"): void {
-  if (!S.isFullscreen || S.stage.active || !S.fullscreenHaptics) return;
+  if (!S.isFullscreen || !S.fullscreenHaptics) return;
   const actuator = (gp as Gamepad & {
     vibrationActuator?: {
       playEffect?: (
@@ -548,45 +523,25 @@ function gamepadLoop(): void {
   else if (isPressed(mask, BTN_LEFT)) activeDir = "left";
   else if (isPressed(mask, BTN_RIGHT)) activeDir = "right";
 
-  // A/B swap belongs to the couch shell. Stage keeps its own established map.
-  const couchSwap = S.isFullscreen && !S.stage.active && S.fullscreenSwapAB;
+  // A/B swap belongs to the couch shell.
+  const couchSwap = S.isFullscreen && S.fullscreenSwapAB;
   const confirmButton = couchSwap ? BTN_B : BTN_A;
   const backButton = couchSwap ? BTN_A : BTN_B;
 
-  // Right stick vertical flick walks one step at a time. Four moves in one
-  // frame skipped the side stage and stacked four hero swaps into a single
-  // stutter.
-  const ry = gp.axes[3] ?? 0;
-  if (S.stage.active && S.stage.stillIndex === null && !activeDir && Math.abs(ry) > 0.68) {
-    if (now - lastRsLeapTime > 220) {
-      lastRsLeapTime = now;
-      if (!stageBridge()?.wake?.()) moveGamepadFocus(ry > 0 ? "down" : "up");
-    }
-  }
   // The classic shell keeps the ring where it is while the right stick scrolls
   // a long settings page or an open dialog; the pad has no wheel.
-  if (!S.stage.active && S.isFullscreen && !activeDir && Math.abs(ry) > 0.3) {
+  const ry = gp.axes[3] ?? 0;
+  if (S.isFullscreen && !activeDir && Math.abs(ry) > 0.3) {
     scrollFocusedPane(Math.round(ry * 22));
   }
 
   if (activeDir) {
-    if (S.stage.active) {
-      window.dispatchEvent(new CustomEvent("stage-input-mode", { detail: { mode: "gamepad" } }));
-      // The first direction press dismisses the boot mark or the attract
-      // screen; it must not also move the ring behind the overlay.
-      if (stageBridge()?.wake?.()) {
-        prevButtons = mask;
-        repeatDir = null;
-        schedulePoll(mask === 0 ? IDLE_PAD_POLL_MS : 0);
-        return;
-      }
-    }
     if (activeDir !== repeatDir) {
       repeatDir = activeDir;
       repeatHoldStartTime = now;
       lastMoveTime = now;
       moveGamepadFocus(activeDir);
-      if (!S.stage.active) pulse(gp, "move");
+      pulse(gp, "move");
     } else {
       const elapsed = now - lastMoveTime;
       const totalHeld = now - repeatHoldStartTime;
@@ -639,34 +594,12 @@ function gamepadLoop(): void {
 
   // Button actions
   if (justPressed(mask, confirmButton)) {
-    if (S.stage.active) {
-      window.dispatchEvent(new CustomEvent("stage-input-mode", { detail: { mode: "gamepad" } }));
-    }
     activateFocused();
     pulse(gp, "select");
   }
   if (justPressed(mask, backButton)) {
-    if (S.stage.active) {
-      window.dispatchEvent(new CustomEvent("stage-input-mode", { detail: { mode: "gamepad" } }));
-    }
     backAction();
     pulse(gp, "back");
-  }
-  if (S.stage.active) {
-    const bridge = stageBridge();
-    if (justPressed(mask, BTN_X)) bridge?.button("x");
-    if (justPressed(mask, BTN_Y)) bridge?.button("y");
-    if (justPressed(mask, BTN_LB)) bridge?.button("lb");
-    if (justPressed(mask, BTN_RB)) bridge?.button("rb");
-    if (justPressed(mask, BTN_LT)) bridge?.button("lt");
-    if (justPressed(mask, BTN_RT)) bridge?.button("rt");
-    if (justPressed(mask, BTN_START)) bridge?.button("start");
-    // The guide/PS button is the console's control-centre key.
-    if (justPressed(mask, BTN_GUIDE)) bridge?.button("start");
-    if (justPressed(mask, BTN_SELECT)) bridge?.button("select");
-    prevButtons = mask;
-    schedulePoll(mask === 0 ? IDLE_PAD_POLL_MS : 0);
-    return;
   }
   if (justPressed(mask, BTN_X)) {
     quickFavoriteAction();
@@ -686,19 +619,16 @@ function gamepadLoop(): void {
   if (justPressed(mask, BTN_RT) && S.isFullscreen) {
     cycleCouchPage(1);
   }
-  // Menu opens the couch menu in Full Screen Mode, and Stage from the desktop.
-  // The mode keeps its own entry point rather than depending on whether Stage
-  // happens to be switched on.
+  // Menu opens the couch menu in Full Screen Mode, and enters the mode from
+  // the desktop.
   if (justPressed(mask, BTN_START)) {
     if (S.isFullscreen) openCouchMenu();
-    else if (S.stage.enabled) void toggleStage();
     else if (S.fullscreenModeEnabled) void toggleFullscreenMode();
   }
   // Guide stays as a second home key for pads whose Menu button is awkward to
   // reach; in the couch shell it is the same menu key.
   if (justPressed(mask, BTN_GUIDE)) {
     if (S.isFullscreen) openCouchMenu();
-    else if (S.stage.enabled) void enterStage();
     else if (S.fullscreenModeEnabled) void toggleFullscreenMode();
   }
   if (justPressed(mask, BTN_SELECT)) {
@@ -719,16 +649,7 @@ function bindPad(gp: Gamepad): void {
   S.gamepadKind = controllerKind(gp.id);
   if (S.gamepadKind === "steamdeck") document.documentElement.classList.add("is-steam-deck");
   const batteryState = (gp as Gamepad & { battery?: { level?: number } }).battery;
-  const battery = batteryState && Number.isFinite(batteryState.level) ? (batteryState.level ?? null) : null;
-  stageControllerBattery(battery);
-  stageControllerConnected(
-    name,
-    S.gamepadKind,
-    battery,
-    // Stage is a launcher takeover: never open it over a running game or
-    // while another application is in front.
-    S.runningGames.size === 0 && launcherOwnsController(),
-  );
+  S.gamepadBattery = batteryState && Number.isFinite(batteryState.level) ? (batteryState.level ?? null) : null;
 }
 
 export function initGamepadSupport(): void {
@@ -738,11 +659,9 @@ export function initGamepadSupport(): void {
     void notifyPlaystationBridge();
     lastHudKey = "";
 
-    // Auto-enter the classic full screen mode only when Stage did not already
-    // take over the window. A pad that reconnects mid-session must never pull
-    // the launcher in front of a running game.
+    // A pad that reconnects mid-session must never pull the launcher in front
+    // of a running game.
     if (
-      !S.stage.active &&
       S.runningGames.size === 0 &&
       launcherOwnsController() &&
       S.fullscreenAutoEnter &&
@@ -764,8 +683,7 @@ export function initGamepadSupport(): void {
     const hasAny = Array.from(gamepads).some((g) => g !== null && g.connected);
     if (!hasAny) {
       S.gamepadPolling = false;
-      stageControllerDisconnected();
-      if (S.stage.active) toast(t("stage.controllerDisconnected"), "");
+      S.gamepadBattery = null;
       closeControllerKeyboard();
       updateGamepadHud(false);
       setFocus(null);
@@ -773,29 +691,6 @@ export function initGamepadSupport(): void {
       document.documentElement.classList.remove("pad-input");
     }
   });
-
-  // A dialog that opens over Stage must take the ring immediately, not after
-  // the next D-pad press. Only the open/close transition moves focus; progress
-  // text inside the dialog must not steal it while the user navigates.
-  const modalPresent = (): boolean =>
-    Boolean(document.querySelector(
-      ".modal:not(.hidden), .selective-overlay, .confirm-dialog:not(.hidden), #install-root > div",
-    ));
-  let modalWasPresent = modalPresent();
-  const onModalRootChange = (): void => {
-    if (!S.stage.active) {
-      modalWasPresent = modalPresent();
-      return;
-    }
-    const present = modalPresent();
-    if (present === modalWasPresent) return;
-    modalWasPresent = present;
-    window.requestAnimationFrame(() => initGamepadFocus());
-  };
-  for (const id of ["modal-root", "selective-root", "confirm-root", "install-root"]) {
-    const root = document.getElementById(id);
-    if (root) new MutationObserver(onModalRootChange).observe(root, { childList: true });
-  }
 
   // A popup can open from a mouse click or a dialog can mount above the page.
   // Move the ring into the new scope (and back to the page when it closes)
@@ -817,7 +712,6 @@ export function initGamepadSupport(): void {
       if (
         S.isFullscreen &&
         S.fullscreenKeyboard &&
-        !S.stage.active &&
         !isControllerKeyboardOpen() &&
         !controllerKeyboardRecentlyClosed() &&
         padWasLastInput() &&
@@ -872,7 +766,7 @@ export function initGamepadSupport(): void {
 
   // A pad that was already connected when the window opened does not always
   // emit `gamepadconnected` until its first button press. Probe once so the
-  // HUD and Stage auto-entry see it.
+  // HUD and auto-entry see it.
   const existing = (navigator.getGamepads ? navigator.getGamepads() : [])
     .find((pad): pad is Gamepad => Boolean(pad && pad.connected));
   if (existing) {
@@ -925,7 +819,6 @@ export function initGamepadSupport(): void {
   let lastMouseX = -1;
   let lastMouseY = -1;
   window.addEventListener("mousemove", (event) => {
-    if (S.stage.active) return;
     const threshold = S.isFullscreen ? 6 : 4;
     if (lastMouseX >= 0 && Math.hypot(event.clientX - lastMouseX, event.clientY - lastMouseY) < threshold) return;
     lastMouseX = event.clientX;
@@ -962,21 +855,5 @@ export function initGamepadSupport(): void {
   });
   window.addEventListener("controller-keyboard-close", () => {
     window.requestAnimationFrame(() => refreshGamepadFocus());
-  });
-
-  // A mode change invalidates the held-button mask; otherwise the first press
-  // inside Stage can look like a release.
-  window.addEventListener("stage-mode", (event) => {
-    prevButtons = 0;
-    repeatDir = null;
-    setFocus(null);
-    if ((event as CustomEvent<{ active?: boolean }>).detail?.active) {
-      closeCouchMenu();
-      closeCouchControls();
-      closeControllerKeyboard();
-      updateGamepadHud(false);
-    } else {
-      refreshCouchBar();
-    }
   });
 }

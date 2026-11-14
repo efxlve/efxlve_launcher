@@ -37,8 +37,6 @@ import { refreshGamepadFocus, updateGamepadHud } from "./features/gamepad/gamepa
 import { updateFullscreenUi } from "./features/gamepad/fullscreen-mode";
 import { closeCouchControls, closeCouchMenu, refreshCouchBar } from "./features/gamepad/couch-shell";
 import { closeControllerKeyboard } from "./features/gamepad/on-screen-keyboard";
-import { renderStageBoot } from "./features/stage/stage-boot";
-import { enterStage, updateStageUi } from "./features/stage/stage-state";
 import { closeHideGamesModal } from "./features/library/hide-games";
 import { closeReleaseCalendar } from "./features/library/release-calendar";
 import { hideLibraryAlphaRail } from "./features/library/library-alpha";
@@ -82,7 +80,6 @@ if (S.uiScale !== 100) void applyUiScale(S.uiScale);
 applyCustomCss(S.customCss);
 // The master switch hides the title-bar Full Screen button before first paint.
 updateFullscreenUi();
-updateStageUi();
 document.documentElement.classList.add("ready");
 applyWinbarAppIcon();
 perfMark("main:module");
@@ -132,21 +129,6 @@ function scheduleRender(): void {
 
 /** Render the active view and refresh the surrounding chrome. */
 function render(): void {
-  // Stage is a separate shell. It must paint before the desktop chrome so the
-  // hidden store, music and Discord children never peek through it.
-  if (S.stage.active) {
-    if (S.storeShown) hideStore();
-    hideSpotifyPlayer();
-    destroyDiscordPage();
-    closeNotifPanel();
-    // The desktop controller bar sits above Stage's layer; hide it here.
-    updateGamepadHud(S.gamepadPolling);
-    renderStageBoot();
-    renderNotificationPanel();
-    presenceSync();
-    return;
-  }
-
   // TV Mode is a full-screen shell state; a single place toggles its body class.
     // The Spotify page is an embedded web player: it owns the whole content area.
   document.body.classList.toggle("spotify-page", S.view === "music");
@@ -288,13 +270,7 @@ const handheld =
 document.documentElement.classList.toggle("is-handheld", handheld);
 if (isSteamDeckDevice()) document.documentElement.classList.add("is-steam-deck");
 
-// Stage-at-launch must be active before the first desktop paint, otherwise the
-// user sees the library flash for a second and then the controller shell.
-if (S.stage.enabled && S.stage.openAtLaunch) void enterStage();
-
-void initApp({ render, scheduleRender, closeAllModals }).then(() => {
-  updateStageUi();
-});
+void initApp({ render, scheduleRender, closeAllModals });
 
 
 // The crosshair lives in a native window and outlives the overlay page: push

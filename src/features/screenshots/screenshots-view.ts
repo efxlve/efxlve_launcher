@@ -10,7 +10,6 @@ import { summaryOf } from "../../core/selectors";
 import { isTauri } from "../../core/constants";
 import { modalRoot } from "../../core/dom";
 import { emptyPanel, icon } from "../../core/icons";
-import { scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtBytes, formatScreenshotDate } from "../../core/utils";
@@ -331,28 +330,20 @@ export function fetchAndRenderScreenshots(appName: string, title: string, force 
       // consumer closed is dropped instead of holding the gallery in memory.
       if (!S.loadingScreenshotsFor.has(appName)) return;
       S.loadingScreenshotsFor.delete(appName);
-      const desktopOpen = S.currentModalAppName === appName;
-      const stageOpen = S.stage.active && S.stage.stillApp === appName;
-      const programOpen = S.stage.active && S.stage.gameKey === appName;
-      const homeOpen = S.stage.active && S.stage.route === "home";
-      if (!desktopOpen && !stageOpen && !programOpen && !homeOpen) return;
+      if (S.currentModalAppName !== appName) return;
       S.loadedScreenshots.set(appName, items);
-      if (desktopOpen) {
-        const badgeEl = modalRoot.querySelector('.drawer-tab[data-tab="screenshots"] .drawer-tab-badge');
-        if (badgeEl) badgeEl.remove();
+      const badgeEl = modalRoot.querySelector('.drawer-tab[data-tab="screenshots"] .drawer-tab-badge');
+      if (badgeEl) badgeEl.remove();
 
-        if (S.activeDrawerTab === "screenshots") {
-          const contentEl = document.getElementById("drawer-tab-content");
-          if (contentEl) {
-            const curSummary = summaryOf(appName);
-            if (curSummary) contentEl.innerHTML = renderDrawerScreenshots(curSummary);
-          }
-        } else if (S.activeDrawerTab === "overview") {
-          const moments = document.getElementById("gp-moments");
-          if (moments) moments.outerHTML = renderMomentsStrip(appName);
+      if (S.activeDrawerTab === "screenshots") {
+        const contentEl = document.getElementById("drawer-tab-content");
+        if (contentEl) {
+          const curSummary = summaryOf(appName);
+          if (curSummary) contentEl.innerHTML = renderDrawerScreenshots(curSummary);
         }
-      } else if (stageOpen || programOpen || homeOpen) {
-        scheduleRender();
+      } else if (S.activeDrawerTab === "overview") {
+        const moments = document.getElementById("gp-moments");
+        if (moments) moments.outerHTML = renderMomentsStrip(appName);
       }
     })
     .catch(() => {
@@ -360,7 +351,6 @@ export function fetchAndRenderScreenshots(appName: string, title: string, force 
       // game must not drop the response of the game still loading.
       if (S.loadingScreenshotsFor.has(appName)) S.loadingScreenshotsFor.delete(appName);
       S.loadedScreenshots.set(appName, []);
-      if (S.stage.active && S.stage.gameKey === appName) scheduleRender();
     });
 }
 

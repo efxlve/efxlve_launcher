@@ -51,7 +51,6 @@ function onMusicView(): boolean {
 }
 
 function coversOpen(): boolean {
-  if (S.stage.active) return true;
   if (COVERING_ROOT_IDS.some((id) => document.getElementById(id)?.firstElementChild)) return true;
   // The couch sheets and the palette are HTML above the native child. They are
   // not store-covering roots, but they still need the child parked underneath.

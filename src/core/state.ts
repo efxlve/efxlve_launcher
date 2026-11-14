@@ -90,23 +90,6 @@ import {
   FULLSCREEN_HAPTICS_KEY,
   FULLSCREEN_KEYBOARD_KEY,
   FULLSCREEN_HINTS_KEY,
-  STAGE_ENABLED_KEY,
-  STAGE_AUTO_KEY,
-  STAGE_OPEN_AT_LAUNCH_KEY,
-  STAGE_LIBRARY_VIEW_KEY,
-  STAGE_LIBRARY_SORT_KEY,
-  STAGE_SOUND_KEY,
-  STAGE_VOLUME_KEY,
-  STAGE_HAPTICS_KEY,
-  STAGE_TEXT_SCALE_KEY,
-  STAGE_SAFE_AREA_KEY,
-  STAGE_STICK_KEY,
-  STAGE_AMBIENCE_KEY,
-  STAGE_AMBIENCE_VOLUME_KEY,
-  STAGE_CINEMATIC_KEY,
-  STAGE_ATTRACT_KEY,
-  STAGE_CUSTOM_AMBIENCE_KEY,
-  STAGE_GAME_TRACKS_KEY,
   isSteamDeckDevice,
   INSTALLED_ICON_KEY,
   HIGHLIGHT_INSTALLED_KEY,
@@ -130,7 +113,7 @@ import { initialReduceEffects } from "./effects";
 import { loadGameStatus, loadUiScale } from "./game-status";
 import { readCustomCss } from "./custom-css";
 import { normalizeSurface } from "./themes";
-import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, CustomLogoLayout, CustomLogoSize, DlMetrics, DownloadFinishAction, DrawerTab, EpicCopyOverride, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibGroupBy, LibraryItem, LogoAnchor, NotifTab, SavedAccount, SettingsSection, StageAchievementFilter, StageLibraryFilter, StageLibrarySort, StageLibraryView, StageProgramTab, StageRoute, StageRouteSnapshot, StageSettingsTab, StageSessionSummary, View } from "./types";
+import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, CustomLogoLayout, CustomLogoSize, DlMetrics, DownloadFinishAction, DrawerTab, EpicCopyOverride, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibGroupBy, LibraryItem, LogoAnchor, NotifTab, SavedAccount, SettingsSection, View } from "./types";
 import type { CriticData, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
 
 
@@ -956,233 +939,13 @@ export const S = {
   gameColModalAppName: (null) as string | null,
   gameColModalSelectedCols: (new Set()) as Set<string>,
   resizeRaf: (null) as number | null,
-  /**
-   * Experimental Stage shell. It is a mode rather than a `View`, so the desktop
-   * navigation history, sidebar and child webviews stay untouched.
-   */
-  stage: {
-    active: false,
-    route: ("home") as StageRoute,
-    gameKey: (null) as string | null,
-    /** Last game the Home hero showed, kept while the focus is on Play or a tool. */
-    homeHeroKey: (null) as string | null,
-    /** Last game the library wall previewed, kept while the focus is on a tool. */
-    previewKey: (null) as string | null,
-    programTab: ("overview") as StageProgramTab,
-    settingsTab: ("general") as StageSettingsTab,
-    achievementFilter: ("all") as StageAchievementFilter,
-    collectionId: (null) as string | null,
-    stillIndex: (null) as number | null,
-    stillApp: (null) as string | null,
-    focusKey: "",
-    libraryFilter: ("all") as StageLibraryFilter,
-    libraryStore: ("all") as GameSource | "all",
-    librarySort: (() => {
-      try {
-        const stored = localStorage.getItem(STAGE_LIBRARY_SORT_KEY);
-        if (stored === "recent" || stored === "alpha" || stored === "playtime" || stored === "installed") return stored;
-      } catch {
-        /* ignore */
-      }
-      return "recent";
-    })() as StageLibrarySort,
-    libraryView: (() => {
-      try {
-        const stored = localStorage.getItem(STAGE_LIBRARY_VIEW_KEY);
-        if (stored === "grid" || stored === "list") return stored;
-      } catch {
-        /* ignore */
-      }
-      return "grid";
-    })() as StageLibraryView,
-    textScale: (() => {
-      try {
-        const raw = localStorage.getItem(STAGE_TEXT_SCALE_KEY);
-        const stored = raw === null ? NaN : Number(raw);
-        if ([100, 110, 120].includes(stored)) return stored;
-      } catch {
-        /* ignore */
-      }
-      return 100;
-    })() as number,
-    safeArea: (() => {
-      try {
-        const raw = localStorage.getItem(STAGE_SAFE_AREA_KEY);
-        const stored = raw === null ? NaN : Number(raw);
-        if ([0, 1, 2, 3].includes(stored)) return stored;
-      } catch {
-        /* ignore */
-      }
-      // The setting is opt-in: the TV/handheld safe-area inset changes the
-      // shell geometry, so the default keeps the stage edge-to-edge.
-      return 0;
-    })() as number,
-    /**
-     * Analog stick deadzone as a level, not a raw threshold: the settings row
-     * and the poller share one contract. 0 tight, 1 normal, 2 loose.
-     */
-    stickSensitivity: (() => {
-      try {
-        const raw = localStorage.getItem(STAGE_STICK_KEY);
-        const stored = raw === null ? NaN : Number(raw);
-        if ([0, 1, 2].includes(stored)) return stored;
-      } catch {
-        /* ignore */
-      }
-      return 1;
-    })() as number,
-    sound: (() => {
-      try {
-        return localStorage.getItem(STAGE_SOUND_KEY) !== "false";
-      } catch {
-        return true;
-      }
-    })() as boolean,
-    soundVolume: (() => {
-      try {
-        const raw = localStorage.getItem(STAGE_VOLUME_KEY);
-        const stored = raw === null ? NaN : Number(raw);
-        if (Number.isFinite(stored) && stored >= 0 && stored <= 100) return stored;
-      } catch {
-        /* ignore */
-      }
-      return 35;
-    })() as number,
-    haptics: (() => {
-      try {
-        return localStorage.getItem(STAGE_HAPTICS_KEY) !== "false";
-      } catch {
-        return true;
-      }
-    })() as boolean,
-    /**
-     * Stage's own generative ambient theme. It is an original composition
-     * synthesised at runtime; no sampled or third-party music ships with the
-     * launcher. Kept separate from the navigation ticks so a player can mute
-     * one without the other.
-     */
-    ambience: (() => {
-      try {
-        return localStorage.getItem(STAGE_AMBIENCE_KEY) !== "false";
-      } catch {
-        return true;
-      }
-    })() as boolean,
-    ambienceVolume: (() => {
-      try {
-        const raw = localStorage.getItem(STAGE_AMBIENCE_VOLUME_KEY);
-        const stored = raw === null ? NaN : Number(raw);
-        if (Number.isFinite(stored) && stored >= 0 && stored <= 100) return stored;
-      } catch {
-        /* ignore */
-      }
-      return 50;
-    })() as number,
-    /** The short boot flourish; off means Stage opens directly on Home. */
-    cinematic: (() => {
-      try {
-        return localStorage.getItem(STAGE_CINEMATIC_KEY) !== "false";
-      } catch {
-        return true;
-      }
-    })() as boolean,
-    /** Fade the chrome away after a quiet Home screen, like an attract loop. */
-    attract: (() => {
-      try {
-        return localStorage.getItem(STAGE_ATTRACT_KEY) !== "false";
-      } catch {
-        return true;
-      }
-    })() as boolean,
-    /** A player-imported track used when no game has its own theme. */
-    customAmbience: (() => {
-      try {
-        return localStorage.getItem(STAGE_CUSTOM_AMBIENCE_KEY) || "";
-      } catch {
-        return "";
-      }
-    })() as string,
-    /** Per-game themes, keyed by the canonical game key. */
-    gameTracks: (() => {
-      try {
-        const raw = localStorage.getItem(STAGE_GAME_TRACKS_KEY);
-        if (!raw) return {} as Record<string, string>;
-        const parsed = JSON.parse(raw) as Record<string, unknown>;
-        const out: Record<string, string> = {};
-        for (const [key, value] of Object.entries(parsed)) {
-          if (typeof value === "string" && value) out[key] = value;
-        }
-        return out;
-      } catch {
-        return {} as Record<string, string>;
-      }
-    })() as Record<string, string>,
-    /** Transient presentation flags; a render picks them up immediately. */
-    intro: false,
-    idle: false,
-    query: "",
-    searchOpen: false,
-    quickMenu: false,
-    controlsOpen: false,
-    spotifyOpen: false,
-    discordOpen: false,
-    notifOpen: false,
-    browserOpen: false,
-    browserUrl: "",
-    powerOpen: false,
-    powerConfirm: false,
-    manageKey: (null) as string | null,
-    manageConfirmUninstall: false,
-    launch: (null) as { key: string; title: string; art: string | null } | null,
-    launchError: "",
-    /** Which game failed, so the error card can name it and Retry has a target. */
-    launchErrorKey: "",
-    returnView: ("library") as View,
-    returnScroll: 0,
-    wasFullscreen: false,
-    enabled: (() => {
-      try {
-        return localStorage.getItem(STAGE_ENABLED_KEY) !== "false";
-      } catch {
-        return true;
-      }
-    })() as boolean,
-    autoEnter: (() => {
-      try {
-        const stored = localStorage.getItem(STAGE_AUTO_KEY);
-        if (stored === "true") return true;
-        if (stored === "false") return false;
-      } catch {
-        /* ignore */
-      }
-      // A handheld is a couch device by definition; a desktop may have a pad
-      // for one game and still want the normal shell. The title bar and F10
-      // stay one press away either way.
-      return isSteamDeckDevice();
-    })() as boolean,
-    openAtLaunch: (() => {
-      try {
-        const stored = localStorage.getItem(STAGE_OPEN_AT_LAUNCH_KEY);
-        if (stored === "true") return true;
-        if (stored === "false") return false;
-      } catch {
-        /* ignore */
-      }
-      // A Deck is a console first: boot into the couch shell unless the owner
-      // explicitly chose the desktop. Desktop machines keep the normal window.
-      return isSteamDeckDevice();
-    })() as boolean,
-    controllerConnected: false,
-    controllerName: "",
-    controllerBattery: (null) as number | null,
-    stack: ([] as StageRouteSnapshot[]),
-    lastSession: (null) as StageSessionSummary | null,
-  },
   gamepadPolling: false,
   lastGamepadActionTime: 0,
   gamepadHudEl: (null) as HTMLElement | null,
   gamepadName: "",
   gamepadKind: ("generic") as ControllerKind,
+  /** Battery level 0–1 of the connected pad, when the browser reports one. */
+  gamepadBattery: (null) as number | null,
   controllerBridge: (null) as ControllerSupportStatus | null,
   steamStatus: (null) as import("../steam").SteamStatus | null,
   steamGames: [] as import("../steam").SteamGame[],

@@ -101,13 +101,10 @@ export function updateFullscreenUi(): void {
   }
 }
 
-// Global F11 key shortcut for Fullscreen toggle. Stage owns its own fullscreen
-// presentation and F10 is its toggle; F11 must not put the desktop scale on top
-// of an active Stage.
+// Global F11 key shortcut for the Full Screen toggle.
 window.addEventListener("keydown", (e: KeyboardEvent) => {
   if (e.key === "F11") {
     if (e.repeat) return;
-    if (S.stage.active) return;
     e.preventDefault();
     void toggleFullscreenMode();
   }

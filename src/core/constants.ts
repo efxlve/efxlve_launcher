@@ -212,32 +212,6 @@ export const FULLSCREEN_HINTS_KEY = "efxlve-fullscreen-hints";
 /** One-time "B goes back" hint after the first controller entry. */
 export const FULLSCREEN_HINT_KEY = "efxlve-fullscreen-hint-seen";
 
-/** Stage is the experimental controller-first shell; this is its master switch. */
-export const STAGE_ENABLED_KEY = "efxlve-stage-enabled";
-/** Enter Stage when a controller connects. */
-export const STAGE_AUTO_KEY = "efxlve-stage-auto";
-/** Start the launcher in Stage on this device. */
-export const STAGE_OPEN_AT_LAUNCH_KEY = "efxlve-stage-open-at-launch";
-/** Stage library layout and sort, remembered between sessions. */
-export const STAGE_LIBRARY_VIEW_KEY = "efxlve-stage-library-view";
-export const STAGE_LIBRARY_SORT_KEY = "efxlve-stage-library-sort";
-/** Stage sound, haptics, text size and safe area. */
-export const STAGE_SOUND_KEY = "efxlve-stage-sound";
-export const STAGE_VOLUME_KEY = "efxlve-stage-volume";
-export const STAGE_HAPTICS_KEY = "efxlve-stage-haptics";
-export const STAGE_TEXT_SCALE_KEY = "efxlve-stage-text-scale";
-export const STAGE_SAFE_AREA_KEY = "efxlve-stage-safe-area";
-/** Analog stick deadzone: 0 tight, 1 normal, 2 loose. */
-export const STAGE_STICK_KEY = "efxlve-stage-stick";
-/** Original generative ambient theme, console intro and the idle Home screen. */
-export const STAGE_AMBIENCE_KEY = "efxlve-stage-ambience";
-export const STAGE_AMBIENCE_VOLUME_KEY = "efxlve-stage-ambience-volume";
-export const STAGE_CINEMATIC_KEY = "efxlve-stage-cinematic";
-export const STAGE_ATTRACT_KEY = "efxlve-stage-attract";
-/** User-supplied Stage music: one global track and one per game. */
-export const STAGE_CUSTOM_AMBIENCE_KEY = "efxlve-stage-custom-ambience";
-export const STAGE_GAME_TRACKS_KEY = "efxlve-stage-game-tracks";
-
 /** Spotify / Discord pages: missing = visible. The overlay follows these. */
 export const SHOW_SPOTIFY_KEY = "efxlve-show-spotify";
 export const SHOW_MINI_PLAYER_KEY = "efxlve-show-mini-player";

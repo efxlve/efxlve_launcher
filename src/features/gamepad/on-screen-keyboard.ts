@@ -116,10 +116,10 @@ function bottomRow(): string {
     ${shiftKey}
     <button type="button" class="couch-key couch-key-icon" data-act="couch-key" data-key="left" data-gp-item data-gp-key="osk:left" aria-label="${esc(t("couch.moveLeft"))}">${icon("chevron-left", 18)}</button>
     <button type="button" class="couch-key couch-key-icon" data-act="couch-key" data-key="right" data-gp-item data-gp-key="osk:right" aria-label="${esc(t("couch.moveRight"))}">${icon("chevron-right", 18)}</button>
-    <button type="button" class="couch-key couch-key-wide" data-act="couch-key" data-key="space" data-gp-item data-gp-key="osk:space">${esc(t("stage.space"))}</button>
-    <button type="button" class="couch-key couch-key-icon" data-act="couch-key" data-key="backspace" data-gp-item data-gp-key="osk:backspace" aria-label="${esc(t("stage.backspace"))}">${icon("arrow-left", 18)}</button>
+    <button type="button" class="couch-key couch-key-wide" data-act="couch-key" data-key="space" data-gp-item data-gp-key="osk:space">${esc(t("couch.keySpace"))}</button>
+    <button type="button" class="couch-key couch-key-icon" data-act="couch-key" data-key="backspace" data-gp-item data-gp-key="osk:backspace" aria-label="${esc(t("couch.keyBackspace"))}">${icon("arrow-left", 18)}</button>
     <button type="button" class="couch-key" data-act="couch-key" data-key="${symbols ? "letters" : "symbols"}" data-gp-item data-gp-key="osk:symbols">${esc(symbols ? t("couch.letters") : t("couch.symbols"))}</button>
-    <button type="button" class="couch-key couch-key-accent" data-act="couch-key" data-key="done" data-gp-item data-gp-key="osk:done">${esc(t("stage.done"))}</button>
+    <button type="button" class="couch-key couch-key-accent" data-act="couch-key" data-key="done" data-gp-item data-gp-key="osk:done">${esc(t("couch.keyDone"))}</button>
   </div>`;
 }
 
@@ -146,8 +146,8 @@ function paint(): void {
       <div class="couch-keyboard-foot">
         ${hudItem(faceGlyph(S.gamepadKind, S.fullscreenSwapAB ? "b" : "a"), t("gamepad.select"))}
         ${hudItem(faceGlyph(S.gamepadKind, S.fullscreenSwapAB ? "a" : "b"), t("common.close"))}
-        ${hudItem(faceGlyph(S.gamepadKind, "x"), t("stage.backspace"))}
-        ${hudItem(faceGlyph(S.gamepadKind, "y"), t("stage.space"))}
+        ${hudItem(faceGlyph(S.gamepadKind, "x"), t("couch.keyBackspace"))}
+        ${hudItem(faceGlyph(S.gamepadKind, "y"), t("couch.keySpace"))}
         ${hudItem(bumperGlyphs(S.gamepadKind), `${t("couch.shift")} / ${t("couch.symbols")}`)}
         <span class="couch-keyboard-hint">${esc(t("couch.keyboardHint"))}</span>
       </div>
@@ -241,7 +241,7 @@ export function isControllerKeyboardOpen(): boolean {
 }
 
 export function openControllerKeyboard(el: Element | null = document.activeElement): void {
-  if (!S.fullscreenKeyboard || S.stage.active) return;
+  if (!S.fullscreenKeyboard) return;
   if (!isTextEntryTarget(el)) return;
   // A live result list can repaint under the same field; an open keyboard is
   // already the right surface and must not reset the player's key position.
@@ -301,7 +301,7 @@ export function controllerKeyboardRecentlyClosed(): boolean {
 /** Called by the poller when the field or its dialog disappeared. */
 export function syncControllerKeyboard(): void {
   if (!isControllerKeyboardOpen()) return;
-  if (S.stage.active || !target?.isConnected) closeControllerKeyboard();
+  if (!target?.isConnected) closeControllerKeyboard();
 }
 
 /** Apply one virtual key. Also the click-router entry point. */

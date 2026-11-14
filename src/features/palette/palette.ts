@@ -87,11 +87,6 @@ function commands(): Command[] {
   if (S.fullscreenModeEnabled) {
     list.push({ label: t("fullscreen.mode"), iconName: "maximize-2", attrs: `data-act="toggle-fullscreen-mode"`, keywords: "tam ekran fullscreen controller gamepad" });
   }
-  // Stage is a windowed shell entry; opening it from the couch shell can leave
-  // two full-screen owners competing for the window.
-  if (S.stage.enabled && !S.isFullscreen) {
-    list.push({ label: t("stage.enter"), iconName: "clapperboard", attrs: `data-act="toggle-stage"`, keywords: "stage sahne controller gamepad couch beta" });
-  }
   list.push(
     { label: t("notif.title"), iconName: "bell", attrs: `data-act="toggle-notifications"`, keywords: "notifications bildirim" },
     { label: t("settings.viewChangelog"), iconName: "clock", attrs: `data-act="open-changelog"`, keywords: "changelog whats new surum notlari" },

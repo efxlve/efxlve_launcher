@@ -47,7 +47,7 @@
       "csp": null,
       "assetProtocol": {
         "enable": true,
-        "scope": ["$APPDATA/stage-audio/**/*"]
+        "scope": []
       }
     }
   },

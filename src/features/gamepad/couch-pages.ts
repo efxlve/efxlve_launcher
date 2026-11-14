@@ -1,8 +1,7 @@
 /**
  * The page ring behind LT/RT in Full Screen Mode.
  *
- * Stage has its own route stack; the classic shell keeps the desktop pages, so
- * the triggers only need a deterministic order across the five pages the couch
+ * The triggers only need a deterministic order across the five pages the couch
  * top bar offers.
  */
 

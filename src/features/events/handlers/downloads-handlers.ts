@@ -185,7 +185,7 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
           .then((msg) => {
             S.gogDlPaused = true;
             toast(localizeMessage(msg), "");
-            if (S.view === "downloads" || S.stage.active) render();
+            if (S.view === "downloads") render();
           })
           .catch((err) => toast(String(err), "err"));
         return true;
@@ -195,7 +195,7 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
           .then((msg) => {
             S.dlQueueStatus.isPaused = true;
             toast(msg, "");
-            if (S.view === "downloads" || S.stage.active) render();
+            if (S.view === "downloads") render();
           })
           .catch((err) => toast(String(err), "err"));
       }
@@ -208,7 +208,7 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
           .then((msg) => {
             S.gogDlPaused = false;
             toast(localizeMessage(msg), "");
-            if (S.view === "downloads" || S.stage.active) render();
+            if (S.view === "downloads") render();
           })
           .catch((err) => toast(String(err), "err"));
         return true;
@@ -219,7 +219,7 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
           .then((msg) => {
             S.dlQueueStatus.isPaused = false;
             toast(msg, "");
-            if (S.view === "downloads" || S.stage.active) render();
+            if (S.view === "downloads") render();
           })
           .catch((err) => toast(String(err), "err"));
       }
@@ -230,7 +230,7 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
         epicReorderQueue(id, "up")
           .then((q) => {
             S.dlQueueStatus = q;
-            if (S.view === "downloads" || S.stage.active) render();
+            if (S.view === "downloads") render();
           })
           .catch((err) => toast(String(err), "err"));
       }
@@ -241,7 +241,7 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
         epicReorderQueue(id, "down")
           .then((q) => {
             S.dlQueueStatus = q;
-            if (S.view === "downloads" || S.stage.active) render();
+            if (S.view === "downloads") render();
           })
           .catch((err) => toast(String(err), "err"));
       }
@@ -252,7 +252,7 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
         epicReorderQueue(id, "now")
           .then((q) => {
             S.dlQueueStatus = q;
-            if (S.view === "downloads" || S.stage.active) render();
+            if (S.view === "downloads") render();
           })
           .catch((err) => toast(String(err), "err"));
       }
@@ -265,7 +265,7 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
           .then((q) => {
             S.dlQueueStatus = q;
             toast(i18nT("dl.removedFromQueue"), "");
-            if (S.view === "downloads" || S.stage.active) render();
+            if (S.view === "downloads") render();
           })
           .catch((err) => toast(String(err), "err"));
       }

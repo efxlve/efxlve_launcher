@@ -192,7 +192,7 @@ export function refreshCouchBar(): void {
       const name = controller.querySelector<HTMLElement>("[data-couch-pad-name]");
       if (name && name.textContent !== S.gamepadName) name.textContent = S.gamepadName;
       controller.title = S.gamepadName;
-      const battery = S.stage.controllerBattery;
+      const battery = S.gamepadBattery;
       const batteryEl = controller.querySelector<HTMLElement>("[data-couch-battery]");
       if (batteryEl) {
         const show = battery !== null && Number.isFinite(battery);
@@ -358,7 +358,6 @@ export function isCouchMenuOpen(): boolean {
 }
 
 export function openCouchMenu(): void {
-  if (S.stage.active) return;
   const root = host();
   if (!root) return;
   closeControllerKeyboard();

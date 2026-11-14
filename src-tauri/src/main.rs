@@ -42,7 +42,6 @@ mod game_running;
 mod presence;
 mod retroachievements;
 mod shared_library;
-mod stage_audio;
 mod steam;
 mod steam_art;
 mod steam_auth;
@@ -676,8 +675,8 @@ fn app_is_maximized(app: AppHandle) -> Result<bool, String> {
 }
 
 /// Windows 11 draws a 1 px border on borderless windows. Painting it black
-/// only hid it on a pure-black edge; over the Stage art it became a visible
-/// black line along the top of the screen. Ask DWM to remove the border.
+/// only hid it on a pure-black edge; over full-screen cover art it became a
+/// visible black line along the top of the screen. Ask DWM to remove the border.
 #[cfg(windows)]
 fn hide_accent_border(window: &tauri::Window) {
     let Ok(hwnd) = window.hwnd() else {
@@ -2472,9 +2471,6 @@ fn main() {
             custom_games::custom_games_import_folder,
             custom_games::custom_games_pick_folder,
             file_dialog::pick_file_dialog,
-            stage_audio::stage_audio_import,
-            stage_audio::stage_audio_list,
-            stage_audio::stage_audio_delete,
             custom_games::custom_games_search_steam,
             custom_games::custom_games_steam_details,
             upscalers::upscalers_scan_game,

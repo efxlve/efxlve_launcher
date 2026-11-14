@@ -7,7 +7,6 @@
  */
 
 import { S } from "../../core/state";
-import { stageBridge } from "./stage-bridge";
 
 /* ========================================================================= */
 /*  Spatial 2D Focus Engine                                                  */
@@ -20,7 +19,6 @@ const focusMemory = new Map<string, string>();
 let lastScopeKey = "";
 
 function focusScopeKey(): string {
-  if (S.stage.active) return `stage:${S.stage.route}`;
   const overlay = topOverlay();
   if (overlay) {
     const id = overlay.id || overlay.className.split(/\s+/)[0] || "overlay";
@@ -184,14 +182,7 @@ export function getNavigableElements(): HTMLElement[] {
     return controls;
   }
 
-  // 2. Stage owns its own focus scope. This must run before the library branch:
-  // the desktop view stays in the DOM (hidden) while Stage is open.
-  if (S.stage.active) {
-    const stageRoot = document.getElementById("stage-root");
-    if (stageRoot) return visibleIn(stageRoot, "[data-gp-item]");
-  }
-
-  // 3. The standalone game drawer, when it is not hosted in #modal-root.
+  // 2. The standalone game drawer, when it is not hosted in #modal-root.
   const drawer = document.querySelector<HTMLElement>(".game-drawer:not(.hidden), #game-detail-drawer:not(.hidden)");
   if (drawer && isVisibleEl(drawer)) {
     return visibleIn(drawer, ".nav-back-btn, #btn-play, #btn-install, [data-act], button:not([disabled]), [role='button']");
@@ -232,7 +223,6 @@ export function setFocus(el: HTMLElement | null): void {
   }
   if (currentFocusedEl) {
     currentFocusedEl.classList.remove("gp-focused");
-    if (S.stage.active) currentFocusedEl.blur();
   }
   currentFocusedEl = el;
   lastFocusedKey = el ? focusKeyOf(el) : "";
@@ -244,48 +234,13 @@ export function setFocus(el: HTMLElement | null): void {
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const scrollBehavior: ScrollBehavior = reduceMotion ? "auto" : "smooth";
     currentFocusedEl.classList.add("gp-focused");
-    if (S.stage.active) {
-      // Keep real DOM focus in sync so screen readers and the inspect tools
-      // follow the same element. The visual ring is still ours.
-      try {
-        currentFocusedEl.focus({ preventScroll: true });
-      } catch {
-        /* A detached node can reject focus; the next render replaces it. */
-      }
-      window.dispatchEvent(
-        new CustomEvent("stage:focus", { detail: { key: stageControlKey(currentFocusedEl) } }),
-      );
-      // Stage scrolls with the ring, not after it: a held D-pad repeats every
-      // 38 ms, and restarting a smooth scroll at that rate leaves the focused
-      // card off screen and the container sliding on after the stick stops.
-      currentFocusedEl.scrollIntoView({
-        block: "nearest",
-        inline: currentFocusedEl.closest("[data-gp-row]") ? "center" : "nearest",
-        behavior: "auto",
-      });
-    } else {
-      currentFocusedEl.scrollIntoView({ block: "nearest", inline: "nearest", behavior: scrollBehavior });
-    }
+    currentFocusedEl.scrollIntoView({ block: "nearest", inline: "nearest", behavior: scrollBehavior });
   }
 }
 
-/** Public entry used by Stage's renderer and pointer hover. */
+/** Public entry used by pointer hover. */
 export function setGamepadFocus(el: HTMLElement | null): void {
   setFocus(el);
-}
-
-/**
- * Stable key for a Stage control. An authored `data-gp-key` wins; a button the
- * markup did not key (download pause, queue actions) still gets one derived
- * from its action, so a repaint can put the ring back where the player left it.
- */
-export function stageControlKey(el: HTMLElement): string {
-  if (el.dataset.gpKey) return el.dataset.gpKey;
-  if (el.dataset.act) {
-    const subject = el.dataset.id || el.dataset.mode || el.dataset.key || el.dataset.route || "";
-    return `ctl:${el.dataset.act}:${subject}`;
-  }
-  return el.id ? `ctl:#${el.id}` : "";
 }
 
 /**
@@ -295,10 +250,6 @@ export function stageControlKey(el: HTMLElement): string {
  */
 export function refreshGamepadFocus(): void {
   if (!currentFocusedEl && !lastFocusedKey) return;
-  // Stage puts the ring on shell chrome the pad does not traverse (the
-  // status-line bell, the Menu pill). A desktop panel repainting behind the
-  // shell must not drag it back into the page.
-  if (S.stage.active && currentFocusedEl?.isConnected && isVisibleEl(currentFocusedEl)) return;
   const candidates = getNavigableElements();
   if (candidates.length === 0) {
     setFocus(null);
@@ -360,32 +311,6 @@ function regionOrder(from: FocusRegion, dir: "up" | "down" | "left" | "right"): 
 }
 
 export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
-  // The collection tool is a horizontal picker: left/right cycles the picker
-  // instead of stepping to the neighbouring toolbar buttons.
-  if (
-    S.stage.active &&
-    S.stage.route === "library" &&
-    currentFocusedEl?.dataset.gpKey === "tool:collection" &&
-    (dir === "left" || dir === "right")
-  ) {
-    stageBridge()?.cycleCollection?.(dir === "right" ? "next" : "prev");
-    return;
-  }
-  if (S.stage.active && S.stage.stillIndex !== null) {
-    const bridge = stageBridge();
-    if (dir === "left") {
-      bridge?.button("lb");
-      return;
-    }
-    if (dir === "right") {
-      bridge?.button("rb");
-      return;
-    }
-    if (dir === "up" || dir === "down") {
-      bridge?.back();
-      return;
-    }
-  }
   const candidates = getNavigableElements();
   if (candidates.length === 0) return;
 
@@ -432,100 +357,9 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
   }
   const curRect = origin.getBoundingClientRect();
   const curCenter = { x: curRect.left + curRect.width / 2, y: curRect.top + curRect.height / 2 };
-  // Scale directional thresholds with the focused control so transformed
-  // cards in the same shelf row cannot capture an up/down move.
-  const moveX = Math.max(12, curRect.width * 0.35);
+  // Scale the directional threshold with the focused control so transformed
+  // cards in the same row cannot capture an up/down move.
   const moveY = Math.max(12, curRect.height * 0.35);
-  const curRow = origin.closest("[data-gp-row]");
-
-  // Settings panels read top to bottom. The generic scan weighs a horizontal
-  // gap 8x, so a right-aligned control loses to a full-width row two rows
-  // below. Inside a Stage settings panel, vertical movement goes to the
-  // nearest control by row and x only breaks a tie.
-  const settingsPanel = origin.closest<HTMLElement>(".stage-settings-panel");
-  if (S.stage.active && settingsPanel && (dir === "up" || dir === "down")) {
-    let best: HTMLElement | null = null;
-    let bestDy = Infinity;
-    let bestDx = Infinity;
-    for (const el of candidates) {
-      if (el === origin || el.closest(".stage-settings-panel") !== settingsPanel) continue;
-      const r = el.getBoundingClientRect();
-      if (r.width === 0 || r.height === 0) continue;
-      const dy = r.top + r.height / 2 - curCenter.y;
-      if (dir === "down" ? dy <= moveY : dy >= -moveY) continue;
-      const dist = Math.abs(dy);
-      const dx = Math.abs(r.left + r.width / 2 - curCenter.x);
-      if (dist < bestDy - 2 || (Math.abs(dist - bestDy) <= 2 && dx < bestDx)) {
-        best = el;
-        bestDy = dist;
-        bestDx = dx;
-      }
-    }
-    if (best) {
-      setFocus(best);
-      return;
-    }
-    // Nothing above this control: return to the tab that owns the panel, not
-    // the tab that happens to sit closest horizontally.
-    if (dir === "up") {
-      const activeTab = document.querySelector<HTMLElement>(".stage-settings-tab.active");
-      if (activeTab && isVisibleEl(activeTab)) {
-        setFocus(activeTab);
-        return;
-      }
-    }
-  }
-  // Down from the settings tabs enters the active panel at its first control;
-  // the full-width row below would otherwise win and skip the card button.
-  if (S.stage.active && dir === "down" && origin.closest(".stage-settings-tabs")) {
-    const first = document.querySelector<HTMLElement>(".stage-settings-panel [data-gp-item]");
-    if (first && isVisibleEl(first)) {
-      setFocus(first);
-      return;
-    }
-  }
-  // The same contract for the programme tabs: Down enters the tab body at its
-  // first control, not the still or card that happens to sit under the tab.
-  if (S.stage.active && dir === "down" && origin.closest(".stage-program-actions")) {
-    const activeTab = document.querySelector<HTMLElement>(".stage-program-tab.active")
-      ?? document.querySelector<HTMLElement>(".stage-program-tabs [data-gp-item]");
-    if (activeTab && isVisibleEl(activeTab)) {
-      setFocus(activeTab);
-      return;
-    }
-  }
-  if (S.stage.active && dir === "up" && origin.closest(".stage-program-tabs")) {
-    const primary = document.querySelector<HTMLElement>(".stage-program-actions [data-gp-key='primary']")
-      ?? document.querySelector<HTMLElement>(".stage-program-actions [data-gp-item]");
-    if (primary && isVisibleEl(primary)) {
-      setFocus(primary);
-      return;
-    }
-  }
-  if (S.stage.active && dir === "down" && origin.closest(".stage-program-tabs")) {
-    const first = document.querySelector<HTMLElement>(".stage-program-content [data-gp-item]");
-    if (first && isVisibleEl(first)) {
-      setFocus(first);
-      return;
-    }
-  }
-  // Up from the top row in a programme tab returns to the owning tab,
-  // not to the leftmost tab that happens to be closer horizontally.
-  if (S.stage.active && dir === "up" && origin.closest(".stage-program-content")) {
-    const contentCandidates = candidates.filter((el) => el.closest(".stage-program-content"));
-    const bestInContent = contentCandidates.some((el) => {
-      if (el === origin) return false;
-      const r = el.getBoundingClientRect();
-      return r.top + r.height / 2 < curCenter.y - moveY;
-    });
-    if (!bestInContent) {
-      const activeTab = document.querySelector<HTMLElement>(".stage-program-tab.active");
-      if (activeTab && isVisibleEl(activeTab)) {
-        setFocus(activeTab);
-        return;
-      }
-    }
-  }
 
   // The desktop shell has three regions. Moving inside one is a geometry
   // contest; crossing to another is a deliberate step. Without this, the
@@ -536,7 +370,6 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
     let bestScore = Infinity;
     for (const el of elements) {
       if (el === origin) continue;
-      if ((dir === "up" || dir === "down") && curRow && curRow === el.closest("[data-gp-row]")) continue;
       const r = el.getBoundingClientRect();
       const c = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
       const dx = c.x - curCenter.x;
@@ -578,290 +411,7 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
     return best;
   };
 
-  // Stage Home is a console home screen with distinct horizontal tiers:
-  // Ribbon (Level 1) -> Hero Actions (Level 2) -> Activity Shelf (Level 3).
-  // Stepping between tiers is deliberate so moving down from a card doesn't
-  // skip the Play button to a card far below.
-  if (S.stage.active && S.stage.route === "home") {
-    const inRibbon = Boolean(origin.closest(".stage-home-ribbon"));
-    const inHero = Boolean(origin.closest("#stage-home-hero"));
-    const inHub = Boolean(origin.closest("#stage-home-activities"));
-
-    if (inRibbon) {
-      if (dir === "down") {
-        const primary = document.querySelector<HTMLElement>("#stage-home-hero [data-gp-key='primary']")
-          ?? document.querySelector<HTMLElement>("#stage-home-hero [data-gp-item]");
-        if (primary && isVisibleEl(primary)) {
-          setFocus(primary);
-          return;
-        }
-      } else if (dir === "left" || dir === "right") {
-        const ribbonCandidates = candidates.filter((el) => el.closest(".stage-home-ribbon"));
-        const best = scan(ribbonCandidates);
-        if (best) {
-          setFocus(best);
-          return;
-        }
-      }
-    } else if (inHero) {
-      if (dir === "up") {
-        const heroKey = S.stage.homeHeroKey;
-        let target: HTMLElement | null = null;
-        if (heroKey) {
-          target = document.querySelector<HTMLElement>(`[data-gp-key="game:${CSS.escape(heroKey)}"]`);
-        }
-        if (!target || !isVisibleEl(target)) {
-          target = document.querySelector<HTMLElement>(".stage-home-ribbon [data-gp-item]");
-        }
-        if (target && isVisibleEl(target)) {
-          setFocus(target);
-          return;
-        }
-      } else if (dir === "down") {
-        const act = document.querySelector<HTMLElement>("#stage-home-activities [data-gp-key='act:resume']")
-          ?? document.querySelector<HTMLElement>("#stage-home-activities [data-gp-item]");
-        if (act && isVisibleEl(act)) {
-          setFocus(act);
-          return;
-        }
-      }
-    } else if (inHub) {
-      if (dir === "up" || dir === "down") {
-        const hubCandidates = candidates.filter((el) => el.closest("#stage-home-activities"));
-        let best: HTMLElement | null = null;
-        let bestDy = Infinity;
-        let bestDx = Infinity;
-        for (const el of hubCandidates) {
-          if (el === origin) continue;
-          if (curRow && curRow === el.closest("[data-gp-row]")) continue;
-          const r = el.getBoundingClientRect();
-          if (r.width === 0 || r.height === 0) continue;
-          const dy = r.top + r.height / 2 - curCenter.y;
-          if (dir === "down" ? dy <= moveY : dy >= -moveY) continue;
-          const dist = Math.abs(dy);
-          const dx = Math.abs(r.left + r.width / 2 - curCenter.x);
-          if (dist < bestDy - 12 || (Math.abs(dist - bestDy) <= 12 && dx < bestDx)) {
-            best = el;
-            bestDy = dist;
-            bestDx = dx;
-          }
-        }
-        if (best) {
-          setFocus(best);
-          return;
-        }
-        if (dir === "up") {
-          const primary = document.querySelector<HTMLElement>("#stage-home-hero [data-gp-key='primary']")
-            ?? document.querySelector<HTMLElement>("#stage-home-hero [data-gp-item]");
-          if (primary && isVisibleEl(primary)) {
-            setFocus(primary);
-            return;
-          }
-        } else {
-          stageBridge()?.bump?.(dir);
-          return;
-        }
-      }
-    }
-  }
-
   let bestEl: HTMLElement | null = null;
-  // The power sheet's cards are a vertical stack; left/right has no neighbour.
-  if (S.stage.active && origin.closest(".stage-power-grid") && (dir === "left" || dir === "right")) {
-    stageBridge()?.bump?.(dir);
-    return;
-  }
-  // The quick-menu grid: Left/Right walks the tile rows only. The resume
-  // banner is a full-width row above them, and its centre sits close enough to
-  // the middle tiles that the generic scan would climb into it.
-  const dockItem = origin.closest<HTMLElement>(".stage-dock-items .stage-dock-item:not(.stage-dock-resume)");
-  if (S.stage.active && dockItem && (dir === "left" || dir === "right")) {
-    const tiles = candidates.filter(
-      (el) => el.closest(".stage-dock-items") && !el.closest(".stage-dock-resume"),
-    );
-    const best = scan(tiles);
-    if (best) {
-      setFocus(best);
-      return;
-    }
-    stageBridge()?.bump?.(dir);
-    return;
-  }
-  // The resume banner spans the whole dock. Down enters the tile
-  // grid at its first cell instead of the column that happens to sit under the
-  // banner's centre; Left/Right bump because the banner is a row of its own.
-  if (S.stage.active && dir === "down" && origin.closest(".stage-dock-resume")) {
-    const firstDock = document.querySelector<HTMLElement>('.stage-dock-items [data-gp-key="dock:home"]');
-    if (firstDock && isVisibleEl(firstDock)) {
-      setFocus(firstDock);
-      return;
-    }
-  }
-  // The library tools wrap; left/right walks the tool set and bumps at the end
-  // instead of jumping to the topbar or the side stage.
-  const libraryTools = origin.closest<HTMLElement>(".stage-library-tools");
-  if (S.stage.active && libraryTools && (dir === "left" || dir === "right")) {
-    const tools = candidates.filter((el) => el.closest(".stage-library-tools") === libraryTools);
-    const best = scan(tools);
-    if (best) {
-      setFocus(best);
-      return;
-    }
-    stageBridge()?.bump?.(dir);
-    return;
-  }
-  // Extras action groups are chips in a wrapping row: left/right stays in the
-  // group instead of jumping to a still above or the manage sheet below.
-  const extraActions = origin.closest<HTMLElement>(".stage-extra-actions");
-  if (S.stage.active && extraActions && (dir === "left" || dir === "right")) {
-    const actions = candidates.filter((el) => el.closest(".stage-extra-actions") === extraActions);
-    const best = scan(actions);
-    if (best) {
-      setFocus(best);
-      return;
-    }
-    stageBridge()?.bump?.(dir);
-    return;
-  }
-  // The header is two stacked rows: filters above tools. The generic scan
-  // weighs horizontal distance so heavily that Down from a right-hand filter
-  // would jump past the tool row into the side stage.
-  const filterTabs = origin.closest<HTMLElement>(".stage-filter-tabs");
-  const nearestByX = (selector: string): HTMLElement | null => {
-    const els = Array.from(document.querySelectorAll<HTMLElement>(selector));
-    let best: HTMLElement | null = null;
-    let bestDx = Infinity;
-    for (const el of els) {
-      const r = el.getBoundingClientRect();
-      if (r.width === 0 || r.height === 0) continue;
-      const dx = Math.abs(r.left + r.width / 2 - curCenter.x);
-      if (dx < bestDx) {
-        best = el;
-        bestDx = dx;
-      }
-    }
-    return best;
-  };
-  if (S.stage.active && dir === "down" && filterTabs) {
-    const tool = nearestByX(".stage-library-tools [data-gp-item]");
-    if (tool) {
-      setFocus(tool);
-      return;
-    }
-  }
-  if (S.stage.active && dir === "up" && libraryTools) {
-    const filter = nearestByX(".stage-filter-tabs [data-gp-item]");
-    if (filter) {
-      setFocus(filter);
-      return;
-    }
-  }
-  if (S.stage.active && S.stage.route === "library") {
-    const inWall = Boolean(origin.closest(".stage-library-wall"));
-    const inSide = Boolean(origin.closest(".stage-library-side"));
-    if (inWall && (dir === "up" || dir === "down")) {
-      const wallCandidates = candidates.filter((el) => el.closest(".stage-library-wall"));
-      const bestInWall = scan(wallCandidates);
-      if (bestInWall) {
-        setFocus(bestInWall);
-        return;
-      }
-      if (dir === "up") {
-        const tool = nearestByX(".stage-library-tools [data-gp-item]")
-          ?? nearestByX(".stage-filter-tabs [data-gp-item]");
-        if (tool) {
-          setFocus(tool);
-          return;
-        }
-      } else {
-        stageBridge()?.bump?.(dir);
-        return;
-      }
-    }
-    if (inSide && dir === "left") {
-      const sideRowCandidates = curRow
-        ? candidates.filter((el) => el.closest("[data-gp-row]") === curRow)
-        : [];
-      const bestInSideRow = scan(sideRowCandidates);
-      if (bestInSideRow) {
-        setFocus(bestInSideRow);
-        return;
-      }
-      const previewKey = S.stage.previewKey;
-      const previewCard = previewKey
-        ? document.querySelector<HTMLElement>(`.stage-library-wall [data-gp-key="lib:${CSS.escape(previewKey)}"]`)
-        : null;
-      const wallFallback = (previewCard && isVisibleEl(previewCard) ? previewCard : null)
-        ?? document.querySelector<HTMLElement>(".stage-library-wall [data-gp-item]");
-      if (wallFallback && isVisibleEl(wallFallback)) {
-        setFocus(wallFallback);
-        return;
-      }
-    }
-  }
-  // The Discord friend grid wraps into rows whose last row can start in
-  // another column. Vertical movement goes by row, left/right stays inside.
-  const friendsList = origin.closest<HTMLElement>(".stage-discord-friends-list");
-  if (S.stage.active && friendsList) {
-    const cards = candidates.filter((el) => el.closest(".stage-discord-friends-list") === friendsList);
-    if (dir === "left" || dir === "right") {
-      const best = scan(cards);
-      if (best) {
-        setFocus(best);
-        return;
-      }
-      stageBridge()?.bump?.(dir);
-      return;
-    }
-    let best: HTMLElement | null = null;
-    let bestDy = Infinity;
-    let bestDx = Infinity;
-    for (const el of cards) {
-      if (el === origin) continue;
-      const r = el.getBoundingClientRect();
-      if (r.width === 0 || r.height === 0) continue;
-      const dy = r.top + r.height / 2 - curCenter.y;
-      if (dir === "down" ? dy <= moveY : dy >= -moveY) continue;
-      const dist = Math.abs(dy);
-      const dx = Math.abs(r.left + r.width / 2 - curCenter.x);
-      if (dist < bestDy - 2 || (Math.abs(dist - bestDy) <= 2 && dx < bestDx)) {
-        best = el;
-        bestDy = dist;
-        bestDx = dx;
-      }
-    }
-    if (best) {
-      setFocus(best);
-      return;
-    }
-    // No card further in that direction; fall through so Down reaches the
-    // open-client action and Up reaches the call controls.
-  }
-  // A data-gp-row is a horizontal shelf or tab strip: left/right stays inside
-  // it and bumps at the edge instead of jumping to the next shelf.
-  if (S.stage.active && curRow && (dir === "left" || dir === "right")) {
-    const rowCandidates = candidates.filter((el) => el.closest("[data-gp-row]") === curRow);
-    const best = scan(rowCandidates);
-    if (best) {
-      setFocus(best);
-      return;
-    }
-    stageBridge()?.bump?.(dir);
-    return;
-  }
-  // A test strip is one row of paired actions; left/right stays inside it even
-  // when a volume pill above sits closer horizontally.
-  const testStrip = origin.closest(".stage-settings-test");
-  if (S.stage.active && testStrip && (dir === "left" || dir === "right")) {
-    const stripCandidates = candidates.filter((el) => el.closest(".stage-settings-test") === testStrip);
-    const best = scan(stripCandidates);
-    if (best) {
-      setFocus(best);
-      return;
-    }
-    stageBridge()?.bump?.(dir);
-    return;
-  }
   if (fromRegion) {
     for (const region of regionOrder(fromRegion, dir)) {
       bestEl = scan(candidates.filter((el) => focusRegionOf(el) === region));
@@ -873,7 +423,5 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
 
   if (bestEl) {
     setFocus(bestEl);
-  } else if (S.stage.active) {
-    stageBridge()?.bump?.(dir);
   }
 }
