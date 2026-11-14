@@ -12,8 +12,8 @@
 .lib-tools .seg > button { height: 34px; }
 /* The 4px inline padding gives the controller focus pill a little breathing
    room while keeping the tab text aligned with the cover grid. */
-.lib-filters .tab { height: 48px; font-size: 16px; padding-inline: 4px; }
-.lib-filters.tabs { gap: clamp(14px, 2vw, 28px); }
+.lib-filters .tab { height: 48px; font-size: clamp(14px, 1.05vw, 16px); padding-inline: 4px; }
+.lib-filters.tabs { gap: clamp(8px, 1.2vw, 20px); }
 .lib-tools .lib-hide-btn { width: 40px; height: 40px; }
 .lib-sort-icon { display: inline-flex; color: var(--text-3); transition: color var(--ease); }
 /* Stepped on purpose: a smooth 60 fps rotation repaints the header every frame
@@ -31,14 +31,18 @@
 .lib-filters::-webkit-scrollbar { display: none; }
 .lib-col-tab { flex-shrink: 0; }
 .lib-pinned-col {
-  min-width: 0; flex-shrink: 0; display: inline-flex; align-items: center;
+  min-width: 0; flex-shrink: 1; display: inline-flex; align-items: center;
   cursor: grab; user-select: none;
   transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.14s ease;
 }
 .lib-pinned-col:hover { transform: translateY(-1px); }
 .lib-pinned-col:active { transform: translateY(0) scale(0.97); }
-.lib-pinned-col-name { display: block; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lib-pinned-col .col-tab-marker { display: inline-flex; align-items: center; margin-right: 4px; color: var(--text-2); }
+.lib-pinned-col-name {
+  display: block; min-width: 0; flex-shrink: 1;
+  max-width: clamp(64px, 8.5vw, 150px);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lib-pinned-col .col-tab-marker { display: inline-flex; align-items: center; margin-right: 4px; color: var(--text-2); flex-shrink: 0; }
 .lib-pinned-col.active .col-tab-marker { color: var(--text); }
 .col-dropdown-list .lib-col-tab { cursor: pointer; touch-action: none; }
 .lib-col-tab.dragging, .lib-pinned-col.dragging { cursor: grabbing !important; opacity: 0.45; transform: scale(0.95); }
@@ -60,7 +64,7 @@
 .lib-sort-kicker { color: var(--text-3); font-weight: 400; }
 .lib-sort-btn .sort-btn-label { max-width: 160px; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
 @media (max-width: 1220px) {
-  .lib-filters .tab { font-size: 14.5px; }
+  .lib-filters .tab { font-size: 13.5px; }
   .lib-tools .lib-sort-btn { gap: 6px; padding: 0 8px 0 10px; }
   .lib-tools .lib-sort-btn .sort-btn-label { max-width: 120px; }
 }
@@ -198,10 +202,10 @@
   display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
 }
 .lib-col-dropdown-btn span {
-  display: inline-block; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: inline-block; max-width: clamp(80px, 10vw, 150px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1100px) {
   /* On narrower screens, fold pinned collections so core tabs + Collections always fit */
   .lib-pinned-col { display: none !important; }
 }
