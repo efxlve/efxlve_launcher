@@ -27,6 +27,7 @@ pub mod playtime;
 pub mod playtime_session;
 pub mod profile;
 pub mod screenshots;
+pub mod sdl;
 pub mod skip;
 pub mod steamgrid;
 pub mod transfers;

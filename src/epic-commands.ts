@@ -499,6 +499,8 @@ export interface InstallOptionTag {
   size: number;
   downloadSize: number;
   category: string;
+  /** Raw manifest tags behind this row. Empty for the legacy one-tag rows. */
+  tags?: string[];
 }
 
 export interface GameInstallOptions {

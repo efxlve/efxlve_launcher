@@ -447,9 +447,13 @@ pub(super) fn start_download_request(
     // Persist the resolved folder, not a later settings default. A retry that
     // omits the path would otherwise install into an empty directory.
     let base = resolve_base(app, merged.install_dir.clone());
+    // A selective install must always carry the untagged and required tags;
+    // otherwise legendary installs only the optional packs. This also repairs
+    // a resume record saved by an older release with a raw tag set.
+    let install_tags = crate::legendary::sdl::expand_selected(&merged.app_name, merged.install_tags);
     let request = PendingDownload {
         app_name: merged.app_name,
-        install_tags: merged.install_tags,
+        install_tags,
         install_dir: Some(base.to_string_lossy().to_string()),
     };
 
@@ -859,8 +863,8 @@ pub(super) async fn monitor_download(
     let mut log_lines: VecDeque<String> = VecDeque::with_capacity(400);
     // Per attempt: the install record is only trusted when legendary logged the
     // commit line or the no-op line. A zero exit alone is not proof.
-    let mut install_committed = false;
-    let mut install_noop = false;
+    let mut install_committed: bool;
+    let mut install_noop: bool;
 
     let result: Result<(), String> = loop {
         install_committed = false;

@@ -45,6 +45,13 @@ export async function applySelectiveInstall(appName: string, tags: string[], dlc
   const s = summaryOf(appName);
   const title = s ? s.title : appName;
   const installDir = S.selectiveInstallDir;
+  // A row is an SDL group; legendary filters on the raw tags, so flatten the
+  // selected groups before closing the modal that holds them.
+  const options = S.selectiveInstallOptions;
+  const installTags = tags.flatMap((key) => {
+    const row = options?.tags.find((tag) => tag.tag === key);
+    return row?.tags && row.tags.length > 0 ? row.tags : [key];
+  });
   closeSelectiveModal();
   S.downloads.set(appName, { progress: 0, done: false, title });
   if (!S.activeDlMetrics || S.activeDlMetrics.done) {
@@ -67,7 +74,7 @@ export async function applySelectiveInstall(appName: string, tags: string[], dlc
   refreshGameActionUi(appName);
   toast(t("selective.starting"), "");
   try {
-    const msg = await epicInstallWithOptions(appName, tags, dlcs, installDir);
+    const msg = await epicInstallWithOptions(appName, installTags, dlcs, installDir);
     toast(msg, "ok");
     S.dlQueueStatus = (await epicGetQueue()) ?? S.dlQueueStatus;
     render();

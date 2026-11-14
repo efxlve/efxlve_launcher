@@ -947,6 +947,9 @@ pub struct InstallOptionTag {
     pub size: u64,
     pub download_size: u64,
     pub category: String,
+    /// Raw manifest tags behind this row. Empty for the legacy one-tag rows.
+    #[serde(default)]
+    pub tags: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1007,6 +1010,7 @@ fn sizes_from_manifest(manifest: &serde_json::Value) -> (u64, u64, Vec<InstallOp
                     size,
                     download_size: dl_size,
                     category: category.to_string(),
+                    tags: Vec::new(),
                 });
             }
         }
@@ -1050,6 +1054,89 @@ fn map_tag_label(tag: &str) -> (&'static str, &'static str) {
             }
         }
     }
+}
+
+/// Disk and download bytes of one manifest tag row.
+fn tag_totals(manifest: &serde_json::Value, tag: &str) -> (u64, u64) {
+    let find = |key: &str| {
+        manifest
+            .get(key)
+            .and_then(|value| value.as_array())
+            .and_then(|rows| {
+                rows.iter()
+                    .find(|row| row.get("tag").and_then(|value| value.as_str()) == Some(tag))
+            })
+            .and_then(|row| row.get("size"))
+            .map(json_u64)
+            .unwrap_or(0)
+    };
+    (find("tag_disk_size"), find("tag_download_size"))
+}
+
+/// Sums the rows for a group. A file can carry several tags, so the real total
+/// is a little lower than this estimate; under-reporting is the worse mistake.
+fn sum_tag_totals(manifest: &serde_json::Value, tags: &[&str]) -> (u64, u64) {
+    let mut seen = std::collections::HashSet::new();
+    let mut totals = (0u64, 0u64);
+    for tag in tags {
+        if !seen.insert(*tag) {
+            continue;
+        }
+        let (disk, download) = tag_totals(manifest, tag);
+        totals.0 += disk;
+        totals.1 += download;
+    }
+    totals
+}
+
+fn is_language_group(key: &str, name: &str) -> bool {
+    let key = key.to_ascii_lowercase();
+    key.starts_with("lang")
+        || (key.len() == 2 && key.chars().all(|c| c.is_ascii_alphabetic()))
+        || name.to_ascii_lowercase().contains("language")
+}
+
+/// Turns legendary's SDL map into one base size and one row per optional
+/// group. Fortnite's internal chunk names (`FortniteBROnDemand`, `GFP_*`) are
+/// not user choices; its only optional group is "Epic Quality Assets".
+fn sdl_options(
+    manifest: &serde_json::Value,
+    groups: &serde_json::Value,
+) -> (u64, u64, Vec<InstallOptionTag>) {
+    let mut base_tags = vec![""];
+    base_tags.extend(crate::legendary::sdl::group_tags(groups, "__required"));
+    let (base_size, base_download_size) = sum_tag_totals(manifest, &base_tags);
+
+    let mut rows = Vec::new();
+    if let Some(groups_map) = groups.as_object() {
+        for key in groups_map.keys() {
+            if key == "__required" {
+                continue;
+            }
+            let tags = crate::legendary::sdl::group_tags(groups, key);
+            if tags.is_empty() {
+                continue;
+            }
+            let (size, download_size) = sum_tag_totals(manifest, &tags);
+            if size == 0 && download_size == 0 {
+                continue;
+            }
+            let name = crate::legendary::sdl::group_name(groups, key);
+            rows.push(InstallOptionTag {
+                tag: key.clone(),
+                label: name.clone(),
+                size,
+                download_size,
+                category: if is_language_group(key, &name) {
+                    "languages".to_string()
+                } else {
+                    "extras".to_string()
+                },
+                tags: tags.into_iter().map(str::to_string).collect(),
+            });
+        }
+    }
+    (base_size, base_download_size, rows)
 }
 
 #[tauri::command]
@@ -1097,6 +1184,45 @@ pub async fn epic_get_install_options(
                 base_size = parsed.0;
                 base_download_size = parsed.1;
                 tags = parsed.2;
+            }
+        }
+    }
+
+    // SDL groups turn Fortnite's internal chunk names into one optional pack
+    // and, more importantly, define the real base (required) size. Only games
+    // whose manifest carries tags can have groups, so a game without tags
+    // never pays for the extra request.
+    if !tags.is_empty() {
+        let config = skip::default_config_dir();
+        let groups = match crate::legendary::sdl::read_groups(&config, &app_name) {
+            Some(groups) => Some(groups),
+            None => {
+                let fetched = crate::legendary::sdl::fetch_groups(&app_name).await;
+                if let Some(data) = fetched.as_ref() {
+                    let version = crate::legendary::sdl::sdl_version(&config, &app_name);
+                    crate::legendary::sdl::save_groups(&config, &app_name, data, version);
+                }
+                fetched
+            }
+        };
+        match (
+            groups.as_ref(),
+            info.as_ref().and_then(|value| value.get("manifest")),
+        ) {
+            (Some(groups), Some(manifest)) => {
+                let (sdl_base, sdl_download, sdl_tags) = sdl_options(manifest, groups);
+                if sdl_base > 0 || sdl_download > 0 {
+                    base_size = sdl_base;
+                    base_download_size = sdl_download;
+                }
+                // Only the base exists; raw manifest tags are internal names,
+                // not selectable packs.
+                tags = sdl_tags;
+            }
+            _ => {
+                // No SDL groups for this title: the manifest tag names are
+                // internal chunk ids, so they must not become checkboxes.
+                tags.clear();
             }
         }
     }
@@ -1224,6 +1350,51 @@ mod tests {
         let (label_tex, cat_tex) = map_tag_label("hires_textures");
         assert_eq!(label_tex, "@t:dlc.catHires");
         assert_eq!(cat_tex, "extras");
+    }
+
+    #[test]
+    fn sdl_groups_give_the_base_required_size_and_one_optional_row() {
+        let manifest = serde_json::json!({
+            "tag_disk_size": [
+                {"tag": "", "size": 100u64},
+                {"tag": "CoreChunk", "size": 900u64},
+                {"tag": "AssetsChunk", "size": 400u64}
+            ],
+            "tag_download_size": [
+                {"tag": "", "size": 50u64},
+                {"tag": "CoreChunk", "size": 800u64},
+                {"tag": "AssetsChunk", "size": 300u64}
+            ]
+        });
+        let groups = serde_json::json!({
+            "__required": {"name": "Core", "tags": ["CoreChunk", ""]},
+            "assets": {"name": "Epic Quality Assets", "tags": ["AssetsChunk"]}
+        });
+        let (base, base_download, rows) = sdl_options(&manifest, &groups);
+        assert_eq!(base, 1_000, "the empty tag is deduplicated");
+        assert_eq!(base_download, 850);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].tag, "assets");
+        assert_eq!(rows[0].label, "Epic Quality Assets");
+        assert_eq!(rows[0].size, 400);
+        assert_eq!(rows[0].download_size, 300);
+        assert_eq!(rows[0].tags, vec!["AssetsChunk".to_string()]);
+        assert_eq!(rows[0].category, "extras");
+    }
+
+    #[test]
+    fn sdl_language_groups_land_in_the_language_section() {
+        let groups = serde_json::json!({
+            "__required": {"tags": [""]},
+            "de": {"name": "Deutsch", "tags": ["voice_de_de"]}
+        });
+        let manifest = serde_json::json!({
+            "tag_disk_size": [{"tag": "voice_de_de", "size": 10u64}],
+            "tag_download_size": [{"tag": "voice_de_de", "size": 9u64}]
+        });
+        let (_, _, rows) = sdl_options(&manifest, &groups);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].category, "languages");
     }
 
     /// Live check: reads the signed-in account's catalog metadata from disk.
