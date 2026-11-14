@@ -31,14 +31,9 @@ body.fullscreen-mode #modal-root > .overlay {
   left: 0;
   right: 0;
   bottom: 0;
-}
-
-body.fullscreen-mode #modal-root > .overlay::before {
-  top: var(--couch-bar-h);
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-position: 0 0;
+  /* The scene is a fixed background, so the rail/bar offsets no longer come
+     from the pseudo-element box; start the scene below the couch bar. */
+  background-position: 0 var(--couch-bar-h);
 }
 
 /* The library filter is anchored below the old window bar + page header. Both

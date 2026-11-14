@@ -595,31 +595,22 @@
   --aero-gloss-blue-hover: linear-gradient(180deg, #c4ecff 0%, #74caf7 48%, #2ba0ec 50%, #1a88d8 100%);
   --aero-gloss-white: linear-gradient(180deg, #ffffff 0%, #f4f9fd 48%, #e2eef8 50%, #eef6fc 100%);
   --aero-gloss-hover: linear-gradient(180deg, #f6fcff 0%, #e2f4fe 48%, #c8e9fc 50%, #e1f4fe 100%);
+  --scene-bg: #8fd6fa url("../assets/gloss-scene.svg") 0 0 / 100vw 100vh no-repeat fixed;
   --scrollbar-thumb: rgba(13, 47, 79, 0.38);
   --scrollbar-thumb-hover: rgba(13, 47, 79, 0.65);
 }
 
 /* Backdrop. The SVG is drawn at viewport size, so every layer that repaints
-   it (body, game page) lines up into one continuous scene. */
+   it (body, game page) lines up into one continuous scene. The game page
+   paints it on `.overlay` itself: a fixed pseudo-element inside the scroll
+   container would paint over the scrollbar. */
 :root[data-surface="gloss"] body {
   background: #8fd6fa url("../assets/gloss-scene.svg") 0 0 / 100vw 100vh no-repeat;
   font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
 }
 :root[data-surface="gloss"] #main-col,
 :root[data-surface="gloss"] #view { background: transparent; }
-:root[data-surface="gloss"] .overlay { background: transparent; }
-:root[data-surface="gloss"] .overlay::before {
-  content: "";
-  position: fixed;
-  z-index: -1;
-  top: var(--winbar-h);
-  left: var(--sidebar-w);
-  right: 0;
-  bottom: 0;
-  background: #8fd6fa url("../assets/gloss-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
-  pointer-events: none;
-  transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
-}
+:root[data-surface="gloss"] .overlay { background: var(--scene-bg); }
 
 /* Gloss theme scrollbar */
 :root[data-surface="gloss"] .overlay::-webkit-scrollbar-track {
@@ -1672,6 +1663,7 @@
   --r-sm: 5px;
   --r-md: 9px;
   --shadow-pop: 0 18px 44px rgba(0, 12, 4, 0.6);
+  --scene-bg: #07180d url("../assets/blades-scene.svg") 0 0 / 100vw 100vh no-repeat fixed;
   --scrollbar-thumb: rgba(155, 212, 74, 0.45);
   --scrollbar-thumb-hover: rgba(155, 212, 74, 0.85);
   --x360-gloss: linear-gradient(180deg, #d8f7a0 0%, #a6dc52 46%, #7fbd2e 50%, #6ca726 100%);
@@ -1684,19 +1676,7 @@
 }
 :root[data-surface="blades"] #main-col,
 :root[data-surface="blades"] #view { background: transparent; }
-:root[data-surface="blades"] .overlay { background: transparent; }
-:root[data-surface="blades"] .overlay::before {
-  content: "";
-  position: fixed;
-  z-index: -1;
-  top: var(--winbar-h);
-  left: var(--sidebar-w);
-  right: 0;
-  bottom: 0;
-  background: #07180d url("../assets/blades-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
-  pointer-events: none;
-  transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
-}
+:root[data-surface="blades"] .overlay { background: var(--scene-bg); }
 
 /* Blades theme scrollbar */
 :root[data-surface="blades"] .overlay::-webkit-scrollbar-track {
@@ -2060,6 +2040,7 @@
   --r-md: 3px;
   --r-lg: 4px;
   --shadow-pop: 0 18px 44px rgba(0, 0, 0, 0.85);
+  --scene-bg: #07080a url("../assets/neon-grid-scene.svg") 0 0 / 100vw 100vh no-repeat fixed;
   --scrollbar-thumb: rgba(252, 238, 10, 0.55);
   --scrollbar-thumb-hover: #fcee0a;
 }
@@ -2069,19 +2050,7 @@
 }
 :root[data-surface="neongrid"] #main-col,
 :root[data-surface="neongrid"] #view { background: transparent; }
-:root[data-surface="neongrid"] .overlay { background: transparent; }
-:root[data-surface="neongrid"] .overlay::before {
-  content: "";
-  position: fixed;
-  z-index: -1;
-  top: var(--winbar-h);
-  left: var(--sidebar-w);
-  right: 0;
-  bottom: 0;
-  background: #07080a url("../assets/neon-grid-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
-  pointer-events: none;
-  transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
-}
+:root[data-surface="neongrid"] .overlay { background: var(--scene-bg); }
 
 /* Neon Grid (Cyberpunk) Custom Visible High-Tech Scrollbars */
 :root[data-surface="neongrid"] ::-webkit-scrollbar-thumb {
@@ -2455,7 +2424,7 @@ html[data-game-scene="on"] #view {
   background: transparent !important;
 }
 html[data-game-scene="on"] .overlay {
-  background: color-mix(in srgb, var(--bg) 34%, transparent) !important;
+  background: var(--scene-bg, color-mix(in srgb, var(--bg) 34%, transparent)) !important;
 }
 html[data-game-scene="on"] .gp-hero {
   background: transparent !important;
@@ -2614,6 +2583,7 @@ html[data-game-scene="on"][data-surface] .col-gallery {
   --r-md: 4px;
   --r-lg: 6px;
   --shadow-pop: 0 18px 44px rgba(0, 0, 0, 0.88);
+  --scene-bg: #05070a url("../assets/quarantine-scene.svg") 0 0 / 100vw 100vh no-repeat fixed;
   --scrollbar-thumb: rgba(220, 38, 38, 0.5);
   --scrollbar-thumb-hover: #ef4444;
 }
@@ -2623,19 +2593,7 @@ html[data-game-scene="on"][data-surface] .col-gallery {
 }
 :root[data-surface="quarantine"] #main-col,
 :root[data-surface="quarantine"] #view { background: transparent; }
-:root[data-surface="quarantine"] .overlay { background: transparent; }
-:root[data-surface="quarantine"] .overlay::before {
-  content: "";
-  position: fixed;
-  z-index: -1;
-  top: var(--winbar-h);
-  left: var(--sidebar-w);
-  right: 0;
-  bottom: 0;
-  background: #05070a url("../assets/quarantine-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
-  pointer-events: none;
-  transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
-}
+:root[data-surface="quarantine"] .overlay { background: var(--scene-bg); }
 
 /* Quarantine Protocol: Custom Visible Tactical Scrollbars */
 :root[data-surface="quarantine"] ::-webkit-scrollbar-thumb {
@@ -2915,6 +2873,7 @@ html[data-game-scene="on"][data-surface] .col-gallery {
   --r-md: 4px;
   --r-lg: 6px;
   --shadow-pop: 0 18px 44px rgba(0, 0, 0, 0.85);
+  --scene-bg: #05080e url("../assets/sentience-scene.svg") 0 0 / 100vw 100vh no-repeat fixed;
   --scrollbar-thumb: rgba(0, 162, 255, 0.48);
   --scrollbar-thumb-hover: #38bdf8;
 }
@@ -2924,19 +2883,7 @@ html[data-game-scene="on"][data-surface] .col-gallery {
 }
 :root[data-surface="sentience"] #main-col,
 :root[data-surface="sentience"] #view { background: transparent; }
-:root[data-surface="sentience"] .overlay { background: transparent; }
-:root[data-surface="sentience"] .overlay::before {
-  content: "";
-  position: fixed;
-  z-index: -1;
-  top: var(--winbar-h);
-  left: var(--sidebar-w);
-  right: 0;
-  bottom: 0;
-  background: #05080e url("../assets/sentience-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
-  pointer-events: none;
-  transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
-}
+:root[data-surface="sentience"] .overlay { background: var(--scene-bg); }
 
 /* Synthetic Soul: Custom Visible Holographic Scrollbars */
 :root[data-surface="sentience"] ::-webkit-scrollbar-thumb {
@@ -3215,6 +3162,7 @@ html[data-game-scene="on"][data-surface] .col-gallery {
   --r-md: 5px;
   --r-lg: 7px;
   --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.9);
+  --scene-bg: #090807 url("../assets/sanctum-scene.svg") 0 0 / 100vw 100vh no-repeat fixed;
   --scrollbar-thumb: rgba(229, 169, 60, 0.48);
   --scrollbar-thumb-hover: #f5be57;
 }
@@ -3224,19 +3172,7 @@ html[data-game-scene="on"][data-surface] .col-gallery {
 }
 :root[data-surface="sanctum"] #main-col,
 :root[data-surface="sanctum"] #view { background: transparent; }
-:root[data-surface="sanctum"] .overlay { background: transparent; }
-:root[data-surface="sanctum"] .overlay::before {
-  content: "";
-  position: fixed;
-  z-index: -1;
-  top: var(--winbar-h);
-  left: var(--sidebar-w);
-  right: 0;
-  bottom: 0;
-  background: #090807 url("../assets/sanctum-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
-  pointer-events: none;
-  transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
-}
+:root[data-surface="sanctum"] .overlay { background: var(--scene-bg); }
 
 /* Ashen Sanctum: Custom Visible Antique Gold Scrollbars */
 :root[data-surface="sanctum"] ::-webkit-scrollbar-thumb {
@@ -3537,6 +3473,7 @@ html[data-game-scene="on"][data-surface] .col-gallery {
   --r-md: 5px;
   --r-lg: 7px;
   --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.9);
+  --scene-bg: #080a0d url("../assets/resonance-scene.svg") 0 0 / 100vw 100vh no-repeat fixed;
   --scrollbar-thumb: rgba(249, 115, 22, 0.48);
   --scrollbar-thumb-hover: #fb923c;
 }
@@ -3546,19 +3483,7 @@ html[data-game-scene="on"][data-surface] .col-gallery {
 }
 :root[data-surface="resonance"] #main-col,
 :root[data-surface="resonance"] #view { background: transparent; }
-:root[data-surface="resonance"] .overlay { background: transparent; }
-:root[data-surface="resonance"] .overlay::before {
-  content: "";
-  position: fixed;
-  z-index: -1;
-  top: var(--winbar-h);
-  left: var(--sidebar-w);
-  right: 0;
-  bottom: 0;
-  background: #080a0d url("../assets/resonance-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
-  pointer-events: none;
-  transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
-}
+:root[data-surface="resonance"] .overlay { background: var(--scene-bg); }
 
 /* Resonance Core: Custom Visible Tactical High-Vis Scrollbars */
 :root[data-surface="resonance"] ::-webkit-scrollbar-thumb {
@@ -3859,6 +3784,7 @@ html[data-game-scene="on"][data-surface] .col-gallery {
   --r-md: 6px;
   --r-lg: 8px;
   --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.82);
+  --scene-bg: #08100a url("../assets/homestead-scene.svg") 0 0 / 100vw 100vh no-repeat fixed;
   --scrollbar-thumb: rgba(234, 179, 8, 0.48);
   --scrollbar-thumb-hover: #facc15;
 }
@@ -3868,19 +3794,7 @@ html[data-game-scene="on"][data-surface] .col-gallery {
 }
 :root[data-surface="homestead"] #main-col,
 :root[data-surface="homestead"] #view { background: transparent; }
-:root[data-surface="homestead"] .overlay { background: transparent; }
-:root[data-surface="homestead"] .overlay::before {
-  content: "";
-  position: fixed;
-  z-index: -1;
-  top: var(--winbar-h);
-  left: var(--sidebar-w);
-  right: 0;
-  bottom: 0;
-  background: #08100a url("../assets/homestead-scene.svg") calc(-1 * var(--sidebar-w)) calc(-1 * var(--winbar-h)) / 100vw 100vh no-repeat;
-  pointer-events: none;
-  transition: left var(--sidebar-drawer-ms) var(--sidebar-drawer-ease);
-}
+:root[data-surface="homestead"] .overlay { background: var(--scene-bg); }
 
 /* Autumn Homestead: Scrollbars */
 :root[data-surface="homestead"] ::-webkit-scrollbar-thumb {
