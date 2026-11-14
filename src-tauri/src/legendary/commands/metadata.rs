@@ -461,6 +461,7 @@ pub fn sync_egl_installed() -> Result<u32, String> {
     }
     let config = skip::default_config_dir();
     let installed_path = config.join("installed.json");
+    let stamp = cache::installed_stamp(&config);
     let mut map: std::collections::HashMap<String, InstalledGame> =
         match std::fs::read_to_string(&installed_path) {
             // A file this pass cannot parse must not be replaced by the EGL-only
@@ -492,7 +493,7 @@ pub fn sync_egl_installed() -> Result<u32, String> {
     }
 
     if changed {
-        cache::write_installed_map(&config, &map);
+        cache::write_installed_map_if_unchanged(&config, stamp, &map);
     }
 
     Ok(imported_count)

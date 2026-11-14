@@ -419,6 +419,7 @@ pub fn refresh_installed_from_egl(config: &Path, app_name: &str) -> bool {
         "Windows",
     );
     let installed_file = config.join("installed.json");
+    let stamp = installed_stamp(config);
     let Ok(text) = std::fs::read_to_string(&installed_file) else {
         return false;
     };
@@ -431,10 +432,7 @@ pub fn refresh_installed_from_egl(config: &Path, app_name: &str) -> bool {
     if crate::legendary::transfers::transfer_active() {
         return false;
     }
-    let Ok(json) = serde_json::to_string_pretty(&map) else {
-        return false;
-    };
-    std::fs::write(&installed_file, json).is_ok()
+    write_installed_map_if_unchanged(config, stamp, &map)
 }
 
 /// How one Epic Games Launcher manifest changed installed.json.
@@ -772,6 +770,30 @@ fn installed_backup_path(config: &Path) -> std::path::PathBuf {
     config.join("installed.json.bak")
 }
 
+/// Identity of installed.json at one moment: size and mtime.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) struct InstalledStamp(Option<(u64, Option<std::time::SystemTime>)>);
+
+pub(crate) fn installed_stamp(config: &Path) -> InstalledStamp {
+    let meta = std::fs::metadata(config.join("installed.json")).ok();
+    InstalledStamp(meta.map(|meta| (meta.len(), meta.modified().ok())))
+}
+
+/// Writes only when no other launcher changed installed.json since `stamp`.
+/// Another legendary (Heroic, the CLI) keeps its own map in memory and writes
+/// it at the end; skipping our stale copy keeps its new record alive.
+pub(crate) fn write_installed_map_if_unchanged(
+    config: &Path,
+    stamp: InstalledStamp,
+    map: &HashMap<String, InstalledGame>,
+) -> bool {
+    if installed_stamp(config) != stamp {
+        return false;
+    }
+    write_installed_map(config, map);
+    true
+}
+
 /// Writes installed.json through a temporary file and keeps the previous
 /// contents as `installed.json.bak`.
 ///
@@ -823,6 +845,7 @@ pub fn read_installed_with_catalog(
     // land mid-write. Never overwrite a file this pass could not read: the map
     // would only hold what the EGL scan rebuilt, losing legendary's records.
     // A truncated file falls back to the last good copy.
+    let stamp_before = installed_stamp(config);
     let mut recovered = false;
     let writable = match std::fs::read_to_string(&installed_file) {
         Ok(text) => match serde_json::from_str::<HashMap<String, InstalledGame>>(&text) {
@@ -846,9 +869,13 @@ pub fn read_installed_with_catalog(
         // No file yet (first run): nothing to clobber.
         Err(e) => e.kind() == std::io::ErrorKind::NotFound,
     };
+    let stamp = installed_stamp(config);
+    // A file that changed while it was being read is another writer's; do not
+    // write our snapshot back over it.
+    let stable = stamp_before == stamp;
     // Our own transfer keeps legendary's map in memory and writes it when the
     // process exits; a write here would lose the record it is about to commit.
-    let writable = writable && !crate::legendary::transfers::transfer_active();
+    let writable = writable && stable && !crate::legendary::transfers::transfer_active();
     mark(app, "rust:installed/json", t_installed);
 
     let mut changed = false;
@@ -903,7 +930,7 @@ pub fn read_installed_with_catalog(
 
     // Auto-sync: persist imported games and version changes into installed.json
     if (changed || recovered) && writable {
-        write_installed_map(config, &map);
+        write_installed_map_if_unchanged(config, stamp, &map);
     }
 
     // 2. Detect games installed via third-party launchers (Ubisoft Connect, EA, ...) from the registry
@@ -1219,6 +1246,39 @@ mod tests {
             serde_json::from_str::<HashMap<String, InstalledGame>>(&repaired).is_ok(),
             "the recovered map must be written back"
         );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn another_launchers_write_is_not_clobbered_by_a_stale_snapshot() {
+        let dir = std::env::temp_dir().join(format!("efxlve_test_stamp_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let game_dir = dir.join("Fortnite");
+        std::fs::create_dir_all(&game_dir).unwrap();
+
+        let mut ours = HashMap::new();
+        ours.insert(
+            "Fortnite".to_string(),
+            installed_record("1.0", game_dir.to_str().unwrap()),
+        );
+        write_installed_map(&dir, &ours);
+        let stamp = installed_stamp(&dir);
+
+        // Heroic or the CLI writes a new record after our read.
+        let mut other = HashMap::new();
+        let mut record = installed_record("2.0", game_dir.to_str().unwrap());
+        record.app_name = "SomeOtherGame".to_string();
+        record.title = "Some Other Game".to_string();
+        other.insert("SomeOtherGame".to_string(), record);
+        write_installed_map(&dir, &other);
+
+        assert!(
+            !write_installed_map_if_unchanged(&dir, stamp, &ours),
+            "a stale snapshot must not overwrite another launcher's write"
+        );
+        let text = std::fs::read_to_string(dir.join("installed.json")).unwrap();
+        assert!(text.contains("SomeOtherGame"));
 
         let _ = std::fs::remove_dir_all(&dir);
     }

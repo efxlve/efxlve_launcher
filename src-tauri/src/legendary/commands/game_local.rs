@@ -176,13 +176,14 @@ pub fn epic_save_game_settings(settings: GameLocalSettings) -> Result<(), String
     // 1. Update launch_parameters in installed.json. A running transfer keeps
     // its own map in memory; the custom config below still records the setting.
     if !crate::legendary::transfers::transfer_active() {
+        let stamp = cache::installed_stamp(&config);
         if let Ok(text) = std::fs::read_to_string(&installed_file) {
             if let Ok(mut map) =
                 serde_json::from_str::<std::collections::HashMap<String, InstalledGame>>(&text)
             {
                 if let Some(entry) = map.get_mut(&settings.app_name) {
                     entry.launch_parameters = settings.launch_parameters.trim().to_string();
-                    cache::write_installed_map(&config, &map);
+                    cache::write_installed_map_if_unchanged(&config, stamp, &map);
                 }
             }
         }
