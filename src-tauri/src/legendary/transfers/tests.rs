@@ -201,6 +201,12 @@ fn repair_verification_errors_belong_to_the_repair() {
 }
 
 #[test]
+fn a_repair_failure_names_the_real_cause() {
+    let text = "[cli] ERROR: File is missing: \"FortniteGame/a.pak\"\n[cli] ERROR: File does not match hash: \"FortniteGame/b.pak\"\nOSError(28, 'No space left on device')";
+    assert_eq!(short_error_for(text, true), "@t:dl.diskFull");
+}
+
+#[test]
 fn legendary_disk_space_wording_maps_to_the_disk_full_message() {
     // The exact line from `check_installation_conditions`; "not enough
     // available disk space" is not the old "not enough space" substring.

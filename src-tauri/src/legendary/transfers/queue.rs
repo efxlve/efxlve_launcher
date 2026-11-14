@@ -1247,7 +1247,7 @@ pub(super) async fn monitor_download(
             // logging its final line; a hung interpreter shutdown must not turn
             // that into an endless "downloading" row.
             if has_hard_error_with(&err_text, repair) {
-                break Err(short_error(&err_text));
+                break Err(short_error_for(&err_text, repair));
             }
             break Ok(());
         }
@@ -1256,7 +1256,7 @@ pub(super) async fn monitor_download(
             // (locked game files, permission denied) and still exit 0, which
             // would record an unapplied update as completed.
             if has_hard_error_with(&err_text, repair) {
-                break Err(short_error(&err_text));
+                break Err(short_error_for(&err_text, repair));
             }
             // The write phase runs inside `dlm.join()`; its failure is logged at
             // INFO/WARNING level and the CLI still exits 0. Without the commit
@@ -1264,7 +1264,7 @@ pub(super) async fn monitor_download(
             // record was never written, so reporting "done" would leave the
             // library saying "Install" right after a 100% download.
             if !install_committed && !install_noop {
-                break Err(short_error(&err_text));
+                break Err(short_error_for(&err_text, repair));
             }
             break Ok(());
         }
@@ -1391,7 +1391,7 @@ pub(super) async fn monitor_download(
                 }
             }
         }
-        break Err(short_error(&err_text));
+        break Err(short_error_for(&err_text, repair));
     };
     let log_lines: Vec<String> = log_lines.into_iter().collect();
     crate::download_log::append(&app, &app_name, &result, &log_lines);

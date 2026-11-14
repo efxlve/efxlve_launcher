@@ -293,8 +293,7 @@ fn is_routine_context(line: &str) -> bool {
         || line.starts_with("INFO:")
 }
 
-pub(crate) fn short_error(err_text: &str) -> String {
-    let low = err_text.to_lowercase();
+pub(crate) fn short_error(err_text: &str) -> String {    let low = err_text.to_lowercase();
     if low.contains("429") || low.contains("too many requests") {
         return "@t:dl.rateLimited".to_string();
     }
@@ -365,4 +364,21 @@ pub(crate) fn short_error(err_text: &str) -> String {
     } else {
         out
     }
+}
+
+/// `short_error`, with a repair's verify-phase lines removed. `install
+/// --repair` logs every missing/mismatched file at ERROR level before fixing
+/// it; a later failure must name the real cause, not those routine lines.
+pub(super) fn short_error_for(err_text: &str, repair: bool) -> String {
+    if !repair {
+        return short_error(err_text);
+    }
+    let filtered: String = err_text
+        .lines()
+        .filter(|line| {
+            !line.contains("File is missing:") && !line.contains("File does not match hash")
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    short_error(&filtered)
 }
