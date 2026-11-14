@@ -1313,8 +1313,10 @@ function renderAchievementList(items: EpicAchievementItem[], s: EpicSummary): st
 /** One rendered achievement set: the whole set for its progress bar and the
  *  filtered slice that is actually on screen. */
 interface AchievementSetSection {
+  key: string;
   name: string;
   is_base: boolean;
+  dlc_app_id: string;
   all: EpicAchievementItem[];
   visible: EpicAchievementItem[];
 }
@@ -1323,9 +1325,9 @@ function achievementSetKey(item: EpicAchievementItem): string {
   return `${item.is_base ? "base" : "dlc"}::${(item.set_name || "").trim()}`;
 }
 
-/** Steam Achievement Sets: one section per developer-created set, base-game
- *  sets first, each with its own progress. A store that groups only into
- *  base/DLC keeps the older two-section layout below. */
+/** Steam Achievement Sets: one collapsible section per developer-created set,
+ *  base-game sets first, each with its own progress. A store that groups only
+ *  into base/DLC keeps the older two-section layout below. */
 function renderAchievementSetSections(
   items: EpicAchievementItem[],
   s: EpicSummary,
@@ -1338,8 +1340,10 @@ function renderAchievementSetSections(
     let section = sections.get(key);
     if (!section) {
       section = {
+        key,
         name: (item.set_name || "").trim(),
         is_base: Boolean(item.is_base),
+        dlc_app_id: item.dlc_app_id ? String(item.dlc_app_id) : "",
         all: [],
         visible: [],
       };
@@ -1367,21 +1371,34 @@ function renderAchievementSetSections(
         .reduce((sum, item) => sum + item.xp, 0);
       const label =
         section.name || (section.is_base ? i18nT("ach.baseGame") : i18nT("ach.dlcPacks"));
+      const storageKey = `${s.appName}::${section.key}`;
+      const open = !S.collapsedAchSets.has(storageKey);
+      const artUrl = section.dlc_app_id
+        ? S.steamDlcArt.get(section.dlc_app_id) || ""
+        : "";
+      const art = section.is_base
+        ? `<span class="ach-group-icon">${icon("gamepad-2", 14)}</span>`
+        : `<span class="ach-set-art${artUrl ? " has-art" : ""}" data-dlc-art="${esc(section.dlc_app_id)}">${
+            artUrl ? `<img src="${esc(artUrl)}" alt="" loading="lazy" />` : ""
+          }${icon("package", 14)}</span>`;
       return `
-        <div class="ach-group-section${section.is_base ? "" : " dlc"}">
-          <div class="ach-group-header">
-            <div class="ach-group-title">
-              <span class="ach-group-icon">${icon(section.is_base ? "gamepad-2" : "package", 14)}</span>
+        <details class="ach-group-section${section.is_base ? "" : " dlc"}" data-ach-set="${esc(storageKey)}"${open ? " open" : ""}>
+          <summary class="ach-group-header">
+            <span class="ach-group-title">
+              ${art}
               <span class="ach-group-heading">${esc(label)}</span>
               <span class="ach-group-badge ${unlocked === total ? "complete" : ""}">${unlocked}/${total} (%${pct})</span>
-            </div>
-            ${xp > 0 ? `<div class="ach-group-xp">${xp} XP</div>` : ""}
-          </div>
+            </span>
+            <span class="ach-group-tail">
+              ${xp > 0 ? `<span class="ach-group-xp">${xp} XP</span>` : ""}
+              <span class="ach-group-chevron">${icon("chevron-down", 14)}</span>
+            </span>
+          </summary>
           <div class="ach-group-bar">
             <div class="ach-group-bar-fill ${section.is_base ? "gold" : "purple"}" style="width: ${pct}%"></div>
           </div>
           ${renderAchievementList(section.visible, s)}
-        </div>
+        </details>
       `;
     })
     .join("");

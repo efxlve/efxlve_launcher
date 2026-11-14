@@ -49,6 +49,7 @@ import {
   PROFILE_VIEW_MODE_KEY,
   RECENT_KEY,
   REVEALED_ACH_KEY,
+  ACH_COLLAPSED_SETS_KEY,
   SS_COMPRESS_KEY,
   SS_FORMAT_KEY,
   SS_HOTKEY_KEY,
@@ -555,6 +556,10 @@ export const S = {
   achSortOrder: ("default") as "default" | "rarity" | "xp" | "date",
   /** Hidden achievements whose spoiler is open; kept across sessions. */
   revealedAchievements: (loadStrSet(REVEALED_ACH_KEY)) as Set<string>,
+  /** Achievement sets the player collapsed, keyed `appName::setKey`. */
+  collapsedAchSets: (loadStrSet(ACH_COLLAPSED_SETS_KEY)) as Set<string>,
+  /** Steam DLC AppID → store header art used on achievement set headers. */
+  steamDlcArt: (new Map()) as Map<string, string>,
   currentModalAppName: (null) as string | null,
   achSourceModalOpen: (null) as string | null,
   /** Store game whose manual Steam AppID editor is open. */

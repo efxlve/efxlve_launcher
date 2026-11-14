@@ -2305,6 +2305,59 @@ export function enrichAchievementsData(appName: string, data: EpicAchievementsDa
   }
 }
 
+/** DLC AppIDs whose store art has already been requested this session. */
+const achDlcArtRequested = new Set<string>();
+
+/** Fills a set header after its DLC art arrives; the list itself is not
+ *  re-rendered, so open sections and scroll stay where they are. */
+function paintAchievementSetArt(dlcAppId: string, url: string): void {
+  document.querySelectorAll<HTMLElement>(".ach-set-art[data-dlc-art]").forEach((holder) => {
+    if (holder.dataset.dlcArt !== dlcAppId) return;
+    let img = holder.querySelector<HTMLImageElement>("img");
+    if (!img) {
+      img = document.createElement("img");
+      img.alt = "";
+      img.loading = "lazy";
+      holder.prepend(img);
+    }
+    img.src = url;
+    holder.classList.add("has-art");
+  });
+}
+
+/**
+ * Steam Achievement Sets name the DLC but carry no art. The store's appdetails
+ * call has the hashed header URL (new DLCs no longer have a stable unhashed
+ * path), so prefetch one per DLC while the list renders. Rust caches the
+ * payload; a failure leaves the package glyph in place.
+ */
+function ensureAchievementSetArt(data: EpicAchievementsData): void {
+  if (!isTauri) return;
+  const ids = [
+    ...new Set(
+      data.achievements
+        .map((item) => Number(item.dlc_app_id) || 0)
+        .filter((id) => id > 0)
+        .map(String),
+    ),
+  ].filter((id) => !S.steamDlcArt.has(id) && !achDlcArtRequested.has(id));
+  if (ids.length === 0) return;
+  for (const id of ids) achDlcArtRequested.add(id);
+  void (async () => {
+    for (const id of ids) {
+      try {
+        const details = await steamGetGameDetails(id, steamLanguage(S.appLanguage));
+        const url = details.headerImage || "";
+        S.steamDlcArt.set(id, url);
+        if (url) paintAchievementSetArt(id, url);
+      } catch {
+        // Keep the package glyph; do not retry on every repaint.
+        S.steamDlcArt.set(id, "");
+      }
+    }
+  })();
+}
+
 /**
  * Repaints the achievements tab without throwing away the list or detail
  * scroll position. Late notes, community answers and legacy migration data use
@@ -2916,6 +2969,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
   }
 
   enrichAchievementsData(s.appName, data);
+  ensureAchievementSetArt(data);
   // Move the old per-achievement localStorage notes into the shared notes file
   // once; the repaint shows them as soon as the writes land.
   ensureLegacyAchievementNotes(s.appName, () => repaintAchievementsTab(s.appName));

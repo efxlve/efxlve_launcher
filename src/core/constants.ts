@@ -346,6 +346,8 @@ export const CLOUD_PRELAUNCH_SKIP_KEY = "efxlve-cloud-prelaunch-skip";
 export const HIDDEN_ACH_KEY = "efxlve-hidden-achievements";
 /** Hidden achievements whose spoiler the player opened; kept across sessions. */
 export const REVEALED_ACH_KEY = "efxlve-revealed-achievements";
+/** Achievement sets the player collapsed in the game page, keyed `app::set`. */
+export const ACH_COLLAPSED_SETS_KEY = "efxlve-ach-collapsed-sets";
 /** Recently launched game ids. */
 export const RECENT_KEY = "efxlve-recent";
 /** Recently installed and updated game ids. */

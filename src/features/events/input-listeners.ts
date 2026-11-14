@@ -8,7 +8,7 @@ import { clearOverlayBlock, overlayBlockedGames, setOverlayAntiCheatOverride } f
  */
 
 import { applyWinbarAppIcon } from "../../core/app-icon";
-import { APP_ICON_KEY, CUSTOM_APP_ICON_KEY, AUTO_UPDATE_TIME_KEY, CASE_STORE_COLORS_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY, LIB_PAGE_SIZE_KEY, STARTUP_TAB_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeDownloadFinishAction, normalizeLibraryPageSize } from "../../core/constants";
+import { APP_ICON_KEY, CUSTOM_APP_ICON_KEY, AUTO_UPDATE_TIME_KEY, CASE_STORE_COLORS_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY, LIB_PAGE_SIZE_KEY, STARTUP_TAB_KEY, SS_HOTKEY_KEY, SS_HOTKEY_NAME_KEY, SS_QUALITY_KEY, isTauri, normalizeDownloadFinishAction, normalizeLibraryPageSize, ACH_COLLAPSED_SETS_KEY, saveStrSet } from "../../core/constants";
 import { setCoverSize, setListDensity } from "../library/library-options";
 import { syncCaseCustomStoreColors } from "../library/case-colors";
 import { scheduleAutoUpdate } from "../downloads/auto-update";
@@ -143,6 +143,39 @@ document.addEventListener("scroll", (e) => {
   closeCollectionsMenu();
 }, { capture: true, passive: true });
 window.addEventListener("resize", closeCollectionsMenu, { passive: true });
+
+// A Steam achievement set is a native <details>; remember which ones the
+// player closed so opening an achievement does not unfold the whole list.
+document.addEventListener(
+  "toggle",
+  (event) => {
+    const el = event.target;
+    if (!(el instanceof HTMLDetailsElement)) return;
+    const key = el.dataset.achSet;
+    if (!key) return;
+    if (el.open) S.collapsedAchSets.delete(key);
+    else S.collapsedAchSets.add(key);
+    saveStrSet(ACH_COLLAPSED_SETS_KEY, S.collapsedAchSets);
+  },
+  true,
+);
+
+// A set-art URL that Steam withdraws falls back to the package glyph instead
+// of leaving a torn image in the header.
+document.addEventListener(
+  "error",
+  (event) => {
+    const el = event.target;
+    if (!(el instanceof HTMLImageElement)) return;
+    const holder = el.closest<HTMLElement>(".ach-set-art");
+    if (!holder) return;
+    holder.classList.remove("has-art");
+    el.remove();
+    const dlcAppId = holder.dataset.dlcArt;
+    if (dlcAppId) S.steamDlcArt.set(dlcAppId, "");
+  },
+  true,
+);
 
 document.addEventListener("keydown", (e) => {
   // Enter and Space activate the click targets that are not buttons: a library
