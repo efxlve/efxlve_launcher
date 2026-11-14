@@ -1310,6 +1310,83 @@ function renderAchievementList(items: EpicAchievementItem[], s: EpicSummary): st
   return `<div class="ach-list">${items.map((a) => renderAchievementRow(a, s)).join("")}</div>`;
 }
 
+/** One rendered achievement set: the whole set for its progress bar and the
+ *  filtered slice that is actually on screen. */
+interface AchievementSetSection {
+  name: string;
+  is_base: boolean;
+  all: EpicAchievementItem[];
+  visible: EpicAchievementItem[];
+}
+
+function achievementSetKey(item: EpicAchievementItem): string {
+  return `${item.is_base ? "base" : "dlc"}::${(item.set_name || "").trim()}`;
+}
+
+/** Steam Achievement Sets: one section per developer-created set, base-game
+ *  sets first, each with its own progress. A store that groups only into
+ *  base/DLC keeps the older two-section layout below. */
+function renderAchievementSetSections(
+  items: EpicAchievementItem[],
+  s: EpicSummary,
+  allItems: EpicAchievementItem[],
+): string {
+  const sections = new Map<string, AchievementSetSection>();
+  const order: string[] = [];
+  for (const item of allItems) {
+    const key = achievementSetKey(item);
+    let section = sections.get(key);
+    if (!section) {
+      section = {
+        name: (item.set_name || "").trim(),
+        is_base: Boolean(item.is_base),
+        all: [],
+        visible: [],
+      };
+      sections.set(key, section);
+      order.push(key);
+    }
+    section.all.push(item);
+  }
+  for (const item of items) {
+    sections.get(achievementSetKey(item))?.visible.push(item);
+  }
+
+  return order
+    .map((key) => sections.get(key))
+    .filter((section): section is AchievementSetSection =>
+      Boolean(section && section.visible.length > 0),
+    )
+    .sort((a, b) => Number(b.is_base) - Number(a.is_base))
+    .map((section) => {
+      const total = section.all.length;
+      const unlocked = section.all.filter((item) => isAchievementUnlocked(item)).length;
+      const pct = total > 0 ? Math.round((unlocked / total) * 100) : 0;
+      const xp = section.all
+        .filter((item) => isAchievementUnlocked(item))
+        .reduce((sum, item) => sum + item.xp, 0);
+      const label =
+        section.name || (section.is_base ? i18nT("ach.baseGame") : i18nT("ach.dlcPacks"));
+      return `
+        <div class="ach-group-section${section.is_base ? "" : " dlc"}">
+          <div class="ach-group-header">
+            <div class="ach-group-title">
+              <span class="ach-group-icon">${icon(section.is_base ? "gamepad-2" : "package", 14)}</span>
+              <span class="ach-group-heading">${esc(label)}</span>
+              <span class="ach-group-badge ${unlocked === total ? "complete" : ""}">${unlocked}/${total} (%${pct})</span>
+            </div>
+            ${xp > 0 ? `<div class="ach-group-xp">${xp} XP</div>` : ""}
+          </div>
+          <div class="ach-group-bar">
+            <div class="ach-group-bar-fill ${section.is_base ? "gold" : "purple"}" style="width: ${pct}%"></div>
+          </div>
+          ${renderAchievementList(section.visible, s)}
+        </div>
+      `;
+    })
+    .join("");
+}
+
 export function renderAchievementSections(
   items: EpicAchievementItem[],
   s: EpicSummary,
@@ -1324,7 +1401,13 @@ export function renderAchievementSections(
     `;
   }
 
-
+  // Category stats and completion ratios must be computed from ALL of the
+  // game's achievements, not just the filtered list. Otherwise, under the
+  // "Unlocked" filter, locked ones disappear and the category looks complete.
+  const allSource = allAchievements && allAchievements.length > 0 ? allAchievements : items;
+  if (allSource.some((item) => (item.set_name || "").trim().length > 0)) {
+    return renderAchievementSetSections(items, s, allSource);
+  }
   if (!shouldGroup) {
     return renderAchievementList(items, s);
   }
@@ -1333,10 +1416,6 @@ export function renderAchievementSections(
   const baseItems = items.filter((a) => a.is_base);
   const dlcItems = items.filter((a) => !a.is_base);
 
-  // Category stats and completion ratios must be computed from ALL of the game's
-  // achievements, not just the filtered list. Otherwise, under the "Unlocked"
-  // filter, locked ones disappear and the category looks complete.
-  const allSource = allAchievements && allAchievements.length > 0 ? allAchievements : items;
   const allBase = allSource.filter((a) => a.is_base);
   const allDlc = allSource.filter((a) => !a.is_base);
 

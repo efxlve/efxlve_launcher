@@ -293,6 +293,8 @@ fn map_game_progress(payload: &serde_json::Value) -> GameAchievementsResponse {
             }),
             hidden: false,
             is_base: true,
+            set_name: String::new(),
+            dlc_app_id: None,
             hardcore: !earned_hardcore.is_empty(),
         });
     }

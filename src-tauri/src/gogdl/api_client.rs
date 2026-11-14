@@ -592,6 +592,8 @@ pub async fn fetch_gog_achievements(
                     .map(|p| crate::legendary::models::AchievementRarity { percent: Some(p) }),
                 hidden,
                 is_base: true,
+                set_name: String::new(),
+                dlc_app_id: None,
                 hardcore: false,
             });
         }

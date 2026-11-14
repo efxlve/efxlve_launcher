@@ -227,6 +227,14 @@ pub struct AchievementItem {
     pub hidden: bool,
     #[serde(default)]
     pub is_base: bool,
+    /// Developer-created achievement set this item belongs to. Steam calls
+    /// these Achievement Sets; empty on stores and older schemas that keep one
+    /// flat list.
+    #[serde(default, deserialize_with = "null_string")]
+    pub set_name: String,
+    /// Steam DLC AppID a set is tied to; `None` for base-game sets.
+    #[serde(default)]
+    pub dlc_app_id: Option<u32>,
     /// RetroAchievements hardcore unlock: earned without save states or cheats.
     #[serde(default)]
     pub hardcore: bool,

@@ -87,16 +87,16 @@ fn steam_language(language: Option<&str>) -> &'static str {
 
 /// One localized string out of a binary schema `display` block: the requested
 /// language wins, then English, then the caller's fallback.
-fn localized_display(display: Option<&Vdf>, field: &str, language: &str, fallback: &str) -> String {
-    let Some(values) = display.and_then(|block| block.get(field)) else {
-        return fallback.to_string();
-    };
+fn localized_text(values: Option<&Vdf>, language: &str, fallback: &str) -> String {
     values
-        .get(language)
-        .or_else(|| values.get("english"))
+        .and_then(|values| values.get(language).or_else(|| values.get("english")))
         .and_then(Vdf::as_str)
         .unwrap_or(fallback)
         .to_string()
+}
+
+fn localized_display(display: Option<&Vdf>, field: &str, language: &str, fallback: &str) -> String {
+    localized_text(display.and_then(|block| block.get(field)), language, fallback)
 }
 
 /// Tier by global unlock rate: Steam has no fixed tiers, so rarity stands in.
@@ -1123,7 +1123,7 @@ pub fn read_emulator_achievements(
 /// One achievement definition from the public Steam Community stats page.
 /// Scene/emulator releases usually carry no Steam client schema, but the
 /// community page publishes the same names, descriptions and icons.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CommunityAchievement {
     pub api_name: String,
@@ -1132,11 +1132,21 @@ pub struct CommunityAchievement {
     pub hidden: bool,
     pub icon_achieved: String,
     pub icon_unachieved: String,
+    /// Developer-created set name; empty for the base-game set.
+    #[serde(default)]
+    pub set_name: String,
+    /// DLC AppID the set belongs to; `None` for base-game sets.
+    #[serde(default)]
+    pub dlc_app_id: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct CommunitySchemaCache {
+    /// Schema version of this cache entry; older files predate achievement
+    /// sets and the fastly icon host, so they are refetched once.
+    #[serde(default)]
+    version: u32,
     fetched_at: u64,
     /// Language the page was read in; empty on caches written before the
     /// launcher asked for one (English).
@@ -1147,9 +1157,10 @@ struct CommunitySchemaCache {
 
 /// Definitions change only with store metadata updates; a week is plenty.
 const COMMUNITY_SCHEMA_TTL_SECS: u64 = 7 * 24 * 60 * 60;
+const COMMUNITY_SCHEMA_VERSION: u32 = 2;
 
 /// Parses the achievement schema out of the SSR payload of
-/// `steamcommunity.com/stats/<appid>/achievements`.
+/// `steamcommunity.com/achievements/<appid>`.
 pub fn parse_community_schema(html: &str) -> Option<Vec<CommunityAchievement>> {
     let marker = html.find("id=\"valve-ssr-data\"")?;
     let open = marker + html[marker..].find('>')? + 1;
@@ -1169,6 +1180,21 @@ pub fn parse_community_schema(html: &str) -> Option<Vec<CommunityAchievement>> {
         };
         let mut out = Vec::new();
         for group in groups {
+            let set_name = group
+                .get("name")
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .trim()
+                .to_string();
+            let dlc_app_id = group
+                .get("dlcappid")
+                .and_then(|value| {
+                    value
+                        .as_u64()
+                        .or_else(|| value.as_str().and_then(|text| text.parse::<u64>().ok()))
+                })
+                .filter(|id| *id > 0)
+                .map(|id| id as u32);
             let Some(items) = group.get("achievements").and_then(|items| items.as_array()) else {
                 continue;
             };
@@ -1205,6 +1231,8 @@ pub fn parse_community_schema(html: &str) -> Option<Vec<CommunityAchievement>> {
                         .and_then(|value| value.as_str())
                         .unwrap_or("")
                         .to_string(),
+                    set_name: set_name.clone(),
+                    dlc_app_id,
                 });
             }
         }
@@ -1228,7 +1256,7 @@ fn read_community_schema_cache(
     let cached = serde_json::from_str::<CommunitySchemaCache>(&text).ok()?;
     let same_language =
         cached.lang == language || (cached.lang.is_empty() && language == "english");
-    same_language.then_some(cached)
+    (same_language && cached.version == COMMUNITY_SCHEMA_VERSION).then_some(cached)
 }
 
 async fn fetch_community_schema(
@@ -1251,7 +1279,7 @@ async fn fetch_community_schema(
         .user_agent("efxlve-launcher")
         .build()
         .ok()?;
-    let url = format!("https://steamcommunity.com/stats/{app_id}/achievements?l={language}");
+    let url = format!("https://steamcommunity.com/achievements/{app_id}?l={language}");
     let fetched = match client.get(&url).send().await {
         Ok(response) if response.status().is_success() => match response.text().await {
             Ok(html) => parse_community_schema(&html),
@@ -1263,6 +1291,7 @@ async fn fetch_community_schema(
     match fetched {
         Some(achievements) => {
             let cache = CommunitySchemaCache {
+                version: COMMUNITY_SCHEMA_VERSION,
                 fetched_at: now_secs(),
                 lang: language.to_string(),
                 achievements: achievements.clone(),
@@ -1282,21 +1311,30 @@ async fn fetch_community_schema(
 /// cache and the community page publish bare file names (`8a61….jpg`); the Web
 /// API publishes full URLs. Absolute values stay as they are, protocol-relative
 /// values get `https:`, and a bare file name gets the app path.
+///
+/// Steam moved community achievement art to the fastly assets host. Icons
+/// uploaded after Achievement Sets only exist there, so the older
+/// `steamcommunity/public/images/apps` path is rewritten instead of kept.
 fn achievement_icon_url(app_id: &str, raw: &str) -> String {
+    const ASSET_ROOT: &str = "https://shared.fastly.steamstatic.com/community_assets/images/apps";
     let value = raw.trim();
     if value.is_empty() {
         return String::new();
     }
-    if value.starts_with("https://") || value.starts_with("http://") {
-        return value.to_string();
+    let absolute = if let Some(rest) = value.strip_prefix("//") {
+        format!("https://{rest}")
+    } else {
+        value.to_string()
+    };
+    if absolute.contains("/steamcommunity/public/images/apps/") {
+        if let Some(file) = absolute.rsplit('/').next().filter(|file| !file.is_empty()) {
+            return format!("{ASSET_ROOT}/{app_id}/{file}");
+        }
     }
-    if let Some(rest) = value.strip_prefix("//") {
-        return format!("https://{rest}");
+    if absolute.starts_with("https://") || absolute.starts_with("http://") {
+        return absolute;
     }
-    format!(
-        "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/{app_id}/{}",
-        value.trim_start_matches('/')
-    )
+    format!("{ASSET_ROOT}/{app_id}/{}", absolute.trim_start_matches('/'))
 }
 
 /// Builds the achievement card directly from emulator state and the public
@@ -1338,7 +1376,9 @@ fn build_emulator_achievements(
                 icon.clone()
             },
             hidden: entry.hidden,
-            is_base: true,
+            is_base: entry.dlc_app_id.is_none(),
+            set_name: entry.set_name.clone(),
+            dlc_app_id: entry.dlc_app_id,
             ..Default::default()
         };
         if entry.hidden {
@@ -1399,6 +1439,51 @@ fn build_raw_emulator_achievements(emu: &ParsedEmulatorAchievements) -> GameAchi
     }
 }
 
+/// One achievement set from the client schema's `groups` block. Group `0` is
+/// the implicit base-game set; a group without `dlcappid` is also a base-game
+/// set (Driving Academy, Multi-Expansion), while a set with `dlcappid` needs
+/// that DLC.
+#[derive(Debug, Clone, Default)]
+pub(super) struct LocalAchievementSet {
+    pub name: String,
+    pub dlc_app_id: Option<u32>,
+}
+
+fn localized_schema_name(node: Option<&Vdf>, language: &str) -> String {
+    match node {
+        Some(Vdf::Str(value)) => value.clone(),
+        _ => localized_text(node, language, ""),
+    }
+}
+
+/// Reads the client schema's `groups` block (`1` → Greece, ...). Older schemas
+/// carry no block, and the caller then keeps every achievement in the base set.
+pub(super) fn local_achievement_sets(
+    app: &Vdf,
+    language: &str,
+) -> std::collections::HashMap<String, LocalAchievementSet> {
+    let mut out = std::collections::HashMap::new();
+    let Some(groups) = app.get("groups") else {
+        return out;
+    };
+    for (group_id, group) in groups.entries() {
+        let name = localized_schema_name(group.get("name"), language);
+        let dlc_app_id = group
+            .get("dlcappid")
+            .and_then(Vdf::as_str)
+            .and_then(|value| value.trim().parse::<u32>().ok())
+            .filter(|id| *id > 0);
+        out.insert(
+            group_id.clone(),
+            LocalAchievementSet {
+                name,
+                dlc_app_id,
+            },
+        );
+    }
+    out
+}
+
 /// Achievements straight from the Steam client's own cache:
 /// `appcache/stats/UserGameStatsSchema_<app>.bin` (definitions, icons) and
 /// `UserGameStats_<account>_<app>.bin` (unlock times) plus emulator achievements.
@@ -1411,7 +1496,9 @@ pub fn read_local_achievements_with_app(
     let schema_bytes =
         std::fs::read(stats_dir(steam).join(format!("UserGameStatsSchema_{app_id}.bin"))).ok()?;
     let schema = parse_binary_vdf(&schema_bytes)?;
-    let stats = schema.get(app_id)?.get("stats")?;
+    let app_root = schema.get(app_id)?;
+    let stats = app_root.get("stats")?;
+    let sets = local_achievement_sets(app_root, language);
     let unlock_times = read_unlock_times(steam, app_id);
     let emu_data = read_emulator_achievements(app, app_id);
 
@@ -1422,7 +1509,7 @@ pub fn read_local_achievements_with_app(
     let mut hidden_items: Vec<AchievementItem> = Vec::new();
     let mut ach_index = 0usize;
 
-    for (group_id, group) in groups {
+    for (stat_group_id, group) in groups {
         let Some(bits) = group.get("bits") else {
             continue;
         };
@@ -1445,9 +1532,17 @@ pub fn read_local_achievements_with_app(
                 .and_then(Vdf::as_str)
                 .map(|v| v != "0")
                 .unwrap_or(false);
+            let set_group_id = bit
+                .get("groupid")
+                .and_then(Vdf::as_str)
+                .unwrap_or("0");
+            let set = sets.get(set_group_id);
+            let set_name = set.map(|set| set.name.clone()).unwrap_or_default();
+            let dlc_app_id = set.and_then(|set| set.dlc_app_id);
+            let is_base = dlc_app_id.is_none();
 
             let mut unlock_time = unlock_times
-                .get(&format!("{group_id}:{bit_id}"))
+                .get(&format!("{stat_group_id}:{bit_id}"))
                 .copied()
                 .unwrap_or(0);
             let mut cur_prog = if unlock_time > 0 { 1.0 } else { 0.0 };
@@ -1494,9 +1589,9 @@ pub fn read_local_achievements_with_app(
                 },
                 icon_link: achievement_icon_url(app_id, file),
                 hidden,
-                // The local schema does not mark base/DLC groups; Steam
-                // achievements are presented as one base-game set.
-                is_base: true,
+                is_base,
+                set_name,
+                dlc_app_id,
                 ..Default::default()
             };
             if hidden {
@@ -1660,6 +1755,10 @@ pub(super) fn read_local_achievement_totals(steam: &Path) -> Vec<(String, u32, u
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct CachedAchievements {
+    /// Older entries carry no version and predate icon/set metadata; the TTL
+    /// path ignores them so one fetch rewrites the file.
+    #[serde(default)]
+    version: u32,
     fetched_at: u64,
     /// Language the text was fetched in; empty on caches written before the
     /// launcher asked for one (English).
@@ -1667,6 +1766,9 @@ pub(super) struct CachedAchievements {
     lang: String,
     response: GameAchievementsResponse,
 }
+
+/// Cache format version: bump when the payload shape or icon host changes.
+const ACHIEVEMENTS_CACHE_VERSION: u32 = 2;
 
 /// Writes the on-disk answer that the drawer, the library summary and the TTL
 /// read, and returns it. The watcher calls this too, so an unlock in a running
@@ -1687,7 +1789,8 @@ fn write_achievements_cache(
         .filter(|cached| {
             // Only a same-language answer may donate its text; a language
             // switch must not drag the old strings back in.
-            (cached.lang == language || (cached.lang.is_empty() && language == "english"))
+            cached.version == ACHIEVEMENTS_CACHE_VERSION
+                && (cached.lang == language || (cached.lang.is_empty() && language == "english"))
                 && cached.response.achievements.len() == merged.achievements.len()
                 && cached.response.total_achievements == merged.total_achievements
         })
@@ -1716,6 +1819,7 @@ fn write_achievements_cache(
         }
     }
     let cached = CachedAchievements {
+        version: ACHIEVEMENTS_CACHE_VERSION,
         fetched_at: now_secs(),
         lang: language.to_string(),
         response: merged.clone(),
@@ -1746,7 +1850,8 @@ pub async fn steam_get_achievements(
             if let Ok(cached) = serde_json::from_str::<CachedAchievements>(&text) {
                 let same_language =
                     cached.lang == language || (cached.lang.is_empty() && language == "english");
-                let within_ttl = same_language
+                let within_ttl = cached.version == ACHIEVEMENTS_CACHE_VERSION
+                    && same_language
                     && now_secs().saturating_sub(cached.fetched_at) < ACHIEVEMENTS_TTL_SECS;
                 // The client rewrites its stats file mid-session; when that file
                 // is newer than the answer, the TTL alone would keep the old
@@ -3502,6 +3607,9 @@ fn steam_achievements_summary_for(
             let Ok(cached) = serde_json::from_str::<CachedAchievements>(&text) else {
                 continue;
             };
+            if cached.version != ACHIEVEMENTS_CACHE_VERSION {
+                continue;
+            }
             // A cached answer older than the client's stats file is stale: the
             // stats scan below owns that app until the next fetch rewrites it.
             if let (Some(steam), Some(account)) = (steam.as_deref(), account) {
@@ -3697,7 +3805,7 @@ mod tests {
             "queries": [
                 { "state": { "data": null } },
                 { "state": { "data": { "groups": [
-                    { "achievements": [
+                    { "id": 0, "name": "", "dlcappid": 0, "achievements": [
                         {
                             "api_name": "ACH_ONE",
                             "name": "First &amp; Best",
@@ -3705,6 +3813,16 @@ mod tests {
                             "hidden": false,
                             "icon_achieved": "https://cdn/one.jpg",
                             "icon_unachieved": "https://cdn/one_bw.jpg"
+                        }
+                    ] },
+                    { "id": 3, "name": "Heavy Cargo Expansion Achievements", "dlcappid": 531131, "achievements": [
+                        {
+                            "api_name": "ACH_TWO",
+                            "name": "Big Haul",
+                            "description": "Deliver it.",
+                            "hidden": false,
+                            "icon_achieved": "two.jpg",
+                            "icon_unachieved": "two_bw.jpg"
                         }
                     ] }
                 ] } } }
@@ -3718,11 +3836,56 @@ mod tests {
             document
         );
         let parsed = parse_community_schema(&html).expect("schema parsed");
-        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed.len(), 2);
         assert_eq!(parsed[0].api_name, "ACH_ONE");
         assert_eq!(parsed[0].name, "First & Best");
         assert_eq!(parsed[0].description, "Finish it.");
         assert_eq!(parsed[0].icon_achieved, "https://cdn/one.jpg");
+        assert_eq!(parsed[0].set_name, "");
+        assert_eq!(parsed[0].dlc_app_id, None);
+        assert_eq!(parsed[1].set_name, "Heavy Cargo Expansion Achievements");
+        assert_eq!(parsed[1].dlc_app_id, Some(531_131));
+    }
+
+    #[test]
+    fn local_schema_reads_achievement_sets_and_dlc_links() {
+        let app = Vdf::Obj(vec![(
+            "groups".into(),
+            Vdf::Obj(vec![
+                (
+                    "1".into(),
+                    Vdf::Obj(vec![
+                        (
+                            "name".into(),
+                            Vdf::Obj(vec![
+                                (
+                                    "english".into(),
+                                    Vdf::Str("Greece Map Expansion Achievements".into()),
+                                ),
+                                ("turkish".into(), Vdf::Str("Yunanistan Başarımları".into())),
+                            ]),
+                        ),
+                        ("dlcappid".into(), Vdf::Str("2604420".into())),
+                    ]),
+                ),
+                (
+                    "12".into(),
+                    Vdf::Obj(vec![(
+                        "name".into(),
+                        Vdf::Obj(vec![(
+                            "english".into(),
+                            Vdf::Str("Driving Academy Achievements".into()),
+                        )]),
+                    )]),
+                ),
+            ]),
+        )]);
+        let sets = local_achievement_sets(&app, "turkish");
+        assert_eq!(sets["1"].name, "Yunanistan Başarımları");
+        assert_eq!(sets["1"].dlc_app_id, Some(2_604_420));
+        // A set without `dlcappid` is still a base-game set, not DLC.
+        assert_eq!(sets["12"].name, "Driving Academy Achievements");
+        assert_eq!(sets["12"].dlc_app_id, None);
     }
 
     #[tokio::test]
@@ -3733,7 +3896,7 @@ mod tests {
             .build()
             .expect("client");
         let html = client
-            .get("https://steamcommunity.com/stats/220/achievements?l=english")
+            .get("https://steamcommunity.com/achievements/220?l=english")
             .send()
             .await
             .expect("response")
@@ -3756,6 +3919,7 @@ mod tests {
             hidden: false,
             icon_achieved: "on.jpg".into(),
             icon_unachieved: "off.jpg".into(),
+            ..Default::default()
         }];
         let emu = parse_achievements_ini("[ACH_ONE]\nAchieved=1\nUnlockTime=1700000000\n");
         let response = build_emulator_achievements("384190", &schema, &emu);
@@ -3765,7 +3929,7 @@ mod tests {
         assert_eq!(response.achievements[0].display_name, "First");
         assert_eq!(
             response.achievements[0].icon_link,
-            "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/384190/on.jpg"
+            "https://shared.fastly.steamstatic.com/community_assets/images/apps/384190/on.jpg"
         );
         assert_eq!(response.achievements[0].unlock_date.as_deref(), Some("2023-11-14"));
     }
@@ -3774,15 +3938,16 @@ mod tests {
     fn achievement_icon_urls_keep_absolute_values_and_expand_file_names() {
         assert_eq!(
             achievement_icon_url("384190", "on.jpg"),
-            "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/384190/on.jpg"
+            "https://shared.fastly.steamstatic.com/community_assets/images/apps/384190/on.jpg"
         );
-        // The Web API already returns full URLs; they must not get the app path twice.
+        // A Web API URL keeps its host unless it names the retired community
+        // path: icons uploaded after Achievement Sets exist only on fastly.
         assert_eq!(
             achievement_icon_url(
                 "384190",
                 "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/384190/on.jpg"
             ),
-            "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/384190/on.jpg"
+            "https://shared.fastly.steamstatic.com/community_assets/images/apps/384190/on.jpg"
         );
         assert_eq!(
             achievement_icon_url("384190", "https://cdn.example/on.jpg"),
@@ -3846,6 +4011,7 @@ mod tests {
                 hidden: false,
                 icon_achieved: String::new(),
                 icon_unachieved: String::new(),
+                ..Default::default()
             })
             .collect();
         let emu = parse_achievements_ini(
@@ -4118,6 +4284,21 @@ mod tests {
                 println!("  {app}: {unlocked}/{total}");
             }
         }
+        if let Some(response) = read_local_achievements(&steam, "227300") {
+            let mut sets: Vec<&str> = response
+                .achievements
+                .iter()
+                .map(|item| item.set_name.as_str())
+                .collect();
+            sets.sort_unstable();
+            sets.dedup();
+            println!(
+                "227300 sets ({} base of {}): {:?}",
+                response.achievements.iter().filter(|item| item.is_base).count(),
+                response.total_achievements,
+                sets
+            );
+        }
     }
 
     #[test]
@@ -4179,6 +4360,7 @@ mod tests {
                 hidden: false,
                 icon_achieved: "https://cdn/one.png".into(),
                 icon_unachieved: "https://cdn/one_gray.png".into(),
+                ..Default::default()
             },
             CommunityAchievement {
                 api_name: "ACH_TWO".into(),
@@ -4187,6 +4369,7 @@ mod tests {
                 hidden: true,
                 icon_achieved: String::new(),
                 icon_unachieved: String::new(),
+                ..Default::default()
             },
         ];
         let existing: serde_json::Map<String, serde_json::Value> =

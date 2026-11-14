@@ -992,6 +992,8 @@ pub(crate) fn achievements_for(app_id: &str, title: &str, language: &str) -> Gam
             rarity: None,
             hidden: false,
             is_base: true,
+            set_name: String::new(),
+            dlc_app_id: None,
             hardcore: false,
         });
     }

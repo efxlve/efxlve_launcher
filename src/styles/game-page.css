@@ -1128,10 +1128,10 @@ button.gp-source[aria-expanded="true"] svg { transform: rotate(180deg); }
 .ach-empty-state-title { font-size: 14px; font-weight: 600; color: var(--text); }
 .ach-empty-state-sub { font-size: 12px; }
 .ach-group-section { margin-bottom: 24px; }
-.ach-group-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.ach-group-title { display: flex; align-items: center; gap: 8px; }
+.ach-group-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px; margin-bottom: 8px; }
+.ach-group-title { display: flex; align-items: center; flex-wrap: wrap; min-width: 0; gap: 8px; }
 .ach-group-icon { color: var(--text-3); display: grid; place-items: center; }
-.ach-group-heading { font-size: 14px; font-weight: 600; }
+.ach-group-heading { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
 .ach-group-badge { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .ach-group-badge.complete { color: var(--ok); }
 .ach-group-xp { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }

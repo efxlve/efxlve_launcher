@@ -195,6 +195,8 @@ interface AchievementItem {
   hidden?: boolean;
   icon_link?: string;
   is_base?: boolean;
+  set_name?: string;
+  dlc_app_id?: number | null;
   tier?: { name?: string } | null;
   rarity?: { percent?: number | null } | null;
   /** Launcher-only state edit folded in by `applyAchievementEdits`. */

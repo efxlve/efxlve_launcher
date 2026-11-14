@@ -975,6 +975,8 @@ pub(crate) fn achievements_response(items: Vec<EaAchievement>) -> GameAchievemen
             rarity: None,
             hidden: item.hidden,
             is_base: true,
+            set_name: String::new(),
+            dlc_app_id: None,
             hardcore: false,
         })
         .collect();

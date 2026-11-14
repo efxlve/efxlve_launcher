@@ -256,6 +256,10 @@ export interface EpicAchievementItem {
   rarity?: EpicAchievementRarity;
   hidden: boolean;
   is_base: boolean;
+  /** Developer-created achievement set (Steam Achievement Sets). */
+  set_name?: string;
+  /** Steam DLC AppID a set is tied to; null/absent for base-game sets. */
+  dlc_app_id?: number | null;
   /** RetroAchievements hardcore unlock (no save states or cheats). */
   hardcore?: boolean;
   /**

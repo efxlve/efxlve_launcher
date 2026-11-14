@@ -241,6 +241,9 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
     ? ""
     : [
         `<span class="ach-detail-fact ${isUnlocked ? "is-earned" : "is-locked"}">${isUnlocked ? icon("check", 11) : icon("lock", 10)}<span>${esc(isUnlocked ? t("ach.earned") : t("ach.locked"))}</span></span>`,
+        (item.set_name || "").trim()
+          ? `<span class="ach-detail-fact">${icon(item.is_base ? "layers" : "package", 10)}<span>${esc((item.set_name || "").trim())}</span></span>`
+          : "",
         isUnlocked && date ? `<span class="ach-detail-fact">${esc(date)}</span>` : "",
         item.hardcore ? `<span class="ach-detail-fact" title="${esc(t("ach.hardcoreHint"))}">${icon("shield", 10)}<span>${esc(t("ach.hardcore"))}</span></span>` : "",
         tierKnown ? `<span class="ach-detail-fact tier ${tier}">${icon("trophy", 10)}<span>${esc(tierName(tier))}</span></span>` : "",

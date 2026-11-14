@@ -1051,6 +1051,8 @@ pub(crate) fn achievements_from_json(value: &serde_json::Value) -> GameAchieveme
                 }),
             hidden: achievement.get("isSecret").and_then(|v| v.as_bool()).unwrap_or(false),
             is_base: true,
+            set_name: String::new(),
+            dlc_app_id: None,
             hardcore: false,
         });
     }
