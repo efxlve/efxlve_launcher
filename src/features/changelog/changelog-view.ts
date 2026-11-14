@@ -30,6 +30,36 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.58",
+    date: "2026-11-15",
+    added: [
+      {
+        en: "Manage now has a Repair button: it checks an installed Epic game and redownloads missing or corrupt files, including Fortnite's required content.",
+        tr: "Manage artık bir Onar düğmesi sunuyor: kurulu Epic oyununu denetliyor, eksik veya bozuk dosyaları — Fortnite'ın zorunlu içeriği dahil — yeniden indiriyor.",
+      },
+    ],
+    improved: [
+      {
+        en: "Fortnite's install options show the real required size and keep the core content when an optional pack is selected, so a finished download no longer leaves an unplayable copy.",
+        tr: "Fortnite'ın kurulum seçenekleri gerçek zorunlu boyutu gösteriyor ve isteğe bağlı bir paket seçildiğinde çekirdek içeriği koruyor; böylece biten indirme oynanamaz bir kopya bırakmıyor.",
+      },
+      {
+        en: "Epic downloads now name the real failure instead of reporting a broken install as finished; a resumed install keeps its folder and a base game is queued before its DLCs.",
+        tr: "Epic indirmeleri artık bozuk bir kurulumu bitmiş gibi göstermek yerine gerçek hatayı söylüyor; yarım kalan kurulum kendi klasöründe devam ediyor ve taban oyun DLC'lerinden önce kuyruğa giriyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Fortnite installs and repairs keep the correct required files even when the install-options service is unreachable, and portable builds keep Epic sign-in and installed state inside the portable folder.",
+        tr: "Kurulum seçenekleri servisine ulaşılamasa bile Fortnite kurulumu ve onarımı doğru zorunlu dosyaları kullanıyor; portable sürümler Epic oturumunu ve kurulu durumunu portable klasöründe tutuyor.",
+      },
+      {
+        en: "The Epic library survives a failed third-party list, installed.json is protected by a backup, large uninstalls no longer freeze the launcher, and game-page logos stay when their CDN is blocked.",
+        tr: "Epic kütüphanesi başarısız bir üçüncü taraf listesinden sonra da ayakta kalıyor, installed.json bir yedekle korunuyor, büyük kaldırmalar launcher'ı dondurmuyor ve oyun sayfası logoları CDN engelliyse de kalıyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.57",
     date: "2026-11-14",
     added: [
