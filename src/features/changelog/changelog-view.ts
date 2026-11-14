@@ -30,6 +30,36 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.57",
+    date: "2026-11-14",
+    added: [
+      {
+        en: "Steam achievement sets can be folded, and every DLC set now shows its own art.",
+        tr: "Steam başarım setleri katlanabiliyor ve her DLC seti artık kendi görselini gösteriyor.",
+      },
+    ],
+    improved: [
+      {
+        en: "Stage Mode has been retired. Full Screen Mode is now the only controller shell, with the same navigation, on-screen keyboard and haptics.",
+        tr: "Sahne Modu kaldırıldı. Tam Ekran Modu artık tek kumanda kabuğu; gezinme, ekran klavyesi ve titreşim aynı şekilde çalışıyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "The game page scrollbar no longer disappears behind theme backdrops.",
+        tr: "Oyun sayfasının kaydırma çubuğu artık tema arka planlarının arkasında kaybolmuyor.",
+      },
+      {
+        en: "Library covers keep their tilt and stay unclipped while the hover settles.",
+        tr: "Kitaplık kapakları, hover otururken eğikliğini koruyor ve kırpılmıyor.",
+      },
+      {
+        en: "Pinned collection tabs resize fluidly instead of overflowing the strip.",
+        tr: "Sabitlenen koleksiyon sekmeleri şeritten taşmak yerine esnek şekilde yeniden boyutlanıyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.56",
     date: "2026-11-13",
     added: [
