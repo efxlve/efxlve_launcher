@@ -1734,12 +1734,10 @@ fn acquire_single_instance_mutex() -> Option<*mut core::ffi::c_void> {
     #[link(name = "user32")]
     extern "system" {
         fn FindWindowW(lpClassName: *const u16, lpWindowName: *const u16) -> *mut core::ffi::c_void;
-        fn ShowWindow(hWnd: *mut core::ffi::c_void, nCmdShow: i32) -> i32;
         fn SetForegroundWindow(hWnd: *mut core::ffi::c_void) -> i32;
     }
 
     const ERROR_ALREADY_EXISTS: u32 = 183;
-    const SW_RESTORE: i32 = 9;
     const EVENT_MODIFY_STATE: u32 = 0x0002;
 
     let mutex_name: Vec<u16> = "Local\\EfxlveLauncherSingleInstanceMutex\0"
@@ -1773,8 +1771,12 @@ fn acquire_single_instance_mutex() -> Option<*mut core::ffi::c_void> {
         if wait_for_other_window(&title_name, &ready_name) {
             let hwnd = unsafe { FindWindowW(std::ptr::null(), title_name.as_ptr()) };
             if !hwnd.is_null() {
+                // The running instance reveals its own window through the event
+                // above, and that path keeps a maximized window maximized.
+                // Calling ShowWindow from this second process can drop a
+                // maximized launcher to its normal rectangle, which made it
+                // reopen windowed, so only raise it here.
                 unsafe {
-                    ShowWindow(hwnd, SW_RESTORE);
                     SetForegroundWindow(hwnd);
                 }
             }
