@@ -23,7 +23,7 @@ pub async fn epic_uninstall_game(
     app_name: String,
     keep_files: bool,
 ) -> Result<String, String> {
-    if super::queue::download_in_flight(&app, &app_name) {
+    if super::queue::any_download_in_flight(&app) {
         return Err("@t:dl.anotherActive".into());
     }
     let bin = resolve_bin(&app)?;
@@ -110,8 +110,18 @@ pub async fn epic_uninstall_game(
                 if path.exists() {
                     return Err(leftover(path));
                 }
-            } else if let Some(left) = remove_install_folder(path) {
-                return Err(leftover(&left));
+            } else {
+                // A Fortnite-sized folder can take minutes to delete; keep the
+                // async runtime free while the file walk runs.
+                let owned = path.to_path_buf();
+                let removed =
+                    tauri::async_runtime::spawn_blocking(move || remove_install_folder(&owned))
+                        .await
+                        .ok()
+                        .flatten();
+                if let Some(left) = removed {
+                    return Err(leftover(&left));
+                }
             }
         }
     }
