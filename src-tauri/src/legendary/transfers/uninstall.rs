@@ -1,6 +1,8 @@
 //! Uninstall one Epic game and delete the install folder when asked.
 //!
-//! The folder delete goes through `guard` first.
+//! A copy the launcher did not install (an EA App game under `Program Files`)
+//! is removed by that client's own cleanup tool; every other folder delete goes
+//! through `guard` first.
 
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
@@ -97,10 +99,20 @@ pub async fn epic_uninstall_game(
     // survived was not uninstalled, and the record has to stay so the next
     // attempt — an elevated run, once the user allows it — still finds it.
     // Third-party copies (an EA App install under `Program Files`) land here:
-    // they have a folder but no legendary record, so legendary exits 0.
+    // they have a folder but no legendary record, so legendary exits 0. Their
+    // own client removes them, because deleting the folder here would leave the
+    // client listing a game it can only "repair".
     if !keep_files {
-        if let Some(left) = resolved_install_path.as_deref().and_then(remove_install_folder) {
-            return Err(format!("@t:dl.uninstallLeftFiles\u{1f}{}", left.display()));
+        let leftover = |path: &Path| format!("@t:dl.uninstallLeftFiles\u{1f}{}", path.display());
+        if let Some(path) = resolved_install_path.as_deref().filter(|path| path.is_dir()) {
+            if crate::companion::has_foreign_uninstaller(path) {
+                let _ = crate::companion::uninstall_foreign_copy(path).await;
+                if path.exists() {
+                    return Err(leftover(path));
+                }
+            } else if let Some(left) = remove_install_folder(path) {
+                return Err(leftover(&left));
+            }
         }
     }
 

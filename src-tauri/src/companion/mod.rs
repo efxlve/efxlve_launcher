@@ -1263,6 +1263,39 @@ fn uninstall_needs_elevation(program: &std::path::Path) -> bool {
             .unwrap_or(false)
 }
 
+/// Runs one EA uninstall command, elevated when the cleanup tool needs it.
+async fn run_uninstall_command(command: &ea_install::UninstallCommand) -> Result<(), String> {
+    if uninstall_needs_elevation(&command.program) {
+        let program = command.program.clone();
+        let args = command.args.clone();
+        match tokio::task::spawn_blocking(move || ea_elevated::run_elevated(&program, &args)).await
+        {
+            Ok(Ok(0)) => Ok(()),
+            Ok(Ok(code)) => Err(format!("EA uninstaller exited with {code}")),
+            Ok(Err(error)) => Err(error),
+            Err(error) => Err(format!("EA uninstall: {error}")),
+        }
+    } else {
+        ea_install::run_uninstall(command).await
+    }
+}
+
+/// True when this folder carries another client's own uninstall record — an EA
+/// App copy under `Program Files`, which Epic hands off at install time.
+pub(crate) fn has_foreign_uninstaller(root: &std::path::Path) -> bool {
+    ea_install::uninstall_command(root).is_some()
+}
+
+/// Uninstalls a copy the launcher did not install through that client's own
+/// cleanup tool, so the client's uninstall record goes with the files. A
+/// cancelled prompt or a failing tool leaves the folder alone; the caller
+/// reports what is left.
+pub(crate) async fn uninstall_foreign_copy(root: &std::path::Path) -> Result<(), String> {
+    let command = ea_install::uninstall_command(root)
+        .ok_or_else(|| format!("@t:ea.noUninstaller\u{1f}{}", root.display()))?;
+    run_uninstall_command(&command).await
+}
+
 /// Removes an EA install through the game's own uninstall registry record.
 ///
 /// A launcher-owned folder without a registry record is removed directly; an
@@ -1273,24 +1306,7 @@ pub async fn ea_content_uninstall(id: String) -> Result<(), String> {
     let (_, owned, root) = ea_content_target(&id, None)?;
     let managed = ea_install::managed_root(&root);
     if let Some(command) = ea_install::uninstall_command(&root) {
-        let elevated = uninstall_needs_elevation(&command.program);
-        let result = if elevated {
-            let program = command.program.clone();
-            let args = command.args.clone();
-            match tokio::task::spawn_blocking(move || {
-                ea_elevated::run_elevated(&program, &args)
-            })
-            .await
-            {
-                Ok(Ok(0)) => Ok(()),
-                Ok(Ok(code)) => Err(format!("EA uninstaller exited with {code}")),
-                Ok(Err(error)) => Err(error),
-                Err(error) => Err(format!("EA uninstall: {error}")),
-            }
-        } else {
-            ea_install::run_uninstall(&command).await
-        };
-        if let Err(error) = result {
+        if let Err(error) = run_uninstall_command(&command).await {
             // A launcher-owned folder can still be removed when the EA cleanup
             // tool refuses (for example because HKLM needs elevation).
             if !managed {
