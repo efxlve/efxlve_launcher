@@ -50,6 +50,7 @@ import {
   epicOpenBackupFolder,
   epicOpenFolderPath,
   epicPreviewBackup,
+  epicRepairGame,
   epicRestoreBackup,
   epicSaveGameSettings,
   epicSelectFolderDialog,
@@ -175,6 +176,18 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
             toast(i18nT("manage.verifyStartFailed", { msg: String(err) }), "err");
           });
         }
+      }
+      return true;
+
+    case "manage-repair":
+      if (id && !id.includes("::")) {
+        epicRepairGame(id)
+          .then((msg) => {
+            toast(localizeMessage(msg), "ok");
+          })
+          .catch((err) => {
+            toast(i18nT("manage.verifyStartFailed", { msg: localizeMessage(String(err)) }), "err");
+          });
       }
       return true;
 

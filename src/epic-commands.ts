@@ -75,6 +75,9 @@ export const epicPendingInstallDir = (appName: string) =>
   invoke<string | null>("epic_pending_install_dir", { appName });
 export const epicResumePendingDownload = () =>
   invoke<string>("epic_resume_pending_download");
+/** Verifies the installed files and redownloads the missing/corrupt ones. */
+export const epicRepairGame = (appName: string) =>
+  invoke<string>("epic_repair_game", { appName });
 export const epicCancelDownload = (appName: string) =>
   invoke<string>("epic_cancel_download", { appName });
 export const epicUninstallGame = (appName: string, keepFiles = false) =>

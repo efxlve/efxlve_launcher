@@ -184,6 +184,23 @@ fn a_write_phase_failure_is_not_a_finished_install() {
 }
 
 #[test]
+fn repair_verification_errors_belong_to_the_repair() {
+    // `install --repair` verifies first; each missing/mismatched file is logged
+    // at ERROR level before it is redownloaded. Those lines must not turn a
+    // working repair into a failure.
+    let missing = "[cli] ERROR: File is missing: \"FortniteGame/x.pak\"";
+    let mismatch = "[cli] ERROR: File does not match hash: \"FortniteGame/y.pak\"";
+    assert!(has_hard_error(missing));
+    assert!(!has_hard_error_with(missing, true));
+    assert!(!has_hard_error_with(mismatch, true));
+    // A real hard error still wins during a repair.
+    assert!(has_hard_error_with(
+        "[cli] INFO: Installation failed after 12.00 seconds.",
+        true
+    ));
+}
+
+#[test]
 fn legendary_disk_space_wording_maps_to_the_disk_full_message() {
     // The exact line from `check_installation_conditions`; "not enough
     // available disk space" is not the old "not enough space" substring.

@@ -15,6 +15,9 @@ pub struct ResumeRecord {
     pub app_name: String,
     pub install_tags: Vec<String>,
     pub install_dir: Option<String>,
+    /// The interrupted attempt was a repair, not an install/update.
+    #[serde(default)]
+    pub repair: bool,
 }
 
 /// Why the legendary process is no longer the active download.
@@ -98,6 +101,7 @@ pub fn merge_resume(saved: Option<&ResumeRecord>, requested: ResumeRecord) -> Re
             requested.install_tags
         },
         install_dir: requested.install_dir.or_else(|| saved.install_dir.clone()),
+        repair: requested.repair,
     }
 }
 
@@ -147,6 +151,7 @@ mod tests {
             app_name: "fortnite".into(),
             install_tags: vec!["en".into()],
             install_dir: Some(dir.into()),
+            repair: false,
         }
     }
 
@@ -188,6 +193,7 @@ mod tests {
                 app_name: "rocketleague".into(),
                 install_tags: Vec::new(),
                 install_dir: Some(r"E:\Games".into()),
+                repair: false,
             },
         );
 
@@ -225,6 +231,7 @@ mod tests {
             app_name: "fortnite".into(),
             install_tags: Vec::new(),
             install_dir: Some(r"C:\Users\Efe\Games".into()),
+            repair: false,
         };
         let merged = merge_resume(Some(&saved), requested);
         assert_eq!(merged.install_dir.as_deref(), Some(r"C:\Users\Efe\Games"));
@@ -238,6 +245,7 @@ mod tests {
                 app_name: "fortnite".into(),
                 install_tags: Vec::new(),
                 install_dir: None,
+                repair: false,
             },
         );
         assert_eq!(resumed.install_dir.as_deref(), Some(r"D:\Games"));
@@ -249,6 +257,7 @@ mod tests {
                 app_name: "fortnite".into(),
                 install_tags: vec!["fr".into()],
                 install_dir: None,
+                repair: false,
             },
         );
         assert_eq!(replaced.install_tags, vec!["fr".to_string()]);
@@ -259,6 +268,7 @@ mod tests {
                 app_name: "fortnite".into(),
                 install_tags: vec!["fr".into()],
                 install_dir: Some(r"C:\Games".into()),
+                repair: false,
             },
         );
         assert_eq!(fresh.install_dir.as_deref(), Some(r"C:\Games"));

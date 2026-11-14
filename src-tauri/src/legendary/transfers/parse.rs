@@ -222,6 +222,13 @@ pub(super) fn is_install_noop(line: &str) -> bool {
 /// error (locked game files, permission denied) and still exit with code 0, so
 /// a zero exit alone must not be treated as a completed install.
 pub(super) fn has_hard_error(err_text: &str) -> bool {
+    has_hard_error_with(err_text, false)
+}
+
+/// `repair` mode verifies first and logs every missing/mismatched file at
+/// ERROR level before redownloading it; those lines are the repair working,
+/// not a failed transfer.
+pub(super) fn has_hard_error_with(err_text: &str, repair: bool) -> bool {
     err_text.lines().any(|line| {
         let line = line.trim();
         // A chunk that failed and was requeued is routine; the install only
@@ -240,6 +247,12 @@ pub(super) fn has_hard_error(err_text: &str) -> bool {
         // the task as success. An update that prunes a file the Epic Games
         // Launcher already deleted must not turn into a failed download.
         if line.contains("Removing file failed") || line.contains("Removing directory failed") {
+            return false;
+        }
+        if repair
+            && (line.contains("File is missing:")
+                || line.contains("File does not match hash"))
+        {
             return false;
         }
         if is_install_failure(line) {

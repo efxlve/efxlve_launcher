@@ -957,7 +957,8 @@ export function renderDrawerManage(s: EpicSummary): string {
     <div class="manage-tab-content">
       ${s.installed ? group("files", "folder", t("manage.groupFiles"), `
         ${row(t("manage.verifyTitle"), t("manage.verifyDesc"),
-          `<button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${id}" ${v ? "disabled" : ""}>${v ? t("manage.verifying") : t("manage.verify")}</button>`,
+          `<button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${id}" ${v ? "disabled" : ""}>${v ? t("manage.verifying") : t("manage.verify")}</button>
+           <button class="btn ghost small" data-act="manage-repair" data-id="${id}" title="${esc(t("manage.verifyDesc"))}">${icon("refresh", 13)} ${t("manage.eaContentRepair")}</button>`,
           `<div id="manage-verify-box-container">${v ? verifyBox(v.percent, v.detail || `${v.current}/${v.total}`, v.speed) : ""}</div>`)}
         ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || st.installPath || t("manage.unspecified"))}</span>`,
           `${moveBtn}<button class="btn ghost small" data-act="epic-open-folder" data-id="${id}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`,

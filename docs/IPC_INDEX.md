@@ -246,6 +246,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_remove_screenshot_root` | `epicRemoveScreenshotRoot({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_reorder_collections` | `epicReorderCollections({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_reorder_queue` | `epicReorderQueue({ ... })` | `src-tauri/src/legendary/transfers/queue.rs` |
+| `epic_repair_game` | `epicRepairGame({ ... })` | `src-tauri/src/legendary/transfers/queue.rs` |
 | `epic_replace_screenshot_with_compressed` | `epicReplaceScreenshotWithCompressed({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_restore_backup` | `epicRestoreBackup({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_resume_download` | `epicResumeDownload({ ... })` | `src-tauri/src/legendary/transfers/queue.rs` |

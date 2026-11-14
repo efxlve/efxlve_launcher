@@ -109,6 +109,9 @@ pub(super) struct PendingDownload {
     app_name: String,
     install_tags: Vec<String>,
     install_dir: Option<String>,
+    /// Run `legendary install --repair` instead of a normal install/update.
+    #[serde(default)]
+    repair: bool,
 }
 
 pub(super) fn pending_download_path() -> PathBuf {
@@ -140,6 +143,7 @@ pub(super) fn write_pending_download(
     app_name: &str,
     install_tags: &[String],
     install_dir: Option<&str>,
+    repair: bool,
 ) {
     let path = pending_download_path();
     if let Some(parent) = path.parent() {
@@ -149,6 +153,7 @@ pub(super) fn write_pending_download(
         app_name: app_name.to_string(),
         install_tags: install_tags.to_vec(),
         install_dir: install_dir.map(str::to_string),
+        repair,
     };
     if let Ok(text) = serde_json::to_string_pretty(&pending) {
         let _ = std::fs::write(path, text);
@@ -185,6 +190,7 @@ pub(super) fn record_from_pending(
         app_name: pending.app_name.clone(),
         install_tags: pending.install_tags.clone(),
         install_dir: pending.install_dir.clone(),
+        repair: pending.repair,
     }
 }
 
@@ -195,6 +201,7 @@ pub(super) fn pending_from_record(
         app_name: record.app_name,
         install_tags: record.install_tags,
         install_dir: record.install_dir,
+        repair: record.repair,
     }
 }
 
@@ -219,6 +226,7 @@ pub(super) fn remembered_request(
         app_name: app_name.to_string(),
         install_tags: Vec::new(),
         install_dir: None,
+        repair: false,
     }
 }
 
@@ -240,6 +248,7 @@ pub(super) fn persist_resume(pending: &PendingDownload) {
         &pending.app_name,
         &pending.install_tags,
         pending.install_dir.as_deref(),
+        pending.repair,
     );
     crate::legendary::download_resume::save_one(
         &crate::legendary::download_resume::resumes_path(),
@@ -471,6 +480,7 @@ pub(super) fn start_download_request(
         app_name: merged.app_name,
         install_tags,
         install_dir: Some(base.to_string_lossy().to_string()),
+        repair: merged.repair,
     };
 
     // EGL may have updated this game since the library last read its manifests.
@@ -507,6 +517,7 @@ pub(super) fn start_download_request(
         &base,
         false,
         &request.install_tags,
+        request.repair,
     ) {
         Ok(child) => child,
         Err(e) => {
@@ -597,6 +608,7 @@ pub(super) fn start_download_request(
             request.app_name,
             base,
             request.install_tags,
+            request.repair,
             generation,
             child,
             stdout,
@@ -750,6 +762,7 @@ pub(super) fn spawn_install_with_tags(
     base: &PathBuf,
     high_mem: bool,
     install_tags: &[String],
+    repair: bool,
 ) -> std::io::Result<tokio::process::Child> {
     let mut cmd = tokio::process::Command::new(bin);
     // Note: global flags (-y) come BEFORE the subcommand.
@@ -759,6 +772,9 @@ pub(super) fn spawn_install_with_tags(
         .arg("--base-path")
         .arg(base)
         .arg("--skip-dlcs");
+    if repair {
+        cmd.arg("--repair");
+    }
 
     if let Some(w) = get_worker_count_arg(app) {
         cmd.arg("--max-workers").arg(w);
@@ -839,6 +855,7 @@ pub(super) fn start_download_with_tags(
             app_name,
             install_tags,
             install_dir: override_dir,
+            repair: false,
         },
     )
 }
@@ -850,6 +867,7 @@ pub(super) async fn monitor_download(
     app_name: String,
     base: PathBuf,
     install_tags: Vec<String>,
+    repair: bool,
     generation: u64,
     mut child: tokio::process::Child,
     mut stdout: Option<tokio::process::ChildStdout>,
@@ -1188,7 +1206,15 @@ pub(super) async fn monitor_download(
             disk_rate = None;
             explicit_net = false;
             explicit_disk = false;
-            match spawn_install_with_tags(&app, &bin, &app_name, &base, high_mem, &install_tags) {
+            match spawn_install_with_tags(
+                &app,
+                &bin,
+                &app_name,
+                &base,
+                high_mem,
+                &install_tags,
+                repair,
+            ) {
                 Ok(c) => {
                     child = c;
                     stdout = child.stdout.take();
@@ -1220,7 +1246,7 @@ pub(super) async fn monitor_download(
             // legendary already wrote installed.json and the EGL manifest before
             // logging its final line; a hung interpreter shutdown must not turn
             // that into an endless "downloading" row.
-            if has_hard_error(&err_text) {
+            if has_hard_error_with(&err_text, repair) {
                 break Err(short_error(&err_text));
             }
             break Ok(());
@@ -1229,7 +1255,7 @@ pub(super) async fn monitor_download(
             // A zero exit alone is not success: legendary can log a hard error
             // (locked game files, permission denied) and still exit 0, which
             // would record an unapplied update as completed.
-            if has_hard_error(&err_text) {
+            if has_hard_error_with(&err_text, repair) {
                 break Err(short_error(&err_text));
             }
             // The write phase runs inside `dlm.join()`; its failure is logged at
@@ -1253,7 +1279,8 @@ pub(super) async fn monitor_download(
                 break Err("@t:dl.cancelled".into());
             }
             tail.clear();
-            match spawn_install_with_tags(&app, &bin, &app_name, &base, true, &install_tags) {
+            match spawn_install_with_tags(&app, &bin, &app_name, &base, true, &install_tags, repair)
+            {
                 Ok(c) => {
                     child = c;
                     stdout = child.stdout.take();
@@ -1289,7 +1316,15 @@ pub(super) async fn monitor_download(
                 break Err("@t:dl.cancelled".into());
             }
             tail.clear();
-            match spawn_install_with_tags(&app, &bin, &app_name, &base, high_mem, &install_tags) {
+            match spawn_install_with_tags(
+                &app,
+                &bin,
+                &app_name,
+                &base,
+                high_mem,
+                &install_tags,
+                repair,
+            ) {
                 Ok(c) => {
                     child = c;
                     stdout = child.stdout.take();
@@ -1326,7 +1361,15 @@ pub(super) async fn monitor_download(
                 break Err("@t:dl.cancelled".into());
             }
             tail.clear();
-            match spawn_install_with_tags(&app, &bin, &app_name, &base, high_mem, &install_tags) {
+            match spawn_install_with_tags(
+                &app,
+                &bin,
+                &app_name,
+                &base,
+                high_mem,
+                &install_tags,
+                repair,
+            ) {
                 Ok(c) => {
                     child = c;
                     stdout = child.stdout.take();
@@ -1503,6 +1546,7 @@ pub async fn epic_install_game(
                 app_name: app_name.clone(),
                 install_tags: Vec::new(),
                 install_dir: install_dir.clone(),
+                repair: false,
             });
             write_queue_snapshot(&s.queue);
             drop(s);
@@ -1513,6 +1557,41 @@ pub async fn epic_install_game(
         }
     }
     start_download(&app, app_name, install_dir)
+}
+
+#[tauri::command]
+pub async fn epic_repair_game(app: AppHandle, app_name: String) -> Result<String, String> {
+    let app_name = app_name.trim().to_string();
+    if app_name.is_empty() {
+        return Err("@t:dl.nameEmpty".into());
+    }
+    if any_download_in_flight(&app) {
+        return Err("@t:dl.anotherActive".into());
+    }
+    let config = crate::legendary::skip::default_config_dir();
+    let Some(installed) = crate::legendary::cache::read_installed(&config)
+        .into_iter()
+        .find(|game| game.app_name == app_name)
+    else {
+        return Err("@t:dl.notInstalled".into());
+    };
+    // Repair the tags this install actually has, plus the required set: a
+    // broken selective install then gains its missing core files instead of
+    // repairing only the optional packs.
+    let install_tags =
+        crate::legendary::sdl::expand_selected(&app_name, installed.install_tags.clone());
+    let base = std::path::Path::new(installed.install_path.trim())
+        .parent()
+        .map(|path| path.to_string_lossy().to_string());
+    start_download_request(
+        &app,
+        PendingDownload {
+            app_name,
+            install_tags,
+            install_dir: base,
+            repair: true,
+        },
+    )
 }
 
 #[tauri::command]
@@ -1543,6 +1622,7 @@ pub async fn epic_install_with_options(
                 app_name: app_name.clone(),
                 install_tags,
                 install_dir: install_dir.clone(),
+                repair: false,
             });
             for dlc_id in dlc_app_ids {
                 let dlc_trimmed = dlc_id.trim().to_string();
@@ -1555,6 +1635,7 @@ pub async fn epic_install_with_options(
                         app_name: dlc_trimmed,
                         install_tags: Vec::new(),
                         install_dir: install_dir.clone(),
+                        repair: false,
                     });
                 }
             }
@@ -1573,6 +1654,7 @@ pub async fn epic_install_with_options(
                     app_name: dlc_trimmed,
                     install_tags: Vec::new(),
                     install_dir: install_dir.clone(),
+                    repair: false,
                 });
             }
         }
@@ -1596,7 +1678,8 @@ pub fn epic_pending_install_dir(app_name: String) -> Option<String> {
 
 /// Restores the last active download after the launcher process was restarted.
 #[tauri::command]
-pub async fn epic_resume_pending_download(app: AppHandle) -> Result<String, String> {    let path = pending_download_path();
+pub async fn epic_resume_pending_download(app: AppHandle) -> Result<String, String> {
+    let path = pending_download_path();
     let pending = std::fs::read_to_string(&path)
         .ok()
         .and_then(|text| serde_json::from_str::<PendingDownload>(&text).ok());
