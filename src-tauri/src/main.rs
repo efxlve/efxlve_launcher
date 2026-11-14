@@ -1878,6 +1878,10 @@ fn init_portable_mode() {
     std::env::set_var("APPDATA", &roaming);
     std::env::set_var("LOCALAPPDATA", &local);
     std::env::set_var("EFXLVE_CONFIG_DIR", &config);
+    // Legendary does not know EFXLVE_CONFIG_DIR; without this it keeps using
+    // `~/.config/legendary` and the portable build reads a different
+    // installed.json than the one its installs write.
+    std::env::set_var("LEGENDARY_CONFIG_PATH", &config);
 }
 
 #[cfg(not(windows))]
