@@ -1021,25 +1021,28 @@ let lastPointerX = 0;
 let lastPointerY = 0;
 let cachedCardRect: DOMRect | null = null;
 let lastRectCard: HTMLElement | null = null;
+const cardSettleTimers = new WeakMap<HTMLElement, number>();
 
 function clearCardTilt(card: HTMLElement): void {
   card.classList.remove("pcard-tilting", "pcard-hovering");
-  card.style.removeProperty("--rx");
-  card.style.removeProperty("--ry");
-  // Keep the normal cover's cursor light position through the settle so it
-  // fades out where the pointer left it instead of snapping to the centre.
-  // Physical cases keep their idle reflection at the default position.
-  if (card.classList.contains("is-case")) {
-    card.style.removeProperty("--mx");
-    card.style.removeProperty("--my");
-    card.style.removeProperty("--glare-angle");
-  }
-  card.style.removeProperty("--nx");
-  card.style.removeProperty("--ny");
   card.classList.add("pcard-settling");
   cachedCardRect = null;
   lastRectCard = null;
-  window.setTimeout(() => card.classList.remove("pcard-settling"), 260);
+
+  const existing = cardSettleTimers.get(card);
+  if (existing) window.clearTimeout(existing);
+  const timer = window.setTimeout(() => {
+    cardSettleTimers.delete(card);
+    card.classList.remove("pcard-settling");
+    card.style.removeProperty("--rx");
+    card.style.removeProperty("--ry");
+    card.style.removeProperty("--mx");
+    card.style.removeProperty("--my");
+    card.style.removeProperty("--nx");
+    card.style.removeProperty("--ny");
+    card.style.removeProperty("--glare-angle");
+  }, 260);
+  cardSettleTimers.set(card, timer);
 }
 
 /**
@@ -1065,7 +1068,14 @@ function wireCardSettle(): void {
     (e) => {
       if (e.pointerType === "touch" || S.view !== "library") return;
       const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(".pgrid > .pcard");
-      card?.classList.add("pcard-hovering");
+      if (!card) return;
+      const existing = cardSettleTimers.get(card);
+      if (existing) {
+        window.clearTimeout(existing);
+        cardSettleTimers.delete(card);
+        card.classList.remove("pcard-settling");
+      }
+      card.classList.add("pcard-hovering");
     },
     { passive: true },
   );
@@ -1089,6 +1099,12 @@ function wireCardSettle(): void {
         activeTiltCard = null;
       }
       if (!card) return;
+      const existing = cardSettleTimers.get(card);
+      if (existing) {
+        window.clearTimeout(existing);
+        cardSettleTimers.delete(card);
+        card.classList.remove("pcard-settling");
+      }
       card.classList.add("pcard-hovering");
       activeTiltCard = card;
       lastPointerX = e.clientX;

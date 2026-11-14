@@ -296,9 +296,7 @@
    layout, so the grid stays a row of empty boxes. */
 .pgrid > .pcard:not(.is-case) { contain: layout paint; }
 .pgrid > .pcard.is-case { contain: layout; }
-.pgrid > .pcard:hover,
-.pgrid > .pcard:focus-visible,
-.pcard.pcard-settling {
+.pgrid > .pcard:is(:hover, .pcard-hovering, :focus-visible, .pcard-settling) {
   z-index: 4; contain: layout;
 }
 .pcard:focus-visible { outline-offset: 3px; }
@@ -316,7 +314,8 @@
 }
 /* The lift shadow and the theme ring settle with the cover; switching them in
    one frame while the cover slides back reads as a jump. */
-.pcard.pcard-settling .pcard-art {
+.pgrid > .pcard.pcard-settling .pcard-art,
+.pgrid > .pcard.pcard-settling .pcard-caption {
   transition:
     transform 240ms cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 240ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -367,7 +366,8 @@
 @media (prefers-reduced-motion: reduce) {
   .pgrid > .pcard:is(.pcard-hovering, :focus-visible) .pcard-art { transform: none; }
   .pgrid > .pcard:not(.is-case):is(.pcard-hovering, :focus-visible) .pcard-caption { transform: none; }
-  .pcard.pcard-settling .pcard-art { transition: none; }
+  .pgrid > .pcard.pcard-settling .pcard-art,
+  .pgrid > .pcard.pcard-settling .pcard-caption { transition: none; }
   .pcard-play-btn { transition: none !important; }
   .pcard-play-btn:hover, .pcard-play-btn.is-running:hover { transform: none; }
 }
@@ -881,8 +881,7 @@
   transition: none;
   will-change: transform;
 }
-.pgrid > .pcard.is-case:hover .pcard-art,
-.pgrid > .pcard.is-case:focus-visible .pcard-art {
+.pgrid > .pcard.is-case:is(:hover, .pcard-hovering, :focus-visible) .pcard-art {
   outline-color: var(--case-border);
   transform: perspective(680px) translateY(-6px) rotateX(var(--rx, 3deg)) rotateY(var(--ry, -6deg)) scale(1.045);
   box-shadow:
@@ -899,8 +898,7 @@
     0 0 22px 1px var(--case-tint);
 }
 @media (prefers-reduced-motion: reduce) {
-  .pgrid > .pcard.is-case:hover .pcard-art,
-  .pgrid > .pcard.is-case:focus-visible .pcard-art {
+  .pgrid > .pcard.is-case:is(:hover, .pcard-hovering, :focus-visible) .pcard-art {
     transform: none;
   }
 }
