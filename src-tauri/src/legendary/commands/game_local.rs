@@ -1206,6 +1206,7 @@ pub async fn epic_get_install_options(
                 fetched
             }
         };
+        let groups = groups.or_else(|| crate::legendary::sdl::fallback_groups(&app_name));
         match (
             groups.as_ref(),
             info.as_ref().and_then(|value| value.get("manifest")),

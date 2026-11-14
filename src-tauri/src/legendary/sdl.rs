@@ -133,15 +133,23 @@ pub(crate) fn expanded_tags(groups: &Value, selected: &[String]) -> Vec<String> 
     tags
 }
 
-/// Expands a selection against the app's SDL groups. With no cached groups the
-/// selection is returned unchanged; `--skip-sdl` is still safe because
-/// legendary uses its own SDL cache or the required tags from the API.
-pub(crate) fn expand_selected(app_name: &str, selected: Vec<String>) -> Vec<String> {
-    if selected.is_empty() {
-        return selected;
+/// Last known SDL groups for titles whose API data may be unreachable. The
+/// cache and the API always win; this only keeps an offline install from
+/// falling back to legendary's stale hardcoded tags.
+pub(crate) fn fallback_groups(app_name: &str) -> Option<Value> {
+    if !app_name.eq_ignore_ascii_case("Fortnite") {
+        return None;
     }
+    serde_json::from_str(include_str!("sdl_fortnite.json")).ok()
+}
+
+/// Expands a selection against the app's SDL groups. The required and untagged
+/// tags are always included, even with an empty selection, so the install never
+/// depends on legendary's own (possibly stale) fallback.
+pub(crate) fn expand_selected(app_name: &str, selected: Vec<String>) -> Vec<String> {
     let config = crate::legendary::skip::default_config_dir();
-    match read_groups(&config, app_name) {
+    let groups = read_groups(&config, app_name).or_else(|| fallback_groups(app_name));
+    match groups {
         Some(groups) => expanded_tags(&groups, &selected),
         None => selected,
     }
@@ -177,11 +185,21 @@ mod tests {
                 .count(),
             1
         );
-        // The expansion is only reached with a non-empty selection; it always
-        // carries the untagged set and the required tags.
+        // The required and untagged tags are always included, so an empty
+        // selection still installs the base.
         let base = expanded_tags(&sample_groups(), &[]);
         assert!(base.iter().any(|tag| tag.is_empty()));
         assert!(base.iter().any(|tag| tag == "CoreChunk"));
+    }
+
+    #[test]
+    fn the_fortnite_fallback_keeps_the_required_tags() {
+        let groups = fallback_groups("fortnite").expect("Fortnite fallback data");
+        let required = group_tags(&groups, "__required");
+        assert!(required.contains(&"Startup"));
+        assert!(required.contains(&"FortniteBR"));
+        assert!(required.iter().any(|tag| tag.is_empty()));
+        assert!(fallback_groups("SomeOtherGame").is_none());
     }
 
     #[test]
