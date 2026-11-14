@@ -1274,12 +1274,17 @@ function renderGameHeroInnerHtml(
   const g = rawOf(appName);
   const art = epicWideArt(s) || s.cover || (g ? epicPortrait(g) : null);
   const customLogo = customLogoOf(appName, s.title);
+  // The logo is a transparent PNG from SteamGridDB, not a store picture: cache
+  // the original bytes so the title art survives a blocked or slow CDN, and
+  // never ask for a resized rendition (the JPEG path would flatten its alpha).
+  const logoPainting = cachedImage(customLogo, 0);
   const logoLayout = getLogoLayout(appName, s.title);
   const logoScalePct = Math.round(logoLayout.scale * 100);
   const adjusting = S.isAdjustingLogo && Boolean(customLogo);
   const meta = gameMetaHtml(s, partner, antiCheat);
 
   warmImages([art], IMAGE_HERO_WIDTH);
+  warmImages([customLogo], 0);
 
   return `
           ${
@@ -1292,7 +1297,7 @@ function renderGameHeroInnerHtml(
           ${
             customLogo
               ? `<div class="gp-hero-logo-layer" style="${logoStyleVars(logoLayout)}">
-                  <img class="gp-hero-logo-img" src="${esc(customLogo)}" alt="" draggable="false" onerror="this.closest('.gp-hero')?.classList.remove('has-custom-logo');this.parentElement?.remove()" />
+                  <img class="gp-hero-logo-img" src="${esc(logoPainting)}" data-img-url="${esc(customLogo)}" data-img-width="0" alt="" draggable="false" onload="this.closest('.gp-hero')?.classList.add('has-custom-logo')" onerror="this.closest('.gp-hero')?.classList.remove('has-custom-logo')" />
                 </div>`
               : ""
           }
@@ -1330,7 +1335,7 @@ function renderGameHeroInnerHtml(
               : ""
           }
           <div class="gp-hero-bottom">
-            <h1 class="gp-title${customLogo ? " has-logo" : ""}"${customLogo ? ` aria-label="${esc(s.title)}"` : ""}>
+            <h1 class="gp-title"${customLogo ? ` aria-label="${esc(s.title)}"` : ""}>
               <span class="gp-title-text">${esc(s.title)}</span>
             </h1>
             <div class="gp-meta" id="gp-meta">${meta}</div>
@@ -4263,8 +4268,10 @@ export async function prefetchGamePage(appName: string): Promise<void> {
     fetchAndRenderScreenshots(appName, s.title);
   }
   // The hero is the one picture the page waits for; the rest (IGDB screenshots,
-  // similar-game covers) is warmed once the IGDB answer lands.
+  // similar-game covers) is warmed once the IGDB answer lands. The transparent
+  // logo is warmed at its original size so it keeps its alpha.
   warmImages([epicWideArt(s) || s.cover], IMAGE_HERO_WIDTH);
+  warmImages([customLogoOf(appName, s.title)], 0);
 
   // News is Steam's feed. Asking for a Steam store search on every Epic game
   // would cost a request for nothing, so only titles with a Steam copy do it.

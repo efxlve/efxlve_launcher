@@ -8,6 +8,7 @@
 
 import { CUSTOM_COVERS_KEY, CUSTOM_HEROES_KEY, CUSTOM_LOGOS_KEY, CUSTOM_LOGO_SIZES_KEY } from "../../core/constants";
 import { icon } from "../../core/icons";
+import { warmImages } from "../../core/picture-cache";
 import { render, repaintGameHero } from "../../core/render";
 import { clearWideArtCache, epicWideArt, rawOf, storeKeysForTitle, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -69,6 +70,12 @@ function persistArtFor(target: CoverFileTarget, appName: string, url: string): b
 function afterArtSaved(target: CoverFileTarget, appName: string): void {
   // The portrait cover also feeds the wide art cache; a logo does not.
   if (target !== "logo") clearWideArtCache(appName);
+  else {
+    // Save the bytes to the picture cache while SteamGridDB is reachable, so
+    // the hero later paints the logo from disk instead of asking the CDN again.
+    // Width zero keeps the original PNG, whose alpha the JPEG path would drop.
+    warmImages([S.customLogos[appName]], 0);
+  }
   S.libraryDataRev++;
   render();
   repaintGameHero(appName);

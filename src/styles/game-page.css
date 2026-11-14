@@ -168,8 +168,7 @@ body.sb-resizing .overlay {
   user-select: none;
   -webkit-user-drag: none;
 }
-.gp-hero.has-custom-logo .gp-title,
-.gp-title.has-logo {
+.gp-hero.has-custom-logo .gp-title {
   position: absolute;
   width: 1px;
   height: 1px;
