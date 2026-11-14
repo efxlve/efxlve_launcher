@@ -1529,7 +1529,8 @@ pub async fn epic_install_with_options(
         return Err("@t:dl.nameEmpty".into());
     }
 
-    // Enqueue all selected DLCs first
+    // An active transfer gets the base first: legendary refuses a DLC whose
+    // base game has no record yet ("Base game ... is not installed").
     {
         let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
         if s.active.as_ref().is_some_and(|a| a == &app_name)
@@ -1537,9 +1538,34 @@ pub async fn epic_install_with_options(
         {
             return Err("@t:dl.alreadyQueued".into());
         }
+        if s.active.is_some() {
+            s.queue.push_back(PendingDownload {
+                app_name: app_name.clone(),
+                install_tags,
+                install_dir: install_dir.clone(),
+            });
+            for dlc_id in dlc_app_ids {
+                let dlc_trimmed = dlc_id.trim().to_string();
+                if !dlc_trimmed.is_empty()
+                    && dlc_trimmed != app_name
+                    && !s.queue.iter().any(|q| q.app_name == dlc_trimmed)
+                    && s.active.as_deref() != Some(&dlc_trimmed)
+                {
+                    s.queue.push_back(PendingDownload {
+                        app_name: dlc_trimmed,
+                        install_tags: Vec::new(),
+                        install_dir: install_dir.clone(),
+                    });
+                }
+            }
+            write_queue_snapshot(&s.queue);
+            return Ok("@t:dl.queuedWithDlc".into());
+        }
+        // No active transfer: the base starts now, so its DLCs wait behind it.
         for dlc_id in dlc_app_ids {
             let dlc_trimmed = dlc_id.trim().to_string();
             if !dlc_trimmed.is_empty()
+                && dlc_trimmed != app_name
                 && !s.queue.iter().any(|q| q.app_name == dlc_trimmed)
                 && s.active.as_deref() != Some(&dlc_trimmed)
             {
@@ -1551,16 +1577,6 @@ pub async fn epic_install_with_options(
             }
         }
         write_queue_snapshot(&s.queue);
-
-        if s.active.is_some() {
-            s.queue.push_back(PendingDownload {
-                app_name: app_name.clone(),
-                install_tags,
-                install_dir: install_dir.clone(),
-            });
-            write_queue_snapshot(&s.queue);
-            return Ok("@t:dl.queuedWithDlc".into());
-        }
     }
 
     start_download_with_tags(&app, app_name, install_tags, install_dir)
