@@ -428,6 +428,9 @@ pub fn refresh_installed_from_egl(config: &Path, app_name: &str) -> bool {
     if merge_egl_record(&mut map, &egl) == EglMerge::Unchanged {
         return false;
     }
+    if crate::legendary::transfers::transfer_active() {
+        return false;
+    }
     let Ok(json) = serde_json::to_string_pretty(&map) else {
         return false;
     };
@@ -765,6 +768,37 @@ pub fn read_installed(config: &Path) -> Vec<InstalledGame> {
     read_installed_with_catalog(config, snapshot.as_deref(), None)
 }
 
+fn installed_backup_path(config: &Path) -> std::path::PathBuf {
+    config.join("installed.json.bak")
+}
+
+/// Writes installed.json through a temporary file and keeps the previous
+/// contents as `installed.json.bak`.
+///
+/// A reader never sees a half-written map, and a truncated file can be
+/// recovered from the backup on the next read.
+pub(crate) fn write_installed_map(config: &Path, map: &HashMap<String, InstalledGame>) {
+    let Ok(json) = serde_json::to_string_pretty(map) else {
+        return;
+    };
+    let path = config.join("installed.json");
+    let tmp = config.join("installed.json.tmp");
+    if std::fs::metadata(&path)
+        .map(|meta| meta.len() > 0)
+        .unwrap_or(false)
+    {
+        let _ = std::fs::copy(&path, installed_backup_path(config));
+    }
+    if std::fs::write(&tmp, json).is_err() {
+        let _ = std::fs::remove_file(&tmp);
+        return;
+    }
+    // `rename` replaces the destination on Windows too (MOVEFILE_REPLACE_EXISTING).
+    if std::fs::rename(&tmp, &path).is_err() {
+        let _ = std::fs::remove_file(&tmp);
+    }
+}
+
 /// One timing line per phase, only when a boot path asked for it.
 fn mark(app: Option<&tauri::AppHandle>, label: &str, started: std::time::Instant) {
     if let Some(app) = app {
@@ -788,17 +822,33 @@ pub fn read_installed_with_catalog(
     // legendary rewrites installed.json while an install runs, so a read can
     // land mid-write. Never overwrite a file this pass could not read: the map
     // would only hold what the EGL scan rebuilt, losing legendary's records.
+    // A truncated file falls back to the last good copy.
+    let mut recovered = false;
     let writable = match std::fs::read_to_string(&installed_file) {
         Ok(text) => match serde_json::from_str::<HashMap<String, InstalledGame>>(&text) {
             Ok(loaded) => {
                 map = loaded;
                 true
             }
-            Err(_) => false,
+            Err(_) => match std::fs::read_to_string(installed_backup_path(config))
+                .ok()
+                .and_then(|text| serde_json::from_str::<HashMap<String, InstalledGame>>(&text).ok())
+            {
+                Some(loaded) => {
+                    eprintln!("[installed] installed.json is corrupt; using installed.json.bak");
+                    map = loaded;
+                    recovered = true;
+                    true
+                }
+                None => false,
+            },
         },
         // No file yet (first run): nothing to clobber.
         Err(e) => e.kind() == std::io::ErrorKind::NotFound,
     };
+    // Our own transfer keeps legendary's map in memory and writes it when the
+    // process exits; a write here would lose the record it is about to commit.
+    let writable = writable && !crate::legendary::transfers::transfer_active();
     mark(app, "rust:installed/json", t_installed);
 
     let mut changed = false;
@@ -852,10 +902,8 @@ pub fn read_installed_with_catalog(
     }
 
     // Auto-sync: persist imported games and version changes into installed.json
-    if changed && writable {
-        if let Ok(json_str) = serde_json::to_string_pretty(&map) {
-            let _ = std::fs::write(&installed_file, json_str);
-        }
+    if (changed || recovered) && writable {
+        write_installed_map(config, &map);
     }
 
     // 2. Detect games installed via third-party launchers (Ubisoft Connect, EA, ...) from the registry
@@ -1136,6 +1184,41 @@ mod tests {
         let text = std::fs::read_to_string(&json_path).unwrap();
         assert!(!text.contains("ReadyOrNot"));
         assert!(text.contains("Cyberpunk"));
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A truncated installed.json used to hide every install ("library says
+    /// Install"). The last good copy is one read away.
+    #[test]
+    fn a_truncated_installed_file_recovers_from_the_backup() {
+        let dir = std::env::temp_dir().join(format!("efxlve_test_recover_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let game_dir = dir.join("Fortnite");
+        std::fs::create_dir_all(&game_dir).unwrap();
+
+        let mut map = HashMap::new();
+        map.insert(
+            "Fortnite".to_string(),
+            installed_record("1.0", game_dir.to_str().unwrap()),
+        );
+        // First write creates the file, the second one also fills the backup.
+        write_installed_map(&dir, &map);
+        write_installed_map(&dir, &map);
+        std::fs::write(dir.join("installed.json"), "{truncated").unwrap();
+
+        let installed = read_installed(&dir);
+        let game = installed
+            .iter()
+            .find(|game| game.app_name == "Fortnite")
+            .expect("the backup record must survive a truncated main file");
+        assert_eq!(game.version, "1.0");
+
+        let repaired = std::fs::read_to_string(dir.join("installed.json")).unwrap();
+        assert!(
+            serde_json::from_str::<HashMap<String, InstalledGame>>(&repaired).is_ok(),
+            "the recovered map must be written back"
+        );
 
         let _ = std::fs::remove_dir_all(&dir);
     }

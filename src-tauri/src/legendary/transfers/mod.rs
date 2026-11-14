@@ -41,6 +41,7 @@ pub use paths::*;
 // queue.rs: EpicDlState, DlProgress, DlPaused, DlQueueStatus, emit_progress_full, epic_install_game, epic_install_with_options, epic_resume_pending_download, epic_cancel_download, epic_pause_download, epic_resume_download, epic_reorder_queue, epic_get_queue
 #[allow(unused_imports)]
 pub use queue::*;
+pub(crate) use queue::transfer_active;
 
 // uninstall.rs: epic_uninstall_game
 #[allow(unused_imports)]

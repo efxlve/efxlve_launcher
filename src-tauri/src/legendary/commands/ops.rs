@@ -510,6 +510,9 @@ pub async fn epic_import_installed_folder(
     app: AppHandle,
     path: String,
 ) -> Result<crate::legendary::import_installed::ImportInstalledResult, String> {
+    if crate::legendary::transfers::any_download_in_flight(&app) {
+        return Err("@t:dl.anotherActive".to_string());
+    }
     crate::legendary::import_installed::import_installed_folder(&app, std::path::Path::new(&path))
         .await
 }
@@ -530,7 +533,9 @@ pub async fn epic_move_game(
     app_name: String,
     target_base_path: String,
 ) -> Result<crate::legendary::move_game::MoveGameResult, String> {
-    if crate::legendary::transfers::download_in_flight(&app, &app_name) {
+    // Both the move and a transfer rewrite installed.json; let the transfer
+    // finish first instead of racing its in-memory map.
+    if crate::legendary::transfers::any_download_in_flight(&app) {
         return Err("@t:dl.anotherActive".to_string());
     }
     let config = skip::default_config_dir();

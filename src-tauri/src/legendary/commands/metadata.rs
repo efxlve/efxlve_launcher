@@ -456,6 +456,9 @@ pub async fn epic_detect_egl_games(_app: AppHandle) -> Result<Vec<cache::EglDete
 
 /// Persistently syncs games detected in the Epic Games Launcher into installed.json.
 pub fn sync_egl_installed() -> Result<u32, String> {
+    if crate::legendary::transfers::transfer_active() {
+        return Err("@t:dl.anotherActive".to_string());
+    }
     let config = skip::default_config_dir();
     let installed_path = config.join("installed.json");
     let mut map: std::collections::HashMap<String, InstalledGame> =
@@ -489,8 +492,7 @@ pub fn sync_egl_installed() -> Result<u32, String> {
     }
 
     if changed {
-        let json_str = serde_json::to_string_pretty(&map).map_err(|e| e.to_string())?;
-        std::fs::write(&installed_path, json_str).map_err(|e| e.to_string())?;
+        cache::write_installed_map(&config, &map);
     }
 
     Ok(imported_count)

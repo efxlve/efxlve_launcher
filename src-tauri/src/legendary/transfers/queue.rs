@@ -6,6 +6,7 @@
 use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::process::Stdio;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
@@ -37,6 +38,19 @@ const STALL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5 * 60
 /// Finalization can be legitimately quiet while files are deleted or the EGL
 /// manifest is written, so it gets a much longer window before the same check.
 const FINALIZE_STALL: std::time::Duration = std::time::Duration::from_secs(15 * 60);
+
+/// True while this process owns an Epic transfer. `installed.json` must not be
+/// rewritten then: legendary keeps its own map in memory and writes it at the
+/// end, so a library refresh or a settings save could lose the new record.
+static TRANSFER_ACTIVE: AtomicBool = AtomicBool::new(false);
+
+pub(crate) fn transfer_active() -> bool {
+    TRANSFER_ACTIVE.load(Ordering::Relaxed)
+}
+
+fn set_transfer_active(active: bool) {
+    TRANSFER_ACTIVE.store(active, Ordering::Relaxed);
+}
 
 /// The same tree kill for a sync caller (the start path cannot await).
 pub(super) fn kill_download_tree_blocking(pid: u32) {
@@ -274,6 +288,7 @@ pub(super) fn release_owned_slot(app: &AppHandle, app_name: &str, generation: u6
             slot.active_generation = None;
             slot.pid = None;
             slot.active_meta = None;
+            set_transfer_active(false);
         }
     }
 }
@@ -450,7 +465,8 @@ pub(super) fn start_download_request(
     // A selective install must always carry the untagged and required tags;
     // otherwise legendary installs only the optional packs. This also repairs
     // a resume record saved by an older release with a raw tag set.
-    let install_tags = crate::legendary::sdl::expand_selected(&merged.app_name, merged.install_tags);
+    let install_tags =
+        crate::legendary::sdl::expand_selected(&merged.app_name, merged.install_tags);
     let request = PendingDownload {
         app_name: merged.app_name,
         install_tags,
@@ -482,6 +498,7 @@ pub(super) fn start_download_request(
         s.paused = false;
         generation
     };
+    set_transfer_active(true);
 
     let mut child = match spawn_install_with_tags(
         app,
@@ -1365,6 +1382,7 @@ pub(super) async fn monitor_download(
         s.active_meta = None;
         (was_cancelled, was_paused, next)
     };
+    set_transfer_active(false);
 
     let stop = if was_cancelled {
         crate::legendary::download_resume::DownloadStop::UserCancel {
