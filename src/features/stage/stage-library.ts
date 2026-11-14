@@ -8,7 +8,7 @@ import { icon } from "../../core/icons";
 import { sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import type { StageLibraryFilter, StageLibrarySort } from "../../core/types";
-import { esc } from "../../core/utils";
+import { esc, fmtPlaytime } from "../../core/utils";
 import { t } from "../../i18n";
 import type { EpicSummary } from "../../epic";
 import { SMART_COLLECTIONS, smartCollection } from "../library/smart-collections";
@@ -19,12 +19,22 @@ import {
   stageAchievements,
   stageFilterCounts,
   stageGameByKey,
+  stageGamePlaytime,
   stageHasUpdate,
   stageLibraryList,
   stagePrimaryAction,
   stageStoreFilterLabel,
 } from "./stage-model";
-import { stageGameFactChips, stageMetaLine, stageProgress, stageStatus, stageStoreName } from "./stage-ui";
+import {
+  stageCriticChip,
+  stageGameFactChips,
+  stageGenreChips,
+  stageMetaLine,
+  stageProgress,
+  stageStatus,
+  stageStripHtml,
+  stageStoreName,
+} from "./stage-ui";
 
 const FILTERS: StageLibraryFilter[] = ["all", "installed", "favorites", "updates"];
 const LIBRARY_CHUNK = 96;
@@ -149,18 +159,27 @@ function tools(): string {
   </div>`;
 }
 
-function gridCard(s: EpicSummary, index: number): string {
-  return `<button type="button" class="stage-cover-card" data-stage-act="open-program" data-key="${esc(s.appName)}" data-lib-preview="${esc(s.appName)}" data-gp-item data-gp-key="lib:${esc(s.appName)}">
-    <span class="stage-cover-frame">${stageCoverMarkup(s, "stage-cover-art", index > 30)}${stageStatus(s)}</span>
+function gridCard(s: EpicSummary, index: number, isPreviewed = false): string {
+  const isFav = S.epicFav.has(s.appName);
+  const play = stageGamePlaytime(s);
+  const store = stageStoreName(sourceOfKey(s.appName));
+  return `<button type="button" class="stage-cover-card${isPreviewed ? " is-previewed" : ""}" data-stage-act="open-program" data-key="${esc(s.appName)}" data-lib-preview="${esc(s.appName)}" data-gp-item data-gp-key="lib:${esc(s.appName)}">
+    <span class="stage-cover-frame">
+      ${stageCoverMarkup(s, "stage-cover-art", index > 30)}
+      ${stageStatus(s)}
+      ${isFav ? `<span class="stage-cover-fav" aria-hidden="true">${icon("heart", 11)}</span>` : ""}
+    </span>
     <span class="stage-cover-title">${esc(s.title)}</span>
+    <span class="stage-cover-sub tabular-nums">${esc(store)}${play.seconds > 0 ? ` · ${esc(fmtPlaytime(play.seconds))}` : ""}</span>
   </button>`;
 }
 
-function listRow(s: EpicSummary, index: number): string {
-  return `<button type="button" class="stage-list-row" data-stage-act="open-program" data-key="${esc(s.appName)}" data-lib-preview="${esc(s.appName)}" data-gp-item data-gp-key="lib:${esc(s.appName)}">
+function listRow(s: EpicSummary, index: number, isPreviewed = false): string {
+  const isFav = S.epicFav.has(s.appName);
+  return `<button type="button" class="stage-list-row${isPreviewed ? " is-previewed" : ""}" data-stage-act="open-program" data-key="${esc(s.appName)}" data-lib-preview="${esc(s.appName)}" data-gp-item data-gp-key="lib:${esc(s.appName)}">
     <span class="stage-list-cover">${stageCoverMarkup(s, "stage-cover-art", index > 30)}</span>
     <span class="stage-list-main">
-      <strong>${esc(s.title)}</strong>
+      <strong>${esc(s.title)}${isFav ? ` <span class="stage-list-fav" aria-hidden="true">${icon("heart", 12)}</span>` : ""}</strong>
       <span>${stageMetaLine(s)}</span>
     </span>
     <span class="stage-list-status">${stageStatus(s)}</span>
@@ -175,18 +194,26 @@ function sideAchievementsInner(s: EpicSummary): string {
   const known = ach.progress_known !== false;
   const percent = known ? Math.round((ach.user_unlocked / ach.total_achievements) * 100) : 0;
   return `<div class="stage-side-ach-head">
-    <span>${icon("trophy", 16)} ${esc(t("stage.achievements"))}</span>
-    <span class="stage-stat stage-side-ach-count"><b class="tabular-nums">${known ? `${ach.user_unlocked} / ${ach.total_achievements}` : String(ach.total_achievements)}</b></span>
+    <span>${icon("trophy", 15)} ${esc(t("stage.achievements"))}</span>
+    <span class="stage-stat stage-side-ach-count"><b class="tabular-nums">${known ? `${ach.user_unlocked} / ${ach.total_achievements} (${percent}%)` : String(ach.total_achievements)}</b></span>
   </div>
   ${known ? stageProgress(percent, "stage-progress-thin") : ""}`;
+}
+
+function sideEyebrowHtml(s: EpicSummary): string {
+  return `<span class="stage-side-store" data-side="store">${esc(stageStoreName(sourceOfKey(s.appName)))}</span>
+    ${stageStatus(s)}
+    ${stageGenreChips(s, 2)}
+    ${stageCriticChip(s)}`;
 }
 
 /** Play/favourite/details row, shared by the first render and the in-place patch. */
 function sideActionsHtml(s: EpicSummary): string {
   const favorite = S.epicFav.has(s.appName);
   return `<div class="stage-primary-action">${stagePrimaryAction(s)}</div>
-    <button type="button" class="stage-icon-btn${favorite ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(s.appName)}" data-gp-item data-gp-key="side:favorite" aria-label="${esc(t("stage.favorite"))}">${icon("heart", 18)}</button>
-    <button type="button" class="stage-icon-btn" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="side:details" aria-label="${esc(t("stage.details"))}">${icon("dots", 18)}</button>`;
+    <button type="button" class="stage-icon-btn" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="side:details" title="${esc(t("stage.details"))}" aria-label="${esc(t("stage.details"))}">${icon("info", 17)}</button>
+    <button type="button" class="stage-icon-btn" data-stage-act="manage-game" data-key="${esc(s.appName)}" data-gp-item data-gp-key="side:manage" title="${esc(t("stage.manage"))}" aria-label="${esc(t("stage.manage"))}">${icon("sliders", 17)}</button>
+    <button type="button" class="stage-icon-btn${favorite ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(s.appName)}" data-gp-item data-gp-key="side:favorite" title="${esc(t("stage.favorite"))}" aria-label="${esc(t("stage.favorite"))}">${icon("heart", 17)}</button>`;
 }
 
 /**
@@ -218,11 +245,13 @@ export function stageLibrarySideHtml(s: EpicSummary | undefined): string {
     return `<aside class="stage-library-side" id="stage-library-side"><div class="stage-side-empty">${icon("search", 30)}<strong>${esc(t("stage.noResults"))}</strong><span>${esc(t("stage.noResultsHint"))}</span></div></aside>`;
   }
   const achInner = sideAchievementsInner(s);
+  const desc = stageStripHtml(s.description);
   return `<aside class="stage-library-side" id="stage-library-side" data-side-sig="${esc(sideSignature(s))}">
     <div class="stage-side-art" id="stage-side-art">${stageHeroMarkup(s, "stage-side-image")}</div>
     <div class="stage-side-body">
-      <span class="stage-side-store" data-side="store">${esc(stageStoreName(sourceOfKey(s.appName)))}</span>
+      <div class="stage-side-eyebrow" data-side="eyebrow">${sideEyebrowHtml(s)}</div>
       <h2 class="stage-side-title" data-side="title">${esc(s.title)}</h2>
+      <p class="stage-side-desc" data-side="desc"${desc ? "" : " hidden"}>${esc(desc)}</p>
       <div class="stage-side-meta stage-stat-row" data-side="meta">${stageGameFactChips(s)}</div>
       <div class="stage-side-actions" data-side="actions">${sideActionsHtml(s)}</div>
       <div class="stage-side-ach" data-side="ach"${achInner ? "" : " hidden"}>${achInner}</div>
@@ -254,12 +283,19 @@ export function patchStageLibrarySide(s: EpicSummary | undefined): void {
       fallback: stageHeroMarkup(s, "stage-side-image"),
     });
   }
-  const text = (name: string, value: string): void => {
-    const el = side.querySelector<HTMLElement>(`[data-side="${name}"]`);
-    if (el) el.textContent = value;
-  };
-  text("store", stageStoreName(sourceOfKey(s.appName)));
-  text("title", s.title);
+  const eyebrow = side.querySelector<HTMLElement>('[data-side="eyebrow"]');
+  if (eyebrow) eyebrow.innerHTML = sideEyebrowHtml(s);
+
+  const titleEl = side.querySelector<HTMLElement>('[data-side="title"]');
+  if (titleEl) titleEl.textContent = s.title;
+
+  const descEl = side.querySelector<HTMLElement>('[data-side="desc"]');
+  if (descEl) {
+    const desc = stageStripHtml(s.description);
+    descEl.textContent = desc;
+    descEl.hidden = !desc;
+  }
+
   const meta = side.querySelector<HTMLElement>('[data-side="meta"]');
   if (meta) meta.innerHTML = stageGameFactChips(s);
 
@@ -312,8 +348,8 @@ export function renderStageLibrary(): string {
         <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="reset-filters" data-gp-item data-gp-key="empty:reset">${esc(t("stage.resetFilters"))}</button>
       </div>`
     : S.stage.libraryView === "grid"
-      ? `<div class="stage-wall stage-wall-grid" data-gp-default>${visible.map((s, index) => gridCard(s, index)).join("")}${more}</div>`
-      : `<div class="stage-wall stage-wall-list" data-gp-default>${visible.map((s, index) => listRow(s, index)).join("")}${more}</div>`;
+      ? `<div class="stage-wall stage-wall-grid" data-gp-default>${visible.map((s, index) => gridCard(s, index, s.appName === selected?.appName)).join("")}${more}</div>`
+      : `<div class="stage-wall stage-wall-list" data-gp-default>${visible.map((s, index) => listRow(s, index, s.appName === selected?.appName)).join("")}${more}</div>`;
 
   return `<div class="stage-library">
     <header class="stage-library-head">
@@ -337,6 +373,9 @@ export function stageLibraryFocus(key: string): void {
   const summary = stageGameByKey(key.slice(4));
   if (!summary) return;
   S.stage.previewKey = summary.appName;
+  document.querySelectorAll<HTMLElement>(".stage-cover-card[data-key], .stage-list-row[data-key]").forEach((el) => {
+    el.classList.toggle("is-previewed", el.dataset.key === summary.appName);
+  });
   updateStageBackdrop(stageWideArt(summary));
   patchStageLibrarySide(summary);
   // The wall was just rendered from this exact list: sorting and filtering

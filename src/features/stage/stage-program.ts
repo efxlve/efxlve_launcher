@@ -15,12 +15,21 @@ import { currentLanguage, t } from "../../i18n";
 import type { EpicSummary } from "../../epic";
 import { renderMarkdownLite } from "../notes/markdown";
 import { loadNotes, notesForScope, onNotesChanged } from "../notes/notes-client";
+import { fetchAndRenderAchievements } from "../drawer/drawer-view";
 import { shotThumbHtml } from "../screenshots/screenshots-view";
 import { stageEnsureScreenshots } from "./stage-actions";
 import { stageHeroMarkup } from "./stage-art";
 import { loadStageAudioFiles, stageAudioLabel } from "./stage-audio-library";
 import { stageAchievements, stageGameByKey, stageGamePlaytime, stagePrimaryAction } from "./stage-model";
-import { stageGameFactChips, stageProgress, stageStoreName } from "./stage-ui";
+import {
+  stageCriticChip,
+  stageGameFactChips,
+  stageGenreChips,
+  stageProgress,
+  stageStatus,
+  stageStoreName,
+  stageStripHtml,
+} from "./stage-ui";
 
 const TABS: StageProgramTab[] = ["overview", "achievements", "media", "notes", "extras"];
 /** One request per session; the notes client owns the cache after that. */
@@ -80,9 +89,31 @@ function tabLabel(tab: StageProgramTab): string {
   }
 }
 
-function tabs(): string {
+function tabBadge(game: EpicSummary, tab: StageProgramTab): string {
+  if (tab === "achievements") {
+    const ach = stageAchievements(game);
+    if (ach?.supported && ach.total_achievements > 0) {
+      const text = ach.progress_known !== false
+        ? `${ach.user_unlocked}/${ach.total_achievements}`
+        : String(ach.total_achievements);
+      return `<span class="stage-tab-count tabular-nums">${esc(text)}</span>`;
+    }
+    return "";
+  }
+  if (tab === "media") {
+    const shots = S.loadedScreenshots.get(game.appName) || [];
+    return shots.length > 0 ? `<span class="stage-tab-count tabular-nums">${shots.length}</span>` : "";
+  }
+  if (tab === "notes") {
+    const notes = notesForScope(game.appName);
+    return notes.length > 0 ? `<span class="stage-tab-count tabular-nums">${notes.length}</span>` : "";
+  }
+  return "";
+}
+
+function tabs(game: EpicSummary): string {
   return `<div class="stage-program-tabs" role="tablist" data-gp-row>
-    ${TABS.map((tab) => `<button type="button" role="tab" aria-selected="${S.stage.programTab === tab}" class="stage-program-tab${S.stage.programTab === tab ? " active" : ""}" data-stage-act="set-tab" data-tab="${tab}" data-gp-item data-gp-key="tab:${tab}">${esc(tabLabel(tab))}</button>`).join("")}
+    ${TABS.map((tab) => `<button type="button" role="tab" aria-selected="${S.stage.programTab === tab}" class="stage-program-tab${S.stage.programTab === tab ? " active" : ""}" data-stage-act="set-tab" data-tab="${tab}" data-gp-item data-gp-key="tab:${tab}"><span>${esc(tabLabel(tab))}</span>${tabBadge(game, tab)}</button>`).join("")}
   </div>`;
 }
 
@@ -159,12 +190,15 @@ function ensureStageProgramData(game: EpicSummary): void {
     }
   }
 
+  if (!S.loadedAchievements.has(appName) && !S.loadingAchFor.has(appName)) {
+    void fetchAndRenderAchievements(appName);
+  }
+
   stageEnsureScreenshots(appName);
   void loadNotes();
 }
 
 function overview(game: EpicSummary): string {
-  ensureStageProgramData(game);
   const play = stageGamePlaytime(game);
   const ach = stageAchievements(game);
   const achKnown = ach?.progress_known !== false;
@@ -226,11 +260,13 @@ function overview(game: EpicSummary): string {
       </div>`
     : "";
 
+  const cleanDesc = stageStripHtml(game.description);
+
   return `<div class="stage-program-grid">
     <div class="stage-program-main-col">
       <div class="stage-program-copy">
         <span class="stage-kicker">${esc(t("stage.about"))}</span>
-        <p>${esc(game.description || t("stage.noDescription"))}</p>
+        <p>${esc(cleanDesc || t("stage.noDescription"))}</p>
       </div>
       ${hltbCard || criticCard ? `<div class="stage-program-cards-row">${hltbCard}${criticCard}</div>` : ""}
       ${trophySpotlight}
@@ -523,6 +559,35 @@ function content(game: EpicSummary): string {
   }
 }
 
+function programHeroAside(game: EpicSummary): string {
+  const ach = stageAchievements(game);
+  const achKnown = ach?.progress_known !== false;
+  const hasAch = Boolean(ach?.supported && ach.total_achievements > 0 && achKnown);
+  const achPct = hasAch ? Math.round((ach!.user_unlocked / ach!.total_achievements) * 100) : 0;
+  const loadedAch = S.loadedAchievements.get(game.appName);
+  const hltb = S.loadedHltb.get(game.appName);
+  const hasHltb = Boolean(hltb && (hltb.main_story || hltb.main_extra));
+  const hours = (n?: number | null) => (n ? t("stage.hoursValue", { h: n.toFixed(n >= 100 ? 0 : 1) }) : "");
+
+  if (!hasAch && !hasHltb) return "";
+
+  return `<aside class="stage-program-hero-aside" aria-hidden="true">
+    ${hasAch ? `<div class="stage-program-aside-block">
+      <div class="stage-program-aside-head">
+        <span class="stage-program-aside-icon">${icon(loadedAch?.is_platinum ? "crown" : "trophy", 16)}</span>
+        <span class="stage-program-aside-label">${esc(loadedAch?.is_platinum ? t("stage.achPlatinum") : t("stage.achievements"))}</span>
+        <strong class="stage-program-aside-pct tabular-nums">${achPct}%</strong>
+      </div>
+      ${stageProgress(achPct, "stage-progress-hub")}
+      <div class="stage-program-aside-sub tabular-nums">${ach!.user_unlocked} / ${ach!.total_achievements} ${esc(t("stage.achUnlocked").toLowerCase())}</div>
+    </div>` : ""}
+    ${hasHltb ? `<div class="stage-program-aside-block is-hltb">
+      ${hltb?.main_story ? `<div class="stage-program-aside-stat"><span>${esc(t("hltb.mainStory"))}</span><strong class="tabular-nums">${esc(hours(hltb.main_story))}</strong></div>` : ""}
+      ${hltb?.main_extra ? `<div class="stage-program-aside-stat"><span>${esc(t("hltb.mainExtra"))}</span><strong class="tabular-nums">${esc(hours(hltb.main_extra))}</strong></div>` : ""}
+    </div>` : ""}
+  </aside>`;
+}
+
 export function renderStageProgram(): string {
   const game = stageGameByKey(S.stage.gameKey);
   if (!game) {
@@ -535,6 +600,7 @@ export function renderStageProgram(): string {
       </div>
     </div>`;
   }
+  ensureStageProgramData(game);
   const favorite = S.epicFav.has(game.appName);
   return `<div class="stage-program" >
     <section class="stage-program-hero">
@@ -542,20 +608,30 @@ export function renderStageProgram(): string {
       <span class="stage-program-scrim"></span>
       <div class="stage-program-head">
         <button type="button" class="stage-back" data-stage-act="back" data-gp-item data-gp-key="prog:back">${icon("arrow-left", 18)}<span>${esc(t("common.back"))}</span></button>
-        <div class="stage-program-titles">
-          <span class="stage-program-kicker">${esc(stageStoreName(sourceOfKey(game.appName)))}</span>
-          <h1>${esc(game.title)}</h1>
-          <div class="stage-stat-row stage-program-hero-facts">${stageGameFactChips(game)}</div>
-        </div>
-        <div class="stage-program-actions" data-gp-default>
-          <div class="stage-primary-action">${stagePrimaryAction(game)}</div>
-          <button type="button" class="stage-btn stage-btn-ghost${favorite ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(game.appName)}" data-gp-item data-gp-key="prog:favorite">${icon("heart", 18)}<span>${esc(favorite ? t("stage.favorited") : t("stage.favorite"))}</span></button>
-          <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="manage-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="prog:manage">${icon("settings", 18)}<span>${esc(t("stage.manage"))}</span></button>
+        <div class="stage-program-hero-row">
+          <div class="stage-program-titles-col">
+            <div class="stage-program-titles">
+              <div class="stage-program-eyebrow">
+                <span class="stage-program-kicker">${esc(stageStoreName(sourceOfKey(game.appName)))}</span>
+                ${stageStatus(game)}
+                ${stageGenreChips(game, 3)}
+                ${stageCriticChip(game)}
+              </div>
+              <h1>${esc(game.title)}</h1>
+              <div class="stage-stat-row stage-program-hero-facts">${stageGameFactChips(game)}</div>
+            </div>
+            <div class="stage-program-actions" data-gp-row data-gp-default>
+              <div class="stage-primary-action">${stagePrimaryAction(game)}</div>
+              <button type="button" class="stage-btn stage-btn-ghost${favorite ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(game.appName)}" data-gp-item data-gp-key="prog:favorite">${icon("heart", 18)}<span>${esc(favorite ? t("stage.favorited") : t("stage.favorite"))}</span></button>
+              <button type="button" class="stage-btn stage-btn-ghost" data-stage-act="manage-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="prog:manage">${icon("settings", 18)}<span>${esc(t("stage.manage"))}</span></button>
+            </div>
+          </div>
+          ${programHeroAside(game)}
         </div>
       </div>
     </section>
 
-    ${tabs()}
+    ${tabs(game)}
     <div class="stage-program-content">${content(game)}</div>
   </div>`;
 }

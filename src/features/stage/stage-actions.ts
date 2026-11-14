@@ -87,6 +87,7 @@ const SORTS = ["recent", "alpha", "playtime", "installed"] as const;
 export function stageFocusedKey(): string {
   const key = S.stage.focusKey;
   if (key.startsWith("game:")) return key.slice(5);
+  if (key.startsWith("ready:")) return key.slice(6);
   if (key.startsWith("lib:")) return key.slice(4);
   if (key.startsWith("search:game:")) return key.slice(12);
   return "";
@@ -135,7 +136,7 @@ export function stageOpenProgram(key: string): void {
   if (S.stage.route !== "program") {
     // Return to the exact card, not to the top of the shelf. A search result or
     // a side-panel button still resolves to the same library card.
-    const focusKey = S.stage.focusKey.startsWith("game:")
+    const focusKey = S.stage.focusKey.startsWith("game:") || S.stage.focusKey.startsWith("ready:")
       ? S.stage.focusKey
       : `lib:${summary.appName}`;
     S.stage.stack.push({

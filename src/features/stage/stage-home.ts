@@ -23,22 +23,45 @@ import { stageIdleGreeting } from "./stage-idle";
 import {
   stageAchievements,
   stageCollectionCoverKeys,
+  stageFilterCounts,
   stageGameByKey,
   stageGamePlaytime,
   stageHeroSummary,
+  stageInstalledSummaries,
   stagePrimaryAction,
   stageRibbonSummaries,
   stageUserCollections,
 } from "./stage-model";
-import { stageMetaLine, stageControllerChip, stageProgress, stageStoreName } from "./stage-ui";
+import {
+  stageActiveDownload,
+  stageControllerChip,
+  stageCriticChip,
+  stageGameFactChips,
+  stageGenreChips,
+  stageProgress,
+  stageStatus,
+  stageStripHtml,
+  stageStoreName,
+} from "./stage-ui";
 
-function ribbonCard(s: EpicSummary, isDefault = false): string {
+function ribbonCard(s: EpicSummary, isDefault = false, isActive = false): string {
   const isRunning = S.runningGames.has(s.appName);
   const hasDl = epicDlProgress(s.appName) !== null;
   const isUpdating = s.updateAvailable && !S.ignoredUpdates.has(s.appName);
-  return `<button type="button" class="stage-ribbon-card${isRunning ? " is-running" : ""}" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="game:${esc(s.appName)}"${isDefault ? " data-gp-default" : ""} aria-label="${esc(s.title)}">
+  const isFav = S.epicFav.has(s.appName);
+  const statusDot = isRunning
+    ? `<span class="stage-ribbon-running" aria-hidden="true"></span>`
+    : hasDl || isUpdating
+      ? `<span class="stage-ribbon-indicator" aria-hidden="true"></span>`
+      : s.installed
+        ? `<span class="stage-ribbon-installed" aria-hidden="true"></span>`
+        : "";
+  const favBadge = isFav ? `<span class="stage-ribbon-fav" aria-hidden="true">${icon("heart", 10)}</span>` : "";
+  return `<button type="button" class="stage-ribbon-card${isRunning ? " is-running" : ""}${isActive ? " is-active" : ""}" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="game:${esc(s.appName)}"${isDefault ? " data-gp-default" : ""} aria-label="${esc(s.title)}">
     <span class="stage-ribbon-art">${stageCoverMarkup(s, "stage-ribbon-image")}</span>
-    ${isRunning ? `<span class="stage-ribbon-running"></span>` : hasDl || isUpdating ? `<span class="stage-ribbon-indicator"></span>` : ""}
+    ${statusDot}
+    ${favBadge}
+    <span class="stage-ribbon-label">${esc(s.title)}</span>
   </button>`;
 }
 
@@ -75,47 +98,120 @@ function welcomeBackBannerHtml(): string {
   </div>`;
 }
 
+function heroSpotlightWidget(game: EpicSummary): string {
+  const ach = stageAchievements(game);
+  const play = stageGamePlaytime(game);
+  const dl = stageActiveDownload();
+  const hasAch = Boolean(ach && ach.supported && ach.total_achievements > 0);
+  const achKnown = ach?.progress_known !== false;
+  const achPct = hasAch && achKnown && ach
+    ? Math.round((ach.user_unlocked / Math.max(1, ach.total_achievements)) * 100)
+    : 0;
+  const loaded = S.loadedAchievements.get(game.appName);
+  const nextAch = loaded?.achievements.find((a) => !a.unlocked);
+
+  const dlBlock = dl
+    ? `<div class="stage-spotlight-dl">
+        <div class="stage-spotlight-dl-head">
+          <span>${icon("download", 12)} ${esc(dl.title)}</span>
+          <b class="tabular-nums">${Math.round(dl.percent)}%</b>
+        </div>
+        ${stageProgress(dl.percent, "stage-progress-thin")}
+      </div>`
+    : "";
+
+  if (hasAch && ach) {
+    return `<aside class="stage-home-spotlight" aria-hidden="true">
+      <div class="stage-spotlight-card">
+        <div class="stage-spotlight-head">
+          <span class="stage-spotlight-icon">${icon(loaded?.is_platinum ? "crown" : "trophy", 16)}</span>
+          <span class="stage-spotlight-kicker">${esc(t("stage.achievements"))}</span>
+          <strong class="stage-spotlight-pct tabular-nums">${achKnown ? `${achPct}%` : ach.total_achievements}</strong>
+        </div>
+        ${achKnown ? stageProgress(achPct, "stage-progress-thin") : ""}
+        <div class="stage-spotlight-meta">
+          <span class="tabular-nums">${achKnown ? `${ach.user_unlocked} / ${ach.total_achievements} ${esc(t("stage.achUnlocked"))}` : `${ach.total_achievements} ${esc(t("stage.achievements"))}`}</span>
+          ${nextAch ? `<small>${esc(nextAch.display_name || nextAch.name)}</small>` : ""}
+        </div>
+      </div>
+      ${dlBlock}
+    </aside>`;
+  }
+
+  const last = play.lastPlayed > 946684800 ? relativeTime(play.lastPlayed * 1000) : "";
+  return `<aside class="stage-home-spotlight" aria-hidden="true">
+    <div class="stage-spotlight-card">
+      <div class="stage-spotlight-head">
+        <span class="stage-spotlight-icon">${icon("clock", 16)}</span>
+        <span class="stage-spotlight-kicker">${esc(t("stage.playtimeLabel"))}</span>
+        <strong class="stage-spotlight-pct tabular-nums">${play.seconds > 0 ? esc(fmtPlaytime(play.seconds)) : "—"}</strong>
+      </div>
+      <div class="stage-spotlight-meta">
+        <span>${esc(last || (game.installed ? t("stage.ready") : t("stage.notInstalled")))}</span>
+        ${game.installSize > 0 ? `<small class="tabular-nums">${esc(fmtBytes(game.installSize))} · ${esc(stageStoreName(sourceOfKey(game.appName)))}</small>` : `<small>${esc(stageStoreName(sourceOfKey(game.appName)))}</small>`}
+      </div>
+    </div>
+    ${dlBlock}
+  </aside>`;
+}
+
 export function stageHomeHeroHtml(game: EpicSummary): string {
   const store = stageStoreName(sourceOfKey(game.appName));
   const isFav = S.epicFav.has(game.appName);
+  const ach = stageAchievements(game);
+  const achKnown = ach?.progress_known !== false;
+  const hasAch = Boolean(ach && ach.supported && ach.total_achievements > 0);
+  const desc = stageStripHtml(game.description);
 
   return `<div class="stage-home-copy">
     <div class="stage-home-eyebrow">
       <span class="stage-hero-store">${esc(store)}</span>
-      <span class="stage-home-meta">${stageMetaLine(game, { withStore: false })}</span>
+      ${stageStatus(game)}
+      ${stageGenreChips(game, 2)}
+      ${stageCriticChip(game)}
     </div>
     <h1 class="stage-home-title">${esc(game.title)}</h1>
+    ${desc ? `<p class="stage-home-desc">${esc(desc)}</p>` : ""}
+    <div class="stage-home-telemetry stage-stat-row">
+      ${stageGameFactChips(game)}
+      ${hasAch && ach ? `<span class="stage-stat">${icon("trophy", 13)}<b class="tabular-nums">${achKnown ? `${ach.user_unlocked} / ${ach.total_achievements}` : String(ach.total_achievements)}</b></span>` : ""}
+    </div>
     <div class="stage-home-actions">
       <div class="stage-primary-action">${stagePrimaryAction(game)}</div>
-      <button type="button" class="stage-home-more" data-stage-act="scroll-to-hub" data-gp-key="hero:details" aria-label="${esc(t("stage.details"))}">
-        <span>${esc(t("stage.details"))}</span>${icon("chevron-down", 15)}
+      <button type="button" class="stage-home-secondary" data-stage-act="open-program" data-key="${esc(game.appName)}" data-gp-item data-gp-key="hero:program">
+        ${icon("info", 16)}<span>${esc(t("stage.details"))}</span>
+      </button>
+      <button type="button" class="stage-home-more" data-stage-act="scroll-to-hub" data-gp-item data-gp-key="hero:details" aria-label="${esc(t("stage.upNext"))}">
+        <span>${esc(t("stage.upNext"))}</span>${icon("chevron-down", 15)}
       </button>
       <div class="stage-actions-divider" aria-hidden="true"></div>
       <div class="stage-home-utility">
         <button type="button" class="stage-hero-btn" data-stage-act="manage-game" data-key="${esc(game.appName)}" data-gp-item data-gp-key="hero:manage" aria-label="${esc(t("stage.manage"))}">
-          ${icon("dots", 18)}
+          ${icon("sliders", 17)}
         </button>
         <button type="button" class="stage-hero-btn${isFav ? " faved" : ""}" data-stage-act="favorite" data-key="${esc(game.appName)}" data-gp-item data-gp-key="hero:favorite" aria-label="${esc(t("stage.favorite"))}">
-          ${icon("heart", 18)}
+          ${icon("heart", 17)}
         </button>
       </div>
     </div>
-  </div>`;
+  </div>
+  ${heroSpotlightWidget(game)}`;
 }
 
 function resumeActivityCard(game: EpicSummary): string {
   const isRunning = S.runningGames.has(game.appName);
   const play = stageGamePlaytime(game);
+  const last = play.lastPlayed > 946684800 ? relativeTime(play.lastPlayed * 1000) : "";
   return `<button type="button" class="stage-activity-card stage-act-resume${isRunning ? " is-running" : ""}" data-stage-act="open-program" data-key="${esc(game.appName)}" data-gp-item data-gp-key="act:resume">
     <div class="stage-act-media">${stageHeroMarkup(game, "stage-act-bg")}</div>
     <div class="stage-act-scrim"></div>
     <div class="stage-act-body">
-      <span class="stage-kicker${isRunning ? " is-running" : ""}">${isRunning ? `<span class="stage-dot-pulse"></span>${esc(t("common.playing"))}` : esc(t("stage.continue"))}</span>
+      <span class="stage-kicker${isRunning ? " is-running" : ""}">${isRunning ? `<span class="stage-dot-pulse"></span>${esc(t("common.playing"))}` : esc(game.installed ? t("stage.continue") : t("stage.upNext"))}</span>
       <h3 class="stage-act-title">${esc(game.title)}</h3>
-      <span class="stage-act-meta">${play.seconds > 0 ? esc(t("stage.hoursValue", { h: (play.seconds / 3600).toFixed(1) })) : esc(t("playtime.notPlayed"))}</span>
+      <span class="stage-act-meta tabular-nums">${play.seconds > 0 ? esc(t("stage.hoursValue", { h: (play.seconds / 3600).toFixed(1) })) : esc(t("playtime.notPlayed"))}${last ? ` · ${esc(last)}` : ""}</span>
     </div>
     <div class="stage-act-foot">
-      <span class="stage-act-pill">${icon("play", 14)} <span>${esc(isRunning ? t("stage.continue") : t("stage.open"))}</span></span>
+      <span class="stage-act-pill">${icon(game.installed ? "play" : "info", 14)} <span>${esc(isRunning ? t("stage.continue") : t("stage.open"))}</span></span>
     </div>
   </button>`;
 }
@@ -124,12 +220,16 @@ function achievementsActivityCard(game: EpicSummary): string {
   const ach = stageAchievements(game);
   if (!ach || !ach.supported || ach.total_achievements <= 0) {
     const play = stageGamePlaytime(game);
+    const last = play.lastPlayed > 946684800 ? relativeTime(play.lastPlayed * 1000) : "";
     return `<button type="button" class="stage-activity-card stage-act-stats" data-stage-act="open-program" data-key="${esc(game.appName)}" data-gp-item data-gp-key="act:achievements">
-      <div class="stage-act-icon-wrap">${icon("clock", 26)}</div>
+      <div class="stage-act-trophy-head">
+        <div class="stage-act-icon-wrap">${icon("clock", 22)}</div>
+        <div class="stage-act-trophy-count tabular-nums">${play.seconds > 0 ? esc(fmtPlaytime(play.seconds)) : "0m"}</div>
+      </div>
       <div class="stage-act-body">
         <span class="stage-kicker">${esc(t("stage.playtimeLabel"))}</span>
         <h3 class="stage-act-title">${play.seconds > 0 ? esc(t("stage.hoursValue", { h: (play.seconds / 3600).toFixed(1) })) : esc(t("playtime.notPlayed"))}</h3>
-        <span class="stage-act-meta">${esc(play.lastPlayed > 0 ? relativeTime(play.lastPlayed) : t("playtime.notPlayed"))}</span>
+        <span class="stage-act-meta">${esc(last || t("playtime.notPlayed"))}</span>
       </div>
     </button>`;
   }
@@ -142,14 +242,14 @@ function achievementsActivityCard(game: EpicSummary): string {
 
   return `<button type="button" class="stage-activity-card stage-act-trophies" data-stage-act="open-program" data-key="${esc(game.appName)}" data-tab="achievements" data-gp-item data-gp-key="act:achievements">
     <div class="stage-act-trophy-head">
-      <div class="stage-act-icon-wrap">${icon("trophy", 22)}</div>
+      <div class="stage-act-icon-wrap">${icon(loaded?.is_platinum ? "crown" : "trophy", 22)}</div>
       <div class="stage-act-trophy-count tabular-nums">${ach.user_unlocked} / ${ach.total_achievements}</div>
     </div>
     <div class="stage-act-body">
-      <span class="stage-kicker">${esc(t("stage.achievements"))} (${percent}%)</span>
+      <span class="stage-kicker">${esc(t("stage.achievements"))} · <b class="tabular-nums">${percent}%</b></span>
       ${stageProgress(percent, "stage-act-progress")}
       <h3 class="stage-act-title">${percent === 100 ? `${icon("trophy", 15)} ${esc(t("stage.achUnlockedLabel"))}` : esc(nextLocked?.display_name || nextLocked?.name || t("stage.tabAchievements"))}</h3>
-      <span class="stage-act-meta">${esc(percent === 100 ? ach.total_achievements + " / " + ach.total_achievements : (nextLocked?.description || t("stage.achUnlockedLabel")))}</span>
+      <span class="stage-act-meta">${esc(percent === 100 ? `${ach.total_achievements} / ${ach.total_achievements}` : (nextLocked?.description || t("stage.achUnlockedLabel")))}</span>
     </div>
   </button>`;
 }
@@ -159,11 +259,16 @@ function capturesActivityCard(game: EpicSummary): string {
   const first = shots[0];
 
   if (!first) {
-    return `<button type="button" class="stage-activity-card stage-act-info" data-stage-act="open-program" data-key="${esc(game.appName)}" data-tab="extras" data-gp-item data-gp-key="act:captures">
-      <div class="stage-act-icon-wrap">${icon("image", 26)}</div>
+    return `<button type="button" class="stage-activity-card stage-act-info" data-stage-act="open-program" data-key="${esc(game.appName)}" data-tab="media" data-gp-item data-gp-key="act:captures">
+      <div class="stage-act-media">${stageHeroMarkup(game, "stage-act-bg")}</div>
+      <div class="stage-act-scrim"></div>
+      <div class="stage-act-trophy-head">
+        <div class="stage-act-icon-wrap">${icon("camera", 22)}</div>
+        <div class="stage-act-trophy-count tabular-nums">0</div>
+      </div>
       <div class="stage-act-body">
         <span class="stage-kicker">${esc(t("stage.stills"))}</span>
-        <h3 class="stage-act-title">${esc(t("stage.stills"))}</h3>
+        <h3 class="stage-act-title">${esc(t("drawer.screenshots"))}</h3>
         <span class="stage-act-meta">${esc(t("stage.noScreenshots"))}</span>
       </div>
     </button>`;
@@ -172,8 +277,12 @@ function capturesActivityCard(game: EpicSummary): string {
   return `<button type="button" class="stage-activity-card stage-act-capture" data-stage-act="open-still" data-key="${esc(game.appName)}" data-index="0" data-gp-item data-gp-key="act:captures">
     <div class="stage-act-media">${shotThumbHtml(first)}</div>
     <div class="stage-act-scrim"></div>
+    <div class="stage-act-trophy-head">
+      <div class="stage-act-icon-wrap">${icon("camera", 20)}</div>
+      <div class="stage-act-trophy-count tabular-nums">${shots.length}</div>
+    </div>
     <div class="stage-act-body">
-      <span class="stage-kicker">${esc(t("stage.stills"))} (${shots.length})</span>
+      <span class="stage-kicker">${esc(t("stage.stills"))}</span>
       <h3 class="stage-act-title">${esc(first.file_name)}</h3>
       <span class="stage-act-meta">${esc(t("stage.stillsNext"))}</span>
     </div>
@@ -181,14 +290,49 @@ function capturesActivityCard(game: EpicSummary): string {
 }
 
 function detailsActivityCard(game: EpicSummary): string {
-  return `<button type="button" class="stage-activity-card stage-act-hub" data-stage-act="open-program" data-key="${esc(game.appName)}" data-gp-item data-gp-key="act:hub">
-    <div class="stage-act-icon-wrap">${icon("hard-drive", 26)}</div>
+  const store = stageStoreName(sourceOfKey(game.appName));
+  const genreLine = (game.genres ?? []).slice(0, 2).join(" · ");
+  return `<button type="button" class="stage-activity-card stage-act-hub" data-stage-act="open-program" data-key="${esc(game.appName)}" data-tab="extras" data-gp-item data-gp-key="act:hub">
+    <div class="stage-act-trophy-head">
+      <div class="stage-act-icon-wrap">${icon("hard-drive", 22)}</div>
+      <div class="stage-act-trophy-count">${esc(store)}</div>
+    </div>
     <div class="stage-act-body">
       <span class="stage-kicker">${esc(t("stage.installSize"))}</span>
-      <h3 class="stage-act-title">${game.installSize > 0 ? esc(fmtBytes(game.installSize)) : "—"}</h3>
-      <span class="stage-act-meta">${esc(game.installed ? t("stage.installed") : t("stage.notInstalled"))} · ${esc(stageStoreName(sourceOfKey(game.appName)))}</span>
+      <h3 class="stage-act-title tabular-nums">${game.installSize > 0 ? esc(fmtBytes(game.installSize)) : esc(game.installed ? t("stage.installed") : t("stage.notInstalled"))}</h3>
+      <span class="stage-act-meta">${esc(game.installed ? t("stage.installed") : t("stage.notInstalled"))}${genreLine ? ` · ${esc(genreLine)}` : ""}</span>
     </div>
   </button>`;
+}
+
+function readyShelfCard(s: EpicSummary): string {
+  const play = stageGamePlaytime(s);
+  const store = stageStoreName(sourceOfKey(s.appName));
+  const isRunning = S.runningGames.has(s.appName);
+  return `<button type="button" class="stage-ready-card${isRunning ? " is-running" : ""}" data-stage-act="open-program" data-key="${esc(s.appName)}" data-gp-item data-gp-key="ready:${esc(s.appName)}">
+    <span class="stage-ready-art">
+      ${stageCoverMarkup(s, "stage-cover-art", true)}
+      ${isRunning ? `<span class="stage-ribbon-running" aria-hidden="true"></span>` : `<span class="stage-ribbon-installed" aria-hidden="true"></span>`}
+    </span>
+    <span class="stage-ready-copy">
+      <strong>${esc(s.title)}</strong>
+      <small class="tabular-nums">${esc(store)}${play.seconds > 0 ? ` · ${esc(fmtPlaytime(play.seconds))}` : ""}</small>
+    </span>
+  </button>`;
+}
+
+function readyShelfRow(): string {
+  const installed = stageInstalledSummaries(14);
+  if (installed.length === 0) return "";
+  return `<div class="stage-ready-section">
+    <div class="stage-shelf-header">
+      <h2 class="stage-shelf-title">${esc(t("stage.readyShelfTitle"))}</h2>
+      <span class="stage-stat"><i class="is-ready" aria-hidden="true"></i><span>${esc(t("stage.filterInstalled"))}</span><b class="tabular-nums">${installed.length}</b></span>
+    </div>
+    <div class="stage-card-row stage-ready-row" data-gp-row>
+      ${installed.map(readyShelfCard).join("")}
+    </div>
+  </div>`;
 }
 
 function collectionCard(collection: GameCollection): string {
@@ -233,15 +377,14 @@ export function stageHomeActivitiesHtml(game: EpicSummary): string {
     ${capturesActivityCard(game)}
     ${detailsActivityCard(game)}
   </div>
+  ${readyShelfRow()}
   ${collectionsRow()}`;
 }
 
 export function renderStageHome(): string {
   const ribbon = stageRibbonSummaries(24);
   if (ribbon.length === 0) return emptyStage();
-  // Only the explicit display name is shown; an account e-mail is not a
-  // greeting.
-  const profileName = S.customProfileName.trim();
+  const counts = stageFilterCounts();
 
   const focusKey = S.stage.focusKey;
   const focusedGame = focusKey.startsWith("game:")
@@ -265,10 +408,13 @@ export function renderStageHome(): string {
       <div class="stage-home-ribbon">
         <div class="stage-ribbon-track" data-gp-row>
           <button type="button" class="stage-ribbon-card stage-ribbon-library" data-stage-act="go" data-route="library" data-gp-item data-gp-key="home:all-games" aria-label="${esc(t("stage.navLibrary"))}">
-            <span class="stage-ribbon-library-icon">${icon("layout-grid", 26)}</span>
-            <span class="stage-ribbon-label">${esc(t("stage.navLibrary"))}</span>
+            <span class="stage-ribbon-library-icon">${icon("layout-grid", 24)}</span>
+            <span class="stage-ribbon-library-copy">
+              <strong>${esc(t("stage.navLibrary"))}</strong>
+              <small class="tabular-nums">${esc(t("stage.libraryCount", { n: counts.all }))}</small>
+            </span>
           </button>
-          ${ribbon.map((s, idx) => ribbonCard(s, idx === 0)).join("")}
+          ${ribbon.map((s, idx) => ribbonCard(s, idx === 0, s.appName === hero.appName)).join("")}
         </div>
       </div>
 
@@ -336,6 +482,11 @@ export function stageHomeFocus(key: string): void {
   if (!game) return;
   S.stage.homeHeroKey = game.appName;
 
+  // Keep the active ribbon card marked even when focus moves down to the hero.
+  document.querySelectorAll<HTMLElement>(".stage-ribbon-card[data-key]").forEach((card) => {
+    card.classList.toggle("is-active", card.dataset.key === game.appName);
+  });
+
   // 1. Patch the art and hero copy in place. The first focus lands on the
   // already-rendered hero, so skip the identical rebuild.
   const heroEl = document.getElementById("stage-home-hero");
@@ -391,6 +542,13 @@ export function stageHomeFocus(key: string): void {
         // The sheet may have opened while the achievements request was in
         // flight; never re-mark the shelf under it.
         if (homeOverlayOpen()) return;
+        const heroNode = document.getElementById("stage-home-hero");
+        if (heroNode && heroNode.dataset.key === game.appName) {
+          heroNode.innerHTML = stageHomeHeroHtml(game);
+          heroNode.querySelectorAll<HTMLElement>("button, [data-gp-item]").forEach((btn) => {
+            if (!btn.closest("[data-gp-skip]")) btn.setAttribute("data-gp-item", "");
+          });
+        }
         const actEl = document.getElementById("stage-home-activities");
         if (actEl) {
           actEl.innerHTML = stageHomeActivitiesHtml(game);

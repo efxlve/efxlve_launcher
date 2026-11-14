@@ -107,6 +107,7 @@ import { renderStageHome, stageHomeActivitiesHtml, stageHomeFocus, stageHomeHero
 import { patchStageLibrarySide, renderStageLibrary, stageLibraryAppend, stageLibraryFocus, stageLibraryRenderToken } from "./stage-library";
 import {
   stageAchievements,
+  stageFilterCounts,
   stageGameByKey,
   stageGamePlaytime,
   stageHasUpdate,
@@ -462,7 +463,9 @@ function patchStageCardsInPlace(): void {
     }
   }
 
-  const libCards = root.querySelectorAll<HTMLElement>(".stage-cover-card[data-key], .stage-list-row[data-key]");
+  const libCards = root.querySelectorAll<HTMLElement>(
+    ".stage-cover-card[data-key], .stage-list-row[data-key], .stage-ready-card[data-key]",
+  );
   for (const card of libCards) {
     const key = card.dataset.key;
     if (!key) continue;
@@ -477,7 +480,7 @@ function patchStageCardStatuses(): void {
   const root = document.getElementById("stage-root");
   if (!root) return;
   const cards = root.querySelectorAll<HTMLElement>(
-    ".stage-cover-card[data-key], .stage-list-row[data-key]",
+    ".stage-cover-card[data-key], .stage-list-row[data-key], .stage-ready-card[data-key]",
   );
   for (const card of cards) {
     const key = card.dataset.key;
@@ -527,7 +530,9 @@ function patchStageHomeHeroInPlace(hero: EpicSummary): void {
     const isFav = S.epicFav.has(hero.appName);
     const hasDl = epicDlProgress(hero.appName) !== null;
     const heroPlay = stageGamePlaytime(hero);
-    const heroSig = `${hasUpdate ? "1" : "0"}:${isRunning ? "1" : "0"}:${isFav ? "1" : "0"}:${hasDl ? "1" : "0"}:${heroPlay.seconds}:${heroPlay.lastPlayed}:${hero.installed ? "1" : "0"}:${hero.installSize}`;
+    const ach = stageAchievements(hero);
+    const criticLoaded = S.loadedCritic.has(hero.appName) ? "1" : "0";
+    const heroSig = `${hasUpdate ? "1" : "0"}:${isRunning ? "1" : "0"}:${isFav ? "1" : "0"}:${hasDl ? "1" : "0"}:${heroPlay.seconds}:${heroPlay.lastPlayed}:${hero.installed ? "1" : "0"}:${hero.installSize}:${ach?.user_unlocked ?? -1}:${ach?.total_achievements ?? -1}:${criticLoaded}`;
     if (heroWrap.dataset.heroActionSig !== heroSig) {
       heroWrap.dataset.heroActionSig = heroSig;
       heroWrap.innerHTML = stageHomeHeroHtml(hero);
@@ -966,6 +971,8 @@ function hints(): string {
 function quickMenu(entered: boolean): string {
   const dl = stageActiveDownload();
   const unread = unreadCount();
+  const counts = stageFilterCounts();
+  const bat = stageBatteryInfo();
   const padChip = stageControllerChip();
   const runningAppName = Array.from(S.runningGames)[0];
   const runningGame = runningAppName ? stageGameByKey(runningAppName) : null;
@@ -992,6 +999,7 @@ function quickMenu(entered: boolean): string {
         <button type="button" class="stage-dock-item" data-stage-act="go" data-route="library" data-gp-item data-gp-key="dock:library">
           <span class="stage-dock-icon">${icon("layout-grid", 22)}</span>
           <span class="stage-dock-text">${esc(t("stage.navLibrary"))}</span>
+          ${counts.all > 0 ? `<span class="stage-dock-badge is-subtle tabular-nums">${counts.all}</span>` : ""}
         </button>
         <button type="button" class="stage-dock-item" data-stage-act="go" data-route="downloads" data-gp-item data-gp-key="dock:downloads">
           <span class="stage-dock-icon">${icon("download", 22)}</span>
@@ -1001,7 +1009,7 @@ function quickMenu(entered: boolean): string {
         <button type="button" class="stage-dock-item" data-stage-act="open-browser-sheet" data-gp-item data-gp-key="dock:browser"><span class="stage-dock-icon">${icon("globe", 22)}</span><span class="stage-dock-text">${esc(t("overlay.tabBrowser"))}</span></button>
         <button type="button" class="stage-dock-item" data-stage-act="open-spotify-sheet" data-gp-item data-gp-key="dock:spotify"><span class="stage-dock-icon">${icon("spotify", 22)}</span><span class="stage-dock-text">Spotify</span></button>
         <button type="button" class="stage-dock-item" data-stage-act="open-discord-sheet" data-gp-item data-gp-key="dock:discord"><span class="stage-dock-icon">${icon("discord", 22)}</span><span class="stage-dock-text">Discord</span></button>
-        <button type="button" class="stage-dock-item" data-stage-act="open-power-sheet" data-gp-item data-gp-key="dock:power"><span class="stage-dock-icon">${icon("zap", 22)}</span><span class="stage-dock-text">${esc(t("stage.power"))}</span></button>
+        <button type="button" class="stage-dock-item" data-stage-act="open-power-sheet" data-gp-item data-gp-key="dock:power"><span class="stage-dock-icon">${icon("zap", 22)}</span><span class="stage-dock-text">${esc(t("stage.power"))}</span>${bat.available ? `<span class="stage-dock-badge is-subtle tabular-nums">${bat.level}%</span>` : ""}</button>
         <button type="button" class="stage-dock-item" data-stage-act="controls" data-gp-item data-gp-key="dock:controls">
           <span class="stage-dock-icon">${icon("gamepad-2", 22)}</span>
           <span class="stage-dock-text">${esc(t("stage.controller"))}</span>
@@ -1540,7 +1548,7 @@ function bindGlobalFocus(): void {
     if (S.stage.route === "library" && key.startsWith("lib:")) stageLibraryFocus(key);
     if (S.stage.route === "home") {
       if (key.startsWith("game:")) stageHomeFocus(key);
-      if (key.startsWith("act:")) {
+      if (key.startsWith("act:") || key.startsWith("ready:") || key.startsWith("col:")) {
         const hub = document.getElementById("stage-home-activities");
         if (hub) hub.scrollIntoView({ behavior: "smooth", block: "start" });
       } else if (key.startsWith("game:") || key.startsWith("hero:") || key === "home:all-games") {
@@ -1866,6 +1874,17 @@ function bindStageEvents(root: HTMLElement): void {
     switch (action) {
       case "go": if (route) stageGo(route); break;
       case "open-program": {
+        if (
+          S.stage.route === "home" &&
+          stageInputMode === "mouse" &&
+          actionEl.classList.contains("stage-ribbon-card") &&
+          key &&
+          S.stage.homeHeroKey !== key
+        ) {
+          stageFeedback("move");
+          stageHomeFocus(`game:${key}`);
+          break;
+        }
         stageOpenProgram(key);
         if (tab) stageSetTab(tab);
         break;
@@ -2072,7 +2091,7 @@ function bindStageEvents(root: HTMLElement): void {
       if (!S.stage.active) return;
       const target = event.target instanceof Element ? event.target : null;
       const hRow = target?.closest<HTMLElement>(
-        ".stage-ribbon-track, .stage-activity-row, .stage-collection-row, .stage-filter-tabs, .stage-program-tabs",
+        ".stage-ribbon-track, .stage-activity-row, .stage-ready-row, .stage-collection-row, .stage-filter-tabs, .stage-program-tabs",
       );
       if (!hRow) return;
 
@@ -2087,12 +2106,28 @@ function bindStageEvents(root: HTMLElement): void {
     { passive: false },
   );
 
+  // Mouse hover on the Library wall updates the sticky side preview panel in place
+  root.addEventListener(
+    "pointerover",
+    (event) => {
+      if (!S.stage.active || S.stage.route !== "library") return;
+      if (stageInputMode !== "mouse") return;
+      const target = event.target instanceof Element ? event.target : null;
+      const previewEl = target?.closest<HTMLElement>("[data-lib-preview]");
+      const previewKey = previewEl?.dataset.libPreview || "";
+      if (previewKey && S.stage.previewKey !== previewKey) {
+        stageLibraryFocus(`lib:${previewKey}`);
+      }
+    },
+    { passive: true },
+  );
+
   // Mouse drag-to-scroll on horizontal carousels
   root.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
     const target = event.target instanceof Element ? event.target : null;
     const hRow = target?.closest<HTMLElement>(
-      ".stage-ribbon-track, .stage-activity-row, .stage-collection-row",
+      ".stage-ribbon-track, .stage-activity-row, .stage-ready-row, .stage-collection-row",
     );
     if (!hRow) return;
     dragTrack = hRow;

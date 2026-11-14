@@ -222,4 +222,44 @@ export function stageControllerChip(): string {
   return `<span class="stage-stat">${icon("gamepad-2", 13)}<i class="${connected ? "is-ready" : "is-off"}" aria-hidden="true"></i><span>${esc(name)}</span>${connected && percent !== null ? `<b class="tabular-nums">${percent}%</b>` : ""}</span>`;
 }
 
+/** Strip raw store HTML tags so synopses read cleanly on Home, Library and Programme. */
+export function stageStripHtml(raw: string | undefined | null): string {
+  if (!raw) return "";
+  return raw
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<\/p>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Release year and top genre pills for hero and preview headers. */
+export function stageGenreChips(s: EpicSummary, maxGenres = 2): string {
+  const parts: string[] = [];
+  if (s.releaseYear && s.releaseYear > 1970) {
+    parts.push(`<span class="stage-meta-pill tabular-nums">${s.releaseYear}</span>`);
+  }
+  const genres = (s.genres ?? []).filter(Boolean).slice(0, maxGenres);
+  for (const g of genres) {
+    parts.push(`<span class="stage-meta-pill">${esc(g)}</span>`);
+  }
+  return parts.join("");
+}
+
+/** Critic score pill when already cached for this title. */
+export function stageCriticChip(s: EpicSummary): string {
+  const critic = S.loadedCritic.get(s.appName);
+  const score = critic?.metacritic_score || critic?.opencritic_score;
+  if (!score || score <= 0) return "";
+  const tone = score >= 75 ? "is-good" : score >= 50 ? "is-avg" : "is-bad";
+  return `<span class="stage-critic-pill ${tone} tabular-nums" title="Metacritic / OpenCritic">${icon("star", 11)}<b>${score}</b></span>`;
+}
+
+
 

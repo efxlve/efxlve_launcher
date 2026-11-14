@@ -60,7 +60,8 @@
   transform: scale(1.1) !important;
 }
 
-#stage-root .stage-home-more.gp-focused {
+#stage-root .stage-home-more.gp-focused,
+#stage-root .stage-home-secondary.gp-focused {
   outline: none !important;
   border-radius: 9999px !important;
   border-color: #ffffff !important;
@@ -92,14 +93,16 @@
     0 0 22px rgba(34, 197, 94, 0.28) !important;
 }
 
-#stage-root .stage-cover-card.gp-focused {
+#stage-root .stage-cover-card.gp-focused,
+#stage-root .stage-ready-card.gp-focused {
   outline: none !important;
   /* The frame owns the shadow. The generic focus shadow would also paint
      behind the title row, where a second near-black band reads as a slab. */
   box-shadow: none !important;
   transform: translateY(-5px) !important;
 }
-#stage-root .stage-cover-card.gp-focused .stage-cover-frame {
+#stage-root .stage-cover-card.gp-focused .stage-cover-frame,
+#stage-root .stage-ready-card.gp-focused .stage-ready-frame {
   outline: none !important;
   border-color: #ffffff !important;
   box-shadow:
@@ -437,6 +440,12 @@
     min-height: 220px;
   }
   .stage-program-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .stage-program-hero-aside {
+    display: none;
+  }
+  .stage-ach-list {
     grid-template-columns: minmax(0, 1fr);
   }
   .stage-net-label {

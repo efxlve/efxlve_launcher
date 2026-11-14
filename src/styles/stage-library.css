@@ -239,10 +239,14 @@
     border-color 220ms var(--stage-ease),
     box-shadow 220ms var(--stage-ease);
 }
+.stage-cover-card.is-previewed .stage-cover-frame {
+  border-color: rgba(255, 255, 255, 0.36);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.6), 0 0 16px rgba(255, 255, 255, 0.14);
+}
 .stage-cover-card:hover .stage-cover-frame {
   transform: translateY(-4px) scale(1.03);
-  border-color: rgba(255, 255, 255, 0.4);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55), 0 0 20px rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 255, 255, 0.18);
 }
 .stage-cover-card.gp-focused .stage-cover-frame {
   transform: translateY(-6px) scale(1.06) !important;
@@ -264,31 +268,59 @@
   position: absolute;
   inset-block-start: 7px;
   inset-inline-start: 7px;
-  max-width: calc(100% - 14px);
+  max-width: calc(100% - 34px);
   min-height: 20px;
-  padding: 2px 6px;
-  background: rgba(0, 0, 0, 0.62);
+  padding: 2px 7px;
+  background: rgba(6, 8, 14, 0.74);
+  backdrop-filter: blur(8px);
   font-size: 9px;
-  opacity: 0;
+  opacity: 0.92;
   transition: opacity 140ms var(--stage-ease);
 }
 .stage-cover-card:hover .stage-cover-frame > .stage-status,
 .stage-cover-card.gp-focused .stage-cover-frame > .stage-status {
   opacity: 1;
 }
+.stage-cover-fav {
+  position: absolute;
+  inset-block-start: 7px;
+  inset-inline-end: 7px;
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(8, 10, 16, 0.74);
+  color: #fb7185;
+  z-index: 4;
+}
+.stage-cover-fav svg {
+  fill: currentColor;
+}
 .stage-cover-title {
   overflow: hidden;
-  color: var(--stage-ink-3);
-  font-size: 11.5px;
-  font-weight: 500;
+  color: var(--stage-ink-2);
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
   transition: color 140ms var(--stage-ease);
 }
 .stage-cover-card.gp-focused .stage-cover-title,
+.stage-cover-card.is-previewed .stage-cover-title,
 .stage-cover-card:hover .stage-cover-title {
-  color: var(--stage-ink);
+  color: #ffffff;
+}
+.stage-cover-sub {
+  overflow: hidden;
+  color: var(--stage-ink-4);
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-block-start: -3px;
 }
 
 .stage-wall-list {
@@ -313,14 +345,27 @@
   cursor: pointer;
   transition: all 140ms var(--stage-ease);
 }
+.stage-list-row.is-previewed {
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(255, 255, 255, 0.16);
+}
 .stage-list-row:hover {
-  background: rgba(255, 255, 255, 0.045);
+  background: rgba(255, 255, 255, 0.065);
 }
 .stage-list-row.gp-focused {
   background: rgba(255, 255, 255, 0.12) !important;
   border-color: #ffffff !important;
   box-shadow: 0 0 0 2px #ffffff, 0 0 20px rgba(255, 255, 255, 0.35) !important;
   transform: translateX(4px);
+}
+.stage-list-fav {
+  display: inline-grid;
+  place-items: center;
+  color: #fb7185;
+  flex-shrink: 0;
+}
+.stage-list-fav svg {
+  fill: currentColor;
 }
 .stage-list-cover {
   flex: 0 0 43px;
@@ -419,27 +464,53 @@
 .stage-side-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: clamp(15px, 1.7vw, 21px);
+  gap: 10px;
+  padding: clamp(16px, 1.8vw, 22px);
+}
+.stage-side-eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
 }
 .stage-side-store {
-  color: var(--stage-ink-3);
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
   font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
+  font-weight: 750;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 .stage-side-title {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   overflow: hidden;
   margin: 0;
   font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
-  font-size: clamp(21px, 1.8vw, 44px);
-  font-weight: 600;
-  line-height: 1.02;
-  letter-spacing: -0.025em;
+  font-size: clamp(20px, 1.55vw, 30px);
+  font-weight: 750;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+.stage-side-desc {
+  margin: 0;
+  color: var(--stage-ink-2);
+  font-size: 12px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+.stage-side-desc[hidden] {
+  display: none;
 }
 .stage-side-meta {
   gap: 6px;

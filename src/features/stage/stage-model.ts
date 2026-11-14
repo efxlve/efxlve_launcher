@@ -264,6 +264,16 @@ export function stageUserCollections(limit = 8): GameCollection[] {
     .slice(0, limit);
 }
 
+/** Installed games ordered by recent activity for the Home "Ready to Play" shelf. */
+export function stageInstalledSummaries(limit = 14): EpicSummary[] {
+  return recentOrder(stageBaseSummaries().filter((s) => s.installed)).slice(0, limit);
+}
+
+/** Favorited games ordered by recent activity for Home quick access. */
+export function stageFavoriteSummaries(limit = 14): EpicSummary[] {
+  return recentOrder(stageBaseSummaries().filter((s) => S.epicFav.has(s.appName))).slice(0, limit);
+}
+
 /** First four representative keys for a collection's cover mosaic. */
 export function stageCollectionCoverKeys(collection: GameCollection): string[] {
   return collectionGames(collection).slice(0, 4);

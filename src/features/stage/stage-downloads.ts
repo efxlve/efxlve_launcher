@@ -13,6 +13,8 @@ import { stageProgress, stageStoreName } from "./stage-ui";
 import { sourceOfKey } from "../../core/selectors";
 
 function downloadRow(id: string, title: string, progress: number): string {
+  const summary = stageGameByKey(id);
+  const store = summary ? stageStoreName(sourceOfKey(summary.appName)) : "";
   const metrics = S.activeDlMetrics && S.activeDlMetrics.id === id ? S.activeDlMetrics : null;
   const amazon = id.startsWith("amazon::");
   const paused = !amazon && (id.startsWith("gog::") ? S.gogDlPaused : S.dlQueueStatus.isPaused);
@@ -23,14 +25,17 @@ function downloadRow(id: string, title: string, progress: number): string {
     ? `${fmtBytes(metrics.downloadedBytes)} / ${fmtBytes(metrics.totalBytes)}`
     : "";
   return `<div class="stage-download-row" data-stage-dl-row="${esc(id)}">
-    <span class="stage-download-icon">${icon("download", 22)}</span>
+    ${summary
+      ? `<span class="stage-list-cover">${stageCoverMarkup(summary, "stage-cover-art")}</span>`
+      : `<span class="stage-download-icon">${icon("download", 22)}</span>`}
     <div class="stage-download-main">
       <div class="stage-download-head">
-        <strong>${esc(title)}</strong>
+        <strong>${esc(summary?.title || title)}</strong>
         <span class="stage-download-pct tabular-nums" data-stage-dl-pct="${esc(id)}">${percent}%</span>
       </div>
       ${stageProgress(percent, paused ? "stage-progress-paused" : "", `data-stage-dl-bar="${esc(id)}"`)}
       <div class="stage-download-meta">
+        ${store ? `<span class="stage-stat">${icon("layers", 12)}<span>${esc(store)}</span></span>` : ""}
         <span class="stage-stat stage-download-state${paused ? " is-paused" : ""}">${icon(paused ? "pause" : "download", 12)}<span>${esc(paused ? t("dl.statusPaused") : metrics?.phase === "starting" ? t("dl.starting") : metrics?.phase === "finishing" ? t("dl.finishing") : t("dl.statusActive"))}</span></span>
         ${speed ? `<span class="stage-download-fact" data-stage-dl-speed="${esc(id)}">${icon("zap", 12)}<span>${esc(speed)}</span></span>` : ""}
         ${eta ? `<span class="stage-download-fact" data-stage-dl-eta="${esc(id)}">${icon("timer", 12)}<span>${esc(eta)}</span></span>` : ""}
@@ -38,6 +43,7 @@ function downloadRow(id: string, title: string, progress: number): string {
       </div>
     </div>
     <div class="stage-download-actions" data-gp-row>
+      ${summary ? `<button type="button" class="stage-btn stage-btn-ghost" data-stage-act="open-program" data-key="${esc(summary.appName)}" data-gp-item data-gp-key="dl:details:${esc(id)}"><span>${esc(t("stage.details"))}</span></button>` : ""}
       ${amazon ? "" : paused
         ? `<button type="button" class="stage-btn stage-btn-ghost" data-act="dl-resume" data-id="${esc(id)}" data-gp-item data-gp-key="dl:toggle:${esc(id)}">${icon("play", 16)}<span>${esc(t("downloads.resume"))}</span></button>`
         : `<button type="button" class="stage-btn stage-btn-ghost" data-act="dl-pause" data-id="${esc(id)}" data-gp-item data-gp-key="dl:toggle:${esc(id)}">${icon("pause", 16)}<span>${esc(t("downloads.pause"))}</span></button>`}
@@ -78,11 +84,16 @@ function updateRow(s: ReturnType<typeof stageBaseSummaries>[number]): string {
 
 function queueRow(id: string, index: number, total: number): string {
   const summary = stageGameByKey(id);
+  const store = summary ? stageStoreName(sourceOfKey(summary.appName)) : "";
   return `<div class="stage-queue-row">
     <span class="stage-queue-index tabular-nums">${index + 1}</span>
+    ${summary ? `<span class="stage-list-cover">${stageCoverMarkup(summary, "stage-cover-art")}</span>` : ""}
     <span class="stage-queue-copy">
       <strong>${esc(summary?.title || id)}</strong>
-      <span class="stage-stat stage-queue-state">${icon("clock", 12)}<span>${esc(t("stage.queueWaiting"))}</span></span>
+      <span class="stage-stat stage-queue-state">
+        ${icon("clock", 12)}<span>${esc(t("stage.queueWaiting"))}</span>
+        ${store ? ` · <span>${esc(store)}</span>` : ""}
+      </span>
     </span>
     <span class="stage-queue-actions" data-gp-row>
       <button type="button" class="stage-icon-btn" data-act="dl-reorder-up" data-id="${esc(id)}" data-gp-item data-gp-key="dl:up:${esc(id)}" ${index === 0 ? "disabled" : ""} aria-label="${esc(t("dl.moveUp"))}">${icon("chevron-up", 16)}</button>

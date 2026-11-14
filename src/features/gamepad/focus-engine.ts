@@ -486,6 +486,22 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
   }
   // The same contract for the programme tabs: Down enters the tab body at its
   // first control, not the still or card that happens to sit under the tab.
+  if (S.stage.active && dir === "down" && origin.closest(".stage-program-actions")) {
+    const activeTab = document.querySelector<HTMLElement>(".stage-program-tab.active")
+      ?? document.querySelector<HTMLElement>(".stage-program-tabs [data-gp-item]");
+    if (activeTab && isVisibleEl(activeTab)) {
+      setFocus(activeTab);
+      return;
+    }
+  }
+  if (S.stage.active && dir === "up" && origin.closest(".stage-program-tabs")) {
+    const primary = document.querySelector<HTMLElement>(".stage-program-actions [data-gp-key='primary']")
+      ?? document.querySelector<HTMLElement>(".stage-program-actions [data-gp-item]");
+    if (primary && isVisibleEl(primary)) {
+      setFocus(primary);
+      return;
+    }
+  }
   if (S.stage.active && dir === "down" && origin.closest(".stage-program-tabs")) {
     const first = document.querySelector<HTMLElement>(".stage-program-content [data-gp-item]");
     if (first && isVisibleEl(first)) {
@@ -493,11 +509,16 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
       return;
     }
   }
-  // Up from the first control in a programme tab returns to the owning tab,
+  // Up from the top row in a programme tab returns to the owning tab,
   // not to the leftmost tab that happens to be closer horizontally.
   if (S.stage.active && dir === "up" && origin.closest(".stage-program-content")) {
-    const first = document.querySelector<HTMLElement>(".stage-program-content [data-gp-item]");
-    if (first === origin) {
+    const contentCandidates = candidates.filter((el) => el.closest(".stage-program-content"));
+    const bestInContent = contentCandidates.some((el) => {
+      if (el === origin) return false;
+      const r = el.getBoundingClientRect();
+      return r.top + r.height / 2 < curCenter.y - moveY;
+    });
+    if (!bestInContent) {
       const activeTab = document.querySelector<HTMLElement>(".stage-program-tab.active");
       if (activeTab && isVisibleEl(activeTab)) {
         setFocus(activeTab);
@@ -605,17 +626,39 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
         }
       }
     } else if (inHub) {
-      if (dir === "up") {
+      if (dir === "up" || dir === "down") {
         const hubCandidates = candidates.filter((el) => el.closest("#stage-home-activities"));
-        const bestHubAbove = scan(hubCandidates);
-        if (bestHubAbove && bestHubAbove.getBoundingClientRect().bottom < curRect.top) {
-          setFocus(bestHubAbove);
+        let best: HTMLElement | null = null;
+        let bestDy = Infinity;
+        let bestDx = Infinity;
+        for (const el of hubCandidates) {
+          if (el === origin) continue;
+          if (curRow && curRow === el.closest("[data-gp-row]")) continue;
+          const r = el.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0) continue;
+          const dy = r.top + r.height / 2 - curCenter.y;
+          if (dir === "down" ? dy <= moveY : dy >= -moveY) continue;
+          const dist = Math.abs(dy);
+          const dx = Math.abs(r.left + r.width / 2 - curCenter.x);
+          if (dist < bestDy - 12 || (Math.abs(dist - bestDy) <= 12 && dx < bestDx)) {
+            best = el;
+            bestDy = dist;
+            bestDx = dx;
+          }
+        }
+        if (best) {
+          setFocus(best);
           return;
         }
-        const primary = document.querySelector<HTMLElement>("#stage-home-hero [data-gp-key='primary']")
-          ?? document.querySelector<HTMLElement>("#stage-home-hero [data-gp-item]");
-        if (primary && isVisibleEl(primary)) {
-          setFocus(primary);
+        if (dir === "up") {
+          const primary = document.querySelector<HTMLElement>("#stage-home-hero [data-gp-key='primary']")
+            ?? document.querySelector<HTMLElement>("#stage-home-hero [data-gp-item]");
+          if (primary && isVisibleEl(primary)) {
+            setFocus(primary);
+            return;
+          }
+        } else {
+          stageBridge()?.bump?.(dir);
           return;
         }
       }
@@ -711,6 +754,49 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
     if (filter) {
       setFocus(filter);
       return;
+    }
+  }
+  if (S.stage.active && S.stage.route === "library") {
+    const inWall = Boolean(origin.closest(".stage-library-wall"));
+    const inSide = Boolean(origin.closest(".stage-library-side"));
+    if (inWall && (dir === "up" || dir === "down")) {
+      const wallCandidates = candidates.filter((el) => el.closest(".stage-library-wall"));
+      const bestInWall = scan(wallCandidates);
+      if (bestInWall) {
+        setFocus(bestInWall);
+        return;
+      }
+      if (dir === "up") {
+        const tool = nearestByX(".stage-library-tools [data-gp-item]")
+          ?? nearestByX(".stage-filter-tabs [data-gp-item]");
+        if (tool) {
+          setFocus(tool);
+          return;
+        }
+      } else {
+        stageBridge()?.bump?.(dir);
+        return;
+      }
+    }
+    if (inSide && dir === "left") {
+      const sideRowCandidates = curRow
+        ? candidates.filter((el) => el.closest("[data-gp-row]") === curRow)
+        : [];
+      const bestInSideRow = scan(sideRowCandidates);
+      if (bestInSideRow) {
+        setFocus(bestInSideRow);
+        return;
+      }
+      const previewKey = S.stage.previewKey;
+      const previewCard = previewKey
+        ? document.querySelector<HTMLElement>(`.stage-library-wall [data-gp-key="lib:${CSS.escape(previewKey)}"]`)
+        : null;
+      const wallFallback = (previewCard && isVisibleEl(previewCard) ? previewCard : null)
+        ?? document.querySelector<HTMLElement>(".stage-library-wall [data-gp-item]");
+      if (wallFallback && isVisibleEl(wallFallback)) {
+        setFocus(wallFallback);
+        return;
+      }
     }
   }
   // The Discord friend grid wraps into rows whose last row can start in
