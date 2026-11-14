@@ -237,6 +237,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_open_local_backups_root` | `epicOpenLocalBackupsRoot({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_open_screenshot_dir` | `epicOpenScreenshotDir({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_pause_download` | `epicPauseDownload({ ... })` | `src-tauri/src/legendary/transfers/queue.rs` |
+| `epic_pending_install_dir` | `epicPendingInstallDir({ ... })` | `src-tauri/src/legendary/transfers/queue.rs` |
 | `epic_presence_clear` | `epicPresenceClear({ ... })` | `src-tauri/src/presence.rs` |
 | `epic_presence_configure` | `epicPresenceConfigure({ ... })` | `src-tauri/src/presence.rs` |
 | `epic_presence_update` | `epicPresenceUpdate({ ... })` | `src-tauri/src/presence.rs` |

@@ -70,6 +70,9 @@ export interface EpicSettings {
 export const epicInstallGame = (appName: string, installDir?: string) =>
   // Note: Tauri command arguments are camelCase by default (even if Rust uses snake_case)!
   invoke<string>("epic_install_game", { appName, installDir: installDir ?? null });
+/** Folder a paused/crashed transfer already writes to, if any. */
+export const epicPendingInstallDir = (appName: string) =>
+  invoke<string | null>("epic_pending_install_dir", { appName });
 export const epicResumePendingDownload = () =>
   invoke<string>("epic_resume_pending_download");
 export const epicCancelDownload = (appName: string) =>

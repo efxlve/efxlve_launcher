@@ -2283,6 +2283,7 @@ fn main() {
             presence::epic_presence_clear,
             legendary::transfers::epic_install_game,
             legendary::transfers::epic_install_with_options,
+            legendary::transfers::epic_pending_install_dir,
             legendary::transfers::epic_resume_pending_download,
             legendary::transfers::epic_pause_download,
             legendary::transfers::epic_resume_download,

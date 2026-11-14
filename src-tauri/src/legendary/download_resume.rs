@@ -80,7 +80,9 @@ pub fn commit_stop(path: &Path, app_name: &str, stop: DownloadStop) -> StopPlan 
     plan
 }
 
-/// Saved base path and tags win so a retry cannot land in an empty folder.
+/// A folder the user chose (or the pending record's own path) wins; the saved
+/// path is the fallback for a resume that carries none. Saved tags stay when
+/// the request has none, so a paused selective install resumes with its packs.
 pub fn merge_resume(saved: Option<&ResumeRecord>, requested: ResumeRecord) -> ResumeRecord {
     let Some(saved) = saved else {
         return requested;
@@ -90,12 +92,12 @@ pub fn merge_resume(saved: Option<&ResumeRecord>, requested: ResumeRecord) -> Re
     }
     ResumeRecord {
         app_name: requested.app_name,
-        install_tags: if saved.install_tags.is_empty() {
-            requested.install_tags
-        } else {
+        install_tags: if requested.install_tags.is_empty() {
             saved.install_tags.clone()
+        } else {
+            requested.install_tags
         },
-        install_dir: saved.install_dir.clone().or(requested.install_dir),
+        install_dir: requested.install_dir.or_else(|| saved.install_dir.clone()),
     }
 }
 
@@ -217,7 +219,7 @@ mod tests {
     }
 
     #[test]
-    fn merge_resume_keeps_the_saved_base_path_and_tags() {
+    fn merge_resume_prefers_the_requested_folder_and_keeps_saved_tags() {
         let saved = sample(r"D:\Games");
         let requested = ResumeRecord {
             app_name: "fortnite".into(),
@@ -225,8 +227,31 @@ mod tests {
             install_dir: Some(r"C:\Users\Efe\Games".into()),
         };
         let merged = merge_resume(Some(&saved), requested);
-        assert_eq!(merged.install_dir.as_deref(), Some(r"D:\Games"));
+        assert_eq!(merged.install_dir.as_deref(), Some(r"C:\Users\Efe\Games"));
         assert_eq!(merged.install_tags, vec!["en".to_string()]);
+
+        // A retry that does not choose a folder (auto-update, pending resume)
+        // stays on the saved path.
+        let resumed = merge_resume(
+            Some(&saved),
+            ResumeRecord {
+                app_name: "fortnite".into(),
+                install_tags: Vec::new(),
+                install_dir: None,
+            },
+        );
+        assert_eq!(resumed.install_dir.as_deref(), Some(r"D:\Games"));
+
+        // An explicit new selection replaces the saved tags too.
+        let replaced = merge_resume(
+            Some(&saved),
+            ResumeRecord {
+                app_name: "fortnite".into(),
+                install_tags: vec!["fr".into()],
+                install_dir: None,
+            },
+        );
+        assert_eq!(replaced.install_tags, vec!["fr".to_string()]);
 
         let fresh = merge_resume(
             None,

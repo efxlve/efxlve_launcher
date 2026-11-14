@@ -28,6 +28,7 @@ import {
   epicGetInstallOptions,
   epicGetSettings,
   epicInstallFolderName,
+  epicPendingInstallDir,
   epicSaveGameSettings,
   epicSelectFolderDialog,
   getThirdPartyLauncher,
@@ -121,13 +122,23 @@ export async function openInstallDialog(appName: string): Promise<void> {
   S.installDialogDir = S.epicSettingsCache?.install_dir || S.epicDefaultDir || "";
   renderInstallDialog();
 
-  const [dirDefault, autoShortcut] = await Promise.all([
+  const [dirDefault, autoShortcut, pendingDir] = await Promise.all([
     S.installDialogDir ? Promise.resolve(S.installDialogDir) : resolveDefaultDir(),
     epicGetAutoDesktopShortcut().catch(() => true),
+    epicPendingInstallDir(appName).catch(() => null),
   ]);
   if (S.installDialogAppName !== appName) return;
-  // Never clobber a path the user typed while the defaults were loading.
-  if (!S.installDialogDir) S.installDialogDir = dirDefault;
+  // A paused/crashed transfer continues in its own folder. Only apply it while
+  // the user has not edited the field.
+  const dirInput = document.getElementById("install-dir-input") as HTMLInputElement | null;
+  const untouched = !dirInput || dirInput.value === S.installDialogDir;
+  if (pendingDir && untouched) {
+    S.installDialogDir = pendingDir;
+    if (dirInput) dirInput.value = pendingDir;
+    updateInstallFinalPath();
+  } else if (!S.installDialogDir) {
+    S.installDialogDir = dirDefault;
+  }
   S.installDialogShortcut = autoShortcut;
 
   try {

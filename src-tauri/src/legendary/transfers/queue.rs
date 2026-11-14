@@ -1582,10 +1582,21 @@ pub async fn epic_install_with_options(
     start_download_with_tags(&app, app_name, install_tags, install_dir)
 }
 
+/// The folder a paused/crashed transfer already writes to. The install dialog
+/// uses it as the default so an explicit confirm cannot move a partial install
+/// to another drive.
+#[tauri::command]
+pub fn epic_pending_install_dir(app_name: String) -> Option<String> {
+    crate::legendary::download_resume::load_one(
+        &crate::legendary::download_resume::resumes_path(),
+        &app_name,
+    )
+    .and_then(|record| record.install_dir)
+}
+
 /// Restores the last active download after the launcher process was restarted.
 #[tauri::command]
-pub async fn epic_resume_pending_download(app: AppHandle) -> Result<String, String> {
-    let path = pending_download_path();
+pub async fn epic_resume_pending_download(app: AppHandle) -> Result<String, String> {    let path = pending_download_path();
     let pending = std::fs::read_to_string(&path)
         .ok()
         .and_then(|text| serde_json::from_str::<PendingDownload>(&text).ok());
