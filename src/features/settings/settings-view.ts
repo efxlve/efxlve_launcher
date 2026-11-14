@@ -53,7 +53,6 @@ import { loadSavedAccounts } from "../auth/account-switcher";
 import { appUpdateBlockedBy, appUpdateInstallBlocked } from "../updates/update-manager";
 import { renderEosSettingsRow, syncEosNotice } from "../eos/eos-install";
 import {
-  controllerConnectedPads,
   controllerSupportStatus,
   launchersStatus,
   eosOverlayStatus,
@@ -82,7 +81,6 @@ import {
   epicGetAllScreenshots,
   epicDeleteGameScreenshot,
   type EglDetectedGame,
-  type ConnectedController,
   type GameScreenshotItem,
   type ScreenshotMoveInfo,
 } from "../../epic";
@@ -111,7 +109,7 @@ import { pcCheckResultHtml } from "./pc-check";
 import { storeLogo } from "../store/store-logos";
 import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, getSteamTryRate } from "../store/store-view";
 import { companionGetClientSettings, eaDefaultInstallDir, eaDirectStatus, eaInstallDir, ubiDefaultInstallDir, ubiDirectProbe, ubiDirectStatus, ubiInstallDir } from "../../companion";
-import { controllerKind } from "../gamepad/gamepad";
+import { controllerKind, refreshConnectedControllers } from "../gamepad/gamepad";
 import {
   achievementClearCustomSound,
   achievementGetNotificationOptions,
@@ -2527,78 +2525,31 @@ export async function loadControllerView(force = false): Promise<void> {
   }
   if (S.controllerBridge && !force) {
     render();
-    startControllerPoll();
     return;
   }
-  const [status, pads] = await Promise.all([
-    controllerSupportStatus().catch(() => ({
-      viEmBus: false,
-      steam: false,
-      steamPath: "",
-      bridgeRunning: false,
-      bridgeDevice: "",
-    })),
-    controllerConnectedPads().catch(() => [] as ConnectedController[]),
-  ]);
-  S.controllerBridge = status;
-  S.connectedControllers = pads;
+  S.controllerBridge = await controllerSupportStatus().catch(() => ({
+    viEmBus: false,
+    steam: false,
+    steamPath: "",
+    bridgeRunning: false,
+    bridgeDevice: "",
+  }));
+  await refreshConnectedControllers();
   render();
-  startControllerPoll();
 }
 
 /**
- * Re-reads the HID pad list; only a change repaints, so the poll below cannot
- * cost a frame when nothing was plugged in or out.
+ * Repaints the section when the pad list changes, and when the Gamepad API
+ * flips a pad from "press a button" to active.
  */
-async function refreshConnectedPads(): Promise<void> {
-  try {
-    const pads = await controllerConnectedPads();
-    const changed = JSON.stringify(pads) !== JSON.stringify(S.connectedControllers);
-    S.connectedControllers = pads;
-    if (changed) render();
-  } catch {
-    /* Keep the last list; the Gamepad API rows still work. */
-  }
-}
-
-let controllerPollTimer: number | null = null;
-
-function stopControllerPoll(): void {
-  if (controllerPollTimer !== null) {
-    window.clearInterval(controllerPollTimer);
-    controllerPollTimer = null;
-  }
-}
-
-/**
- * Keeps the section live while it is open, so a pad plugged in after it was
- * opened shows up without pressing Check again. The timer stops itself once
- * the user leaves the section.
- */
-function startControllerPoll(): void {
-  stopControllerPoll();
-  controllerPollTimer = window.setInterval(() => {
-    if (S.view !== "settings" || S.settingsSection !== "controller") {
-      stopControllerPoll();
-      return;
-    }
-    void refreshConnectedPads();
-  }, 2000);
-}
-
-/**
- * Chromium only lists a connected pad once one of its buttons is pressed, and
- * this is the moment it does: repaint so a "press a button" row turns into an
- * active pad without a manual refresh.
- */
-function onControllerListChanged(): void {
+function repaintControllerSection(): void {
   if (S.view !== "settings" || S.settingsSection !== "controller") return;
   render();
-  void refreshConnectedPads();
 }
 
-window.addEventListener("gamepadconnected", onControllerListChanged);
-window.addEventListener("gamepaddisconnected", onControllerListChanged);
+window.addEventListener("gamepadconnected", repaintControllerSection);
+window.addEventListener("gamepaddisconnected", repaintControllerSection);
+window.addEventListener("controller-list-changed", repaintControllerSection);
 
 /** Loads the store client rows for Settings > Launchers. */
 export async function loadLaunchersView(force = false): Promise<void> {

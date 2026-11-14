@@ -919,6 +919,7 @@
   "gamepad.inspectTrophies": "Voir les trophées",
   "gamepad.detail": "Détails",
   "gamepad.connected": "Manette connectée : {name}",
+  "gamepad.disconnected": "Manette déconnectée : {name}",
   "controller.padsTitle": "Manettes connectées",
   "controller.connected": "Connectée",
   "controller.none": "Aucune manette connectée",

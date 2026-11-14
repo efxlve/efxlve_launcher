@@ -919,6 +919,7 @@
   "gamepad.inspectTrophies": "Trophäen ansehen",
   "gamepad.detail": "Details",
   "gamepad.connected": "Controller verbunden: {name}",
+  "gamepad.disconnected": "Controller getrennt: {name}",
   "controller.padsTitle": "Verbundene Controller",
   "controller.connected": "Verbunden",
   "controller.none": "Kein Controller verbunden",

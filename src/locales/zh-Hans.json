@@ -919,6 +919,7 @@
   "gamepad.inspectTrophies": "查看奖杯",
   "gamepad.detail": "详情",
   "gamepad.connected": "已连接控制器：{name}",
+  "gamepad.disconnected": "已断开控制器：{name}",
   "controller.padsTitle": "已连接的控制器",
   "controller.connected": "已连接",
   "controller.none": "未连接控制器",

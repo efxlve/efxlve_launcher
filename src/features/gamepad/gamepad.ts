@@ -12,7 +12,7 @@ import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
 import type { ControllerKind } from "../../core/types";
-import { controllerSupportStatus } from "../../epic";
+import { controllerConnectedPads, controllerSupportStatus, type ConnectedController } from "../../epic";
 import { closeNotifPanel, pushNotification } from "../notifications/notifications";
 import { setFullscreenMode, toggleFullscreenMode } from "./fullscreen-mode";
 import { closeAllModals } from "../../core/render";
@@ -27,6 +27,7 @@ import { isControllerKeyboardOpen, openControllerKeyboard, closeControllerKeyboa
 import { faceGlyph, bumperGlyphs, triggerGlyphs, systemGlyph, hudItem } from "./pad-hints";
 import { stepCouchPage } from "./couch-pages";
 import { isTextEntryTarget } from "./text-entry";
+import { PadNotices, type PadNotice } from "./pad-notices";
 
 /** Analog stick deadzone used by the poller. */
 const STICK_DEADZONE = 0.42;
@@ -373,6 +374,9 @@ function launcherGainedFocus(): void {
   prevButtons = heldPadMask();
   repeatDir = null;
   schedulePoll(0);
+  // A pad plugged in or removed while the launcher was behind another window
+  // is announced now, when the notice can actually be seen.
+  void refreshConnectedControllers();
 }
 
 function launcherLostFocus(): void {
@@ -652,10 +656,45 @@ function bindPad(gp: Gamepad): void {
   S.gamepadBattery = batteryState && Number.isFinite(batteryState.level) ? (batteryState.level ?? null) : null;
 }
 
+/** How often the HID pad list is read while the launcher is in front. */
+const CONTROLLER_WATCH_MS = 4000;
+
+const padNotices = new PadNotices();
+
+function showPadNotice(notice: PadNotice | null): void {
+  if (!notice) return;
+  const key = notice.connected ? "gamepad.connected" : "gamepad.disconnected";
+  toast(t(key, { name: notice.name }), notice.connected ? "ok" : "");
+}
+
+/**
+ * Reads the HID pad list and announces what changed.
+ *
+ * Chromium keeps a connected pad out of the Gamepad API until one of its
+ * buttons is pressed, so the browser events alone cannot announce a pad that
+ * was just plugged in. The first snapshot only seeds the watch, and the list is
+ * also what Settings > Controller shows.
+ */
+export async function refreshConnectedControllers(): Promise<void> {
+  if (!isTauri) return;
+  let pads: ConnectedController[];
+  try {
+    pads = await controllerConnectedPads();
+  } catch {
+    return;
+  }
+  const changed = JSON.stringify(pads) !== JSON.stringify(S.connectedControllers);
+  S.connectedControllers = pads;
+  if (changed) window.dispatchEvent(new Event("controller-list-changed"));
+  const named = pads.map((pad) => (pad.name ? pad : { ...pad, name: t("controller.kindGeneric") }));
+  for (const notice of padNotices.updateNative(named)) showPadNotice(notice);
+}
+
 export function initGamepadSupport(): void {
   window.addEventListener("gamepadconnected", (e) => {
     bindPad(e.gamepad);
-    toast(t("gamepad.connected", { name: S.gamepadName }), "ok");
+    const native = S.connectedControllers.find((pad) => pad.kind === S.gamepadKind);
+    showPadNotice(padNotices.webConnected(S.gamepadKind, native?.name || S.gamepadName || t("controller.kindGeneric")));
     void notifyPlaystationBridge();
     lastHudKey = "";
 
@@ -678,7 +717,8 @@ export function initGamepadSupport(): void {
     refreshCouchBar();
   });
 
-  window.addEventListener("gamepaddisconnected", () => {
+  window.addEventListener("gamepaddisconnected", (e) => {
+    showPadNotice(padNotices.webDisconnected(controllerKind(e.gamepad.id)));
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
     const hasAny = Array.from(gamepads).some((g) => g !== null && g.connected);
     if (!hasAny) {
@@ -778,6 +818,14 @@ export function initGamepadSupport(): void {
     }
     refreshCouchBar();
   }
+
+  // Connect/disconnect notices come from the HID list: the Gamepad API hides a
+  // freshly plugged pad until its first button press. The poll runs only while
+  // the launcher is in front, and the list also feeds Settings > Controller.
+  void refreshConnectedControllers();
+  window.setInterval(() => {
+    if (launcherOwnsController()) void refreshConnectedControllers();
+  }, CONTROLLER_WATCH_MS);
 
   // Only the foreground launcher may consume the pad. A blur that happens mid
   // press must also drop the held mask, or the next focus would look like a

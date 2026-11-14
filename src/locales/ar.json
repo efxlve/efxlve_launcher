@@ -919,6 +919,7 @@
   "gamepad.inspectTrophies": "فحص الجوائز",
   "gamepad.detail": "التفاصيل",
   "gamepad.connected": "وحدة التحكم متصلة: {name}",
+  "gamepad.disconnected": "وحدة التحكم غير متصلة: {name}",
   "controller.padsTitle": "أذرع التحكم المتصلة",
   "controller.connected": "متصل",
   "controller.none": "لا يوجد ذراع تحكم متصل",

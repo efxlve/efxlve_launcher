@@ -966,6 +966,7 @@
   "gamepad.inspectTrophies": "Kupaları İncele",
   "gamepad.detail": "Detay",
   "gamepad.connected": "Oyun Kolu Bağlandı: {name}",
+  "gamepad.disconnected": "Oyun Kolu Bağlantısı Kesildi: {name}",
   "controller.padsTitle": "Bağlı kontrolcüler",
   "controller.connected": "Bağlı",
   "controller.none": "Bağlı kontrolcü yok",

@@ -919,6 +919,7 @@
   "gamepad.inspectTrophies": "Открыть трофеи",
   "gamepad.detail": "Подробности",
   "gamepad.connected": "Контроллер подключён: {name}",
+  "gamepad.disconnected": "Контроллер отключён: {name}",
   "controller.padsTitle": "Подключённые геймпады",
   "controller.connected": "Подключён",
   "controller.none": "Геймпад не подключён",

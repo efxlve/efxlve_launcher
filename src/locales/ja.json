@@ -919,6 +919,7 @@
   "gamepad.inspectTrophies": "トロフィーを確認",
   "gamepad.detail": "詳細",
   "gamepad.connected": "コントローラー接続: {name}",
+  "gamepad.disconnected": "コントローラー切断: {name}",
   "controller.padsTitle": "接続中のコントローラー",
   "controller.connected": "接続中",
   "controller.none": "コントローラーが接続されていません",

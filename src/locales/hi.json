@@ -966,6 +966,7 @@
   "gamepad.inspectTrophies": "ट्रॉफियां देखें",
   "gamepad.detail": "विवरण",
   "gamepad.connected": "कंट्रोलर कनेक्ट हुआ: {name}",
+  "gamepad.disconnected": "कंट्रोलर डिस्कनेक्ट हुआ: {name}",
   "controller.padsTitle": "कनेक्ट किए गए कंट्रोलर",
   "controller.connected": "कनेक्ट है",
   "controller.none": "कोई कंट्रोलर कनेक्ट नहीं है",

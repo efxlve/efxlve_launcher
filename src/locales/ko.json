@@ -919,6 +919,7 @@
   "gamepad.inspectTrophies": "트로피 살펴보기",
   "gamepad.detail": "세부 정보",
   "gamepad.connected": "컨트롤러 연결됨: {name}",
+  "gamepad.disconnected": "컨트롤러 연결 해제됨: {name}",
   "controller.padsTitle": "연결된 컨트롤러",
   "controller.connected": "연결됨",
   "controller.none": "연결된 컨트롤러 없음",

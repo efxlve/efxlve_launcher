@@ -919,6 +919,7 @@
   "gamepad.inspectTrophies": "ดูถ้วยรางวัล",
   "gamepad.detail": "รายละเอียด",
   "gamepad.connected": "เชื่อมต่อคอนโทรลเลอร์: {name}",
+  "gamepad.disconnected": "ยกเลิกการเชื่อมต่อคอนโทรลเลอร์: {name}",
   "controller.padsTitle": "คอนโทรลเลอร์ที่เชื่อมต่อ",
   "controller.connected": "เชื่อมต่อแล้ว",
   "controller.none": "ไม่มีคอนโทรลเลอร์ที่เชื่อมต่อ",

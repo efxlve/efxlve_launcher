@@ -966,6 +966,7 @@
   "gamepad.inspectTrophies": "Inspect Trophies",
   "gamepad.detail": "Details",
   "gamepad.connected": "Controller Connected: {name}",
+  "gamepad.disconnected": "Controller Disconnected: {name}",
   "controller.padsTitle": "Connected controllers",
   "controller.connected": "Connected",
   "controller.none": "No controller connected",

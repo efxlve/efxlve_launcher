@@ -919,6 +919,7 @@
   "gamepad.inspectTrophies": "Sprawdź trofea",
   "gamepad.detail": "Szczegóły",
   "gamepad.connected": "Podłączono kontroler: {name}",
+  "gamepad.disconnected": "Odłączono kontroler: {name}",
   "controller.padsTitle": "Podłączone kontrolery",
   "controller.connected": "Podłączony",
   "controller.none": "Brak podłączonego kontrolera",
