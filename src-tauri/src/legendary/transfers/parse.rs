@@ -201,6 +201,23 @@ pub(super) fn is_install_finished(line: &str) -> bool {
     line.contains("Finished installation process")
 }
 
+/// Legendary's write-phase failure. `dlm.join()` wraps the part that moves the
+/// downloaded chunks into the game folder, and a write error there (a full
+/// disk, a locked file, a permission failure) is logged at INFO/WARNING level
+/// before the CLI exits with code 0. The install record is never written, so
+/// the launcher must not call this a finished download.
+pub(super) fn is_install_failure(line: &str) -> bool {
+    line.contains("Installation failed after")
+        || line
+            .contains("The following exception occurred while waiting for the downloader to finish")
+}
+
+/// Legendary's no-op path: everything is already on disk and registered. It
+/// exits 0 without printing the installation commit line.
+pub(super) fn is_install_noop(line: &str) -> bool {
+    line.contains("Download size is 0")
+}
+
 /// True when legendary's own log shows a hard error. Legendary can log a hard
 /// error (locked game files, permission denied) and still exit with code 0, so
 /// a zero exit alone must not be treated as a completed install.
@@ -224,6 +241,9 @@ pub(super) fn has_hard_error(err_text: &str) -> bool {
         // Launcher already deleted must not turn into a failed download.
         if line.contains("Removing file failed") || line.contains("Removing directory failed") {
             return false;
+        }
+        if is_install_failure(line) {
+            return true;
         }
         line.starts_with("Traceback")
             || line.contains("ERROR:")

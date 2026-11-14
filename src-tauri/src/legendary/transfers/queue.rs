@@ -857,8 +857,14 @@ pub(super) async fn monitor_download(
     // A wider window than the error heuristic: the feedback report attaches it,
     // and the preparation phase usually explains a failed update.
     let mut log_lines: VecDeque<String> = VecDeque::with_capacity(400);
+    // Per attempt: the install record is only trusted when legendary logged the
+    // commit line or the no-op line. A zero exit alone is not proof.
+    let mut install_committed = false;
+    let mut install_noop = false;
 
     let result: Result<(), String> = loop {
+        install_committed = false;
+        install_noop = false;
         // stdout carries no progress but is drained so the pipe does not fill.
         let out_task = spawn_drain(stdout.take());
         let mut stopped_after_completion = false;
@@ -899,6 +905,10 @@ pub(super) async fn monitor_download(
                         }
                         if is_install_finished(&line) {
                             completion_at = Some(std::time::Instant::now());
+                            install_committed = true;
+                        }
+                        if is_install_noop(&line) {
+                            install_noop = true;
                         }
 
                         if tail.len() >= 60 {
@@ -1150,6 +1160,9 @@ pub(super) async fn monitor_download(
             let _ = child.wait().await;
             out_task.abort();
             let _ = out_task.await;
+            // Error heuristics belong to one attempt; a line from the killed
+            // attempt must not fail the retry that succeeds.
+            tail.clear();
             net_rate = None;
             disk_rate = None;
             explicit_net = false;
@@ -1198,6 +1211,14 @@ pub(super) async fn monitor_download(
             if has_hard_error(&err_text) {
                 break Err(short_error(&err_text));
             }
+            // The write phase runs inside `dlm.join()`; its failure is logged at
+            // INFO/WARNING level and the CLI still exits 0. Without the commit
+            // line (or the no-op line for an already-complete install) the game
+            // record was never written, so reporting "done" would leave the
+            // library saying "Install" right after a 100% download.
+            if !install_committed && !install_noop {
+                break Err(short_error(&err_text));
+            }
             break Ok(());
         }
         // Heroic pattern: on a memory error, raise the limit and retry once.
@@ -1210,6 +1231,7 @@ pub(super) async fn monitor_download(
             if user_halted(&app) {
                 break Err("@t:dl.cancelled".into());
             }
+            tail.clear();
             match spawn_install_with_tags(&app, &bin, &app_name, &base, true, &install_tags) {
                 Ok(c) => {
                     child = c;
@@ -1245,6 +1267,7 @@ pub(super) async fn monitor_download(
             if user_halted(&app) {
                 break Err("@t:dl.cancelled".into());
             }
+            tail.clear();
             match spawn_install_with_tags(&app, &bin, &app_name, &base, high_mem, &install_tags) {
                 Ok(c) => {
                     child = c;
@@ -1281,6 +1304,7 @@ pub(super) async fn monitor_download(
             if user_halted(&app) {
                 break Err("@t:dl.cancelled".into());
             }
+            tail.clear();
             match spawn_install_with_tags(&app, &bin, &app_name, &base, high_mem, &install_tags) {
                 Ok(c) => {
                     child = c;

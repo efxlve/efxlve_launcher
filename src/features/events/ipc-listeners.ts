@@ -787,6 +787,13 @@ export async function initApp(hooks: {
         if (S.view === "downloads") render();
         else if (S.view === "library") patchLibraryCardDom(event.payload.id);
       });
+      // A failure can land after the install record was written (a post-install
+      // error); re-read it so the card reflects what is on disk.
+      if (!event.payload.id.includes("::") && summaryOf(event.payload.id)) {
+        void refreshEpicInstalled().then(() => {
+          if (S.view === "library") patchLibraryCardDom(event.payload.id);
+        });
+      }
     });
     listenLater<DownloadCancelledEvent>("download-cancelled", (event) => {
       noteDownloadInterrupted();

@@ -159,6 +159,30 @@ fn a_logged_error_beats_a_zero_exit() {
 }
 
 #[test]
+fn a_write_phase_failure_is_not_a_finished_install() {
+    // Legendary wraps the file-write phase in dlm.join(). A full disk or a
+    // locked file lands here, is logged at INFO/WARNING level, and the CLI
+    // still exits 0. installed.json is never written, so the launcher must not
+    // paint the download as finished and leave the library on "Install".
+    let failed = "[cli] INFO: Installation failed after 3021.44 seconds.";
+    assert!(is_install_failure(failed));
+    assert!(has_hard_error(failed));
+
+    let full_disk = "The following exception occurred while waiting for the downloader to finish: OSError(28, 'No space left on device'). Try restarting the process, the resume file will be used to start where it failed.";
+    assert!(is_install_failure(full_disk));
+    assert_eq!(short_error(full_disk), "@t:dl.diskFull");
+
+    let locked = "The following exception occurred while waiting for the downloader to finish: PermissionError(13, 'Access is denied')";
+    assert_eq!(short_error(locked), "@t:dl.permissionDenied");
+
+    // An install that had nothing to do exits 0 without the commit line; that
+    // is a successful no-op, not a failed write.
+    let noop = "[cli] INFO: Download size is 0, the game is either already up to date or has not changed. Exiting...";
+    assert!(is_install_noop(noop));
+    assert!(!has_hard_error(noop));
+}
+
+#[test]
 fn legendary_disk_space_wording_maps_to_the_disk_full_message() {
     // The exact line from `check_installation_conditions`; "not enough
     // available disk space" is not the old "not enough space" substring.
