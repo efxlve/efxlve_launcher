@@ -2,7 +2,7 @@
 //!
 //! The folder delete goes through `guard` first.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 
 use tauri::AppHandle;
@@ -79,46 +79,66 @@ pub async fn epic_uninstall_game(
     cmd.creation_flags(CREATE_NO_WINDOW);
     let out = cmd.output().await.map_err(|e| e.to_string())?;
 
-    // 3. Remove all EGL .item manifests in ProgramData for this game (and any of its DLCs).
-    // Critical: If the .item manifest remains, official Epic Games Store displays
-    // "Repair" instead of returning to the uninstalled state, and our launcher
-    // re-detects the game on refresh.
-    crate::legendary::cache::remove_egl_manifests_for_game(&app_name);
-
-    // 4. When not keeping files, completely remove remaining game files and directories
-    if !keep_files {
-        if let Some(ref path) = resolved_install_path {
-            let def_dir = default_install_dir();
-            if path.is_dir() && is_safe_game_dir(path, &def_dir) {
-                let _ = force_remove_dir_all(path);
-            }
-        }
-    }
-
-    // 5. Ensure the game is pruned from installed.json and manifests
-    crate::legendary::cache::remove_game_from_installed_json(&config, &app_name);
-    crate::legendary::cache::remove_game_manifests(&config, &app_name);
-
     let err = String::from_utf8_lossy(&out.stderr);
     let low = err.to_lowercase();
-    // If legendary reported it wasn't installed in its own database, but our
-    // cleanup completed (e.g. for EGL-imported games), treat it as uninstalled.
+    // If legendary reported it wasn't installed in its own database, but the
+    // folder is gone (e.g. for EGL-imported games), treat it as uninstalled.
     let uninstalled = out.status.success()
         || low.contains("not installed")
         || resolved_install_path
             .as_ref()
             .map(|p| !p.exists())
             .unwrap_or(false);
-    if uninstalled {
-        // A paused or crashed transfer leaves a resume record and a queue
-        // snapshot; deleting the game must not resurrect them on restart.
-        super::queue::forget_pending(&app_name);
-        crate::legendary::download_resume::remove_resume(
-            &crate::legendary::download_resume::resumes_path(),
-            &app_name,
-        );
-        Ok(format!("@t:dl.uninstalled\u{1f}{resolved_title}"))
-    } else {
-        Err(short_error(&err))
+    if !uninstalled {
+        return Err(short_error(&err));
+    }
+
+    // 3. Remove the install folder before any record. A copy whose files
+    // survived was not uninstalled, and the record has to stay so the next
+    // attempt — an elevated run, once the user allows it — still finds it.
+    // Third-party copies (an EA App install under `Program Files`) land here:
+    // they have a folder but no legendary record, so legendary exits 0.
+    if !keep_files {
+        if let Some(left) = resolved_install_path.as_deref().and_then(remove_install_folder) {
+            return Err(format!("@t:dl.uninstallLeftFiles\u{1f}{}", left.display()));
+        }
+    }
+
+    // 4. Remove all EGL .item manifests in ProgramData for this game (and any of its DLCs).
+    // Critical: If the .item manifest remains, official Epic Games Store displays
+    // "Repair" instead of returning to the uninstalled state, and our launcher
+    // re-detects the game on refresh.
+    crate::legendary::cache::remove_egl_manifests_for_game(&app_name);
+
+    // 5. Ensure the game is pruned from installed.json and manifests
+    crate::legendary::cache::remove_game_from_installed_json(&config, &app_name);
+    crate::legendary::cache::remove_game_manifests(&config, &app_name);
+
+    // A paused or crashed transfer leaves a resume record and a queue
+    // snapshot; deleting the game must not resurrect them on restart.
+    super::queue::forget_pending(&app_name);
+    crate::legendary::download_resume::remove_resume(
+        &crate::legendary::download_resume::resumes_path(),
+        &app_name,
+    );
+    Ok(format!("@t:dl.uninstalled\u{1f}{resolved_title}"))
+}
+
+/// Removes one recorded install folder and answers with the folder that is
+/// still on disk, if any.
+///
+/// A path that is already gone has nothing left to delete. A folder the guard
+/// refuses is reported as leftover instead of being skipped: the caller must not
+/// claim an uninstall whose files are still there.
+pub(super) fn remove_install_folder(path: &Path) -> Option<PathBuf> {
+    if !path.is_dir() {
+        return None;
+    }
+    if !is_safe_game_dir(path, &default_install_dir()) {
+        return Some(path.to_path_buf());
+    }
+    match force_remove_dir_all(path) {
+        Ok(()) if !path.exists() => None,
+        _ => Some(path.to_path_buf()),
     }
 }

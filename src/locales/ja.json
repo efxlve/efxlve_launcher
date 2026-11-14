@@ -1326,6 +1326,7 @@
   "dl.anotherActive": "現在、別のダウンロードが進行中です",
   "dl.invalidAction": "無効な操作",
   "dl.uninstalled": "{a1} をアンインストールしました",
+  "dl.uninstallLeftFiles": "アンインストールは終了しましたが、{a1} にファイルが残っています。EFXLVE を管理者として実行するか、フォルダーを削除してください。",
   "dl.launchedOffline": "{a1} を起動しました（オフライン）",
   "dl.launched": "{a1} を起動しました",
   "dl.stopped": "ゲームを停止しました",

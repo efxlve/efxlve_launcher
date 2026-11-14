@@ -1326,6 +1326,7 @@
   "dl.anotherActive": "يوجد تنزيل نشط آخر الآن",
   "dl.invalidAction": "إجراء غير صالح",
   "dl.uninstalled": "أُلغي تثبيت {a1}",
+  "dl.uninstallLeftFiles": "انتهت الإزالة لكن الملفات ما زالت في {a1}. شغّل EFXLVE كمسؤول أو احذف المجلد.",
   "dl.launchedOffline": "شُغّلت {a1} (دون اتصال)",
   "dl.launched": "شُغّلت {a1}",
   "dl.stopped": "أُوقفت اللعبة",

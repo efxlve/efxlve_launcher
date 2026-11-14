@@ -106,6 +106,10 @@ pub(crate) fn is_safe_game_dir(path: &Path, default_install: &Path) -> bool {
 
 /// Recursively removes a directory on Windows, stripping any read-only attributes
 /// that would otherwise cause `ERROR_ACCESS_DENIED` during deletion.
+///
+/// An error means the folder survived: the caller must not report the game as
+/// removed. Every attempt is made before the error is returned, so the folder is
+/// the only thing left when the caller sees it.
 pub(crate) fn force_remove_dir_all(path: &Path) -> std::io::Result<()> {
     if !path.exists() {
         return Ok(());
@@ -115,41 +119,61 @@ pub(crate) fn force_remove_dir_all(path: &Path) -> std::io::Result<()> {
         return Ok(());
     }
 
-    fn strip_readonly_and_delete(p: &Path) -> std::io::Result<()> {
-        if let Ok(meta) = p.symlink_metadata() {
-            if meta.is_dir() {
-                if let Ok(entries) = std::fs::read_dir(p) {
-                    for entry in entries.flatten() {
-                        let _ = strip_readonly_and_delete(&entry.path());
-                    }
-                }
-                if let Ok(m) = p.metadata() {
-                    let mut perms = m.permissions();
-                    if perms.readonly() {
-                        perms.set_readonly(false);
-                        let _ = std::fs::set_permissions(p, perms);
-                    }
-                }
-                let _ = std::fs::remove_dir(p);
-            } else {
-                if let Ok(m) = p.metadata() {
-                    let mut perms = m.permissions();
-                    if perms.readonly() {
-                        perms.set_readonly(false);
-                        let _ = std::fs::set_permissions(p, perms);
-                    }
-                }
-                let _ = std::fs::remove_file(p);
+    fn note(first: &mut Option<std::io::Error>, result: std::io::Result<()>) {
+        if let Err(error) = result {
+            if first.is_none() {
+                *first = Some(error);
             }
         }
-        Ok(())
     }
 
-    let _ = strip_readonly_and_delete(path);
-    if path.exists() {
-        let _ = std::fs::remove_dir_all(path);
+    fn clear_readonly(p: &Path, first: &mut Option<std::io::Error>) {
+        if let Ok(m) = p.metadata() {
+            let mut perms = m.permissions();
+            if perms.readonly() {
+                perms.set_readonly(false);
+                note(first, std::fs::set_permissions(p, perms));
+            }
+        }
     }
-    Ok(())
+
+    fn strip_readonly_and_delete(p: &Path, first: &mut Option<std::io::Error>) {
+        if let Ok(meta) = p.symlink_metadata() {
+            if meta.is_dir() {
+                match std::fs::read_dir(p) {
+                    Ok(entries) => {
+                        for entry in entries.flatten() {
+                            strip_readonly_and_delete(&entry.path(), first);
+                        }
+                    }
+                    Err(error) => note(first, Err(error)),
+                }
+                clear_readonly(p, first);
+                note(first, std::fs::remove_dir(p));
+            } else {
+                clear_readonly(p, first);
+                note(first, std::fs::remove_file(p));
+            }
+        }
+    }
+
+    let mut first = None;
+    strip_readonly_and_delete(path, &mut first);
+    if !path.exists() {
+        return Ok(());
+    }
+    // The recursive pass can lose a race with a file that just reappeared;
+    // one plain retry is cheaper than a second walk.
+    let _ = std::fs::remove_dir_all(path);
+    if !path.exists() {
+        return Ok(());
+    }
+    Err(first.unwrap_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::PermissionDenied,
+            path.display().to_string(),
+        )
+    }))
 }
 
 #[cfg(test)]

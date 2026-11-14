@@ -1326,6 +1326,7 @@
   "dl.anotherActive": "In questo momento c'è un altro download attivo",
   "dl.invalidAction": "Azione non valida",
   "dl.uninstalled": "{a1} disinstallato",
+  "dl.uninstallLeftFiles": "La disinstallazione è terminata, ma restano file in {a1}. Avvia EFXLVE come amministratore o elimina la cartella.",
   "dl.launchedOffline": "{a1} avviato (offline)",
   "dl.launched": "{a1} avviato",
   "dl.stopped": "Gioco arrestato",

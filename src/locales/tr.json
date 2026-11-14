@@ -1399,6 +1399,7 @@
   "dl.anotherActive": "Şu an başka bir aktif indirme var",
   "dl.invalidAction": "Geçersiz eylem",
   "dl.uninstalled": "{a1} kaldırıldı",
+  "dl.uninstallLeftFiles": "Kaldırma işlemi bitti ama {a1} içinde dosyalar kaldı. EFXLVE'yi yönetici olarak çalıştırın veya klasörü silin.",
   "dl.launchedOffline": "{a1} başlatıldı (çevrimdışı)",
   "dl.stopped": "Oyun durduruldu",
   "dl.notRunning": "Oyun çalışmıyor",

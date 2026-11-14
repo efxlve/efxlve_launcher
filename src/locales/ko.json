@@ -1326,6 +1326,7 @@
   "dl.anotherActive": "지금 다른 다운로드가 진행 중입니다",
   "dl.invalidAction": "잘못된 동작",
   "dl.uninstalled": "{a1}을(를) 제거했습니다",
+  "dl.uninstallLeftFiles": "제거가 끝났지만 {a1}에 파일이 남아 있습니다. EFXLVE를 관리자 권한으로 실행하거나 폴더를 삭제하세요.",
   "dl.launchedOffline": "{a1}을(를) 실행했습니다 (오프라인)",
   "dl.launched": "{a1}을(를) 실행했습니다",
   "dl.stopped": "게임을 중지했습니다",

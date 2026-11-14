@@ -4,6 +4,7 @@ use super::guard::*;
 use super::launch::*;
 use super::parse::*;
 use super::queue::*;
+use super::uninstall::remove_install_folder;
 
 #[test]
 fn install_path_does_not_match_a_drive_root_or_a_sibling() {
@@ -350,4 +351,53 @@ fn test_force_remove_dir_all_handles_readonly() {
 
     assert!(force_remove_dir_all(&temp_dir).is_ok());
     assert!(!temp_dir.exists());
+}
+
+#[test]
+fn a_removed_install_folder_asks_for_nothing() {
+    let dir = std::env::temp_dir().join(format!("efxlve_test_leftover_ok_{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(dir.join("bin")).unwrap();
+    std::fs::write(dir.join("bin").join("game.exe"), b"fake").unwrap();
+
+    assert_eq!(remove_install_folder(&dir), None);
+    assert!(!dir.exists());
+    // A folder that is already gone is not reported either.
+    assert_eq!(remove_install_folder(&dir), None);
+}
+
+/// The Windows-only case behind the report: an install folder this process may
+/// not delete (an EA App copy under `Program Files`) used to disappear from
+/// `installed.json` while every file stayed on disk.
+#[cfg(windows)]
+#[test]
+fn an_undeletable_install_folder_is_reported_not_forgotten() {
+    use std::os::windows::fs::OpenOptionsExt;
+
+    let dir = std::env::temp_dir().join(format!("efxlve_test_leftover_no_{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let locked = dir.join("game.exe");
+    std::fs::write(&locked, b"fake").unwrap();
+    // No share mode: while this handle is open the file cannot be removed.
+    let handle = std::fs::OpenOptions::new()
+        .read(true)
+        .share_mode(0)
+        .open(&locked)
+        .unwrap();
+
+    assert_eq!(remove_install_folder(&dir), Some(dir.clone()));
+    assert!(dir.exists());
+
+    drop(handle);
+    assert!(force_remove_dir_all(&dir).is_ok());
+    assert!(!dir.exists());
+}
+
+/// A folder the delete guard refuses is a leftover, not a silent skip.
+#[cfg(windows)]
+#[test]
+fn a_guard_refused_folder_is_reported() {
+    let system = std::path::Path::new(r"C:\Windows\System32");
+    assert_eq!(remove_install_folder(system), Some(system.to_path_buf()));
 }
