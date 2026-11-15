@@ -621,6 +621,7 @@ async function startRestore(): Promise<void> {
     (item) => item.manifestPath === S.archiveSelectedManifest,
   );
   if (!found || S.archiveRunning) return;
+  S.archiveEraseArmed = false;
   if (S.archiveBurning !== null) {
     toast(t("archive.burnInProgress"), "err");
     return;
@@ -769,6 +770,7 @@ export function handleArchiveAction(
   }
   if (act === "archive-burn-load") {
     const manifestPath = target.dataset.manifest || S.archiveSelectedManifest;
+    S.archiveEraseArmed = false;
     void loadArchiveDiscs(manifestPath);
     void loadBurnRecorders();
     return true;
