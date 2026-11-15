@@ -481,7 +481,7 @@ function renderRestoreTab(): string {
           ? registering
             ? `<button type="button" class="btn ghost small" disabled>${icon("refresh", 13, "spin")} ${t("archive.stageRegistering")}</button>`
             : `<button type="button" class="btn danger small" data-act="archive-cancel">${icon("x", 13)} ${t("archive.cancel")}</button>`
-          : `<button type="button" class="btn primary" data-act="archive-restore-start" ${restoreReady && !busy && !S.archiveXtoolInstalling ? "" : "disabled"}>${icon("download", 14)} ${t("archive.restoreStart")}</button>`
+          : `<button type="button" class="btn primary" data-act="archive-restore-start" ${restoreReady && !busy && !S.archiveEstimating && !S.archiveXtoolInstalling ? "" : "disabled"}>${icon("download", 14)} ${t("archive.restoreStart")}</button>`
       }
     </div>
     ${S.archiveRestoreResult ? "" : renderProgress(S.archiveProgress, "archive")}

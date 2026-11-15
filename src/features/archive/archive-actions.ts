@@ -515,7 +515,14 @@ async function eraseDisc(): Promise<void> {
 
 async function startBackup(): Promise<void> {
   const game = selectedArchiveGame();
-  if (!game || !game.installPath || S.archiveRunning) return;
+  if (
+    !game ||
+    !game.installPath ||
+    S.archiveRunning ||
+    S.archiveEstimating
+  ) {
+    return;
+  }
   if (S.archiveXtoolInstalling) return;
   if (S.archiveBurning !== null) {
     toast(t("archive.burnInProgress"), "err");
@@ -661,7 +668,7 @@ async function startRestore(): Promise<void> {
   const found = S.archiveFound?.find(
     (item) => item.manifestPath === S.archiveSelectedManifest,
   );
-  if (!found || S.archiveRunning) return;
+  if (!found || S.archiveRunning || S.archiveEstimating) return;
   if (S.archiveXtoolInstalling) return;
   S.archiveEraseArmed = false;
   if (S.archiveBurning !== null) {
