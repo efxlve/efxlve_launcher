@@ -8,7 +8,10 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 pub const FORMAT_NAME: &str = "efxlve-media-archive";
-pub const FORMAT_VERSION: u32 = 1;
+/// Version 2 can contain stored blocks and an xtool-wrapped stream. An older
+/// launcher reads the version first and refuses the archive instead of
+/// restoring zstd frames that are actually raw bytes.
+pub const FORMAT_VERSION: u32 = 2;
 pub const MANIFEST_FILE: &str = "manifest.efxmeta.json";
 pub const BLOCK_MAGIC: [u8; 4] = *b"EFXB";
 pub const BLOCK_VERSION: u16 = 1;
@@ -115,6 +118,14 @@ impl MediaManifest {
             || self.compression.frame_bytes > 512 * 1024 * 1024
         {
             return Err("@t:archive.manifestInvalid\u{1f}frame".to_string());
+        }
+        if self
+            .compression
+            .precompressor
+            .as_deref()
+            .is_some_and(|value| value != "xtool")
+        {
+            return Err("@t:archive.manifestInvalid\u{1f}compression".to_string());
         }
         let blocks: u64 = self.volumes.iter().map(|v| u64::from(v.blocks)).sum();
         if blocks == 0 || blocks > 1_000_000 {
@@ -319,6 +330,14 @@ mod tests {
         assert_eq!(loaded.app_name, "steam::1");
         assert_eq!(loaded.volume_for_blocks(), vec![1]);
         assert_eq!(loaded.stored_bytes(), 10);
+        let mut older = loaded;
+        older.format_version = 1;
+        assert!(older.validate().is_ok());
+        older.format_version = FORMAT_VERSION + 1;
+        assert!(older.validate().is_err());
+        older.format_version = FORMAT_VERSION;
+        older.compression.precompressor = Some("other".to_string());
+        assert!(older.validate().is_err());
         let _ = std::fs::remove_dir_all(&dir);
     }
 
