@@ -4088,7 +4088,7 @@
   "archive.game": "Oyun",
   "archive.gameDesc": "Kurulu klasör doğrudan okunur; hiçbir dosya taşınmaz.",
   "archive.mediaTitle": "Parça boyutu",
-  "archive.mediaDesc": "Seçilen profil her parçanın boyutunu belirler. “Başlat” yalnızca parçaları oluşturur; diske yazma ayrı bir adımdır.",
+  "archive.mediaDesc": "Seçilen profil her parçanın boyutunu belirler. “Parçalara ayır ve arşivle” yalnızca parçaları oluşturur; diske yazma ayrı bir adımdır.",
   "archive.profileCd": "CD-R",
   "archive.profileDvd5": "DVD-5",
   "archive.profileDvd9": "DVD-9",

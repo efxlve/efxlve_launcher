@@ -4088,7 +4088,7 @@
   "archive.game": "Game",
   "archive.gameDesc": "The installed folder is read directly; nothing is moved.",
   "archive.mediaTitle": "Part size",
-  "archive.mediaDesc": "The selected profile sets how large each part is. Start backup only creates the parts; burning is a separate step.",
+  "archive.mediaDesc": "The selected profile sets how large each part is. Split and archive only creates the parts; burning is a separate step.",
   "archive.profileCd": "CD-R",
   "archive.profileDvd5": "DVD-5",
   "archive.profileDvd9": "DVD-9",
