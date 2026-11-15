@@ -1208,7 +1208,7 @@
 }
 
 /* ---------- Media archive ---------- */
-.archive-tabs { display: flex; gap: 8px; margin: 14px 0; }
+.archive-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
 .archive-card { margin-top: 0; }
 .archive-game-select { min-width: 260px; max-width: 420px; }
 .archive-profiles {

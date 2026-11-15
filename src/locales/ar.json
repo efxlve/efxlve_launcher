@@ -4261,7 +4261,7 @@
   "archive.xtoolInstall": "Install xtool",
   "archive.xtoolInstalling": "Downloading xtool…",
   "archive.xtoolInstalled": "xtool is ready.",
-  "archive.xtoolHash": "The downloaded xtool archive did not match the pinned checksum. Nothing was installed.",
+  "archive.xtoolHash": "The downloaded xtool archive did not match the pinned checksum. Nothing was installed; use Manual download if the release was updated.",
   "archive.xtoolDownloadFailed": "Could not download xtool: {a1}",
   "archive.xtoolExtractFailed": "Could not unpack xtool: {a1}",
   "archive.guideTab": "Guide",
@@ -4302,5 +4302,6 @@
   "archive.guideTrouble6": "xtool is missing: press Install xtool, or choose the folder that contains xtool.exe and _libraries.",
   "archive.guideNotesTitle": "Good to know",
   "archive.guideNotesBody": "The archive folder is portable: copy it to a USB drive, an external disk, or burn the disc folders. A backup is personal; do not share game files. Compression takes time, especially with xtool, and a full Blu-ray backup can run for hours.",
-  "archive.levelXtoolHint": "xtool is set: Fast is enough. xtool already compresses the game data, and a higher zstd level mostly adds waiting time."
+  "archive.levelXtoolHint": "xtool is set: Fast is enough. xtool already compresses the game data, and a higher zstd level mostly adds waiting time.",
+  "archive.guideXtoolSecurity": "Windows may warn about the unsigned xtool binary. The launcher checks its own download against a pinned SHA-256 before unpacking it."
 }

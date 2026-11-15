@@ -27,6 +27,7 @@ export function renderArchiveGuide(): string {
          <h4>${icon("sparkles", 14)} ${t("archive.guideXtoolTitle")}</h4>
          <p>${t("archive.guideXtoolBody")}</p>
          <p>${t("archive.guideXtoolInstall")}</p>
+         <p>${t("archive.guideXtoolSecurity")}</p>
          <p>${t("archive.guideXtoolRestore")}</p>
          <p class="archive-guide-note">${t("archive.guideXtoolLegal")}</p>
        </section>`
