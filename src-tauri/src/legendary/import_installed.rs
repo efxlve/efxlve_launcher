@@ -361,6 +361,28 @@ pub async fn import_installed_folder(
     Ok(ImportInstalledResult { imported, relinked })
 }
 
+/// Registers one restored game folder through legendary. The packer's store
+/// step calls this after the files are in place, so a disc restore does not
+/// start a fresh download.
+pub(crate) async fn import_game(
+    app: &AppHandle,
+    app_name: &str,
+    game_dir: &Path,
+) -> Result<(), String> {
+    if !game_dir.is_dir() {
+        return Err("restored folder is missing".to_string());
+    }
+    let bin = super::paths::resolve_binary(app).map_err(|error| error.to_string())?;
+    if run_import(&bin, app_name, game_dir).await {
+        // The EGL manifest is a second copy Epic reads; point it at the folder
+        // too when the launcher already has a record for this title.
+        bind_existing_install(app_name, game_dir);
+        Ok(())
+    } else {
+        Err("legendary import-game failed".to_string())
+    }
+}
+
 async fn run_import(bin: &Path, app_name: &str, game_dir: &Path) -> bool {
     let path = game_dir.to_string_lossy().to_string();
     let mut cmd = tokio::process::Command::new(bin);

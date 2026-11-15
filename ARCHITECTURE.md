@@ -151,3 +151,10 @@ page per game.
 - A swap keeps the original beside the game file as `<name>.dlsss`, so **Restore original** never needs a network service.
 - Catalog downloads come from the public DLSS Swapper manifest. The archive MD5, extracted DLL MD5 and Authenticode signature are verified before the file enters the launcher cache; no upscaler binary is bundled with the launcher.
 - The feature is Windows-only and hidden on Linux/macOS. A target must be an existing known DLL inside the game folder the caller named.
+
+### 3.7 Media Archive (Disc / USB)
+- `src-tauri/src/media_archive/` owns the archive format (`format.rs`), media presets (`profile.rs`), packing (`pack.rs`), restore (`restore.rs`) and store registration (`store.rs`). The frontend screen is `src/features/archive/`.
+- One backup is a folder with `manifest.efxmeta.json` and `*.efxpak.NNN` volumes. `profile.rs` sizes a volume for CD-R, DVD-5/9, Blu-ray 25/50/100 or FAT32 (under 4 GiB), so one volume can be copied to one disc.
+- The tar stream is compressed as independent zstd frames (64 MiB maximum). A damaged frame fails its own SHA-256 check with the volume and block number; the rest of the backup is not poisoned.
+- Restore reads volumes from the manifest folder plus any extra folders the user adds, verifies each block, unpacks into a staging folder and only then replaces the game folder. Steam, GOG and custom records are rewritten against the new path; Epic and Amazon go through their existing import commands.
+- Direct optical writing (IMAPI2 / xorriso / drutil), Reed-Solomon parity and the standalone restorer are open work; see `TODO.md`.

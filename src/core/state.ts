@@ -9,6 +9,14 @@
  * This file is intentionally free of logic; it only declares state.
  */
 import { EPIC_STORE_URL, type CloudBackupSettings, type CloudBackupEntry, type CloudFolderSuggestion } from "../epic";
+import type {
+  ArchivePlan,
+  ArchiveProgress,
+  ArchiveSummary,
+  FoundArchive,
+  MediaProfileInfo,
+  RestoreResult,
+} from "../archive";
 import { initialLanguage, t } from "../i18n";
 import type { MtuProbe } from "../net-diag";
 import {
@@ -602,6 +610,27 @@ export const S = {
   backupsQuery: "",
   backupsFilter: ("all") as "all" | "backed" | "stale" | "missing",
   isBackingUp: false,
+  /** Media archive: one game folder compressed into disc-sized volumes. */
+  archiveTab: ("backup") as "backup" | "restore",
+  archiveProfiles: (null) as MediaProfileInfo[] | null,
+  archiveSelectedApp: "",
+  archiveProfile: "fat32",
+  archiveCustomMib: 8_000,
+  archiveLevel: ("balanced") as "fast" | "balanced" | "max",
+  archiveTarget: "",
+  archivePlan: (null) as ArchivePlan | null,
+  archivePlanLoading: false,
+  archiveProgress: (null) as ArchiveProgress | null,
+  archiveRunning: false,
+  archiveResult: (null) as ArchiveSummary | null,
+  archiveSource: "",
+  archiveFound: (null) as FoundArchive[] | null,
+  archiveFoundLoading: false,
+  archiveSelectedManifest: "",
+  archiveExtraDirs: [] as string[],
+  archiveRestoreTarget: "",
+  archiveOverwrite: false,
+  archiveRestoreResult: (null) as RestoreResult | null,
   cloudBackupSettings: (null) as CloudBackupSettings | null,
   cloudBackupTesting: false,
   cloudBackupSyncing: false,

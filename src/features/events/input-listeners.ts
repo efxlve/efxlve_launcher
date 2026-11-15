@@ -69,6 +69,7 @@ import { achievementProgress, isAchievementUnlocked } from "../../core/achieveme
 import { queueAchievementNoteSave } from "../drawer/ach-notes";
 import { handleCompatAction } from "../settings/compat-view";
 import { handleGameCompatChange } from "../drawer/game-compat";
+import { handleArchiveChange } from "../archive/archive-actions";
 import { closeSelectiveModal, renderSelectiveModal } from "../dlc/selective-install";
 import { updateInstallFinalPath } from "../install/install-dialog";
 import { closeMoveGameModal } from "../move-game/move-game-actions";
@@ -1042,6 +1043,7 @@ document.addEventListener("change", (e) => {
     }
     return;
   }
+  if (handleArchiveChange(t)) return;
   if (handleGameCompatChange(t)) return;
   // Compatibility selects (target, runner, runner version, umu toggle) live in
   // the settings page but are answered by their own module.

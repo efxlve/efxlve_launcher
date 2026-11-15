@@ -234,6 +234,15 @@ function toggle(act: string, checked: boolean): string {
   return `<label class="switch"><input type="checkbox" data-act="${act}" ${checked ? "checked" : ""} /><span class="track"></span></label>`;
 }
 
+/** One row in the manage panel that opens Settings > Archive for this game. */
+function archiveManageRow(s: EpicSummary): string {
+  return row(
+    t("manage.archiveTitle"),
+    t("manage.archiveDesc"),
+    `<button class="btn ghost small" data-act="archive-open-for-game" data-id="${esc(s.appName)}">${icon("package", 13)} ${t("manage.archive")}</button>`,
+  );
+}
+
 function verifyBox(percent: number, detail: string, speed: string): string {
   return `
     <div class="verify-box">
@@ -614,7 +623,7 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
       );
   return `
     <div class="manage-tab-content">
-      ${group("files", "folder", t("manage.groupFiles"), `${files}${verify}${eaContent}${launchMode}${adopt}${move}${updates}${installSizeRow(s.installSize, s.installed)}`)}
+      ${group("files", "folder", t("manage.groupFiles"), `${files}${verify}${eaContent}${launchMode}${adopt}${move}${updates}${s.installed ? archiveManageRow(s) : ""}${installSizeRow(s.installSize, s.installed)}`)}
       ${saves}
       ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
@@ -735,7 +744,7 @@ function amazonManageBody(s: EpicSummary): string {
     : "";
   return `
     <div class="manage-tab-content">
-      ${group("files", "folder", t("manage.groupFiles"), `${files}${installSizeRow(st.installSize || s.installSize, s.installed)}`)}
+      ${group("files", "folder", t("manage.groupFiles"), `${files}${s.installed ? archiveManageRow(s) : ""}${installSizeRow(st.installSize || s.installSize, s.installed)}`)}
       ${saves}
       ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
@@ -841,6 +850,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           ${installSizeRow(s.installSize, s.installed)}
           ${row(t("manage.verifyTitle"), t("steam.verifyDesc"),
             `<button class="btn ghost small" data-act="steam-action" data-id="${steamId}" data-mode="validate">${icon("shield", 13)} ${t("steam.validate")}</button>`)}
+          ${archiveManageRow(s)}
         `)}
 
         ${steamLaunchGroup(steamId)}
@@ -883,6 +893,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           ${s.installed ? row(t("manage.verifyTitle"), t("manage.verifyDesc"),
             `<button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${s.appName}">${icon("shield", 13)} ${t("manage.verify")}</button>`,
             `<div id="manage-verify-box-container"></div>`) : ""}
+          ${s.installed ? archiveManageRow(s) : ""}
         `)}
         ${group("saves", "cloud", t("manage.groupSaves"), `
           <div class="row mg-row stack mg-callout">
@@ -960,6 +971,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           `<button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${id}" ${v ? "disabled" : ""}>${v ? t("manage.verifying") : t("manage.verify")}</button>
            <button class="btn ghost small" data-act="manage-repair" data-id="${id}" title="${esc(t("manage.verifyDesc"))}">${icon("refresh", 13)} ${t("manage.eaContentRepair")}</button>`,
           `<div id="manage-verify-box-container">${v ? verifyBox(v.percent, v.detail || `${v.current}/${v.total}`, v.speed) : ""}</div>`)}
+        ${archiveManageRow(s)}
         ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || st.installPath || t("manage.unspecified"))}</span>`,
           `${moveBtn}<button class="btn ghost small" data-act="epic-open-folder" data-id="${id}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`,
           `${copyIssueNote}${blockedMove ? `<div class="mg-note">${icon("info", 12)} ${t("manage.moveThirdPartyWarning", { name: esc(partner!.name) })}</div>` : ""}`)}

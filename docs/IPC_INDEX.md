@@ -31,6 +31,15 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `app_set_taskbar_badge` | `appSetTaskbarBadge({ ... })` | `src-tauri/src/taskbar_badge.rs` |
 | `app_set_tray_labels` | `appSetTrayLabels({ ... })` | `src-tauri/src/main.rs` |
 | `app_toggle_maximize` | `appToggleMaximize({ ... })` | `src-tauri/src/main.rs` |
+| `archive_cancel` | `archiveCancel({ ... })` | `src-tauri/src/media_archive/commands.rs` |
+| `archive_default_target` | `archiveDefaultTarget({ ... })` | `src-tauri/src/media_archive/commands.rs` |
+| `archive_inspect` | `archiveInspect({ ... })` | `src-tauri/src/media_archive/commands.rs` |
+| `archive_locate` | `archiveLocate({ ... })` | `src-tauri/src/media_archive/commands.rs` |
+| `archive_plan` | `archivePlan({ ... })` | `src-tauri/src/media_archive/commands.rs` |
+| `archive_profiles` | `archiveProfiles({ ... })` | `src-tauri/src/media_archive/commands.rs` |
+| `archive_restore` | `archiveRestore({ ... })` | `src-tauri/src/media_archive/commands.rs` |
+| `archive_scan_folder` | `archiveScanFolder({ ... })` | `src-tauri/src/media_archive/commands.rs` |
+| `archive_start` | `archiveStart({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `cache_images` | `cacheImages({ ... })` | `src-tauri/src/image_cache.rs` |
 | `check_install_path_state` | `checkInstallPathState({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `clear_image_cache` | `clearImageCache({ ... })` | `src-tauri/src/image_cache.rs` |

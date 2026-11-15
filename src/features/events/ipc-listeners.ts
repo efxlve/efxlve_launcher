@@ -69,6 +69,8 @@ import { loadSteamLibrary, refreshSteamInstalled, startSteamLibraryWatch } from 
 import { syncInstalledWatch } from "../library/installed-watch";
 import { companionStoreId, loadCompanionLibrary, syncCompanionAccounts } from "../library/companion-library";
 import { loadCustomGamesLibrary } from "../custom-games/custom-games-library";
+import { onArchiveProgress } from "../archive/archive-actions";
+import type { ArchiveProgress } from "../../archive";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom, refreshGameActionUi } from "../../core/game-view";
 import { recordAchievementUnlocks, attachAchievementScreenshot } from "../../core/achievement-history";
@@ -837,6 +839,10 @@ export async function initApp(hooks: {
       } else {
         toast(t("verify.failed", { msg: localizeMessage(message) }), "err");
       }
+    });
+
+    listenLater<ArchiveProgress>("archive-progress", (event) => {
+      if (event.payload) onArchiveProgress(event.payload);
     });
 
     listenLater<MoveGameProgress>("move-progress", (event) => {

@@ -65,6 +65,16 @@ Open work only. Delete the item when it lands.
   removed directly. Program Files uninstallers may still need an elevated
   launcher.
 
+## Media archive (disc / USB)
+
+- Direct optical writing is not wired. The archive writes disc-sized volumes to
+  a folder or USB drive and the UI explains the one-part-per-disc copy. Windows
+  IMAPI2, Linux `xorriso` and macOS `drutil` remain open.
+- Reed-Solomon parity for scratched discs and long-term USB bit rot is not
+  implemented. Block SHA-256 detects damage but cannot repair it.
+- The standalone `efxlve-restore.exe` for a PC without the launcher is not
+  built.
+
 ## Linux/macOS: packaging and validation
 
 - Tagged releases still publish Windows only. The manual **Package** workflow

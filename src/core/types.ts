@@ -67,7 +67,7 @@ export interface CustomLogoLayout {
 }
 
 /** Category selected in the settings page left rail. */
-export type SettingsSection = "account" | "downloads" | "stores" | "cloud" | "integrations" | "social" | "launchers" | "compat" | "collections" | "cases" | "controller" | "appearance" | "screenshots" | "achievements" | "notes" | "system" | "tasks" | "hidden" | "about";
+export type SettingsSection = "account" | "downloads" | "stores" | "cloud" | "integrations" | "social" | "launchers" | "compat" | "collections" | "cases" | "archive" | "controller" | "appearance" | "screenshots" | "achievements" | "notes" | "system" | "tasks" | "hidden" | "about";
 
 /** What happens once the last queued download finishes. */
 export type DownloadFinishAction = "none" | "notify" | "sleep" | "shutdown";

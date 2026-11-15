@@ -103,6 +103,7 @@ import {
 } from "../drawer/side-widgets";
 import { renderCloudBackupSettingsGroup } from "../cloud-backup/cloud-backup-view";
 import { renderBackupsSection } from "../backups/backups-page";
+import { renderArchiveSection } from "../archive/archive-view";
 import { handleCompatAction, loadCompatView, renderCompatSection } from "./compat-view";
 import { keepDiscordOpen } from "../discord/discord-view";
 import { pcCheckResultHtml } from "./pc-check";
@@ -139,6 +140,7 @@ const SECTIONS: { id: SettingsSection; labelKey: string; icon: IconName }[] = [
   { id: "compat", labelKey: "settings.secCompat", icon: "cpu" },
   { id: "collections", labelKey: "settings.secCollections", icon: "folder" },
   { id: "cases", labelKey: "settings.secCases", icon: "layers" },
+  { id: "archive", labelKey: "settings.secArchive", icon: "package" },
   { id: "controller", labelKey: "settings.secController", icon: "gamepad-2" },
   { id: "appearance", labelKey: "settings.secAppearance", icon: "sparkles" },
   { id: "screenshots", labelKey: "settings.secScreenshots", icon: "camera" },
@@ -161,7 +163,7 @@ const NAV_GROUPS: { labelKey: string; sections: SettingsSection[] }[] = [
   },
   {
     labelKey: "settings.navLibrary",
-    sections: ["downloads", "stores", "collections", "cases", "hidden"],
+    sections: ["downloads", "stores", "collections", "cases", "archive", "hidden"],
   },
   {
     labelKey: "settings.navApp",
@@ -2120,6 +2122,7 @@ function renderSection(section: SettingsSection): string {
     case "compat": return renderCompatSection();
     case "collections": return renderCollections();
     case "cases": return renderCasesSection();
+    case "archive": return renderArchiveSection();
     case "controller": return renderController();
     case "appearance": return renderAppearance();
     case "screenshots": return renderScreenshots();

@@ -176,6 +176,7 @@ import { closeAvatarModal, closeChangeNameModal, openAvatarFilePicker, openChang
 import { handleAuthAction } from "./handlers/auth-handlers";
 import { handleCloudBackupAction } from "./handlers/cloud-backup-handlers";
 import { handleBackupsAction } from "../backups/backups-handlers";
+import { handleArchiveAction, openArchiveForGame } from "../archive/archive-actions";
 import { handleCollectionAction } from "./handlers/collection-handlers";
 import { handleCoverAction } from "./handlers/cover-handlers";
 import { handleEglRemovalAction } from "./handlers/egl-removal-handlers";
@@ -378,6 +379,16 @@ document.addEventListener("click", (e) => {
   // the modal they live in. Handle it before any domain handler.
   if (act === "prevent-modal-close") return;
 
+  if (act === "archive-open-for-game" && id) {
+    openArchiveForGame(id);
+    closeAllModals();
+    S.settingsSection = "archive";
+    if (S.view !== "settings") setView("settings");
+    pushNavHistory({ view: "settings", settingsSection: "archive" });
+    render();
+    return;
+  }
+
   // The shared confirm dialog answers here, before any domain handler.
   if (act === "confirm-yes") {
     answerConfirm(true);
@@ -431,6 +442,7 @@ document.addEventListener("click", (e) => {
   if (handleAuthAction(act, t, id)) return;
   if (handleCloudBackupAction(act, t, id, targetEl)) return;
   if (handleBackupsAction(act, t, id)) return;
+  if (handleArchiveAction(act, id, t)) return;
   if (handleCoverAction(act, t, id, targetEl)) return;
   if (handleEglRemovalAction(act, t, id, targetEl)) return;
   if (handleCollectionAction(act, t, id, targetEl)) return;

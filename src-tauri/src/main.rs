@@ -27,6 +27,7 @@ mod launchers;
 mod legendary;
 mod lookup_cache;
 mod ludusavi;
+mod media_archive;
 mod nile;
 mod notes;
 mod net_diag;
@@ -2254,6 +2255,15 @@ fn main() {
             legendary::commands::epic_set_offline_mode,
             legendary::commands::epic_get_auto_desktop_shortcut,
             legendary::commands::epic_set_auto_desktop_shortcut,
+            media_archive::commands::archive_profiles,
+            media_archive::commands::archive_plan,
+            media_archive::commands::archive_start,
+            media_archive::commands::archive_cancel,
+            media_archive::commands::archive_scan_folder,
+            media_archive::commands::archive_inspect,
+            media_archive::commands::archive_locate,
+            media_archive::commands::archive_default_target,
+            media_archive::commands::archive_restore,
             legendary::commands::epic_backup_save,
             legendary::commands::epic_list_backups,
             legendary::commands::epic_export_backup,
