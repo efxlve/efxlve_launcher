@@ -12,11 +12,34 @@
 
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use serde::Serialize;
 
 use super::format::sha256_bytes;
+
+/// One managed install at a time; two calls share the same staging folders.
+static INSTALL_BUSY: AtomicBool = AtomicBool::new(false);
+
+#[derive(Debug)]
+pub struct InstallGuard;
+
+impl Drop for InstallGuard {
+    fn drop(&mut self) {
+        INSTALL_BUSY.store(false, Ordering::SeqCst);
+    }
+}
+
+pub fn begin_install() -> Result<InstallGuard, String> {
+    if INSTALL_BUSY
+        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+        .is_err()
+    {
+        return Err("@t:archive.xtoolBusy".to_string());
+    }
+    Ok(InstallGuard)
+}
 
 /// The pinned release. The zip hash is checked before anything is unpacked, so
 /// a replaced or tampered asset never reaches the user's disk.
@@ -33,6 +56,16 @@ pub fn install_path(root: &Path) -> PathBuf {
 
 pub fn installed_exe(root: &Path) -> PathBuf {
     install_path(root).join("xtool.exe")
+}
+
+/// Serializes tests that spawn xtool.exe. The tool keeps working files next to
+/// its own folder, so two test processes would fight over the same names.
+#[cfg(test)]
+pub fn test_lock() -> std::sync::MutexGuard<'static, ()> {
+    static LOCK: std::sync::OnceLock<std::sync::Mutex<()>> = std::sync::OnceLock::new();
+    LOCK.get_or_init(|| std::sync::Mutex::new(()))
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
 /// One progress step for the in-app installer. Sent while the zip downloads
@@ -336,6 +369,14 @@ mod tests {
         assert!(PRECOMP_ARGS.contains(&"-bd.\\_libraries"));
         assert_eq!(DECODE_ARGS[0], "decode");
         assert!(DECODE_ARGS.contains(&"-bd.\\_libraries"));
+    }
+
+    #[test]
+    fn only_one_install_can_run() {
+        let first = begin_install().unwrap();
+        assert_eq!(begin_install().unwrap_err(), "@t:archive.xtoolBusy");
+        drop(first);
+        assert!(begin_install().is_ok());
     }
 
     #[test]

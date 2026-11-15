@@ -111,7 +111,7 @@ pub fn capture(app: &AppHandle, app_name: &str, install_path: &Path) -> StoreMet
             }
         }
         "epic" => {
-            meta.epic_app_name = Some(app_name.to_string());
+            meta.epic_app_name = Some(app_name.trim_start_matches("epic::").to_string());
         }
         _ => {}
     }
@@ -169,6 +169,15 @@ pub fn register_local(
                 .steam_app_id
                 .clone()
                 .unwrap_or_else(|| manifest.app_name.trim_start_matches("steam::").to_string());
+            if !super::format::safe_steam_app_id(&app_id) {
+                return LocalRegistration {
+                    registration: RestoreRegistration::warning(
+                        "@t:archive.notRegistered",
+                        "@t:archive.steamIdInvalid",
+                    ),
+                    pending: None,
+                };
+            }
             let size = directory_size(target);
             let text = patch_acf(
                 acf,
@@ -201,6 +210,15 @@ pub fn register_local(
                     pending: None,
                 };
             };
+            if !super::format::safe_store_id(id) {
+                return LocalRegistration {
+                    registration: RestoreRegistration::warning(
+                        "@t:archive.notRegistered",
+                        "@t:archive.storeIdInvalid",
+                    ),
+                    pending: None,
+                };
+            }
             let Some(info) = crate::gogdl::cache::scan_gog_info(target, id) else {
                 return LocalRegistration {
                     registration: RestoreRegistration::warning(
@@ -227,26 +245,46 @@ pub fn register_local(
             }
         }
         "custom" => register_custom(app, manifest, target),
-        "epic" => LocalRegistration {
-            registration: RestoreRegistration {
-                registered: false,
-                detail: "@t:archive.epicPending".to_string(),
-                warning: None,
-            },
-            pending: Some(StorePending::Epic(
-                manifest
-                    .store_meta
-                    .epic_app_name
-                    .clone()
-                    .unwrap_or_else(|| manifest.app_name.clone()),
-            )),
-        },
+        "epic" => {
+            let app_name = manifest
+                .store_meta
+                .epic_app_name
+                .clone()
+                .unwrap_or_else(|| manifest.app_name.clone());
+            let app_name = app_name.strip_prefix("epic::").unwrap_or(&app_name).to_string();
+            if !super::format::safe_store_id(&app_name) {
+                return LocalRegistration {
+                    registration: RestoreRegistration::warning(
+                        "@t:archive.notRegistered",
+                        "@t:archive.storeIdInvalid",
+                    ),
+                    pending: None,
+                };
+            }
+            LocalRegistration {
+                registration: RestoreRegistration {
+                    registered: false,
+                    detail: "@t:archive.epicPending".to_string(),
+                    warning: None,
+                },
+                pending: Some(StorePending::Epic(app_name)),
+            }
+        }
         "amazon" => {
             let id = manifest
                 .store_meta
                 .amazon_product_id
                 .clone()
                 .unwrap_or_else(|| manifest.app_name.trim_start_matches("amazon::").to_string());
+            if !super::format::safe_store_id(&id) {
+                return LocalRegistration {
+                    registration: RestoreRegistration::warning(
+                        "@t:archive.notRegistered",
+                        "@t:archive.storeIdInvalid",
+                    ),
+                    pending: None,
+                };
+            }
             LocalRegistration {
                 registration: RestoreRegistration {
                     registered: false,

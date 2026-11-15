@@ -108,11 +108,52 @@ impl MediaManifest {
         if !safe_component(&self.install_dir_name) {
             return Err("@t:archive.manifestInvalid\u{1f}installDir".to_string());
         }
+        let app_id = self
+            .app_name
+            .split_once("::")
+            .map(|(_, id)| id)
+            .unwrap_or(&self.app_name);
+        if app_id.is_empty() || app_id.starts_with('-') || !safe_component(app_id) {
+            return Err("@t:archive.manifestInvalid\u{1f}appName".to_string());
+        }
+        if let Some(id) = self.store_meta.steam_app_id.as_deref() {
+            if !safe_steam_app_id(id) {
+                return Err("@t:archive.manifestInvalid\u{1f}steamId".to_string());
+            }
+        }
+        if let Some(id) = self.store_meta.epic_app_name.as_deref() {
+            // Older manifests stored the library key (`epic::Ginger`); accept
+            // it, but validate the bare app name that reaches the CLI.
+            let id = id.strip_prefix("epic::").unwrap_or(id);
+            if !safe_store_id(id) {
+                return Err("@t:archive.manifestInvalid\u{1f}storeId".to_string());
+            }
+        }
+        for id in [
+            self.store_meta.gog_game_id.as_deref(),
+            self.store_meta.amazon_product_id.as_deref(),
+        ]
+        .into_iter()
+        .flatten()
+        {
+            if !safe_store_id(id) {
+                return Err("@t:archive.manifestInvalid\u{1f}storeId".to_string());
+            }
+        }
         if self.volumes.is_empty() {
             return Err("@t:archive.manifestInvalid\u{1f}volumes".to_string());
         }
         if self.volumes.iter().any(|v| !safe_component(&v.file_name)) {
             return Err("@t:archive.manifestInvalid\u{1f}volumeName".to_string());
+        }
+        if self.volumes.iter().enumerate().any(|(index, volume)| {
+            volume.index as usize != index + 1
+                || volume.bytes == 0
+                || volume.blocks == 0
+                || volume.sha256.len() != 64
+                || !volume.sha256.bytes().all(|byte| byte.is_ascii_hexdigit())
+        }) {
+            return Err("@t:archive.manifestInvalid\u{1f}volumes".to_string());
         }
         if self.compression.frame_bytes == 0
             || self.compression.frame_bytes > 512 * 1024 * 1024
@@ -209,6 +250,25 @@ pub fn safe_component(value: &str) -> bool {
     let mut components = Path::new(trimmed).components();
     matches!(components.next(), Some(std::path::Component::Normal(_)))
         && components.next().is_none()
+}
+
+/// Store ids end up in file names and command arguments. Digits, letters, dot,
+/// underscore and hyphen are enough for Steam, GOG, Epic and Amazon ids; a
+/// leading `-` must never reach a CLI as a flag.
+pub(crate) fn safe_store_id(value: &str) -> bool {
+    !value.is_empty()
+        && value != "."
+        && value != ".."
+        && !value.starts_with('-')
+        && value
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || matches!(character, '_' | '-' | '.'))
+}
+
+/// Steam app ids are numeric. They become `appmanifest_<id>.acf` under
+/// `steamapps`, so a path separator here would escape that folder.
+pub(crate) fn safe_steam_app_id(value: &str) -> bool {
+    !value.is_empty() && value.chars().all(|character| character.is_ascii_digit())
 }
 
 pub fn encode_block_header(
@@ -316,7 +376,7 @@ mod tests {
                 index: 1,
                 file_name: "game.efxpak.001".to_string(),
                 bytes: 10,
-                sha256: "x".to_string(),
+                sha256: "0".repeat(64),
                 blocks: 1,
             }],
             store_meta: StoreMeta::default(),
@@ -330,6 +390,23 @@ mod tests {
         assert_eq!(loaded.app_name, "steam::1");
         assert_eq!(loaded.volume_for_blocks(), vec![1]);
         assert_eq!(loaded.stored_bytes(), 10);
+        let mut dangerous = manifest.clone();
+        dangerous.store_meta.steam_app_id = Some(r"..\..\evil".to_string());
+        assert!(dangerous.validate().is_err());
+        dangerous.store_meta.steam_app_id = Some("123".to_string());
+        dangerous.store_meta.epic_app_name = Some("-oops".to_string());
+        assert!(dangerous.validate().is_err());
+        dangerous.store_meta.epic_app_name = Some("epic::Ginger".to_string());
+        assert!(dangerous.validate().is_ok());
+        let mut bad_volume = manifest.clone();
+        bad_volume.volumes[0].index = 2;
+        assert!(bad_volume.validate().is_err());
+        bad_volume = manifest.clone();
+        bad_volume.volumes[0].bytes = 0;
+        assert!(bad_volume.validate().is_err());
+        bad_volume = manifest.clone();
+        bad_volume.volumes[0].sha256 = "x".to_string();
+        assert!(bad_volume.validate().is_err());
         let mut older = loaded;
         older.format_version = 1;
         assert!(older.validate().is_ok());
@@ -348,5 +425,17 @@ mod tests {
         assert!(!safe_component(r"..\Game"));
         assert!(!safe_component(r"C:\Game"));
         assert!(!safe_component("a/b"));
+    }
+
+    #[test]
+    fn store_identifiers_stay_argument_safe() {
+        assert!(safe_steam_app_id("12345"));
+        assert!(!safe_steam_app_id("12/345"));
+        assert!(!safe_steam_app_id("-123"));
+        assert!(safe_store_id("Ginger_1"));
+        assert!(safe_store_id("amzn1.adg.product"));
+        assert!(!safe_store_id("-oops"));
+        assert!(!safe_store_id(r"..\evil"));
+        assert!(!safe_store_id(".."));
     }
 }

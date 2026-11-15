@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin};
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
@@ -301,6 +301,7 @@ fn pack_into(
     staging: &Path,
 ) -> Result<(MediaManifest, u64), String> {
     let estimated_volumes = worst_case_volumes(scan.total_bytes, job.profile.volume_bytes);
+    let sink_failure = Arc::new(Mutex::new(None));
     let ctx = PackCtx {
         sink: job.sink.clone(),
         id: job.app_name.clone(),
@@ -312,6 +313,7 @@ fn pack_into(
         cancel: job.cancel.clone(),
         start: Instant::now(),
         last_emit_ms: Arc::new(AtomicU64::new(0)),
+        sink_failure: sink_failure.clone(),
     };
 
     let mut compressor = Compressor::new(job.level)
@@ -338,7 +340,11 @@ fn pack_into(
         storing: false,
     };
     let sink = match &job.xtool {
-        Some(xtool) => ArchiveSink::Xtool(XtoolSink::new(xtool, sink)?),
+        Some(xtool) => ArchiveSink::Xtool(XtoolSink::new(
+            xtool,
+            sink,
+            sink_failure.clone(),
+        )?),
         None => ArchiveSink::Direct(sink),
     };
     let mut builder = tar::Builder::new(sink);
@@ -462,6 +468,10 @@ struct PackCtx {
     cancel: Arc<AtomicBool>,
     start: Instant,
     last_emit_ms: Arc<AtomicU64>,
+    /// Set by the xtool reader thread when the volume writer fails. The file
+    /// reader polls it so a full disk aborts the current file instead of
+    /// reading the rest of the game.
+    sink_failure: Arc<Mutex<Option<String>>>,
 }
 
 impl PackCtx {
@@ -527,6 +537,15 @@ impl<R: Read> Read for ProgressReader<R> {
                 io::ErrorKind::Interrupted,
                 "@t:archive.cancelled",
             ));
+        }
+        if let Some(error) = self
+            .ctx
+            .sink_failure
+            .lock()
+            .ok()
+            .and_then(|mut slot| slot.take())
+        {
+            return Err(io::Error::other(error));
         }
         let read = self.inner.read(buf)?;
         if read == 0 && self.remaining > 0 {
@@ -687,10 +706,23 @@ struct XtoolSink {
     child: Child,
     reader: Option<JoinHandle<()>>,
     result: Receiver<Result<VolumeWriter, String>>,
+    failure: Arc<Mutex<Option<String>>>,
+}
+
+fn record_sink_failure(slot: &Mutex<Option<String>>, message: String) {
+    if let Ok(mut slot) = slot.lock() {
+        if slot.is_none() {
+            *slot = Some(message);
+        }
+    }
 }
 
 impl XtoolSink {
-    fn new(xtool: &Xtool, sink: FrameSink) -> Result<Self, String> {
+    fn new(
+        xtool: &Xtool,
+        sink: FrameSink,
+        failure: Arc<Mutex<Option<String>>>,
+    ) -> Result<Self, String> {
         let mut child = xtool.precompress()?;
         let stdin = child
             .stdin
@@ -701,6 +733,7 @@ impl XtoolSink {
             .take()
             .ok_or_else(|| "@t:archive.xtoolFailed\u{1f}stdout".to_string())?;
         let (tx, result) = mpsc::channel();
+        let shared = failure.clone();
         let reader = std::thread::spawn(move || {
             let mut sink = sink;
             let mut failure: Option<String> = None;
@@ -711,14 +744,16 @@ impl XtoolSink {
                     Ok(read) => {
                         if failure.is_none() {
                             if let Err(error) = sink.write_all(&buffer[..read]) {
-                                failure = Some(error.to_string());
+                                let message = error.to_string();
+                                record_sink_failure(&shared, message.clone());
+                                failure = Some(message);
                             }
                         }
                     }
                     Err(error) => {
-                        failure.get_or_insert_with(|| {
-                            format!("@t:archive.xtoolFailed\u{1f}{error}")
-                        });
+                        let message = format!("@t:archive.xtoolFailed\u{1f}{error}");
+                        record_sink_failure(&shared, message.clone());
+                        failure.get_or_insert(message);
                         break;
                     }
                 }
@@ -736,6 +771,7 @@ impl XtoolSink {
             child,
             reader: Some(reader),
             result,
+            failure,
         })
     }
 
@@ -764,9 +800,17 @@ impl Write for XtoolSink {
         let Some(stdin) = self.stdin.as_mut() else {
             return Err(io::Error::other("@t:archive.xtoolFailed\u{1f}closed"));
         };
-        stdin
-            .write(buf)
-            .map_err(|error| io::Error::other(format!("@t:archive.xtoolFailed\u{1f}{error}")))
+        match stdin.write(buf) {
+            Ok(written) => Ok(written),
+            Err(error) => {
+                if let Some(stored) = self.failure.lock().ok().and_then(|mut slot| slot.take()) {
+                    return Err(io::Error::other(stored));
+                }
+                Err(io::Error::other(format!(
+                    "@t:archive.xtoolFailed\u{1f}{error}"
+                )))
+            }
+        }
     }
 
     fn flush(&mut self) -> io::Result<()> {

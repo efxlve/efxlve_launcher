@@ -4323,5 +4323,9 @@
   "archive.eraseConfirm": "Silmeyi onayla",
   "archive.eraseConfirmHint": "Bu işlem diskteki her şeyi siler. Devam etmek için Silmeyi onayla'ya, vazgeçmek için İptal'e bas.",
   "archive.readOnlyDisc": "Bu salt okunur bir disk. Yedek yazmak için boş, kaydedilebilir bir disk tak.",
-  "archive.estimateFirst": "Sıkıştırılmamış oyun bu sürücüye sığmıyor. Boyutu tahmin et'e bas; sıkıştırma sonrası sığabilir."
+  "archive.estimateFirst": "Sıkıştırılmamış oyun bu sürücüye sığmıyor. Boyutu tahmin et'e bas; sıkıştırma sonrası sığabilir.",
+  "archive.steamIdInvalid": "Yedekte geçersiz bir Steam uygulama kimliği var; oyun geri yüklendi ama mağazaya kaydedilmedi.",
+  "archive.storeIdInvalid": "Yedekte geçersiz bir mağaza kimliği var; oyun geri yüklendi ama mağazaya kaydedilmedi.",
+  "archive.xtoolBusy": "xtool zaten kuruluyor.",
+  "disc.busy": "Başka bir disk işlemi zaten sürüyor."
 }

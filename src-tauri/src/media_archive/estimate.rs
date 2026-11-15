@@ -36,7 +36,8 @@ const BLOCK_HEADER: u64 = 64;
 pub struct ArchiveEstimate {
     pub original_bytes: u64,
     pub estimated_bytes: u64,
-    /// Estimated stored bytes divided by the original bytes, 0.0 to 1.0.
+    /// Estimated stored bytes divided by the original bytes. Slightly over 1.0
+    /// is possible for incompressible games because of the archive overhead.
     pub ratio: f64,
     pub estimated_volumes: u32,
     pub sampled_files: u32,
@@ -60,6 +61,29 @@ pub fn sample_windows(len: u64, window: u64) -> Vec<(u64, usize)> {
     (0..4)
         .map(|index| (span * index / 3, piece as usize))
         .collect()
+}
+
+/// One contiguous window, centred in the file. `xtool` needs complete zlib
+/// streams, so its sample must not be cut into disjoint 1 MiB slices.
+pub fn contiguous_window(len: u64, window: u64) -> (u64, usize) {
+    if len == 0 || window == 0 {
+        return (0, 0);
+    }
+    let size = len.min(window);
+    let offset = if len > size { (len - size) / 2 } else { 0 };
+    (offset, size as usize)
+}
+
+fn read_contiguous(entry: &FileEntry, budget: u64) -> Option<Vec<u8>> {
+    let (offset, size) = contiguous_window(entry.size, budget.min(PER_FILE_SAMPLE));
+    if size == 0 {
+        return None;
+    }
+    let mut file = File::open(&entry.source).ok()?;
+    file.seek(SeekFrom::Start(offset)).ok()?;
+    let mut buffer = vec![0u8; size];
+    file.read_exact(&mut buffer).ok()?;
+    Some(buffer)
 }
 
 fn read_sample(entry: &FileEntry, budget: u64) -> Option<Vec<u8>> {
@@ -176,7 +200,7 @@ pub fn estimate_archive(
                 if budget == 0 {
                     break;
                 }
-                let Some(bytes) = read_sample(entry, budget) else {
+                let Some(bytes) = read_contiguous(entry, budget) else {
                     continue;
                 };
                 budget = budget.saturating_sub(bytes.len() as u64);
@@ -228,7 +252,7 @@ pub fn estimate_archive(
     let blocks = body.div_ceil(profile.frame_bytes.max(1));
     let estimated_bytes = body.saturating_add(blocks.saturating_mul(BLOCK_HEADER));
     let stored_ratio = if scan.total_bytes > 0 {
-        (estimated_bytes as f64 / scan.total_bytes as f64).min(1.0)
+        estimated_bytes as f64 / scan.total_bytes as f64
     } else {
         1.0
     };
@@ -283,6 +307,15 @@ mod tests {
     }
 
     #[test]
+    fn contiguous_windows_are_inside_the_file() {
+        assert_eq!(contiguous_window(0, 10), (0, 0));
+        assert_eq!(contiguous_window(10, 4), (3, 4));
+        assert_eq!(contiguous_window(4, 10), (0, 4));
+        let (offset, size) = contiguous_window(100, 40);
+        assert!(offset + size as u64 <= 100);
+    }
+
+    #[test]
     fn a_compressible_game_estimates_a_smaller_archive() {
         let root = temp_root("compressible");
         std::fs::write(root.join("data.txt"), vec![b'a'; 2 * MIB as usize]).unwrap();
@@ -309,6 +342,7 @@ mod tests {
     #[test]
     #[ignore = "needs EFXLVE_XTOOL and EFXLVE_ESTIMATE_GAME"]
     fn a_real_game_can_be_estimated() {
+        let _lock = crate::media_archive::xtool::test_lock();
         let game = std::env::var("EFXLVE_ESTIMATE_GAME").expect("set EFXLVE_ESTIMATE_GAME");
         let xtool_path = std::env::var("EFXLVE_XTOOL").expect("set EFXLVE_XTOOL");
         let xtool = Xtool::new(&xtool_path).unwrap();

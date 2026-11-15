@@ -4323,5 +4323,9 @@
   "archive.eraseConfirm": "Confirm erase",
   "archive.eraseConfirmHint": "This deletes everything on the disc. Click Confirm erase to continue, or Cancel to keep the disc.",
   "archive.readOnlyDisc": "This is a read-only disc. Insert a blank recordable disc to burn a backup.",
-  "archive.estimateFirst": "The uncompressed game does not fit on this drive. Press Estimate size; compression may still fit it."
+  "archive.estimateFirst": "The uncompressed game does not fit on this drive. Press Estimate size; compression may still fit it.",
+  "archive.steamIdInvalid": "The backup has an invalid Steam app id; the game was restored but not registered.",
+  "archive.storeIdInvalid": "The backup has an invalid store id; the game was restored but not registered.",
+  "archive.xtoolBusy": "xtool is already being installed.",
+  "disc.busy": "Another disc operation is already running."
 }

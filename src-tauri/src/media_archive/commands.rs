@@ -269,6 +269,7 @@ pub async fn archive_xtool_install(app: AppHandle) -> Result<String, String> {
         .path()
         .app_data_dir()
         .map_err(|error| error.to_string())?;
+    let _install = xtool::begin_install()?;
     let _awake = crate::keep_awake::keep_awake();
     let exe = xtool::install_with_progress(&root, |progress| {
         let _ = app.emit("xtool-progress", progress);
@@ -614,6 +615,7 @@ pub async fn disc_list_recorders() -> Result<Vec<DiscRecorder>, String> {
 
 #[tauri::command]
 pub async fn disc_burn_folder(folder: String, recorder_id: String) -> Result<(), String> {
+    let _disc = disc::begin_disc_job()?;
     let _awake = crate::keep_awake::keep_awake();
     tauri::async_runtime::spawn_blocking(move || {
         disc::burn_folder(Path::new(&folder), &recorder_id)
@@ -624,6 +626,7 @@ pub async fn disc_burn_folder(folder: String, recorder_id: String) -> Result<(),
 
 #[tauri::command]
 pub async fn disc_erase(recorder_id: String) -> Result<(), String> {
+    let _disc = disc::begin_disc_job()?;
     let _awake = crate::keep_awake::keep_awake();
     tauri::async_runtime::spawn_blocking(move || disc::erase(&recorder_id))
         .await

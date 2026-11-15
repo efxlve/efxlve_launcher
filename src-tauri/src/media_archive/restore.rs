@@ -685,8 +685,8 @@ impl BlockReader {
             speed_bytes: speed,
             eta_seconds: eta,
             current_file: current,
-            volume: self.volume_of(self.block_index.saturating_sub(1)) + 1,
-            volume_count: self.volume_for_block.iter().max().copied().unwrap_or(0) + 1,
+            volume: self.volume_of(self.block_index.saturating_sub(1)).max(1),
+            volume_count: self.volume_for_block.iter().max().copied().unwrap_or(1),
             error: None,
         });
     }
@@ -819,9 +819,26 @@ impl XtoolReader {
 
 impl Read for XtoolReader {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        match self.stdout.as_mut() {
-            Some(stdout) => stdout.read(buf),
-            None => Ok(0),
+        let Some(stdout) = self.stdout.as_mut() else {
+            return Ok(0);
+        };
+        match stdout.read(buf) {
+            Ok(0) => {
+                // The feeder records a block/cancel error before it closes
+                // stdin; the child then exits and stdout reaches EOF. Surface
+                // that error instead of letting tar report a truncated stream.
+                if let Some(error) = self.failure.lock().ok().and_then(|mut slot| slot.take()) {
+                    return Err(io::Error::other(error));
+                }
+                Ok(0)
+            }
+            Ok(read) => Ok(read),
+            Err(error) => {
+                if let Some(failure) = self.failure.lock().ok().and_then(|mut slot| slot.take()) {
+                    return Err(io::Error::other(failure));
+                }
+                Err(error)
+            }
         }
     }
 }
@@ -896,6 +913,49 @@ mod tests {
         })
         .unwrap();
         (game, outcome.folder, outcome.manifest_path)
+    }
+
+    struct CaptureSink(Arc<Mutex<Vec<ArchiveProgress>>>);
+
+    impl ProgressSink for CaptureSink {
+        fn emit(&self, progress: ArchiveProgress) {
+            if let Ok(mut events) = self.0.lock() {
+                events.push(progress);
+            }
+        }
+    }
+
+    #[test]
+    fn restore_progress_names_the_current_volume() {
+        let root = temp_root("progress");
+        let (_game, folder, manifest_path) = pack_fixture(&root, 32 * 1024);
+        let manifest = crate::media_archive::format::read_manifest(&manifest_path).unwrap();
+        let target = root.join("target");
+        std::fs::create_dir_all(&target).unwrap();
+        let events = Arc::new(Mutex::new(Vec::new()));
+        restore_game(RestoreJob {
+            manifest: manifest.clone(),
+            manifest_dir: folder,
+            extra_dirs: Vec::new(),
+            xtool: None,
+            target_parent: target,
+            overwrite: false,
+            sink: Arc::new(CaptureSink(events.clone())),
+            cancel: Arc::new(AtomicBool::new(false)),
+        })
+        .unwrap();
+        let events = events.lock().unwrap();
+        let total = manifest.volumes.len() as u32;
+        assert!(!events.is_empty());
+        for event in events.iter().filter(|event| event.stage == "restoring") {
+            assert!(
+                event.volume >= 1 && event.volume <= total,
+                "volume {} of {total}",
+                event.volume
+            );
+            assert_eq!(event.volume_count, total);
+        }
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]
@@ -1128,6 +1188,7 @@ mod tests {
         use flate2::Compression;
         use std::io::Write;
 
+        let _lock = crate::media_archive::xtool::test_lock();
         let path = std::env::var("EFXLVE_XTOOL").expect("set EFXLVE_XTOOL");
         let xtool = Xtool::new(&path).unwrap();
         let root = temp_root("xtool-roundtrip");
@@ -1215,6 +1276,83 @@ mod tests {
         assert_eq!(
             std::fs::read(restored.target.join("data.bin")).unwrap(),
             binary
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    #[ignore = "needs EFXLVE_XTOOL pointing at a local xtool.exe"]
+    fn an_xtool_corrupt_block_reports_the_volume_not_a_truncated_tar() {
+        use flate2::write::ZlibEncoder;
+        use flate2::Compression;
+        use std::io::Write;
+
+        let _lock = crate::media_archive::xtool::test_lock();
+        let path = std::env::var("EFXLVE_XTOOL").expect("set EFXLVE_XTOOL");
+        let xtool = Xtool::new(&path).unwrap();
+        let root = temp_root("xtool-corrupt");
+        let game = root.join("Game");
+        std::fs::create_dir_all(&game).unwrap();
+        let mut text = Vec::new();
+        for line in 0..20_000 {
+            text.extend_from_slice(
+                format!("line {line}: the quick brown fox jumps over the lazy dog\n").as_bytes(),
+            );
+        }
+        let mut encoder = ZlibEncoder::new(Vec::new(), Compression::new(6));
+        encoder.write_all(&text).unwrap();
+        let zlib_stream = encoder.finish().unwrap();
+        std::fs::write(game.join("assets.bin"), &zlib_stream).unwrap();
+        std::fs::write(game.join("data.bin"), noisy(200 * 1024, 17)).unwrap();
+        let media = root.join("media");
+        std::fs::create_dir_all(&media).unwrap();
+        let packed = pack_game(PackJob {
+            app_name: "steam::8".to_string(),
+            title: "Xtool Corrupt".to_string(),
+            install_path: game,
+            target_root: media,
+            profile: MediaProfileInfo {
+                id: "test".to_string(),
+                volume_bytes: 128 * 1024,
+                frame_bytes: 64 * 1024,
+                file_system: "test".to_string(),
+            },
+            level: 3,
+            window_log: 20,
+            xtool: Some(xtool.clone()),
+            store_meta: StoreMeta::default(),
+            sink: Arc::new(NoopSink),
+            cancel: Arc::new(AtomicBool::new(false)),
+        })
+        .unwrap();
+        assert!(packed.manifest.volumes.len() >= 2);
+        let second = packed
+            .folder
+            .join(&packed.manifest.volumes[1].file_name);
+        let mut bytes = std::fs::read(&second).unwrap();
+        let last = bytes.len() - 1;
+        bytes[last] ^= 0xff;
+        std::fs::write(&second, bytes).unwrap();
+        let target = root.join("target");
+        std::fs::create_dir_all(&target).unwrap();
+        let error = restore_game(RestoreJob {
+            manifest: packed.manifest,
+            manifest_dir: packed.folder,
+            extra_dirs: Vec::new(),
+            xtool: Some(xtool),
+            target_parent: target,
+            overwrite: false,
+            sink: Arc::new(NoopSink),
+            cancel: Arc::new(AtomicBool::new(false)),
+        })
+        .err()
+        .expect("a corrupt xtool block must fail");
+        assert!(!error.contains("writeFailed"), "{error}");
+        assert!(
+            error.contains("blockCorrupt")
+                || error.contains("volumeCorrupt")
+                || error.contains("xtoolFailed"),
+            "{error}"
         );
         let _ = std::fs::remove_dir_all(&root);
     }

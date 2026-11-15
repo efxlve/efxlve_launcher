@@ -3,10 +3,34 @@
 //! script; this module owns validation, recorder listing and error mapping.
 
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use serde::{Deserialize, Serialize};
 
 use super::format::{read_manifest, MANIFEST_FILE};
+
+/// One optical operation at a time. Two commands sharing one IMAPI2 recorder
+/// can make a burn fail halfway through.
+static DISC_BUSY: AtomicBool = AtomicBool::new(false);
+
+#[derive(Debug)]
+pub struct DiscJobGuard;
+
+impl Drop for DiscJobGuard {
+    fn drop(&mut self) {
+        DISC_BUSY.store(false, Ordering::SeqCst);
+    }
+}
+
+pub fn begin_disc_job() -> Result<DiscJobGuard, String> {
+    if DISC_BUSY
+        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+        .is_err()
+    {
+        return Err("@t:disc.busy".to_string());
+    }
+    Ok(DiscJobGuard)
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -80,8 +104,8 @@ for ($i = 0; $i -lt $dm.Count; $i++) {
       $loaded = [bool]$data.IsMediaLoaded
       if ($loaded) {
         $blank = ([bool]$data.MediaPhysicallyBlank) -or ([bool]$data.MediaHeuristicallyBlank)
-        $free = ([int64]$data.FreeSectorsOnMedia) * 2048
-        $capacity = ([int64]$data.TotalSectorsOnMedia) * 2048
+        $free = ([Math]::Max([int64]0, [int64]$data.FreeSectorsOnMedia)) * 2048
+        $capacity = ([Math]::Max([int64]0, [int64]$data.TotalSectorsOnMedia)) * 2048
         $media = [int]$data.CurrentPhysicalMediaType
       }
     } catch { }
@@ -243,9 +267,9 @@ try {{
   $writer.ClientName = "Efxlve Launcher"
   if (-not $writer.IsMediaLoaded) {{ throw "NO_DISC" }}
   if (-not $writer.MediaPhysicallyBlank -and -not $writer.MediaHeuristicallyBlank) {{ throw "NOT_BLANK" }}
-  $free = [int64]$writer.FreeSectorsOnMedia
+  $free = [Math]::Max([int64]0, [int64]$writer.FreeSectorsOnMedia)
   if ($free -le 0 -and (($writer.MediaPhysicallyBlank) -or ($writer.MediaHeuristicallyBlank))) {{
-    $free = [int64]$writer.TotalSectorsOnMedia
+    $free = [Math]::Max([int64]0, [int64]$writer.TotalSectorsOnMedia)
   }}
   if ($free -le 0) {{ throw "NO_SPACE" }}
   $part = Get-ChildItem -LiteralPath $folder -Filter "*.efxpak.*" | Select-Object -First 1
@@ -254,9 +278,10 @@ try {{
   $fsi = New-Object -ComObject IMAPI2FS.MsftFileSystemImage
   $fsi.FileSystemsToCreate = $fileSystems
   $fsi.VolumeName = $label
-  $fsi.FreeMediaBlocks = $free
+  $fsi.FreeMediaBlocks = 0
   $fsi.Root.AddTree($folder, $false)
   $image = $fsi.CreateResultImage()
+  if ([int64]$image.TotalBlocks -gt $free) {{ throw "NO_SPACE" }}
   $stream = $image.ImageStream
   $writer.Write($stream)
   try {{ $rec.EjectMedia() }} catch {{ }}
@@ -487,6 +512,14 @@ mod tests {
         assert_eq!(file_systems_for(25_000 * 1024 * 1024), 4);
     }
 
+    #[test]
+    fn only_one_disc_job_can_run() {
+        let first = begin_disc_job().unwrap();
+        assert_eq!(begin_disc_job().unwrap_err(), "@t:disc.busy");
+        drop(first);
+        assert!(begin_disc_job().is_ok());
+    }
+
     #[cfg(windows)]
     #[test]
     fn recorder_list_returns_even_without_a_drive() {
@@ -538,7 +571,7 @@ mod tests {
               "skippedLinks": 0,
               "compression": { "algorithm": "zstd", "level": 3, "windowLog": 20, "frameBytes": 1048576 },
               "volumeBytes": 1048576,
-              "volumes": [{ "index": 1, "fileName": "game.efxpak.001", "bytes": 1, "sha256": "x", "blocks": 1 }],
+              "volumes": [{ "index": 1, "fileName": "game.efxpak.001", "bytes": 1, "sha256": "0000000000000000000000000000000000000000000000000000000000000000", "blocks": 1 }],
               "storeMeta": {},
               "complete": true,
               "discLayout": true

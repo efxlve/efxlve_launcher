@@ -200,7 +200,6 @@ function schedulePlan(): void {
 function invalidateEstimate(): void {
   estimateToken += 1;
   S.archiveEstimate = null;
-  S.archiveEstimating = false;
 }
 
 export async function requestEstimate(): Promise<void> {
@@ -231,10 +230,10 @@ export async function requestEstimate(): Promise<void> {
   } catch (error) {
     if (token === estimateToken) toast(localizeMessage(String(error)), "err");
   } finally {
-    if (token === estimateToken) {
-      S.archiveEstimating = false;
-      scheduleRender();
-    }
+    // Only one estimate can be in flight; the guard above prevents a second.
+    // A token mismatch drops the stale result, not the spinner state.
+    S.archiveEstimating = false;
+    scheduleRender();
   }
 }
 
@@ -324,15 +323,28 @@ export function onXtoolProgress(progress: XtoolProgress): void {
 }
 
 export function onArchiveProgress(progress: ArchiveProgress): void {
+  const previous = S.archiveProgress;
   S.archiveProgress = progress;
   if (progress.stage === "done") {
     S.archiveRunning = false;
+    S.archiveActiveId = "";
     scheduleRender();
     return;
   }
   if (progress.stage === "failed") {
     // The command's rejection handler owns the final state; a failure event
     // alone must not re-enable the button while it is still cleaning up.
+    scheduleRender();
+    return;
+  }
+  // startBackup/startRestore clear the progress panel before the first event.
+  // The first event must build the panel; later events patch it in place. A
+  // stage change (notably `registering`) also swaps the action button.
+  if (
+    !document.getElementById("archive-progress") ||
+    progress.stage === "registering" ||
+    previous?.stage === "registering"
+  ) {
     scheduleRender();
     return;
   }
@@ -370,15 +382,20 @@ export function openArchiveForGame(appName: string): void {
   // keys every game (`epic::Ginger`). Resolve it before the view falls back to
   // the first installed game.
   const item = findArchiveGame(archiveGameList(), appName);
+  const busy =
+    S.archiveRunning || S.archiveBurning !== null || S.archiveErasing;
   S.archiveSelectedApp = item?.key ?? appName;
   S.archiveTab = "backup";
   S.archivePlan = null;
   S.archiveResult = null;
-  S.archiveProgress = null;
   S.archiveTarget = "";
-  S.archiveRunning = false;
   invalidateEstimate();
-  clearBurnState();
+  if (!busy) {
+    S.archiveProgress = null;
+    S.archiveRunning = false;
+    S.archiveActiveId = "";
+    clearBurnState();
+  }
   loadArchiveView();
 }
 
@@ -500,6 +517,7 @@ async function startBackup(): Promise<void> {
     return;
   }
   S.archiveRunning = true;
+  S.archiveActiveId = game.key;
   S.archiveProgress = null;
   S.archiveResult = null;
   clearBurnState();
@@ -531,6 +549,7 @@ async function startBackup(): Promise<void> {
     }
   } finally {
     S.archiveRunning = false;
+    S.archiveActiveId = "";
     scheduleRender();
   }
 }
@@ -650,6 +669,7 @@ async function startRestore(): Promise<void> {
     return;
   }
   S.archiveRunning = true;
+  S.archiveActiveId = found.manifest.appName;
   S.archiveProgress = null;
   S.archiveRestoreResult = null;
   scheduleRender();
@@ -674,6 +694,7 @@ async function startRestore(): Promise<void> {
     }
   } finally {
     S.archiveRunning = false;
+    S.archiveActiveId = "";
     scheduleRender();
   }
 }
@@ -735,7 +756,10 @@ export function handleArchiveAction(
     return true;
   }
   if (act === "archive-cancel") {
-    const id = S.archiveProgress?.id || S.archiveSelectedApp;
+    const id =
+      S.archiveProgress?.id ||
+      S.archiveActiveId ||
+      S.archiveSelectedApp;
     void archiveCancel(id).then((cancelled) => {
       if (cancelled) toast(t("archive.cancelling"), "ok");
     });
