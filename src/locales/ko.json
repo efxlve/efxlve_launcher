@@ -4322,5 +4322,6 @@
   "archive.guideTrouble7": "The disc already contains data: erase it if it is a rewritable disc (CD-RW, DVD-RW, BD-RE), or insert a blank one.",
   "archive.eraseConfirm": "Confirm erase",
   "archive.eraseConfirmHint": "This deletes everything on the disc. Click Confirm erase to continue, or Cancel to keep the disc.",
-  "archive.readOnlyDisc": "This is a read-only disc. Insert a blank recordable disc to burn a backup."
+  "archive.readOnlyDisc": "This is a read-only disc. Insert a blank recordable disc to burn a backup.",
+  "archive.estimateFirst": "The uncompressed game does not fit on this drive. Press Estimate size; compression may still fit it."
 }

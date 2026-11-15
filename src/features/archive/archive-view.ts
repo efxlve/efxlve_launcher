@@ -227,7 +227,7 @@ function renderBackupTab(): string {
                </div>
                <div class="archive-inline">
                  <input id="archive-xtool-input" class="input archive-path" type="text" value="${esc(S.archiveXtoolPath)}" placeholder="C:\\xtool\\xtool.exe" data-act="archive-xtool-input" />
-                 <button type="button" class="btn primary small" data-act="archive-xtool-install" ${S.archiveXtoolInstalling ? "disabled" : ""}>${
+                 <button type="button" class="btn primary small" data-act="archive-xtool-install" ${S.archiveXtoolInstalling || S.archiveBurning !== null || S.archiveErasing ? "disabled" : ""}>${
                    S.archiveXtoolInstalling
                      ? `${icon("refresh", 13, "spin")} ${t("archive.xtoolInstalling")}`
                      : `${icon("download", 13)} ${t("archive.xtoolInstall")}`
@@ -313,6 +313,11 @@ function renderPlanSummary(plan: ArchivePlan | null): string {
           : `<div class="archive-warn">${icon("alert-triangle", 13)} ${t("archive.notEnoughSpace", { need: fmtBytesOrZero(needed), free })}</div>`
       }
       ${
+        !fits && !S.archiveEstimate
+          ? `<div class="archive-note">${t("archive.estimateFirst")}</div>`
+          : ""
+      }
+      ${
         plan.volumeFits
           ? ""
           : `<div class="archive-warn">${icon("alert-triangle", 13)} ${t("archive.fat32Limit")}</div>`
@@ -327,7 +332,12 @@ function renderPlanSummary(plan: ArchivePlan | null): string {
 
 function renderEstimate(): string {
   const estimate = S.archiveEstimate;
-  const busy = S.archiveEstimating || S.archiveRunning || S.archiveXtoolInstalling;
+  const busy =
+    S.archiveEstimating ||
+    S.archiveRunning ||
+    S.archiveXtoolInstalling ||
+    S.archiveBurning !== null ||
+    S.archiveErasing;
   const button = `<button type="button" class="btn ghost small" data-act="archive-estimate" ${busy ? "disabled" : ""}>${
     S.archiveEstimating
       ? `${icon("refresh", 13, "spin")} ${t("archive.estimating")}`
@@ -382,9 +392,12 @@ function renderXtoolProgress(): string {
     progress?.stage === "extracting"
       ? t("archive.xtoolExtracting")
       : t("archive.xtoolInstalling");
+  const indeterminate = !progress || progress.total === 0;
   return `
     <div class="archive-install-progress" id="archive-xtool-progress">
-      <div class="progress"><span id="archive-xtool-progress-fill" style="width:${percent}%"></span></div>
+      <div class="progress ${indeterminate ? "indeterminate" : ""}">
+        <span id="archive-xtool-progress-fill" style="${indeterminate ? "" : `width:${percent}%`}"></span>
+      </div>
       <div class="archive-progress-meta">
         <span id="archive-xtool-progress-label">${label}</span>
         <span id="archive-xtool-progress-text" class="tabular-nums">${text}</span>
@@ -540,7 +553,7 @@ function renderRestoreDetail(): string {
           ? `<div class="archive-inline archive-restore-target">
                <label class="archive-inline-label" for="archive-xtool-input">${t("archive.xtoolTitle")}</label>
                <input id="archive-xtool-input" class="input archive-path" type="text" value="${esc(S.archiveXtoolPath)}" placeholder="C:\\xtool\\xtool.exe" data-act="archive-xtool-input" />
-               <button type="button" class="btn primary small" data-act="archive-xtool-install" ${S.archiveXtoolInstalling ? "disabled" : ""}>${
+               <button type="button" class="btn primary small" data-act="archive-xtool-install" ${S.archiveXtoolInstalling || S.archiveBurning !== null || S.archiveErasing ? "disabled" : ""}>${
                  S.archiveXtoolInstalling
                    ? `${icon("refresh", 13, "spin")} ${t("archive.xtoolInstalling")}`
                    : `${icon("download", 13)} ${t("archive.xtoolInstall")}`

@@ -4322,5 +4322,6 @@
   "archive.guideTrouble7": "Diskte zaten veri var: yeniden yazılabilir diskse (CD-RW, DVD-RW, BD-RE) sil, değilse boş bir disk tak.",
   "archive.eraseConfirm": "Silmeyi onayla",
   "archive.eraseConfirmHint": "Bu işlem diskteki her şeyi siler. Devam etmek için Silmeyi onayla'ya, vazgeçmek için İptal'e bas.",
-  "archive.readOnlyDisc": "Bu salt okunur bir disk. Yedek yazmak için boş, kaydedilebilir bir disk tak."
+  "archive.readOnlyDisc": "Bu salt okunur bir disk. Yedek yazmak için boş, kaydedilebilir bir disk tak.",
+  "archive.estimateFirst": "Sıkıştırılmamış oyun bu sürücüye sığmıyor. Boyutu tahmin et'e bas; sıkıştırma sonrası sığabilir."
 }

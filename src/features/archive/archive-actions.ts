@@ -205,7 +205,16 @@ function invalidateEstimate(): void {
 
 export async function requestEstimate(): Promise<void> {
   const game = selectedArchiveGame();
-  if (!game || !game.installPath || S.archiveEstimating) return;
+  if (
+    !game ||
+    !game.installPath ||
+    S.archiveEstimating ||
+    S.archiveRunning ||
+    S.archiveBurning !== null ||
+    S.archiveErasing
+  ) {
+    return;
+  }
   const token = ++estimateToken;
   S.archiveEstimating = true;
   S.archiveEstimate = null;
@@ -255,7 +264,13 @@ function setXtoolPath(value: string): void {
 }
 
 async function installXtool(): Promise<void> {
-  if (S.archiveXtoolInstalling) return;
+  if (
+    S.archiveXtoolInstalling ||
+    S.archiveBurning !== null ||
+    S.archiveErasing
+  ) {
+    return;
+  }
   S.archiveXtoolInstalling = true;
   S.archiveXtoolProgress = {
     stage: "downloading",
@@ -281,9 +296,16 @@ async function installXtool(): Promise<void> {
 export function onXtoolProgress(progress: XtoolProgress): void {
   if (!S.archiveXtoolInstalling) return;
   S.archiveXtoolProgress = progress;
+  const bar = document.querySelector<HTMLElement>(
+    "#archive-xtool-progress .progress",
+  );
+  if (bar) bar.classList.toggle("indeterminate", progress.total === 0);
   const fill = document.getElementById("archive-xtool-progress-fill");
   if (fill) {
-    fill.style.width = `${Math.max(0, Math.min(100, progress.percent))}%`;
+    fill.style.width =
+      progress.total > 0
+        ? `${Math.max(0, Math.min(100, progress.percent))}%`
+        : "";
   }
   const text = document.getElementById("archive-xtool-progress-text");
   if (text) {
