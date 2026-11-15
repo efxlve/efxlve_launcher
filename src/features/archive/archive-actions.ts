@@ -744,6 +744,7 @@ export function handleArchiveChange(target: HTMLElement): boolean {
   }
   if (act === "archive-xtool-input") {
     setXtoolPath((target as HTMLInputElement).value);
+    scheduleRender();
     return true;
   }
   if (act === "archive-source-input") {
