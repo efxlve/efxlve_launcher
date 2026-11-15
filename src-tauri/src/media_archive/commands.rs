@@ -274,6 +274,7 @@ pub async fn archive_xtool_install(app: AppHandle) -> Result<String, String> {
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn archive_start(
     app: AppHandle,
     app_name: String,
@@ -458,7 +459,7 @@ pub async fn archive_scan_folder(root: String) -> Result<Vec<FoundArchive>, Stri
             }
         }
         let mut found: Vec<FoundArchive> = unique.into_values().collect();
-        found.sort_by(|left, right| right.manifest.created_at.cmp(&left.manifest.created_at));
+        found.sort_by_key(|item| std::cmp::Reverse(item.manifest.created_at));
         Ok(found)
     })
     .await
@@ -683,7 +684,14 @@ pub async fn archive_restore(
     let (path, manifest_dir) = resolve_manifest_path(&path)?;
     let manifest = read_manifest(&path)?;
     let xtool = if manifest.compression.precompressor.as_deref() == Some("xtool") {
-        Some(Xtool::new(xtool_path.as_deref().unwrap_or(""))?)
+        let path = xtool_path
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty());
+        match path {
+            Some(path) => Some(Xtool::new(path)?),
+            None => return Err("@t:archive.xtoolRequired".to_string()),
+        }
     } else {
         None
     };

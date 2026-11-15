@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 const MIB: u64 = 1024 * 1024;
 const MAX_FRAME_BYTES: u64 = 64 * MIB;
-const MIN_FRAME_BYTES: u64 = 1 * MIB;
+const MIN_FRAME_BYTES: u64 = MIB;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

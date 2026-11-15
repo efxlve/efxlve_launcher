@@ -80,7 +80,7 @@ Closing the window sends the launcher to the tray instead of quitting, so **quit
 
 | Folder | What it holds |
 |---|---|
-| `%APPDATA%\com.efxlve.launcher` | Settings, caches, helper binaries (`legendary`, `gogdl`, `nile`, `comet`), logs and feedback reports |
+| `%APPDATA%\com.efxlve.launcher` | Settings, caches, helper binaries (`legendary`, `gogdl`, `nile`, `comet`), the optional managed `xtool` copy, logs and feedback reports |
 | `%LOCALAPPDATA%\com.efxlve.launcher` | The WebView2 profile (`EBWebView`); a damaged profile is the usual reason the window never appears |
 | `%USERPROFILE%\.config\legendary` | Epic account sessions, the installed list and save backups |
 | `%USERPROFILE%\.config\efxlve` | Screenshot thumbnails and the compatibility tools |

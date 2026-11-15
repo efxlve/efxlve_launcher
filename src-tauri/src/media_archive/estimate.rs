@@ -163,7 +163,7 @@ pub fn estimate_archive(
             candidates.push(entry);
         }
     }
-    candidates.sort_by(|left, right| right.size.cmp(&left.size));
+    candidates.sort_by_key(|entry| std::cmp::Reverse(entry.size));
 
     let mut budget = if level >= 15 { HEAVY_BUDGET } else { SAMPLE_BUDGET };
     let mut sampled_files = 0u32;

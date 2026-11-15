@@ -145,7 +145,7 @@ impl MediaManifest {
     pub fn volume_for_blocks(&self) -> Vec<u32> {
         let mut out = Vec::with_capacity(self.total_blocks() as usize);
         for volume in &self.volumes {
-            out.extend(std::iter::repeat(volume.index).take(volume.blocks as usize));
+            out.extend(std::iter::repeat_n(volume.index, volume.blocks as usize));
         }
         out
     }

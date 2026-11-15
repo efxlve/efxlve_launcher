@@ -5,6 +5,7 @@ import { isInstallParent, parentFolder } from "./archive-paths";
 describe("archive folder helpers", () => {
   it("finds the parent of a Windows or Unix path", () => {
     expect(parentFolder("C:\\Games\\Epic\\Game")).toBe("c:\\games\\epic");
+    expect(parentFolder("C:\\Games\\Epic\\Game\\")).toBe("c:\\games\\epic");
     expect(parentFolder("/home/efe/Games/Game")).toBe("/home/efe/games");
   });
 

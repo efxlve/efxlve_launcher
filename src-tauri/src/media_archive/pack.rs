@@ -632,6 +632,7 @@ impl Write for FrameSink {
 
 /// The tar stream either goes straight into the zstd frames or through an
 /// external precompressor first. Both wrappers finish with the same writer.
+#[allow(clippy::large_enum_variant)]
 enum ArchiveSink {
     Direct(FrameSink),
     Xtool(XtoolSink),

@@ -302,6 +302,8 @@ mod tests {
             writer.write_all(b"x86").unwrap();
             writer.start_file("Freearc/Arc.exe", options).unwrap();
             writer.write_all(b"arc").unwrap();
+            writer.start_file("../escape.txt", options).unwrap();
+            writer.write_all(b"bad").unwrap();
             writer.finish().unwrap();
         }
         let root = temp_root("extract");
@@ -311,6 +313,7 @@ mod tests {
         assert!(staging.join("_libraries").join("zlibwapi.dll").is_file());
         assert!(!staging.join("_x86").exists());
         assert!(!staging.join("Freearc").exists());
+        assert!(!root.join("escape.txt").exists());
         assert!(staging.join("LICENSE-xtool.txt").is_file());
         let _ = std::fs::remove_dir_all(&root);
     }

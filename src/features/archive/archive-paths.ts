@@ -1,7 +1,11 @@
 /** Case-insensitive folder helpers for the archive target check. */
 
 export function parentFolder(path: string): string {
-  return path.replace(/[\\/][^\\/]*$/, "").replace(/[\\/]+$/, "").toLowerCase();
+  const trimmed = path.replace(/[\\/]+$/, "");
+  return trimmed
+    .replace(/[\\/][^\\/]*$/, "")
+    .replace(/[\\/]+$/, "")
+    .toLowerCase();
 }
 
 /** True when the chosen target is the folder that already holds the installed game. */

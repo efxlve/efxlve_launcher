@@ -413,16 +413,12 @@ fn path_key(path: &Path) -> String {
 }
 
 fn steamapps_ancestor(path: &Path) -> Option<&Path> {
-    for ancestor in path.ancestors() {
-        if ancestor
+    path.ancestors().find(|ancestor| {
+        ancestor
             .file_name()
             .and_then(|name| name.to_str())
             .is_some_and(|name| name.eq_ignore_ascii_case("steamapps"))
-        {
-            return Some(ancestor);
-        }
-    }
-    None
+    })
 }
 
 fn directory_size(path: &Path) -> u64 {

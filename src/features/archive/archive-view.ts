@@ -258,7 +258,7 @@ function renderBackupTab(): string {
           ? registering
             ? `<button type="button" class="btn ghost small" disabled>${icon("refresh", 13, "spin")} ${t("archive.stageRegistering")}</button>`
             : `<button type="button" class="btn danger small" data-act="archive-cancel">${icon("x", 13)} ${t("archive.cancel")}</button>`
-          : `<button type="button" class="btn primary" data-act="archive-start" ${!plan || !archiveFits(plan.freeBytes, plan.requiredBytes, S.archiveEstimate?.estimatedBytes ?? null) || !plan.volumeFits || S.archiveBurning !== null ? "disabled" : ""}>${icon("package", 14)} ${t("archive.start")}</button>`
+          : `<button type="button" class="btn primary" data-act="archive-start" ${!plan || !archiveFits(plan.freeBytes, plan.requiredBytes, S.archiveEstimate?.estimatedBytes ?? null) || !plan.volumeFits || S.archiveBurning !== null || S.archiveEstimating || S.archiveXtoolInstalling ? "disabled" : ""}>${icon("package", 14)} ${t("archive.start")}</button>`
       }
     </div>
     ${S.archiveResult ? "" : renderProgress(S.archiveProgress, "archive")}
@@ -325,7 +325,7 @@ function renderPlanSummary(plan: ArchivePlan | null): string {
 
 function renderEstimate(): string {
   const estimate = S.archiveEstimate;
-  const busy = S.archiveEstimating || S.archiveRunning;
+  const busy = S.archiveEstimating || S.archiveRunning || S.archiveXtoolInstalling;
   const button = `<button type="button" class="btn ghost small" data-act="archive-estimate" ${busy ? "disabled" : ""}>${
     S.archiveEstimating
       ? `${icon("refresh", 13, "spin")} ${t("archive.estimating")}`
@@ -440,7 +440,7 @@ function renderRestoreTab(): string {
           ? registering
             ? `<button type="button" class="btn ghost small" disabled>${icon("refresh", 13, "spin")} ${t("archive.stageRegistering")}</button>`
             : `<button type="button" class="btn danger small" data-act="archive-cancel">${icon("x", 13)} ${t("archive.cancel")}</button>`
-          : `<button type="button" class="btn primary" data-act="archive-restore-start" ${restoreReady && S.archiveBurning === null ? "" : "disabled"}>${icon("download", 14)} ${t("archive.restoreStart")}</button>`
+          : `<button type="button" class="btn primary" data-act="archive-restore-start" ${restoreReady && S.archiveBurning === null && !S.archiveRunning && !S.archiveXtoolInstalling ? "" : "disabled"}>${icon("download", 14)} ${t("archive.restoreStart")}</button>`
       }
     </div>
     ${S.archiveRestoreResult ? "" : renderProgress(S.archiveProgress, "archive")}

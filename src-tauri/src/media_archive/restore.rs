@@ -184,7 +184,7 @@ pub fn restore_game(job: RestoreJob) -> Result<RestoreOutcome, String> {
         .map_err(|error| format!("@t:archive.targetFailed\u{1f}{error}"))?;
 
     let result = extract_all(&job, &volume_paths, &staging);
-    let outcome = match result {
+    match result {
         Ok((file_count, bytes)) => {
             if let Err(error) = replace_target(&staging, &target) {
                 let _ = std::fs::remove_dir_all(&staging);
@@ -200,8 +200,7 @@ pub fn restore_game(job: RestoreJob) -> Result<RestoreOutcome, String> {
             let _ = std::fs::remove_dir_all(&staging);
             Err(error)
         }
-    };
-    outcome
+    }
 }
 
 fn extract_all(
@@ -1062,6 +1061,38 @@ mod tests {
         assert_eq!(
             std::fs::read(restored.target.join("notes.txt")).unwrap(),
             b"hello"
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_version_one_backup_still_restores() {
+        let root = temp_root("version-one");
+        let (game, folder, manifest_path) = pack_fixture(&root, 128 * 1024);
+        let mut manifest = crate::media_archive::format::read_manifest(&manifest_path).unwrap();
+        manifest.format_version = 1;
+        crate::media_archive::format::write_manifest(&folder, &manifest).unwrap();
+        let target = root.join("target");
+        std::fs::create_dir_all(&target).unwrap();
+        let restored = restore_game(RestoreJob {
+            manifest,
+            manifest_dir: folder,
+            extra_dirs: Vec::new(),
+            xtool: None,
+            target_parent: target,
+            overwrite: false,
+            sink: Arc::new(NoopSink),
+            cancel: Arc::new(AtomicBool::new(false)),
+        })
+        .unwrap();
+        assert_eq!(restored.file_count, 2);
+        assert_eq!(
+            std::fs::read(restored.target.join("bin").join("a.dat")).unwrap(),
+            noisy(80 * 1024, 42)
+        );
+        assert_eq!(
+            std::fs::read(game.join("readme.txt")).unwrap(),
+            std::fs::read(restored.target.join("readme.txt")).unwrap()
         );
         let _ = std::fs::remove_dir_all(&root);
     }
