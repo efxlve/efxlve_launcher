@@ -422,6 +422,7 @@ function clearBurnState(): void {
 
 export async function loadArchiveDiscs(manifestPath: string): Promise<void> {
   if (!manifestPath) return;
+  if (S.archiveBurning !== null || S.archiveErasing) return;
   S.archiveDiscsManifest = manifestPath;
   S.archiveDiscsLoading = true;
   scheduleRender();
@@ -443,6 +444,7 @@ export async function loadArchiveDiscs(manifestPath: string): Promise<void> {
 }
 
 export async function loadBurnRecorders(force = false): Promise<void> {
+  if (S.archiveBurning !== null || S.archiveErasing) return;
   if (S.archiveBurnRecorders && !force) return;
   S.archiveEraseArmed = false;
   try {
@@ -474,12 +476,12 @@ async function burnDisc(folder: string, index: number): Promise<void> {
     await discBurnFolder(folder, recorder);
     S.archiveBurnDone = index;
     toast(t("archive.burnDone"), "ok");
-    await loadBurnRecorders(true);
   } catch (error) {
     toast(localizeMessage(String(error)), "err");
   } finally {
     S.archiveBurning = null;
     scheduleRender();
+    void loadBurnRecorders(true);
   }
 }
 
@@ -503,13 +505,13 @@ async function eraseDisc(): Promise<void> {
   try {
     await discErase(recorder);
     toast(t("archive.eraseDone"), "ok");
-    await loadBurnRecorders(true);
   } catch (error) {
     toast(localizeMessage(String(error)), "err");
   } finally {
     S.archiveErasing = false;
     S.archiveEraseArmed = false;
     scheduleRender();
+    void loadBurnRecorders(true);
   }
 }
 

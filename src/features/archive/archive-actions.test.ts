@@ -4,6 +4,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const ipc = vi.hoisted(() => ({
   scan: vi.fn(async () => []),
   install: vi.fn(async () => ""),
+  recorders: vi.fn(async () => []),
+  discs: vi.fn(async () => []),
+  burn: vi.fn(async () => undefined),
 }));
 
 vi.mock("../../archive", async (importOriginal) => {
@@ -12,6 +15,9 @@ vi.mock("../../archive", async (importOriginal) => {
     ...actual,
     archiveScanFolder: ipc.scan,
     archiveXtoolInstall: ipc.install,
+    archiveDiscs: ipc.discs,
+    discListRecorders: ipc.recorders,
+    discBurnFolder: ipc.burn,
   };
 });
 
@@ -23,7 +29,12 @@ vi.mock("../../core/toast", () => ({
 
 import type { ArchiveSummary } from "../../archive";
 import { S } from "../../core/state";
-import { handleArchiveAction, openArchiveForGame } from "./archive-actions";
+import {
+  handleArchiveAction,
+  loadArchiveDiscs,
+  loadBurnRecorders,
+  openArchiveForGame,
+} from "./archive-actions";
 
 function summary(): ArchiveSummary {
   return {
@@ -41,8 +52,14 @@ beforeEach(() => {
   S.archiveResult = null;
   S.archiveSelectedApp = "";
   S.archiveSource = "";
+  S.archiveDiscsManifest = "";
+  S.archiveBurnRecorder = "";
+  S.archiveBurnDone = null;
   ipc.scan.mockClear();
   ipc.install.mockClear();
+  ipc.recorders.mockClear();
+  ipc.discs.mockClear();
+  ipc.burn.mockClear();
 });
 
 describe("archive busy guards", () => {
@@ -91,5 +108,36 @@ describe("archive busy guards", () => {
     await Promise.resolve();
 
     expect(ipc.install).not.toHaveBeenCalled();
+  });
+
+  it("does not query recorders while a disc is burning", async () => {
+    S.archiveBurning = 1;
+
+    await loadBurnRecorders(true);
+
+    expect(ipc.recorders).not.toHaveBeenCalled();
+  });
+
+  it("keeps the burn panel's manifest while a disc is burning", async () => {
+    S.archiveBurning = 1;
+    S.archiveDiscsManifest = "burning.json";
+
+    await loadArchiveDiscs("other.json");
+
+    expect(S.archiveDiscsManifest).toBe("burning.json");
+    expect(ipc.discs).not.toHaveBeenCalled();
+  });
+
+  it("refreshes recorders after a burn finishes", async () => {
+    S.archiveBurnRecorder = "drive";
+    const target = document.createElement("button");
+    target.dataset.folder = "C:\\disc-1";
+    target.dataset.index = "1";
+
+    expect(handleArchiveAction("archive-burn", undefined, target)).toBe(true);
+
+    await vi.waitFor(() => expect(ipc.burn).toHaveBeenCalled());
+    await vi.waitFor(() => expect(ipc.recorders).toHaveBeenCalled());
+    expect(S.archiveBurning).toBeNull();
   });
 });
