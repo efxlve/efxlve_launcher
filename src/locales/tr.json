@@ -4237,6 +4237,6 @@
   "archive.burnInProgress": "Disk yazma sürüyor. Bitmesini bekle.",
   "archive.partSize": "Parça boyutu",
   "archive.selectedMedia": "Seçili medya",
-  "archive.mediaHint": "Optik profiller her disk için bir disc-N klasörü oluşturur; USB profili tüm parçaları tek klasörde tutar. Diske yazma, yedek bittikten sonra başlar.",
+  "archive.mediaHint": "USB (FAT32) tek dosyada 4 GB sınırı olduğu için 3.9 GB'lık parçalar kullanır; USB'nin kendisi 32, 64 veya 128 GB olabilir. Optik profiller her disk için bir disc-N klasörü oluşturur; USB tüm parçaları tek klasörde tutar. Diske yazma, yedek bittikten sonra başlar.",
   "archive.startHint": "Bu işlem diske yazmaz; önce parça dosyalarını oluşturur."
 }

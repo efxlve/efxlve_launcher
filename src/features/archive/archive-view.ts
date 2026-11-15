@@ -163,7 +163,7 @@ function renderBackupTab(): string {
               (profile) => `
                 <button type="button" class="archive-profile ${profile.id === S.archiveProfile ? "active" : ""}" data-act="archive-profile" data-profile="${esc(profile.id)}">
                   <span class="archive-profile-name">${esc(profileLabel(profile.id))}</span>
-                  <span class="archive-profile-size tabular-nums">${profile.id === "custom" ? `${S.archiveCustomMib} MiB` : fmtBytes(profile.volumeBytes)}</span>
+                  <span class="archive-profile-size tabular-nums">${profile.id === "custom" ? `${S.archiveCustomMib} MiB` : fmtBytes(profile.volumeBytes)} / ${t("archive.partOne")}</span>
                   <span class="archive-profile-fs">${esc(profile.fileSystem)}</span>
                 </button>`,
             )
