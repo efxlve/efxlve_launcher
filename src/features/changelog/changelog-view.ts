@@ -41,6 +41,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "A portable build now reads and writes every Epic record inside its own folder, so a finished install is recognized as installed instead of offering another download.",
         tr: "Portable sürüm artık tüm Epic kayıtlarını kendi klasöründe okuyup yazıyor; biten kurulum tekrar indirme istemek yerine kurulu görünüyor.",
       },
+      {
+        en: "Opening a collection or closing a game page no longer freezes the launcher for a few seconds: the controller scan runs in the background and the game-page picture cache is released with the page.",
+        tr: "Koleksiyon açmak veya oyun sayfasını kapatmak launcher'ı artık birkaç saniye dondurmuyor: kontrolcü taraması arka planda çalışıyor ve oyun sayfasının resim önbelleği sayfayla birlikte bırakılıyor.",
+      },
     ],
   },
   {
