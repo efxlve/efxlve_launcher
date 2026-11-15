@@ -8,6 +8,7 @@
 
 import { syncGameSceneRest } from "./game-scene";
 import { updatePageHeader, updateSidebarActive } from "./nav";
+import { releaseLogoImages } from "./picture-cache";
 import { presenceSync, updateGamepadHud } from "./render";
 import { S } from "./state";
 
@@ -56,6 +57,8 @@ export function syncSidebarGameActive(): void {
 
 /** Close the game page and refresh the gamepad HUD. */
 export function closeModal(): void {
+  // The original-size logo data URLs only exist for the page being closed.
+  releaseLogoImages();
   modalRoot.innerHTML = "";
   S.currentModalAppName = null;
   S.isAdjustingLogo = false;

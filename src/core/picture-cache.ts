@@ -24,6 +24,9 @@ interface CachedImage {
 const cachedPictures = new Map<string, string>();
 /** Keep the decoded data URLs bounded; a long session must not grow forever. */
 const PICTURE_CACHE_LIMIT = 32;
+/** Strings are UTF-16; a 16 MB payload is roughly 32 MB of JS memory. */
+const PICTURE_CACHE_BYTES_LIMIT = 16 * 1024 * 1024;
+let cachedBytes = 0;
 /** URLs asked for in this session, so a repaint does not ask twice. */
 const requested = new Set<string>();
 
@@ -41,6 +44,36 @@ function pictureKey(url: string, width: number): string {
 export function cachedImage(url: string | null | undefined, width = 0): string {
   if (!url) return "";
   return cachedPictures.get(pictureKey(url, width)) ?? url;
+}
+
+function rememberPicture(url: string, width: number, dataUrl: string): void {
+  const key = pictureKey(url, width);
+  const previous = cachedPictures.get(key);
+  if (previous) cachedBytes -= previous.length;
+  cachedPictures.set(key, dataUrl);
+  cachedBytes += dataUrl.length;
+  while (
+    cachedPictures.size > PICTURE_CACHE_LIMIT ||
+    cachedBytes > PICTURE_CACHE_BYTES_LIMIT
+  ) {
+    const oldest = cachedPictures.keys().next().value;
+    if (!oldest) break;
+    cachedBytes -= cachedPictures.get(oldest)?.length ?? 0;
+    cachedPictures.delete(oldest);
+  }
+}
+
+/**
+ * Frees the original-size logos. They are only painted on the game page, and a
+ * transparent PNG can be several megabytes; keeping them after the page closes
+ * made the next library repaint pay for the WebView's major collection.
+ */
+export function releaseLogoImages(): void {
+  for (const [key, value] of [...cachedPictures]) {
+    if (!key.startsWith("0|")) continue;
+    cachedBytes -= value.length;
+    cachedPictures.delete(key);
+  }
 }
 
 /**
@@ -67,11 +100,7 @@ export function warmImages(
       let landed = false;
       for (const entry of entries) {
         if (entry.dataUrl) {
-          if (cachedPictures.size >= PICTURE_CACHE_LIMIT) {
-            const oldest = cachedPictures.keys().next().value;
-            if (oldest) cachedPictures.delete(oldest);
-          }
-          cachedPictures.set(pictureKey(entry.url, width), entry.dataUrl);
+          rememberPicture(entry.url, width, entry.dataUrl);
           landed = true;
         }
       }
@@ -113,6 +142,7 @@ export async function clearImageCache(): Promise<number> {
   const bytes = await invoke<number>("clear_image_cache");
   cachedPictures.clear();
   requested.clear();
+  cachedBytes = 0;
   return bytes;
 }
 
