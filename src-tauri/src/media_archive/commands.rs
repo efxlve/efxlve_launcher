@@ -238,15 +238,25 @@ pub async fn archive_estimate(
     profile_id: String,
     custom_mib: Option<u64>,
     level: String,
+    xtool_path: Option<String>,
 ) -> Result<ArchiveEstimate, String> {
     let profile = profile::resolve(&profile_id, custom_mib)?;
     let (compression_level, window_log) = compression_setting(&level)?;
+    let xtool = match xtool_path
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        Some(path) => Some(Xtool::new(path)?),
+        None => None,
+    };
     tauri::async_runtime::spawn_blocking(move || {
         estimate::estimate_archive(
             Path::new(&install_path),
             &profile,
             compression_level,
             window_log,
+            xtool.as_ref(),
         )
     })
     .await

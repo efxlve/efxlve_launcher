@@ -4255,7 +4255,7 @@
   "archive.xtoolLibraries": "xtool.exe yanında _libraries klasörü yok.",
   "archive.xtoolFailed": "xtool başarısız: {a1}",
   "archive.xtoolRequired": "Bu yedek xtool ile ön sıkıştırılmış. Geri yüklemeden önce xtool.exe yolunu ayarla.",
-  "archive.estimateHintXtool": "{files} dosya yalnızca zstd ile örneklendi; xtool adımı yedeği daha da küçültebilir.",
+  "archive.estimateHintXtool": "{files} dosya xtool + zstd ile örneklendi; gerçek değer biraz farklı olabilir.",
   "archive.xtoolRestoreHint": "Bu yedek xtool ile ön sıkıştırılmış. Geri yüklemeden önce uygun xtool.exe dosyasını göster; açma adımı aynı aracı gerektirir.",
   "archive.xtoolDownload": "Elle indir",
   "archive.xtoolInstall": "xtool'u kur",
@@ -4284,7 +4284,7 @@
   "archive.guideEstimateBody": "Tahmin, en büyük dosyalardan örnek alır, örnekleri sıkıştırır ve sonucu tüm oyuna uygular. Yaklaşık bir değerdir. Zaten sıkışık dosyalar ayrı sayılır; gerçek boyut yedek bittikten sonra görünür.",
   "archive.guideXtoolTitle": "xtool ön sıkıştırma",
   "archive.guideXtoolBody": "xtool, Razor12911'in MIT lisanslı isteğe bağlı ön sıkıştırıcısıdır. Birçok oyun varlıklarını zlib akışları içeren paketlerde tutar; zstd bunları küçültemez, xtool açar ve LZMA ile yeniden sıkıştırır. Yerelde çalışır; launcher dosyalarını hiçbir yere yüklemez.",
-  "archive.guideXtoolInstall": "Yedek sekmesinde xtool'u kur'a bas. Launcher GitHub'dan sabitlenmiş 0.7.9 sürümünü indirir, SHA-256 özetini doğrular, kendi veri klasörüne çıkarır ve yolu doldurur. Dilersen zip'i kendin indirip xtool.exe ve _libraries klasörünü içeren klasörü seçebilirsin.",
+  "archive.guideXtoolInstall": "Yedek sekmesinde xtool'u kur düğmesine bas. Launcher GitHub'dan sabitlenmiş 0.7.9 sürümünü indirir, SHA-256 özetini doğrular, kendi veri klasörüne çıkarır ve yolu doldurur. Dilersen zip'i kendin indirip xtool.exe ve _libraries klasörünü içeren klasörü seçebilirsin.",
   "archive.guideXtoolRestore": "xtool ile alınan yedeği geri yüklemek için yeniden xtool gerekir. Yol bu bilgisayarda hatırlanır; başka bir bilgisayarda xtool'u kur veya Geri Yükle ekranında klasörünü seç.",
   "archive.guideXtoolLegal": "xtool'u sahip olduğun oyunların kişisel yedekleri için kullan. Araç yasal ve açık kaynak; oluşan oyun arşivini paylaşmak değil.",
   "archive.guideBackupTitle": "Yedek alma",
@@ -4299,7 +4299,8 @@
   "archive.guideTrouble3": "Oyun çalışıyor: yedekleme veya geri yüklemeden önce kapat.",
   "archive.guideTrouble4": "Parça eksik: o parçayı içeren klasörü ekle. Dosya adı birebir eşleşmeli.",
   "archive.guideTrouble5": "Özet hatası: o parça bozuk. Sağlam bir kopyayla değiştir; diğer parçalar geçerli kalır.",
-  "archive.guideTrouble6": "xtool bulunamadı: xtool'u kur'a bas veya xtool.exe ve _libraries klasörünü içeren klasörü seç.",
+  "archive.guideTrouble6": "xtool bulunamadı: xtool'u kur düğmesine bas veya xtool.exe ve _libraries klasörünü içeren klasörü seç.",
   "archive.guideNotesTitle": "Bilmekte fayda var",
-  "archive.guideNotesBody": "Arşiv klasörü taşınabilir: USB'ye kopyala, harici diske al veya disk klasörlerini yaz. Yedek kişiseldir; oyun dosyalarını paylaşma. Sıkıştırma zaman alır, özellikle xtool ile; tam bir Blu-ray yedeği saatler sürebilir."
+  "archive.guideNotesBody": "Arşiv klasörü taşınabilir: USB'ye kopyala, harici diske al veya disk klasörlerini yaz. Yedek kişiseldir; oyun dosyalarını paylaşma. Sıkıştırma zaman alır, özellikle xtool ile; tam bir Blu-ray yedeği saatler sürebilir.",
+  "archive.levelXtoolHint": "xtool ayarlı: Fast yeterli. Ağır sıkıştırmayı zaten xtool yapar; daha yüksek zstd seviyesi çoğunlukla bekleme süresi ekler."
 }

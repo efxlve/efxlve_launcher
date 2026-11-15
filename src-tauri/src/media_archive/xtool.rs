@@ -53,8 +53,9 @@ async fn download() -> Result<Vec<u8>, String> {
     Ok(payload.to_vec())
 }
 
-/// Unpacks the pinned archive, skipping the 32-bit copy the launcher never
-/// runs. `enclosed_name` keeps a crafted entry from escaping the target.
+/// Unpacks the pinned archive, skipping the 32-bit copy and the FreeArc
+/// examples the launcher never runs. `enclosed_name` keeps a crafted entry from
+/// escaping the target.
 fn extract(payload: &[u8], staging: &Path) -> Result<(), String> {
     std::fs::create_dir_all(staging)
         .map_err(|error| format!("@t:archive.xtoolExtractFailed\u{1f}{error}"))?;
@@ -68,7 +69,11 @@ fn extract(payload: &[u8], staging: &Path) -> Result<(), String> {
             continue;
         };
         let name = relative.to_string_lossy().replace('\\', "/");
-        if name == "_x86" || name.starts_with("_x86/") {
+        if name == "_x86"
+            || name.starts_with("_x86/")
+            || name == "Freearc"
+            || name.starts_with("Freearc/")
+        {
             continue;
         }
         let out = staging.join(&relative);
@@ -196,6 +201,25 @@ impl Xtool {
         Ok(Self { exe, root })
     }
 
+    pub fn precompress_file(&self, input: &Path, output: &Path) -> Result<(), String> {
+        let input = std::fs::File::open(input)
+            .map_err(|error| format!("@t:archive.xtoolFailed\u{1f}{error}"))?;
+        let output = std::fs::File::create(output)
+            .map_err(|error| format!("@t:archive.xtoolFailed\u{1f}{error}"))?;
+        let status = Command::new(&self.exe)
+            .args(PRECOMP_ARGS)
+            .current_dir(&self.root)
+            .stdin(Stdio::from(input))
+            .stdout(Stdio::from(output))
+            .stderr(Stdio::null())
+            .status()
+            .map_err(|error| format!("@t:archive.xtoolFailed\u{1f}{error}"))?;
+        if !status.success() {
+            return Err(format!("@t:archive.xtoolFailed\u{1f}{status}"));
+        }
+        Ok(())
+    }
+
     pub fn precompress(&self) -> Result<Child, String> {
         self.spawn(PRECOMP_ARGS)
     }
@@ -276,6 +300,8 @@ mod tests {
             writer.write_all(b"dll").unwrap();
             writer.start_file("_x86/xtool.exe", options).unwrap();
             writer.write_all(b"x86").unwrap();
+            writer.start_file("Freearc/Arc.exe", options).unwrap();
+            writer.write_all(b"arc").unwrap();
             writer.finish().unwrap();
         }
         let root = temp_root("extract");
@@ -284,6 +310,7 @@ mod tests {
         assert!(staging.join("xtool.exe").is_file());
         assert!(staging.join("_libraries").join("zlibwapi.dll").is_file());
         assert!(!staging.join("_x86").exists());
+        assert!(!staging.join("Freearc").exists());
         assert!(staging.join("LICENSE-xtool.txt").is_file());
         let _ = std::fs::remove_dir_all(&root);
     }

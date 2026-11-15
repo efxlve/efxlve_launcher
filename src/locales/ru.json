@@ -4255,7 +4255,7 @@
   "archive.xtoolLibraries": "The _libraries folder is missing next to xtool.exe.",
   "archive.xtoolFailed": "xtool failed: {a1}",
   "archive.xtoolRequired": "This backup was precompressed with xtool. Set the xtool.exe path before restoring.",
-  "archive.estimateHintXtool": "{files} files sampled with zstd only; the xtool step can make the backup smaller.",
+  "archive.estimateHintXtool": "{files} files sampled with xtool + zstd; the real value may differ slightly.",
   "archive.xtoolRestoreHint": "This backup was precompressed with xtool. Point at the matching xtool.exe before restoring; the decode step needs the same tool.",
   "archive.xtoolDownload": "Manual download",
   "archive.xtoolInstall": "Install xtool",
@@ -4301,5 +4301,6 @@
   "archive.guideTrouble5": "A checksum failed: that part is damaged. Replace it with a good copy; the other parts are still valid.",
   "archive.guideTrouble6": "xtool is missing: press Install xtool, or choose the folder that contains xtool.exe and _libraries.",
   "archive.guideNotesTitle": "Good to know",
-  "archive.guideNotesBody": "The archive folder is portable: copy it to a USB drive, an external disk, or burn the disc folders. A backup is personal; do not share game files. Compression takes time, especially with xtool, and a full Blu-ray backup can run for hours."
+  "archive.guideNotesBody": "The archive folder is portable: copy it to a USB drive, an external disk, or burn the disc folders. A backup is personal; do not share game files. Compression takes time, especially with xtool, and a full Blu-ray backup can run for hours.",
+  "archive.levelXtoolHint": "xtool is set: Fast is enough. xtool already compresses the game data, and a higher zstd level mostly adds waiting time."
 }

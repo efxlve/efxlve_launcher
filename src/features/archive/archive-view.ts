@@ -18,6 +18,7 @@ import type {
 } from "../../archive";
 import { archiveGameList, loadArchiveView, selectedArchiveGame } from "./archive-actions";
 import { renderArchiveGuide } from "./archive-guide";
+import { archiveFits, archiveRequiredBytes } from "./archive-space";
 
 function storeName(key: string): string {
   if (key.startsWith("steam::")) return "Steam";
@@ -211,6 +212,11 @@ function renderBackupTab(): string {
         </div>
       </div>
       ${
+        IS_WINDOWS && S.archiveXtoolPath.trim()
+          ? `<div class="archive-note">${t("archive.levelXtoolHint")}</div>`
+          : ""
+      }
+      ${
         IS_WINDOWS
           ? `<div class="row settings-row stacked">
                <div class="row-main">
@@ -251,7 +257,7 @@ function renderBackupTab(): string {
           ? registering
             ? `<button type="button" class="btn ghost small" disabled>${icon("refresh", 13, "spin")} ${t("archive.stageRegistering")}</button>`
             : `<button type="button" class="btn danger small" data-act="archive-cancel">${icon("x", 13)} ${t("archive.cancel")}</button>`
-          : `<button type="button" class="btn primary" data-act="archive-start" ${!plan || !plan.enoughSpace || !plan.volumeFits || S.archiveBurning !== null ? "disabled" : ""}>${icon("package", 14)} ${t("archive.start")}</button>`
+          : `<button type="button" class="btn primary" data-act="archive-start" ${!plan || !archiveFits(plan.freeBytes, plan.requiredBytes, S.archiveEstimate?.estimatedBytes ?? null) || !plan.volumeFits || S.archiveBurning !== null ? "disabled" : ""}>${icon("package", 14)} ${t("archive.start")}</button>`
       }
     </div>
     ${S.archiveResult ? "" : renderProgress(S.archiveProgress, "archive")}
@@ -268,21 +274,34 @@ function renderPlanSummary(plan: ArchivePlan | null): string {
     return `<div class="archive-summary archive-loading">${t("archive.noPlan")}</div>`;
   }
   const free = plan.freeBytes == null ? "—" : fmtBytesOrZero(plan.freeBytes);
+  const needed = archiveRequiredBytes(
+    plan.requiredBytes,
+    S.archiveEstimate?.estimatedBytes ?? null,
+  );
+  const fits = archiveFits(
+    plan.freeBytes,
+    plan.requiredBytes,
+    S.archiveEstimate?.estimatedBytes ?? null,
+  );
+  const parts = S.archiveEstimate?.estimatedVolumes ?? plan.estimatedVolumes;
+  const partsLabel = S.archiveEstimate
+    ? t("archive.estimateParts")
+    : t("archive.estimatedVolumes");
   return `
     <div class="archive-summary">
       <div class="archive-summary-grid">
         <div><span class="archive-k">${t("archive.originalSize")}</span><span class="archive-v tabular-nums">${fmtBytes(plan.originalBytes)}</span></div>
         <div><span class="archive-k">${t("archive.files")}</span><span class="archive-v tabular-nums">${plan.fileCount.toLocaleString()}</span></div>
-        <div><span class="archive-k">${t("archive.estimatedVolumes")}</span><span class="archive-v tabular-nums">${plan.estimatedVolumes}</span></div>
-        <div><span class="archive-k">${t("archive.freeSpace")}</span><span class="archive-v tabular-nums ${plan.enoughSpace ? "" : "is-err"}">${free}${plan.targetFileSystem ? ` · ${esc(plan.targetFileSystem)}` : ""}</span></div>
+        <div><span class="archive-k">${partsLabel}</span><span class="archive-v tabular-nums">${parts}</span></div>
+        <div><span class="archive-k">${t("archive.freeSpace")}</span><span class="archive-v tabular-nums ${fits ? "" : "is-err"}">${free}${plan.targetFileSystem ? ` · ${esc(plan.targetFileSystem)}` : ""}</span></div>
         <div><span class="archive-k">${t("archive.selectedMedia")}</span><span class="archive-v">${esc(profileLabel(S.archiveProfile))}</span></div>
         <div><span class="archive-k">${t("archive.partSize")}</span><span class="archive-v tabular-nums">${fmtBytesOrZero(plan.volumeBytes)}</span></div>
       </div>
       <div class="archive-path-line"><span class="archive-k">${t("archive.outputFolder")}</span><span class="archive-path-value">${esc(plan.archivePath)}</span></div>
       ${
-        plan.enoughSpace
+        fits
           ? ""
-          : `<div class="archive-warn">${icon("alert-triangle", 13)} ${t("archive.notEnoughSpace", { need: fmtBytesOrZero(plan.requiredBytes), free })}</div>`
+          : `<div class="archive-warn">${icon("alert-triangle", 13)} ${t("archive.notEnoughSpace", { need: fmtBytesOrZero(needed), free })}</div>`
       }
       ${
         plan.volumeFits
@@ -326,11 +345,15 @@ function renderEstimate(): string {
         <div><span class="archive-k">${t("archive.estimateSize")}</span><span class="archive-v tabular-nums">${fmtBytesOrZero(estimate.estimatedBytes)}</span></div>
         <div><span class="archive-k">${t("archive.estimateRatio")}</span><span class="archive-v tabular-nums">${percent}%</span></div>
         <div><span class="archive-k">${t("archive.estimateParts")}</span><span class="archive-v tabular-nums">${estimate.estimatedVolumes}</span></div>
-        <div><span class="archive-k">${t("archive.estimateSkipped")}</span><span class="archive-v tabular-nums">${fmtBytesOrZero(estimate.bypassedBytes)}</span></div>
+        ${
+          estimate.usesXtool
+            ? ""
+            : `<div><span class="archive-k">${t("archive.estimateSkipped")}</span><span class="archive-v tabular-nums">${fmtBytesOrZero(estimate.bypassedBytes)}</span></div>`
+        }
       </div>
       <div class="archive-note">${t(
-        S.archiveXtoolPath.trim() ? "archive.estimateHintXtool" : "archive.estimateHint",
-        S.archiveXtoolPath.trim()
+        estimate.usesXtool ? "archive.estimateHintXtool" : "archive.estimateHint",
+        estimate.usesXtool
           ? { files: estimate.sampledFiles }
           : { files: estimate.sampledFiles, skipped: estimate.bypassedFiles },
       )}</div>
@@ -485,6 +508,11 @@ function renderRestoreDetail(): string {
           ? `<div class="archive-inline archive-restore-target">
                <label class="archive-inline-label" for="archive-xtool-input">${t("archive.xtoolTitle")}</label>
                <input id="archive-xtool-input" class="input archive-path" type="text" value="${esc(S.archiveXtoolPath)}" placeholder="C:\\xtool\\xtool.exe" data-act="archive-xtool-input" />
+               <button type="button" class="btn primary small" data-act="archive-xtool-install" ${S.archiveXtoolInstalling ? "disabled" : ""}>${
+                 S.archiveXtoolInstalling
+                   ? `${icon("refresh", 13, "spin")} ${t("archive.xtoolInstalling")}`
+                   : `${icon("download", 13)} ${t("archive.xtoolInstall")}`
+               }</button>
                <button type="button" class="btn ghost small" data-act="archive-pick-xtool">${icon("folder", 13)} ${t("archive.chooseFolder")}</button>
              </div>
              <div class="archive-note">${t("archive.xtoolRestoreHint")}</div>`

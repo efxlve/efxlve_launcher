@@ -214,6 +214,7 @@ export async function requestEstimate(): Promise<void> {
       profileId: S.archiveProfile,
       customMib: S.archiveCustomMib,
       level: S.archiveLevel,
+      xtoolPath: S.archiveXtoolPath,
     });
     if (token === estimateToken) S.archiveEstimate = estimate;
   } catch (error) {
@@ -242,6 +243,7 @@ function xtoolExecutable(folder: string): string {
 }
 
 function setXtoolPath(value: string): void {
+  if (value !== S.archiveXtoolPath) invalidateEstimate();
   S.archiveXtoolPath = value;
   try {
     localStorage.setItem(ARCHIVE_XTOOL_KEY, value);

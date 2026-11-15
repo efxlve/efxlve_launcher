@@ -6,6 +6,7 @@
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::Serialize;
 use zstd::bulk::Compressor;
@@ -13,6 +14,7 @@ use zstd::bulk::Compressor;
 use super::bypass::should_store_raw;
 use super::pack::{scan_tree, FileEntry, ScanResult};
 use super::profile::{self, MediaProfileInfo};
+use super::xtool::Xtool;
 
 const MIB: u64 = 1024 * 1024;
 /// Bytes read from one file. Spread over four windows, so a file with a
@@ -21,8 +23,10 @@ const MIB: u64 = 1024 * 1024;
 const PER_FILE_SAMPLE: u64 = 4 * MIB;
 const SAMPLE_FILES: usize = 24;
 /// Default and heavy-profile budgets. Level 19 runs at a few MB/s, so it gets a
-/// smaller sample rather than a matching minute-long wait.
-const SAMPLE_BUDGET: u64 = 96 * MIB;
+/// smaller sample rather than a matching minute-long wait. The xtool sample
+/// runs at a few MB/s itself, so the default stays well under a minute even on
+/// a large game.
+const SAMPLE_BUDGET: u64 = 64 * MIB;
 const HEAVY_BUDGET: u64 = 32 * MIB;
 const TAR_BLOCK: u64 = 512;
 const BLOCK_HEADER: u64 = 64;
@@ -39,6 +43,8 @@ pub struct ArchiveEstimate {
     pub sampled_bytes: u64,
     pub bypassed_files: u64,
     pub bypassed_bytes: u64,
+    /// True when the sample went through xtool instead of plain zstd.
+    pub uses_xtool: bool,
 }
 
 /// Windows to read from a file of `len` bytes, totalling at most `window`.
@@ -56,11 +62,7 @@ pub fn sample_windows(len: u64, window: u64) -> Vec<(u64, usize)> {
         .collect()
 }
 
-fn sample_file(
-    entry: &FileEntry,
-    budget: u64,
-    compressor: &mut Compressor<'static>,
-) -> Option<(u64, u64)> {
+fn read_sample(entry: &FileEntry, budget: u64) -> Option<Vec<u8>> {
     let mut file = File::open(&entry.source).ok()?;
     let windows = sample_windows(entry.size, budget.min(PER_FILE_SAMPLE));
     let mut buffer = Vec::new();
@@ -70,11 +72,52 @@ fn sample_file(
         file.seek(SeekFrom::Start(offset)).ok()?;
         file.read_exact(&mut buffer[start..]).ok()?;
     }
-    if buffer.is_empty() {
-        return None;
-    }
-    let compressed = compressor.compress(&buffer).ok()?;
-    Some((buffer.len() as u64, compressed.len() as u64))
+    (!buffer.is_empty()).then_some(buffer)
+}
+
+fn compress_with(compressor: &mut Compressor<'static>, bytes: &[u8]) -> Option<u64> {
+    compressor.compress(bytes).ok().map(|packed| packed.len() as u64)
+}
+
+/// Mirrors the packing pipeline: xtool precompresses the sample, then zstd
+/// compresses its output. xtool needs real files, so the sample goes through a
+/// short-lived temp folder instead of a pipe.
+fn compress_with_xtool(
+    xtool: &Xtool,
+    sample: &[u8],
+    level: i32,
+    window_log: u32,
+) -> Result<u64, String> {
+    let suffix = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or(0);
+    let dir = std::env::temp_dir().join(format!(
+        "efxlve-estimate-{}-{suffix}",
+        std::process::id()
+    ));
+    std::fs::create_dir_all(&dir)
+        .map_err(|error| format!("@t:archive.compressFailed\u{1f}{error}"))?;
+    let input = dir.join("sample.bin");
+    let output = dir.join("sample.xtool");
+    let result = (|| {
+        std::fs::write(&input, sample)
+            .map_err(|error| format!("@t:archive.compressFailed\u{1f}{error}"))?;
+        xtool.precompress_file(&input, &output)?;
+        let packed = std::fs::read(&output)
+            .map_err(|error| format!("@t:archive.compressFailed\u{1f}{error}"))?;
+        let mut compressor = Compressor::new(level)
+            .map_err(|error| format!("@t:archive.compressFailed\u{1f}{error}"))?;
+        compressor
+            .set_parameter(zstd::zstd_safe::CParameter::WindowLog(window_log))
+            .map_err(|error| format!("@t:archive.compressFailed\u{1f}{error}"))?;
+        // `compress` borrows the compressor mutably; it is local to this
+        // closure so the temp folder is always removed on the way out.
+        compress_with(&mut compressor, &packed)
+            .ok_or_else(|| "@t:archive.compressFailed\u{1f}zstd".to_string())
+    })();
+    let _ = std::fs::remove_dir_all(&dir);
+    result
 }
 
 /// Tar header and padding for every member, plus the two zero blocks that end
@@ -95,11 +138,13 @@ pub fn estimate_archive(
     profile: &MediaProfileInfo,
     level: i32,
     window_log: u32,
+    xtool: Option<&Xtool>,
 ) -> Result<ArchiveEstimate, String> {
     let scan = scan_tree(install)?;
     if scan.file_count == 0 {
         return Err("@t:archive.emptyGame".to_string());
     }
+    let uses_xtool = xtool.is_some();
 
     let mut bypassed_files = 0u64;
     let mut bypassed_bytes = 0u64;
@@ -108,7 +153,10 @@ pub fn estimate_archive(
         if entry.is_dir {
             continue;
         }
-        if should_store_raw(&entry.rel, entry.size) {
+        // xtool receives the whole tar stream, so bypassing a member would
+        // split that stream. In xtool mode every file is a candidate, including
+        // the video and engine packs that a plain backup stores raw.
+        if !uses_xtool && should_store_raw(&entry.rel, entry.size) {
             bypassed_files += 1;
             bypassed_bytes = bypassed_bytes.saturating_add(entry.size);
         } else {
@@ -117,27 +165,51 @@ pub fn estimate_archive(
     }
     candidates.sort_by(|left, right| right.size.cmp(&left.size));
 
-    let mut compressor = Compressor::new(level)
-        .map_err(|error| format!("@t:archive.compressFailed\u{1f}{error}"))?;
-    compressor
-        .set_parameter(zstd::zstd_safe::CParameter::WindowLog(window_log))
-        .map_err(|error| format!("@t:archive.compressFailed\u{1f}{error}"))?;
-
     let mut budget = if level >= 15 { HEAVY_BUDGET } else { SAMPLE_BUDGET };
     let mut sampled_files = 0u32;
     let mut sampled_bytes = 0u64;
     let mut sampled_compressed = 0u64;
-    for entry in candidates.iter().take(SAMPLE_FILES) {
-        if budget == 0 {
-            break;
+    match xtool {
+        Some(xtool) => {
+            let mut sample = Vec::new();
+            for entry in candidates.iter().take(SAMPLE_FILES) {
+                if budget == 0 {
+                    break;
+                }
+                let Some(bytes) = read_sample(entry, budget) else {
+                    continue;
+                };
+                budget = budget.saturating_sub(bytes.len() as u64);
+                sampled_files += 1;
+                sample.extend_from_slice(&bytes);
+            }
+            sampled_bytes = sample.len() as u64;
+            if !sample.is_empty() {
+                sampled_compressed = compress_with_xtool(xtool, &sample, level, window_log)?;
+            }
         }
-        let Some((raw, compressed)) = sample_file(entry, budget, &mut compressor) else {
-            continue;
-        };
-        budget = budget.saturating_sub(raw);
-        sampled_files += 1;
-        sampled_bytes = sampled_bytes.saturating_add(raw);
-        sampled_compressed = sampled_compressed.saturating_add(compressed);
+        None => {
+            let mut compressor = Compressor::new(level)
+                .map_err(|error| format!("@t:archive.compressFailed\u{1f}{error}"))?;
+            compressor
+                .set_parameter(zstd::zstd_safe::CParameter::WindowLog(window_log))
+                .map_err(|error| format!("@t:archive.compressFailed\u{1f}{error}"))?;
+            for entry in candidates.iter().take(SAMPLE_FILES) {
+                if budget == 0 {
+                    break;
+                }
+                let Some(bytes) = read_sample(entry, budget) else {
+                    continue;
+                };
+                budget = budget.saturating_sub(bytes.len() as u64);
+                let Some(compressed) = compress_with(&mut compressor, &bytes) else {
+                    continue;
+                };
+                sampled_files += 1;
+                sampled_bytes = sampled_bytes.saturating_add(bytes.len() as u64);
+                sampled_compressed = sampled_compressed.saturating_add(compressed);
+            }
+        }
     }
 
     // With no sample at all the game is a handful of tiny files; assume a
@@ -170,6 +242,7 @@ pub fn estimate_archive(
         sampled_bytes,
         bypassed_files,
         bypassed_bytes,
+        uses_xtool,
     })
 }
 
@@ -215,7 +288,8 @@ mod tests {
         std::fs::write(root.join("data.txt"), vec![b'a'; 2 * MIB as usize]).unwrap();
         std::fs::write(root.join("movie.mp4"), noisy(300 * 1024, 3)).unwrap();
         let profile = resolve("fat32", None).unwrap();
-        let estimate = estimate_archive(&root, &profile, 3, 20).unwrap();
+        let estimate = estimate_archive(&root, &profile, 3, 20, None).unwrap();
+        assert!(!estimate.uses_xtool);
         assert_eq!(estimate.bypassed_files, 1);
         assert_eq!(estimate.bypassed_bytes, 300 * 1024);
         assert!(estimate.estimated_bytes < estimate.original_bytes);
@@ -228,7 +302,27 @@ mod tests {
     fn an_empty_folder_is_refused() {
         let root = temp_root("empty");
         let profile = resolve("fat32", None).unwrap();
-        assert!(estimate_archive(&root, &profile, 3, 20).is_err());
+        assert!(estimate_archive(&root, &profile, 3, 20, None).is_err());
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    #[ignore = "needs EFXLVE_XTOOL and EFXLVE_ESTIMATE_GAME"]
+    fn a_real_game_can_be_estimated() {
+        let game = std::env::var("EFXLVE_ESTIMATE_GAME").expect("set EFXLVE_ESTIMATE_GAME");
+        let xtool_path = std::env::var("EFXLVE_XTOOL").expect("set EFXLVE_XTOOL");
+        let xtool = Xtool::new(&xtool_path).unwrap();
+        let profile = resolve("fat32", None).unwrap();
+        let estimate = estimate_archive(
+            std::path::Path::new(&game),
+            &profile,
+            3,
+            24,
+            Some(&xtool),
+        )
+        .unwrap();
+        eprintln!("{estimate:#?}");
+        assert!(estimate.uses_xtool);
+        assert!(estimate.estimated_bytes < estimate.original_bytes);
     }
 }

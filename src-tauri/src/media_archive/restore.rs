@@ -1117,6 +1117,12 @@ mod tests {
         std::fs::write(game.join("assets.bin"), &zlib_stream).unwrap();
         let binary = noisy(300 * 1024, 91);
         std::fs::write(game.join("data.bin"), &binary).unwrap();
+        let profile = MediaProfileInfo {
+            id: "test".to_string(),
+            volume_bytes: 4 * 1024 * 1024,
+            frame_bytes: 1024 * 1024,
+            file_system: "test".to_string(),
+        };
 
         let pack = |name: &str, xtool: Option<Xtool>| {
             let media = root.join(name);
@@ -1126,12 +1132,7 @@ mod tests {
                 title: format!("Xtool {name}"),
                 install_path: game.clone(),
                 target_root: media,
-                profile: MediaProfileInfo {
-                    id: "test".to_string(),
-                    volume_bytes: 4 * 1024 * 1024,
-                    frame_bytes: 1024 * 1024,
-                    file_system: "test".to_string(),
-                },
+                profile: profile.clone(),
                 level: 3,
                 window_log: 20,
                 xtool,
@@ -1155,6 +1156,13 @@ mod tests {
             packed.manifest.compression.precompressor.as_deref(),
             Some("xtool")
         );
+        let estimate =
+            crate::media_archive::estimate::estimate_archive(&game, &profile, 3, 20, Some(&xtool))
+                .unwrap();
+        assert!(estimate.uses_xtool);
+        assert_eq!(estimate.bypassed_files, 0);
+        assert_eq!(estimate.bypassed_bytes, 0);
+        assert!(estimate.estimated_bytes < estimate.original_bytes);
 
         let target = root.join("target");
         std::fs::create_dir_all(&target).unwrap();

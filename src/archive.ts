@@ -135,6 +135,7 @@ export interface ArchiveEstimate {
   sampledBytes: number;
   bypassedFiles: number;
   bypassedBytes: number;
+  usesXtool: boolean;
 }
 
 export interface DiscRecorder {
@@ -224,12 +225,14 @@ export const archiveEstimate = (args: {
   profileId: string;
   customMib?: number;
   level: string;
+  xtoolPath?: string;
 }) =>
   invoke<ArchiveEstimate>("archive_estimate", {
     installPath: args.installPath,
     profileId: args.profileId,
     customMib: args.customMib ?? null,
     level: args.level,
+    xtoolPath: args.xtoolPath?.trim() ? args.xtoolPath.trim() : null,
   });
 
 export const archiveScanFolder = (root: string) =>
