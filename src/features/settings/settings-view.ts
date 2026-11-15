@@ -2534,7 +2534,7 @@ export async function loadControllerView(force = false): Promise<void> {
     bridgeRunning: false,
     bridgeDevice: "",
   }));
-  await refreshConnectedControllers();
+  await refreshConnectedControllers(force);
   render();
 }
 

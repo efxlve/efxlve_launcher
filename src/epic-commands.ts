@@ -134,8 +134,8 @@ export interface ConnectedController {
   name: string;
   kind: ControllerKind;
 }
-export const controllerConnectedPads = () =>
-  invoke<ConnectedController[]>("controller_connected_pads");
+export const controllerConnectedPads = (force = false) =>
+  invoke<ConnectedController[]>("controller_connected_pads", { force });
 
 /** XInput bridge state: running plus the pad it currently bridges. */
 export interface ControllerBridgeStatus {

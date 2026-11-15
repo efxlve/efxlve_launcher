@@ -657,7 +657,7 @@ function bindPad(gp: Gamepad): void {
 }
 
 /** How often the HID pad list is read while the launcher is in front. */
-const CONTROLLER_WATCH_MS = 4000;
+const CONTROLLER_WATCH_MS = 15000;
 
 const padNotices = new PadNotices();
 
@@ -675,11 +675,11 @@ function showPadNotice(notice: PadNotice | null): void {
  * was just plugged in. The first snapshot only seeds the watch, and the list is
  * also what Settings > Controller shows.
  */
-export async function refreshConnectedControllers(): Promise<void> {
+export async function refreshConnectedControllers(force = false): Promise<void> {
   if (!isTauri) return;
   let pads: ConnectedController[];
   try {
-    pads = await controllerConnectedPads();
+    pads = await controllerConnectedPads(force);
   } catch {
     return;
   }

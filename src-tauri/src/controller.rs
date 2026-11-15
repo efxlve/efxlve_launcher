@@ -8,11 +8,21 @@
 //! detected too: its Steam Input layer can do the mapping for any game added to
 //! the library.
 
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
+
 use serde::Serialize;
 
 use crate::controller_bridge::PadFamily;
 use crate::steam;
 use crate::winreg;
+
+/// The HID list changes only when a pad is plugged in or removed. Enumerating
+/// the whole stack is not free (hidapi opens every device), so repeated reads
+/// share one answer for this long.
+const PAD_CACHE_TTL: Duration = Duration::from_secs(15);
+
+static PAD_CACHE: Mutex<Option<(Instant, Vec<ConnectedController>)>> = Mutex::new(None);
 
 /// Support status shown in Settings > Controller.
 #[derive(Debug, Clone, Serialize)]
@@ -65,17 +75,37 @@ pub struct ConnectedController {
 /// the section shows the pad at once and explains the first button press
 /// instead of claiming nothing is connected.
 #[tauri::command]
-pub fn controller_connected_pads() -> Vec<ConnectedController> {
-    #[cfg(windows)]
-    {
-        hid_pads()
+pub async fn controller_connected_pads(force: Option<bool>) -> Vec<ConnectedController> {
+    let force = force.unwrap_or(false);
+    if !force {
+        if let Ok(cache) = PAD_CACHE.lock() {
+            if let Some((at, pads)) = cache.as_ref() {
+                if at.elapsed() < PAD_CACHE_TTL {
+                    return pads.clone();
+                }
+            }
+        }
     }
-    #[cfg(not(windows))]
-    {
-        // Only Windows enumerates the HID stack here; elsewhere the Gamepad API
-        // is the single source.
-        Vec::new()
+    // hidapi walks the whole HID stack; keep it off the IPC/main thread.
+    let pads = tauri::async_runtime::spawn_blocking(list_pads)
+        .await
+        .unwrap_or_default();
+    if let Ok(mut cache) = PAD_CACHE.lock() {
+        *cache = Some((Instant::now(), pads.clone()));
     }
+    pads
+}
+
+#[cfg(windows)]
+fn list_pads() -> Vec<ConnectedController> {
+    hid_pads()
+}
+
+#[cfg(not(windows))]
+fn list_pads() -> Vec<ConnectedController> {
+    // Only Windows enumerates the HID stack here; elsewhere the Gamepad API
+    // is the single source.
+    Vec::new()
 }
 
 /// Controller family for a HID pad. Sony pads come from the bridge's product
