@@ -1048,6 +1048,42 @@ mod tests {
     }
 
     #[test]
+    fn a_sink_failure_stops_the_file_reader_on_the_next_read() {
+        let failure = Arc::new(Mutex::new(None));
+        let ctx = PackCtx {
+            sink: Arc::new(NoopSink),
+            id: "test".to_string(),
+            total_bytes: 8,
+            processed: Arc::new(AtomicU64::new(0)),
+            output: Arc::new(AtomicU64::new(0)),
+            volume: Arc::new(AtomicU32::new(1)),
+            volume_count: 1,
+            cancel: Arc::new(AtomicBool::new(false)),
+            start: Instant::now(),
+            last_emit_ms: Arc::new(AtomicU64::new(0)),
+            sink_failure: failure.clone(),
+        };
+        let mut reader = ProgressReader {
+            inner: io::Cursor::new(vec![7u8; 8]),
+            ctx,
+            current: "file.bin".to_string(),
+            remaining: 8,
+        };
+        let mut buf = [0u8; 4];
+        assert_eq!(reader.read(&mut buf).unwrap(), 4);
+
+        *failure.lock().unwrap() =
+            Some("@t:archive.writeFailed\u{1f}disk full".to_string());
+        let error = reader.read(&mut buf).unwrap_err();
+
+        assert!(
+            error.to_string().contains("@t:archive.writeFailed"),
+            "{error}"
+        );
+        assert_eq!(reader.ctx.processed.load(Ordering::Relaxed), 4);
+    }
+
+    #[test]
     fn scan_skips_nothing_it_cannot_read() {
         let root = temp_root("scan");
         let game = root.join("Game");
