@@ -4303,5 +4303,6 @@
   "archive.guideNotesTitle": "Bilmekte fayda var",
   "archive.guideNotesBody": "Arşiv klasörü taşınabilir: USB'ye kopyala, harici diske al veya disk klasörlerini yaz. Yedek kişiseldir; oyun dosyalarını paylaşma. Sıkıştırma zaman alır, özellikle xtool ile; tam bir Blu-ray yedeği saatler sürebilir.",
   "archive.levelXtoolHint": "xtool ayarlı: Fast yeterli. Ağır sıkıştırmayı zaten xtool yapar; daha yüksek zstd seviyesi çoğunlukla bekleme süresi ekler.",
-  "archive.guideXtoolSecurity": "Windows imzasız xtool ikilisi için uyarı gösterebilir. Launcher kendi indirdiği dosyayı çıkarmadan önce sabitlenmiş SHA-256 ile doğrular."
+  "archive.guideXtoolSecurity": "Windows imzasız xtool ikilisi için uyarı gösterebilir. Launcher kendi indirdiği dosyayı çıkarmadan önce sabitlenmiş SHA-256 ile doğrular.",
+  "archive.targetIsGameParent": "Bu klasörde kurulu oyun var. Yedek onun yanına yazılacak; yedeği ayrı tutmak için USB'yi veya başka bir diski seç."
 }

@@ -19,6 +19,7 @@ import type {
 import { archiveGameList, loadArchiveView, selectedArchiveGame } from "./archive-actions";
 import { renderArchiveGuide } from "./archive-guide";
 import { archiveFits, archiveRequiredBytes } from "./archive-space";
+import { isInstallParent } from "./archive-paths";
 
 function storeName(key: string): string {
   if (key.startsWith("steam::")) return "Steam";
@@ -287,6 +288,7 @@ function renderPlanSummary(plan: ArchivePlan | null): string {
   const partsLabel = S.archiveEstimate
     ? t("archive.estimateParts")
     : t("archive.estimatedVolumes");
+  const sameAsGame = isInstallParent(plan.targetRoot, plan.installPath);
   return `
     <div class="archive-summary">
       <div class="archive-summary-grid">
@@ -298,6 +300,11 @@ function renderPlanSummary(plan: ArchivePlan | null): string {
         <div><span class="archive-k">${t("archive.partSize")}</span><span class="archive-v tabular-nums">${fmtBytesOrZero(plan.volumeBytes)}</span></div>
       </div>
       <div class="archive-path-line"><span class="archive-k">${t("archive.outputFolder")}</span><span class="archive-path-value">${esc(plan.archivePath)}</span></div>
+      ${
+        sameAsGame
+          ? `<div class="archive-note archive-target-warning">${icon("info", 13)} ${t("archive.targetIsGameParent")}</div>`
+          : ""
+      }
       ${
         fits
           ? ""

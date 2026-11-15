@@ -4303,5 +4303,6 @@
   "archive.guideNotesTitle": "Good to know",
   "archive.guideNotesBody": "The archive folder is portable: copy it to a USB drive, an external disk, or burn the disc folders. A backup is personal; do not share game files. Compression takes time, especially with xtool, and a full Blu-ray backup can run for hours.",
   "archive.levelXtoolHint": "xtool is set: Fast is enough. xtool already compresses the game data, and a higher zstd level mostly adds waiting time.",
-  "archive.guideXtoolSecurity": "Windows may warn about the unsigned xtool binary. The launcher checks its own download against a pinned SHA-256 before unpacking it."
+  "archive.guideXtoolSecurity": "Windows may warn about the unsigned xtool binary. The launcher checks its own download against a pinned SHA-256 before unpacking it.",
+  "archive.targetIsGameParent": "This folder already holds the installed game. The backup will be written next to it; choose the USB drive or another disk to keep the backup separate."
 }
