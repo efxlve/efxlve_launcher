@@ -17,6 +17,7 @@ mod pack;
 mod profile;
 mod restore;
 mod store;
+mod xtool;
 
 use serde::{Deserialize, Serialize};
 

@@ -24,6 +24,7 @@ import { initialLanguage, t } from "../i18n";
 import type { MtuProbe } from "../net-diag";
 import {
   APP_AUTO_UPDATE_KEY,
+  ARCHIVE_XTOOL_KEY,
   CUSTOM_AVATARS_KEY,
   CUSTOM_PROFILE_NAME_KEY,
   CUSTOM_PROFILE_BANNERS_KEY,
@@ -643,6 +644,7 @@ export const S = {
   archiveBurnRecorder: "",
   archiveBurning: (null) as number | null,
   archiveBurnDone: (null) as number | null,
+  archiveXtoolPath: (localStorage.getItem(ARCHIVE_XTOOL_KEY) || "") as string,
   cloudBackupSettings: (null) as CloudBackupSettings | null,
   cloudBackupTesting: false,
   cloudBackupSyncing: false,

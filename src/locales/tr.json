@@ -4247,5 +4247,14 @@
   "archive.estimateParts": "Tahmini parça",
   "archive.estimateSkipped": "Zaten sıkışık",
   "archive.estimateIntro": "Yedek başlamadan önce en büyük dosyalardan örnek alıp arşiv boyutunu tahmin eder.",
-  "archive.estimateHint": "{files} dosya örneklendi; {skipped} zaten sıkıştırılmış dosya olduğu gibi saklanacak."
+  "archive.estimateHint": "{files} dosya örneklendi; {skipped} zaten sıkıştırılmış dosya olduğu gibi saklanacak.",
+  "archive.xtoolTitle": "xtool ön sıkıştırma (deneysel)",
+  "archive.xtoolDesc": "Kendi xtool.exe dosyanı gösterir. Ayarlandığında her yedek, oyunun zlib akışlarını zstd'den önce açar; zaten sıkıştırılmış oyun verisini küçülten adım budur.",
+  "archive.xtoolHint": "_libraries klasörü xtool.exe ile aynı yerde olmalı. xtool ile alınan yedekler yalnızca xtool bulunan bir makinede geri yüklenebilir; kişisel yedekler içindir, yavaştır ve çok bellek kullanır. xtool açıkken Fast yeterli.",
+  "archive.xtoolMissing": "Seçilen yolda xtool.exe bulunamadı.",
+  "archive.xtoolLibraries": "xtool.exe yanında _libraries klasörü yok.",
+  "archive.xtoolFailed": "xtool başarısız: {a1}",
+  "archive.xtoolRequired": "Bu yedek xtool ile ön sıkıştırılmış. Geri yüklemeden önce xtool.exe yolunu ayarla.",
+  "archive.estimateHintXtool": "{files} dosya yalnızca zstd ile örneklendi; xtool adımı yedeği daha da küçültebilir.",
+  "archive.xtoolRestoreHint": "Bu yedek xtool ile ön sıkıştırılmış. Geri yüklemeden önce uygun xtool.exe dosyasını göster; açma adımı aynı aracı gerektirir."
 }

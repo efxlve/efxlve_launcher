@@ -16,6 +16,7 @@ use super::pack::{pack_game, scan_tree, unique_archive_folder, PackJob, Progress
 use super::profile::{self, MediaProfileInfo};
 use super::restore::{locate_volumes, restore_game, RestoreJob};
 use super::store::{self, RestoreRegistration, StorePending};
+use super::xtool::Xtool;
 use super::ArchiveProgress;
 
 const SCAN_DEPTH: u8 = 3;
@@ -262,9 +263,18 @@ pub async fn archive_start(
     profile_id: String,
     custom_mib: Option<u64>,
     level: String,
+    xtool_path: Option<String>,
 ) -> Result<ArchiveSummary, String> {
     let profile = profile::resolve(&profile_id, custom_mib)?;
     let (compression_level, window_log) = compression_setting(&level)?;
+    let xtool = match xtool_path
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        Some(path) => Some(Xtool::new(path)?),
+        None => None,
+    };
     if let Some((running, _)) = crate::legendary::screenshots::get_active_running_game() {
         if running == app_name {
             return Err("@t:archive.gameRunning".to_string());
@@ -319,6 +329,7 @@ pub async fn archive_start(
         profile,
         level: compression_level,
         window_log,
+        xtool,
         store_meta,
         sink: sink.clone(),
         cancel: cancel.clone(),
@@ -646,10 +657,16 @@ pub async fn archive_restore(
     target_parent: String,
     extra_dirs: Vec<String>,
     overwrite: bool,
+    xtool_path: Option<String>,
 ) -> Result<RestoreResult, String> {
     let path = PathBuf::from(&manifest_path);
     let (path, manifest_dir) = resolve_manifest_path(&path)?;
     let manifest = read_manifest(&path)?;
+    let xtool = if manifest.compression.precompressor.as_deref() == Some("xtool") {
+        Some(Xtool::new(xtool_path.as_deref().unwrap_or(""))?)
+    } else {
+        None
+    };
     let id = manifest.app_name.clone();
     if let Some((running, _)) = crate::legendary::screenshots::get_active_running_game() {
         if running == id {
@@ -684,6 +701,7 @@ pub async fn archive_restore(
         extra_dirs: extras,
         target_parent: PathBuf::from(target),
         overwrite,
+        xtool,
         sink: sink.clone(),
         cancel,
     };

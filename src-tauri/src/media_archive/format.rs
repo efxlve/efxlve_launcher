@@ -23,6 +23,10 @@ pub struct CompressionInfo {
     pub level: i32,
     pub window_log: u32,
     pub frame_bytes: u64,
+    /// `Some("xtool")` when the tar stream is wrapped in xtool's precompressor
+    /// before zstd. Older manifests default to `None`, which means plain zstd.
+    #[serde(default)]
+    pub precompressor: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -294,6 +298,7 @@ mod tests {
                 level: 10,
                 window_log: 27,
                 frame_bytes: 64 * 1024 * 1024,
+                precompressor: None,
             },
             volume_bytes: 1024,
             volumes: vec![VolumeInfo {

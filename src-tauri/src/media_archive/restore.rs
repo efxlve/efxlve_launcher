@@ -5,8 +5,10 @@
 use std::fs::File;
 use std::io::{self, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
+use std::process::{Child, ChildStdout};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
+use std::thread::JoinHandle;
 use std::time::Instant;
 
 use sha2::{Digest, Sha256};
@@ -17,6 +19,7 @@ use super::format::{
 };
 use super::pack::ProgressSink;
 use super::profile::free_bytes;
+use super::xtool::Xtool;
 use super::ArchiveProgress;
 
 const RESTORE_PAD_BYTES: u64 = 64 * 1024 * 1024;
@@ -27,6 +30,8 @@ pub struct RestoreJob {
     pub extra_dirs: Vec<PathBuf>,
     pub target_parent: PathBuf,
     pub overwrite: bool,
+    /// Required only when the manifest says the stream went through xtool.
+    pub xtool: Option<Xtool>,
     pub sink: Arc<dyn ProgressSink>,
     pub cancel: Arc<AtomicBool>,
 }
@@ -112,6 +117,10 @@ pub(super) fn find_volume_file(
 
 pub fn restore_game(job: RestoreJob) -> Result<RestoreOutcome, String> {
     job.manifest.validate()?;
+    let precompressed = job.manifest.compression.precompressor.as_deref() == Some("xtool");
+    if precompressed && job.xtool.is_none() {
+        return Err("@t:archive.xtoolRequired".to_string());
+    }
     std::fs::create_dir_all(&job.target_parent)
         .map_err(|error| format!("@t:archive.targetFailed\u{1f}{error}"))?;
     let target_parent = job
@@ -223,7 +232,16 @@ fn extract_all(
         start: Instant::now(),
         last_emit: Instant::now(),
     };
-    let mut archive = tar::Archive::new(block_reader);
+    let mut archive = tar::Archive::new(
+        if job.manifest.compression.precompressor.as_deref() == Some("xtool") {
+            match &job.xtool {
+                Some(xtool) => RestoreSource::Xtool(XtoolReader::new(xtool, block_reader)?),
+                None => return Err("@t:archive.xtoolRequired".to_string()),
+            }
+        } else {
+            RestoreSource::Direct(block_reader)
+        },
+    );
     let entries = archive.entries().map_err(extraction_error)?;
     let mut file_count = 0u64;
     let mut bytes = 0u64;
@@ -274,6 +292,7 @@ fn extract_all(
         file_count += 1;
         bytes = bytes.saturating_add(copied);
     }
+    archive.into_inner().finish()?;
     Ok((file_count, bytes))
 }
 
@@ -691,6 +710,136 @@ impl Read for BlockReader {
     }
 }
 
+/// Tar input for the restore: either the decoded frames directly or the output
+/// of `xtool decode`, which rebuilds the original tar bytes.
+enum RestoreSource {
+    Direct(BlockReader),
+    Xtool(XtoolReader),
+}
+
+impl Read for RestoreSource {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        match self {
+            Self::Direct(reader) => reader.read(buf),
+            Self::Xtool(reader) => reader.read(buf),
+        }
+    }
+}
+
+impl RestoreSource {
+    fn finish(self) -> Result<(), String> {
+        match self {
+            Self::Direct(_) => Ok(()),
+            Self::Xtool(reader) => reader.finish(),
+        }
+    }
+}
+
+struct XtoolReader {
+    stdout: Option<ChildStdout>,
+    child: Child,
+    feeder: Option<JoinHandle<()>>,
+    failure: Arc<Mutex<Option<String>>>,
+}
+
+fn record_failure(slot: &Mutex<Option<String>>, message: String) {
+    if let Ok(mut slot) = slot.lock() {
+        if slot.is_none() {
+            *slot = Some(message);
+        }
+    }
+}
+
+impl XtoolReader {
+    fn new(xtool: &Xtool, mut reader: BlockReader) -> Result<Self, String> {
+        let mut child = xtool.decode()?;
+        let mut stdin = child
+            .stdin
+            .take()
+            .ok_or_else(|| "@t:archive.xtoolFailed\u{1f}stdin".to_string())?;
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| "@t:archive.xtoolFailed\u{1f}stdout".to_string())?;
+        let failure = Arc::new(Mutex::new(None));
+        let shared = failure.clone();
+        // The block reader has to feed the child while the tar parser reads its
+        // output; doing both on one thread would deadlock once a pipe fills.
+        let feeder = std::thread::spawn(move || {
+            let mut buffer = vec![0u8; 1024 * 1024];
+            loop {
+                match reader.read(&mut buffer) {
+                    Ok(0) => break,
+                    Ok(read) => {
+                        if let Err(error) = stdin.write_all(&buffer[..read]) {
+                            record_failure(
+                                &shared,
+                                format!("@t:archive.xtoolFailed\u{1f}{error}"),
+                            );
+                            return;
+                        }
+                    }
+                    Err(error) => {
+                        record_failure(&shared, error.to_string());
+                        return;
+                    }
+                }
+            }
+        });
+        Ok(Self {
+            stdout: Some(stdout),
+            child,
+            feeder: Some(feeder),
+            failure,
+        })
+    }
+
+    /// Drains the remaining output and reports the first failure from either
+    /// side. A damaged block must surface as a corrupt-volume message, not as
+    /// a truncated tar stream.
+    fn finish(mut self) -> Result<(), String> {
+        if let Some(mut stdout) = self.stdout.take() {
+            let _ = io::copy(&mut stdout, &mut io::sink());
+        }
+        let status = self
+            .child
+            .wait()
+            .map_err(|error| format!("@t:archive.xtoolFailed\u{1f}{error}"))?;
+        if let Some(feeder) = self.feeder.take() {
+            let _ = feeder.join();
+        }
+        if let Some(error) = self.failure.lock().ok().and_then(|mut slot| slot.take()) {
+            return Err(error);
+        }
+        if !status.success() {
+            return Err(format!("@t:archive.xtoolFailed\u{1f}{status}"));
+        }
+        Ok(())
+    }
+}
+
+impl Read for XtoolReader {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        match self.stdout.as_mut() {
+            Some(stdout) => stdout.read(buf),
+            None => Ok(0),
+        }
+    }
+}
+
+impl Drop for XtoolReader {
+    fn drop(&mut self) {
+        // A corrupt block aborts the restore before finish() runs. Close the
+        // pipes and join the feeder so no thread outlives the staging folder.
+        drop(self.stdout.take());
+        let _ = self.child.kill();
+        let _ = self.child.wait();
+        if let Some(feeder) = self.feeder.take() {
+            let _ = feeder.join();
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -741,6 +890,7 @@ mod tests {
             },
             level: 3,
             window_log: 20,
+            xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
             cancel: Arc::new(AtomicBool::new(false)),
@@ -761,6 +911,7 @@ mod tests {
             manifest,
             manifest_dir: folder,
             extra_dirs: Vec::new(),
+            xtool: None,
             target_parent: target_parent.clone(),
             overwrite: false,
             sink: Arc::new(NoopSink),
@@ -811,6 +962,7 @@ mod tests {
             },
             level: 3,
             window_log: 20,
+            xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
             cancel: Arc::new(AtomicBool::new(false)),
@@ -825,6 +977,7 @@ mod tests {
             manifest: packed.manifest.clone(),
             manifest_dir: packed.folder.clone(),
             extra_dirs: Vec::new(),
+            xtool: None,
             target_parent: root_target,
             overwrite: false,
             sink: Arc::new(NoopSink),
@@ -849,6 +1002,7 @@ mod tests {
             manifest,
             manifest_dir: disc1,
             extra_dirs: extras,
+            xtool: None,
             target_parent: disc_target,
             overwrite: false,
             sink: Arc::new(NoopSink),
@@ -882,6 +1036,7 @@ mod tests {
             },
             level: 3,
             window_log: 20,
+            xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
             cancel: Arc::new(AtomicBool::new(false)),
@@ -893,6 +1048,7 @@ mod tests {
             manifest: packed.manifest,
             manifest_dir: packed.folder,
             extra_dirs: Vec::new(),
+            xtool: None,
             target_parent: target,
             overwrite: false,
             sink: Arc::new(NoopSink),
@@ -906,6 +1062,120 @@ mod tests {
         assert_eq!(
             std::fs::read(restored.target.join("notes.txt")).unwrap(),
             b"hello"
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn an_xtool_backup_needs_xtool_to_restore() {
+        let root = temp_root("xtool-required");
+        let (_game, folder, manifest_path) = pack_fixture(&root, 128 * 1024);
+        let mut manifest = crate::media_archive::format::read_manifest(&manifest_path).unwrap();
+        manifest.compression.precompressor = Some("xtool".to_string());
+        let target = root.join("target");
+        let error = restore_game(RestoreJob {
+            manifest,
+            manifest_dir: folder,
+            extra_dirs: Vec::new(),
+            xtool: None,
+            target_parent: target.clone(),
+            overwrite: false,
+            sink: Arc::new(NoopSink),
+            cancel: Arc::new(AtomicBool::new(false)),
+        })
+        .err()
+        .expect("an xtool backup without xtool must fail");
+        assert!(error.contains("xtoolRequired"));
+        assert!(!target.join("Game").exists());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    #[ignore = "needs EFXLVE_XTOOL pointing at a local xtool.exe"]
+    fn xtool_backup_and_restore_round_trip() {
+        use flate2::write::ZlibEncoder;
+        use flate2::Compression;
+        use std::io::Write;
+
+        let path = std::env::var("EFXLVE_XTOOL").expect("set EFXLVE_XTOOL");
+        let xtool = Xtool::new(&path).unwrap();
+        let root = temp_root("xtool-roundtrip");
+        let game = root.join("Game");
+        std::fs::create_dir_all(&game).unwrap();
+
+        // A zlib stream is what xtool opens: zstd alone can only store it, so
+        // the xtool archive must come out smaller than the direct one.
+        let mut text = Vec::new();
+        for line in 0..200_000 {
+            text.extend_from_slice(
+                format!("line {line}: the quick brown fox jumps over the lazy dog\n").as_bytes(),
+            );
+        }
+        let mut encoder = ZlibEncoder::new(Vec::new(), Compression::new(6));
+        encoder.write_all(&text).unwrap();
+        let zlib_stream = encoder.finish().unwrap();
+        std::fs::write(game.join("assets.bin"), &zlib_stream).unwrap();
+        let binary = noisy(300 * 1024, 91);
+        std::fs::write(game.join("data.bin"), &binary).unwrap();
+
+        let pack = |name: &str, xtool: Option<Xtool>| {
+            let media = root.join(name);
+            std::fs::create_dir_all(&media).unwrap();
+            pack_game(PackJob {
+                app_name: "steam::7".to_string(),
+                title: format!("Xtool {name}"),
+                install_path: game.clone(),
+                target_root: media,
+                profile: MediaProfileInfo {
+                    id: "test".to_string(),
+                    volume_bytes: 4 * 1024 * 1024,
+                    frame_bytes: 1024 * 1024,
+                    file_system: "test".to_string(),
+                },
+                level: 3,
+                window_log: 20,
+                xtool,
+                store_meta: StoreMeta::default(),
+                sink: Arc::new(NoopSink),
+                cancel: Arc::new(AtomicBool::new(false)),
+            })
+            .unwrap()
+        };
+
+        let direct = pack("direct", None);
+        let packed = pack("xtool", Some(xtool.clone()));
+        assert!(direct.stored_bytes > 0);
+        assert!(
+            packed.stored_bytes < direct.stored_bytes,
+            "xtool {} vs direct {}",
+            packed.stored_bytes,
+            direct.stored_bytes
+        );
+        assert_eq!(
+            packed.manifest.compression.precompressor.as_deref(),
+            Some("xtool")
+        );
+
+        let target = root.join("target");
+        std::fs::create_dir_all(&target).unwrap();
+        let restored = restore_game(RestoreJob {
+            manifest: packed.manifest,
+            manifest_dir: packed.folder,
+            extra_dirs: Vec::new(),
+            xtool: Some(xtool),
+            target_parent: target,
+            overwrite: false,
+            sink: Arc::new(NoopSink),
+            cancel: Arc::new(AtomicBool::new(false)),
+        })
+        .unwrap();
+        assert_eq!(
+            std::fs::read(restored.target.join("assets.bin")).unwrap(),
+            zlib_stream
+        );
+        assert_eq!(
+            std::fs::read(restored.target.join("data.bin")).unwrap(),
+            binary
         );
         let _ = std::fs::remove_dir_all(&root);
     }
@@ -953,6 +1223,7 @@ mod tests {
             },
             level: 3,
             window_log: 20,
+            xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
             cancel: Arc::new(AtomicBool::new(false)),
@@ -965,6 +1236,7 @@ mod tests {
             manifest: outcome.manifest,
             manifest_dir: outcome.folder,
             extra_dirs: Vec::new(),
+            xtool: None,
             target_parent: target,
             overwrite: false,
             sink: Arc::new(NoopSink),
@@ -992,6 +1264,7 @@ mod tests {
             manifest,
             manifest_dir: folder,
             extra_dirs: Vec::new(),
+            xtool: None,
             target_parent: target,
             overwrite: false,
             sink: Arc::new(NoopSink),
@@ -1023,6 +1296,7 @@ mod tests {
             manifest,
             manifest_dir: folder,
             extra_dirs: vec![extra],
+            xtool: None,
             target_parent: target,
             overwrite: false,
             sink: Arc::new(NoopSink),
@@ -1049,6 +1323,7 @@ mod tests {
             manifest,
             manifest_dir: folder,
             extra_dirs: Vec::new(),
+            xtool: None,
             target_parent: target.clone(),
             overwrite: false,
             sink: Arc::new(NoopSink),

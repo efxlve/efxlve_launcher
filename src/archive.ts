@@ -68,6 +68,8 @@ export interface ArchiveCompression {
   level: number;
   windowLog: number;
   frameBytes: number;
+  /** `"xtool"` when the stream is wrapped in xtool before zstd. */
+  precompressor?: string | null;
 }
 
 export interface ArchiveStoreMeta {
@@ -198,6 +200,7 @@ export const archiveStart = (args: {
   profileId: string;
   customMib?: number;
   level: string;
+  xtoolPath?: string;
 }) =>
   invoke<ArchiveSummary>("archive_start", {
     appName: args.appName,
@@ -207,6 +210,7 @@ export const archiveStart = (args: {
     profileId: args.profileId,
     customMib: args.customMib ?? null,
     level: args.level,
+    xtoolPath: args.xtoolPath?.trim() ? args.xtoolPath.trim() : null,
   });
 
 export const archiveCancel = (appName: string) =>
@@ -251,10 +255,12 @@ export const archiveRestore = (args: {
   targetParent: string;
   extraDirs: string[];
   overwrite: boolean;
+  xtoolPath?: string;
 }) =>
   invoke<RestoreResult>("archive_restore", {
     manifestPath: args.manifestPath,
     targetParent: args.targetParent,
     extraDirs: args.extraDirs,
     overwrite: args.overwrite,
+    xtoolPath: args.xtoolPath?.trim() ? args.xtoolPath.trim() : null,
   });

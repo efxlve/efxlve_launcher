@@ -81,6 +81,15 @@ function fmtBytesOrZero(bytes: number): string {
   return bytes > 0 ? fmtBytes(bytes) : "0 B";
 }
 
+function compressionLabel(compression: {
+  level: number;
+  precompressor?: string | null;
+}): string {
+  return compression.precompressor === "xtool"
+    ? `xtool + zstd ${compression.level}`
+    : `zstd ${compression.level}`;
+}
+
 function fmtEta(seconds: number): string {
   if (!seconds || seconds <= 0) return "—";
   if (seconds >= 3600) {
@@ -193,6 +202,21 @@ function renderBackupTab(): string {
           </select>
         </div>
       </div>
+      ${
+        IS_WINDOWS
+          ? `<div class="row settings-row stacked">
+               <div class="row-main">
+                 <div class="settings-row-title">${t("archive.xtoolTitle")}</div>
+                 <div class="settings-row-desc">${t("archive.xtoolDesc")}</div>
+               </div>
+               <div class="archive-inline">
+                 <input id="archive-xtool-input" class="input archive-path" type="text" value="${esc(S.archiveXtoolPath)}" placeholder="C:\\xtool\\xtool.exe" data-act="archive-xtool-input" />
+                 <button type="button" class="btn ghost small" data-act="archive-pick-xtool">${icon("folder", 13)} ${t("archive.chooseFolder")}</button>
+               </div>
+               <div class="archive-note">${t("archive.xtoolHint")}</div>
+             </div>`
+          : ""
+      }
       <div class="row settings-row stacked">
         <div class="row-main">
           <div class="settings-row-title">${t("archive.target")}</div>
@@ -290,7 +314,12 @@ function renderEstimate(): string {
         <div><span class="archive-k">${t("archive.estimateParts")}</span><span class="archive-v tabular-nums">${estimate.estimatedVolumes}</span></div>
         <div><span class="archive-k">${t("archive.estimateSkipped")}</span><span class="archive-v tabular-nums">${fmtBytesOrZero(estimate.bypassedBytes)}</span></div>
       </div>
-      <div class="archive-note">${t("archive.estimateHint", { files: estimate.sampledFiles, skipped: estimate.bypassedFiles })}</div>
+      <div class="archive-note">${t(
+        S.archiveXtoolPath.trim() ? "archive.estimateHintXtool" : "archive.estimateHint",
+        S.archiveXtoolPath.trim()
+          ? { files: estimate.sampledFiles }
+          : { files: estimate.sampledFiles, skipped: estimate.bypassedFiles },
+      )}</div>
     </div>`;
 }
 
@@ -304,7 +333,7 @@ function renderBackupResult(result: ArchiveSummary | null): string {
         <div><span class="archive-k">${t("archive.originalSize")}</span><span class="archive-v tabular-nums">${fmtBytes(result.originalBytes)}</span></div>
         <div><span class="archive-k">${t("archive.storedSize")}</span><span class="archive-v tabular-nums">${fmtBytes(result.storedBytes)}</span></div>
         <div><span class="archive-k">${t("archive.parts")}</span><span class="archive-v tabular-nums">${result.volumeCount}</span></div>
-        <div><span class="archive-k">${t("archive.compression")}</span><span class="archive-v tabular-nums">zstd ${result.compression.level}</span></div>
+        <div><span class="archive-k">${t("archive.compression")}</span><span class="archive-v tabular-nums">${compressionLabel(result.compression)}</span></div>
       </div>
       <div class="archive-path-line"><span class="archive-k">${t("archive.outputFolder")}</span><span class="archive-path-value">${esc(result.folder)}</span></div>
       <div class="archive-disc-hint">${icon("info", 13)} ${t("archive.discHint")}</div>
@@ -435,8 +464,18 @@ function renderRestoreDetail(): string {
         <div><span class="archive-k">${t("archive.originalSize")}</span><span class="archive-v tabular-nums">${fmtBytes(manifest.originalBytes)}</span></div>
         <div><span class="archive-k">${t("archive.storedSize")}</span><span class="archive-v tabular-nums">${fmtBytes(found.storedBytes)}</span></div>
         <div><span class="archive-k">${t("archive.parts")}</span><span class="archive-v tabular-nums">${manifest.volumes.length}</span></div>
-        <div><span class="archive-k">${t("archive.compression")}</span><span class="archive-v tabular-nums">zstd ${manifest.compression.level}</span></div>
+        <div><span class="archive-k">${t("archive.compression")}</span><span class="archive-v tabular-nums">${compressionLabel(manifest.compression)}</span></div>
       </div>
+      ${
+        manifest.compression.precompressor === "xtool"
+          ? `<div class="archive-inline archive-restore-target">
+               <label class="archive-inline-label" for="archive-xtool-input">${t("archive.xtoolTitle")}</label>
+               <input id="archive-xtool-input" class="input archive-path" type="text" value="${esc(S.archiveXtoolPath)}" placeholder="C:\\xtool\\xtool.exe" data-act="archive-xtool-input" />
+               <button type="button" class="btn ghost small" data-act="archive-pick-xtool">${icon("folder", 13)} ${t("archive.chooseFolder")}</button>
+             </div>
+             <div class="archive-note">${t("archive.xtoolRestoreHint")}</div>`
+          : ""
+      }
       ${
         missing
           ? `<div class="archive-warn">${icon("alert-triangle", 13)} ${esc(t("archive.missingList", { list: missingLabels(found) }))}</div>

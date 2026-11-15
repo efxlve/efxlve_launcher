@@ -6,6 +6,7 @@
 import { S } from "../../core/state";
 import { scheduleRender } from "../../core/render";
 import { toast } from "../../core/toast";
+import { ARCHIVE_XTOOL_KEY } from "../../core/constants";
 import type { LibraryItem } from "../../core/types";
 import { fmtBytes, fmtSpeed } from "../../core/utils";
 import { t, localizeMessage } from "../../i18n";
@@ -233,6 +234,21 @@ async function pickFolder(current: string): Promise<string | null> {
   }
 }
 
+/** xtool ships as `xtool.exe` next to its `_libraries` folder. */
+function xtoolExecutable(folder: string): string {
+  const separator = folder.includes("\\") ? "\\" : "/";
+  return `${folder.replace(/[\\/]+$/, "")}${separator}xtool.exe`;
+}
+
+function setXtoolPath(value: string): void {
+  S.archiveXtoolPath = value;
+  try {
+    localStorage.setItem(ARCHIVE_XTOOL_KEY, value);
+  } catch {
+    // Storage blocked: the path still applies for this session.
+  }
+}
+
 export function onArchiveProgress(progress: ArchiveProgress): void {
   S.archiveProgress = progress;
   if (progress.stage === "done") {
@@ -385,6 +401,7 @@ async function startBackup(): Promise<void> {
       profileId: S.archiveProfile,
       customMib: S.archiveCustomMib,
       level: S.archiveLevel,
+      xtoolPath: S.archiveXtoolPath,
     });
     S.archiveResult = result;
     S.archiveProgress = null;
@@ -525,6 +542,7 @@ async function startRestore(): Promise<void> {
       targetParent: S.archiveRestoreTarget.trim(),
       extraDirs: S.archiveExtraDirs,
       overwrite: S.archiveOverwrite,
+      xtoolPath: S.archiveXtoolPath,
     });
     S.archiveRestoreResult = result;
     S.archiveProgress = null;
@@ -577,6 +595,15 @@ export function handleArchiveAction(
       S.archivePlan = null;
       S.archiveResult = null;
       void loadArchivePlan();
+    });
+    return true;
+  }
+  if (act === "archive-pick-xtool") {
+    const parent = S.archiveXtoolPath.replace(/[\\/][^\\/]*$/, "");
+    void pickFolder(parent).then((folder) => {
+      if (!folder) return;
+      setXtoolPath(xtoolExecutable(folder));
+      scheduleRender();
     });
     return true;
   }
@@ -689,6 +716,10 @@ export function handleArchiveChange(target: HTMLElement): boolean {
     S.archivePlan = null;
     S.archiveResult = null;
     schedulePlan();
+    return true;
+  }
+  if (act === "archive-xtool-input") {
+    setXtoolPath((target as HTMLInputElement).value);
     return true;
   }
   if (act === "archive-source-input") {

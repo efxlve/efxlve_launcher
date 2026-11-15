@@ -4,8 +4,11 @@
 use std::fs::File;
 use std::io::{self, BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
+use std::process::{Child, ChildStdin};
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
+use std::sync::mpsc::{self, Receiver};
 use std::sync::Arc;
+use std::thread::JoinHandle;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use sha2::{Digest, Sha256};
@@ -17,6 +20,7 @@ use super::format::{
     VolumeInfo, BLOCK_FLAG_STORED, FORMAT_NAME, FORMAT_VERSION, MANIFEST_FILE,
 };
 use super::profile::{worst_case_volumes, MediaProfileInfo};
+use super::xtool::Xtool;
 use super::ArchiveProgress;
 
 /// Progress events leave the engine through a trait so the pack tests never
@@ -60,6 +64,8 @@ pub struct PackJob {
     pub profile: MediaProfileInfo,
     pub level: i32,
     pub window_log: u32,
+    /// Optional precompressor. The tar stream is piped through it before zstd.
+    pub xtool: Option<Xtool>,
     pub store_meta: StoreMeta,
     pub sink: Arc<dyn ProgressSink>,
     pub cancel: Arc<AtomicBool>,
@@ -331,6 +337,10 @@ fn pack_into(
         output: ctx.output.clone(),
         storing: false,
     };
+    let sink = match &job.xtool {
+        Some(xtool) => ArchiveSink::Xtool(XtoolSink::new(xtool, sink)?),
+        None => ArchiveSink::Direct(sink),
+    };
     let mut builder = tar::Builder::new(sink);
 
     for entry in &scan.entries {
@@ -396,10 +406,15 @@ fn pack_into(
         dir_count: scan.dir_count,
         skipped_links: scan.skipped_links,
         compression: CompressionInfo {
-            algorithm: "zstd".to_string(),
+            algorithm: if job.xtool.is_some() {
+                "zstd+xtool".to_string()
+            } else {
+                "zstd".to_string()
+            },
             level: job.level,
             window_log: job.window_log,
             frame_bytes: job.profile.frame_bytes,
+            precompressor: job.xtool.as_ref().map(|_| "xtool".to_string()),
         },
         volume_bytes: job.profile.volume_bytes,
         volumes,
@@ -424,6 +439,9 @@ fn tar_error(error: io::Error, cancel: &Arc<AtomicBool>) -> String {
         "@t:archive.compressFailed",
         "@t:archive.blockTooLarge",
         "@t:archive.fat32Limit",
+        "@t:archive.xtoolFailed",
+        "@t:archive.xtoolMissing",
+        "@t:archive.xtoolLibraries",
     ] {
         if let Some(index) = text.find(marker) {
             return text[index..].to_string();
@@ -602,13 +620,173 @@ impl Write for FrameSink {
             let rest = self.pending.split_off(self.frame_bytes);
             let frame = std::mem::replace(&mut self.pending, rest);
             self.push_frame(frame)
-                .map_err(|error| io::Error::other(error))?;
+                .map_err(io::Error::other)?;
         }
         Ok(buf.len())
     }
 
     fn flush(&mut self) -> io::Result<()> {
         Ok(())
+    }
+}
+
+/// The tar stream either goes straight into the zstd frames or through an
+/// external precompressor first. Both wrappers finish with the same writer.
+enum ArchiveSink {
+    Direct(FrameSink),
+    Xtool(XtoolSink),
+}
+
+impl Write for ArchiveSink {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        match self {
+            Self::Direct(sink) => sink.write(buf),
+            Self::Xtool(sink) => sink.write(buf),
+        }
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        match self {
+            Self::Direct(sink) => sink.flush(),
+            Self::Xtool(sink) => sink.flush(),
+        }
+    }
+}
+
+impl ArchiveSink {
+    fn begin_store(&mut self) -> Result<(), String> {
+        match self {
+            Self::Direct(sink) => sink.begin_store(),
+            // The precompressor owns the byte stream: a member cannot be cut
+            // out of it, so the whole tar stream keeps the same mode.
+            Self::Xtool(_) => Ok(()),
+        }
+    }
+
+    fn end_store(&mut self) -> Result<(), String> {
+        match self {
+            Self::Direct(sink) => sink.end_store(),
+            Self::Xtool(_) => Ok(()),
+        }
+    }
+
+    fn finish(self) -> Result<VolumeWriter, String> {
+        match self {
+            Self::Direct(sink) => sink.finish(),
+            Self::Xtool(sink) => sink.finish(),
+        }
+    }
+}
+
+/// Feeds the tar bytes into `xtool precomp` and compresses its output on a
+/// reader thread. A child process needs both pipe ends drained at the same
+/// time, so the frames cannot live on the thread that writes the tar stream.
+struct XtoolSink {
+    stdin: Option<ChildStdin>,
+    child: Child,
+    reader: Option<JoinHandle<()>>,
+    result: Receiver<Result<VolumeWriter, String>>,
+}
+
+impl XtoolSink {
+    fn new(xtool: &Xtool, sink: FrameSink) -> Result<Self, String> {
+        let mut child = xtool.precompress()?;
+        let stdin = child
+            .stdin
+            .take()
+            .ok_or_else(|| "@t:archive.xtoolFailed\u{1f}stdin".to_string())?;
+        let mut stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| "@t:archive.xtoolFailed\u{1f}stdout".to_string())?;
+        let (tx, result) = mpsc::channel();
+        let reader = std::thread::spawn(move || {
+            let mut sink = sink;
+            let mut failure: Option<String> = None;
+            let mut buffer = vec![0u8; 1024 * 1024];
+            loop {
+                match stdout.read(&mut buffer) {
+                    Ok(0) => break,
+                    Ok(read) => {
+                        if failure.is_none() {
+                            if let Err(error) = sink.write_all(&buffer[..read]) {
+                                failure = Some(error.to_string());
+                            }
+                        }
+                    }
+                    Err(error) => {
+                        failure.get_or_insert_with(|| {
+                            format!("@t:archive.xtoolFailed\u{1f}{error}")
+                        });
+                        break;
+                    }
+                }
+            }
+            let finished = sink.finish();
+            let message = match (failure, finished) {
+                (Some(error), _) => Err(error),
+                (None, Ok(writer)) => Ok(writer),
+                (None, Err(error)) => Err(error),
+            };
+            let _ = tx.send(message);
+        });
+        Ok(Self {
+            stdin: Some(stdin),
+            child,
+            reader: Some(reader),
+            result,
+        })
+    }
+
+    fn finish(mut self) -> Result<VolumeWriter, String> {
+        drop(self.stdin.take());
+        let status = self
+            .child
+            .wait()
+            .map_err(|error| format!("@t:archive.xtoolFailed\u{1f}{error}"))?;
+        if let Some(reader) = self.reader.take() {
+            let _ = reader.join();
+        }
+        let finished = self
+            .result
+            .recv()
+            .map_err(|_| "@t:archive.xtoolFailed\u{1f}reader".to_string())?;
+        if !status.success() {
+            return Err(format!("@t:archive.xtoolFailed\u{1f}{status}"));
+        }
+        finished
+    }
+}
+
+impl Write for XtoolSink {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let Some(stdin) = self.stdin.as_mut() else {
+            return Err(io::Error::other("@t:archive.xtoolFailed\u{1f}closed"));
+        };
+        stdin
+            .write(buf)
+            .map_err(|error| io::Error::other(format!("@t:archive.xtoolFailed\u{1f}{error}")))
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        match self.stdin.as_mut() {
+            Some(stdin) => stdin.flush(),
+            None => Ok(()),
+        }
+    }
+}
+
+impl Drop for XtoolSink {
+    fn drop(&mut self) {
+        // A cancelled or failed pack drops the sink without calling finish.
+        // The child would otherwise keep running and the reader thread would
+        // keep writing into a folder that is about to be removed.
+        drop(self.stdin.take());
+        let _ = self.child.kill();
+        let _ = self.child.wait();
+        if let Some(reader) = self.reader.take() {
+            let _ = reader.join();
+        }
     }
 }
 
@@ -861,6 +1039,7 @@ mod tests {
             },
             level: 3,
             window_log: 20,
+            xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
             cancel: Arc::new(AtomicBool::new(false)),
@@ -903,6 +1082,7 @@ mod tests {
             },
             level: 3,
             window_log: 20,
+            xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
             cancel: Arc::new(AtomicBool::new(false)),
@@ -962,6 +1142,7 @@ mod tests {
             },
             level: 3,
             window_log: 20,
+            xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
             cancel: Arc::new(AtomicBool::new(false)),
@@ -1004,6 +1185,7 @@ mod tests {
             profile: resolve("fat32", None).unwrap(),
             level: 3,
             window_log: 20,
+            xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
             cancel: Arc::new(AtomicBool::new(false)),
