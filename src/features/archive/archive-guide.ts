@@ -19,7 +19,7 @@ export function renderArchiveGuide(): string {
   const quick = [1, 2, 3, 4, 5]
     .map((step) => `<li>${t(`archive.guideQuick${step}`)}</li>`)
     .join("");
-  const trouble = (IS_WINDOWS ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5])
+  const trouble = (IS_WINDOWS ? [1, 2, 3, 4, 5, 6, 7] : [1, 2, 3, 4, 5])
     .map((step) => `<li>${t(`archive.guideTrouble${step}`)}</li>`)
     .join("");
   const xtool = IS_WINDOWS
@@ -51,7 +51,7 @@ export function renderArchiveGuide(): string {
 
       ${section("hard-drive", "archive.guideBackupTitle", "archive.guideBackupBody")}
       ${section("download", "archive.guideRestoreTitle", "archive.guideRestoreBody")}
-      ${section("hard-drive", "archive.guideBurnTitle", "archive.guideBurnBody")}
+      ${IS_WINDOWS ? section("hard-drive", "archive.guideBurnTitle", "archive.guideBurnBody") : ""}
 
       <section class="archive-guide-section">
         <h4>${icon("alert-triangle", 14)} ${t("archive.guideTroubleTitle")}</h4>

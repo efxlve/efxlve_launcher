@@ -18,6 +18,27 @@ pub struct DiscRecorder {
     pub revision: String,
     pub device_type: i32,
     pub media_types: i32,
+    /// A disc is inserted and the drive can report its state.
+    #[serde(default)]
+    pub media_loaded: bool,
+    /// IMAPI says the disc has no data; only a blank disc can be burned here.
+    #[serde(default)]
+    pub media_blank: bool,
+    /// `IMAPI_MEDIA_PHYSICAL_TYPE` value, 0 when the drive is empty.
+    #[serde(default)]
+    pub media_type: i32,
+    /// Friendly name for `media_type`, filled in by Rust after parsing.
+    #[serde(default)]
+    pub media_name: String,
+    /// CD-RW, DVD-RW, DVD-RAM, DVD+RW and BD-RE can be erased and reused.
+    #[serde(default)]
+    pub media_rewritable: bool,
+    /// False for pressed/read-only media and for an empty drive.
+    #[serde(default)]
+    pub media_writable: bool,
+    /// Space left on the disc, in bytes; 0 when empty or closed.
+    #[serde(default)]
+    pub free_bytes: u64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -44,6 +65,20 @@ for ($i = 0; $i -lt $dm.Count; $i++) {
     $id = [string]$dm.Item($i)
     $rec = New-Object -ComObject IMAPI2.MsftDiscRecorder2
     $rec.InitializeDiscRecorder($id)
+    $loaded = $false
+    $blank = $false
+    $free = [int64]0
+    $media = 0
+    try {
+      $data = New-Object -ComObject IMAPI2.MsftDiscFormat2Data
+      $data.Recorder = $rec
+      $loaded = [bool]$data.IsMediaLoaded
+      if ($loaded) {
+        $blank = ([bool]$data.MediaPhysicallyBlank) -or ([bool]$data.MediaHeuristicallyBlank)
+        $free = ([int64]$data.FreeSectorsOnMedia) * 2048
+        $media = [int]$data.CurrentPhysicalMediaType
+      }
+    } catch { }
     $items += [pscustomobject]@{
       id = $id
       name = [string]$rec.VolumeName
@@ -52,6 +87,10 @@ for ($i = 0; $i -lt $dm.Count; $i++) {
       revision = [string]$rec.ProductRevision
       deviceType = [int]$rec.DeviceType
       mediaTypes = [int]$rec.MediaTypesSupported
+      mediaLoaded = $loaded
+      mediaBlank = $blank
+      mediaType = $media
+      freeBytes = $free
     }
   } catch { }
 }
@@ -67,7 +106,60 @@ for ($i = 0; $i -lt $dm.Count; $i++) {
         let parsed: RecorderList = serde_json::from_str(text).map_err(|error| {
             format!("@t:disc.failed\u{1f}{error}")
         })?;
-        Ok(parsed.items)
+        let mut items = parsed.items;
+        for item in &mut items {
+            item.media_name = media_name(item.media_type).to_string();
+            item.media_rewritable = media_rewritable(item.media_type);
+            item.media_writable = media_writable(item.media_type);
+        }
+        Ok(items)
+    }
+}
+
+/// `IMAPI_MEDIA_PHYSICAL_TYPE` values from imapi2.h.
+fn media_name(value: i32) -> &'static str {
+    match value {
+        0x1 => "CD-ROM",
+        0x2 => "CD-R",
+        0x3 => "CD-RW",
+        0x4 => "DVD-ROM",
+        0x5 => "DVD-RAM",
+        0x6 => "DVD+R",
+        0x7 => "DVD+RW",
+        0x8 => "DVD+R DL",
+        0x9 => "DVD-R",
+        0xa => "DVD-RW",
+        0xb => "DVD-R DL",
+        0xc => "DVD-RAM",
+        0xd => "DVD+RW DL",
+        0xe => "HD DVD-ROM",
+        0xf => "HD DVD-R",
+        0x10 => "HD DVD-RAM",
+        0x11 => "BD-ROM",
+        0x12 => "BD-R",
+        0x13 => "BD-RE",
+        _ => "",
+    }
+}
+
+fn media_rewritable(value: i32) -> bool {
+    matches!(value, 0x3 | 0x5 | 0x7 | 0xa | 0xc | 0xd | 0x10 | 0x13)
+}
+
+fn media_writable(value: i32) -> bool {
+    matches!(
+        value,
+        0x2 | 0x3 | 0x5 | 0x6 | 0x7 | 0x8 | 0x9 | 0xa | 0xb | 0xc | 0xd | 0xf | 0x10 | 0x12 | 0x13
+    )
+}
+
+/// IMAPI2FS flags: ISO9660 = 1, Joliet = 2, UDF = 4. A CD profile keeps the
+/// classic ISO + Joliet pair; DVDs and Blu-rays use UDF.
+fn file_systems_for(volume_bytes: u64) -> i32 {
+    if volume_bytes <= 700 * 1024 * 1024 {
+        3
+    } else {
+        4
     }
 }
 
@@ -127,6 +219,7 @@ $ProgressPreference = "SilentlyContinue"
 $folder = {}
 $recorderId = {}
 $label = {}
+$fileSystems = {}
 try {{
   if (-not (Test-Path -LiteralPath $folder)) {{ throw "FOLDER_MISSING" }}
   $dm = New-Object -ComObject IMAPI2.MsftDiscMaster2
@@ -142,14 +235,14 @@ try {{
   $writer.Recorder = $rec
   $writer.ClientName = "Efxlve Launcher"
   if (-not $writer.IsMediaLoaded) {{ throw "NO_DISC" }}
-  if (-not $writer.MediaPhysicallyBlank) {{ throw "NOT_BLANK" }}
+  if (-not $writer.MediaPhysicallyBlank -and -not $writer.MediaHeuristicallyBlank) {{ throw "NOT_BLANK" }}
   $free = [int64]$writer.FreeSectorsOnMedia
   if ($free -le 0) {{ throw "NO_SPACE" }}
   $part = Get-ChildItem -LiteralPath $folder -Filter "*.efxpak.*" | Select-Object -First 1
   if ($null -eq $part) {{ throw "NO_PART" }}
   if ($part.Length -gt ($free * 2048)) {{ throw "NO_SPACE" }}
   $fsi = New-Object -ComObject IMAPI2FS.MsftFileSystemImage
-  $fsi.FileSystemsToCreate = 4
+  $fsi.FileSystemsToCreate = $fileSystems
   $fsi.VolumeName = $label
   $fsi.FreeMediaBlocks = $free
   $fsi.Root.AddTree($folder, $false)
@@ -165,7 +258,8 @@ try {{
 "#,
             ps_quote(&folder.to_string_lossy()),
             ps_quote(recorder_id),
-            ps_quote(&label)
+            ps_quote(&label),
+            file_systems_for(manifest.volume_bytes)
         );
         let error = match run_powershell(&script) {
             Ok(_) => return Ok(()),
@@ -191,6 +285,69 @@ try {{
             Some("FOLDER_MISSING") => Err("@t:disc.folderMissing".to_string()),
             _ => Err(format!(
                 "@t:disc.failed\u{1f}{}",
+                clean_error_detail(&error)
+            )),
+        }
+    }
+}
+
+/// Quick-erases a rewritable disc so the burn step can use it again.
+pub fn erase(recorder_id: &str) -> Result<(), String> {
+    #[cfg(not(windows))]
+    {
+        let _ = recorder_id;
+        return Err("@t:disc.unsupported".to_string());
+    }
+    #[cfg(windows)]
+    {
+        let script = format!(
+            r#"
+$ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$recorderId = {}
+try {{
+  $dm = New-Object -ComObject IMAPI2.MsftDiscMaster2
+  $matched = $null
+  for ($i = 0; $i -lt $dm.Count; $i++) {{
+    $candidate = [string]$dm.Item($i)
+    if ($candidate -eq $recorderId) {{ $matched = $candidate; break }}
+  }}
+  if ($null -eq $matched) {{ throw "RECORDER_MISSING" }}
+  $rec = New-Object -ComObject IMAPI2.MsftDiscRecorder2
+  $rec.InitializeDiscRecorder($matched)
+  $data = New-Object -ComObject IMAPI2.MsftDiscFormat2Data
+  $data.Recorder = $rec
+  if (-not $data.IsMediaLoaded) {{ throw "NO_DISC" }}
+  $media = [int]$data.CurrentPhysicalMediaType
+  if (-not (@(3,5,7,10,12,13,16,19) -contains $media)) {{ throw "NOT_REWRITABLE" }}
+  $erase = New-Object -ComObject IMAPI2.MsftDiscFormat2Erase
+  $erase.Recorder = $rec
+  $erase.ClientName = "Efxlve Launcher"
+  $erase.FullErase = $false
+  $erase.EraseMedia()
+  [Console]::Out.WriteLine("OK")
+}} catch {{
+  [Console]::Error.WriteLine($_.Exception.Message)
+  exit 1
+}}
+"#,
+            ps_quote(recorder_id)
+        );
+        let error = match run_powershell(&script) {
+            Ok(_) => return Ok(()),
+            Err(error) => error,
+        };
+        let code = ["NO_DISC", "NOT_REWRITABLE", "RECORDER_MISSING"]
+            .iter()
+            .find(|code| error.contains(**code))
+            .copied();
+        match code {
+            Some("NO_DISC") => Err("@t:disc.noDisc".to_string()),
+            Some("NOT_REWRITABLE") => Err("@t:disc.notRewritable".to_string()),
+            Some("RECORDER_MISSING") => Err("@t:disc.recorderMissing".to_string()),
+            _ => Err(format!(
+                "@t:disc.eraseFailed\u{1f}{}",
                 clean_error_detail(&error)
             )),
         }
@@ -286,6 +443,39 @@ mod tests {
         assert_eq!(ps_quote("a'b"), "'a''b'");
     }
 
+    #[test]
+    fn recorder_payload_reads_media_fields() {
+        let json = r#"{"items":[{"id":"x","name":"Drive","vendor":"V","product":"P","revision":"R","deviceType":1,"mediaTypes":2,"mediaLoaded":true,"mediaBlank":true,"mediaType":19,"freeBytes":1000}]}"#;
+        let parsed: RecorderList = serde_json::from_str(json).unwrap();
+        let item = &parsed.items[0];
+        assert!(item.media_loaded);
+        assert!(item.media_blank);
+        assert_eq!(item.media_type, 0x13);
+        assert_eq!(item.free_bytes, 1000);
+    }
+
+    #[test]
+    fn media_types_map_to_friendly_names_and_rewritable_flags() {
+        assert_eq!(media_name(0x13), "BD-RE");
+        assert_eq!(media_name(0x12), "BD-R");
+        assert_eq!(media_name(0), "");
+        assert!(media_rewritable(0x3));
+        assert!(media_rewritable(0x13));
+        assert!(!media_rewritable(0x12));
+        assert!(!media_rewritable(0));
+        assert!(media_writable(0x12));
+        assert!(media_writable(0x13));
+        assert!(!media_writable(0x1));
+        assert!(!media_writable(0));
+    }
+
+    #[test]
+    fn cds_use_iso_and_joliet_while_dvds_use_udf() {
+        assert_eq!(file_systems_for(680 * 1024 * 1024), 3);
+        assert_eq!(file_systems_for(4400 * 1024 * 1024), 4);
+        assert_eq!(file_systems_for(25_000 * 1024 * 1024), 4);
+    }
+
     #[cfg(windows)]
     #[test]
     fn recorder_list_returns_even_without_a_drive() {
@@ -302,6 +492,15 @@ mod tests {
         let result = burn_folder(&dir, "recorder");
         assert_eq!(result.unwrap_err(), "@t:disc.notDiscFolder");
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_missing_recorder_is_reported_by_erase() {
+        assert_eq!(
+            erase("no-such-recorder").unwrap_err(),
+            "@t:disc.recorderMissing"
+        );
     }
 
     #[cfg(windows)]

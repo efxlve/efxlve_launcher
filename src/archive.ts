@@ -146,6 +146,20 @@ export interface DiscRecorder {
   revision: string;
   deviceType: number;
   mediaTypes: number;
+  mediaLoaded: boolean;
+  mediaBlank: boolean;
+  mediaType: number;
+  mediaName: string;
+  mediaRewritable: boolean;
+  mediaWritable: boolean;
+  freeBytes: number;
+}
+
+export interface XtoolProgress {
+  stage: "downloading" | "extracting" | string;
+  downloaded: number;
+  total: number;
+  percent: number;
 }
 
 export interface FoundArchive {
@@ -252,6 +266,9 @@ export const discListRecorders = () =>
 
 export const discBurnFolder = (folder: string, recorderId: string) =>
   invoke<void>("disc_burn_folder", { folder, recorderId });
+
+export const discErase = (recorderId: string) =>
+  invoke<void>("disc_erase", { recorderId });
 
 export const archiveDefaultTarget = (appName: string, installPath: string) =>
   invoke<ArchiveDefaultTarget>("archive_default_target", { appName, installPath });

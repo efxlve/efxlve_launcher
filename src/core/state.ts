@@ -19,6 +19,7 @@ import type {
   FoundArchive,
   MediaProfileInfo,
   RestoreResult,
+  XtoolProgress,
 } from "../archive";
 import { initialLanguage, t } from "../i18n";
 import type { MtuProbe } from "../net-diag";
@@ -646,6 +647,9 @@ export const S = {
   archiveBurnDone: (null) as number | null,
   archiveXtoolPath: (localStorage.getItem(ARCHIVE_XTOOL_KEY) || "") as string,
   archiveXtoolInstalling: false,
+  archiveXtoolProgress: (null) as XtoolProgress | null,
+  archiveErasing: false,
+  archiveEraseArmed: false,
   cloudBackupSettings: (null) as CloudBackupSettings | null,
   cloudBackupTesting: false,
   cloudBackupSyncing: false,

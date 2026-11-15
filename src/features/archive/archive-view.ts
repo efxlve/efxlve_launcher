@@ -20,6 +20,7 @@ import { archiveGameList, loadArchiveView, selectedArchiveGame } from "./archive
 import { renderArchiveGuide } from "./archive-guide";
 import { archiveFits, archiveRequiredBytes } from "./archive-space";
 import { isInstallParent } from "./archive-paths";
+import { burnReady } from "./archive-disc";
 
 function storeName(key: string): string {
   if (key.startsWith("steam::")) return "Steam";
@@ -235,6 +236,7 @@ function renderBackupTab(): string {
                  <button type="button" class="btn ghost small" data-act="open-external-url" data-url="https://github.com/Razor12911/xtool/releases">${t("archive.xtoolDownload")}</button>
                </div>
                <div class="archive-note">${t("archive.xtoolHint")}</div>
+             ${renderXtoolProgress()}
              </div>`
           : ""
       }
@@ -258,7 +260,7 @@ function renderBackupTab(): string {
           ? registering
             ? `<button type="button" class="btn ghost small" disabled>${icon("refresh", 13, "spin")} ${t("archive.stageRegistering")}</button>`
             : `<button type="button" class="btn danger small" data-act="archive-cancel">${icon("x", 13)} ${t("archive.cancel")}</button>`
-          : `<button type="button" class="btn primary" data-act="archive-start" ${!plan || !archiveFits(plan.freeBytes, plan.requiredBytes, S.archiveEstimate?.estimatedBytes ?? null) || !plan.volumeFits || S.archiveBurning !== null || S.archiveEstimating || S.archiveXtoolInstalling ? "disabled" : ""}>${icon("package", 14)} ${t("archive.start")}</button>`
+          : `<button type="button" class="btn primary" data-act="archive-start" ${!plan || !archiveFits(plan.freeBytes, plan.requiredBytes, S.archiveEstimate?.estimatedBytes ?? null) || !plan.volumeFits || S.archiveBurning !== null || S.archiveErasing || S.archiveEstimating || S.archiveXtoolInstalling ? "disabled" : ""}>${icon("package", 14)} ${t("archive.start")}</button>`
       }
     </div>
     ${S.archiveResult ? "" : renderProgress(S.archiveProgress, "archive")}
@@ -367,6 +369,29 @@ function renderEstimate(): string {
     </div>`;
 }
 
+function renderXtoolProgress(): string {
+  if (!S.archiveXtoolInstalling) return "";
+  const progress = S.archiveXtoolProgress;
+  const percent = progress?.percent ?? 0;
+  const text = progress
+    ? progress.total > 0
+      ? `${progress.percent.toFixed(0)}% · ${fmtBytesOrZero(progress.downloaded)} / ${fmtBytesOrZero(progress.total)}`
+      : fmtBytesOrZero(progress.downloaded)
+    : "";
+  const label =
+    progress?.stage === "extracting"
+      ? t("archive.xtoolExtracting")
+      : t("archive.xtoolInstalling");
+  return `
+    <div class="archive-install-progress" id="archive-xtool-progress">
+      <div class="progress"><span id="archive-xtool-progress-fill" style="width:${percent}%"></span></div>
+      <div class="archive-progress-meta">
+        <span id="archive-xtool-progress-label">${label}</span>
+        <span id="archive-xtool-progress-text" class="tabular-nums">${text}</span>
+      </div>
+    </div>`;
+}
+
 function renderBackupResult(result: ArchiveSummary | null): string {
   if (!result) return "";
   return `
@@ -440,7 +465,7 @@ function renderRestoreTab(): string {
           ? registering
             ? `<button type="button" class="btn ghost small" disabled>${icon("refresh", 13, "spin")} ${t("archive.stageRegistering")}</button>`
             : `<button type="button" class="btn danger small" data-act="archive-cancel">${icon("x", 13)} ${t("archive.cancel")}</button>`
-          : `<button type="button" class="btn primary" data-act="archive-restore-start" ${restoreReady && S.archiveBurning === null && !S.archiveRunning && !S.archiveXtoolInstalling ? "" : "disabled"}>${icon("download", 14)} ${t("archive.restoreStart")}</button>`
+          : `<button type="button" class="btn primary" data-act="archive-restore-start" ${restoreReady && S.archiveBurning === null && !S.archiveRunning && !S.archiveErasing && !S.archiveXtoolInstalling ? "" : "disabled"}>${icon("download", 14)} ${t("archive.restoreStart")}</button>`
       }
     </div>
     ${S.archiveRestoreResult ? "" : renderProgress(S.archiveProgress, "archive")}
@@ -522,7 +547,8 @@ function renderRestoreDetail(): string {
                }</button>
                <button type="button" class="btn ghost small" data-act="archive-pick-xtool">${icon("folder", 13)} ${t("archive.chooseFolder")}</button>
              </div>
-             <div class="archive-note">${t("archive.xtoolRestoreHint")}</div>`
+             <div class="archive-note">${t("archive.xtoolRestoreHint")}</div>
+             ${renderXtoolProgress()}`
           : ""
       }
       ${
@@ -586,11 +612,24 @@ function recorderLabel(recorder: DiscRecorder): string {
   return hardware || recorder.id;
 }
 
+function mediaStatus(recorder: DiscRecorder): string {
+  if (!recorder.mediaLoaded) return t("archive.mediaEmpty");
+  const media = recorder.mediaName || t("archive.mediaUnknown");
+  if (recorder.mediaBlank) {
+    return t("archive.mediaBlank", {
+      media,
+      free: fmtBytesOrZero(recorder.freeBytes),
+    });
+  }
+  return t("archive.mediaNotBlank", { media });
+}
+
 function renderBurnPanel(manifestPath: string): string {
   const discs = S.archiveDiscsManifest === manifestPath ? S.archiveDiscs : null;
   const recorders = S.archiveBurnRecorders;
   const selected = S.archiveBurnRecorder;
-  const busy = S.archiveBurning !== null || S.archiveRunning;
+  const selectedRecorder = recorders?.find((recorder) => recorder.id === selected);
+  const busy = S.archiveBurning !== null || S.archiveRunning || S.archiveErasing;
   const recorderControl =
     recorders === null
       ? `<div class="archive-loading">${icon("refresh", 14, "spin")} ${t("archive.calculating")}</div>`
@@ -604,12 +643,30 @@ function renderBurnPanel(manifestPath: string): string {
                ${recorders
                  .map(
                    (recorder) =>
-                     `<option value="${esc(recorder.id)}" ${recorder.id === selected ? "selected" : ""}>${esc(recorderLabel(recorder))}</option>`,
+                     `<option value="${esc(recorder.id)}" ${recorder.id === selected ? "selected" : ""}>${esc(recorderLabel(recorder))}${recorder.mediaLoaded && recorder.mediaName ? ` · ${esc(recorder.mediaName)}` : ""}</option>`,
                  )
                  .join("")}
              </select>
              <button type="button" class="btn ghost small" data-act="archive-burn-refresh" ${busy ? "disabled" : ""}>${icon("refresh", 13)} ${t("archive.burnRefresh")}</button>
            </div>`;
+  const recorderState = selectedRecorder
+    ? `<div class="archive-note">${mediaStatus(selectedRecorder)}</div>
+       ${
+         selectedRecorder.mediaLoaded && !selectedRecorder.mediaBlank
+           ? selectedRecorder.mediaRewritable
+             ? `<div class="archive-actions">
+                  <button type="button" class="btn ${S.archiveEraseArmed ? "danger" : "ghost"} small" data-act="archive-erase" ${busy ? "disabled" : ""}>
+                    ${S.archiveErasing ? `${icon("refresh", 13, "spin")} ${t("archive.erasing")}` : S.archiveEraseArmed ? `${icon("alert-triangle", 13)} ${t("archive.eraseConfirm")}` : `${icon("trash", 13)} ${t("archive.erase")}`}
+                  </button>
+                  ${S.archiveEraseArmed && !S.archiveErasing ? `<button type="button" class="btn ghost small" data-act="archive-erase-cancel">${t("archive.cancel")}</button>` : ""}
+                </div>
+                <div class="archive-note">${S.archiveEraseArmed ? t("archive.eraseConfirmHint") : t("archive.eraseHint")}</div>`
+             : selectedRecorder.mediaWritable
+               ? `<div class="archive-warn">${icon("alert-triangle", 13)} ${t("archive.notRewritable")}</div>`
+               : `<div class="archive-warn">${icon("alert-triangle", 13)} ${t("archive.readOnlyDisc")}</div>`
+           : ""
+       }`
+    : "";
   const discList =
     discs === null
       ? S.archiveDiscsLoading
@@ -624,13 +681,19 @@ function renderBurnPanel(manifestPath: string): string {
                .map((disc) => {
                  const burning = S.archiveBurning === disc.volumeIndex;
                  const done = S.archiveBurnDone === disc.volumeIndex;
+                 const tooSmall =
+                   selectedRecorder?.mediaLoaded &&
+                   selectedRecorder.mediaBlank &&
+                   selectedRecorder.freeBytes > 0 &&
+                   selectedRecorder.freeBytes < disc.bytes;
                  return `<div class="archive-burn-row">
                    <div class="archive-burn-main">
                      <span class="archive-found-title">${t("archive.burnDisc", { n: disc.volumeIndex })}</span>
                      <span class="archive-found-meta">${fmtBytesOrZero(disc.bytes)} · ${esc(disc.folder)}</span>
+                     ${tooSmall ? `<span class="archive-found-warn">${t("archive.discTooSmall", { need: fmtBytes(disc.bytes), free: fmtBytes(selectedRecorder?.freeBytes ?? 0) })}</span>` : ""}
                    </div>
                    ${done ? `<span class="archive-found-ok">${icon("check-circle", 13)} ${t("archive.burnDoneShort")}</span>` : ""}
-                   <button type="button" class="btn primary small" data-act="archive-burn" data-folder="${esc(disc.folder)}" data-index="${disc.volumeIndex}" ${!selected || busy ? "disabled" : ""}>
+                   <button type="button" class="btn primary small" data-act="archive-burn" data-folder="${esc(disc.folder)}" data-index="${disc.volumeIndex}" ${!burnReady(selectedRecorder, disc.bytes) || busy ? "disabled" : ""}>
                      ${burning ? `${icon("refresh", 13, "spin")} ${t("archive.burning")}` : `${icon("hard-drive", 13)} ${t("archive.burnStart")}`}
                    </button>
                  </div>`;
@@ -642,6 +705,13 @@ function renderBurnPanel(manifestPath: string): string {
       <div class="archive-result-head">${icon("hard-drive", 15)} <strong>${t("archive.burnTitle")}</strong></div>
       <div class="archive-note">${t("archive.burnExperimental")}</div>
       ${recorderControl}
+      ${recorderState}
+      ${
+        S.archiveBurning !== null || S.archiveErasing
+          ? `<div class="progress indeterminate archive-burn-progress"><span></span></div>`
+          : ""
+      }
+      ${S.archiveBurning !== null ? `<div class="archive-note">${t("archive.burnWait")}</div>` : ""}
       ${discList}
       <div class="archive-note">${t("archive.burnEject")}</div>
     </div>`;

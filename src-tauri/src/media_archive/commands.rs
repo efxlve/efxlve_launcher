@@ -269,7 +269,10 @@ pub async fn archive_xtool_install(app: AppHandle) -> Result<String, String> {
         .path()
         .app_data_dir()
         .map_err(|error| error.to_string())?;
-    let exe = xtool::install(&root).await?;
+    let exe = xtool::install_with_progress(&root, |progress| {
+        let _ = app.emit("xtool-progress", progress);
+    })
+    .await?;
     Ok(exe.display().to_string())
 }
 
@@ -613,6 +616,13 @@ pub async fn disc_burn_folder(folder: String, recorder_id: String) -> Result<(),
     })
     .await
     .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn disc_erase(recorder_id: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || disc::erase(&recorder_id))
+        .await
+        .map_err(|error| error.to_string())?
 }
 
 #[tauri::command]

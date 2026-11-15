@@ -14,6 +14,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::Duration;
 
+use serde::Serialize;
+
 use super::format::sha256_bytes;
 
 /// The pinned release. The zip hash is checked before anything is unpacked, so
@@ -33,24 +35,64 @@ pub fn installed_exe(root: &Path) -> PathBuf {
     install_path(root).join("xtool.exe")
 }
 
-async fn download() -> Result<Vec<u8>, String> {
+/// One progress step for the in-app installer. Sent while the zip downloads
+/// and once more while it is unpacked.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct XtoolProgress {
+    /// `downloading` or `extracting`.
+    pub stage: String,
+    pub downloaded: u64,
+    pub total: u64,
+    pub percent: f64,
+}
+
+fn percent(downloaded: u64, total: u64) -> f64 {
+    if total > 0 {
+        (downloaded as f64 / total as f64 * 100.0).min(100.0)
+    } else {
+        0.0
+    }
+}
+
+async fn download<F: FnMut(u64, u64)>(mut progress: F) -> Result<Vec<u8>, String> {
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(300))
         .user_agent("Efxlve-Launcher")
         .build()
         .map_err(|error| format!("@t:archive.xtoolDownloadFailed\u{1f}{error}"))?;
-    let response = client
+    let mut response = client
         .get(DOWNLOAD_URL)
         .send()
         .await
         .map_err(|error| format!("@t:archive.xtoolDownloadFailed\u{1f}{error}"))?
         .error_for_status()
         .map_err(|error| format!("@t:archive.xtoolDownloadFailed\u{1f}{error}"))?;
-    let payload = response
-        .bytes()
-        .await
-        .map_err(|error| format!("@t:archive.xtoolDownloadFailed\u{1f}{error}"))?;
-    Ok(payload.to_vec())
+    let total = response.content_length().unwrap_or(0);
+    let mut payload = Vec::with_capacity(total as usize);
+    let mut downloaded = 0u64;
+    let mut last_emit = 0u64;
+    loop {
+        let chunk = response
+            .chunk()
+            .await
+            .map_err(|error| format!("@t:archive.xtoolDownloadFailed\u{1f}{error}"))?;
+        let Some(chunk) = chunk else {
+            break;
+        };
+        payload.extend_from_slice(&chunk);
+        downloaded = downloaded.saturating_add(chunk.len() as u64);
+        // A 35 MB download arrives in thousands of chunks; one event per 256 KB
+        // keeps the bar smooth without flooding the webview.
+        if downloaded == total || downloaded.saturating_sub(last_emit) >= 256 * 1024 {
+            progress(downloaded, total);
+            last_emit = downloaded;
+        }
+    }
+    if downloaded > last_emit {
+        progress(downloaded, total);
+    }
+    Ok(payload)
 }
 
 /// Unpacks the pinned archive, skipping the 32-bit copy and the FreeArc
@@ -106,14 +148,26 @@ fn extract(payload: &[u8], staging: &Path) -> Result<(), String> {
 
 /// Downloads and unpacks the pinned xtool release into the launcher data
 /// folder. An existing copy is returned without touching the network, so the
-/// button is safe to press twice.
-pub async fn install(root: &Path) -> Result<PathBuf, String> {
+/// button is safe to press twice. Reports download and extraction progress so
+/// the settings screen can show a real bar instead of a spinner.
+pub async fn install_with_progress<F: FnMut(XtoolProgress)>(
+    root: &Path,
+    mut progress: F,
+) -> Result<PathBuf, String> {
     let target = install_path(root);
     let exe = installed_exe(root);
     if exe.is_file() && target.join("_libraries").is_dir() {
         return Ok(exe);
     }
-    let payload = download().await?;
+    let payload = download(|downloaded, total| {
+        progress(XtoolProgress {
+            stage: "downloading".to_string(),
+            downloaded,
+            total,
+            percent: percent(downloaded, total),
+        });
+    })
+    .await?;
     let digest = sha256_bytes(&payload)
         .iter()
         .map(|byte| format!("{byte:02x}"))
@@ -121,6 +175,12 @@ pub async fn install(root: &Path) -> Result<PathBuf, String> {
     if digest != ARCHIVE_SHA256 {
         return Err("@t:archive.xtoolHash".to_string());
     }
+    progress(XtoolProgress {
+        stage: "extracting".to_string(),
+        downloaded: payload.len() as u64,
+        total: payload.len() as u64,
+        percent: 100.0,
+    });
     std::fs::create_dir_all(root).map_err(|error| {
         format!("@t:archive.xtoolExtractFailed\u{1f}{error}")
     })?;
@@ -342,7 +402,7 @@ mod tests {
         let target = install_path(&root);
         std::fs::create_dir_all(target.join("_libraries")).unwrap();
         std::fs::write(target.join("xtool.exe"), b"stub").unwrap();
-        let resolved = install(&root).await.unwrap();
+        let resolved = install_with_progress(&root, |_| {}).await.unwrap();
         assert_eq!(resolved, target.join("xtool.exe"));
         let _ = std::fs::remove_dir_all(&root);
     }
@@ -353,12 +413,21 @@ mod tests {
         let root =
             std::env::temp_dir().join(format!("efxlve-xtool-live-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
-        let exe = install(&root).await.expect("download and unpack xtool");
+        let mut stages: Vec<(String, u64)> = Vec::new();
+        let exe = install_with_progress(&root, |progress| {
+            stages.push((progress.stage, progress.downloaded));
+        })
+        .await
+        .expect("download and unpack xtool");
         assert!(exe.is_file());
         let folder = exe.parent().unwrap();
         assert!(folder.join("_libraries").is_dir());
         assert!(folder.join("LICENSE-xtool.txt").is_file());
         assert!(folder.join("xtool.exe").metadata().unwrap().len() > 1_000_000);
+        assert!(stages
+            .iter()
+            .any(|(stage, downloaded)| stage == "downloading" && *downloaded > 0));
+        assert!(stages.iter().any(|(stage, _)| stage == "extracting"));
         let _ = std::fs::remove_dir_all(&root);
     }
 }

@@ -1273,6 +1273,23 @@
   gap: 10px; margin-bottom: 8px;
 }
 .archive-estimate-head .archive-k { margin-bottom: 0; }
+.archive-install-progress { margin-top: 10px; }
+.archive-burn-progress { margin-top: 10px; }
+.progress.indeterminate > span {
+  width: 35%;
+  animation: archive-progress-slide 1.2s ease-in-out infinite;
+}
+@keyframes archive-progress-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(285%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .progress.indeterminate > span {
+    width: 100%;
+    animation: none;
+    opacity: 0.5;
+  }
+}
 .archive-guide { margin-top: 14px; display: grid; gap: 10px; }
 .archive-guide-lead { margin: 0; color: var(--text-2); font-size: 13px; line-height: 1.6; }
 .archive-guide-section {

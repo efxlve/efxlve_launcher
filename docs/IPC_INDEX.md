@@ -129,6 +129,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `custom_games_stop` | `customGamesStop({ ... })` | `src-tauri/src/custom_games.rs` |
 | `destroy_store_view` | `destroyStoreView({ ... })` | `src-tauri/src/store_host.rs` |
 | `disc_burn_folder` | `discBurnFolder({ ... })` | `src-tauri/src/media_archive/commands.rs` |
+| `disc_erase` | `discErase({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `disc_list_recorders` | `discListRecorders({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `discord_open_conversation` | `discordOpenConversation({ ... })` | `src-tauri/src/discord_host.rs` |
 | `discord_open_devtools` | `discordOpenDevtools({ ... })` | `src-tauri/src/discord_host.rs` |

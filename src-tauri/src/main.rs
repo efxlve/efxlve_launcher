@@ -2269,6 +2269,7 @@ fn main() {
             media_archive::commands::archive_restore,
             media_archive::commands::disc_list_recorders,
             media_archive::commands::disc_burn_folder,
+            media_archive::commands::disc_erase,
             legendary::commands::epic_backup_save,
             legendary::commands::epic_list_backups,
             legendary::commands::epic_export_backup,

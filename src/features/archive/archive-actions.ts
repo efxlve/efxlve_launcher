@@ -25,9 +25,11 @@ import {
   archiveStart,
   archiveXtoolInstall,
   discBurnFolder,
+  discErase,
   discListRecorders,
   type ArchiveProgress,
   type FoundArchive,
+  type XtoolProgress,
 } from "../../archive";
 
 let planToken = 0;
@@ -255,6 +257,12 @@ function setXtoolPath(value: string): void {
 async function installXtool(): Promise<void> {
   if (S.archiveXtoolInstalling) return;
   S.archiveXtoolInstalling = true;
+  S.archiveXtoolProgress = {
+    stage: "downloading",
+    downloaded: 0,
+    total: 0,
+    percent: 0,
+  };
   scheduleRender();
   try {
     const path = await archiveXtoolInstall();
@@ -264,7 +272,32 @@ async function installXtool(): Promise<void> {
     toast(localizeMessage(String(error)), "err");
   } finally {
     S.archiveXtoolInstalling = false;
+    S.archiveXtoolProgress = null;
     scheduleRender();
+  }
+}
+
+/** Download progress is patched into the existing bar, not a full repaint. */
+export function onXtoolProgress(progress: XtoolProgress): void {
+  if (!S.archiveXtoolInstalling) return;
+  S.archiveXtoolProgress = progress;
+  const fill = document.getElementById("archive-xtool-progress-fill");
+  if (fill) {
+    fill.style.width = `${Math.max(0, Math.min(100, progress.percent))}%`;
+  }
+  const text = document.getElementById("archive-xtool-progress-text");
+  if (text) {
+    text.textContent =
+      progress.total > 0
+        ? `${progress.percent.toFixed(0)}% · ${fmtBytes(progress.downloaded)} / ${fmtBytes(progress.total)}`
+        : fmtBytes(progress.downloaded);
+  }
+  const label = document.getElementById("archive-xtool-progress-label");
+  if (label) {
+    label.textContent =
+      progress.stage === "extracting"
+        ? t("archive.xtoolExtracting")
+        : t("archive.xtoolInstalling");
   }
 }
 
@@ -333,6 +366,7 @@ function clearBurnState(): void {
   S.archiveDiscsLoading = false;
   S.archiveBurnDone = null;
   S.archiveBurning = null;
+  S.archiveEraseArmed = false;
 }
 
 export async function loadArchiveDiscs(manifestPath: string): Promise<void> {
@@ -359,6 +393,7 @@ export async function loadArchiveDiscs(manifestPath: string): Promise<void> {
 
 export async function loadBurnRecorders(force = false): Promise<void> {
   if (S.archiveBurnRecorders && !force) return;
+  S.archiveEraseArmed = false;
   try {
     const recorders = await discListRecorders();
     S.archiveBurnRecorders = recorders;
@@ -374,19 +409,21 @@ export async function loadBurnRecorders(force = false): Promise<void> {
 }
 
 async function burnDisc(folder: string, index: number): Promise<void> {
-  if (!folder || S.archiveBurning !== null || S.archiveRunning) return;
+  if (!folder || S.archiveBurning !== null || S.archiveRunning || S.archiveErasing) return;
   const recorder = S.archiveBurnRecorder;
   if (!recorder) {
     toast(t("archive.burnNoRecorder"), "err");
     return;
   }
   S.archiveBurning = index;
+  S.archiveEraseArmed = false;
   S.archiveBurnDone = null;
   scheduleRender();
   try {
     await discBurnFolder(folder, recorder);
     S.archiveBurnDone = index;
     toast(t("archive.burnDone"), "ok");
+    await loadBurnRecorders(true);
   } catch (error) {
     toast(localizeMessage(String(error)), "err");
   } finally {
@@ -395,10 +432,44 @@ async function burnDisc(folder: string, index: number): Promise<void> {
   }
 }
 
+async function eraseDisc(): Promise<void> {
+  if (
+    S.archiveErasing ||
+    S.archiveBurning !== null ||
+    S.archiveRunning
+  ) {
+    return;
+  }
+  const recorder = S.archiveBurnRecorder;
+  if (!recorder) {
+    toast(t("archive.burnNoRecorder"), "err");
+    return;
+  }
+  S.archiveErasing = true;
+  S.archiveEraseArmed = false;
+  S.archiveBurnDone = null;
+  scheduleRender();
+  try {
+    await discErase(recorder);
+    toast(t("archive.eraseDone"), "ok");
+    await loadBurnRecorders(true);
+  } catch (error) {
+    toast(localizeMessage(String(error)), "err");
+  } finally {
+    S.archiveErasing = false;
+    S.archiveEraseArmed = false;
+    scheduleRender();
+  }
+}
+
 async function startBackup(): Promise<void> {
   const game = selectedArchiveGame();
   if (!game || !game.installPath || S.archiveRunning) return;
   if (S.archiveBurning !== null) {
+    toast(t("archive.burnInProgress"), "err");
+    return;
+  }
+  if (S.archiveErasing) {
     toast(t("archive.burnInProgress"), "err");
     return;
   }
@@ -532,6 +603,10 @@ async function startRestore(): Promise<void> {
     toast(t("archive.burnInProgress"), "err");
     return;
   }
+  if (S.archiveErasing) {
+    toast(t("archive.burnInProgress"), "err");
+    return;
+  }
   if (S.runningGames.has(found.manifest.appName)) {
     toast(t("archive.gameRunning"), "err");
     return;
@@ -589,6 +664,7 @@ export function handleArchiveAction(
   if (act === "archive-tab") {
     const tab = target.dataset.tab;
     S.archiveTab = tab === "restore" || tab === "guide" ? tab : "backup";
+    S.archiveEraseArmed = false;
     scheduleRender();
     return true;
   }
@@ -685,6 +761,20 @@ export function handleArchiveAction(
     void burnDisc(folder, index);
     return true;
   }
+  if (act === "archive-erase") {
+    if (!S.archiveEraseArmed) {
+      S.archiveEraseArmed = true;
+      scheduleRender();
+      return true;
+    }
+    void eraseDisc();
+    return true;
+  }
+  if (act === "archive-erase-cancel") {
+    S.archiveEraseArmed = false;
+    scheduleRender();
+    return true;
+  }
   if (act === "archive-pick-restore-target") {
     void pickFolder(S.archiveRestoreTarget).then((folder) => {
       if (folder) {
@@ -762,6 +852,8 @@ export function handleArchiveChange(target: HTMLElement): boolean {
   }
   if (act === "archive-burn-recorder") {
     S.archiveBurnRecorder = (target as HTMLSelectElement).value;
+    S.archiveEraseArmed = false;
+    scheduleRender();
     return true;
   }
   return false;
