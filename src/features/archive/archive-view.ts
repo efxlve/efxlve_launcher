@@ -17,6 +17,7 @@ import type {
   RestoreResult,
 } from "../../archive";
 import { archiveGameList, loadArchiveView, selectedArchiveGame } from "./archive-actions";
+import { renderArchiveGuide } from "./archive-guide";
 
 function storeName(key: string): string {
   if (key.startsWith("steam::")) return "Steam";
@@ -130,8 +131,15 @@ export function renderArchiveSection(): string {
     <div class="archive-tabs" role="tablist">
       <button type="button" role="tab" class="btn ${S.archiveTab === "backup" ? "primary" : "ghost"} small" data-act="archive-tab" data-tab="backup" aria-selected="${S.archiveTab === "backup"}">${icon("package", 13)} ${t("archive.tabBackup")}</button>
       <button type="button" role="tab" class="btn ${S.archiveTab === "restore" ? "primary" : "ghost"} small" data-act="archive-tab" data-tab="restore" aria-selected="${S.archiveTab === "restore"}">${icon("hard-drive", 13)} ${t("archive.tabRestore")}</button>
+      <button type="button" role="tab" class="btn ${S.archiveTab === "guide" ? "primary" : "ghost"} small" data-act="archive-tab" data-tab="guide" aria-selected="${S.archiveTab === "guide"}">${icon("info", 13)} ${t("archive.guideTab")}</button>
     </div>`;
-  return `${title}${tabs}${S.archiveTab === "backup" ? renderBackupTab() : renderRestoreTab()}`;
+  const content =
+    S.archiveTab === "backup"
+      ? renderBackupTab()
+      : S.archiveTab === "restore"
+        ? renderRestoreTab()
+        : renderArchiveGuide();
+  return `${title}${tabs}${content}`;
 }
 
 function renderBackupTab(): string {

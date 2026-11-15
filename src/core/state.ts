@@ -615,7 +615,7 @@ export const S = {
   backupsFilter: ("all") as "all" | "backed" | "stale" | "missing",
   isBackingUp: false,
   /** Media archive: one game folder compressed into disc-sized volumes. */
-  archiveTab: ("backup") as "backup" | "restore",
+  archiveTab: ("backup") as "backup" | "restore" | "guide",
   archiveProfiles: (null) as MediaProfileInfo[] | null,
   archiveSelectedApp: "",
   archiveProfile: "fat32",

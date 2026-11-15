@@ -585,7 +585,8 @@ export function handleArchiveAction(
   target: HTMLElement,
 ): boolean {
   if (act === "archive-tab") {
-    S.archiveTab = target.dataset.tab === "restore" ? "restore" : "backup";
+    const tab = target.dataset.tab;
+    S.archiveTab = tab === "restore" || tab === "guide" ? tab : "backup";
     scheduleRender();
     return true;
   }
