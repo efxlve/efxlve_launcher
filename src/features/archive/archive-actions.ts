@@ -10,6 +10,7 @@ import type { LibraryItem } from "../../core/types";
 import { fmtBytes, fmtSpeed } from "../../core/utils";
 import { t, localizeMessage } from "../../i18n";
 import { epicOpenFolderPath, epicSelectFolderDialog } from "../../epic";
+import { findArchiveGame, pickArchiveGame } from "./archive-selection";
 import {
   archiveCancel,
   archiveDefaultTarget,
@@ -44,11 +45,7 @@ export function archiveGameList(): LibraryItem[] {
 }
 
 export function selectedArchiveGame(): LibraryItem | undefined {
-  const games = archiveGameList();
-  return (
-    games.find((game) => game.key === S.archiveSelectedApp) ??
-    (games.length ? games[0] : undefined)
-  );
+  return pickArchiveGame(archiveGameList(), S.archiveSelectedApp);
 }
 
 export function archiveStageLabel(stage: string): string {
@@ -120,7 +117,11 @@ async function ensureArchiveSelection(): Promise<void> {
   }
   const games = archiveGameList();
   if (!games.length) return;
-  if (!games.some((game) => game.key === S.archiveSelectedApp)) {
+  if (
+    !games.some(
+      (game) => game.key === S.archiveSelectedApp || game.id === S.archiveSelectedApp,
+    )
+  ) {
     S.archiveSelectedApp = games[0].key;
     S.archivePlan = null;
     S.archiveTarget = "";
@@ -241,7 +242,11 @@ function updateArchiveProgressInPlace(progress: ArchiveProgress): void {
 }
 
 export function openArchiveForGame(appName: string): void {
-  S.archiveSelectedApp = appName;
+  // The manage panel passes an Epic appName (`Ginger`), while the archive list
+  // keys every game (`epic::Ginger`). Resolve it before the view falls back to
+  // the first installed game.
+  const item = findArchiveGame(archiveGameList(), appName);
+  S.archiveSelectedApp = item?.key ?? appName;
   S.archiveTab = "backup";
   S.archivePlan = null;
   S.archiveResult = null;
