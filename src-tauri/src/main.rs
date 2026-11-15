@@ -37,6 +37,8 @@ mod perf;
 mod pc_check;
 mod power;
 mod release_calendar;
+#[cfg(windows)]
+mod portable;
 mod task_manager;
 mod game_running;
 mod presence;
@@ -1878,6 +1880,12 @@ fn init_portable_mode() {
     std::env::set_var("APPDATA", &roaming);
     std::env::set_var("LOCALAPPDATA", &local);
     std::env::set_var("EFXLVE_CONFIG_DIR", &config);
+    // Earlier portable releases wrote to the normal Legendary folder; carry
+    // that account and those install records over once before Legendary is
+    // pointed at the portable path below.
+    if let Some(legacy) = portable::legacy_config_dir() {
+        let _ = portable::migrate_legendary_config(&legacy, &config);
+    }
     // Legendary does not know EFXLVE_CONFIG_DIR; without this it keeps using
     // `~/.config/legendary` and the portable build reads a different
     // installed.json than the one its installs write.
