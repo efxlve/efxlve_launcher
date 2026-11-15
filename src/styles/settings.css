@@ -1264,6 +1264,7 @@
 .archive-ok { color: var(--ok); background: var(--ok-tint); }
 .archive-note { margin-top: 8px; color: var(--text-3); font-size: 11.5px; line-height: 1.45; }
 .archive-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+.archive-start-hint { margin-top: 14px; text-align: right; }
 .archive-progress {
   margin-top: 16px; padding: 12px 14px; border: 1px solid var(--line);
   border-radius: 10px; background: var(--surface-2);

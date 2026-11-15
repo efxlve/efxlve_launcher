@@ -178,6 +178,7 @@ function renderBackupTab(): string {
                </div>`
             : ""
         }
+        <div class="archive-note">${t("archive.mediaHint")}</div>
       </div>
       <div class="row settings-row">
         <div class="row-main">
@@ -204,6 +205,7 @@ function renderBackupTab(): string {
       </div>
     </div>
     ${renderPlanSummary(plan)}
+    <div class="archive-note archive-start-hint">${t("archive.startHint")}</div>
     <div class="archive-actions">
       ${
         running
@@ -234,6 +236,8 @@ function renderPlanSummary(plan: ArchivePlan | null): string {
         <div><span class="archive-k">${t("archive.files")}</span><span class="archive-v tabular-nums">${plan.fileCount.toLocaleString()}</span></div>
         <div><span class="archive-k">${t("archive.estimatedVolumes")}</span><span class="archive-v tabular-nums">${plan.estimatedVolumes}</span></div>
         <div><span class="archive-k">${t("archive.freeSpace")}</span><span class="archive-v tabular-nums ${plan.enoughSpace ? "" : "is-err"}">${free}${plan.targetFileSystem ? ` · ${esc(plan.targetFileSystem)}` : ""}</span></div>
+        <div><span class="archive-k">${t("archive.selectedMedia")}</span><span class="archive-v">${esc(profileLabel(S.archiveProfile))}</span></div>
+        <div><span class="archive-k">${t("archive.partSize")}</span><span class="archive-v tabular-nums">${fmtBytesOrZero(plan.volumeBytes)}</span></div>
       </div>
       <div class="archive-path-line"><span class="archive-k">${t("archive.outputFolder")}</span><span class="archive-path-value">${esc(plan.archivePath)}</span></div>
       ${
