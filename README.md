@@ -191,7 +191,7 @@ These open-source tools ship with the launcher or are downloaded once at first u
 - [Nile](https://github.com/imLinguin/nile) — Amazon Games library, installs and updates.
 - [Comet](https://github.com/imLinguin/comet) — open-source GOG Galaxy Communication Service, run while a GOG game plays so achievements unlock without the Galaxy client.
 - [Maxima](https://github.com/ArmchairDevelopers/Maxima) (GPL-3.0) — the EA LSX message shapes and activation license format the direct EA launch follows. No Maxima binary ships with the launcher.
-- [xtool](https://github.com/Razor12911/xtool) — optional precompressor for game archive backups. Not bundled or downloaded: you point the launcher at your own `xtool.exe`, and a backup made with it needs the tool again to restore.
+- [xtool](https://github.com/Razor12911/xtool) — optional precompressor for game archive backups. The launcher can download the pinned 0.7.9 release on request (MIT license, checksum verified) into its data folder, or you can point it at your own copy. A backup made with it needs the tool again to restore.
 - [SteamGridDB](https://www.steamgriddb.com/) — high-resolution cover art for the library grid.
 
 ### Storefront extensions & community tooling

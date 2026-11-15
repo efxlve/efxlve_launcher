@@ -216,6 +216,9 @@ export const archiveStart = (args: {
 export const archiveCancel = (appName: string) =>
   invoke<boolean>("archive_cancel", { appName });
 
+export const archiveXtoolInstall = () =>
+  invoke<string>("archive_xtool_install");
+
 export const archiveEstimate = (args: {
   installPath: string;
   profileId: string;

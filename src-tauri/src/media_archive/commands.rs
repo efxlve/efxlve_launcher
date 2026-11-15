@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 
 use super::disc::{self, DiscRecorder};
 use super::estimate::{self, ArchiveEstimate};
@@ -16,7 +16,7 @@ use super::pack::{pack_game, scan_tree, unique_archive_folder, PackJob, Progress
 use super::profile::{self, MediaProfileInfo};
 use super::restore::{locate_volumes, restore_game, RestoreJob};
 use super::store::{self, RestoreRegistration, StorePending};
-use super::xtool::Xtool;
+use super::xtool::{self, Xtool};
 use super::ArchiveProgress;
 
 const SCAN_DEPTH: u8 = 3;
@@ -251,6 +251,16 @@ pub async fn archive_estimate(
     })
     .await
     .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn archive_xtool_install(app: AppHandle) -> Result<String, String> {
+    let root = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| error.to_string())?;
+    let exe = xtool::install(&root).await?;
+    Ok(exe.display().to_string())
 }
 
 #[tauri::command]

@@ -2258,6 +2258,7 @@ fn main() {
             media_archive::commands::archive_profiles,
             media_archive::commands::archive_plan,
             media_archive::commands::archive_estimate,
+            media_archive::commands::archive_xtool_install,
             media_archive::commands::archive_start,
             media_archive::commands::archive_cancel,
             media_archive::commands::archive_scan_folder,

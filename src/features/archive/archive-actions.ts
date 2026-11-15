@@ -23,6 +23,7 @@ import {
   archiveRestore,
   archiveScanFolder,
   archiveStart,
+  archiveXtoolInstall,
   discBurnFolder,
   discListRecorders,
   type ArchiveProgress,
@@ -246,6 +247,22 @@ function setXtoolPath(value: string): void {
     localStorage.setItem(ARCHIVE_XTOOL_KEY, value);
   } catch {
     // Storage blocked: the path still applies for this session.
+  }
+}
+
+async function installXtool(): Promise<void> {
+  if (S.archiveXtoolInstalling) return;
+  S.archiveXtoolInstalling = true;
+  scheduleRender();
+  try {
+    const path = await archiveXtoolInstall();
+    setXtoolPath(path);
+    toast(t("archive.xtoolInstalled"), "ok");
+  } catch (error) {
+    toast(localizeMessage(String(error)), "err");
+  } finally {
+    S.archiveXtoolInstalling = false;
+    scheduleRender();
   }
 }
 
@@ -605,6 +622,10 @@ export function handleArchiveAction(
       setXtoolPath(xtoolExecutable(folder));
       scheduleRender();
     });
+    return true;
+  }
+  if (act === "archive-xtool-install") {
+    void installXtool();
     return true;
   }
   if (act === "archive-start") {

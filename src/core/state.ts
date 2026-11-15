@@ -645,6 +645,7 @@ export const S = {
   archiveBurning: (null) as number | null,
   archiveBurnDone: (null) as number | null,
   archiveXtoolPath: (localStorage.getItem(ARCHIVE_XTOOL_KEY) || "") as string,
+  archiveXtoolInstalling: false,
   cloudBackupSettings: (null) as CloudBackupSettings | null,
   cloudBackupTesting: false,
   cloudBackupSyncing: false,
