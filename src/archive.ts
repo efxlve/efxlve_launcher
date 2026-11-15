@@ -153,6 +153,7 @@ export interface DiscRecorder {
   mediaRewritable: boolean;
   mediaWritable: boolean;
   freeBytes: number;
+  capacityBytes: number;
 }
 
 export interface XtoolProgress {

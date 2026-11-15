@@ -20,7 +20,7 @@ import { archiveGameList, loadArchiveView, selectedArchiveGame } from "./archive
 import { renderArchiveGuide } from "./archive-guide";
 import { archiveFits, archiveRequiredBytes } from "./archive-space";
 import { isInstallParent } from "./archive-paths";
-import { burnReady } from "./archive-disc";
+import { burnReady, discFreeBytes } from "./archive-disc";
 
 function storeName(key: string): string {
   if (key.startsWith("steam::")) return "Steam";
@@ -618,7 +618,7 @@ function mediaStatus(recorder: DiscRecorder): string {
   if (recorder.mediaBlank) {
     return t("archive.mediaBlank", {
       media,
-      free: fmtBytesOrZero(recorder.freeBytes),
+      free: fmtBytesOrZero(discFreeBytes(recorder)),
     });
   }
   return t("archive.mediaNotBlank", { media });
@@ -684,13 +684,13 @@ function renderBurnPanel(manifestPath: string): string {
                  const tooSmall =
                    selectedRecorder?.mediaLoaded &&
                    selectedRecorder.mediaBlank &&
-                   selectedRecorder.freeBytes > 0 &&
-                   selectedRecorder.freeBytes < disc.bytes;
+                   discFreeBytes(selectedRecorder) > 0 &&
+                   discFreeBytes(selectedRecorder) < disc.bytes;
                  return `<div class="archive-burn-row">
                    <div class="archive-burn-main">
                      <span class="archive-found-title">${t("archive.burnDisc", { n: disc.volumeIndex })}</span>
                      <span class="archive-found-meta">${fmtBytesOrZero(disc.bytes)} · ${esc(disc.folder)}</span>
-                     ${tooSmall ? `<span class="archive-found-warn">${t("archive.discTooSmall", { need: fmtBytes(disc.bytes), free: fmtBytes(selectedRecorder?.freeBytes ?? 0) })}</span>` : ""}
+                     ${tooSmall ? `<span class="archive-found-warn">${t("archive.discTooSmall", { need: fmtBytes(disc.bytes), free: fmtBytes(selectedRecorder ? discFreeBytes(selectedRecorder) : 0) })}</span>` : ""}
                    </div>
                    ${done ? `<span class="archive-found-ok">${icon("check-circle", 13)} ${t("archive.burnDoneShort")}</span>` : ""}
                    <button type="button" class="btn primary small" data-act="archive-burn" data-folder="${esc(disc.folder)}" data-index="${disc.volumeIndex}" ${!burnReady(selectedRecorder, disc.bytes) || busy ? "disabled" : ""}>

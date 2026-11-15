@@ -39,6 +39,10 @@ pub struct DiscRecorder {
     /// Space left on the disc, in bytes; 0 when empty or closed.
     #[serde(default)]
     pub free_bytes: u64,
+    /// Total capacity reported by the drive, used when a blank disc reports 0
+    /// free sectors.
+    #[serde(default)]
+    pub capacity_bytes: u64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -68,6 +72,7 @@ for ($i = 0; $i -lt $dm.Count; $i++) {
     $loaded = $false
     $blank = $false
     $free = [int64]0
+    $capacity = [int64]0
     $media = 0
     try {
       $data = New-Object -ComObject IMAPI2.MsftDiscFormat2Data
@@ -76,6 +81,7 @@ for ($i = 0; $i -lt $dm.Count; $i++) {
       if ($loaded) {
         $blank = ([bool]$data.MediaPhysicallyBlank) -or ([bool]$data.MediaHeuristicallyBlank)
         $free = ([int64]$data.FreeSectorsOnMedia) * 2048
+        $capacity = ([int64]$data.TotalSectorsOnMedia) * 2048
         $media = [int]$data.CurrentPhysicalMediaType
       }
     } catch { }
@@ -91,6 +97,7 @@ for ($i = 0; $i -lt $dm.Count; $i++) {
       mediaBlank = $blank
       mediaType = $media
       freeBytes = $free
+      capacityBytes = $capacity
     }
   } catch { }
 }
@@ -237,6 +244,9 @@ try {{
   if (-not $writer.IsMediaLoaded) {{ throw "NO_DISC" }}
   if (-not $writer.MediaPhysicallyBlank -and -not $writer.MediaHeuristicallyBlank) {{ throw "NOT_BLANK" }}
   $free = [int64]$writer.FreeSectorsOnMedia
+  if ($free -le 0 -and (($writer.MediaPhysicallyBlank) -or ($writer.MediaHeuristicallyBlank))) {{
+    $free = [int64]$writer.TotalSectorsOnMedia
+  }}
   if ($free -le 0) {{ throw "NO_SPACE" }}
   $part = Get-ChildItem -LiteralPath $folder -Filter "*.efxpak.*" | Select-Object -First 1
   if ($null -eq $part) {{ throw "NO_PART" }}
@@ -445,13 +455,14 @@ mod tests {
 
     #[test]
     fn recorder_payload_reads_media_fields() {
-        let json = r#"{"items":[{"id":"x","name":"Drive","vendor":"V","product":"P","revision":"R","deviceType":1,"mediaTypes":2,"mediaLoaded":true,"mediaBlank":true,"mediaType":19,"freeBytes":1000}]}"#;
+        let json = r#"{"items":[{"id":"x","name":"Drive","vendor":"V","product":"P","revision":"R","deviceType":1,"mediaTypes":2,"mediaLoaded":true,"mediaBlank":true,"mediaType":19,"freeBytes":1000,"capacityBytes":2000}]}"#;
         let parsed: RecorderList = serde_json::from_str(json).unwrap();
         let item = &parsed.items[0];
         assert!(item.media_loaded);
         assert!(item.media_blank);
         assert_eq!(item.media_type, 0x13);
         assert_eq!(item.free_bytes, 1000);
+        assert_eq!(item.capacity_bytes, 2000);
     }
 
     #[test]
