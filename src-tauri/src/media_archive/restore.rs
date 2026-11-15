@@ -12,7 +12,8 @@ use std::time::Instant;
 use sha2::{Digest, Sha256};
 
 use super::format::{
-    decode_block_header, safe_component, MediaManifest, BLOCK_HEADER_BYTES,
+    decode_block_header, safe_component, MediaManifest, BLOCK_FLAG_STORED,
+    BLOCK_HEADER_BYTES,
 };
 use super::pack::ProgressSink;
 use super::profile::free_bytes;
@@ -578,22 +579,38 @@ impl BlockReader {
                 self.block_index
             )));
         }
-        let mut compressed = vec![0u8; decoded.compressed_len as usize];
-        self.inner.read_exact(&mut compressed).map_err(|error| {
+        let mut payload = vec![0u8; decoded.compressed_len as usize];
+        self.inner.read_exact(&mut payload).map_err(|error| {
             io::Error::other(format!(
                 "@t:archive.volumeCorrupt\u{1f}{volume}\u{1f}{}\u{1f}{error}",
                 self.block_index
             ))
         })?;
-        let raw = self
-            .decompressor
-            .decompress(&compressed, decoded.raw_len as usize)
-            .map_err(|error| {
-                io::Error::other(format!(
-                    "@t:archive.volumeCorrupt\u{1f}{volume}\u{1f}{}\u{1f}{error}",
+        let raw = if decoded.flags == BLOCK_FLAG_STORED {
+            // A bypassed file is stored byte for byte; only an identical
+            // payload length can be a valid member of the stream.
+            if decoded.compressed_len != decoded.raw_len {
+                return Err(io::Error::other(format!(
+                    "@t:archive.volumeCorrupt\u{1f}{volume}\u{1f}{}",
                     self.block_index
-                ))
-            })?;
+                )));
+            }
+            payload
+        } else if decoded.flags != 0 {
+            return Err(io::Error::other(format!(
+                "@t:archive.volumeCorrupt\u{1f}{volume}\u{1f}{}",
+                self.block_index
+            )));
+        } else {
+            self.decompressor
+                .decompress(&payload, decoded.raw_len as usize)
+                .map_err(|error| {
+                    io::Error::other(format!(
+                        "@t:archive.volumeCorrupt\u{1f}{volume}\u{1f}{}\u{1f}{error}",
+                        self.block_index
+                    ))
+                })?
+        };
         let digest: [u8; 32] = Sha256::digest(&raw).into();
         if digest != decoded.raw_sha {
             return Err(io::Error::other(format!(
@@ -839,6 +856,57 @@ mod tests {
         })
         .unwrap();
         assert_eq!(from_disc.file_count, 4);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn stored_blocks_restore_byte_for_byte() {
+        let root = temp_root("stored");
+        let game = root.join("Game");
+        std::fs::create_dir_all(&game).unwrap();
+        let movie = noisy(300 * 1024, 77);
+        std::fs::write(game.join("movie.mp4"), &movie).unwrap();
+        std::fs::write(game.join("notes.txt"), b"hello").unwrap();
+        let media = root.join("media");
+        std::fs::create_dir_all(&media).unwrap();
+        let packed = pack_game(PackJob {
+            app_name: "steam::5".to_string(),
+            title: "Stored Blocks".to_string(),
+            install_path: game,
+            target_root: media,
+            profile: MediaProfileInfo {
+                id: "test".to_string(),
+                volume_bytes: 128 * 1024,
+                frame_bytes: 32 * 1024,
+                file_system: "test".to_string(),
+            },
+            level: 3,
+            window_log: 20,
+            store_meta: StoreMeta::default(),
+            sink: Arc::new(NoopSink),
+            cancel: Arc::new(AtomicBool::new(false)),
+        })
+        .unwrap();
+        let target = root.join("target");
+        std::fs::create_dir_all(&target).unwrap();
+        let restored = restore_game(RestoreJob {
+            manifest: packed.manifest,
+            manifest_dir: packed.folder,
+            extra_dirs: Vec::new(),
+            target_parent: target,
+            overwrite: false,
+            sink: Arc::new(NoopSink),
+            cancel: Arc::new(AtomicBool::new(false)),
+        })
+        .unwrap();
+        assert_eq!(
+            std::fs::read(restored.target.join("movie.mp4")).unwrap(),
+            movie
+        );
+        assert_eq!(
+            std::fs::read(restored.target.join("notes.txt")).unwrap(),
+            b"hello"
+        );
         let _ = std::fs::remove_dir_all(&root);
     }
 

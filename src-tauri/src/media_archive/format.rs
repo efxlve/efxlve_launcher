@@ -13,6 +13,8 @@ pub const MANIFEST_FILE: &str = "manifest.efxmeta.json";
 pub const BLOCK_MAGIC: [u8; 4] = *b"EFXB";
 pub const BLOCK_VERSION: u16 = 1;
 pub const BLOCK_HEADER_BYTES: usize = 64;
+/// The block payload is stored byte for byte, not zstd-compressed.
+pub const BLOCK_FLAG_STORED: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -198,6 +200,7 @@ pub fn encode_block_header(
     block_index: u32,
     compressed_len: u32,
     raw_len: u32,
+    flags: u32,
     raw_sha: &[u8; 32],
 ) -> [u8; BLOCK_HEADER_BYTES] {
     let mut header = [0u8; BLOCK_HEADER_BYTES];
@@ -207,6 +210,7 @@ pub fn encode_block_header(
     header[8..12].copy_from_slice(&block_index.to_le_bytes());
     header[12..16].copy_from_slice(&compressed_len.to_le_bytes());
     header[16..20].copy_from_slice(&raw_len.to_le_bytes());
+    header[20..24].copy_from_slice(&flags.to_le_bytes());
     header[24..56].copy_from_slice(raw_sha);
     header
 }
@@ -215,6 +219,7 @@ pub struct BlockHeader {
     pub block_index: u32,
     pub compressed_len: u32,
     pub raw_len: u32,
+    pub flags: u32,
     pub raw_sha: [u8; 32],
 }
 
@@ -233,12 +238,14 @@ pub fn decode_block_header(header: &[u8; BLOCK_HEADER_BYTES]) -> Result<BlockHea
     let block_index = u32::from_le_bytes(header[8..12].try_into().unwrap_or_default());
     let compressed_len = u32::from_le_bytes(header[12..16].try_into().unwrap_or_default());
     let raw_len = u32::from_le_bytes(header[16..20].try_into().unwrap_or_default());
+    let flags = u32::from_le_bytes(header[20..24].try_into().unwrap_or_default());
     let mut raw_sha = [0u8; 32];
     raw_sha.copy_from_slice(&header[24..56]);
     Ok(BlockHeader {
         block_index,
         compressed_len,
         raw_len,
+        flags,
         raw_sha,
     })
 }
@@ -250,17 +257,18 @@ mod tests {
     #[test]
     fn block_header_round_trips() {
         let sha = sha256_bytes(b"hello");
-        let header = encode_block_header(7, 1234, 5678, &sha);
+        let header = encode_block_header(7, 1234, 5678, BLOCK_FLAG_STORED, &sha);
         let decoded = decode_block_header(&header).unwrap();
         assert_eq!(decoded.block_index, 7);
         assert_eq!(decoded.compressed_len, 1234);
         assert_eq!(decoded.raw_len, 5678);
+        assert_eq!(decoded.flags, BLOCK_FLAG_STORED);
         assert_eq!(decoded.raw_sha, sha);
     }
 
     #[test]
     fn a_foreign_header_is_rejected() {
-        let mut header = encode_block_header(1, 1, 1, &[0u8; 32]);
+        let mut header = encode_block_header(1, 1, 1, 0, &[0u8; 32]);
         header[0] = b'X';
         assert!(decode_block_header(&header).is_err());
     }

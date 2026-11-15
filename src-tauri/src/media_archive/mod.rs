@@ -8,6 +8,7 @@
 //! frames; a damaged frame fails its own checksum instead of poisoning the
 //! rest of the backup.
 
+mod bypass;
 pub mod commands;
 mod disc;
 mod format;

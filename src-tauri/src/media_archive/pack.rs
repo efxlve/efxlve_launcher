@@ -11,9 +11,10 @@ use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use sha2::{Digest, Sha256};
 use zstd::bulk::Compressor;
 
+use super::bypass::should_store_raw;
 use super::format::{
     encode_block_header, sha256_bytes, write_manifest, CompressionInfo, MediaManifest, StoreMeta,
-    VolumeInfo, FORMAT_NAME, FORMAT_VERSION, MANIFEST_FILE,
+    VolumeInfo, BLOCK_FLAG_STORED, FORMAT_NAME, FORMAT_VERSION, MANIFEST_FILE,
 };
 use super::profile::{worst_case_volumes, MediaProfileInfo};
 use super::ArchiveProgress;
@@ -328,6 +329,7 @@ fn pack_into(
         writer,
         block_index: 0,
         output: ctx.output.clone(),
+        storing: false,
     };
     let mut builder = tar::Builder::new(sink);
 
@@ -346,6 +348,10 @@ fn pack_into(
                 .append_data(&mut header, rel, io::empty())
                 .map_err(|error| tar_error(error, &job.cancel))?;
         } else {
+            let bypass = should_store_raw(&entry.rel, entry.size);
+            if bypass {
+                builder.get_mut().begin_store()?;
+            }
             let file = File::open(&entry.source)
                 .map_err(|error| format!("@t:archive.readFailed\u{1f}{error}"))?;
             let mut header = tar::Header::new_gnu();
@@ -362,6 +368,9 @@ fn pack_into(
             builder
                 .append_data(&mut header, rel, reader)
                 .map_err(|error| tar_error(error, &job.cancel))?;
+            if bypass {
+                builder.get_mut().end_store()?;
+            }
             ctx.tick(&entry.rel, false);
         }
     }
@@ -526,6 +535,9 @@ struct FrameSink {
     writer: VolumeWriter,
     block_index: u32,
     output: Arc<AtomicU64>,
+    /// While true every frame is written as a stored block. The packer turns
+    /// this on around a file whose bytes are already compressed.
+    storing: bool,
 }
 
 impl FrameSink {
@@ -535,19 +547,42 @@ impl FrameSink {
         }
         let raw_len = frame.len();
         let raw_sha = sha256_bytes(&frame);
-        let compressed = self
-            .compressor
-            .compress(&frame)
-            .map_err(|error| format!("@t:archive.compressFailed\u{1f}{error}"))?;
-        self.writer.write_block(
-            &compressed,
-            raw_len,
-            &raw_sha,
-            self.block_index,
-        )?;
+        let (payload, flags) = if self.storing {
+            (frame, BLOCK_FLAG_STORED)
+        } else {
+            let compressed = self
+                .compressor
+                .compress(&frame)
+                .map_err(|error| format!("@t:archive.compressFailed\u{1f}{error}"))?;
+            (compressed, 0)
+        };
+        let payload_len = payload.len();
+        self.writer
+            .write_block(&payload, raw_len, &raw_sha, flags, self.block_index)?;
         self.output
-            .fetch_add(compressed.len() as u64, Ordering::Relaxed);
+            .fetch_add(payload_len as u64, Ordering::Relaxed);
         self.block_index += 1;
+        Ok(())
+    }
+
+    /// Ends the current frame so the next bytes can start a stored run.
+    fn flush_pending(&mut self) -> Result<(), String> {
+        if self.pending.is_empty() {
+            return Ok(());
+        }
+        let frame = std::mem::take(&mut self.pending);
+        self.push_frame(frame)
+    }
+
+    fn begin_store(&mut self) -> Result<(), String> {
+        self.flush_pending()?;
+        self.storing = true;
+        Ok(())
+    }
+
+    fn end_store(&mut self) -> Result<(), String> {
+        self.flush_pending()?;
+        self.storing = false;
         Ok(())
     }
 
@@ -675,13 +710,14 @@ impl VolumeWriter {
 
     fn write_block(
         &mut self,
-        compressed: &[u8],
+        payload: &[u8],
         raw_len: usize,
         raw_sha: &[u8; 32],
+        flags: u32,
         block_index: u32,
     ) -> Result<(), String> {
         let record = 64usize
-            .checked_add(compressed.len())
+            .checked_add(payload.len())
             .ok_or_else(|| "@t:archive.blockTooLarge".to_string())?;
         if record as u64 > self.max_bytes {
             return Err("@t:archive.blockTooLarge".to_string());
@@ -701,15 +737,15 @@ impl VolumeWriter {
         let Some(current) = self.current.as_mut() else {
             return Err("@t:archive.writeFailed\u{1f}no volume".to_string());
         };
-        let compressed_len = u32::try_from(compressed.len())
+        let compressed_len = u32::try_from(payload.len())
             .map_err(|_| "@t:archive.blockTooLarge".to_string())?;
         let raw_len = u32::try_from(raw_len)
             .map_err(|_| "@t:archive.blockTooLarge".to_string())?;
-        let header = encode_block_header(block_index, compressed_len, raw_len, raw_sha);
+        let header = encode_block_header(block_index, compressed_len, raw_len, flags, raw_sha);
         current
             .writer
             .write_all(&header)
-            .and_then(|_| current.writer.write_all(compressed))
+            .and_then(|_| current.writer.write_all(payload))
             .map_err(|error| format!("@t:archive.writeFailed\u{1f}{error}"))?;
         current.bytes += record as u64;
         current.blocks += 1;
@@ -901,6 +937,56 @@ mod tests {
         .unwrap();
         assert_eq!(per_disc.len(), 1);
         assert_eq!(per_disc[0].volume_index, 1);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn already_compressed_files_are_stored_without_recompressing() {
+        let root = temp_root("bypass");
+        let game = root.join("Game");
+        std::fs::create_dir_all(&game).unwrap();
+        std::fs::write(game.join("intro.mp4"), noisy(400 * 1024, 5)).unwrap();
+        std::fs::write(game.join("data.bin"), noisy(400 * 1024, 6)).unwrap();
+        let target = root.join("media");
+        std::fs::create_dir_all(&target).unwrap();
+        let outcome = pack_game(PackJob {
+            app_name: "steam::9".to_string(),
+            title: "Bypass".to_string(),
+            install_path: game,
+            target_root: target,
+            profile: MediaProfileInfo {
+                id: "test".to_string(),
+                volume_bytes: 4 * 1024 * 1024,
+                frame_bytes: 64 * 1024,
+                file_system: "test".to_string(),
+            },
+            level: 3,
+            window_log: 20,
+            store_meta: StoreMeta::default(),
+            sink: Arc::new(NoopSink),
+            cancel: Arc::new(AtomicBool::new(false)),
+        })
+        .unwrap();
+        let mut stored = 0u64;
+        let mut compressed = 0u32;
+        for volume in &outcome.manifest.volumes {
+            let bytes = std::fs::read(outcome.folder.join(&volume.file_name)).unwrap();
+            let mut pos = 0usize;
+            while pos + 64 <= bytes.len() {
+                let header: [u8; 64] = bytes[pos..pos + 64].try_into().unwrap();
+                let decoded =
+                    crate::media_archive::format::decode_block_header(&header).unwrap();
+                if decoded.flags == BLOCK_FLAG_STORED {
+                    assert_eq!(decoded.compressed_len, decoded.raw_len);
+                    stored += u64::from(decoded.raw_len);
+                } else {
+                    compressed += 1;
+                }
+                pos += 64 + decoded.compressed_len as usize;
+            }
+        }
+        assert!(stored >= 400 * 1024, "stored {stored}");
+        assert!(compressed > 0, "the .bin file must still compress");
         let _ = std::fs::remove_dir_all(&root);
     }
 
