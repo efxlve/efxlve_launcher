@@ -4269,9 +4269,9 @@ export async function prefetchGamePage(appName: string): Promise<void> {
   }
   // The hero is the one picture the page waits for; the rest (IGDB screenshots,
   // similar-game covers) is warmed once the IGDB answer lands. The transparent
-  // logo is warmed at its original size so it keeps its alpha.
+  // logo is warmed only when the page actually paints it: a full-size PNG over
+  // IPC is too heavy for an idle or hover prefetch of a page nobody opened.
   warmImages([epicWideArt(s) || s.cover], IMAGE_HERO_WIDTH);
-  warmImages([customLogoOf(appName, s.title)], 0);
 
   // News is Steam's feed. Asking for a Steam store search on every Epic game
   // would cost a request for nothing, so only titles with a Steam copy do it.
