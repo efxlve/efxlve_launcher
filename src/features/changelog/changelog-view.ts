@@ -30,6 +30,20 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.59",
+    date: "2026-11-15",
+    fixed: [
+      {
+        en: "Portable builds carry an existing Epic sign-in and installed games over from the normal config on first launch, so upgrading no longer asks for a new sign-in or a reinstall.",
+        tr: "Portable sürümler ilk açılışta mevcut Epic oturumunu ve kurulu oyunları normal config klasöründen devralıyor; güncelleme artık yeniden giriş veya yeniden kurulum istemiyor.",
+      },
+      {
+        en: "A portable build now reads and writes every Epic record inside its own folder, so a finished install is recognized as installed instead of offering another download.",
+        tr: "Portable sürüm artık tüm Epic kayıtlarını kendi klasöründe okuyup yazıyor; biten kurulum tekrar indirme istemek yerine kurulu görünüyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.58",
     date: "2026-11-15",
     added: [
