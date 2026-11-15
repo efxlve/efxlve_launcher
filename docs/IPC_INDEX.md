@@ -34,6 +34,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `archive_cancel` | `archiveCancel({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `archive_default_target` | `archiveDefaultTarget({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `archive_discs` | `archiveDiscs({ ... })` | `src-tauri/src/media_archive/commands.rs` |
+| `archive_estimate` | `archiveEstimate({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `archive_inspect` | `archiveInspect({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `archive_locate` | `archiveLocate({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `archive_plan` | `archivePlan({ ... })` | `src-tauri/src/media_archive/commands.rs` |
