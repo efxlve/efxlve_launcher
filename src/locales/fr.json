@@ -4249,12 +4249,13 @@
   "archive.estimateIntro": "Samples the largest files and estimates the archive size before the backup starts.",
   "archive.estimateHint": "{files} files sampled; {skipped} already-compressed files will be stored as they are.",
   "archive.xtoolTitle": "xtool precompression (experimental)",
-  "archive.xtoolDesc": "Points at your own xtool.exe. When set, every backup opens the game's zlib streams before zstd, which is what makes already-compressed game data shrink.",
+  "archive.xtoolDesc": "Optional. Download the release zip from GitHub, extract it to its own folder, and keep xtool.exe next to the _libraries folder. Then choose that folder here; the launcher fills in xtool.exe for you.",
   "archive.xtoolHint": "Keep the _libraries folder next to xtool.exe. xtool backups can only be restored on a machine with xtool, so this is for personal backups; it is slow and uses a lot of memory. Fast is enough once xtool is on.",
   "archive.xtoolMissing": "xtool.exe was not found at the selected path.",
   "archive.xtoolLibraries": "The _libraries folder is missing next to xtool.exe.",
   "archive.xtoolFailed": "xtool failed: {a1}",
   "archive.xtoolRequired": "This backup was precompressed with xtool. Set the xtool.exe path before restoring.",
   "archive.estimateHintXtool": "{files} files sampled with zstd only; the xtool step can make the backup smaller.",
-  "archive.xtoolRestoreHint": "This backup was precompressed with xtool. Point at the matching xtool.exe before restoring; the decode step needs the same tool."
+  "archive.xtoolRestoreHint": "This backup was precompressed with xtool. Point at the matching xtool.exe before restoring; the decode step needs the same tool.",
+  "archive.xtoolDownload": "Download xtool"
 }

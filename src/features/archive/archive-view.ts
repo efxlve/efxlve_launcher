@@ -212,6 +212,7 @@ function renderBackupTab(): string {
                <div class="archive-inline">
                  <input id="archive-xtool-input" class="input archive-path" type="text" value="${esc(S.archiveXtoolPath)}" placeholder="C:\\xtool\\xtool.exe" data-act="archive-xtool-input" />
                  <button type="button" class="btn ghost small" data-act="archive-pick-xtool">${icon("folder", 13)} ${t("archive.chooseFolder")}</button>
+                 <button type="button" class="btn ghost small" data-act="open-external-url" data-url="https://github.com/Razor12911/xtool/releases">${icon("download", 13)} ${t("archive.xtoolDownload")}</button>
                </div>
                <div class="archive-note">${t("archive.xtoolHint")}</div>
              </div>`
