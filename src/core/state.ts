@@ -11,6 +11,7 @@
 import { EPIC_STORE_URL, type CloudBackupSettings, type CloudBackupEntry, type CloudFolderSuggestion } from "../epic";
 import type {
   ArchiveDisc,
+  ArchiveEstimate,
   ArchivePlan,
   ArchiveProgress,
   ArchiveSummary,
@@ -622,6 +623,8 @@ export const S = {
   archiveTarget: "",
   archivePlan: (null) as ArchivePlan | null,
   archivePlanLoading: false,
+  archiveEstimate: (null) as ArchiveEstimate | null,
+  archiveEstimating: false,
   archiveProgress: (null) as ArchiveProgress | null,
   archiveRunning: false,
   archiveResult: (null) as ArchiveSummary | null,

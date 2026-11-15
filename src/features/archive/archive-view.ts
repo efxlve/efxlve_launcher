@@ -205,6 +205,7 @@ function renderBackupTab(): string {
       </div>
     </div>
     ${renderPlanSummary(plan)}
+    ${renderEstimate()}
     <div class="archive-note archive-start-hint">${t("archive.startHint")}</div>
     <div class="archive-actions">
       ${
@@ -255,6 +256,41 @@ function renderPlanSummary(plan: ArchivePlan | null): string {
           ? `<div class="archive-note">${t("archive.skippedLinks", { count: plan.skippedLinks })}</div>`
           : ""
       }
+    </div>`;
+}
+
+function renderEstimate(): string {
+  const estimate = S.archiveEstimate;
+  const busy = S.archiveEstimating || S.archiveRunning;
+  const button = `<button type="button" class="btn ghost small" data-act="archive-estimate" ${busy ? "disabled" : ""}>${
+    S.archiveEstimating
+      ? `${icon("refresh", 13, "spin")} ${t("archive.estimating")}`
+      : `${icon("activity", 13)} ${t("archive.estimateAction")}`
+  }</button>`;
+  if (!estimate) {
+    return `
+      <div class="archive-estimate">
+        <div class="archive-estimate-head">
+          <span class="archive-k">${t("archive.estimateTitle")}</span>
+          ${button}
+        </div>
+        <div class="archive-note">${t("archive.estimateIntro")}</div>
+      </div>`;
+  }
+  const percent = Math.round(estimate.ratio * 100);
+  return `
+    <div class="archive-estimate">
+      <div class="archive-estimate-head">
+        <span class="archive-k">${t("archive.estimateTitle")}</span>
+        ${button}
+      </div>
+      <div class="archive-summary-grid">
+        <div><span class="archive-k">${t("archive.estimateSize")}</span><span class="archive-v tabular-nums">${fmtBytesOrZero(estimate.estimatedBytes)}</span></div>
+        <div><span class="archive-k">${t("archive.estimateRatio")}</span><span class="archive-v tabular-nums">${percent}%</span></div>
+        <div><span class="archive-k">${t("archive.estimateParts")}</span><span class="archive-v tabular-nums">${estimate.estimatedVolumes}</span></div>
+        <div><span class="archive-k">${t("archive.estimateSkipped")}</span><span class="archive-v tabular-nums">${fmtBytesOrZero(estimate.bypassedBytes)}</span></div>
+      </div>
+      <div class="archive-note">${t("archive.estimateHint", { files: estimate.sampledFiles, skipped: estimate.bypassedFiles })}</div>
     </div>`;
 }
 

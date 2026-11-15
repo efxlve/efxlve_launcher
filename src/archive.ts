@@ -124,6 +124,17 @@ export interface ArchiveDisc {
   bytes: number;
 }
 
+export interface ArchiveEstimate {
+  originalBytes: number;
+  estimatedBytes: number;
+  ratio: number;
+  estimatedVolumes: number;
+  sampledFiles: number;
+  sampledBytes: number;
+  bypassedFiles: number;
+  bypassedBytes: number;
+}
+
 export interface DiscRecorder {
   id: string;
   name: string;
@@ -200,6 +211,19 @@ export const archiveStart = (args: {
 
 export const archiveCancel = (appName: string) =>
   invoke<boolean>("archive_cancel", { appName });
+
+export const archiveEstimate = (args: {
+  installPath: string;
+  profileId: string;
+  customMib?: number;
+  level: string;
+}) =>
+  invoke<ArchiveEstimate>("archive_estimate", {
+    installPath: args.installPath,
+    profileId: args.profileId,
+    customMib: args.customMib ?? null,
+    level: args.level,
+  });
 
 export const archiveScanFolder = (root: string) =>
   invoke<FoundArchive[]>("archive_scan_folder", { root });

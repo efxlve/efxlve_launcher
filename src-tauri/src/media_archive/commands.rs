@@ -10,6 +10,7 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
 use super::disc::{self, DiscRecorder};
+use super::estimate::{self, ArchiveEstimate};
 use super::format::{read_manifest, CompressionInfo, MediaManifest, VolumeInfo, MANIFEST_FILE};
 use super::pack::{pack_game, scan_tree, unique_archive_folder, PackJob, ProgressSink};
 use super::profile::{self, MediaProfileInfo};
@@ -228,6 +229,27 @@ pub async fn archive_plan(
         enough_space: free.map(|bytes| bytes >= required_bytes).unwrap_or(true),
         volume_fits,
     })
+}
+
+#[tauri::command]
+pub async fn archive_estimate(
+    install_path: String,
+    profile_id: String,
+    custom_mib: Option<u64>,
+    level: String,
+) -> Result<ArchiveEstimate, String> {
+    let profile = profile::resolve(&profile_id, custom_mib)?;
+    let (compression_level, window_log) = compression_setting(&level)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        estimate::estimate_archive(
+            Path::new(&install_path),
+            &profile,
+            compression_level,
+            window_log,
+        )
+    })
+    .await
+    .map_err(|error| error.to_string())?
 }
 
 #[tauri::command]

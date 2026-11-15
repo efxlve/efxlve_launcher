@@ -2257,6 +2257,7 @@ fn main() {
             legendary::commands::epic_set_auto_desktop_shortcut,
             media_archive::commands::archive_profiles,
             media_archive::commands::archive_plan,
+            media_archive::commands::archive_estimate,
             media_archive::commands::archive_start,
             media_archive::commands::archive_cancel,
             media_archive::commands::archive_scan_folder,

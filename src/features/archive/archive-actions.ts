@@ -15,6 +15,7 @@ import {
   archiveCancel,
   archiveDefaultTarget,
   archiveDiscs,
+  archiveEstimate,
   archiveLocate,
   archivePlan,
   archiveProfiles,
@@ -30,6 +31,7 @@ import {
 let planToken = 0;
 let planTimer: number | undefined;
 let planInFlightKey = "";
+let estimateToken = 0;
 let bootPromise: Promise<void> | null = null;
 let bootKey = "";
 
@@ -190,6 +192,38 @@ function schedulePlan(): void {
   }, 300);
 }
 
+/** The estimate is tied to one game, profile and level; any change drops it. */
+function invalidateEstimate(): void {
+  estimateToken += 1;
+  S.archiveEstimate = null;
+  S.archiveEstimating = false;
+}
+
+export async function requestEstimate(): Promise<void> {
+  const game = selectedArchiveGame();
+  if (!game || !game.installPath || S.archiveEstimating) return;
+  const token = ++estimateToken;
+  S.archiveEstimating = true;
+  S.archiveEstimate = null;
+  scheduleRender();
+  try {
+    const estimate = await archiveEstimate({
+      installPath: game.installPath,
+      profileId: S.archiveProfile,
+      customMib: S.archiveCustomMib,
+      level: S.archiveLevel,
+    });
+    if (token === estimateToken) S.archiveEstimate = estimate;
+  } catch (error) {
+    if (token === estimateToken) toast(localizeMessage(String(error)), "err");
+  } finally {
+    if (token === estimateToken) {
+      S.archiveEstimating = false;
+      scheduleRender();
+    }
+  }
+}
+
 async function pickFolder(current: string): Promise<string | null> {
   try {
     return await epicSelectFolderDialog(current || null, t("archive.chooseFolder"));
@@ -253,6 +287,7 @@ export function openArchiveForGame(appName: string): void {
   S.archiveProgress = null;
   S.archiveTarget = "";
   S.archiveRunning = false;
+  invalidateEstimate();
   clearBurnState();
   loadArchiveView();
 }
@@ -525,9 +560,14 @@ export function handleArchiveAction(
       S.archiveProfile = profile;
       S.archivePlan = null;
       S.archiveResult = null;
+      invalidateEstimate();
       schedulePlan();
       scheduleRender();
     }
+    return true;
+  }
+  if (act === "archive-estimate") {
+    void requestEstimate();
     return true;
   }
   if (act === "archive-pick-target") {
@@ -621,6 +661,7 @@ export function handleArchiveChange(target: HTMLElement): boolean {
       S.archivePlan = null;
       S.archiveResult = null;
       S.archiveTarget = "";
+      invalidateEstimate();
       scheduleRender();
       void ensureArchiveSelection();
     }
@@ -629,6 +670,8 @@ export function handleArchiveChange(target: HTMLElement): boolean {
   if (act === "archive-level") {
     const value = (target as HTMLSelectElement).value;
     S.archiveLevel = value === "fast" || value === "max" ? value : "balanced";
+    invalidateEstimate();
+    scheduleRender();
     return true;
   }
   if (act === "archive-custom-mib") {
@@ -636,7 +679,9 @@ export function handleArchiveChange(target: HTMLElement): boolean {
     S.archiveCustomMib = Math.max(16, Math.min(1_000_000, Math.round(value) || 8_000));
     S.archivePlan = null;
     S.archiveResult = null;
+    invalidateEstimate();
     schedulePlan();
+    scheduleRender();
     return true;
   }
   if (act === "archive-target-input") {

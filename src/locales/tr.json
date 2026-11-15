@@ -4238,5 +4238,14 @@
   "archive.partSize": "Parça boyutu",
   "archive.selectedMedia": "Seçili medya",
   "archive.mediaHint": "USB (FAT32) tek dosyada 4 GB sınırı olduğu için 3.9 GB'lık parçalar kullanır; USB'nin kendisi 32, 64 veya 128 GB olabilir. Optik profiller her disk için bir disc-N klasörü oluşturur; USB tüm parçaları tek klasörde tutar. Diske yazma, yedek bittikten sonra başlar.",
-  "archive.startHint": "Bu işlem diske yazmaz; önce parça dosyalarını oluşturur."
+  "archive.startHint": "Bu işlem diske yazmaz; önce parça dosyalarını oluşturur.",
+  "archive.estimateAction": "Boyutu tahmin et",
+  "archive.estimating": "Tahmin ediliyor…",
+  "archive.estimateTitle": "Tahmini yedek",
+  "archive.estimateSize": "Tahmini boyut",
+  "archive.estimateRatio": "Oran",
+  "archive.estimateParts": "Tahmini parça",
+  "archive.estimateSkipped": "Zaten sıkışık",
+  "archive.estimateIntro": "Yedek başlamadan önce en büyük dosyalardan örnek alıp arşiv boyutunu tahmin eder.",
+  "archive.estimateHint": "{files} dosya örneklendi; {skipped} zaten sıkıştırılmış dosya olduğu gibi saklanacak."
 }

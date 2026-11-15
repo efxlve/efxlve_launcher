@@ -11,6 +11,7 @@
 mod bypass;
 pub mod commands;
 mod disc;
+mod estimate;
 mod format;
 mod pack;
 mod profile;
