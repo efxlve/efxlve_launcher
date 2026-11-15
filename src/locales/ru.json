@@ -4327,5 +4327,6 @@
   "archive.steamIdInvalid": "В архиве указан некорректный ID приложения Steam; игра восстановлена, но не зарегистрирована.",
   "archive.storeIdInvalid": "В архиве указан некорректный ID магазина; игра восстановлена, но не зарегистрирована.",
   "archive.xtoolBusy": "Установка xtool уже выполняется.",
-  "disc.busy": "Уже выполняется другая операция с диском."
+  "disc.busy": "Уже выполняется другая операция с диском.",
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
 }

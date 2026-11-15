@@ -4327,5 +4327,6 @@
   "archive.steamIdInvalid": "バックアップの Steam アプリ ID が無効です。ゲームは復元されましたが登録されませんでした。",
   "archive.storeIdInvalid": "バックアップのストア ID が無効です。ゲームは復元されましたが登録されませんでした。",
   "archive.xtoolBusy": "xtool はすでにインストール処理中です。",
-  "disc.busy": "別のディスク操作がすでに実行中です。"
+  "disc.busy": "別のディスク操作がすでに実行中です。",
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
 }

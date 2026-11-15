@@ -253,6 +253,7 @@ function xtoolExecutable(folder: string): string {
 }
 
 function setXtoolPath(value: string): void {
+  if (S.archiveRunning || S.archiveEstimating) return;
   if (value !== S.archiveXtoolPath) invalidateEstimate();
   S.archiveXtoolPath = value;
   try {
@@ -266,7 +267,9 @@ async function installXtool(): Promise<void> {
   if (
     S.archiveXtoolInstalling ||
     S.archiveBurning !== null ||
-    S.archiveErasing
+    S.archiveErasing ||
+    S.archiveRunning ||
+    S.archiveEstimating
   ) {
     return;
   }
@@ -339,9 +342,18 @@ export function onArchiveProgress(progress: ArchiveProgress): void {
   }
   // startBackup/startRestore clear the progress panel before the first event.
   // The first event must build the panel; later events patch it in place. A
-  // stage change (notably `registering`) also swaps the action button.
+  // stage change (notably `registering`) also swaps the action button. Do not
+  // force a full repaint when the archive screen or the progress tab is hidden.
+  const visible =
+    S.view === "settings" &&
+    S.settingsSection === "archive" &&
+    S.archiveTab !== "guide";
+  const panel = document.getElementById("archive-progress");
+  if (!panel) {
+    if (visible) scheduleRender();
+    return;
+  }
   if (
-    !document.getElementById("archive-progress") ||
     progress.stage === "registering" ||
     previous?.stage === "registering"
   ) {
@@ -378,24 +390,24 @@ function updateArchiveProgressInPlace(progress: ArchiveProgress): void {
 }
 
 export function openArchiveForGame(appName: string): void {
+  if (S.archiveRunning || S.archiveBurning !== null || S.archiveErasing) {
+    toast(t("archive.jobRunning"), "err");
+    return;
+  }
   // The manage panel passes an Epic appName (`Ginger`), while the archive list
   // keys every game (`epic::Ginger`). Resolve it before the view falls back to
   // the first installed game.
   const item = findArchiveGame(archiveGameList(), appName);
-  const busy =
-    S.archiveRunning || S.archiveBurning !== null || S.archiveErasing;
   S.archiveSelectedApp = item?.key ?? appName;
   S.archiveTab = "backup";
   S.archivePlan = null;
   S.archiveResult = null;
+  S.archiveProgress = null;
   S.archiveTarget = "";
+  S.archiveRunning = false;
+  S.archiveActiveId = "";
   invalidateEstimate();
-  if (!busy) {
-    S.archiveProgress = null;
-    S.archiveRunning = false;
-    S.archiveActiveId = "";
-    clearBurnState();
-  }
+  clearBurnState();
   loadArchiveView();
 }
 
@@ -504,6 +516,7 @@ async function eraseDisc(): Promise<void> {
 async function startBackup(): Promise<void> {
   const game = selectedArchiveGame();
   if (!game || !game.installPath || S.archiveRunning) return;
+  if (S.archiveXtoolInstalling) return;
   if (S.archiveBurning !== null) {
     toast(t("archive.burnInProgress"), "err");
     return;
@@ -555,6 +568,9 @@ async function startBackup(): Promise<void> {
 }
 
 async function scanSource(): Promise<void> {
+  if (S.archiveRunning || S.archiveBurning !== null || S.archiveErasing) {
+    return;
+  }
   const root = S.archiveSource.trim();
   if (!root) {
     toast(t("archive.sourceMissing"), "err");
@@ -594,6 +610,9 @@ async function applyRestoreDefaults(found: FoundArchive): Promise<void> {
 }
 
 async function selectFound(manifestPath: string): Promise<void> {
+  if (S.archiveRunning || S.archiveBurning !== null || S.archiveErasing) {
+    return;
+  }
   const found = S.archiveFound?.find((item) => item.manifestPath === manifestPath);
   if (!found) return;
   S.archiveSelectedManifest = manifestPath;
@@ -605,6 +624,9 @@ async function selectFound(manifestPath: string): Promise<void> {
 }
 
 async function addPartsFolder(): Promise<void> {
+  if (S.archiveRunning || S.archiveBurning !== null || S.archiveErasing) {
+    return;
+  }
   const found = S.archiveFound?.find(
     (item) => item.manifestPath === S.archiveSelectedManifest,
   );
@@ -640,6 +662,7 @@ async function startRestore(): Promise<void> {
     (item) => item.manifestPath === S.archiveSelectedManifest,
   );
   if (!found || S.archiveRunning) return;
+  if (S.archiveXtoolInstalling) return;
   S.archiveEraseArmed = false;
   if (S.archiveBurning !== null) {
     toast(t("archive.burnInProgress"), "err");
@@ -705,6 +728,32 @@ export function handleArchiveAction(
   _id: string | undefined,
   target: HTMLElement,
 ): boolean {
+  const busy =
+    S.archiveRunning || S.archiveBurning !== null || S.archiveErasing;
+  if (
+    busy &&
+    [
+      "archive-pick-target",
+      "archive-pick-source",
+      "archive-scan",
+      "archive-select-found",
+      "archive-add-parts",
+      "archive-burn-load",
+      "archive-burn-refresh",
+      "archive-pick-restore-target",
+      "archive-profile",
+      "archive-pick-xtool",
+      "archive-xtool-install",
+    ].includes(act ?? "")
+  ) {
+    return true;
+  }
+  if (
+    (act === "archive-pick-xtool" || act === "archive-xtool-install") &&
+    S.archiveEstimating
+  ) {
+    return true;
+  }
   if (act === "archive-tab") {
     const tab = target.dataset.tab;
     S.archiveTab = tab === "restore" || tab === "guide" ? tab : "backup";
@@ -843,6 +892,25 @@ export function handleArchiveAction(
 export function handleArchiveChange(target: HTMLElement): boolean {
   const act = target.dataset.act;
   if (!act?.startsWith("archive-")) return false;
+  const busy =
+    S.archiveRunning || S.archiveBurning !== null || S.archiveErasing;
+  if (
+    busy &&
+    [
+      "archive-select-game",
+      "archive-custom-mib",
+      "archive-target-input",
+      "archive-level",
+      "archive-xtool-input",
+      "archive-restore-target-input",
+      "archive-overwrite",
+      "archive-source-input",
+      "archive-burn-recorder",
+    ].includes(act)
+  ) {
+    return true;
+  }
+  if (act === "archive-xtool-input" && S.archiveEstimating) return true;
   if (act === "archive-select-game") {
     const value = (target as HTMLSelectElement).value;
     if (value && value !== S.archiveSelectedApp) {

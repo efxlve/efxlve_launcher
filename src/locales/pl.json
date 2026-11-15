@@ -4327,5 +4327,6 @@
   "archive.steamIdInvalid": "Kopia zapasowa ma nieprawidłowy identyfikator aplikacji Steam; gra została przywrócona, ale nie zarejestrowana.",
   "archive.storeIdInvalid": "Kopia zapasowa ma nieprawidłowy identyfikator sklepu; gra została przywrócona, ale nie zarejestrowana.",
   "archive.xtoolBusy": "Trwa już instalacja xtool.",
-  "disc.busy": "Inna operacja na płycie jest już w toku."
+  "disc.busy": "Inna operacja na płycie jest już w toku.",
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
 }

@@ -4327,5 +4327,6 @@
   "archive.steamIdInvalid": "備份中的 Steam 應用程式 ID 無效；遊戲已還原，但未註冊到 Steam。",
   "archive.storeIdInvalid": "備份中的商店 ID 無效；遊戲已還原，但未註冊到商店。",
   "archive.xtoolBusy": "xtool 正在安裝中。",
-  "disc.busy": "另一個光碟操作正在執行。"
+  "disc.busy": "另一個光碟操作正在執行。",
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
 }

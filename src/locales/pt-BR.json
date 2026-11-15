@@ -4327,5 +4327,6 @@
   "archive.steamIdInvalid": "O backup tem um ID de aplicativo do Steam inválido; o jogo foi restaurado, mas não registrado.",
   "archive.storeIdInvalid": "O backup tem um ID de loja inválido; o jogo foi restaurado, mas não registrado.",
   "archive.xtoolBusy": "O xtool já está sendo instalado.",
-  "disc.busy": "Outra operação de disco já está em andamento."
+  "disc.busy": "Outra operação de disco já está em andamento.",
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
 }

@@ -4327,5 +4327,6 @@
   "archive.steamIdInvalid": "백업의 Steam 앱 ID가 잘못되었습니다. 게임은 복원되었지만 스토어에 등록되지 않았습니다.",
   "archive.storeIdInvalid": "백업의 스토어 ID가 잘못되었습니다. 게임은 복원되었지만 스토어에 등록되지 않았습니다.",
   "archive.xtoolBusy": "xtool이 이미 설치 중입니다.",
-  "disc.busy": "다른 디스크 작업이 이미 실행 중입니다."
+  "disc.busy": "다른 디스크 작업이 이미 실행 중입니다.",
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
 }

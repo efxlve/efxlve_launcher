@@ -4327,5 +4327,6 @@
   "archive.steamIdInvalid": "备份中的 Steam 应用 ID 无效；游戏已恢复，但未注册到 Steam。",
   "archive.storeIdInvalid": "备份中的商店 ID 无效；游戏已恢复，但未注册到商店。",
   "archive.xtoolBusy": "xtool 正在安装中。",
-  "disc.busy": "另一个光盘操作正在运行。"
+  "disc.busy": "另一个光盘操作正在运行。",
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
 }

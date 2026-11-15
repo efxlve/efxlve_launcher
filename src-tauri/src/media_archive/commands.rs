@@ -491,7 +491,7 @@ fn scan_manifests(
                 .iter()
                 .filter_map(|path| std::fs::metadata(path).ok())
                 .map(|meta| meta.len())
-                .sum();
+                .fold(0u64, u64::saturating_add);
             out.push(FoundArchive {
                 manifest_path: manifest_path.display().to_string(),
                 manifest,
@@ -536,7 +536,7 @@ pub fn archive_inspect(manifest_path: String) -> Result<FoundArchive, String> {
         .iter()
         .filter_map(|candidate| std::fs::metadata(candidate).ok())
         .map(|meta| meta.len())
-        .sum();
+        .fold(0u64, u64::saturating_add);
     Ok(FoundArchive {
         manifest_path: path.display().to_string(),
         manifest,
@@ -608,6 +608,7 @@ pub fn archive_discs(manifest_path: String) -> Result<Vec<ArchiveDisc>, String> 
 
 #[tauri::command]
 pub async fn disc_list_recorders() -> Result<Vec<DiscRecorder>, String> {
+    let _disc = disc::begin_disc_job()?;
     tauri::async_runtime::spawn_blocking(disc::list_recorders)
         .await
         .map_err(|error| error.to_string())?

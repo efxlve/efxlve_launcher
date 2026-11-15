@@ -4327,5 +4327,6 @@
   "archive.steamIdInvalid": "تحتوي النسخة الاحتياطية على معرّف تطبيق Steam غير صالح؛ تمت استعادة اللعبة دون تسجيلها.",
   "archive.storeIdInvalid": "تحتوي النسخة الاحتياطية على معرّف متجر غير صالح؛ تمت استعادة اللعبة دون تسجيلها.",
   "archive.xtoolBusy": "يجري تثبيت xtool بالفعل.",
-  "disc.busy": "توجد عملية قرص أخرى قيد التشغيل بالفعل."
+  "disc.busy": "توجد عملية قرص أخرى قيد التشغيل بالفعل.",
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
 }

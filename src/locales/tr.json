@@ -4327,5 +4327,6 @@
   "archive.steamIdInvalid": "Yedekte geçersiz bir Steam uygulama kimliği var; oyun geri yüklendi ama mağazaya kaydedilmedi.",
   "archive.storeIdInvalid": "Yedekte geçersiz bir mağaza kimliği var; oyun geri yüklendi ama mağazaya kaydedilmedi.",
   "archive.xtoolBusy": "xtool zaten kuruluyor.",
-  "disc.busy": "Başka bir disk işlemi zaten sürüyor."
+  "disc.busy": "Başka bir disk işlemi zaten sürüyor.",
+  "archive.jobRunning": "Zaten bir arşiv veya disk işlemi sürüyor. Önce bitir veya iptal et."
 }

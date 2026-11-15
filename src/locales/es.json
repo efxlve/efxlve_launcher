@@ -4327,5 +4327,6 @@
   "archive.steamIdInvalid": "La copia tiene un ID de aplicación de Steam no válido; el juego se restauró pero no se registró.",
   "archive.storeIdInvalid": "La copia tiene un ID de tienda no válido; el juego se restauró pero no se registró.",
   "archive.xtoolBusy": "xtool ya se está instalando.",
-  "disc.busy": "Ya hay otra operación de disco en curso."
+  "disc.busy": "Ya hay otra operación de disco en curso.",
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
 }

@@ -4327,5 +4327,6 @@
   "archive.steamIdInvalid": "बैकअप में अमान्य Steam ऐप आईडी है; गेम पुनर्स्थापित हो गया लेकिन पंजीकृत नहीं हुआ।",
   "archive.storeIdInvalid": "बैकअप में अमान्य स्टोर आईडी है; गेम पुनर्स्थापित हो गया लेकिन पंजीकृत नहीं हुआ।",
   "archive.xtoolBusy": "xtool पहले से इंस्टॉल किया जा रहा है।",
-  "disc.busy": "एक अन्य डिस्क ऑपरेशन पहले से चल रहा है।"
+  "disc.busy": "एक अन्य डिस्क ऑपरेशन पहले से चल रहा है।",
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
 }

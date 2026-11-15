@@ -155,6 +155,8 @@ function renderBackupTab(): string {
   const profiles = S.archiveProfiles ?? [];
   const plan = S.archivePlan;
   const running = S.archiveRunning;
+  const busy = running || S.archiveBurning !== null || S.archiveErasing;
+  const xtoolBusy = busy || S.archiveEstimating;
   const registering = running && S.archiveProgress?.stage === "registering";
   return `
     <div class="list settings-group archive-card">
@@ -163,7 +165,7 @@ function renderBackupTab(): string {
           <div class="settings-row-title">${t("archive.game")}</div>
           <div class="settings-row-desc">${t("archive.gameDesc")}</div>
         </div>
-        <select class="settings-select archive-game-select" data-act="archive-select-game">
+        <select class="settings-select archive-game-select" data-act="archive-select-game" ${busy ? "disabled" : ""}>
           ${games
             .map(
               (item) =>
@@ -181,7 +183,7 @@ function renderBackupTab(): string {
           ${profiles
             .map(
               (profile) => `
-                <button type="button" class="archive-profile ${profile.id === S.archiveProfile ? "active" : ""}" data-act="archive-profile" data-profile="${esc(profile.id)}">
+                <button type="button" class="archive-profile ${profile.id === S.archiveProfile ? "active" : ""}" data-act="archive-profile" data-profile="${esc(profile.id)}" ${busy ? "disabled" : ""}>
                   <span class="archive-profile-name">${esc(profileLabel(profile.id))}</span>
                   <span class="archive-profile-size tabular-nums">${profile.id === "custom" ? `${S.archiveCustomMib} MiB` : fmtBytes(profile.volumeBytes)} / ${t("archive.partOne")}</span>
                   <span class="archive-profile-fs">${esc(profile.fileSystem)}</span>
@@ -193,7 +195,7 @@ function renderBackupTab(): string {
           S.archiveProfile === "custom"
             ? `<div class="archive-inline">
                  <label class="archive-inline-label" for="archive-custom-mib">${t("archive.customSize")}</label>
-                 <input id="archive-custom-mib" class="input archive-number" type="number" min="16" max="1000000" value="${S.archiveCustomMib}" data-act="archive-custom-mib" />
+                 <input id="archive-custom-mib" class="input archive-number" type="number" min="16" max="1000000" value="${S.archiveCustomMib}" data-act="archive-custom-mib" ${busy ? "disabled" : ""} />
                  <span class="archive-inline-unit">MiB</span>
                </div>`
             : ""
@@ -206,7 +208,7 @@ function renderBackupTab(): string {
           <div class="settings-row-desc">${t("archive.levelDesc")}</div>
         </div>
         <div class="settings-row-control">
-          <select class="settings-select" data-act="archive-level">
+          <select class="settings-select" data-act="archive-level" ${busy ? "disabled" : ""}>
             <option value="fast" ${S.archiveLevel === "fast" ? "selected" : ""}>${t("archive.levelFast")}</option>
             <option value="balanced" ${S.archiveLevel === "balanced" ? "selected" : ""}>${t("archive.levelBalanced")}</option>
             <option value="max" ${S.archiveLevel === "max" ? "selected" : ""}>${t("archive.levelMax")}</option>
@@ -226,13 +228,13 @@ function renderBackupTab(): string {
                  <div class="settings-row-desc">${t("archive.xtoolDesc")}</div>
                </div>
                <div class="archive-inline">
-                 <input id="archive-xtool-input" class="input archive-path" type="text" value="${esc(S.archiveXtoolPath)}" placeholder="C:\\xtool\\xtool.exe" data-act="archive-xtool-input" />
-                 <button type="button" class="btn primary small" data-act="archive-xtool-install" ${S.archiveXtoolInstalling || S.archiveBurning !== null || S.archiveErasing ? "disabled" : ""}>${
+                 <input id="archive-xtool-input" class="input archive-path" type="text" value="${esc(S.archiveXtoolPath)}" placeholder="C:\\xtool\\xtool.exe" data-act="archive-xtool-input" ${xtoolBusy || S.archiveXtoolInstalling ? "disabled" : ""} />
+                 <button type="button" class="btn primary small" data-act="archive-xtool-install" ${S.archiveXtoolInstalling || xtoolBusy ? "disabled" : ""}>${
                    S.archiveXtoolInstalling
                      ? `${icon("refresh", 13, "spin")} ${t("archive.xtoolInstalling")}`
                      : `${icon("download", 13)} ${t("archive.xtoolInstall")}`
                  }</button>
-                 <button type="button" class="btn ghost small" data-act="archive-pick-xtool">${icon("folder", 13)} ${t("archive.chooseFolder")}</button>
+                 <button type="button" class="btn ghost small" data-act="archive-pick-xtool" ${S.archiveXtoolInstalling || xtoolBusy ? "disabled" : ""}>${icon("folder", 13)} ${t("archive.chooseFolder")}</button>
                  <button type="button" class="btn ghost small" data-act="open-external-url" data-url="https://github.com/Razor12911/xtool/releases">${t("archive.xtoolDownload")}</button>
                </div>
                <div class="archive-note">${t("archive.xtoolHint")}</div>
@@ -246,8 +248,8 @@ function renderBackupTab(): string {
           <div class="settings-row-desc">${t("archive.targetDesc")}</div>
         </div>
         <div class="archive-inline">
-          <input id="archive-target-input" class="input archive-path" type="text" value="${esc(S.archiveTarget)}" placeholder="${esc(t("archive.targetPlaceholder"))}" data-act="archive-target-input" />
-          <button type="button" class="btn ghost small" data-act="archive-pick-target">${icon("folder", 13)} ${t("archive.chooseFolder")}</button>
+          <input id="archive-target-input" class="input archive-path" type="text" value="${esc(S.archiveTarget)}" placeholder="${esc(t("archive.targetPlaceholder"))}" data-act="archive-target-input" ${busy ? "disabled" : ""} />
+          <button type="button" class="btn ghost small" data-act="archive-pick-target" ${busy ? "disabled" : ""}>${icon("folder", 13)} ${t("archive.chooseFolder")}</button>
         </div>
       </div>
     </div>
@@ -452,6 +454,7 @@ function renderProgress(progress: ArchiveProgress | null, prefix: string): strin
 
 function renderRestoreTab(): string {
   const found = selectedFound();
+  const busy = S.archiveRunning || S.archiveBurning !== null || S.archiveErasing;
   const restoreReady = Boolean(
     found && !found.missingVolumes.length && S.archiveRestoreTarget.trim(),
   );
@@ -464,9 +467,9 @@ function renderRestoreTab(): string {
           <div class="settings-row-desc">${t("archive.restoreSourceDesc")}</div>
         </div>
         <div class="archive-inline">
-          <input id="archive-source-input" class="input archive-path" type="text" value="${esc(S.archiveSource)}" placeholder="${esc(t("archive.sourcePlaceholder"))}" data-act="archive-source-input" />
-          <button type="button" class="btn ghost small" data-act="archive-pick-source">${icon("folder", 13)} ${t("archive.chooseFolder")}</button>
-          <button type="button" class="btn primary small" data-act="archive-scan" ${S.archiveFoundLoading ? "disabled" : ""}>${S.archiveFoundLoading ? t("archive.scanning") : t("archive.scan")}</button>
+          <input id="archive-source-input" class="input archive-path" type="text" value="${esc(S.archiveSource)}" placeholder="${esc(t("archive.sourcePlaceholder"))}" data-act="archive-source-input" ${busy ? "disabled" : ""} />
+          <button type="button" class="btn ghost small" data-act="archive-pick-source" ${busy ? "disabled" : ""}>${icon("folder", 13)} ${t("archive.chooseFolder")}</button>
+          <button type="button" class="btn primary small" data-act="archive-scan" ${S.archiveFoundLoading || busy ? "disabled" : ""}>${S.archiveFoundLoading ? t("archive.scanning") : t("archive.scan")}</button>
         </div>
       </div>
     </div>
@@ -478,7 +481,7 @@ function renderRestoreTab(): string {
           ? registering
             ? `<button type="button" class="btn ghost small" disabled>${icon("refresh", 13, "spin")} ${t("archive.stageRegistering")}</button>`
             : `<button type="button" class="btn danger small" data-act="archive-cancel">${icon("x", 13)} ${t("archive.cancel")}</button>`
-          : `<button type="button" class="btn primary" data-act="archive-restore-start" ${restoreReady && S.archiveBurning === null && !S.archiveRunning && !S.archiveErasing && !S.archiveXtoolInstalling ? "" : "disabled"}>${icon("download", 14)} ${t("archive.restoreStart")}</button>`
+          : `<button type="button" class="btn primary" data-act="archive-restore-start" ${restoreReady && !busy && !S.archiveXtoolInstalling ? "" : "disabled"}>${icon("download", 14)} ${t("archive.restoreStart")}</button>`
       }
     </div>
     ${S.archiveRestoreResult ? "" : renderProgress(S.archiveProgress, "archive")}
@@ -502,6 +505,7 @@ function selectedFound(): FoundArchive | undefined {
 }
 
 function renderFoundList(): string {
+  const busy = S.archiveRunning || S.archiveBurning !== null || S.archiveErasing;
   if (S.archiveFoundLoading) {
     return `<div class="archive-summary archive-loading">${icon("refresh", 14, "spin")} ${t("archive.scanning")}</div>`;
   }
@@ -517,7 +521,7 @@ function renderFoundList(): string {
         .map((item) => {
           const missing = item.missingVolumes.length > 0;
           return `
-            <button type="button" class="archive-found ${item.manifestPath === S.archiveSelectedManifest ? "active" : ""}" data-act="archive-select-found" data-manifest="${esc(item.manifestPath)}">
+            <button type="button" class="archive-found ${item.manifestPath === S.archiveSelectedManifest ? "active" : ""}" data-act="archive-select-found" data-manifest="${esc(item.manifestPath)}" ${busy ? "disabled" : ""}>
               <span class="archive-found-main">
                 <span class="archive-found-title">${esc(item.manifest.title)}</span>
                 <span class="archive-found-meta">${storeName(item.manifest.appName)} · ${fmtArchiveDate(item.manifest.createdAt)} · ${fmtBytes(item.storedBytes)} · ${item.manifest.volumes.length} ${partWord(item.manifest.volumes.length)}</span>
@@ -538,6 +542,8 @@ function renderRestoreDetail(): string {
   if (!found) return "";
   const manifest = found.manifest;
   const missing = found.missingVolumes.length > 0;
+  const busy = S.archiveRunning || S.archiveBurning !== null || S.archiveErasing;
+  const xtoolBusy = busy || S.archiveEstimating;
   const finalPath = joinPath(S.archiveRestoreTarget, manifest.installDirName);
   return `
     <div class="archive-summary archive-restore-detail">
@@ -552,13 +558,13 @@ function renderRestoreDetail(): string {
         manifest.compression.precompressor === "xtool"
           ? `<div class="archive-inline archive-restore-target">
                <label class="archive-inline-label" for="archive-xtool-input">${t("archive.xtoolTitle")}</label>
-               <input id="archive-xtool-input" class="input archive-path" type="text" value="${esc(S.archiveXtoolPath)}" placeholder="C:\\xtool\\xtool.exe" data-act="archive-xtool-input" />
-               <button type="button" class="btn primary small" data-act="archive-xtool-install" ${S.archiveXtoolInstalling || S.archiveBurning !== null || S.archiveErasing ? "disabled" : ""}>${
+               <input id="archive-xtool-input" class="input archive-path" type="text" value="${esc(S.archiveXtoolPath)}" placeholder="C:\\xtool\\xtool.exe" data-act="archive-xtool-input" ${xtoolBusy || S.archiveXtoolInstalling ? "disabled" : ""} />
+               <button type="button" class="btn primary small" data-act="archive-xtool-install" ${S.archiveXtoolInstalling || xtoolBusy ? "disabled" : ""}>${
                  S.archiveXtoolInstalling
                    ? `${icon("refresh", 13, "spin")} ${t("archive.xtoolInstalling")}`
                    : `${icon("download", 13)} ${t("archive.xtoolInstall")}`
                }</button>
-               <button type="button" class="btn ghost small" data-act="archive-pick-xtool">${icon("folder", 13)} ${t("archive.chooseFolder")}</button>
+               <button type="button" class="btn ghost small" data-act="archive-pick-xtool" ${S.archiveXtoolInstalling || xtoolBusy ? "disabled" : ""}>${icon("folder", 13)} ${t("archive.chooseFolder")}</button>
              </div>
              <div class="archive-note">${t("archive.xtoolRestoreHint")}</div>
              ${renderXtoolProgress()}`
@@ -567,18 +573,18 @@ function renderRestoreDetail(): string {
       ${
         missing
           ? `<div class="archive-warn">${icon("alert-triangle", 13)} ${esc(t("archive.missingList", { list: missingLabels(found) }))}</div>
-             <div class="archive-actions"><button type="button" class="btn ghost small" data-act="archive-add-parts">${icon("folder", 13)} ${t("archive.addPartsFolder")}</button></div>
+             <div class="archive-actions"><button type="button" class="btn ghost small" data-act="archive-add-parts" ${busy ? "disabled" : ""}>${icon("folder", 13)} ${t("archive.addPartsFolder")}</button></div>
              ${S.archiveExtraDirs.length ? `<div class="archive-note">${t("archive.extraDirs", { count: S.archiveExtraDirs.length })}</div>` : ""}`
           : ""
       }
       <div class="archive-inline archive-restore-target">
         <label class="archive-inline-label" for="archive-restore-target">${t("archive.restoreTarget")}</label>
-        <input id="archive-restore-target" class="input archive-path" type="text" value="${esc(S.archiveRestoreTarget)}" data-act="archive-restore-target-input" />
-        <button type="button" class="btn ghost small" data-act="archive-pick-restore-target">${icon("folder", 13)} ${t("archive.chooseFolder")}</button>
+        <input id="archive-restore-target" class="input archive-path" type="text" value="${esc(S.archiveRestoreTarget)}" data-act="archive-restore-target-input" ${busy ? "disabled" : ""} />
+        <button type="button" class="btn ghost small" data-act="archive-pick-restore-target" ${busy ? "disabled" : ""}>${icon("folder", 13)} ${t("archive.chooseFolder")}</button>
       </div>
       <div class="archive-path-line"><span class="archive-k">${t("archive.restoreFinalPath")}</span><span class="archive-path-value">${esc(finalPath)}</span></div>
       <label class="archive-check">
-        <input type="checkbox" data-act="archive-overwrite" ${S.archiveOverwrite ? "checked" : ""} />
+        <input type="checkbox" data-act="archive-overwrite" ${S.archiveOverwrite ? "checked" : ""} ${busy ? "disabled" : ""} />
         <span>${t("archive.overwrite")}</span>
       </label>
       <div class="archive-note">${t("archive.restoreHint")}</div>
@@ -586,7 +592,7 @@ function renderRestoreDetail(): string {
         manifest.discLayout && IS_WINDOWS
           ? S.archiveDiscsManifest === found.manifestPath
             ? renderBurnPanel(found.manifestPath)
-            : `<div class="archive-actions"><button type="button" class="btn ghost small" data-act="archive-burn-load" data-manifest="${esc(found.manifestPath)}">${icon("hard-drive", 13)} ${t("archive.burnTitle")}</button></div>`
+            : `<div class="archive-actions"><button type="button" class="btn ghost small" data-act="archive-burn-load" data-manifest="${esc(found.manifestPath)}" ${busy ? "disabled" : ""}>${icon("hard-drive", 13)} ${t("archive.burnTitle")}</button></div>`
           : ""
       }
     </div>`;
@@ -685,7 +691,7 @@ function renderBurnPanel(manifestPath: string): string {
       ? S.archiveDiscsLoading
         ? `<div class="archive-loading">${icon("refresh", 14, "spin")} ${t("archive.calculating")}</div>`
         : `<div class="archive-actions">
-             <button type="button" class="btn ghost small" data-act="archive-burn-load" data-manifest="${esc(manifestPath)}">${icon("hard-drive", 13)} ${t("archive.burnLoad")}</button>
+             <button type="button" class="btn ghost small" data-act="archive-burn-load" data-manifest="${esc(manifestPath)}" ${busy ? "disabled" : ""}>${icon("hard-drive", 13)} ${t("archive.burnLoad")}</button>
            </div>`
       : discs.length === 0
         ? `<div class="archive-note">${t("archive.burnFlat")}</div>`

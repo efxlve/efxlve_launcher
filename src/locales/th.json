@@ -4327,5 +4327,6 @@
   "archive.steamIdInvalid": "ข้อมูลสำรองมีรหัสแอป Steam ไม่ถูกต้อง กู้คืนเกมแล้วแต่ยังไม่ได้ลงทะเบียน",
   "archive.storeIdInvalid": "ข้อมูลสำรองมีรหัสร้านค้าไม่ถูกต้อง กู้คืนเกมแล้วแต่ยังไม่ได้ลงทะเบียน",
   "archive.xtoolBusy": "กำลังติดตั้ง xtool อยู่แล้ว",
-  "disc.busy": "มีการทำงานกับแผ่นดิสก์อื่นกำลังดำเนินอยู่แล้ว"
+  "disc.busy": "มีการทำงานกับแผ่นดิสก์อื่นกำลังดำเนินอยู่แล้ว",
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
 }

@@ -4327,5 +4327,6 @@
   "archive.steamIdInvalid": "La sauvegarde contient un identifiant d'application Steam invalide ; le jeu a été restauré mais non enregistré.",
   "archive.storeIdInvalid": "La sauvegarde contient un identifiant de boutique invalide ; le jeu a été restauré mais non enregistré.",
   "archive.xtoolBusy": "xtool est déjà en cours d'installation.",
-  "disc.busy": "Une autre opération sur le disque est déjà en cours."
+  "disc.busy": "Une autre opération sur le disque est déjà en cours.",
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
 }

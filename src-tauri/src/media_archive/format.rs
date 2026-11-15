@@ -168,7 +168,12 @@ impl MediaManifest {
         {
             return Err("@t:archive.manifestInvalid\u{1f}compression".to_string());
         }
-        let blocks: u64 = self.volumes.iter().map(|v| u64::from(v.blocks)).sum();
+        let blocks: u64 = self
+            .volumes
+            .iter()
+            .fold(0u64, |total, volume| {
+                total.saturating_add(u64::from(volume.blocks))
+            });
         if blocks == 0 || blocks > 1_000_000 {
             return Err("@t:archive.manifestInvalid\u{1f}blocks".to_string());
         }
@@ -193,7 +198,9 @@ impl MediaManifest {
 
     #[cfg(test)]
     pub fn stored_bytes(&self) -> u64 {
-        self.volumes.iter().map(|v| v.bytes).sum()
+        self.volumes
+            .iter()
+            .fold(0u64, |total, volume| total.saturating_add(volume.bytes))
     }
 }
 

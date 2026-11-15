@@ -396,7 +396,9 @@ fn pack_into(
         .map_err(|error| tar_error(error, &job.cancel))?;
     let writer = sink.finish()?;
     let volumes = writer.finish()?;
-    let stored_bytes = volumes.iter().map(|volume| volume.bytes).sum();
+    let stored_bytes = volumes
+        .iter()
+        .fold(0u64, |total, volume| total.saturating_add(volume.bytes));
     let manifest = MediaManifest {
         format: FORMAT_NAME.to_string(),
         format_version: FORMAT_VERSION,
@@ -973,7 +975,10 @@ impl VolumeWriter {
         current.bytes += record as u64;
         current.blocks += 1;
         self.output.store(
-            self.volumes.iter().map(|v| v.bytes).sum::<u64>() + current.bytes,
+            self.volumes
+                .iter()
+                .fold(0u64, |total, volume| total.saturating_add(volume.bytes))
+                .saturating_add(current.bytes),
             Ordering::Relaxed,
         );
         Ok(())

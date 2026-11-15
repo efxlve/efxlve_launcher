@@ -3,7 +3,7 @@
 //! replacing the destination.
 
 use std::fs::File;
-use std::io::{self, BufReader, Read, Write};
+use std::io::{self, BufReader, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdout};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -75,6 +75,73 @@ pub fn locate_volumes(
 
 fn file_size(path: &Path) -> Option<u64> {
     std::fs::metadata(path).ok().map(|meta| meta.len())
+}
+
+fn volume_corrupt(volume: u32, block: u32) -> String {
+    format!("@t:archive.volumeCorrupt\u{1f}{volume}\u{1f}{block}")
+}
+
+/// Walks each volume's block headers without decompressing. This catches a
+/// manifest whose block count does not match the file, trailing bytes after
+/// the last block, and a block sequence that jumps or repeats.
+fn verify_volume_shapes(manifest: &MediaManifest, paths: &[PathBuf]) -> Result<(), String> {
+    let frame = manifest.compression.frame_bytes;
+    let mut expected_block = 0u32;
+    for (volume, path) in manifest.volumes.iter().zip(paths) {
+        let mut file = File::open(path).map_err(|_| volume_corrupt(volume.index, expected_block))?;
+        let len = file
+            .metadata()
+            .map_err(|_| volume_corrupt(volume.index, expected_block))?
+            .len();
+        if len != volume.bytes {
+            return Err(volume_corrupt(volume.index, expected_block));
+        }
+        let mut offset = 0u64;
+        for _ in 0..volume.blocks {
+            if offset.saturating_add(BLOCK_HEADER_BYTES as u64) > len {
+                return Err(volume_corrupt(volume.index, expected_block));
+            }
+            file.seek(SeekFrom::Start(offset))
+                .and_then(|_| {
+                    let mut header = [0u8; BLOCK_HEADER_BYTES];
+                    file.read_exact(&mut header)?;
+                    Ok(header)
+                })
+                .map_err(|_| volume_corrupt(volume.index, expected_block))
+                .and_then(|header| {
+                    decode_block_header(&header)
+                        .map_err(|_| volume_corrupt(volume.index, expected_block))
+                })
+                .and_then(|decoded| {
+                    if decoded.block_index != expected_block
+                        || decoded.raw_len == 0
+                        || u64::from(decoded.raw_len) > frame
+                        || u64::from(decoded.compressed_len)
+                            > frame.saturating_add(1024 * 1024)
+                    {
+                        return Err(volume_corrupt(volume.index, expected_block));
+                    }
+                    offset = offset
+                        .saturating_add(BLOCK_HEADER_BYTES as u64)
+                        .saturating_add(u64::from(decoded.compressed_len));
+                    if offset > len {
+                        return Err(volume_corrupt(volume.index, expected_block));
+                    }
+                    expected_block = expected_block.saturating_add(1);
+                    Ok(())
+                })?;
+        }
+        if offset != len {
+            return Err(volume_corrupt(volume.index, expected_block));
+        }
+    }
+    if expected_block != manifest.total_blocks() {
+        return Err(volume_corrupt(
+            manifest.volumes.last().map(|volume| volume.index).unwrap_or(1),
+            expected_block,
+        ));
+    }
+    Ok(())
 }
 
 /// Finds a volume by name and exact size. Optical backups put one volume in a
@@ -170,6 +237,7 @@ pub fn restore_game(job: RestoreJob) -> Result<RestoreOutcome, String> {
             .unwrap_or_default();
         return Err(format!("@t:archive.missingVolume\u{1f}{index}\u{1f}{name}"));
     }
+    verify_volume_shapes(&job.manifest, &volume_paths)?;
 
     let staging_name = format!(
         ".{}.efxlve-restore-{}-{}",
@@ -244,55 +312,89 @@ fn extract_all(
     let entries = archive.entries().map_err(extraction_error)?;
     let mut file_count = 0u64;
     let mut bytes = 0u64;
-    for entry in entries {
-        if job.cancel.load(Ordering::Relaxed) {
-            return Err("@t:archive.cancelled".to_string());
-        }
-        let mut entry = entry.map_err(extraction_error)?;
-        let path = entry
-            .path()
-            .map_err(|error| format!("@t:archive.readFailed\u{1f}{error}"))?
-            .into_owned();
-        let Some(rel) = safe_rel_path(&path) else {
-            return Err(format!(
-                "@t:archive.unsafePath\u{1f}{}",
-                path.to_string_lossy()
-            ));
-        };
-        let kind = entry.header().entry_type();
-        let mode = entry.header().mode().unwrap_or(0o644);
-        if kind.is_dir() {
-            let dir = staging.join(&rel);
-            std::fs::create_dir_all(&dir)
+    let extraction: Result<(), String> = (|| {
+        for entry in entries {
+            if job.cancel.load(Ordering::Relaxed) {
+                return Err("@t:archive.cancelled".to_string());
+            }
+            let mut entry = entry.map_err(extraction_error)?;
+            let path = entry
+                .path()
+                .map_err(|error| format!("@t:archive.readFailed\u{1f}{error}"))?
+                .into_owned();
+            let Some(rel) = safe_rel_path(&path) else {
+                return Err(format!(
+                    "@t:archive.unsafePath\u{1f}{}",
+                    path.to_string_lossy()
+                ));
+            };
+            let kind = entry.header().entry_type();
+            let mode = entry.header().mode().unwrap_or(0o644);
+            if kind.is_dir() {
+                let dir = staging.join(&rel);
+                std::fs::create_dir_all(&dir)
+                    .map_err(|error| format!("@t:archive.writeFailed\u{1f}{error}"))?;
+                apply_mode(&dir, if mode == 0 { 0o755 } else { mode });
+                continue;
+            }
+            if !kind.is_file() {
+                // The packer never writes links or devices. A foreign tar member
+                // must not be followed.
+                continue;
+            }
+            if let Ok(mut current) = current_file.lock() {
+                *current = rel.to_string_lossy().to_string();
+            }
+            let target_file = staging.join(&rel);
+            if let Some(parent) = target_file.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|error| format!("@t:archive.writeFailed\u{1f}{error}"))?;
+            }
+            let mut file = std::fs::File::create(&target_file)
                 .map_err(|error| format!("@t:archive.writeFailed\u{1f}{error}"))?;
-            apply_mode(&dir, if mode == 0 { 0o755 } else { mode });
-            continue;
-        }
-        if !kind.is_file() {
-            // The packer never writes links or devices. A foreign tar member
-            // must not be followed.
-            continue;
-        }
-        if let Ok(mut current) = current_file.lock() {
-            *current = rel.to_string_lossy().to_string();
-        }
-        let target_file = staging.join(&rel);
-        if let Some(parent) = target_file.parent() {
-            std::fs::create_dir_all(parent)
+            let copied = io::copy(&mut entry, &mut file)
+                .map_err(extraction_error)?;
+            file.flush()
                 .map_err(|error| format!("@t:archive.writeFailed\u{1f}{error}"))?;
+            apply_mode(&target_file, if mode == 0 { 0o644 } else { mode });
+            file_count += 1;
+            bytes = bytes.saturating_add(copied);
         }
-        let mut file = std::fs::File::create(&target_file)
-            .map_err(|error| format!("@t:archive.writeFailed\u{1f}{error}"))?;
-        let copied = io::copy(&mut entry, &mut file)
-            .map_err(extraction_error)?;
-        file.flush()
-            .map_err(|error| format!("@t:archive.writeFailed\u{1f}{error}"))?;
-        apply_mode(&target_file, if mode == 0 { 0o644 } else { mode });
-        file_count += 1;
-        bytes = bytes.saturating_add(copied);
+        Ok(())
+    })();
+    // Always finish a normal or truncated stream. For a target write error or
+    // a cancel, drop the source instead: finish() would drain the rest of the
+    // xtool output and read the whole archive for nothing.
+    let truncated = extraction
+        .as_ref()
+        .err()
+        .is_some_and(|error| is_truncated_error(error));
+    let finished: Result<(), String> = if extraction.is_ok() || truncated {
+        archive.into_inner().finish()
+    } else {
+        drop(archive);
+        Ok(())
+    };
+    match (extraction, finished) {
+        (Ok(()), Ok(())) => Ok((file_count, bytes)),
+        (Ok(()), Err(error)) => Err(error),
+        (Err(error), Ok(())) => Err(error),
+        (Err(error), Err(finish_error)) => {
+            if is_truncated_error(&error) {
+                Err(finish_error)
+            } else {
+                Err(error)
+            }
+        }
     }
-    archive.into_inner().finish()?;
-    Ok((file_count, bytes))
+}
+
+/// A truncated tar stream usually means the decompressor/xtool failed. Do not
+/// report the read error when finish() can name the real cause.
+fn is_truncated_error(text: &str) -> bool {
+    text.contains("unexpected end of file")
+        || text.contains("failed to iterate over archive")
+        || text.contains("UnexpectedEof")
 }
 
 /// A damaged frame surfaces from the block reader while the tar entry is being
@@ -309,6 +411,8 @@ fn extraction_error(error: io::Error) -> String {
         "@t:archive.blockCorrupt",
         "@t:archive.volumeCorrupt",
         "@t:archive.cancelled",
+        "@t:archive.xtoolFailed",
+        "@t:archive.readFailed",
     ] {
         if let Some(index) = text.find(marker) {
             return text[index..].to_string();
@@ -1126,8 +1230,45 @@ mod tests {
     }
 
     #[test]
-    fn a_version_one_backup_still_restores() {
-        let root = temp_root("version-one");
+    fn extraction_error_keeps_a_specific_xtool_marker() {
+        let error = extraction_error(io::Error::other(
+            "@t:archive.xtoolFailed\u{1f}decode failed",
+        ));
+        assert!(error.contains("xtoolFailed"), "{error}");
+    }
+
+    #[test]
+    fn trailing_bytes_in_a_volume_are_rejected() {
+        let root = temp_root("trailing");
+        let (_game, folder, manifest_path) = pack_fixture(&root, 128 * 1024);
+        let mut manifest =
+            crate::media_archive::format::read_manifest(&manifest_path).unwrap();
+        let path = folder.join(&manifest.volumes[0].file_name);
+        let mut bytes = std::fs::read(&path).unwrap();
+        bytes.extend_from_slice(&[0u8; 64]);
+        std::fs::write(&path, &bytes).unwrap();
+        manifest.volumes[0].bytes = bytes.len() as u64;
+        crate::media_archive::format::write_manifest(&folder, &manifest).unwrap();
+        let target = root.join("target");
+        std::fs::create_dir_all(&target).unwrap();
+        let error = restore_game(RestoreJob {
+            manifest,
+            manifest_dir: folder,
+            extra_dirs: Vec::new(),
+            xtool: None,
+            target_parent: target,
+            overwrite: false,
+            sink: Arc::new(NoopSink),
+            cancel: Arc::new(AtomicBool::new(false)),
+        })
+        .err()
+        .expect("trailing volume bytes must fail");
+        assert!(error.contains("volumeCorrupt"), "{error}");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_version_one_backup_still_restores() {        let root = temp_root("version-one");
         let (game, folder, manifest_path) = pack_fixture(&root, 128 * 1024);
         let mut manifest = crate::media_archive::format::read_manifest(&manifest_path).unwrap();
         manifest.format_version = 1;
