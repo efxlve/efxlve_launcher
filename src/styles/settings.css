@@ -1316,3 +1316,14 @@
   display: flex; gap: 7px; align-items: flex-start; margin-top: 10px;
   color: var(--text-2); font-size: 11.5px; line-height: 1.45;
 }
+.archive-burn { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.archive-burn-select { min-width: 220px; max-width: 380px; }
+.archive-burn-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.archive-burn-row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2);
+}
+.archive-burn-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.archive-burn-row .archive-found-meta {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}

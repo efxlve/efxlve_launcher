@@ -33,6 +33,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `app_toggle_maximize` | `appToggleMaximize({ ... })` | `src-tauri/src/main.rs` |
 | `archive_cancel` | `archiveCancel({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `archive_default_target` | `archiveDefaultTarget({ ... })` | `src-tauri/src/media_archive/commands.rs` |
+| `archive_discs` | `archiveDiscs({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `archive_inspect` | `archiveInspect({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `archive_locate` | `archiveLocate({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `archive_plan` | `archivePlan({ ... })` | `src-tauri/src/media_archive/commands.rs` |
@@ -125,6 +126,8 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `custom_games_steam_details` | `customGamesSteamDetails({ ... })` | `src-tauri/src/custom_games.rs` |
 | `custom_games_stop` | `customGamesStop({ ... })` | `src-tauri/src/custom_games.rs` |
 | `destroy_store_view` | `destroyStoreView({ ... })` | `src-tauri/src/store_host.rs` |
+| `disc_burn_folder` | `discBurnFolder({ ... })` | `src-tauri/src/media_archive/commands.rs` |
+| `disc_list_recorders` | `discListRecorders({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `discord_open_conversation` | `discordOpenConversation({ ... })` | `src-tauri/src/discord_host.rs` |
 | `discord_open_devtools` | `discordOpenDevtools({ ... })` | `src-tauri/src/discord_host.rs` |
 | `discord_relationships_probe` | `discordRelationshipsProbe({ ... })` | `src-tauri/src/discord_rpc.rs` |

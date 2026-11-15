@@ -76,6 +76,10 @@ pub struct MediaManifest {
     pub volumes: Vec<VolumeInfo>,
     pub store_meta: StoreMeta,
     pub complete: bool,
+    /// Optical profiles put each volume in its own `disc-N` folder, next to a
+    /// copy of the manifest, so the folder can be burned as one disc.
+    #[serde(default)]
+    pub disc_layout: bool,
 }
 
 impl MediaManifest {
@@ -293,6 +297,7 @@ mod tests {
             }],
             store_meta: StoreMeta::default(),
             complete: true,
+            disc_layout: false,
         };
         let dir = std::env::temp_dir().join(format!("efxlve-manifest-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);

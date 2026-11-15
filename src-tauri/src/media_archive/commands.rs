@@ -9,6 +9,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
+use super::disc::{self, DiscRecorder};
 use super::format::{read_manifest, CompressionInfo, MediaManifest, VolumeInfo, MANIFEST_FILE};
 use super::pack::{pack_game, scan_tree, unique_archive_folder, PackJob, ProgressSink};
 use super::profile::{self, MediaProfileInfo};
@@ -118,6 +119,16 @@ pub struct ArchiveSummary {
     pub volumes: Vec<VolumeInfo>,
     pub compression: CompressionInfo,
     pub created_at: u64,
+    pub disc_layout: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ArchiveDisc {
+    pub volume_index: u32,
+    pub folder: String,
+    pub manifest_path: String,
+    pub bytes: u64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -323,6 +334,7 @@ pub async fn archive_start(
                 volumes: manifest.volumes,
                 compression: manifest.compression,
                 created_at: manifest.created_at,
+                disc_layout: manifest.disc_layout,
             })
         }
         Err(error) => {
@@ -364,6 +376,35 @@ pub async fn archive_scan_folder(root: String) -> Result<Vec<FoundArchive>, Stri
         let mut found = Vec::new();
         let mut budget = SCAN_BUDGET;
         scan_manifests(&root, SCAN_DEPTH, &mut budget, &mut found);
+        // A disc-layout backup repeats the manifest in every `disc-N` folder.
+        // Keep one entry per archive, preferring the copy with the most parts.
+        let mut unique: HashMap<String, FoundArchive> = HashMap::new();
+        for item in found {
+            let key = format!(
+                "{}|{}|{}",
+                item.manifest.app_name,
+                item.manifest.created_at,
+                item.manifest.install_dir_name
+            );
+            let score = item
+                .manifest
+                .volumes
+                .len()
+                .saturating_sub(item.missing_volumes.len());
+            match unique.get(&key) {
+                Some(existing)
+                    if existing
+                        .manifest
+                        .volumes
+                        .len()
+                        .saturating_sub(existing.missing_volumes.len())
+                        >= score => {}
+                _ => {
+                    unique.insert(key, item);
+                }
+            }
+        }
+        let mut found: Vec<FoundArchive> = unique.into_values().collect();
         found.sort_by(|left, right| right.manifest.created_at.cmp(&left.manifest.created_at));
         Ok(found)
     })
@@ -472,6 +513,52 @@ fn resolve_manifest_path(path: &Path) -> Result<(PathBuf, PathBuf), String> {
         .map(Path::to_path_buf)
         .ok_or_else(|| "@t:archive.invalidTarget".to_string())?;
     Ok((path.to_path_buf(), dir))
+}
+
+#[tauri::command]
+pub fn archive_discs(manifest_path: String) -> Result<Vec<ArchiveDisc>, String> {
+    let path = PathBuf::from(&manifest_path);
+    let (path, dir) = resolve_manifest_path(&path)?;
+    let manifest = read_manifest(&path)?;
+    if !manifest.disc_layout {
+        return Ok(Vec::new());
+    }
+    let mut discs = Vec::new();
+    for volume in &manifest.volumes {
+        let Some(file) =
+            super::restore::find_volume_file(&dir, &volume.file_name, volume.bytes, 2)
+        else {
+            continue;
+        };
+        let folder = file.parent().unwrap_or(&dir).to_path_buf();
+        let disc_manifest = folder.join(MANIFEST_FILE);
+        if !disc_manifest.is_file() {
+            let _ = std::fs::copy(&path, &disc_manifest);
+        }
+        discs.push(ArchiveDisc {
+            volume_index: volume.index,
+            folder: folder.display().to_string(),
+            manifest_path: disc_manifest.display().to_string(),
+            bytes: volume.bytes,
+        });
+    }
+    Ok(discs)
+}
+
+#[tauri::command]
+pub async fn disc_list_recorders() -> Result<Vec<DiscRecorder>, String> {
+    tauri::async_runtime::spawn_blocking(disc::list_recorders)
+        .await
+        .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn disc_burn_folder(folder: String, recorder_id: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        disc::burn_folder(Path::new(&folder), &recorder_id)
+    })
+    .await
+    .map_err(|error| error.to_string())?
 }
 
 #[tauri::command]

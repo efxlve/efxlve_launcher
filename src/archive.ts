@@ -99,6 +99,7 @@ export interface ArchiveManifest {
   volumes: ArchiveVolumeInfo[];
   storeMeta: ArchiveStoreMeta;
   complete: boolean;
+  discLayout: boolean;
 }
 
 export interface ArchiveSummary {
@@ -113,6 +114,24 @@ export interface ArchiveSummary {
   volumes: ArchiveVolumeInfo[];
   compression: ArchiveCompression;
   createdAt: number;
+  discLayout: boolean;
+}
+
+export interface ArchiveDisc {
+  volumeIndex: number;
+  folder: string;
+  manifestPath: string;
+  bytes: number;
+}
+
+export interface DiscRecorder {
+  id: string;
+  name: string;
+  vendor: string;
+  product: string;
+  revision: string;
+  deviceType: number;
+  mediaTypes: number;
 }
 
 export interface FoundArchive {
@@ -190,6 +209,15 @@ export const archiveInspect = (manifestPath: string) =>
 
 export const archiveLocate = (manifestPath: string, extraDirs: string[]) =>
   invoke<number[]>("archive_locate", { manifestPath, extraDirs });
+
+export const archiveDiscs = (manifestPath: string) =>
+  invoke<ArchiveDisc[]>("archive_discs", { manifestPath });
+
+export const discListRecorders = () =>
+  invoke<DiscRecorder[]>("disc_list_recorders");
+
+export const discBurnFolder = (folder: string, recorderId: string) =>
+  invoke<void>("disc_burn_folder", { folder, recorderId });
 
 export const archiveDefaultTarget = (appName: string, installPath: string) =>
   invoke<ArchiveDefaultTarget>("archive_default_target", { appName, installPath });

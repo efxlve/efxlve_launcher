@@ -13,12 +13,15 @@ import { epicOpenFolderPath, epicSelectFolderDialog } from "../../epic";
 import {
   archiveCancel,
   archiveDefaultTarget,
+  archiveDiscs,
   archiveLocate,
   archivePlan,
   archiveProfiles,
   archiveRestore,
   archiveScanFolder,
   archiveStart,
+  discBurnFolder,
+  discListRecorders,
   type ArchiveProgress,
   type FoundArchive,
 } from "../../archive";
@@ -245,12 +248,85 @@ export function openArchiveForGame(appName: string): void {
   S.archiveProgress = null;
   S.archiveTarget = "";
   S.archiveRunning = false;
+  clearBurnState();
   loadArchiveView();
+}
+
+function clearBurnState(): void {
+  S.archiveDiscs = null;
+  S.archiveDiscsManifest = "";
+  S.archiveDiscsLoading = false;
+  S.archiveBurnDone = null;
+  S.archiveBurning = null;
+}
+
+export async function loadArchiveDiscs(manifestPath: string): Promise<void> {
+  if (!manifestPath) return;
+  S.archiveDiscsManifest = manifestPath;
+  S.archiveDiscsLoading = true;
+  scheduleRender();
+  try {
+    const discs = await archiveDiscs(manifestPath);
+    if (S.archiveDiscsManifest !== manifestPath) return;
+    S.archiveDiscs = discs;
+  } catch (error) {
+    if (S.archiveDiscsManifest === manifestPath) {
+      S.archiveDiscs = [];
+      toast(localizeMessage(String(error)), "err");
+    }
+  } finally {
+    if (S.archiveDiscsManifest === manifestPath) {
+      S.archiveDiscsLoading = false;
+      scheduleRender();
+    }
+  }
+}
+
+export async function loadBurnRecorders(force = false): Promise<void> {
+  if (S.archiveBurnRecorders && !force) return;
+  try {
+    const recorders = await discListRecorders();
+    S.archiveBurnRecorders = recorders;
+    if (!recorders.some((recorder) => recorder.id === S.archiveBurnRecorder)) {
+      S.archiveBurnRecorder = recorders[0]?.id ?? "";
+    }
+  } catch (error) {
+    S.archiveBurnRecorders = [];
+    S.archiveBurnRecorder = "";
+    toast(localizeMessage(String(error)), "err");
+  }
+  scheduleRender();
+}
+
+async function burnDisc(folder: string, index: number): Promise<void> {
+  if (!folder || S.archiveBurning !== null || S.archiveRunning) return;
+  const recorder = S.archiveBurnRecorder;
+  if (!recorder) {
+    toast(t("archive.burnNoRecorder"), "err");
+    return;
+  }
+  S.archiveBurning = index;
+  S.archiveBurnDone = null;
+  scheduleRender();
+  try {
+    await discBurnFolder(folder, recorder);
+    S.archiveBurnDone = index;
+    toast(t("archive.burnDone"), "ok");
+  } catch (error) {
+    toast(localizeMessage(String(error)), "err");
+  } finally {
+    S.archiveBurning = null;
+    scheduleRender();
+  }
 }
 
 async function startBackup(): Promise<void> {
   const game = selectedArchiveGame();
   if (!game || !game.installPath || S.archiveRunning) return;
+  if (S.archiveBurning !== null) {
+    toast(t("archive.burnInProgress"), "err");
+    return;
+  }
   if (S.runningGames.has(game.key)) {
     toast(t("archive.gameRunning"), "err");
     return;
@@ -258,6 +334,7 @@ async function startBackup(): Promise<void> {
   S.archiveRunning = true;
   S.archiveProgress = null;
   S.archiveResult = null;
+  clearBurnState();
   scheduleRender();
   try {
     const result = await archiveStart({
@@ -271,6 +348,10 @@ async function startBackup(): Promise<void> {
     });
     S.archiveResult = result;
     S.archiveProgress = null;
+    if (result.discLayout) {
+      void loadArchiveDiscs(result.manifestPath);
+      void loadBurnRecorders(true);
+    }
     toast(t("archive.backupDone"), "ok");
   } catch (error) {
     const raw = String(error);
@@ -296,6 +377,7 @@ async function scanSource(): Promise<void> {
   try {
     const found = await archiveScanFolder(root);
     S.archiveFound = found;
+    clearBurnState();
     const current = found.find((item) => item.manifestPath === S.archiveSelectedManifest);
     if (!current) {
       S.archiveSelectedManifest = found[0]?.manifestPath ?? "";
@@ -329,6 +411,7 @@ async function selectFound(manifestPath: string): Promise<void> {
   S.archiveSelectedManifest = manifestPath;
   S.archiveExtraDirs = [];
   S.archiveRestoreResult = null;
+  clearBurnState();
   await applyRestoreDefaults(found);
   scheduleRender();
 }
@@ -369,6 +452,10 @@ async function startRestore(): Promise<void> {
     (item) => item.manifestPath === S.archiveSelectedManifest,
   );
   if (!found || S.archiveRunning) return;
+  if (S.archiveBurning !== null) {
+    toast(t("archive.burnInProgress"), "err");
+    return;
+  }
   if (S.runningGames.has(found.manifest.appName)) {
     toast(t("archive.gameRunning"), "err");
     return;
@@ -486,6 +573,22 @@ export function handleArchiveAction(
     void addPartsFolder();
     return true;
   }
+  if (act === "archive-burn-load") {
+    const manifestPath = target.dataset.manifest || S.archiveSelectedManifest;
+    void loadArchiveDiscs(manifestPath);
+    void loadBurnRecorders();
+    return true;
+  }
+  if (act === "archive-burn-refresh") {
+    void loadBurnRecorders(true);
+    return true;
+  }
+  if (act === "archive-burn") {
+    const folder = target.dataset.folder || "";
+    const index = Number(target.dataset.index) || 0;
+    void burnDisc(folder, index);
+    return true;
+  }
   if (act === "archive-pick-restore-target") {
     void pickFolder(S.archiveRestoreTarget).then((folder) => {
       if (folder) {
@@ -549,6 +652,10 @@ export function handleArchiveChange(target: HTMLElement): boolean {
   }
   if (act === "archive-overwrite") {
     S.archiveOverwrite = (target as HTMLInputElement).checked;
+    return true;
+  }
+  if (act === "archive-burn-recorder") {
+    S.archiveBurnRecorder = (target as HTMLSelectElement).value;
     return true;
   }
   return false;

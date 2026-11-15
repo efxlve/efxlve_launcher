@@ -67,9 +67,9 @@ Open work only. Delete the item when it lands.
 
 ## Media archive (disc / USB)
 
-- Direct optical writing is not wired. The archive writes disc-sized volumes to
-  a folder or USB drive and the UI explains the one-part-per-disc copy. Windows
-  IMAPI2, Linux `xorriso` and macOS `drutil` remain open.
+- Windows IMAPI2 burning is implemented in `media_archive/disc.rs` and marked
+  experimental. It still needs a pass on real CD-R, DVD-R and BD-R media; Linux
+  `xorriso` and macOS `drutil` remain open.
 - Reed-Solomon parity for scratched discs and long-term USB bit rot is not
   implemented. Block SHA-256 detects damage but cannot repair it.
 - The standalone `efxlve-restore.exe` for a PC without the launcher is not

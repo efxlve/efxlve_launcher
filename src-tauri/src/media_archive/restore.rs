@@ -46,21 +46,16 @@ pub fn locate_volumes(
     let mut paths = Vec::with_capacity(manifest.volumes.len());
     let mut missing = Vec::new();
     for volume in &manifest.volumes {
-        let mut found: Option<PathBuf> = None;
-        let candidate = manifest_dir.join(&volume.file_name);
-        if candidate.is_file() && file_size(&candidate) == Some(volume.bytes) {
-            found = Some(candidate);
-        }
+        let mut found =
+            find_volume_file(manifest_dir, &volume.file_name, volume.bytes, 2);
         if found.is_none() {
             for dir in extra_dirs {
                 if dir == manifest_dir {
                     continue;
                 }
-                if let Some(path) = find_file(dir, &volume.file_name, 2) {
-                    if file_size(&path) == Some(volume.bytes) {
-                        found = Some(path);
-                        break;
-                    }
+                found = find_volume_file(dir, &volume.file_name, volume.bytes, 2);
+                if found.is_some() {
+                    break;
                 }
             }
         }
@@ -76,9 +71,16 @@ fn file_size(path: &Path) -> Option<u64> {
     std::fs::metadata(path).ok().map(|meta| meta.len())
 }
 
-fn find_file(root: &Path, name: &str, depth: u8) -> Option<PathBuf> {
+/// Finds a volume by name and exact size. Optical backups put one volume in a
+/// `disc-N` folder, so a plain direct lookup is not enough.
+pub(super) fn find_volume_file(
+    root: &Path,
+    name: &str,
+    bytes: u64,
+    depth: u8,
+) -> Option<PathBuf> {
     let direct = root.join(name);
-    if direct.is_file() {
+    if direct.is_file() && file_size(&direct) == Some(bytes) {
         return Some(direct);
     }
     if depth == 0 {
@@ -100,7 +102,7 @@ fn find_file(root: &Path, name: &str, depth: u8) -> Option<PathBuf> {
         {
             continue;
         }
-        if let Some(found) = find_file(&entry.path(), name, depth - 1) {
+        if let Some(found) = find_volume_file(&entry.path(), name, bytes, depth - 1) {
             return Some(found);
         }
     }
@@ -676,7 +678,7 @@ impl Read for BlockReader {
 mod tests {
     use super::*;
     use crate::media_archive::pack::{pack_game, NoopSink, PackJob};
-    use crate::media_archive::format::StoreMeta;
+    use crate::media_archive::format::{StoreMeta, MANIFEST_FILE};
     use crate::media_archive::profile::MediaProfileInfo;
 
     fn temp_root(name: &str) -> PathBuf {
@@ -762,6 +764,81 @@ mod tests {
             std::fs::read(game.join("readme.txt")).unwrap(),
             std::fs::read(outcome.target.join("readme.txt")).unwrap()
         );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_disc_layout_backup_restores_from_the_root_or_from_disc_folders() {
+        let root = temp_root("disc-layout");
+        let game = root.join("Game");
+        std::fs::create_dir_all(&game).unwrap();
+        for index in 0..4 {
+            std::fs::write(
+                game.join(format!("part{index}.bin")),
+                noisy(70 * 1024, index as u64 + 120),
+            )
+            .unwrap();
+        }
+        let media = root.join("media");
+        std::fs::create_dir_all(&media).unwrap();
+        let packed = pack_game(PackJob {
+            app_name: "steam::4".to_string(),
+            title: "Disc Layout Restore".to_string(),
+            install_path: game,
+            target_root: media,
+            profile: MediaProfileInfo {
+                id: "dvd5".to_string(),
+                volume_bytes: 128 * 1024,
+                frame_bytes: 32 * 1024,
+                file_system: "UDF".to_string(),
+            },
+            level: 3,
+            window_log: 20,
+            store_meta: StoreMeta::default(),
+            sink: Arc::new(NoopSink),
+            cancel: Arc::new(AtomicBool::new(false)),
+        })
+        .unwrap();
+        assert!(packed.manifest.disc_layout);
+        assert!(packed.manifest.volumes.len() >= 2);
+
+        let root_target = root.join("root-target");
+        std::fs::create_dir_all(&root_target).unwrap();
+        let from_root = restore_game(RestoreJob {
+            manifest: packed.manifest.clone(),
+            manifest_dir: packed.folder.clone(),
+            extra_dirs: Vec::new(),
+            target_parent: root_target,
+            overwrite: false,
+            sink: Arc::new(NoopSink),
+            cancel: Arc::new(AtomicBool::new(false)),
+        })
+        .unwrap();
+        assert_eq!(from_root.file_count, 4);
+
+        let disc1 = packed.folder.join("disc-1");
+        let manifest =
+            crate::media_archive::format::read_manifest(&disc1.join(MANIFEST_FILE)).unwrap();
+        let extras: Vec<PathBuf> = packed
+            .manifest
+            .volumes
+            .iter()
+            .skip(1)
+            .map(|volume| packed.folder.join(format!("disc-{}", volume.index)))
+            .collect();
+        let disc_target = root.join("disc-target");
+        std::fs::create_dir_all(&disc_target).unwrap();
+        let from_disc = restore_game(RestoreJob {
+            manifest,
+            manifest_dir: disc1,
+            extra_dirs: extras,
+            target_parent: disc_target,
+            overwrite: false,
+            sink: Arc::new(NoopSink),
+            cancel: Arc::new(AtomicBool::new(false)),
+        })
+        .unwrap();
+        assert_eq!(from_disc.file_count, 4);
         let _ = std::fs::remove_dir_all(&root);
     }
 

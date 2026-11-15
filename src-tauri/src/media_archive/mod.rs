@@ -9,6 +9,7 @@
 //! rest of the backup.
 
 pub mod commands;
+mod disc;
 mod format;
 mod pack;
 mod profile;

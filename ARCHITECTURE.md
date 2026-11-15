@@ -153,8 +153,8 @@ page per game.
 - The feature is Windows-only and hidden on Linux/macOS. A target must be an existing known DLL inside the game folder the caller named.
 
 ### 3.7 Media Archive (Disc / USB)
-- `src-tauri/src/media_archive/` owns the archive format (`format.rs`), media presets (`profile.rs`), packing (`pack.rs`), restore (`restore.rs`) and store registration (`store.rs`). The frontend screen is `src/features/archive/`.
-- One backup is a folder with `manifest.efxmeta.json` and `*.efxpak.NNN` volumes. `profile.rs` sizes a volume for CD-R, DVD-5/9, Blu-ray 25/50/100 or FAT32 (under 4 GiB), so one volume can be copied to one disc.
+- `src-tauri/src/media_archive/` owns the archive format (`format.rs`), media presets (`profile.rs`), packing (`pack.rs`), restore (`restore.rs`), store registration (`store.rs`) and Windows optical writing (`disc.rs`). The frontend screen is `src/features/archive/`.
+- One backup is a folder with `manifest.efxmeta.json` and `*.efxpak.NNN` volumes. `profile.rs` sizes a volume for CD-R, DVD-5/9, Blu-ray 25/50/100 or FAT32 (under 4 GiB). Optical profiles put one volume and a manifest copy in a self-contained `disc-N` folder, so each folder can be burned as one disc; USB profiles stay flat.
 - The tar stream is compressed as independent zstd frames (64 MiB maximum). A damaged frame fails its own SHA-256 check with the volume and block number; the rest of the backup is not poisoned.
-- Restore reads volumes from the manifest folder plus any extra folders the user adds, verifies each block, unpacks into a staging folder and only then replaces the game folder. Steam, GOG and custom records are rewritten against the new path; Epic and Amazon go through their existing import commands.
-- Direct optical writing (IMAPI2 / xorriso / drutil), Reed-Solomon parity and the standalone restorer are open work; see `TODO.md`.
+- Restore reads volumes from the manifest folder, its `disc-N` subfolders and any extra folders the user adds, verifies each block, unpacks into a staging folder and only then replaces the game folder. Steam, GOG and custom records are rewritten against the new path; Epic and Amazon go through their existing import commands.
+- `disc.rs` drives Windows IMAPI2 through PowerShell: it lists recorders, requires a blank disc, builds a UDF image from one `disc-N` folder and writes it with the system engine. Burning is marked experimental until it passes on real CD/DVD/BD media. Linux `xorriso` and macOS `drutil`, Reed-Solomon parity and the standalone restorer remain open work; see `TODO.md`.

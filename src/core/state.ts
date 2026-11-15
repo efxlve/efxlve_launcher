@@ -10,9 +10,11 @@
  */
 import { EPIC_STORE_URL, type CloudBackupSettings, type CloudBackupEntry, type CloudFolderSuggestion } from "../epic";
 import type {
+  ArchiveDisc,
   ArchivePlan,
   ArchiveProgress,
   ArchiveSummary,
+  DiscRecorder,
   FoundArchive,
   MediaProfileInfo,
   RestoreResult,
@@ -631,6 +633,13 @@ export const S = {
   archiveRestoreTarget: "",
   archiveOverwrite: false,
   archiveRestoreResult: (null) as RestoreResult | null,
+  archiveDiscs: (null) as ArchiveDisc[] | null,
+  archiveDiscsManifest: "",
+  archiveDiscsLoading: false,
+  archiveBurnRecorders: (null) as DiscRecorder[] | null,
+  archiveBurnRecorder: "",
+  archiveBurning: (null) as number | null,
+  archiveBurnDone: (null) as number | null,
   cloudBackupSettings: (null) as CloudBackupSettings | null,
   cloudBackupTesting: false,
   cloudBackupSyncing: false,

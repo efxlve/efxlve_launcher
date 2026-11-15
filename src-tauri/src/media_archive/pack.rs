@@ -248,9 +248,24 @@ pub fn pack_game(job: PackJob) -> Result<PackOutcome, String> {
     );
     match result {
         Ok((manifest, stored_bytes)) => {
-            if let Err(error) = write_manifest(&staging, &manifest) {
-                let _ = std::fs::remove_dir_all(&staging);
-                return Err(error);
+            let manifest_path = match write_manifest(&staging, &manifest) {
+                Ok(path) => path,
+                Err(error) => {
+                    let _ = std::fs::remove_dir_all(&staging);
+                    return Err(error);
+                }
+            };
+            if manifest.disc_layout {
+                for volume in &manifest.volumes {
+                    let disc = staging.join(format!("disc-{}", volume.index));
+                    let copied = std::fs::create_dir_all(&disc).and_then(|_| {
+                        std::fs::copy(&manifest_path, disc.join(MANIFEST_FILE))
+                    });
+                    if let Err(error) = copied {
+                        let _ = std::fs::remove_dir_all(&staging);
+                        return Err(format!("@t:archive.manifestWrite\u{1f}{error}"));
+                    }
+                }
             }
             if let Err(error) = std::fs::rename(&staging, &final_dir) {
                 let _ = std::fs::remove_dir_all(&staging);
@@ -302,6 +317,7 @@ fn pack_into(
         staging.to_path_buf(),
         folder_name.to_string(),
         job.profile.volume_bytes,
+        job.profile.disc_layout(),
         ctx.output.clone(),
         ctx.volume.clone(),
     );
@@ -380,6 +396,7 @@ fn pack_into(
         volumes,
         store_meta: job.store_meta.clone(),
         complete: true,
+        disc_layout: job.profile.disc_layout(),
     };
     ctx.emit("finalizing", 100.0, "");
     Ok((manifest, stored_bytes))
@@ -597,6 +614,7 @@ struct VolumeWriter {
     dir: PathBuf,
     base: String,
     max_bytes: u64,
+    disc_layout: bool,
     next_index: u32,
     current: Option<CurrentVolume>,
     volumes: Vec<VolumeInfo>,
@@ -609,6 +627,7 @@ impl VolumeWriter {
         dir: PathBuf,
         base: String,
         max_bytes: u64,
+        disc_layout: bool,
         output: Arc<AtomicU64>,
         active: Arc<AtomicU32>,
     ) -> Self {
@@ -616,6 +635,7 @@ impl VolumeWriter {
             dir,
             base,
             max_bytes,
+            disc_layout,
             next_index: 1,
             current: None,
             volumes: Vec::new(),
@@ -628,7 +648,15 @@ impl VolumeWriter {
         let index = self.next_index;
         self.next_index += 1;
         let file_name = format!("{}.efxpak.{index:03}", self.base);
-        let path = self.dir.join(&file_name);
+        let volume_dir = if self.disc_layout {
+            let dir = self.dir.join(format!("disc-{index}"));
+            std::fs::create_dir_all(&dir)
+                .map_err(|error| format!("@t:archive.writeFailed\u{1f}{error}"))?;
+            dir
+        } else {
+            self.dir.clone()
+        };
+        let path = volume_dir.join(&file_name);
         let file = File::create(&path)
             .map_err(|error| format!("@t:archive.writeFailed\u{1f}{error}"))?;
         self.active.store(index, Ordering::Relaxed);
@@ -730,7 +758,8 @@ impl VolumeWriter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::media_archive::profile::resolve;
+    use crate::media_archive::format::MANIFEST_FILE;
+    use crate::media_archive::profile::{resolve, MediaProfileInfo};
 
     fn temp_root(name: &str) -> PathBuf {
         let root = std::env::temp_dir().join(format!(
@@ -808,6 +837,70 @@ mod tests {
             let path = outcome.folder.join(&volume.file_name);
             assert_eq!(std::fs::metadata(&path).unwrap().len(), volume.bytes);
         }
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn optical_layout_puts_one_volume_and_a_manifest_in_each_disc_folder() {
+        let root = temp_root("discs");
+        let game = root.join("Game");
+        std::fs::create_dir_all(&game).unwrap();
+        for index in 0..3 {
+            std::fs::write(
+                game.join(format!("part{index}.bin")),
+                noisy(60 * 1024, index as u64 + 80),
+            )
+            .unwrap();
+        }
+        let target = root.join("media");
+        std::fs::create_dir_all(&target).unwrap();
+        let outcome = pack_game(PackJob {
+            app_name: "steam::3".to_string(),
+            title: "Disc Layout".to_string(),
+            install_path: game,
+            target_root: target,
+            profile: MediaProfileInfo {
+                id: "dvd5".to_string(),
+                volume_bytes: 128 * 1024,
+                frame_bytes: 32 * 1024,
+                file_system: "UDF".to_string(),
+            },
+            level: 3,
+            window_log: 20,
+            store_meta: StoreMeta::default(),
+            sink: Arc::new(NoopSink),
+            cancel: Arc::new(AtomicBool::new(false)),
+        })
+        .unwrap();
+        assert!(outcome.manifest.disc_layout);
+        assert!(outcome.manifest.volumes.len() >= 2);
+        for volume in &outcome.manifest.volumes {
+            let disc = outcome.folder.join(format!("disc-{}", volume.index));
+            assert!(disc.join(&volume.file_name).is_file());
+            assert!(disc.join(MANIFEST_FILE).is_file());
+        }
+        let manifest =
+            crate::media_archive::format::read_manifest(&outcome.manifest_path).unwrap();
+        let (paths, missing) =
+            crate::media_archive::restore::locate_volumes(&manifest, &outcome.folder, &[]);
+        assert!(missing.is_empty());
+        assert_eq!(paths.len(), manifest.volumes.len());
+        let discs = crate::media_archive::commands::archive_discs(
+            outcome.manifest_path.display().to_string(),
+        )
+        .unwrap();
+        assert_eq!(discs.len(), manifest.volumes.len());
+        let per_disc = crate::media_archive::commands::archive_discs(
+            outcome
+                .folder
+                .join("disc-1")
+                .join(MANIFEST_FILE)
+                .display()
+                .to_string(),
+        )
+        .unwrap();
+        assert_eq!(per_disc.len(), 1);
+        assert_eq!(per_disc[0].volume_index, 1);
         let _ = std::fs::remove_dir_all(&root);
     }
 

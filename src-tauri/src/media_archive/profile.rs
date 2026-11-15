@@ -19,6 +19,15 @@ pub struct MediaProfileInfo {
 }
 
 impl MediaProfileInfo {
+    /// Optical profiles get one folder per disc; a USB drive keeps every part
+    /// in one flat folder.
+    pub fn disc_layout(&self) -> bool {
+        matches!(
+            self.id.as_str(),
+            "cd" | "dvd5" | "dvd9" | "bd25" | "bd50" | "bd100"
+        )
+    }
+
     fn new(id: &str, mib: u64, file_system: &str) -> Self {
         let volume_bytes = mib * MIB;
         Self {
@@ -160,6 +169,8 @@ mod tests {
         assert!(resolve("custom", Some(0)).is_err());
         assert!(resolve("custom", None).is_err());
         assert_eq!(resolve("fat32", None).unwrap().volume_bytes, 3_950 * MIB);
+        assert!(resolve("dvd5", None).unwrap().disc_layout());
+        assert!(!resolve("fat32", None).unwrap().disc_layout());
     }
 
     #[test]
