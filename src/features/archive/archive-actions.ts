@@ -23,6 +23,7 @@ import {
   archiveRestore,
   archiveScanFolder,
   archiveStart,
+  archiveVerify,
   archiveXtoolInstall,
   discBurnFolder,
   discErase,
@@ -66,6 +67,8 @@ export function archiveStageLabel(stage: string): string {
       return t("archive.stageFinalizing");
     case "restoring":
       return t("archive.stageRestoring");
+    case "verifying":
+      return t("archive.stageVerifying");
     case "registering":
       return t("archive.stageRegistering");
     case "done":
@@ -423,6 +426,7 @@ export function openArchiveForGame(appName: string): void {
   S.archiveTab = "backup";
   S.archivePlan = null;
   S.archiveResult = null;
+  S.archiveVerifyResult = null;
   S.archiveProgress = null;
   S.archiveTarget = "";
   S.archiveRunning = false;
@@ -648,6 +652,7 @@ async function selectFound(manifestPath: string): Promise<void> {
   S.archiveSelectedManifest = manifestPath;
   S.archiveExtraDirs = [];
   S.archiveRestoreResult = null;
+  S.archiveVerifyResult = null;
   clearBurnState();
   await applyRestoreDefaults(found);
   scheduleRender();
@@ -673,6 +678,47 @@ async function addPartsFolder(): Promise<void> {
     toast(localizeMessage(String(error)), "err");
   }
   scheduleRender();
+}
+
+/** Read-only block check: no target, free space or xtool is needed. */
+async function verifyArchive(manifestPath: string): Promise<void> {
+  const found = S.archiveFound?.find((item) => item.manifestPath === manifestPath);
+  if (
+    !found ||
+    S.archiveRunning ||
+    S.archiveBurning !== null ||
+    S.archiveErasing ||
+    S.archiveXtoolInstalling ||
+    S.archiveEstimating
+  ) {
+    return;
+  }
+  S.archiveRunning = true;
+  S.archiveActiveId = found.manifest.appName;
+  S.archiveProgress = null;
+  S.archiveVerifyResult = null;
+  scheduleRender();
+  try {
+    const result = await archiveVerify(manifestPath, S.archiveExtraDirs);
+    S.archiveVerifyResult = result;
+    toast(
+      t("archive.verifyDone", {
+        blocks: result.blocks,
+        volumes: result.volumeCount,
+      }),
+      "ok",
+    );
+  } catch (error) {
+    const raw = String(error);
+    if (!raw.includes("archive.cancelled")) {
+      toast(localizeMessage(raw), "err");
+    }
+  } finally {
+    S.archiveRunning = false;
+    S.archiveActiveId = "";
+    S.archiveProgress = null;
+    scheduleRender();
+  }
 }
 
 /** The store record changed on disk; reload the matching library view so the
@@ -772,6 +818,7 @@ export function handleArchiveAction(
       "archive-burn-refresh",
       "archive-pick-restore-target",
       "archive-profile",
+      "archive-verify",
       "archive-pick-xtool",
       "archive-xtool-install",
     ].includes(act ?? "")
@@ -913,6 +960,11 @@ export function handleArchiveAction(
         scheduleRender();
       }
     });
+    return true;
+  }
+  if (act === "archive-verify") {
+    const manifestPath = target.dataset.manifest || S.archiveSelectedManifest;
+    void verifyArchive(manifestPath);
     return true;
   }
   if (act === "archive-restore-start") {

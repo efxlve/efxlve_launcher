@@ -9,6 +9,12 @@ const ipc = vi.hoisted(() => ({
   burn: vi.fn(async () => undefined),
   estimate: vi.fn(async () => ({}) as ArchiveEstimate),
   cancel: vi.fn(async () => true),
+  verify: vi.fn(async () => ({
+    appName: "steam::1",
+    title: "Game",
+    blocks: 1,
+    volumeCount: 1,
+  })),
 }));
 
 vi.mock("../../archive", async (importOriginal) => {
@@ -22,6 +28,7 @@ vi.mock("../../archive", async (importOriginal) => {
     discBurnFolder: ipc.burn,
     archiveEstimate: ipc.estimate,
     archiveCancel: ipc.cancel,
+    archiveVerify: ipc.verify,
   };
 });
 
@@ -31,7 +38,7 @@ vi.mock("../../core/toast", () => ({
   progressToast: vi.fn(() => ({ update: vi.fn(), close: vi.fn() })),
 }));
 
-import type { ArchiveEstimate, ArchiveSummary } from "../../archive";
+import type { ArchiveEstimate, ArchiveSummary, FoundArchive } from "../../archive";
 import { S } from "../../core/state";
 import type { LibraryItem } from "../../core/types";
 import {
@@ -66,6 +73,8 @@ beforeEach(() => {
   S.archiveBurnRecorder = "";
   S.archiveBurnDone = null;
   S.archiveEstimate = null;
+  S.archiveFound = null;
+  S.archiveVerifyResult = null;
   S.allGamesMap.clear();
   ipc.scan.mockClear();
   ipc.install.mockClear();
@@ -74,6 +83,7 @@ beforeEach(() => {
   ipc.burn.mockClear();
   ipc.estimate.mockClear();
   ipc.cancel.mockClear();
+  ipc.verify.mockClear();
 });
 
 describe("archive busy guards", () => {
@@ -193,5 +203,31 @@ describe("archive busy guards", () => {
 
     expect(S.archiveEraseFull).toBe(true);
     expect(S.archiveEraseArmed).toBe(false);
+  });
+
+  it("verifies the selected archive without a restore target", async () => {
+    const manifestPath = "C:\\archives\\manifest.efxmeta.json";
+    S.archiveFound = [
+      {
+        manifestPath,
+        manifest: {
+          appName: "steam::1",
+          title: "Game",
+          volumes: [],
+        },
+        missingVolumes: [],
+        storedBytes: 10,
+      } as unknown as FoundArchive,
+    ];
+    const target = document.createElement("button");
+    target.dataset.manifest = manifestPath;
+
+    expect(handleArchiveAction("archive-verify", undefined, target)).toBe(true);
+
+    await vi.waitFor(() =>
+      expect(ipc.verify).toHaveBeenCalledWith(manifestPath, []),
+    );
+    await vi.waitFor(() => expect(S.archiveVerifyResult?.blocks).toBe(1));
+    expect(S.archiveRunning).toBe(false);
   });
 });

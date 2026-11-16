@@ -42,6 +42,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `archive_restore` | `archiveRestore({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `archive_scan_folder` | `archiveScanFolder({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `archive_start` | `archiveStart({ ... })` | `src-tauri/src/media_archive/commands.rs` |
+| `archive_verify` | `archiveVerify({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `archive_xtool_install` | `archiveXtoolInstall({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `cache_images` | `cacheImages({ ... })` | `src-tauri/src/image_cache.rs` |
 | `check_install_path_state` | `checkInstallPathState({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |

@@ -42,6 +42,12 @@ pub struct RestoreOutcome {
     pub bytes: u64,
 }
 
+#[derive(Debug)]
+pub struct VerifyOutcome {
+    pub blocks: u32,
+    pub volume_count: u32,
+}
+
 /// Resolves every volume of a backup. Each file is searched in the manifest
 /// folder first, then in the folders the user added for other discs.
 pub fn locate_volumes(
@@ -271,6 +277,62 @@ pub fn restore_game(job: RestoreJob) -> Result<RestoreOutcome, String> {
     }
 }
 
+/// Reads every block and checks its SHA-256 without writing anything. xtool is
+/// not needed: the block hash covers the xtool output before zstd.
+pub fn verify_archive(
+    manifest: &MediaManifest,
+    manifest_dir: &Path,
+    extra_dirs: &[PathBuf],
+    sink: Arc<dyn ProgressSink>,
+    cancel: Arc<AtomicBool>,
+) -> Result<VerifyOutcome, String> {
+    manifest.validate()?;
+    let (volume_paths, missing) = locate_volumes(manifest, manifest_dir, extra_dirs);
+    if let Some(index) = missing.first() {
+        let name = manifest
+            .volumes
+            .iter()
+            .find(|volume| volume.index == *index)
+            .map(|volume| volume.file_name.clone())
+            .unwrap_or_default();
+        return Err(format!("@t:archive.missingVolume\u{1f}{index}\u{1f}{name}"));
+    }
+    verify_volume_shapes(manifest, &volume_paths)?;
+    let reader = VolumeSequenceReader::new(volume_paths);
+    let mut block_reader = BlockReader {
+        inner: reader,
+        decompressor: zstd::bulk::Decompressor::new()
+            .map_err(|error| format!("@t:archive.readFailed\u{1f}{error}"))?,
+        pending: Vec::new(),
+        pos: 0,
+        block_index: 0,
+        total_blocks: manifest.total_blocks(),
+        max_frame_bytes: manifest.compression.frame_bytes,
+        volume_for_block: manifest.volume_for_blocks(),
+        processed: Arc::new(AtomicU64::new(0)),
+        total_bytes: manifest.original_bytes,
+        sink,
+        cancel,
+        id: manifest.app_name.clone(),
+        current_file: Arc::new(Mutex::new(String::new())),
+        start: Instant::now(),
+        last_emit: Instant::now(),
+        stage: "verifying",
+    };
+    io::copy(&mut block_reader, &mut io::sink()).map_err(extraction_error)?;
+    if block_reader.block_index != manifest.total_blocks() {
+        return Err(format!(
+            "@t:archive.volumeCorrupt\u{1f}{}\u{1f}{}",
+            manifest.volumes.last().map(|volume| volume.index).unwrap_or(1),
+            block_reader.block_index
+        ));
+    }
+    Ok(VerifyOutcome {
+        blocks: block_reader.block_index,
+        volume_count: manifest.volumes.len() as u32,
+    })
+}
+
 fn extract_all(
     job: &RestoreJob,
     volume_paths: &[PathBuf],
@@ -298,6 +360,7 @@ fn extract_all(
         current_file: current_file.clone(),
         start: Instant::now(),
         last_emit: Instant::now(),
+        stage: "restoring",
     };
     let mut archive = tar::Archive::new(
         if job.manifest.compression.precompressor.as_deref() == Some("xtool") {
@@ -651,6 +714,8 @@ struct BlockReader {
     current_file: Arc<Mutex<String>>,
     start: Instant,
     last_emit: Instant,
+    /// `restoring` for a real restore, `verifying` for a read-only check.
+    stage: &'static str,
 }
 
 impl BlockReader {
@@ -781,7 +846,7 @@ impl BlockReader {
             .unwrap_or_default();
         self.sink.emit(ArchiveProgress {
             id: self.id.clone(),
-            stage: "restoring".to_string(),
+            stage: self.stage.to_string(),
             percent: (percent * 10.0).round() / 10.0,
             processed_bytes: processed,
             total_bytes: self.total_bytes,
@@ -1059,6 +1124,56 @@ mod tests {
             );
             assert_eq!(event.volume_count, total);
         }
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_healthy_backup_verifies_without_a_target() {
+        let root = temp_root("verify-ok");
+        let (_game, folder, manifest_path) = pack_fixture(&root, 32 * 1024);
+        let manifest = crate::media_archive::format::read_manifest(&manifest_path).unwrap();
+        let events = Arc::new(Mutex::new(Vec::new()));
+
+        let outcome = verify_archive(
+            &manifest,
+            &folder,
+            &[],
+            Arc::new(CaptureSink(events.clone())),
+            Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap();
+
+        assert_eq!(outcome.blocks, manifest.total_blocks());
+        assert_eq!(outcome.volume_count, manifest.volumes.len() as u32);
+        let events = events.lock().unwrap();
+        assert!(!events.is_empty());
+        assert!(events.iter().all(|event| event.stage == "verifying"));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_flipped_block_fails_verification() {
+        let root = temp_root("verify-bad");
+        let (_game, folder, manifest_path) = pack_fixture(&root, 64 * 1024);
+        let manifest = crate::media_archive::format::read_manifest(&manifest_path).unwrap();
+        let path = folder.join(&manifest.volumes[0].file_name);
+        let mut bytes = std::fs::read(&path).unwrap();
+        bytes[BLOCK_HEADER_BYTES + 8] ^= 0xFF;
+        std::fs::write(&path, &bytes).unwrap();
+
+        let error = verify_archive(
+            &manifest,
+            &folder,
+            &[],
+            Arc::new(NoopSink),
+            Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap_err();
+
+        assert!(
+            error.contains("blockCorrupt") || error.contains("volumeCorrupt"),
+            "{error}"
+        );
         let _ = std::fs::remove_dir_all(&root);
     }
 

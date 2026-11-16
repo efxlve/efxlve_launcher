@@ -189,6 +189,13 @@ export interface ArchiveDefaultTarget {
   finalPath: string;
 }
 
+export interface ArchiveVerifyResult {
+  appName: string;
+  title: string;
+  blocks: number;
+  volumeCount: number;
+}
+
 export const archiveProfiles = () => invoke<MediaProfileInfo[]>("archive_profiles");
 
 export const archivePlan = (args: {
@@ -290,3 +297,6 @@ export const archiveRestore = (args: {
     overwrite: args.overwrite,
     xtoolPath: args.xtoolPath?.trim() ? args.xtoolPath.trim() : null,
   });
+
+export const archiveVerify = (manifestPath: string, extraDirs: string[]) =>
+  invoke<ArchiveVerifyResult>("archive_verify", { manifestPath, extraDirs });

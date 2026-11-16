@@ -591,6 +591,11 @@ function renderRestoreDetail(): string {
         <span>${t("archive.overwrite")}</span>
       </label>
       <div class="archive-note">${t("archive.restoreHint")}</div>
+      <div class="archive-actions">
+        <button type="button" class="btn ghost small" data-act="archive-verify" data-manifest="${esc(found.manifestPath)}" ${busy || S.archiveEstimating || S.archiveXtoolInstalling ? "disabled" : ""}>${icon("shield-check", 13)} ${t("archive.verify")}</button>
+      </div>
+      <div class="archive-note">${t("archive.verifyHint")}</div>
+      ${renderVerifyResult()}
       ${
         manifest.discLayout && IS_WINDOWS
           ? S.archiveDiscsManifest === found.manifestPath
@@ -599,6 +604,12 @@ function renderRestoreDetail(): string {
           : ""
       }
     </div>`;
+}
+
+function renderVerifyResult(): string {
+  const result = S.archiveVerifyResult;
+  if (!result) return "";
+  return `<div class="archive-ok">${icon("check-circle", 13)} ${t("archive.verifySummary", { blocks: result.blocks, volumes: result.volumeCount })}</div>`;
 }
 
 function renderRestoreResult(result: RestoreResult | null): string {

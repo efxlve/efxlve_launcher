@@ -14,7 +14,7 @@ use super::estimate::{self, ArchiveEstimate};
 use super::format::{read_manifest, CompressionInfo, MediaManifest, VolumeInfo, MANIFEST_FILE};
 use super::pack::{pack_game, scan_tree, unique_archive_folder, PackJob, ProgressSink};
 use super::profile::{self, MediaProfileInfo};
-use super::restore::{locate_volumes, restore_game, RestoreJob};
+use super::restore::{locate_volumes, restore_game, verify_archive, RestoreJob};
 use super::store::{self, RestoreRegistration, StorePending};
 use super::xtool::{self, Xtool};
 use super::ArchiveProgress;
@@ -149,6 +149,15 @@ pub struct RestoreResult {
     pub file_count: u64,
     pub bytes: u64,
     pub registration: RestoreRegistration,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ArchiveVerifyResult {
+    pub app_name: String,
+    pub title: String,
+    pub blocks: u32,
+    pub volume_count: u32,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -811,6 +820,50 @@ pub async fn archive_restore(
         file_count: outcome.file_count,
         bytes: outcome.bytes,
         registration,
+    })
+}
+
+#[tauri::command]
+pub async fn archive_verify(
+    app: AppHandle,
+    manifest_path: String,
+    extra_dirs: Vec<String>,
+) -> Result<ArchiveVerifyResult, String> {
+    let path = PathBuf::from(&manifest_path);
+    let (path, manifest_dir) = resolve_manifest_path(&path)?;
+    let manifest = read_manifest(&path)?;
+    let (guard, cancel) = begin(&manifest.app_name)?;
+    let extras: Vec<PathBuf> = extra_dirs.into_iter().map(PathBuf::from).collect();
+    let sink: Arc<dyn ProgressSink> = Arc::new(AppProgressSink { app });
+    sink.emit(ArchiveProgress {
+        id: manifest.app_name.clone(),
+        stage: "verifying".to_string(),
+        percent: 0.0,
+        processed_bytes: 0,
+        total_bytes: manifest.original_bytes,
+        output_bytes: 0,
+        speed_bytes: 0.0,
+        eta_seconds: 0,
+        current_file: String::new(),
+        volume: 1,
+        volume_count: manifest.volumes.len() as u32,
+        error: None,
+    });
+    let app_name = manifest.app_name.clone();
+    let title = manifest.title.clone();
+    let _awake = crate::keep_awake::keep_awake();
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        verify_archive(&manifest, &manifest_dir, &extras, sink, cancel)
+    })
+    .await
+    .map_err(|error| error.to_string())?;
+    drop(guard);
+    let outcome = result?;
+    Ok(ArchiveVerifyResult {
+        app_name,
+        title,
+        blocks: outcome.blocks,
+        volume_count: outcome.volume_count,
     })
 }
 
