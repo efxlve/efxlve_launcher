@@ -68,6 +68,8 @@ The current release is **v0.1.59**:
 
 The `.sig` files and `latest.json` are **updater metadata**, not installers. The app downloads them itself; you never need to open them.
 
+`efxlve-restore.exe` (also inside the portable zip) recovers an archive on a PC without the launcher; `--verify` checks every block without writing anything. It only restores files; Steam, Epic and Amazon still need their client and an account that owns the game.
+
 Requirements: Windows needs Microsoft Edge WebView2 (pre-installed on Windows 11). Linux needs a desktop with GTK3/WebKitGTK 4.1; the AppImage bundles what it can. The macOS build is an **Apple Silicon preview** and is not notarized yet.
 
 ### Portable mode
@@ -233,6 +235,7 @@ Direct dependencies of the backend; each crate keeps its own license:
 - [flate2](https://github.com/rust-lang/flate2) / [tar](https://github.com/alexcrichton/tar-rs) — archive extraction for store tools.
 - [xz2](https://github.com/alexcrichton/xz2-rs) / [zstd](https://github.com/gyscos/zstd-rs) — `.tar.xz` and `.tar.zst` runtime archives.
 - [sha2](https://github.com/RustCrypto/hashes) — checksums for downloaded binaries.
+- [ctrlc](https://github.com/Detegr/rust-ctrlc) — Ctrl+C handling in the standalone restorer.
 - [rsa](https://github.com/RustCrypto/RSA) — Steam sign-in encryption.
 - [zeroize](https://github.com/RustCrypto/utils) — wiping secrets from memory.
 - [rand](https://github.com/rust-random/rand), [base64](https://github.com/marshallpierce/rust-base64), [url](https://github.com/servo/rust-url) — protocol helpers.

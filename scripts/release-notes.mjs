@@ -55,6 +55,8 @@ const download = [
   "",
   "`.sig` files and `latest.json` are updater metadata; normal users do not need them.",
   "",
+  "`efxlve-restore.exe` recovers an archive on a PC without the launcher. It only restores files; Steam, Epic and Amazon still need their client and an owning account.",
+  "",
 ];
 
 const body = [

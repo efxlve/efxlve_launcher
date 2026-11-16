@@ -110,6 +110,10 @@ jobs:
         if: matrix.target != ''
         run: rustup target add ${{ matrix.target }}
 
+      - name: Build the standalone restorer
+        if: matrix.platform == 'windows-latest'
+        run: cargo build --manifest-path src-tauri/Cargo.toml --release --bin efxlve-restore
+
       - name: Build and publish release
         uses: tauri-apps/tauri-action@v1
         env:
@@ -151,10 +155,12 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force portable | Out-Null
           Copy-Item src-tauri/target/release/efxlve-launcher.exe portable/
+          Copy-Item src-tauri/target/release/efxlve-restore.exe portable/
           Set-Content -Path portable/portable.txt -Value "portable"
           @"
           Efxlve Launcher portable
           Run efxlve-launcher.exe. Launcher data stays in portable-data next to this file.
+          efxlve-restore.exe recovers an archive on a PC without the launcher. It only restores files; store clients and an owning account are still required.
           "@ | Set-Content -Path portable/README.txt
           Compress-Archive -Path portable/* -DestinationPath efxlve-launcher-portable.zip -Force
 
@@ -166,6 +172,15 @@ jobs:
         run: |
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           gh release upload "v$version" efxlve-launcher-portable.zip --clobber
+
+      - name: Upload the standalone restorer
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          gh release upload "v$version" src-tauri/target/release/efxlve-restore.exe --clobber
 
   publish-release:
     needs: publish-tauri

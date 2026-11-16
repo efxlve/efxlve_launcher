@@ -49,29 +49,7 @@ pub struct LocalRegistration {
     pub pending: Option<StorePending>,
 }
 
-pub fn store_of(app_name: &str) -> &'static str {
-    if app_name.starts_with("steam::") {
-        "steam"
-    } else if app_name.starts_with("gog::") {
-        "gog"
-    } else if app_name.starts_with("amazon::") {
-        "amazon"
-    } else if app_name.starts_with("custom::") {
-        "custom"
-    } else if app_name.starts_with("ubisoft::") {
-        "ubisoft"
-    } else if app_name.starts_with("ea::") {
-        "ea"
-    } else if app_name.starts_with("xbox::") {
-        "xbox"
-    } else if app_name.starts_with("battlenet::") {
-        "battlenet"
-    } else if app_name.starts_with("riot::") {
-        "riot"
-    } else {
-        "epic"
-    }
-}
+pub use crate::store_label::store_of;
 
 /// Small store records for the manifest. Missing records are fine; the restore
 /// simply reports that the store needs a manual import.

@@ -65,6 +65,9 @@ jobs:
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml
 
+      - name: Standalone restore build
+        run: cargo build --manifest-path src-tauri/Cargo.toml --bin efxlve-restore
+
   linux:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
@@ -112,6 +115,9 @@ jobs:
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml
 
+      - name: Standalone restore build
+        run: cargo build --manifest-path src-tauri/Cargo.toml --bin efxlve-restore
+
   macos:
     runs-on: macos-latest
     timeout-minutes: 60
@@ -146,3 +152,6 @@ jobs:
 
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml
+
+      - name: Standalone restore build
+        run: cargo build --manifest-path src-tauri/Cargo.toml --bin efxlve-restore
