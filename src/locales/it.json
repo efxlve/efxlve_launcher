@@ -4339,5 +4339,9 @@
   "archive.storeIdInvalid": "Il backup ha un ID negozio non valido; il gioco è stato ripristinato ma non registrato.",
   "archive.xtoolBusy": "xtool è già in fase di installazione.",
   "disc.busy": "Un'altra operazione sul disco è già in corso.",
-  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first.",
+  "xbox.buy": "Acquista",
+  "xbox.buyHint": "Non possiedi questo gioco. Apri Microsoft Store per acquistarlo.",
+  "xbox.subscribe": "Abbonati",
+  "xbox.subscribeHint": "Questo gioco è incluso in Game Pass. Abbonati o acquistalo per giocare."
 }

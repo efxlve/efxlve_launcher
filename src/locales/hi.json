@@ -4339,5 +4339,9 @@
   "archive.storeIdInvalid": "बैकअप में अमान्य स्टोर आईडी है; गेम पुनर्स्थापित हो गया लेकिन पंजीकृत नहीं हुआ।",
   "archive.xtoolBusy": "xtool पहले से इंस्टॉल किया जा रहा है।",
   "disc.busy": "एक अन्य डिस्क ऑपरेशन पहले से चल रहा है।",
-  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first.",
+  "xbox.buy": "खरीदें",
+  "xbox.buyHint": "आपके पास यह गेम नहीं है। इसे खरीदने के लिए Microsoft Store खोलें।",
+  "xbox.subscribe": "सब्सक्राइब",
+  "xbox.subscribeHint": "यह गेम Game Pass में शामिल है। खेलने के लिए सब्सक्राइब करें या इसे खरीदें।"
 }

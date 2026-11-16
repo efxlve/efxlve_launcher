@@ -4339,5 +4339,9 @@
   "archive.storeIdInvalid": "В архиве указан некорректный ID магазина; игра восстановлена, но не зарегистрирована.",
   "archive.xtoolBusy": "Установка xtool уже выполняется.",
   "disc.busy": "Уже выполняется другая операция с диском.",
-  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first.",
+  "xbox.buy": "Купить",
+  "xbox.buyHint": "У вас нет этой игры. Откройте Microsoft Store, чтобы купить её.",
+  "xbox.subscribe": "Подписаться",
+  "xbox.subscribeHint": "Эта игра входит в Game Pass. Оформите подписку или купите игру, чтобы играть."
 }

@@ -470,6 +470,21 @@ fn read_disk() -> Option<Vec<GamePassTitle>> {
     Some(cache.titles)
 }
 
+/// The last catalog written to disk, even after the refresh window. The
+/// library uses it to label a title as Game Pass without waiting for a fetch;
+/// the boolean is false once the list is stale or missing, so the caller can
+/// refresh it in the background.
+pub(crate) fn cached_titles() -> (Vec<GamePassTitle>, bool) {
+    let Ok(text) = std::fs::read_to_string(cache_path()) else {
+        return (Vec::new(), false);
+    };
+    let Ok(cache) = serde_json::from_str::<DiskCache>(&text) else {
+        return (Vec::new(), false);
+    };
+    let fresh = !cache.titles.is_empty() && now_secs().saturating_sub(cache.fetched) <= TTL.as_secs();
+    (cache.titles, fresh)
+}
+
 fn write_disk(titles: &[GamePassTitle]) {
     let path = cache_path();
     if let Some(parent) = path.parent() {

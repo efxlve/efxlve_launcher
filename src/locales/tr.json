@@ -4339,5 +4339,9 @@
   "archive.storeIdInvalid": "Yedekte geçersiz bir mağaza kimliği var; oyun geri yüklendi ama mağazaya kaydedilmedi.",
   "archive.xtoolBusy": "xtool zaten kuruluyor.",
   "disc.busy": "Başka bir disk işlemi zaten sürüyor.",
-  "archive.jobRunning": "Zaten bir arşiv veya disk işlemi sürüyor. Önce bitir veya iptal et."
+  "archive.jobRunning": "Zaten bir arşiv veya disk işlemi sürüyor. Önce bitir veya iptal et.",
+  "xbox.buy": "Satın al",
+  "xbox.buyHint": "Bu oyuna sahip değilsin. Satın almak için Microsoft Store'u aç.",
+  "xbox.subscribe": "Abone ol",
+  "xbox.subscribeHint": "Bu oyun Game Pass'ta. Tekrar oynamak için abone ol veya satın al."
 }

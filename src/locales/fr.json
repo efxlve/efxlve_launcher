@@ -4339,5 +4339,9 @@
   "archive.storeIdInvalid": "La sauvegarde contient un identifiant de boutique invalide ; le jeu a été restauré mais non enregistré.",
   "archive.xtoolBusy": "xtool est déjà en cours d'installation.",
   "disc.busy": "Une autre opération sur le disque est déjà en cours.",
-  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first.",
+  "xbox.buy": "Acheter",
+  "xbox.buyHint": "Vous ne possédez pas ce jeu. Ouvrez le Microsoft Store pour l'acheter.",
+  "xbox.subscribe": "S'abonner",
+  "xbox.subscribeHint": "Ce jeu est inclus dans Game Pass. Abonnez-vous ou achetez-le pour jouer."
 }

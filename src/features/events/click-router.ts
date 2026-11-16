@@ -135,7 +135,7 @@ import { clearReleaseCalendarSearch, closeReleaseCalendar, closeReleaseStores, i
 import { handleLibraryOptionAction, syncDensityControl, syncDensityMenu } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
-import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaContentCancel, eaContentPlan, eaContentUninstall, eaContentVerify, eaDirectSetEnabled, eaLoginOpen, isTransientUbisoftError, ubiDirectAdopt, ubiDirectCancel, ubiDirectCloudSaves, ubiDirectImportSaves, ubiDirectMove, ubiDirectRelease, ubiDirectSetEnabled, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, ubiStoreSignin, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxUninstall, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaContentCancel, eaContentPlan, eaContentUninstall, eaContentVerify, eaDirectSetEnabled, eaLoginOpen, isTransientUbisoftError, ubiDirectAdopt, ubiDirectCancel, ubiDirectCloudSaves, ubiDirectImportSaves, ubiDirectMove, ubiDirectRelease, ubiDirectSetEnabled, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, ubiStoreSignin, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxOpenGamePass, xboxOpenStore, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { collectionGames } from "../../core/game-collections";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
@@ -978,6 +978,11 @@ document.addEventListener("click", (e) => {
     void call.catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "xbox-install-cancel" && id) {
     void xboxInstallCancel(id).catch(() => {});
+  } else if (act === "xbox-buy" && id) {
+    // The Store page owns the purchase flow and the licence check.
+    void xboxOpenStore(id).catch((e: unknown) => toast(String(e), "err"));
+  } else if (act === "xbox-subscribe") {
+    void xboxOpenGamePass().catch((e: unknown) => toast(String(e), "err"));
   } else if (act === "companion-uninstall" && id) {
     const store = (t.dataset.store as CompanionStore) || "ubisoft";
     const gameId = id.startsWith(`${store}::`) ? id.slice(store.length + 2) : id;

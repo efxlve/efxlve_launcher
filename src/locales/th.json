@@ -4339,5 +4339,9 @@
   "archive.storeIdInvalid": "ข้อมูลสำรองมีรหัสร้านค้าไม่ถูกต้อง กู้คืนเกมแล้วแต่ยังไม่ได้ลงทะเบียน",
   "archive.xtoolBusy": "กำลังติดตั้ง xtool อยู่แล้ว",
   "disc.busy": "มีการทำงานกับแผ่นดิสก์อื่นกำลังดำเนินอยู่แล้ว",
-  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first.",
+  "xbox.buy": "ซื้อ",
+  "xbox.buyHint": "คุณยังไม่ได้เป็นเจ้าของเกมนี้ เปิด Microsoft Store เพื่อซื้อ",
+  "xbox.subscribe": "สมัคร",
+  "xbox.subscribeHint": "เกมนี้อยู่ใน Game Pass สมัครหรือซื้อเพื่อเล่น"
 }

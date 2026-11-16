@@ -4339,5 +4339,9 @@
   "archive.storeIdInvalid": "백업의 스토어 ID가 잘못되었습니다. 게임은 복원되었지만 스토어에 등록되지 않았습니다.",
   "archive.xtoolBusy": "xtool이 이미 설치 중입니다.",
   "disc.busy": "다른 디스크 작업이 이미 실행 중입니다.",
-  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first.",
+  "xbox.buy": "구매",
+  "xbox.buyHint": "이 게임을 소유하고 있지 않습니다. Microsoft Store에서 구매하세요.",
+  "xbox.subscribe": "구독",
+  "xbox.subscribeHint": "이 게임은 Game Pass에 포함되어 있습니다. 구독하거나 구매하면 플레이할 수 있습니다."
 }

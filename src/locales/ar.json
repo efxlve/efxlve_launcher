@@ -4339,5 +4339,9 @@
   "archive.storeIdInvalid": "تحتوي النسخة الاحتياطية على معرّف متجر غير صالح؛ تمت استعادة اللعبة دون تسجيلها.",
   "archive.xtoolBusy": "يجري تثبيت xtool بالفعل.",
   "disc.busy": "توجد عملية قرص أخرى قيد التشغيل بالفعل.",
-  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first.",
+  "xbox.buy": "شراء",
+  "xbox.buyHint": "أنت لا تملك هذه اللعبة. افتح Microsoft Store لشرائها.",
+  "xbox.subscribe": "اشترك",
+  "xbox.subscribeHint": "هذه اللعبة متضمنة في Game Pass. اشترك أو اشترِ اللعبة للعب."
 }

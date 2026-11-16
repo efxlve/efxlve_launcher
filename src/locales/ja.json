@@ -4339,5 +4339,9 @@
   "archive.storeIdInvalid": "バックアップのストア ID が無効です。ゲームは復元されましたが登録されませんでした。",
   "archive.xtoolBusy": "xtool はすでにインストール処理中です。",
   "disc.busy": "別のディスク操作がすでに実行中です。",
-  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first.",
+  "xbox.buy": "購入",
+  "xbox.buyHint": "このゲームを所有していません。Microsoft Store で購入してください。",
+  "xbox.subscribe": "登録",
+  "xbox.subscribeHint": "このゲームは Game Pass に含まれています。登録するか購入するとプレイできます。"
 }

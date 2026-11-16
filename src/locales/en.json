@@ -4339,5 +4339,9 @@
   "archive.storeIdInvalid": "The backup has an invalid store id; the game was restored but not registered.",
   "archive.xtoolBusy": "xtool is already being installed.",
   "disc.busy": "Another disc operation is already running.",
-  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first.",
+  "xbox.buy": "Buy",
+  "xbox.buyHint": "You don't own this game. Open the Microsoft Store to buy it.",
+  "xbox.subscribe": "Subscribe",
+  "xbox.subscribeHint": "This game is on Game Pass. Subscribe or buy it to play."
 }

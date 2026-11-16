@@ -178,6 +178,18 @@ export interface LibraryItem {
   genres?: string[];
   /** Release year for the library filters (null when unknown). */
   releaseYear?: number | null;
+  /**
+   * Store-side entitlement facts for a companion game (Xbox today). Absent for
+   * stores that do not report a library. `none` means the title is neither
+   * purchased nor covered by an active subscription.
+   */
+  access?: {
+    ownership: "owned" | "gamePass" | "none" | "unknown";
+    /** Store product id, empty when the store answered none. */
+    productId: string;
+    /** True while the public Game Pass catalog lists the title. */
+    gamePass: boolean;
+  };
 }
 
 /** Installed facts a primary-store card borrows from a matching EA App copy. */

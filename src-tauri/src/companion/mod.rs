@@ -35,8 +35,10 @@ mod ubisoft_login;
 mod ubi_vault;
 mod xbox_catalog;
 mod xbox_deploy;
+mod xbox_entitlements;
 mod xbox_installed;
 mod xbox_login;
+mod xbox_subscription;
 mod xbox_vault;
 pub(crate) use ubisoft_login::{accept_session as accept_ubi_session, watch_script as ubi_watch_script};
 use ubisoft_login::UbiSync;
@@ -131,6 +133,30 @@ pub struct CompanionGame {
     pub achievements_total: u32,
     pub achievements_xp: u32,
     pub achievements_total_xp: u32,
+    /// Store page id of an Xbox title, empty when the store answers none.
+    pub product_id: String,
+    /// True while the public Game Pass catalog lists this Xbox title.
+    pub game_pass: bool,
+    /// False when the catalog on disk was missing or stale; the app refreshes
+    /// it once in the background and re-reads the library.
+    pub game_pass_checked: bool,
+    /// What the signed-in Store account can do with this title right now.
+    pub access: CompanionAccess,
+}
+
+/// Store-side access to one companion title. `unknown` must keep the normal
+/// install button: a cache that failed to answer is not proof of no purchase.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum CompanionAccess {
+    /// Purchased, shared, or otherwise licensed in the Store library.
+    Owned,
+    /// Covered by an active Game Pass subscription.
+    GamePass,
+    /// No purchase and no active subscription; the card offers buy/subscribe.
+    None,
+    /// The local Store caches did not answer.
+    Unknown,
 }
 
 const STORES: &[&str] = &["ea", "ubisoft", "xbox", "battlenet", "riot"];
@@ -217,6 +243,10 @@ fn to_public(game: &FoundGame, cover: &str, hero: &str, developer: &str) -> Comp
         achievements_total: 0,
         achievements_xp: 0,
         achievements_total_xp: 0,
+        product_id: String::new(),
+        game_pass: false,
+        game_pass_checked: false,
+        access: CompanionAccess::Unknown,
     }
 }
 
@@ -238,12 +268,87 @@ fn xbox_progress<'a>(game: &FoundGame, owned: &'a [xbox_login::OwnedGame]) -> Op
     owned.iter().find(|row| ea::normalize_title(&row.name) == wanted)
 }
 
+/// The Game Pass titles known on disk, matched by package family name first and
+/// by normalized title when the catalog ships no package (EA Play titles).
+#[derive(Default)]
+struct GamePassIndex {
+    pfns: HashSet<String>,
+    titles: HashSet<String>,
+    /// True when the on-disk catalog is inside its refresh window.
+    fresh: bool,
+}
+
+impl GamePassIndex {
+    fn load() -> Self {
+        let (titles, fresh) = xbox_catalog::cached_titles();
+        let mut pfns = HashSet::new();
+        let mut names = HashSet::new();
+        for title in titles {
+            if !title.pfn.is_empty() {
+                pfns.insert(title.pfn.to_ascii_lowercase());
+            }
+            let name = ea::normalize_title(&title.title);
+            if !name.is_empty() {
+                names.insert(name);
+            }
+        }
+        Self { pfns, titles: names, fresh }
+    }
+
+    fn contains(&self, pfn: &str, name: &str) -> bool {
+        (!pfn.is_empty() && self.pfns.contains(&pfn.to_ascii_lowercase()))
+            || self.titles.contains(&ea::normalize_title(name))
+    }
+}
+
+/// What the Store account can do with one Xbox title. A title the player once
+/// played through Game Pass stays in the history but is absent from the Store
+/// library, so it offers a purchase or a new subscription instead of a download.
+fn xbox_access(
+    row: &xbox_login::OwnedGame,
+    entitlements: &xbox_entitlements::Snapshot,
+    game_pass: bool,
+    subscription: Option<bool>,
+) -> CompanionAccess {
+    if !entitlements.known {
+        return CompanionAccess::Unknown;
+    }
+    if !row.product_id.is_empty() && entitlements.owned.contains(&row.product_id) {
+        return CompanionAccess::Owned;
+    }
+    if game_pass {
+        return match (subscription, row.product_id.is_empty()) {
+            (Some(true), _) => CompanionAccess::GamePass,
+            // Without a product id there is no Store page to buy from, so the
+            // row keeps its install action instead of an unusable Buy button.
+            (Some(false), false) => CompanionAccess::None,
+            _ => CompanionAccess::Unknown,
+        };
+    }
+    // No product id means no way to compare against the Store library; never
+    // claim a purchase is missing.
+    if row.product_id.is_empty() {
+        return CompanionAccess::Unknown;
+    }
+    CompanionAccess::None
+}
+
 fn with_cached_art(games: &[FoundGame]) -> Vec<CompanionGame> {
     let cache = load_cache();
     // The account's own title history already carries per-game achievement
     // progress and gamerscore; attach it here so the profile needs no network
     // round trip per game.
     let xbox_owned = xbox_login::cached_owned();
+    // Only the Xbox rows need the Store and subscription caches; other stores
+    // should not pay for a file read they cannot use.
+    let has_xbox = games.iter().any(|game| game.store == "xbox");
+    let entitlements = if has_xbox {
+        xbox_entitlements::snapshot()
+    } else {
+        xbox_entitlements::Snapshot::default()
+    };
+    let game_pass = if has_xbox { GamePassIndex::load() } else { GamePassIndex::default() };
+    let subscription = if has_xbox { xbox_subscription::active() } else { None };
     games
         .iter()
         .map(|game| {
@@ -257,6 +362,10 @@ fn with_cached_art(games: &[FoundGame]) -> Vec<CompanionGame> {
                 public.achievements_total = row.achievement_total;
                 public.achievements_xp = row.gamerscore;
                 public.achievements_total_xp = row.total_gamerscore;
+                public.product_id = row.product_id.clone();
+                public.game_pass = game_pass.contains(&row.pfn, &row.name);
+                public.game_pass_checked = game_pass.fresh;
+                public.access = xbox_access(row, &entitlements, public.game_pass, subscription);
             }
             public
         })
@@ -1993,6 +2102,19 @@ pub fn xbox_open_store(product_id: String) -> Result<(), String> {
     launch::open_game(&format!("ms-windows-store://pdp/?ProductId={product_id}"), "")
 }
 
+/// Opens the PC Game Pass plan in the Store, for a title the account played
+/// through a subscription that is no longer active.
+#[tauri::command]
+pub fn xbox_open_game_pass() -> Result<(), String> {
+    // Global Store product id for PC Game Pass; the Store resolves the market
+    // and offers the plans the account can actually buy.
+    const PC_GAME_PASS: &str = "CFQ7TTC0KGQ8";
+    launch::open_game(
+        &format!("ms-windows-store://pdp/?ProductId={PC_GAME_PASS}"),
+        "",
+    )
+}
+
 /// Starts the Store install for one Xbox package and reports when it lands.
 /// The download and the licence work stay with the Store.
 #[tauri::command]
@@ -2140,6 +2262,63 @@ pub async fn companion_game_action(app: tauri::AppHandle, store: String, id: Str
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_xbox_title_is_owned_or_needs_a_purchase() {
+        let mut entitlements = xbox_entitlements::Snapshot {
+            known: true,
+            ..Default::default()
+        };
+        entitlements.owned.insert("BQVQTL3PCH05".into());
+        let owned = xbox_login::OwnedGame {
+            product_id: "BQVQTL3PCH05".into(),
+            ..Default::default()
+        };
+        assert_eq!(
+            xbox_access(&owned, &entitlements, false, Some(false)),
+            CompanionAccess::Owned
+        );
+
+        let twelve = xbox_login::OwnedGame {
+            product_id: "9P55TJKCL1BC".into(),
+            ..Default::default()
+        };
+        // A title with no Store id cannot offer a purchase page; keep Install.
+        assert_eq!(
+            xbox_access(
+                &xbox_login::OwnedGame::default(),
+                &entitlements,
+                true,
+                Some(false)
+            ),
+            CompanionAccess::Unknown
+        );
+        // Left Game Pass, never bought: a purchase is the only path back.
+        assert_eq!(
+            xbox_access(&twelve, &entitlements, false, Some(false)),
+            CompanionAccess::None
+        );
+        // Still on Game Pass with no active plan: subscribe or buy.
+        assert_eq!(
+            xbox_access(&twelve, &entitlements, true, Some(false)),
+            CompanionAccess::None
+        );
+        // Active plan: the install action stays.
+        assert_eq!(
+            xbox_access(&twelve, &entitlements, true, Some(true)),
+            CompanionAccess::GamePass
+        );
+        // The Xbox app has not answered: never hide the install action.
+        assert_eq!(
+            xbox_access(&twelve, &entitlements, true, None),
+            CompanionAccess::Unknown
+        );
+        // A Store cache that did not answer is not "not owned".
+        assert_eq!(
+            xbox_access(&twelve, &xbox_entitlements::Snapshot::default(), false, Some(false)),
+            CompanionAccess::Unknown
+        );
+    }
 
     #[test]
     fn ubisoft_deep_links_use_the_install_id_for_installs_and_the_uplay_id_for_launches() {

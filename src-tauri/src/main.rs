@@ -2432,6 +2432,7 @@ fn main() {
             companion::xbox_gamepass_catalog,
             companion::xbox_gamepass_detail,
             companion::xbox_open_store,
+            companion::xbox_open_game_pass,
             companion::ea_content_cancel,
             companion::ea_content_install,
             companion::ea_content_plan,

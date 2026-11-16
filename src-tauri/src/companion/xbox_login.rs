@@ -74,6 +74,10 @@ pub(crate) struct OwnedGame {
     /// AUMID of the installed package, empty when the game is not installed.
     #[serde(default)]
     pub aumid: String,
+    /// Store product id from the title's availability list. The Store library
+    /// cache is keyed on it, so it is how ownership is checked.
+    #[serde(default)]
+    pub product_id: String,
 }
 
 /// Per-title progress aggregated from the account-wide achievements service.
@@ -649,9 +653,26 @@ pub(crate) fn parse_titles(value: &serde_json::Value) -> Vec<OwnedGame> {
                 .and_then(|v| v.as_u64())
                 .unwrap_or(0) as u32,
             aumid: String::new(),
+            product_id: product_id_of(title),
         });
     }
     games
+}
+
+/// Store product id of a title's first availability. The Store library cache
+/// and the purchase page both use this twelve-character id.
+fn product_id_of(title: &serde_json::Value) -> String {
+    title
+        .get("detail")
+        .and_then(|detail| detail.get("availabilities"))
+        .and_then(|rows| rows.as_array())
+        .and_then(|rows| {
+            rows.iter().find_map(|row| {
+                let id = row.get("ProductId").and_then(|v| v.as_str())?.trim();
+                (!id.is_empty()).then(|| id.to_string())
+            })
+        })
+        .unwrap_or_default()
 }
 
 /// Playnite strips the PC suffixes and trademark symbols from Xbox titles.
@@ -1211,6 +1232,11 @@ mod tests {
                         "totalAchievements": 50,
                         "currentGamerscore": 200,
                         "totalGamerscore": 1000
+                    },
+                    "detail": {
+                        "availabilities": [
+                            {"ProductId": "9NBLGGH5FV99", "SkuId": "0010"}
+                        ]
                     }
                 },
                 {
@@ -1237,6 +1263,7 @@ mod tests {
         assert_eq!(game.hero, "https://x/hero.png");
         assert_eq!(game.achievement_current, 10);
         assert_eq!(game.total_gamerscore, 1000);
+        assert_eq!(game.product_id, "9NBLGGH5FV99");
     }
 
     #[test]

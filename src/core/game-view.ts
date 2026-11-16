@@ -12,8 +12,9 @@ import { t } from "../i18n";
 import { FAV_KEY } from "./constants";
 import { icon, epicPlatinumIcon } from "./icons";
 import { openEpicModal, render } from "./render";
-import { isCompanionKey, libraryPlaytime, rawOf, sharedOwnerOf, storeKeysForTitle, summaryOf } from "./selectors";
+import { isCompanionKey, libraryItemOf, libraryPlaytime, rawOf, sharedOwnerOf, storeKeysForTitle, summaryOf } from "./selectors";
 import { S } from "./state";
+import type { LibraryItem } from "./types";
 import { esc, fmtPlaytime } from "./utils";
 
 /** O(1) achievement lookup supporting both composite (`gog::id`) and raw (`id`) keys. */
@@ -514,6 +515,33 @@ export function libraryListDimmed(s: EpicSummary): boolean {
   return !requiresThirdPartyLauncher(getThirdPartyLauncher(rawOf(s.appName)));
 }
 
+/** Entitlement facts the Xbox backend attaches to one library row. */
+export type XboxAccess = NonNullable<LibraryItem["access"]>;
+
+export function xboxAccessOf(appName: string): XboxAccess | null {
+  if (!appName.startsWith("xbox::")) return null;
+  return libraryItemOf(appName)?.access ?? null;
+}
+
+/**
+ * Buy/subscribe buttons for an Xbox title the Store account does not own.
+ * Null means the normal install or play action still applies.
+ */
+export function xboxStoreActions(
+  s: EpicSummary,
+  size: "full" | "small" | "lg" | "",
+  primaryOnly = false,
+): string | null {
+  if (s.installed) return null;
+  const access = xboxAccessOf(s.appName);
+  if (!access || access.ownership !== "none" || !access.productId) return null;
+  const btn = size ? ` ${size}` : "";
+  const buy = `<button class="btn${access.gamePass ? " ghost" : " primary"}${btn}" data-act="xbox-buy" data-id="${esc(access.productId)}" title="${esc(t("xbox.buyHint"))}">${icon("store", 14)} ${t("xbox.buy")}</button>`;
+  if (!access.gamePass) return buy;
+  const subscribe = `<button class="btn primary${btn}" data-act="xbox-subscribe" title="${esc(t("xbox.subscribeHint"))}">${icon("gamepad-2", 14)} ${t("xbox.subscribe")}</button>`;
+  return primaryOnly ? subscribe : `${subscribe} ${buy}`;
+}
+
 /** Primary action buttons (play/install/update/cancel) for a game card. */
 export function epicActionButtons(
   s: EpicSummary,
@@ -576,6 +604,8 @@ export function epicActionButtons(
   }
   if (s.appName.startsWith("xbox::")) {
     const family = s.appName.slice(6);
+    const storeActions = xboxStoreActions(s, size, opts.primaryOnly === true);
+    if (storeActions) return storeActions;
     if (S.xboxWaiting.has(family)) {
       return `<button class="btn primary${btn}" data-act="xbox-install-cancel" data-id="${esc(family)}" title="${esc(t("xbox.installWaitingHint"))}">${icon("download", 12)} ${t("xbox.installWaiting")}</button>`;
     }

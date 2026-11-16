@@ -6,7 +6,7 @@
  */
 
 import { listen } from "@tauri-apps/api/event";
-import { companionAchievementsSummary, companionLibrary, companionPlaytimes, companionResolveCovers, companionStoreStatus, companionSync, companionToItem, eaDirectStatus, type CompanionStore } from "../../companion";
+import { companionAchievementsSummary, companionLibrary, companionPlaytimes, companionResolveCovers, companionStoreStatus, companionSync, companionToItem, eaDirectStatus, xboxGamePassCatalog, type CompanionGame, type CompanionStore } from "../../companion";
 import { clearWideArtCache, rebuildAllGamesMap } from "../../core/selectors";
 import { scheduleRender, render, openEpicModal } from "../../core/render";
 import { setView, hideStore } from "../store/store-view";
@@ -18,6 +18,23 @@ import type { EpicAchievementSummary } from "../../epic";
 
 const storeIds = new Map<string, string>();
 let loginBound = false;
+let xboxCatalogRequested = false;
+
+/**
+ * Fetches the public Game Pass list once per session when an uninstalled Xbox
+ * game needs it, then re-reads the access flags. The first fetch can take half
+ * a minute; the library is already painted when it lands.
+ */
+function refreshXboxCatalog(games: CompanionGame[]): void {
+  if (xboxCatalogRequested || S.offlineMode) return;
+  if (!games.some((g) => g.store === "xbox" && !g.installed && !g.gamePassChecked)) return;
+  xboxCatalogRequested = true;
+  void xboxGamePassCatalog()
+    .then((titles) => {
+      if (titles.length) void loadCompanionLibrary();
+    })
+    .catch(() => {});
+}
 
 /** The store's own numeric id for a library row, when the store reports one. */
 export function companionStoreId(appName: string): string {
@@ -127,6 +144,7 @@ async function loadCompanionLibraryOnce(): Promise<void> {
     for (const g of games) {
       if (g.storeId) storeIds.set(`${g.store}::${g.id}`, g.storeId);
     }
+    refreshXboxCatalog(games);
   } catch {
     // A transient read/session error must not erase the cards the user already
     // has. An actual unlink answers with an empty list, which is handled above.

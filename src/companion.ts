@@ -34,7 +34,21 @@ export interface CompanionGame {
   achievementsTotal: number;
   achievementsXp: number;
   achievementsTotalXp: number;
+  /** Store page id of an Xbox title, empty when the store answers none. */
+  productId: string;
+  /** True while the public Game Pass catalog lists this Xbox title. */
+  gamePass: boolean;
+  /** False when the cached catalog was missing or stale and needs a refresh. */
+  gamePassChecked: boolean;
+  /** What the signed-in Store account can do with this title right now. */
+  access: CompanionAccess;
 }
+
+/**
+ * Store-side access to one companion title. `unknown` keeps the normal install
+ * button: a cache that failed to answer is not proof of no purchase.
+ */
+export type CompanionAccess = "owned" | "gamePass" | "none" | "unknown";
 
 export interface CompanionAccount {
   store: CompanionStore;
@@ -415,6 +429,9 @@ export const xboxGamePassDetail = (productId: string) =>
 /** Opens the Store page for a catalog title the launcher cannot install. */
 export const xboxOpenStore = (productId: string) => invoke<void>("xbox_open_store", { productId });
 
+/** Opens the PC Game Pass plan for a title whose subscription has ended. */
+export const xboxOpenGamePass = () => invoke<void>("xbox_open_game_pass");
+
 /** Per-client behavior toggles (Integrations → After playing). */
 export interface CompanionClientSettings {
   closeAfterPlay: Record<string, boolean>;
@@ -553,5 +570,12 @@ export function companionToItem(g: CompanionGame): LibraryItem {
     updateAvailable: false,
     cloudSavesSupported: false,
     dlcCount: 0,
+    access: g.store === "xbox"
+      ? {
+          ownership: g.access || "unknown",
+          productId: g.productId || "",
+          gamePass: g.gamePass === true,
+        }
+      : undefined,
   };
 }

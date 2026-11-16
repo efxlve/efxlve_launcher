@@ -4339,5 +4339,9 @@
   "archive.storeIdInvalid": "Kopia zapasowa ma nieprawidłowy identyfikator sklepu; gra została przywrócona, ale nie zarejestrowana.",
   "archive.xtoolBusy": "Trwa już instalacja xtool.",
   "disc.busy": "Inna operacja na płycie jest już w toku.",
-  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first.",
+  "xbox.buy": "Kup",
+  "xbox.buyHint": "Nie posiadasz tej gry. Otwórz Microsoft Store, aby ją kupić.",
+  "xbox.subscribe": "Subskrybuj",
+  "xbox.subscribeHint": "Ta gra jest dostępna w Game Pass. Zasubskrybuj lub kup ją, aby zagrać."
 }

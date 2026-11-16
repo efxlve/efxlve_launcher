@@ -4339,5 +4339,9 @@
   "archive.storeIdInvalid": "備份中的商店 ID 無效；遊戲已還原，但未註冊到商店。",
   "archive.xtoolBusy": "xtool 正在安裝中。",
   "disc.busy": "另一個光碟操作正在執行。",
-  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first."
+  "archive.jobRunning": "An archive or disc operation is already running. Finish or cancel it first.",
+  "xbox.buy": "購買",
+  "xbox.buyHint": "你尚未擁有此遊戲。開啟 Microsoft Store 購買。",
+  "xbox.subscribe": "訂閱",
+  "xbox.subscribeHint": "此遊戲包含在 Game Pass 中。訂閱或購買後即可遊玩。"
 }
