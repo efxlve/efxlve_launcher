@@ -4296,6 +4296,8 @@
   "archive.guideBackupBody": "أغلق اللعبة، ثم اخترها وحدد حجم الجزء والمجلد الهدف. قدّر الحجم إن أردت، ثم اضغط «تقسيم وأرشفة». تعرض لوحة التقدم المرحلة والملف الحالي والسرعة والوقت المتبقي ورقم الجزء. وعند الانتهاء تعرض لوحة النتائج الحجم الفعلي المخزّن وعدد الأجزاء ومجلد الإخراج. وفي الملفات التعريفية الضوئية تظهر لوحة نسخ الأقراص؛ فالنسخ على القرص خطوة منفصلة.",
   "archive.guideRestoreTitle": "الاستعادة",
   "archive.guideRestoreBody": "افتح علامة تبويب «استعادة»، واختر المجلد الذي يحتوي على manifest.efxmeta.json، واضغط «فحص» ثم اختر النسخة الاحتياطية. اختر المجلد الأب للعبة واضغط «استعادة». وفي نسخ الأقراص الاحتياطية اختر disc-1 أولًا؛ وإذا كانت هناك أجزاء مفقودة فأضف مجلدات disc-N الأخرى عبر «إضافة مجلد أجزاء».",
+  "archive.guideStoreTitle": "Store accounts",
+  "archive.guideStoreBody": "A backup restores files, not ownership. Steam, Epic and Amazon games still need their client and an account that owns the game; the launcher writes the local install record it can. GOG and custom games usually run directly.",
   "archive.guideBurnTitle": "الكتابة على الأقراص",
   "archive.guideBurnBody": "يحتوي كل مجلد disc-N على جزء واحد ونسخة من ملف البيان، بحيث يمكن نسخه على قرص بمفرده. اختر محرك الأقراص واستخدم لوحة النسخ على القرص. توضح اللوحة ما إذا كان القرص مُدخلًا وفارغًا والمساحة المتبقية فيه. ويمكن مسح القرص القابل لإعادة الكتابة مسحًا سريعًا من هناك؛ أما الأقراص التي تُكتب مرة واحدة فتتطلب قرصًا جديدًا. ويجب أن يتطابق المحرك والوسيط الفارغ مع الملف التعريفي الذي اخترته؛ فلا يمكن كتابة صورة Blu-ray على قرص DVD.",
   "archive.guideVerifyTitle": "Check a backup",

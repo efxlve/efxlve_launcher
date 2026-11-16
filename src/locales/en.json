@@ -4296,6 +4296,8 @@
   "archive.guideBackupBody": "Close the game, then select it, the part size and the target folder. Estimate the size if you want, then press Split and archive. The progress panel shows the stage, current file, speed, remaining time and part number. When it finishes, the result panel shows the real stored size, the part count and the output folder. For optical profiles a disc write panel appears; burning is a separate step.",
   "archive.guideRestoreTitle": "Restoring",
   "archive.guideRestoreBody": "Open the Restore tab, choose the folder that contains manifest.efxmeta.json, press Scan and select the backup. Choose the parent folder for the game and press Restore. For a disc backup, select disc-1 first; if parts are missing, add the other disc-N folders with Add parts folder.",
+  "archive.guideStoreTitle": "Store accounts",
+  "archive.guideStoreBody": "A backup restores files, not ownership. Steam, Epic and Amazon games still need their client and an account that owns the game; the launcher writes the local install record it can. GOG and custom games usually run directly.",
   "archive.guideBurnTitle": "Writing discs",
   "archive.guideBurnBody": "Each disc-N folder contains one part and a copy of the manifest, so it can be burned on its own. Select your recorder and use the Disc Write panel. The panel shows whether a disc is inserted, whether it is blank and how much space is left. A used rewritable disc can be quick-erased there; write-once discs need a new one. The drive and the blank media must match the profile you chose; a Blu-ray image cannot be written to a DVD.",
   "archive.guideVerifyTitle": "Check a backup",

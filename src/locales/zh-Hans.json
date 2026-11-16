@@ -4296,6 +4296,8 @@
   "archive.guideBackupBody": "关闭游戏，然后选择游戏、分卷大小和目标文件夹。可按需预估大小，随后点击“分卷并归档”。进度面板会显示当前阶段、正在处理的文件、速度、剩余时间和分卷编号。完成后，结果面板会显示实际存储大小、分卷数量和输出文件夹。对于光盘配置，还会出现光盘写入面板；刻录是单独的步骤。",
   "archive.guideRestoreTitle": "恢复备份",
   "archive.guideRestoreBody": "打开“恢复”标签页，选择包含 manifest.efxmeta.json 的文件夹，点击“扫描”并选择备份。选择游戏的上级安装文件夹后点击“恢复”。如果是光盘备份，请先选择 disc-1；若提示缺少分卷，请用“添加分卷文件夹”添加其余 disc-N 文件夹。",
+  "archive.guideStoreTitle": "Store accounts",
+  "archive.guideStoreBody": "A backup restores files, not ownership. Steam, Epic and Amazon games still need their client and an account that owns the game; the launcher writes the local install record it can. GOG and custom games usually run directly.",
   "archive.guideBurnTitle": "刻录光盘",
   "archive.guideBurnBody": "每个 disc-N 文件夹都包含一个分卷和一份清单副本，因此可以单独刻录。选择刻录机并使用光盘写入面板。面板会显示是否已放入光盘、是否为空白盘以及剩余空间。已使用的可擦写光盘可在面板中快速擦除；一次性刻录光盘则需更换新盘。光驱和空白盘片必须与所选配置匹配，蓝光镜像无法刻录到 DVD 上。",
   "archive.guideVerifyTitle": "Check a backup",

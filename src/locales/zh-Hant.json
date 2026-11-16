@@ -4296,6 +4296,8 @@
   "archive.guideBackupBody": "關閉遊戲，然後選擇遊戲、分割檔大小與目標資料夾。可按需預估大小，隨後按下「分割並封存」。進度面板會顯示目前階段、正在處理的檔案、速度、剩餘時間與分割檔編號。完成後，結果面板會顯示實際儲存大小、分割檔數量與輸出資料夾。對於光碟設定檔，還會出現光碟寫入面板；燒錄是獨立的步驟。",
   "archive.guideRestoreTitle": "還原備份",
   "archive.guideRestoreBody": "開啟「還原」分頁，選擇包含 manifest.efxmeta.json 的資料夾，按下「掃描」並選擇備份。選擇遊戲的上層安裝資料夾後按下「還原」。若是光碟備份，請先選擇 disc-1；若提示缺少分割檔，請用「新增分割檔資料夾」加入其餘 disc-N 資料夾。",
+  "archive.guideStoreTitle": "Store accounts",
+  "archive.guideStoreBody": "A backup restores files, not ownership. Steam, Epic and Amazon games still need their client and an account that owns the game; the launcher writes the local install record it can. GOG and custom games usually run directly.",
   "archive.guideBurnTitle": "燒錄光碟",
   "archive.guideBurnBody": "每個 disc-N 資料夾都包含一個分割檔與一份清單副本，因此可以單獨燒錄。選擇燒錄機並使用光碟寫入面板。面板會顯示是否已放入光碟、是否為空白片以及剩餘空間。已使用的可抹寫光碟可在面板中快速抹除；一次性燒錄光碟則需更換新片。光碟機與空白光碟片必須與所選設定檔相符，藍光映像無法燒錄到 DVD 上。",
   "archive.guideVerifyTitle": "Check a backup",

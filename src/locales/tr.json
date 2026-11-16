@@ -4296,6 +4296,8 @@
   "archive.guideBackupBody": "Oyunu kapat; oyunu, parça boyutunu ve hedef klasörü seç. İstersen boyutu tahmin et, sonra Parçalara ayır ve arşivle'ye bas. İlerleme paneli aşamayı, geçerli dosyayı, hızı, kalan süreyi ve parça numarasını gösterir. Bitince sonuç paneli gerçek boyutu, parça sayısını ve klasörü gösterir. Optik profillerde diske yazma paneli çıkar; yazma ayrı bir adımdır.",
   "archive.guideRestoreTitle": "Geri yükleme",
   "archive.guideRestoreBody": "Geri Yükle sekmesini aç, manifest.efxmeta.json dosyasını içeren klasörü seç, Tara'ya bas ve yedeği seç. Oyunun kurulacağı üst klasörü seçip Geri Yükle'ye bas. Disk yedeğinde önce disc-1'i seç; parça eksikse diğer disc-N klasörlerini Parça klasörü ekle ile ekle.",
+  "archive.guideStoreTitle": "Mağaza hesapları",
+  "archive.guideStoreBody": "Yedek dosyaları geri getirir, sahipliği değil. Steam, Epic ve Amazon oyunları için istemci ve oyunu satın almış bir hesap gerekir; launcher yerel kurulum kaydını yapabildiği kadar yazar. GOG ve custom oyunlar genelde doğrudan açılır.",
   "archive.guideBurnTitle": "Diske yazma",
   "archive.guideBurnBody": "Her disc-N klasöründe bir parça ve manifestin bir kopyası vardır; tek başına yazılabilir. Sürücünü seç ve Diske Yaz panelini kullan. Panel disk takılı mı, boş mu ve ne kadar yer kaldığını gösterir. Kullanılmış yeniden yazılabilir disk orada hızlıca silinebilir; tek yazımlık diskler için yeni bir disk gerekir. Sürücü ve boş medya seçtiğin profille uyumlu olmalı; Blu-ray görüntüsü DVD'ye yazılamaz.",
   "archive.guideVerifyTitle": "Yedeği kontrol et",

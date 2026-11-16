@@ -4296,6 +4296,8 @@
   "archive.guideBackupBody": "Zamknij grę, a następnie wybierz ją, rozmiar części oraz folder docelowy. W razie potrzeby oszacuj rozmiar, po czym kliknij „Podziel i zarchiwizuj”. Panel postępu pokazuje etap, bieżący plik, prędkość, pozostały czas i numer części. Po zakończeniu panel wyników wyświetla rzeczywisty zapisany rozmiar, liczbę części i folder wyjściowy. Dla profili optycznych pojawia się panel nagrywania płyt; samo nagrywanie to osobny krok.",
   "archive.guideRestoreTitle": "Przywracanie",
   "archive.guideRestoreBody": "Otwórz kartę „Przywróć”, wybierz folder zawierający plik manifest.efxmeta.json, kliknij „Skanuj” i wybierz kopię zapasową. Wybierz folder nadrzędny dla gry i kliknij „Przywróć”. W przypadku kopii z płyt najpierw wybierz folder disc-1; jeśli brakuje części, dodaj pozostałe foldery disc-N za pomocą przycisku „Dodaj folder z częściami”.",
+  "archive.guideStoreTitle": "Store accounts",
+  "archive.guideStoreBody": "A backup restores files, not ownership. Steam, Epic and Amazon games still need their client and an account that owns the game; the launcher writes the local install record it can. GOG and custom games usually run directly.",
   "archive.guideBurnTitle": "Nagrywanie płyt",
   "archive.guideBurnBody": "Każdy folder disc-N zawiera jedną część oraz kopię manifestu, dzięki czemu można go nagrać osobno. Wybierz nagrywarkę i skorzystaj z panelu „Nagraj na płytę”. Panel pokazuje, czy włożono płytę, czy jest pusta i ile pozostało na niej miejsca. Używaną płytę wielokrotnego zapisu można tam szybko wymazać; płyty jednokrotnego zapisu wymagają nowego nośnika. Napęd i czysta płyta muszą odpowiadać wybranemu profilowi — obrazu Blu-ray nie można zapisać na płycie DVD.",
   "archive.guideVerifyTitle": "Check a backup",

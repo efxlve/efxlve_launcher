@@ -73,8 +73,13 @@ Open work only. Delete the item when it lands.
   open.
 - Reed-Solomon parity for scratched discs and long-term USB bit rot is not
   implemented. Block SHA-256 detects damage but cannot repair it.
-- The standalone `efxlve-restore.exe` for a PC without the launcher is not
-  built.
+- A standalone `efxlve-restore.exe` for a PC without the launcher is not built.
+  Scope it as file recovery, not a store replacement: GOG and custom archives
+  restore directly; Steam, Epic and Amazon still need their client and an
+  account that owns the game, so the tool should only put files in place and
+  hand off to the client's install/verify step. It must never bypass DRM. The
+  portable launcher on the same USB already covers the normal case; the
+  standalone exe is only for a machine where the launcher cannot run.
 
 ## Linux/macOS: packaging and validation
 

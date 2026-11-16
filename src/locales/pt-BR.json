@@ -4296,6 +4296,8 @@
   "archive.guideBackupBody": "Feche o jogo e selecione o jogo, o tamanho da parte e a pasta de destino. Estime o tamanho se quiser e clique em Dividir e arquivar. O painel de progresso mostra a etapa, o arquivo atual, a velocidade, o tempo restante e o número da parte. Ao terminar, o painel de resultado mostra o tamanho real gravado, o total de partes e a pasta de saída. Para perfis ópticos, aparece um painel de gravação de disco; a gravação é uma etapa separada.",
   "archive.guideRestoreTitle": "Restaurando",
   "archive.guideRestoreBody": "Abra a aba Restaurar, escolha a pasta que contém manifest.efxmeta.json, clique em Verificar e selecione o backup. Escolha a pasta principal para o jogo e clique em Restaurar. Em um backup de disco, selecione disc-1 primeiro; se faltarem partes, adicione as outras pastas disc-N com Adicionar pasta de partes.",
+  "archive.guideStoreTitle": "Store accounts",
+  "archive.guideStoreBody": "A backup restores files, not ownership. Steam, Epic and Amazon games still need their client and an account that owns the game; the launcher writes the local install record it can. GOG and custom games usually run directly.",
   "archive.guideBurnTitle": "Gravando discos",
   "archive.guideBurnBody": "Cada pasta disc-N contém uma parte e uma cópia do manifesto, podendo ser gravada individualmente. Selecione seu gravador e use o painel Gravar em disco. O painel mostra se há um disco inserido, se está virgem e quanto espaço livre resta. Um disco regravável usado pode ser apagado rapidamente ali; discos graváveis uma única vez exigem uma mídia nova. A unidade e a mídia virgem devem corresponder ao perfil escolhido; uma imagem de Blu-ray não pode ser gravada em um DVD.",
   "archive.guideVerifyTitle": "Check a backup",

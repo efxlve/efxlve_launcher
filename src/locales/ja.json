@@ -4296,6 +4296,8 @@
   "archive.guideBackupBody": "ゲームを終了し、ゲーム、パーツのサイズ、保存先フォルダーを選択します。必要に応じてサイズを見積もり、「分割してアーカイブ」を押します。進行パネルには現在の工程、ファイル名、速度、残り時間、パーツ番号が表示されます。完了すると、実際の保存サイズ、パーツ数、出力フォルダーが表示されます。光学プロファイルではディスク書き込みパネルが表示されます（書き込みは別手順です）。",
   "archive.guideRestoreTitle": "復元",
   "archive.guideRestoreBody": "「復元」タブを開き、manifest.efxmeta.json が入ったフォルダーを選択して「スキャン」を押し、バックアップを選びます。ゲームの親フォルダーを選択して「復元」を押します。ディスクバックアップの場合はまず disc-1 を選択し、パーツが不足している場合は「パーツフォルダーを追加」で他の disc-N フォルダーを追加してください。",
+  "archive.guideStoreTitle": "Store accounts",
+  "archive.guideStoreBody": "A backup restores files, not ownership. Steam, Epic and Amazon games still need their client and an account that owns the game; the launcher writes the local install record it can. GOG and custom games usually run directly.",
   "archive.guideBurnTitle": "ディスクへの書き込み",
   "archive.guideBurnBody": "各 disc-N フォルダーには 1 つのパーツとマニフェストのコピーが含まれており、単体でディスクに書き込めます。ドライブを選択してディスク書き込みパネルを使用してください。パネルにはディスクの有無、空かどうか、残り容量が表示されます。使用済みの書き換え可能ディスクはその場でクイック消去できますが、追記型ディスクには新しい空ディスクが必要です。ドライブとメディアは選択したプロファイルと一致している必要があります（Blu-ray イメージを DVD に書き込むことはできません）。",
   "archive.guideVerifyTitle": "Check a backup",

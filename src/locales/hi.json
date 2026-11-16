@@ -4296,6 +4296,8 @@
   "archive.guideBackupBody": "गेम बंद करें, फिर गेम, पार्ट का आकार और लक्ष्य फ़ोल्डर चुनें। यदि चाहें तो आकार का अनुमान लगाएँ, फिर विभाजित और संग्रहीत करें दबाएँ। प्रगति पैनल चरण, वर्तमान फ़ाइल, गति, शेष समय और पार्ट संख्या दिखाता है। समाप्त होने पर परिणाम पैनल वास्तविक संग्रहीत आकार, पार्ट संख्या और आउटपुट फ़ोल्डर दिखाता है। ऑप्टिकल प्रोफ़ाइल के लिए डिस्क लेखन पैनल दिखाई देता है; डिस्क लिखना एक अलग चरण है।",
   "archive.guideRestoreTitle": "पुनर्स्थापना",
   "archive.guideRestoreBody": "पुनर्स्थापित करें टैब खोलें, manifest.efxmeta.json वाला फ़ोल्डर चुनें, स्कैन करें दबाएँ और बैकअप चुनें। गेम के लिए पैरेंट फ़ोल्डर चुनें और पुनर्स्थापित करें दबाएँ। डिस्क बैकअप के लिए पहले disc-1 चुनें; यदि पार्ट्स गायब हैं, तो पार्ट्स फ़ोल्डर जोड़ें से अन्य disc-N फ़ोल्डर जोड़ें।",
+  "archive.guideStoreTitle": "Store accounts",
+  "archive.guideStoreBody": "A backup restores files, not ownership. Steam, Epic and Amazon games still need their client and an account that owns the game; the launcher writes the local install record it can. GOG and custom games usually run directly.",
   "archive.guideBurnTitle": "डिस्क लिखना",
   "archive.guideBurnBody": "प्रत्येक disc-N फ़ोल्डर में एक पार्ट और मैनिफ़ेस्ट की एक प्रति होती है, इसलिए इसे अकेले डिस्क पर लिखा जा सकता है। अपना रिकॉर्डर चुनें और डिस्क लेखन पैनल का उपयोग करें। पैनल दिखाता है कि डिस्क लगी है या नहीं, खाली है या नहीं और कितना स्थान बचा है। उपयोग की गई रीराइटेबल डिस्क को वहाँ तुरंत मिटाया जा सकता है; एक बार लिखने योग्य डिस्क के लिए नई डिस्क चाहिए। ड्राइव और खाली मीडिया आपके चुने हुए प्रोफ़ाइल से मेल खाने चाहिए; Blu-ray इमेज को DVD पर नहीं लिखा जा सकता।",
   "archive.guideVerifyTitle": "Check a backup",
