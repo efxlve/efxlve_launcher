@@ -7,6 +7,8 @@ const ipc = vi.hoisted(() => ({
   recorders: vi.fn(async () => []),
   discs: vi.fn(async () => []),
   burn: vi.fn(async () => undefined),
+  estimate: vi.fn(async () => ({}) as ArchiveEstimate),
+  cancel: vi.fn(async () => true),
 }));
 
 vi.mock("../../archive", async (importOriginal) => {
@@ -18,6 +20,8 @@ vi.mock("../../archive", async (importOriginal) => {
     archiveDiscs: ipc.discs,
     discListRecorders: ipc.recorders,
     discBurnFolder: ipc.burn,
+    archiveEstimate: ipc.estimate,
+    archiveCancel: ipc.cancel,
   };
 });
 
@@ -27,13 +31,16 @@ vi.mock("../../core/toast", () => ({
   progressToast: vi.fn(() => ({ update: vi.fn(), close: vi.fn() })),
 }));
 
-import type { ArchiveSummary } from "../../archive";
+import type { ArchiveEstimate, ArchiveSummary } from "../../archive";
 import { S } from "../../core/state";
+import type { LibraryItem } from "../../core/types";
 import {
+  cancelEstimate,
   handleArchiveAction,
   loadArchiveDiscs,
   loadBurnRecorders,
   openArchiveForGame,
+  requestEstimate,
 } from "./archive-actions";
 
 function summary(): ArchiveSummary {
@@ -55,11 +62,15 @@ beforeEach(() => {
   S.archiveDiscsManifest = "";
   S.archiveBurnRecorder = "";
   S.archiveBurnDone = null;
+  S.archiveEstimate = null;
+  S.allGamesMap.clear();
   ipc.scan.mockClear();
   ipc.install.mockClear();
   ipc.recorders.mockClear();
   ipc.discs.mockClear();
   ipc.burn.mockClear();
+  ipc.estimate.mockClear();
+  ipc.cancel.mockClear();
 });
 
 describe("archive busy guards", () => {
@@ -139,5 +150,32 @@ describe("archive busy guards", () => {
     await vi.waitFor(() => expect(ipc.burn).toHaveBeenCalled());
     await vi.waitFor(() => expect(ipc.recorders).toHaveBeenCalled());
     expect(S.archiveBurning).toBeNull();
+  });
+
+  it("cancels the running estimate through the active job map", async () => {
+    S.allGamesMap.set("steam::1", {
+      key: "steam::1",
+      title: "Game",
+      installed: true,
+      installPath: "C:\\Game",
+    } as unknown as LibraryItem);
+    S.archiveSelectedApp = "steam::1";
+    let resolveEstimate!: (value: ArchiveEstimate) => void;
+    ipc.estimate.mockImplementationOnce(
+      () =>
+        new Promise<ArchiveEstimate>((resolve) => {
+          resolveEstimate = resolve;
+        }),
+    );
+
+    const pending = requestEstimate();
+    await vi.waitFor(() => expect(ipc.estimate).toHaveBeenCalled());
+
+    await cancelEstimate();
+    expect(ipc.cancel).toHaveBeenCalledWith("steam::1");
+
+    resolveEstimate({} as ArchiveEstimate);
+    await pending;
+    expect(S.archiveEstimating).toBe(false);
   });
 });

@@ -1389,9 +1389,15 @@ mod tests {
             packed.manifest.compression.precompressor.as_deref(),
             Some("xtool")
         );
-        let estimate =
-            crate::media_archive::estimate::estimate_archive(&game, &profile, 3, 20, Some(&xtool))
-                .unwrap();
+        let estimate = crate::media_archive::estimate::estimate_archive(
+            &game,
+            &profile,
+            3,
+            20,
+            Some(&xtool),
+            &AtomicBool::new(false),
+        )
+        .unwrap();
         assert!(estimate.uses_xtool);
         assert_eq!(estimate.bypassed_files, 0);
         assert_eq!(estimate.bypassed_bytes, 0);

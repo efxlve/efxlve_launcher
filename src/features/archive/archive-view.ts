@@ -345,12 +345,15 @@ function renderEstimate(): string {
       ? `${icon("refresh", 13, "spin")} ${t("archive.estimating")}`
       : `${icon("activity", 13)} ${t("archive.estimateAction")}`
   }</button>`;
+  const cancel = S.archiveEstimating
+    ? `<button type="button" class="btn ghost small" data-act="archive-estimate-cancel">${icon("x", 13)} ${t("archive.cancel")}</button>`
+    : "";
   if (!estimate) {
     return `
       <div class="archive-estimate">
         <div class="archive-estimate-head">
           <span class="archive-k">${t("archive.estimateTitle")}</span>
-          ${button}
+          ${button}${cancel}
         </div>
         <div class="archive-note">${t("archive.estimateIntro")}</div>
       </div>`;
@@ -360,7 +363,7 @@ function renderEstimate(): string {
     <div class="archive-estimate">
       <div class="archive-estimate-head">
         <span class="archive-k">${t("archive.estimateTitle")}</span>
-        ${button}
+        ${button}${cancel}
       </div>
       <div class="archive-summary-grid">
         <div><span class="archive-k">${t("archive.estimateSize")}</span><span class="archive-v tabular-nums">${fmtBytesOrZero(estimate.estimatedBytes)}</span></div>

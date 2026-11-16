@@ -36,6 +36,8 @@ let planToken = 0;
 let planTimer: number | undefined;
 let planInFlightKey = "";
 let estimateToken = 0;
+let estimateKey = "";
+let estimateCancelling = false;
 let bootPromise: Promise<void> | null = null;
 let bootKey = "";
 
@@ -215,11 +217,14 @@ export async function requestEstimate(): Promise<void> {
     return;
   }
   const token = ++estimateToken;
+  const key = game.key;
+  estimateKey = key;
   S.archiveEstimating = true;
   S.archiveEstimate = null;
   scheduleRender();
   try {
     const estimate = await archiveEstimate({
+      appName: key,
       installPath: game.installPath,
       profileId: S.archiveProfile,
       customMib: S.archiveCustomMib,
@@ -228,12 +233,28 @@ export async function requestEstimate(): Promise<void> {
     });
     if (token === estimateToken) S.archiveEstimate = estimate;
   } catch (error) {
-    if (token === estimateToken) toast(localizeMessage(String(error)), "err");
+    const raw = String(error);
+    if (token === estimateToken && !raw.includes("archive.cancelled")) {
+      toast(localizeMessage(raw), "err");
+    }
   } finally {
     // Only one estimate can be in flight; the guard above prevents a second.
     // A token mismatch drops the stale result, not the spinner state.
+    if (estimateKey === key) estimateKey = "";
     S.archiveEstimating = false;
     scheduleRender();
+  }
+}
+
+/** Stops the running estimate at the next sample boundary. */
+export async function cancelEstimate(): Promise<void> {
+  if (!S.archiveEstimating || !estimateKey || estimateCancelling) return;
+  estimateCancelling = true;
+  try {
+    const cancelled = await archiveCancel(estimateKey);
+    if (cancelled) toast(t("archive.cancelling"), "ok");
+  } finally {
+    estimateCancelling = false;
   }
 }
 
@@ -784,6 +805,10 @@ export function handleArchiveAction(
   }
   if (act === "archive-estimate") {
     void requestEstimate();
+    return true;
+  }
+  if (act === "archive-estimate-cancel") {
+    void cancelEstimate();
     return true;
   }
   if (act === "archive-pick-target") {

@@ -236,6 +236,7 @@ export const archiveXtoolInstall = () =>
   invoke<string>("archive_xtool_install");
 
 export const archiveEstimate = (args: {
+  appName: string;
   installPath: string;
   profileId: string;
   customMib?: number;
@@ -243,6 +244,7 @@ export const archiveEstimate = (args: {
   xtoolPath?: string;
 }) =>
   invoke<ArchiveEstimate>("archive_estimate", {
+    appName: args.appName,
     installPath: args.installPath,
     profileId: args.profileId,
     customMib: args.customMib ?? null,

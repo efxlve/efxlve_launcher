@@ -6,6 +6,7 @@
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::Serialize;
@@ -157,14 +158,24 @@ fn tar_overhead(scan: &ScanResult) -> u64 {
     overhead
 }
 
+fn check_cancel(cancel: &AtomicBool) -> Result<(), String> {
+    if cancel.load(Ordering::Relaxed) {
+        Err("@t:archive.cancelled".to_string())
+    } else {
+        Ok(())
+    }
+}
+
 pub fn estimate_archive(
     install: &Path,
     profile: &MediaProfileInfo,
     level: i32,
     window_log: u32,
     xtool: Option<&Xtool>,
+    cancel: &AtomicBool,
 ) -> Result<ArchiveEstimate, String> {
     let scan = scan_tree(install)?;
+    check_cancel(cancel)?;
     if scan.file_count == 0 {
         return Err("@t:archive.emptyGame".to_string());
     }
@@ -174,6 +185,7 @@ pub fn estimate_archive(
     let mut bypassed_bytes = 0u64;
     let mut candidates: Vec<&FileEntry> = Vec::new();
     for entry in &scan.entries {
+        check_cancel(cancel)?;
         if entry.is_dir {
             continue;
         }
@@ -197,6 +209,7 @@ pub fn estimate_archive(
         Some(xtool) => {
             let mut sample = Vec::new();
             for entry in candidates.iter().take(SAMPLE_FILES) {
+                check_cancel(cancel)?;
                 if budget == 0 {
                     break;
                 }
@@ -207,9 +220,11 @@ pub fn estimate_archive(
                 sampled_files += 1;
                 sample.extend_from_slice(&bytes);
             }
+            check_cancel(cancel)?;
             sampled_bytes = sample.len() as u64;
             if !sample.is_empty() {
                 sampled_compressed = compress_with_xtool(xtool, &sample, level, window_log)?;
+                check_cancel(cancel)?;
             }
         }
         None => {
@@ -219,6 +234,7 @@ pub fn estimate_archive(
                 .set_parameter(zstd::zstd_safe::CParameter::WindowLog(window_log))
                 .map_err(|error| format!("@t:archive.compressFailed\u{1f}{error}"))?;
             for entry in candidates.iter().take(SAMPLE_FILES) {
+                check_cancel(cancel)?;
                 if budget == 0 {
                     break;
                 }
@@ -256,6 +272,7 @@ pub fn estimate_archive(
     } else {
         1.0
     };
+    check_cancel(cancel)?;
 
     Ok(ArchiveEstimate {
         original_bytes: scan.total_bytes,
@@ -321,7 +338,8 @@ mod tests {
         std::fs::write(root.join("data.txt"), vec![b'a'; 2 * MIB as usize]).unwrap();
         std::fs::write(root.join("movie.mp4"), noisy(300 * 1024, 3)).unwrap();
         let profile = resolve("fat32", None).unwrap();
-        let estimate = estimate_archive(&root, &profile, 3, 20, None).unwrap();
+        let estimate =
+            estimate_archive(&root, &profile, 3, 20, None, &AtomicBool::new(false)).unwrap();
         assert!(!estimate.uses_xtool);
         assert_eq!(estimate.bypassed_files, 1);
         assert_eq!(estimate.bypassed_bytes, 300 * 1024);
@@ -335,7 +353,18 @@ mod tests {
     fn an_empty_folder_is_refused() {
         let root = temp_root("empty");
         let profile = resolve("fat32", None).unwrap();
-        assert!(estimate_archive(&root, &profile, 3, 20, None).is_err());
+        assert!(estimate_archive(&root, &profile, 3, 20, None, &AtomicBool::new(false)).is_err());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_cancelled_estimate_reports_cancelled() {
+        let root = temp_root("cancelled");
+        std::fs::write(root.join("data.bin"), noisy(1024 * 1024, 9)).unwrap();
+        let profile = resolve("fat32", None).unwrap();
+        let error = estimate_archive(&root, &profile, 3, 20, None, &AtomicBool::new(true))
+            .unwrap_err();
+        assert!(error.contains("cancelled"), "{error}");
         let _ = std::fs::remove_dir_all(&root);
     }
 
@@ -353,6 +382,7 @@ mod tests {
             3,
             24,
             Some(&xtool),
+            &AtomicBool::new(false),
         )
         .unwrap();
         eprintln!("{estimate:#?}");

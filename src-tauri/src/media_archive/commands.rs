@@ -234,12 +234,14 @@ pub async fn archive_plan(
 
 #[tauri::command]
 pub async fn archive_estimate(
+    app_name: String,
     install_path: String,
     profile_id: String,
     custom_mib: Option<u64>,
     level: String,
     xtool_path: Option<String>,
 ) -> Result<ArchiveEstimate, String> {
+    let (_active, cancel) = begin(&app_name)?;
     let profile = profile::resolve(&profile_id, custom_mib)?;
     let (compression_level, window_log) = compression_setting(&level)?;
     let xtool = match xtool_path
@@ -257,6 +259,7 @@ pub async fn archive_estimate(
             compression_level,
             window_log,
             xtool.as_ref(),
+            &cancel,
         )
     })
     .await
