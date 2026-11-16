@@ -221,6 +221,9 @@ pub(super) fn is_install_noop(line: &str) -> bool {
 /// True when legendary's own log shows a hard error. Legendary can log a hard
 /// error (locked game files, permission denied) and still exit with code 0, so
 /// a zero exit alone must not be treated as a completed install.
+///
+/// Test-only entry point; the monitor always passes its `repair` mode.
+#[cfg(test)]
 pub(super) fn has_hard_error(err_text: &str) -> bool {
     has_hard_error_with(err_text, false)
 }
