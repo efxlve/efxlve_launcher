@@ -67,9 +67,10 @@ Open work only. Delete the item when it lands.
 
 ## Media archive (disc / USB)
 
-- Windows IMAPI2 burning is implemented in `media_archive/disc.rs` and marked
-  experimental. It still needs a pass on real CD-R, DVD-R and BD-R media; Linux
-  `xorriso` and macOS `drutil` remain open.
+- Windows IMAPI2 burning and erase are implemented in `media_archive/disc.rs` and
+  marked experimental. They still need a pass on real CD-R, DVD-R, BD-R and
+  BD-RE media, including full erase; Linux `xorriso` and macOS `drutil` remain
+  open.
 - Reed-Solomon parity for scratched discs and long-term USB bit rot is not
   implemented. Block SHA-256 detects damage but cannot repair it.
 - The standalone `efxlve-restore.exe` for a PC without the launcher is not

@@ -51,7 +51,9 @@ export function renderArchiveGuide(): string {
 
       ${section("hard-drive", "archive.guideBackupTitle", "archive.guideBackupBody")}
       ${section("download", "archive.guideRestoreTitle", "archive.guideRestoreBody")}
+      ${section("shield-check", "archive.guideVerifyTitle", "archive.guideVerifyBody")}
       ${IS_WINDOWS ? section("hard-drive", "archive.guideBurnTitle", "archive.guideBurnBody") : ""}
+      ${IS_WINDOWS ? section("trash", "archive.guideEraseTitle", "archive.guideEraseBody") : ""}
 
       <section class="archive-guide-section">
         <h4>${icon("alert-triangle", 14)} ${t("archive.guideTroubleTitle")}</h4>
