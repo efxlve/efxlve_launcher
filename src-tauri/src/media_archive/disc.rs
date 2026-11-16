@@ -106,6 +106,9 @@ for ($i = 0; $i -lt $dm.Count; $i++) {
         $blank = ([bool]$data.MediaPhysicallyBlank) -or ([bool]$data.MediaHeuristicallyBlank)
         $free = ([Math]::Max([int64]0, [int64]$data.FreeSectorsOnMedia)) * 2048
         $capacity = ([Math]::Max([int64]0, [int64]$data.TotalSectorsOnMedia)) * 2048
+        if ($blank -and $free -le 0) {
+          $free = $capacity
+        }
         $media = [int]$data.CurrentPhysicalMediaType
       }
     } catch { }

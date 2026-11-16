@@ -264,6 +264,7 @@ pub fn safe_component(value: &str) -> bool {
 /// leading `-` must never reach a CLI as a flag.
 pub(crate) fn safe_store_id(value: &str) -> bool {
     !value.is_empty()
+        && value.len() <= 128
         && value != "."
         && value != ".."
         && !value.starts_with('-')
@@ -275,7 +276,9 @@ pub(crate) fn safe_store_id(value: &str) -> bool {
 /// Steam app ids are numeric. They become `appmanifest_<id>.acf` under
 /// `steamapps`, so a path separator here would escape that folder.
 pub(crate) fn safe_steam_app_id(value: &str) -> bool {
-    !value.is_empty() && value.chars().all(|character| character.is_ascii_digit())
+    !value.is_empty()
+        && value.len() <= 16
+        && value.chars().all(|character| character.is_ascii_digit())
 }
 
 pub fn encode_block_header(
@@ -437,10 +440,14 @@ mod tests {
     #[test]
     fn store_identifiers_stay_argument_safe() {
         assert!(safe_steam_app_id("12345"));
+        assert!(safe_steam_app_id(&"1".repeat(16)));
+        assert!(!safe_steam_app_id(&"1".repeat(17)));
         assert!(!safe_steam_app_id("12/345"));
         assert!(!safe_steam_app_id("-123"));
         assert!(safe_store_id("Ginger_1"));
         assert!(safe_store_id("amzn1.adg.product"));
+        assert!(safe_store_id(&"a".repeat(128)));
+        assert!(!safe_store_id(&"a".repeat(129)));
         assert!(!safe_store_id("-oops"));
         assert!(!safe_store_id(r"..\evil"));
         assert!(!safe_store_id(".."));
