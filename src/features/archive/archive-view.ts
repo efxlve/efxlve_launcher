@@ -592,7 +592,7 @@ function renderRestoreDetail(): string {
       </label>
       <div class="archive-note">${t("archive.restoreHint")}</div>
       <div class="archive-actions">
-        <button type="button" class="btn ghost small" data-act="archive-verify" data-manifest="${esc(found.manifestPath)}" ${busy || S.archiveEstimating || S.archiveXtoolInstalling ? "disabled" : ""}>${icon("shield-check", 13)} ${t("archive.verify")}</button>
+        <button type="button" class="btn ghost small" data-act="archive-verify" data-manifest="${esc(found.manifestPath)}" ${busy || missing || S.archiveEstimating || S.archiveXtoolInstalling ? "disabled" : ""}>${icon("shield-check", 13)} ${t("archive.verify")}</button>
       </div>
       <div class="archive-note">${t("archive.verifyHint")}</div>
       ${renderVerifyResult()}
