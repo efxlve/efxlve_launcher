@@ -3456,6 +3456,16 @@ function checkAndEmitNewStoreUnlocks(appName: string): number {
   return newlyUnlocked;
 }
 
+/**
+ * Marks an unlock another source already announced (the native emulator
+ * watcher). The store poll shares this baseline, so the same achievement does
+ * not queue a second card, sound or bell entry when both paths are active.
+ */
+export function noteStoreUnlockSeen(appName: string, achievement: string): void {
+  const baseline = sessionUnlockedBaseline.get(appName);
+  if (baseline) baseline.add(achievement);
+}
+
 function stopStoreAchievementPoll(appName: string): void {
   const timer = sessionPollTimers.get(appName);
   if (timer !== undefined) {

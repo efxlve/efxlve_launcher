@@ -43,6 +43,10 @@ pub struct ToastPayload {
     /// Filled in by [`show`]; the page echoes it back when the exit finishes.
     #[serde(default)]
     pub generation: u64,
+    /// Filled in by [`show`]; a card from an earlier game session is dropped
+    /// instead of surfacing over the next game.
+    #[serde(skip)]
+    pub session: u64,
     pub title: String,
     pub body: String,
     pub tier: u8,
@@ -80,6 +84,10 @@ struct ToastIconPayload {
 }
 
 static GENERATION: AtomicU64 = AtomicU64::new(0);
+/// Bumped when a game session ends or the overlay service stops. A payload
+/// keeps the session it was created in, so a card still sitting in the queue
+/// cannot surface over the next game (or over a protected title).
+static SESSION: AtomicU64 = AtomicU64::new(1);
 static READY: AtomicBool = AtomicBool::new(false);
 /// A running game keeps the toast page warm so the first card is instant.
 static PINNED: AtomicBool = AtomicBool::new(false);
@@ -109,6 +117,7 @@ fn take_queued_icon(generation: u64) -> Option<String> {
 pub fn show(app: &AppHandle, mut payload: ToastPayload) -> u64 {
     let generation = GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
     payload.generation = generation;
+    payload.session = SESSION.load(Ordering::SeqCst);
     if let Ok(mut queue) = QUEUE.lock() {
         queue.get_or_insert_with(std::collections::VecDeque::new).push_back(payload);
     }
@@ -129,10 +138,12 @@ fn start_drain(app: AppHandle) {
             let Some(payload) = next else {
                 break;
             };
-            CURRENT.store(payload.generation, Ordering::SeqCst);
             let hold = payload.hold_ms.saturating_add(1_400);
-            show_now(&app, payload);
-            std::thread::sleep(std::time::Duration::from_millis(hold));
+            // A card dropped for a dead session or a hidden panel costs no
+            // hold time; only a card that reached the screen keeps the queue.
+            if show_now(&app, payload) {
+                std::thread::sleep(std::time::Duration::from_millis(hold));
+            }
         }
         DRAINING.store(false, Ordering::SeqCst);
         // A push can land between the empty check and the flag reset; restart
@@ -148,7 +159,22 @@ fn start_drain(app: AppHandle) {
     });
 }
 
-fn show_now(app: &AppHandle, mut payload: ToastPayload) {
+fn show_now(app: &AppHandle, mut payload: ToastPayload) -> bool {
+    // A game switch, a service stop or an anti-cheat title can invalidate a
+    // card that was already queued. Dropping it here is the last line of
+    // defence: the session check also covers a card that left the queue just
+    // before `release`/`shutdown` cleared it.
+    if payload.session != SESSION.load(Ordering::SeqCst) {
+        return false;
+    }
+    // The interactive panel is the surface the player is using; a card over it
+    // would cover the very UI that opened. The unlock still reaches the bell.
+    if super::panel_visible() {
+        return false;
+    }
+    if !payload.tagless && super::achievement_notifications_blocked() {
+        return false;
+    }
     // The icon download can land while the card is still queued.
     if let Some(icon) = take_queued_icon(payload.generation) {
         payload.icon = Some(icon);
@@ -157,9 +183,19 @@ fn show_now(app: &AppHandle, mut payload: ToastPayload) {
         Ok(win) => win,
         Err(error) => {
             crate::perf::write_line_global(&format!("toast: {error}"));
-            return;
+            return false;
         }
     };
+    // Window creation can take long enough for the panel to open or a game to
+    // switch underneath us. Re-check before the card gets a chance to paint.
+    if payload.session != SESSION.load(Ordering::SeqCst)
+        || super::panel_visible()
+        || (!payload.tagless && super::achievement_notifications_blocked())
+    {
+        let _ = win.hide();
+        return false;
+    }
+    CURRENT.store(payload.generation, Ordering::SeqCst);
     // Check readiness after the window exists: a rebuild flips READY to false,
     // and a checkpoint taken before it would be lost with the old renderer.
     let mut deferred = false;
@@ -171,6 +207,24 @@ fn show_now(app: &AppHandle, mut payload: ToastPayload) {
     }
     place_on_active_monitor(&win);
     let _ = win.set_always_on_top(true);
+    // A panel open can land between the check above and the show here. Drop
+    // the card instead of painting it under the panel's topbar.
+    if payload.session != SESSION.load(Ordering::SeqCst)
+        || super::panel_visible()
+        || (!payload.tagless && super::achievement_notifications_blocked())
+    {
+        if let Ok(mut slot) = PENDING.lock() {
+            if slot
+                .as_ref()
+                .is_some_and(|pending| pending.generation == payload.generation)
+            {
+                *slot = None;
+            }
+        }
+        CURRENT.store(0, Ordering::SeqCst);
+        let _ = win.hide();
+        return false;
+    }
     let _ = win.show();
     make_click_through(&win);
     #[cfg(windows)]
@@ -206,6 +260,7 @@ fn show_now(app: &AppHandle, mut payload: ToastPayload) {
         }
     }
     schedule_watchdog(app.clone(), payload.generation, payload.hold_ms);
+    true
 }
 
 /// Keeps the toast page loaded while a game runs, so the first card arrives
@@ -220,18 +275,56 @@ pub fn prewarm(app: &AppHandle) {
     });
 }
 
-/// The game session ended: let the usual idle release collect the window.
+/// Drops every card that belongs to the session that just ended.
+///
+/// The queue is cleared before the session is bumped: a card enqueued by the
+/// new game after the bump survives, while a card that read the old session
+/// before it is rejected by its own check in `show_now`.
+fn clear_session() {
+    if let Ok(mut queue) = QUEUE.lock() {
+        if let Some(queue) = queue.as_mut() {
+            queue.clear();
+        }
+    }
+    SESSION.fetch_add(1, Ordering::SeqCst);
+    if let Ok(mut slot) = PENDING.lock() {
+        *slot = None;
+    }
+    if let Ok(mut map) = QUEUED_ICONS.lock() {
+        if let Some(map) = map.as_mut() {
+            map.clear();
+        }
+    }
+    CURRENT.store(0, Ordering::SeqCst);
+}
+
+/// The game session ended: the next game must not inherit this one's cards.
+/// The window is hidden now, then collected by the usual idle release.
 pub fn release(app: &AppHandle) {
     PINNED.store(false, Ordering::SeqCst);
-    let generation = GENERATION.load(Ordering::SeqCst);
+    clear_session();
+    let generation = GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
+    if let Some(win) = app.get_webview_window(TOAST_LABEL) {
+        let _ = win.hide();
+    }
     schedule_idle_release(app.clone(), generation);
 }
 
-/// The overlay service stopped: destroy the toast host and its renderer now,
-/// instead of leaving a pre-warmed transparent window parked for a game that
-/// may never end.
+/// Hides the card without ending the session or clearing the queue. The panel
+/// takes the screen on open; the queue is left alone and `show_now` drops any
+/// card that comes due while the panel stays visible.
+pub(crate) fn hide_window(app: &AppHandle) {
+    if let Some(win) = app.get_webview_window(TOAST_LABEL) {
+        let _ = win.hide();
+    }
+}
+
+/// The overlay service stopped: drop queued cards and destroy the toast host
+/// and its renderer now, instead of leaving a pre-warmed transparent window
+/// parked for a game that may never end.
 pub fn shutdown(app: &AppHandle) {
     PINNED.store(false, Ordering::SeqCst);
+    clear_session();
     GENERATION.fetch_add(1, Ordering::SeqCst);
     READY.store(false, Ordering::SeqCst);
     let handle = app.clone();
@@ -246,9 +339,17 @@ pub fn shutdown(app: &AppHandle) {
 #[tauri::command]
 pub fn toast_ready(app: AppHandle) {
     READY.store(true, Ordering::SeqCst);
+    let session = SESSION.load(Ordering::SeqCst);
     let pending = PENDING.lock().ok().and_then(|mut slot| slot.take());
     if let Some(payload) = pending {
-        emit_card(&app, &payload);
+        if payload.session == session && !super::panel_visible() {
+            emit_card(&app, &payload);
+        } else if let Some(win) = app.get_webview_window(TOAST_LABEL) {
+            // The card became stale (game switch, service stop) or the panel
+            // took the screen while the page was booting. Do not leave an
+            // empty topmost window behind.
+            let _ = win.hide();
+        }
     }
 }
 
@@ -304,10 +405,26 @@ pub fn set_icon(app: &AppHandle, generation: u64, path: &Path) {
             "ach-toast-icon",
             ToastIconPayload { generation, src },
         );
-    } else if let Ok(mut map) = QUEUED_ICONS.lock() {
-        // The card is still queued; `show_now` picks the picture up.
-        map.get_or_insert_with(std::collections::HashMap::new)
-            .insert(generation, src);
+    } else {
+        // Store the picture only while its card is still queued. A card that
+        // was dropped (game switch, panel open) must not leave an orphan in
+        // the map for the rest of the process.
+        let queued = QUEUE
+            .lock()
+            .ok()
+            .and_then(|queue| {
+                queue
+                    .as_ref()
+                    .map(|queue| queue.iter().any(|payload| payload.generation == generation))
+            })
+            .unwrap_or(false);
+        if queued {
+            if let Ok(mut map) = QUEUED_ICONS.lock() {
+                // The card is still queued; `show_now` picks the picture up.
+                map.get_or_insert_with(std::collections::HashMap::new)
+                    .insert(generation, src);
+            }
+        }
     }
 }
 

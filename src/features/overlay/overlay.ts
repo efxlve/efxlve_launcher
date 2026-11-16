@@ -53,6 +53,7 @@ import { applyAchievementEdits } from "../../core/achievement-edits";
 import { CROSSHAIR_HOTKEYS, applyCrosshairConfig, loadCrosshair, sanitizeCrosshair, saveCrosshair, setCrosshairVisible, type CrosshairConfig, type CrosshairHotkey, type CrosshairShape } from "../../core/crosshair";
 import { esc, fmtAchDate, fmtDecimal1, stripEmoji } from "../../core/utils";
 import { steamGetAchievementCommunity, type SteamAchievementCommunity } from "../../steam";
+import { customGamesList } from "../../custom-games";
 import { currentLanguage, initialLanguage, localizeMessage, setLanguage, t } from "../../i18n";
 import {
   formatTime as formatSpotifyTime,
@@ -7592,6 +7593,46 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   panelOpened = true;
 }
 
+/**
+ * Custom games are announced with their Steam AppID because their native
+ * watcher was started before the launcher key existed. The map lets the panel
+ * fold those unlocks into the custom game's own list without a round trip.
+ */
+let customGameSteamIds = new Map<string, string>();
+let customGameIdsLoading = false;
+
+function refreshCustomGameSteamIds(): void {
+  if (customGameIdsLoading) return;
+  customGameIdsLoading = true;
+  void customGamesList()
+    .then((games) => {
+      customGameSteamIds = new Map(
+        games
+          .filter((game) => game.steamAppId && game.steamAppId.trim().length > 0)
+          .map((game) => [game.id, game.steamAppId!.trim()]),
+      );
+    })
+    .catch(() => undefined)
+    .finally(() => {
+      customGameIdsLoading = false;
+    });
+}
+
+/**
+ * Maps an `achievement-unlocked` app id to the panel's game key. Steam events
+ * carry the bare AppID, store games carry their launcher key and a custom game
+ * carries its Steam AppID.
+ */
+function achievementEventMatchesContext(appId: string): boolean {
+  if (!appId) return false;
+  if (context.appName === appId) return true;
+  if (context.appName === `steam::${appId}`) return true;
+  if (context.appName.startsWith("custom::")) {
+    return customGameSteamIds.get(context.appName) === appId;
+  }
+  return false;
+}
+
 async function boot(): Promise<void> {
   document.documentElement.dataset.surface = "soft";
   await setLanguage(initialLanguage());
@@ -7618,12 +7659,14 @@ async function boot(): Promise<void> {
   openWidgets = loadOpenWidgets();
   syncPinnedToRust();
 
+  refreshCustomGameSteamIds();
   startOverlayLoops();
 
   await listen<OpenPayload>("overlay-open", (event) => {
     setGhostMode(false);
     startOverlayLoops();
     startClipPolling();
+    if (event.payload.appName.startsWith("custom::")) refreshCustomGameSteamIds();
     void onOpen(event.payload);
   });
 
@@ -7698,12 +7741,14 @@ async function boot(): Promise<void> {
   });
 
   // The native watcher already showed the toast; the panel still has to fold
-  // the unlock into its own list and home card.
+  // the unlock into its own list and home card. Steam events name the bare
+  // AppID, store games name their launcher key, and a custom game names the
+  // Steam AppID its emulator watcher was started with.
   await listen<{ appId: string; name: string; displayName: string; description: string }>(
     "achievement-unlocked",
     (event) => {
-      if (!cachedAchievements || !context.appName.startsWith("steam::")) return;
-      if (context.appName !== `steam::${event.payload.appId}`) return;
+      if (!cachedAchievements) return;
+      if (!achievementEventMatchesContext(event.payload.appId)) return;
       const item = cachedAchievements.achievements.find((entry) => entry.name === event.payload.name);
       if (!item || isAchievementUnlocked(item)) return;
       item.unlocked = true;

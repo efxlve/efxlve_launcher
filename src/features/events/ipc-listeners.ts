@@ -111,6 +111,7 @@ import { syncCaseCustomStoreColors } from "../library/case-colors";
 import { drawSpeedCanvas, scheduleDrawSpeedCanvas, startSpeedChartTimer, stopSpeedChartTimer } from "../downloads/downloads-view";
 import {
   fetchAndRenderAchievements,
+  noteStoreUnlockSeen,
   openEpicModal,
   paintGameMeta,
   refreshAchievementsAfterSession,
@@ -1303,6 +1304,9 @@ export async function initApp(hooks: {
       });
     }
     for (const key of appKeys) {
+      // The native watcher and the store poll can see the same unlock. Mark it
+      // here so the poll does not announce a second card for it.
+      noteStoreUnlockSeen(key, name);
       const list = S.loadedAchievements.get(key);
       const entry = list?.achievements.find((ach) => ach.name === name);
       const wasUnlocked = entry?.unlocked === true;

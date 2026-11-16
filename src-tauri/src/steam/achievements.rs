@@ -2965,6 +2965,7 @@ fn toast_payload(
 ) -> crate::overlay::toast::ToastPayload {
     crate::overlay::toast::ToastPayload {
         generation: 0,
+        session: 0,
         title: title.to_string(),
         body: body.to_string(),
         tier,

@@ -539,6 +539,13 @@ pub(crate) fn achievement_notifications_blocked() -> bool {
         .unwrap_or(false)
 }
 
+/// True while the interactive panel is on screen. A toast card must not cover
+/// the panel the player just opened, so `show_now` drops any card that comes
+/// due while this is set.
+pub(crate) fn panel_visible() -> bool {
+    STATE.lock().map(|s| s.visible).unwrap_or(false)
+}
+
 /// Clears the active game context when a title stops.
 #[tauri::command]
 pub fn overlay_clear_active_game(app: AppHandle, app_name: String) {
@@ -707,6 +714,9 @@ pub(crate) fn show(app: &AppHandle) {
             title: String::new(),
         },
     };
+    // The panel takes the screen: a card that is still playing goes away now,
+    // and any card queued behind it is dropped by `toast::show_now`.
+    toast::hide_window(app);
     // The window is created on demand: it does not exist while the overlay is
     // switched off.
     let created = match ensure_window(app) {
@@ -736,10 +746,11 @@ pub(crate) fn show(app: &AppHandle) {
         hud::focus_window(raw_hwnd.0 as isize);
     }
     // A freshly created page has no listener yet; its ready signal replays this
-    // payload once. An already warm panel gets it now.
+    // payload once. An already warm panel gets it now. `emit` broadcasts to
+    // every webview, so a second `emit_to` would run the panel's open handler
+    // twice and duplicate its loads.
     if !created {
-        let _ = app.emit("overlay-open", payload.clone());
-        let _ = app.emit_to(OVERLAY_LABEL, "overlay-open", payload);
+        let _ = app.emit("overlay-open", payload);
     }
     metrics::ensure_running(app.clone());
 }
@@ -880,9 +891,10 @@ pub(crate) fn hide_now(app: &AppHandle) {
         Err(_) => 0,
     };
     hud::focus_window(hwnd);
+    // One broadcast reaches the panel, the browser and the toast host. The
+    // targeted sends used to deliver the same event two or three times, so a
+    // close ran its handlers more than once.
     let _ = app.emit("overlay-close", ());
-    let _ = app.emit_to(OVERLAY_LABEL, "overlay-close", ());
-    let _ = app.emit_to(browser::WINDOW_LABEL, "overlay-close", ());
 
     // A closed panel does not need to keep a WebView2 renderer parked in the
     // background. The page is rebuilt on the next open and the ready handshake
