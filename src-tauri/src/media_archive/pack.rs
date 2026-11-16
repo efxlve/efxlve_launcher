@@ -1084,6 +1084,40 @@ mod tests {
     }
 
     #[test]
+    fn a_cancelled_backup_leaves_no_partial_folder() {
+        let root = temp_root("cancel");
+        let game = root.join("Game");
+        std::fs::create_dir_all(&game).unwrap();
+        std::fs::write(game.join("data.bin"), noisy(256 * 1024, 41)).unwrap();
+        let target = root.join("archives");
+        let error = pack_game(PackJob {
+            app_name: "steam::9".to_string(),
+            title: "Cancelled".to_string(),
+            install_path: game,
+            target_root: target.clone(),
+            profile: MediaProfileInfo {
+                id: "test".to_string(),
+                volume_bytes: 128 * 1024,
+                frame_bytes: 32 * 1024,
+                file_system: "test".to_string(),
+            },
+            level: 3,
+            window_log: 20,
+            xtool: None,
+            store_meta: StoreMeta::default(),
+            sink: Arc::new(NoopSink),
+            cancel: Arc::new(AtomicBool::new(true)),
+        })
+        .err()
+        .expect("a cancelled backup must fail");
+
+        assert!(error.contains("cancelled"), "{error}");
+        let leftovers: Vec<_> = std::fs::read_dir(&target).unwrap().collect();
+        assert!(leftovers.is_empty(), "{leftovers:?}");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn scan_skips_nothing_it_cannot_read() {
         let root = temp_root("scan");
         let game = root.join("Game");
