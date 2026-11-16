@@ -4314,6 +4314,8 @@
   "archive.erasing": "消去中…",
   "archive.eraseDone": "ディスクは再び空になりました。",
   "archive.eraseHint": "クイック消去を行います。低速なドライブでは数分かかる場合があります。書き換え可能ディスクに新しいバックアップを書き込む前に使用してください。",
+  "archive.eraseFull": "Full erase",
+  "archive.eraseFullHint": "Full erase overwrites the whole disc and takes much longer. Quick erase is enough to reuse a rewritable disc.",
   "archive.notRewritable": "このディスクは 1 回のみ書き込み可能です。ディスクを再利用するには DVD-RW または BD-RE を使用してください。",
   "archive.discTooSmall": "ディスクの空き容量は {free} ですが、このパーツには {need} 必要です。",
   "archive.burnWait": "ディスクの書き込みには数分かかる場合があります。アプリを開いたままにし、ディスクを取り出さないでください。",

@@ -652,6 +652,7 @@ export const S = {
   archiveXtoolProgress: (null) as XtoolProgress | null,
   archiveErasing: false,
   archiveEraseArmed: false,
+  archiveEraseFull: false,
   cloudBackupSettings: (null) as CloudBackupSettings | null,
   cloudBackupTesting: false,
   cloudBackupSyncing: false,

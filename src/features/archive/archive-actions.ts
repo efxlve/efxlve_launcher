@@ -524,7 +524,7 @@ async function eraseDisc(): Promise<void> {
   S.archiveBurnDone = null;
   scheduleRender();
   try {
-    await discErase(recorder);
+    await discErase(recorder, S.archiveEraseFull);
     toast(t("archive.eraseDone"), "ok");
   } catch (error) {
     toast(localizeMessage(String(error)), "err");
@@ -940,6 +940,7 @@ export function handleArchiveChange(target: HTMLElement): boolean {
       "archive-overwrite",
       "archive-source-input",
       "archive-burn-recorder",
+      "archive-erase-full",
     ].includes(act)
   ) {
     return true;
@@ -1002,6 +1003,12 @@ export function handleArchiveChange(target: HTMLElement): boolean {
   }
   if (act === "archive-burn-recorder") {
     S.archiveBurnRecorder = (target as HTMLSelectElement).value;
+    S.archiveEraseArmed = false;
+    scheduleRender();
+    return true;
+  }
+  if (act === "archive-erase-full") {
+    S.archiveEraseFull = (target as HTMLInputElement).checked;
     S.archiveEraseArmed = false;
     scheduleRender();
     return true;

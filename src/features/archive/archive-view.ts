@@ -676,13 +676,19 @@ function renderBurnPanel(manifestPath: string): string {
        ${
          selectedRecorder.mediaLoaded && !selectedRecorder.mediaBlank
            ? selectedRecorder.mediaRewritable
-             ? `<div class="archive-actions">
+             ? `<div class="archive-inline">
+                  <label class="archive-inline-label">
+                    <input type="checkbox" data-act="archive-erase-full" ${S.archiveEraseFull ? "checked" : ""} ${busy ? "disabled" : ""} />
+                    ${t("archive.eraseFull")}
+                  </label>
+                </div>
+                <div class="archive-actions">
                   <button type="button" class="btn ${S.archiveEraseArmed ? "danger" : "ghost"} small" data-act="archive-erase" ${busy ? "disabled" : ""}>
                     ${S.archiveErasing ? `${icon("refresh", 13, "spin")} ${t("archive.erasing")}` : S.archiveEraseArmed ? `${icon("alert-triangle", 13)} ${t("archive.eraseConfirm")}` : `${icon("trash", 13)} ${t("archive.erase")}`}
                   </button>
                   ${S.archiveEraseArmed && !S.archiveErasing ? `<button type="button" class="btn ghost small" data-act="archive-erase-cancel">${t("archive.cancel")}</button>` : ""}
                 </div>
-                <div class="archive-note">${S.archiveEraseArmed ? t("archive.eraseConfirmHint") : t("archive.eraseHint")}</div>`
+                <div class="archive-note">${S.archiveEraseArmed ? t("archive.eraseConfirmHint") : S.archiveEraseFull ? t("archive.eraseFullHint") : t("archive.eraseHint")}</div>`
              : selectedRecorder.mediaWritable
                ? `<div class="archive-warn">${icon("alert-triangle", 13)} ${t("archive.notRewritable")}</div>`
                : `<div class="archive-warn">${icon("alert-triangle", 13)} ${t("archive.readOnlyDisc")}</div>`

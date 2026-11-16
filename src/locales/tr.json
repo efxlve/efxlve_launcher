@@ -4314,6 +4314,8 @@
   "archive.erasing": "Siliniyor…",
   "archive.eraseDone": "Disk yeniden boş.",
   "archive.eraseHint": "Hızlı silme. Yavaş sürücülerde birkaç dakika sürebilir; yeniden yazılabilir diske yeni yedek yazmadan önce kullan.",
+  "archive.eraseFull": "Tam silme",
+  "archive.eraseFullHint": "Tam silme tüm diski baştan yazar ve çok daha uzun sürer. Yeniden yazılabilir bir diski kullanmak için hızlı silme yeterlidir.",
   "archive.notRewritable": "Bu disk tek yazımlık. Diski yeniden kullanmak için DVD-RW veya BD-RE kullan.",
   "archive.discTooSmall": "Diskte {free} yer var ama bu parça {need} istiyor.",
   "archive.burnWait": "Diske yazma birkaç dakika sürebilir. Uygulamayı açık tut ve diski çıkarma.",

@@ -37,6 +37,7 @@ import type { LibraryItem } from "../../core/types";
 import {
   cancelEstimate,
   handleArchiveAction,
+  handleArchiveChange,
   loadArchiveDiscs,
   loadBurnRecorders,
   openArchiveForGame,
@@ -56,6 +57,8 @@ beforeEach(() => {
   S.archiveErasing = false;
   S.archiveEstimating = false;
   S.archiveXtoolInstalling = false;
+  S.archiveEraseArmed = false;
+  S.archiveEraseFull = false;
   S.archiveResult = null;
   S.archiveSelectedApp = "";
   S.archiveSource = "";
@@ -177,5 +180,18 @@ describe("archive busy guards", () => {
     resolveEstimate({} as ArchiveEstimate);
     await pending;
     expect(S.archiveEstimating).toBe(false);
+  });
+
+  it("disarms the erase confirmation when full erase changes", () => {
+    S.archiveEraseArmed = true;
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = true;
+    input.dataset.act = "archive-erase-full";
+
+    expect(handleArchiveChange(input)).toBe(true);
+
+    expect(S.archiveEraseFull).toBe(true);
+    expect(S.archiveEraseArmed).toBe(false);
   });
 });

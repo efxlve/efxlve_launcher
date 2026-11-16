@@ -4314,6 +4314,8 @@
   "archive.erasing": "Cancellazione…",
   "archive.eraseDone": "Il disco è di nuovo vuoto.",
   "archive.eraseHint": "Cancellazione rapida. Può richiedere alcuni minuti sulle unità lente; usala prima di scrivere un nuovo backup su un disco riscrivibile.",
+  "archive.eraseFull": "Full erase",
+  "archive.eraseFullHint": "Full erase overwrites the whole disc and takes much longer. Quick erase is enough to reuse a rewritable disc.",
   "archive.notRewritable": "Questo disco è scrivibile una sola volta. Usa un DVD-RW o BD-RE per riutilizzare un disco.",
   "archive.discTooSmall": "Il disco ha {free} liberi ma questa parte richiede {need}.",
   "archive.burnWait": "La scrittura di un disco può richiedere diversi minuti. Tieni aperta l'applicazione e non espellere il disco.",

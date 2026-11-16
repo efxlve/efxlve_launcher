@@ -4314,6 +4314,8 @@
   "archive.erasing": "Apagando…",
   "archive.eraseDone": "O disco está vazio novamente.",
   "archive.eraseHint": "Limpeza rápida. Pode levar alguns minutos em unidades lentas; use antes de gravar um novo backup em um disco regravável.",
+  "archive.eraseFull": "Full erase",
+  "archive.eraseFullHint": "Full erase overwrites the whole disc and takes much longer. Quick erase is enough to reuse a rewritable disc.",
   "archive.notRewritable": "Este disco é gravável apenas uma vez. Use um DVD-RW ou BD-RE para reutilizar um disco.",
   "archive.discTooSmall": "O disco tem {free} livres, mas esta parte precisa de {need}.",
   "archive.burnWait": "A gravação de um disco pode levar vários minutos. Mantenha o aplicativo aberto e não ejete o disco.",

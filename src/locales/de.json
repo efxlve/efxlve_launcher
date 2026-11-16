@@ -4314,6 +4314,8 @@
   "archive.erasing": "Wird gelöscht…",
   "archive.eraseDone": "Die Disc ist wieder leer.",
   "archive.eraseHint": "Schnelllöschung. Kann auf langsamen Laufwerken einige Minuten dauern; nutze sie vor dem Beschreiben einer wiederbeschreibbaren Disc mit einem neuen Backup.",
+  "archive.eraseFull": "Full erase",
+  "archive.eraseFullHint": "Full erase overwrites the whole disc and takes much longer. Quick erase is enough to reuse a rewritable disc.",
   "archive.notRewritable": "Diese Disc ist nur einmal beschreibbar. Verwende eine DVD-RW oder BD-RE, um eine Disc mehrfach zu nutzen.",
   "archive.discTooSmall": "Auf der Disc sind {free} frei, aber dieser Teil benötigt {need}.",
   "archive.burnWait": "Das Beschreiben einer Disc kann mehrere Minuten dauern. Lass die App geöffnet und wirf die Disc nicht aus.",

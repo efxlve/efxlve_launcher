@@ -4314,6 +4314,8 @@
   "archive.erasing": "正在擦除…",
   "archive.eraseDone": "光盘已恢复为空白。",
   "archive.eraseHint": "快速擦除。在较慢的光驱上可能需要几分钟；向可擦写光盘写入新备份前请使用此功能。",
+  "archive.eraseFull": "Full erase",
+  "archive.eraseFullHint": "Full erase overwrites the whole disc and takes much longer. Quick erase is enough to reuse a rewritable disc.",
   "archive.notRewritable": "这是一次性写入光盘。若要重复使用光盘，请使用 DVD-RW 或 BD-RE。",
   "archive.discTooSmall": "光盘剩余 {free} 可用空间，但此分卷需要 {need}。",
   "archive.burnWait": "刻录光盘可能需要几分钟时间，请保持应用打开且不要弹出光盘。",

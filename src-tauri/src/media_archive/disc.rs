@@ -329,17 +329,42 @@ try {{
     }
 }
 
-/// Quick-erases a rewritable disc so the burn step can use it again.
-pub fn erase(recorder_id: &str) -> Result<(), String> {
+/// Erases a rewritable disc. Quick erase resets the table of contents; a full
+/// erase overwrites the surface as well and takes much longer.
+pub fn erase(recorder_id: &str, full: bool) -> Result<(), String> {
     #[cfg(not(windows))]
     {
-        let _ = recorder_id;
+        let _ = (recorder_id, full);
         return Err("@t:disc.unsupported".to_string());
     }
     #[cfg(windows)]
     {
-        let script = format!(
-            r#"
+        let script = erase_script(recorder_id, full);
+        let error = match run_powershell(&script) {
+            Ok(_) => return Ok(()),
+            Err(error) => error,
+        };
+        let code = ["NO_DISC", "NOT_REWRITABLE", "RECORDER_MISSING"]
+            .iter()
+            .find(|code| error.contains(**code))
+            .copied();
+        match code {
+            Some("NO_DISC") => Err("@t:disc.noDisc".to_string()),
+            Some("NOT_REWRITABLE") => Err("@t:disc.notRewritable".to_string()),
+            Some("RECORDER_MISSING") => Err("@t:disc.recorderMissing".to_string()),
+            _ => Err(format!(
+                "@t:disc.eraseFailed\u{1f}{}",
+                clean_error_detail(&error)
+            )),
+        }
+    }
+}
+
+#[cfg(windows)]
+fn erase_script(recorder_id: &str, full: bool) -> String {
+    let full_erase = if full { "$true" } else { "$false" };
+    format!(
+        r#"
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -362,7 +387,7 @@ try {{
   $erase = New-Object -ComObject IMAPI2.MsftDiscFormat2Erase
   $erase.Recorder = $rec
   $erase.ClientName = "Efxlve Launcher"
-  $erase.FullErase = $false
+  $erase.FullErase = {}
   $erase.EraseMedia()
   [Console]::Out.WriteLine("OK")
 }} catch {{
@@ -370,26 +395,9 @@ try {{
   exit 1
 }}
 "#,
-            ps_quote(recorder_id)
-        );
-        let error = match run_powershell(&script) {
-            Ok(_) => return Ok(()),
-            Err(error) => error,
-        };
-        let code = ["NO_DISC", "NOT_REWRITABLE", "RECORDER_MISSING"]
-            .iter()
-            .find(|code| error.contains(**code))
-            .copied();
-        match code {
-            Some("NO_DISC") => Err("@t:disc.noDisc".to_string()),
-            Some("NOT_REWRITABLE") => Err("@t:disc.notRewritable".to_string()),
-            Some("RECORDER_MISSING") => Err("@t:disc.recorderMissing".to_string()),
-            _ => Err(format!(
-                "@t:disc.eraseFailed\u{1f}{}",
-                clean_error_detail(&error)
-            )),
-        }
-    }
+        ps_quote(recorder_id),
+        full_erase
+    )
 }
 
 /// `canonicalize` returns a `\\?\` verbatim path on Windows, which IMAPI's
@@ -481,6 +489,16 @@ mod tests {
         assert_eq!(ps_quote("a'b"), "'a''b'");
     }
 
+    #[cfg(windows)]
+    #[test]
+    fn erase_script_selects_quick_or_full() {
+        let quick = erase_script("a'b", false);
+        assert!(quick.contains("$erase.FullErase = $false"));
+        assert!(quick.contains("$recorderId = 'a''b'"));
+        let full = erase_script("drive", true);
+        assert!(full.contains("$erase.FullErase = $true"));
+    }
+
     #[test]
     fn recorder_payload_reads_media_fields() {
         let json = r#"{"items":[{"id":"x","name":"Drive","vendor":"V","product":"P","revision":"R","deviceType":1,"mediaTypes":2,"mediaLoaded":true,"mediaBlank":true,"mediaType":19,"freeBytes":1000,"capacityBytes":2000}]}"#;
@@ -545,7 +563,7 @@ mod tests {
     #[test]
     fn a_missing_recorder_is_reported_by_erase() {
         assert_eq!(
-            erase("no-such-recorder").unwrap_err(),
+            erase("no-such-recorder", false).unwrap_err(),
             "@t:disc.recorderMissing"
         );
     }

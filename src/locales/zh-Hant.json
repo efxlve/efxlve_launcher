@@ -4314,6 +4314,8 @@
   "archive.erasing": "正在抹除…",
   "archive.eraseDone": "光碟已恢復為空白。",
   "archive.eraseHint": "快速抹除。在較慢的光碟機上可能需要幾分鐘；向可抹寫光碟寫入新備份前請使用此功能。",
+  "archive.eraseFull": "Full erase",
+  "archive.eraseFullHint": "Full erase overwrites the whole disc and takes much longer. Quick erase is enough to reuse a rewritable disc.",
   "archive.notRewritable": "這是一次性寫入光碟。若要重複使用光碟，請使用 DVD-RW 或 BD-RE。",
   "archive.discTooSmall": "光碟剩餘 {free} 可用空間，但此分割檔需要 {need}。",
   "archive.burnWait": "燒錄光碟可能需要幾分鐘時間，請保持應用程式開啟且不要退出光碟。",

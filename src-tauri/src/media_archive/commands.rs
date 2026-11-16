@@ -629,10 +629,10 @@ pub async fn disc_burn_folder(folder: String, recorder_id: String) -> Result<(),
 }
 
 #[tauri::command]
-pub async fn disc_erase(recorder_id: String) -> Result<(), String> {
+pub async fn disc_erase(recorder_id: String, full: bool) -> Result<(), String> {
     let _disc = disc::begin_disc_job()?;
     let _awake = crate::keep_awake::keep_awake();
-    tauri::async_runtime::spawn_blocking(move || disc::erase(&recorder_id))
+    tauri::async_runtime::spawn_blocking(move || disc::erase(&recorder_id, full))
         .await
         .map_err(|error| error.to_string())?
 }

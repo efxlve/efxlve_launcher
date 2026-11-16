@@ -4314,6 +4314,8 @@
   "archive.erasing": "지우는 중…",
   "archive.eraseDone": "디스크가 다시 비워졌습니다.",
   "archive.eraseHint": "빠른 지우기입니다. 느린 드라이브에서는 몇 분 정도 걸릴 수 있으며, 재기록 가능 디스크에 새 백업을 쓰기 전에 사용하세요.",
+  "archive.eraseFull": "Full erase",
+  "archive.eraseFullHint": "Full erase overwrites the whole disc and takes much longer. Quick erase is enough to reuse a rewritable disc.",
   "archive.notRewritable": "이 디스크는 일회 기록용입니다. 디스크를 재사용하려면 DVD-RW 또는 BD-RE를 사용하세요.",
   "archive.discTooSmall": "디스크에 {free}의 여유 공간이 있지만 이 파츠에는 {need}가 필요합니다.",
   "archive.burnWait": "디스크를 굽는 데 몇 분 정도 걸릴 수 있습니다. 앱을 열어 두고 디스크를 꺼내지 마세요.",

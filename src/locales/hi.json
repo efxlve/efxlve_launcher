@@ -4314,6 +4314,8 @@
   "archive.erasing": "मिटाया जा रहा है…",
   "archive.eraseDone": "डिस्क फिर से खाली हो गई है।",
   "archive.eraseHint": "त्वरित मिटाना। धीमे ड्राइव पर इसमें कुछ मिनट लग सकते हैं; रीराइटेबल डिस्क पर नया बैकअप लिखने से पहले इसका उपयोग करें।",
+  "archive.eraseFull": "Full erase",
+  "archive.eraseFullHint": "Full erase overwrites the whole disc and takes much longer. Quick erase is enough to reuse a rewritable disc.",
   "archive.notRewritable": "यह डिस्क केवल एक बार लिखने योग्य है। डिस्क का पुनः उपयोग करने के लिए DVD-RW या BD-RE का उपयोग करें।",
   "archive.discTooSmall": "डिस्क में {free} खाली है लेकिन इस पार्ट को {need} चाहिए।",
   "archive.burnWait": "डिस्क लिखने में कई मिनट लग सकते हैं। ऐप खुला रखें और डिस्क बाहर न निकालें।",

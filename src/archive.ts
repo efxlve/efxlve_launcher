@@ -270,8 +270,8 @@ export const discListRecorders = () =>
 export const discBurnFolder = (folder: string, recorderId: string) =>
   invoke<void>("disc_burn_folder", { folder, recorderId });
 
-export const discErase = (recorderId: string) =>
-  invoke<void>("disc_erase", { recorderId });
+export const discErase = (recorderId: string, full: boolean) =>
+  invoke<void>("disc_erase", { recorderId, full });
 
 export const archiveDefaultTarget = (appName: string, installPath: string) =>
   invoke<ArchiveDefaultTarget>("archive_default_target", { appName, installPath });
