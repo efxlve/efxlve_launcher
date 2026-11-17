@@ -11,7 +11,7 @@ use std::sync::{Arc, Mutex};
 
 use media_archive::format::{read_manifest, MANIFEST_FILE};
 use media_archive::pack::ProgressSink;
-use media_archive::restore::{locate_volumes, restore_game, verify_archive, RestoreJob};
+use media_archive::restore::{restore_game, verify_archive, RestoreJob};
 use media_archive::xtool::Xtool;
 use media_archive::ArchiveProgress;
 
@@ -159,13 +159,6 @@ fn run() -> Result<(), String> {
             extra_dirs.push(dir);
         }
     }
-    let (_, missing) = locate_volumes(&manifest, &manifest_dir, &extra_dirs);
-    if let Some(index) = missing.first() {
-        return Err(format!(
-            "volume {index} is missing; put the other disc folders under the same parent or pass --extra"
-        ));
-    }
-
     let cancel = Arc::new(AtomicBool::new(false));
     let handler_cancel = cancel.clone();
     ctrlc::set_handler(move || {

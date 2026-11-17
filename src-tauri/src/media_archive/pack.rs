@@ -364,10 +364,12 @@ fn write_parity(
     let (shard_bytes, data_shards) = parity_shape(volumes, parity_shards);
     let layout = ParityLayout::new(data_shards, parity_shards).map_err(parity_write)?;
     let mut parity_volumes = Vec::with_capacity(volumes.len());
+    let mut volume_paths = Vec::with_capacity(volumes.len());
 
     for volume in volumes {
         let path = find_packed_volume(staging, &volume.file_name)
             .ok_or_else(|| parity_write(format!("missing volume {}", volume.file_name)))?;
+        volume_paths.push(path.clone());
         let parent = path.parent().unwrap_or(staging);
         let mut writers = Vec::with_capacity(parity_shards);
         let mut parity_hashers = Vec::with_capacity(parity_shards);
@@ -434,6 +436,28 @@ fn write_parity(
             data_sha256,
             files,
         });
+    }
+
+    let mut folders: Vec<PathBuf> = volume_paths
+        .iter()
+        .filter_map(|path| path.parent().map(Path::to_path_buf))
+        .collect();
+    folders.sort();
+    folders.dedup();
+    if folders.len() > 1 {
+        for (index, parity_volume) in parity_volumes.iter().enumerate() {
+            let Some(source) = volume_paths.get(index).and_then(|path| path.parent()) else {
+                continue;
+            };
+            let target = &folders[(index + 1) % folders.len()];
+            if source == target {
+                continue;
+            }
+            for file in &parity_volume.files {
+                std::fs::rename(source.join(&file.file_name), target.join(&file.file_name))
+                    .map_err(parity_write)?;
+            }
+        }
     }
 
     let parity_bytes = shard_bytes

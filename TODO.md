@@ -72,10 +72,14 @@ Open work only. Delete the item when it lands.
   BD-RE media, including full erase; Linux `xorriso` and macOS `drutil` remain
   open.
 - Reed-Solomon parity is wired into pack and restore. Format version 3 writes
-  four `.efxpar.NNN` files per volume, stores a SHA-256 for every data shard and
-  every parity file, and restores up to four damaged shards per volume. A whole
-  missing volume, damage beyond the parity count, and real-media validation are
-  still open. Older launchers reject v3 instead of misreading the extra files.
+  four `.efxpar.NNN` files per volume and places them on the next disc/folder,
+  stores a SHA-256 for every data shard and every parity file, and restores up
+  to four damaged shards per volume. A missing volume can be rebuilt when its
+  data-shard count fits the four parity shards (the current small-volume/fixture
+  case); a large optical volume has more data shards than parity, so rebuilding
+  a whole lost disc still needs striping or a higher parity count. Real-media
+  validation is also open. Older launchers reject v3 instead of misreading the
+  extra files.
 - The standalone `efxlve-restore.exe` (`src/restore_main.rs`) ships with the
   portable zip and as a release asset. It still needs a pass on a clean Windows
   machine without the launcher. Scope it as file recovery, not a store

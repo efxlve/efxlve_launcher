@@ -573,21 +573,21 @@ fn stored_bytes_on_disk(manifest: &MediaManifest, paths: &[PathBuf]) -> u64 {
         .filter_map(|path| std::fs::metadata(path).ok())
         .map(|meta| meta.len())
         .fold(0u64, u64::saturating_add);
-    if let Some(parity) = &manifest.parity {
-        for (volume, path) in manifest.volumes.iter().zip(paths) {
-            let Some(volume_parity) = parity
-                .volumes
-                .iter()
-                .find(|entry| entry.volume_index == volume.index)
-            else {
-                continue;
-            };
-            let Some(parent) = path.parent() else {
-                continue;
-            };
-            for file in &volume_parity.files {
-                if let Ok(meta) = std::fs::metadata(parent.join(&file.file_name)) {
-                    total = total.saturating_add(meta.len());
+    if manifest.parity.is_some() {
+        let mut dirs: Vec<PathBuf> = paths
+            .iter()
+            .filter_map(|path| path.parent().map(Path::to_path_buf))
+            .collect();
+        dirs.sort();
+        dirs.dedup();
+        for dir in dirs {
+            if let Ok(entries) = std::fs::read_dir(&dir) {
+                for entry in entries.flatten() {
+                    if entry.file_name().to_string_lossy().contains(".efxpar.") {
+                        if let Ok(meta) = entry.metadata() {
+                            total = total.saturating_add(meta.len());
+                        }
+                    }
                 }
             }
         }
@@ -634,14 +634,11 @@ pub fn archive_discs(manifest_path: String) -> Result<Vec<ArchiveDisc>, String> 
             let _ = std::fs::copy(&path, &disc_manifest);
         }
         let mut bytes = volume.bytes;
-        if let Some(parity) = &manifest.parity {
-            if let Some(entry) = parity
-                .volumes
-                .iter()
-                .find(|entry| entry.volume_index == volume.index)
-            {
-                for file in &entry.files {
-                    if let Ok(meta) = std::fs::metadata(folder.join(&file.file_name)) {
+        if let Ok(entries) = std::fs::read_dir(&folder) {
+            for entry in entries.flatten() {
+                let name = entry.file_name();
+                if name.to_string_lossy().contains(".efxpar.") {
+                    if let Ok(meta) = entry.metadata() {
                         bytes = bytes.saturating_add(meta.len());
                     }
                 }

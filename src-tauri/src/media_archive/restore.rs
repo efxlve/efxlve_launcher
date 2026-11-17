@@ -272,21 +272,50 @@ fn read_chunk(
 /// `parity_shards` damaged data shards per volume into a temporary volume.
 /// The caller passes the temporary paths to the block reader and removes them
 /// afterwards.
+fn missing_volume(manifest: &MediaManifest, index: usize) -> String {
+    let volume = &manifest.volumes[index];
+    format!(
+        "@t:archive.missingVolume\u{1f}{}\u{1f}{}",
+        volume.index, volume.file_name
+    )
+}
+
+/// Verifies each parity file and data-shard hash, then rebuilds up to
+/// `parity_shards` damaged or missing data shards per volume into a temporary
+/// volume. Parity files are searched in every volume folder, so a file placed
+/// on another disc can rebuild a whole missing volume when the shard count
+/// fits the parity count. The caller passes the temporary paths to the block
+/// reader and removes them afterwards.
 fn repair_volumes(
     manifest: &MediaManifest,
-    paths: &[PathBuf],
+    paths: &[Option<PathBuf>],
+    manifest_dir: &Path,
+    extra_dirs: &[PathBuf],
     temp_dir: &Path,
     temps: &mut Vec<PathBuf>,
 ) -> Result<Vec<PathBuf>, String> {
     let Some(parity) = &manifest.parity else {
-        return Ok(paths.to_vec());
+        if let Some((index, _)) = paths.iter().enumerate().find(|(_, path)| path.is_none()) {
+            return Err(missing_volume(manifest, index));
+        }
+        return Ok(paths.iter().flatten().cloned().collect());
     };
     parity.validate()?;
     let layout = ParityLayout::new(parity.data_shards as usize, parity.parity_shards as usize)
         .map_err(|error| format!("@t:archive.parityFailed\u{1f}{error}"))?;
     let shard_bytes = parity.shard_bytes;
-    let mut repaired = paths.to_vec();
 
+    let mut search_dirs = vec![manifest_dir.to_path_buf()];
+    for path in paths.iter().flatten() {
+        if let Some(parent) = path.parent() {
+            search_dirs.push(parent.to_path_buf());
+        }
+    }
+    search_dirs.extend(extra_dirs.iter().cloned());
+    search_dirs.sort();
+    search_dirs.dedup();
+
+    let mut repaired = Vec::with_capacity(paths.len());
     for (path_index, (volume, path)) in manifest.volumes.iter().zip(paths).enumerate() {
         let Some(volume_parity) = parity
             .volumes
@@ -295,14 +324,17 @@ fn repair_volumes(
         else {
             return Err("@t:archive.parityFailed\u{1f}volume metadata".to_string());
         };
-        let parent = path.parent().unwrap_or(temp_dir);
         let mut parity_readers: Vec<Option<File>> = Vec::with_capacity(volume_parity.files.len());
         for file in &volume_parity.files {
-            let candidate = parent.join(&file.file_name);
-            let good = candidate.is_file()
-                && file_sha256(&candidate).is_ok_and(|digest| digest == file.sha256);
+            let candidate = search_dirs
+                .iter()
+                .map(|dir| dir.join(&file.file_name))
+                .find(|candidate| candidate.is_file());
+            let good = candidate.as_ref().is_some_and(|candidate| {
+                file_sha256(candidate).is_ok_and(|digest| digest == file.sha256)
+            });
             parity_readers.push(if good {
-                Some(File::open(&candidate).map_err(|error| {
+                Some(File::open(candidate.unwrap()).map_err(|error| {
                     format!("@t:archive.parityFailed\u{1f}{error}")
                 })?)
             } else {
@@ -310,30 +342,41 @@ fn repair_volumes(
             });
         }
 
-        let mut source = File::open(path).map_err(|error| {
-            format!("@t:archive.parityFailed\u{1f}{error}")
-        })?;
-        let mut shard_hashers: Vec<Sha256> = (0..layout.data_shards())
-            .map(|_| Sha256::new())
-            .collect();
-        let mut offset = 0u64;
-        while offset < shard_bytes {
-            let chunk_len = (shard_bytes - offset).min(PARITY_CHUNK_BYTES as u64) as usize;
-            for (shard, hasher) in shard_hashers.iter_mut().enumerate() {
-                let start = shard as u64 * shard_bytes + offset;
-                let chunk = read_chunk(&mut source, start, chunk_len, volume.bytes)?;
-                hasher.update(&chunk);
-            }
-            offset += chunk_len as u64;
-        }
+        let mut source = match path {
+            Some(path) => Some(File::open(path).map_err(|error| {
+                format!("@t:archive.parityFailed\u{1f}{error}")
+            })?),
+            None => None,
+        };
         let mut bad = Vec::new();
-        for (shard, hasher) in shard_hashers.into_iter().enumerate() {
-            if format!("{:x}", hasher.finalize()) != volume_parity.data_sha256[shard] {
-                bad.push(shard);
+        if let Some(source) = source.as_mut() {
+            let mut shard_hashers: Vec<Sha256> =
+                (0..layout.data_shards()).map(|_| Sha256::new()).collect();
+            let mut offset = 0u64;
+            while offset < shard_bytes {
+                let chunk_len = (shard_bytes - offset).min(PARITY_CHUNK_BYTES as u64) as usize;
+                for (shard, hasher) in shard_hashers.iter_mut().enumerate() {
+                    let start = shard as u64 * shard_bytes + offset;
+                    let chunk = read_chunk(source, start, chunk_len, volume.bytes)?;
+                    hasher.update(&chunk);
+                }
+                offset += chunk_len as u64;
             }
+            for (shard, hasher) in shard_hashers.into_iter().enumerate() {
+                if format!("{:x}", hasher.finalize()) != volume_parity.data_sha256[shard] {
+                    bad.push(shard);
+                }
+            }
+        } else {
+            bad.extend(0..layout.data_shards());
         }
-        if bad.is_empty() {
+
+        if source.is_some() && bad.is_empty() {
+            repaired.push(path.clone().unwrap_or_default());
             continue;
+        }
+        if path.is_none() && parity_readers.iter().flatten().count() < layout.data_shards() {
+            return Err(missing_volume(manifest, path_index));
         }
         if bad.len() > layout.parity_shards() {
             return Err("@t:archive.parityTooMany".to_string());
@@ -346,9 +389,15 @@ fn repair_volumes(
             super::pack::now_seconds()
         ));
         let _ = std::fs::remove_file(&temp);
-        std::fs::copy(path, &temp).map_err(|error| {
-            format!("@t:archive.parityFailed\u{1f}{error}")
-        })?;
+        if let Some(path) = path {
+            std::fs::copy(path, &temp).map_err(|error| {
+                format!("@t:archive.parityFailed\u{1f}{error}")
+            })?;
+        } else {
+            File::create(&temp).map_err(|error| {
+                format!("@t:archive.parityFailed\u{1f}{error}")
+            })?;
+        }
         temps.push(temp.clone());
         let mut repaired_file = File::options()
             .read(true)
@@ -365,12 +414,10 @@ fn repair_volumes(
                     shards.push(None);
                 } else {
                     let start = shard as u64 * shard_bytes + offset;
-                    shards.push(Some(read_chunk(
-                        &mut source,
-                        start,
-                        chunk_len,
-                        volume.bytes,
-                    )?));
+                    let source = source.as_mut().ok_or_else(|| {
+                        "@t:archive.parityFailed\u{1f}source".to_string()
+                    })?;
+                    shards.push(Some(read_chunk(source, start, chunk_len, volume.bytes)?));
                 }
             }
             for reader in &mut parity_readers {
@@ -405,7 +452,12 @@ fn repair_volumes(
             }
             offset += chunk_len as u64;
         }
-        repaired[path_index] = temp;
+        if source.is_none() {
+            repaired_file
+                .set_len(volume.bytes)
+                .map_err(|error| format!("@t:archive.parityFailed\u{1f}{error}"))?;
+        }
+        repaired.push(temp);
     }
     Ok(repaired)
 }
@@ -453,22 +505,23 @@ pub fn restore_game(job: RestoreJob) -> Result<RestoreOutcome, String> {
         }
     }
 
-    let (volume_paths, missing) =
+    let (found_paths, missing) =
         locate_volumes(&job.manifest, &job.manifest_dir, &job.extra_dirs);
-    if let Some(index) = missing.first() {
-        let name = job
-            .manifest
-            .volumes
-            .iter()
-            .find(|volume| volume.index == *index)
-            .map(|volume| volume.file_name.clone())
-            .unwrap_or_default();
-        return Err(format!("@t:archive.missingVolume\u{1f}{index}\u{1f}{name}"));
+    let mut volume_paths = Vec::with_capacity(job.manifest.volumes.len());
+    let mut found_iter = found_paths.into_iter();
+    for volume in &job.manifest.volumes {
+        if missing.contains(&volume.index) {
+            volume_paths.push(None);
+        } else {
+            volume_paths.push(found_iter.next());
+        }
     }
     let mut repair_temps = Vec::new();
     let volume_paths = match repair_volumes(
         &job.manifest,
         &volume_paths,
+        &job.manifest_dir,
+        &job.extra_dirs,
         &target_parent,
         &mut repair_temps,
     ) {
@@ -1952,7 +2005,8 @@ mod tests {
     fn a_missing_volume_is_named_before_any_file_is_written() {
         let root = temp_root("missing");
         let (_game, folder, manifest_path) = pack_fixture(&root, 32 * 1024);
-        let manifest = crate::media_archive::format::read_manifest(&manifest_path).unwrap();
+        let mut manifest = crate::media_archive::format::read_manifest(&manifest_path).unwrap();
+        manifest.parity = None;
         let second = folder.join(&manifest.volumes[1].file_name);
         std::fs::remove_file(&second).unwrap();
         let target = root.join("target");

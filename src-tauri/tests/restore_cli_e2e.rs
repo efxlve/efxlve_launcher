@@ -352,6 +352,31 @@ fn the_built_binary_finds_disc_folders_and_restores_them() {
 }
 
 #[test]
+fn the_built_binary_rebuilds_a_deleted_disc_from_cross_disc_parity() {
+    let root = temp_root("missing-disc");
+    let source = write_source(&root);
+    let archive_root = root.join("archive");
+    let manifest = pack(&source, &archive_root, true);
+    let archive = manifest.parent().unwrap().to_path_buf();
+    assert!(
+        archive.join("disc-2").is_dir(),
+        "the fixture should have a second disc folder"
+    );
+    fs::remove_dir_all(archive.join("disc-2")).unwrap();
+
+    let restore_parent = root.join("restored");
+    let output = restore(&archive, &restore_parent, &[]);
+    assert!(
+        output.status.success(),
+        "cross-disc repair failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_same_tree(&source, &restore_parent.join("Game"));
+
+    let _ = fs::remove_dir_all(&root);
+}
+
+#[test]
 fn the_built_binary_restores_an_xtool_archive() {
     let root = temp_root("xtool");
     let source = write_source(&root);
@@ -413,7 +438,19 @@ fn the_built_binary_reports_a_missing_volume_without_writing_files() {
         volumes.len() > 1,
         "the fixture should span several volumes"
     );
-    fs::remove_file(&volumes[1]).unwrap();
+    let volume = &volumes[1];
+    let volume_name = volume
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or_default()
+        .to_string();
+    fs::remove_file(volume).unwrap();
+    for entry in fs::read_dir(&archive).unwrap().flatten() {
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.starts_with(&volume_name) && name.contains(".efxpar.") {
+            fs::remove_file(entry.path()).unwrap();
+        }
+    }
 
     let restore_parent = root.join("restored");
     let output = restore(&archive, &restore_parent, &[]);
