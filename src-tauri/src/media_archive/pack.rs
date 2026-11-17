@@ -357,9 +357,9 @@ fn write_parity(
     staging: &Path,
     volumes: &[VolumeInfo],
     parity_shards: usize,
-) -> Result<Option<ParityInfo>, String> {
+) -> Result<(Option<ParityInfo>, u64), String> {
     if parity_shards == 0 {
-        return Ok(None);
+        return Ok((None, 0));
     }
     let (shard_bytes, data_shards) = parity_shape(volumes, parity_shards);
     let layout = ParityLayout::new(data_shards, parity_shards).map_err(parity_write)?;
@@ -436,12 +436,18 @@ fn write_parity(
         });
     }
 
-    Ok(Some(ParityInfo {
-        data_shards: data_shards as u32,
-        parity_shards: parity_shards as u32,
-        shard_bytes,
-        volumes: parity_volumes,
-    }))
+    let parity_bytes = shard_bytes
+        .saturating_mul(parity_shards as u64)
+        .saturating_mul(volumes.len() as u64);
+    Ok((
+        Some(ParityInfo {
+            data_shards: data_shards as u32,
+            parity_shards: parity_shards as u32,
+            shard_bytes,
+            volumes: parity_volumes,
+        }),
+        parity_bytes,
+    ))
 }
 
 fn pack_into(
@@ -548,10 +554,11 @@ fn pack_into(
         .map_err(|error| tar_error(error, &job.cancel))?;
     let writer = sink.finish()?;
     let volumes = writer.finish()?;
-    let parity = write_parity(staging, &volumes, job.parity_shards)?;
+    let (parity, parity_bytes) = write_parity(staging, &volumes, job.parity_shards)?;
     let stored_bytes = volumes
         .iter()
-        .fold(0u64, |total, volume| total.saturating_add(volume.bytes));
+        .fold(0u64, |total, volume| total.saturating_add(volume.bytes))
+        .saturating_add(parity_bytes);
     let manifest = MediaManifest {
         format: FORMAT_NAME.to_string(),
         format_version: FORMAT_VERSION,

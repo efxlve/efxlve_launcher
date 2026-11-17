@@ -504,11 +504,7 @@ fn scan_manifests(
     if manifest_path.is_file() {
         if let Ok(manifest) = read_manifest(&manifest_path) {
             let (paths, missing) = locate_volumes(&manifest, dir, &[]);
-            let stored_bytes = paths
-                .iter()
-                .filter_map(|path| std::fs::metadata(path).ok())
-                .map(|meta| meta.len())
-                .fold(0u64, u64::saturating_add);
+            let stored_bytes = stored_bytes_on_disk(&manifest, &paths);
             out.push(FoundArchive {
                 manifest_path: manifest_path.display().to_string(),
                 manifest,
@@ -549,11 +545,7 @@ pub fn archive_inspect(manifest_path: String) -> Result<FoundArchive, String> {
     let (path, dir) = resolve_manifest_path(&path)?;
     let manifest = read_manifest(&path)?;
     let (paths, missing) = locate_volumes(&manifest, &dir, &[]);
-    let stored_bytes = paths
-        .iter()
-        .filter_map(|candidate| std::fs::metadata(candidate).ok())
-        .map(|meta| meta.len())
-        .fold(0u64, u64::saturating_add);
+    let stored_bytes = stored_bytes_on_disk(&manifest, &paths);
     Ok(FoundArchive {
         manifest_path: path.display().to_string(),
         manifest,
@@ -573,6 +565,34 @@ pub fn archive_locate(
     let extras: Vec<PathBuf> = extra_dirs.into_iter().map(PathBuf::from).collect();
     let (_, missing) = locate_volumes(&manifest, &dir, &extras);
     Ok(missing)
+}
+
+fn stored_bytes_on_disk(manifest: &MediaManifest, paths: &[PathBuf]) -> u64 {
+    let mut total = paths
+        .iter()
+        .filter_map(|path| std::fs::metadata(path).ok())
+        .map(|meta| meta.len())
+        .fold(0u64, u64::saturating_add);
+    if let Some(parity) = &manifest.parity {
+        for (volume, path) in manifest.volumes.iter().zip(paths) {
+            let Some(volume_parity) = parity
+                .volumes
+                .iter()
+                .find(|entry| entry.volume_index == volume.index)
+            else {
+                continue;
+            };
+            let Some(parent) = path.parent() else {
+                continue;
+            };
+            for file in &volume_parity.files {
+                if let Ok(meta) = std::fs::metadata(parent.join(&file.file_name)) {
+                    total = total.saturating_add(meta.len());
+                }
+            }
+        }
+    }
+    total
 }
 
 fn resolve_manifest_path(path: &Path) -> Result<(PathBuf, PathBuf), String> {
@@ -613,11 +633,25 @@ pub fn archive_discs(manifest_path: String) -> Result<Vec<ArchiveDisc>, String> 
         if !disc_manifest.is_file() {
             let _ = std::fs::copy(&path, &disc_manifest);
         }
+        let mut bytes = volume.bytes;
+        if let Some(parity) = &manifest.parity {
+            if let Some(entry) = parity
+                .volumes
+                .iter()
+                .find(|entry| entry.volume_index == volume.index)
+            {
+                for file in &entry.files {
+                    if let Ok(meta) = std::fs::metadata(folder.join(&file.file_name)) {
+                        bytes = bytes.saturating_add(meta.len());
+                    }
+                }
+            }
+        }
         discs.push(ArchiveDisc {
             volume_index: volume.index,
             folder: folder.display().to_string(),
             manifest_path: disc_manifest.display().to_string(),
-            bytes: volume.bytes,
+            bytes,
         });
     }
     Ok(discs)
