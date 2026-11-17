@@ -365,6 +365,30 @@ export const achievementSetNotificationOptions = (options: AchievementNotificati
 export const achievementSetNotificationColors = (colors: AchievementCardColors) =>
   invoke<void>("achievement_set_notification_colors", { colors });
 
+/** One newly unlocked achievement in a store poll burst. */
+export interface StoreUnlockAnnouncement {
+  name: string;
+  displayName: string;
+  description: string;
+  iconUrl: string;
+  rarityPercent: number | null;
+  tierName: string | null;
+}
+
+/** Announces a whole store poll burst with one card and one set of events. */
+export const achievementAnnounceStoreUnlocks = (
+  appId: string,
+  unlockedCount: number,
+  totalCount: number,
+  unlocks: StoreUnlockAnnouncement[],
+) =>
+  invoke<void>("achievement_announce_store_unlocks", {
+    appId,
+    unlockedCount,
+    totalCount,
+    unlocks,
+  });
+
 /** Saves the current frame as an unlock souvenir; null when it was not taken. */
 export const achievementCaptureSouvenir = (appName: string, title?: string) =>
   invoke<string | null>("achievement_capture_souvenir", { appName, title: title ?? null });

@@ -26,6 +26,11 @@ pub const TOAST_LABEL: &str = "toast";
 /// How long a hidden toast window may keep its renderer alive.
 const IDLE_RELEASE_MS: u64 = 60_000;
 
+/// How many cards may wait behind the one on screen. A burst is already
+/// coalesced at its source; this is the safety net for several separate bursts
+/// and system hints in a short window.
+const MAX_QUEUE: usize = 8;
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ToastPalette {
@@ -63,6 +68,12 @@ pub struct ToastPayload {
     /// System hints ("Shift+Tab opens the overlay") have no rarity line.
     #[serde(default)]
     pub tagless: bool,
+    /// Play the unlock chime when the card reaches the screen, not when it is
+    /// queued. Skipped in the page payload.
+    #[serde(skip)]
+    pub sound: bool,
+    #[serde(skip)]
+    pub sound_tier: u8,
     /// The achievement picture, when it landed before the card was emitted.
     #[serde(default)]
     pub icon: Option<String>,
@@ -106,11 +117,73 @@ fn emit_card(app: &AppHandle, payload: &ToastPayload) {
     let _ = app.emit_to(TOAST_LABEL, "ach-toast", payload.clone());
 }
 
+/// The chime belongs to the card, not to the queue push: a card that waits
+/// behind another must not ring early. The settings are read again at display
+/// time, so a volume or style change applies to a card already queued.
+fn play_card_sound(app: &AppHandle, payload: &ToastPayload) {
+    if payload.sound {
+        crate::steam::play_achievement_card_sound(app, payload.sound_tier);
+    }
+}
+
 fn take_queued_icon(generation: u64) -> Option<String> {
     QUEUED_ICONS
         .lock()
         .ok()
         .and_then(|mut map| map.as_mut().and_then(|map| map.remove(&generation)))
+}
+
+/// Appends a card, merging a full queue into the newest achievement card.
+///
+/// A source-side burst is already one card; this catches several separate
+/// bursts and hints close together. A hint never displaces an achievement
+/// card, and merged cards keep the rarest tier, the latest counts and the
+/// stronger sound.
+fn enqueue(queue: &mut std::collections::VecDeque<ToastPayload>, payload: ToastPayload) {
+    if payload.tagless {
+        if queue.len() < MAX_QUEUE {
+            queue.push_back(payload);
+        } else if queue.iter().all(|item| item.tagless) {
+            queue.pop_front();
+            queue.push_back(payload);
+        }
+        return;
+    }
+    if queue.len() < MAX_QUEUE {
+        queue.push_back(payload);
+        return;
+    }
+    if let Some(last) = queue.iter_mut().rev().find(|item| !item.tagless) {
+        let incoming_count = payload.batch.max(1);
+        let mut incoming_names = if payload.batch > 1 {
+            payload.batch_names.clone()
+        } else {
+            vec![payload.title.clone()]
+        };
+        if last.batch == 0 {
+            last.batch = 1;
+        }
+        if last.batch_names.is_empty() {
+            last.batch_names.push(last.title.clone());
+        }
+        last.batch = last.batch.saturating_add(incoming_count);
+        last.batch_names.append(&mut incoming_names);
+        last.tier = last.tier.max(payload.tier);
+        last.unlocked = last.unlocked.max(payload.unlocked);
+        last.total = last.total.max(payload.total);
+        last.rarity_percent = match (last.rarity_percent, payload.rarity_percent) {
+            (Some(a), Some(b)) => Some(a.min(b)),
+            (Some(a), None) => Some(a),
+            (None, Some(b)) => Some(b),
+            (None, None) => None,
+        };
+        last.sound |= payload.sound;
+        last.sound_tier = last.sound_tier.max(payload.sound_tier);
+        return;
+    }
+    // Every slot is a hint: keep the newest card instead of growing the queue.
+    queue.pop_front();
+    queue.push_back(payload);
 }
 
 /// Shows one card. Returns the generation a late icon download must match.
@@ -119,7 +192,10 @@ pub fn show(app: &AppHandle, mut payload: ToastPayload) -> u64 {
     payload.generation = generation;
     payload.session = SESSION.load(Ordering::SeqCst);
     if let Ok(mut queue) = QUEUE.lock() {
-        queue.get_or_insert_with(std::collections::VecDeque::new).push_back(payload);
+        enqueue(
+            queue.get_or_insert_with(std::collections::VecDeque::new),
+            payload,
+        );
     }
     start_drain(app.clone());
     generation
@@ -168,8 +244,10 @@ fn show_now(app: &AppHandle, mut payload: ToastPayload) -> bool {
         return false;
     }
     // The interactive panel is the surface the player is using; a card over it
-    // would cover the very UI that opened. The unlock still reaches the bell.
+    // would cover the very UI that opened. The unlock still reaches the bell,
+    // and the chime still plays as the audio half of the notification.
     if super::panel_visible() {
+        play_card_sound(app, &payload);
         return false;
     }
     if !payload.tagless && super::achievement_notifications_blocked() {
@@ -183,15 +261,20 @@ fn show_now(app: &AppHandle, mut payload: ToastPayload) -> bool {
         Ok(win) => win,
         Err(error) => {
             crate::perf::write_line_global(&format!("toast: {error}"));
+            play_card_sound(app, &payload);
             return false;
         }
     };
     // Window creation can take long enough for the panel to open or a game to
     // switch underneath us. Re-check before the card gets a chance to paint.
     if payload.session != SESSION.load(Ordering::SeqCst)
-        || super::panel_visible()
         || (!payload.tagless && super::achievement_notifications_blocked())
     {
+        let _ = win.hide();
+        return false;
+    }
+    if super::panel_visible() {
+        play_card_sound(app, &payload);
         let _ = win.hide();
         return false;
     }
@@ -208,9 +291,11 @@ fn show_now(app: &AppHandle, mut payload: ToastPayload) -> bool {
     place_on_active_monitor(&win);
     let _ = win.set_always_on_top(true);
     // A panel open can land between the check above and the show here. Drop
-    // the card instead of painting it under the panel's topbar.
+    // the card instead of painting it under the panel's topbar; the chime is
+    // still the audio half of the notification.
+    let panel_took_over = super::panel_visible();
     if payload.session != SESSION.load(Ordering::SeqCst)
-        || super::panel_visible()
+        || panel_took_over
         || (!payload.tagless && super::achievement_notifications_blocked())
     {
         if let Ok(mut slot) = PENDING.lock() {
@@ -223,6 +308,9 @@ fn show_now(app: &AppHandle, mut payload: ToastPayload) -> bool {
         }
         CURRENT.store(0, Ordering::SeqCst);
         let _ = win.hide();
+        if panel_took_over {
+            play_card_sound(app, &payload);
+        }
         return false;
     }
     let _ = win.show();
@@ -255,6 +343,7 @@ fn show_now(app: &AppHandle, mut payload: ToastPayload) -> bool {
     // the same card twice when readiness lands between the two checks.
     if READY.load(Ordering::SeqCst) && !deferred {
         emit_card(app, &payload);
+        play_card_sound(app, &payload);
         if let Ok(mut slot) = PENDING.lock() {
             *slot = None;
         }
@@ -342,12 +431,18 @@ pub fn toast_ready(app: AppHandle) {
     let session = SESSION.load(Ordering::SeqCst);
     let pending = PENDING.lock().ok().and_then(|mut slot| slot.take());
     if let Some(payload) = pending {
-        if payload.session == session && !super::panel_visible() {
+        let panel_visible = super::panel_visible();
+        if payload.session == session && !panel_visible {
             emit_card(&app, &payload);
+            play_card_sound(&app, &payload);
         } else if let Some(win) = app.get_webview_window(TOAST_LABEL) {
             // The card became stale (game switch, service stop) or the panel
             // took the screen while the page was booting. Do not leave an
-            // empty topmost window behind.
+            // empty topmost window behind; the chime still marks the unlock
+            // when the panel was the reason for dropping the card.
+            if payload.session == session && panel_visible {
+                play_card_sound(&app, &payload);
+            }
             let _ = win.hide();
         }
     }
@@ -583,4 +678,80 @@ fn schedule_idle_release(app: AppHandle, generation: u64) {
         READY.store(false, Ordering::SeqCst);
         let _ = win.destroy();
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{enqueue, ToastPalette, ToastPayload, MAX_QUEUE};
+    use std::collections::VecDeque;
+
+    fn card(title: &str, tagless: bool) -> ToastPayload {
+        ToastPayload {
+            generation: 0,
+            session: 0,
+            title: title.to_string(),
+            body: String::new(),
+            tier: 0,
+            unlocked: 0,
+            total: 0,
+            rarity_percent: None,
+            theme: "rarity".into(),
+            size: "normal".into(),
+            position: "top-right".into(),
+            style: "prism".into(),
+            exit_style: "auto".into(),
+            hold_ms: 5_000,
+            palette: ToastPalette {
+                background: "#000000".into(),
+                accent: "#f59e0b".into(),
+                border: "#785018".into(),
+                icon: "#fbbf24".into(),
+                title: "#ffffff".into(),
+                body: "#acb2b8".into(),
+            },
+            tagless,
+            sound: false,
+            sound_tier: 0,
+            icon: None,
+            batch: 0,
+            batch_names: Vec::new(),
+        }
+    }
+
+    fn full(tagless: bool) -> VecDeque<ToastPayload> {
+        (0..MAX_QUEUE)
+            .map(|index| card(&format!("item-{index}"), tagless))
+            .collect()
+    }
+
+    #[test]
+    fn a_full_queue_merges_achievement_cards() {
+        let mut queue = full(false);
+        enqueue(&mut queue, card("new", false));
+        assert_eq!(queue.len(), MAX_QUEUE);
+        let last = queue.back().expect("the queue keeps its last card");
+        assert_eq!(last.batch, 2);
+        assert_eq!(
+            last.batch_names,
+            vec![format!("item-{}", MAX_QUEUE - 1), "new".to_string()]
+        );
+    }
+
+    #[test]
+    fn a_hint_never_displaces_an_achievement_card() {
+        let mut queue = full(false);
+        enqueue(&mut queue, card("tip", true));
+        assert_eq!(queue.len(), MAX_QUEUE);
+        assert!(queue.iter().all(|item| !item.tagless));
+    }
+
+    #[test]
+    fn an_achievement_card_replaces_a_hint_when_every_slot_is_a_hint() {
+        let mut queue = full(true);
+        enqueue(&mut queue, card("unlock", false));
+        assert_eq!(queue.len(), MAX_QUEUE);
+        assert_eq!(queue.front().unwrap().title, "item-1");
+        assert_eq!(queue.back().unwrap().title, "unlock");
+        assert!(!queue.back().unwrap().tagless);
+    }
 }

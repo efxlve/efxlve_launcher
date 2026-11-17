@@ -44,7 +44,7 @@ import { setGameSceneArt } from "../../core/game-scene";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtAchDate, fmtBytes, fmtDecimal1, fmtHours, fmtPlaytime } from "../../core/utils";
-import { checkInstallPathState, epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type HltbData, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
+import { checkInstallPathState, epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementItem, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type HltbData, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 import { gogGetAchievements, gogGetSystemRequirements } from "../../gog";
 import { loadGogDetails } from "./game-details-cache";
 import { hydrateGameCompatCard } from "./game-compat";
@@ -52,8 +52,8 @@ import { hydrateProtonDbChip } from "./protondb";
 import { hydrateAntiCheatChip } from "./awacy";
 import { hydrateDeckChip } from "./deck";
 import {
+  achievementAnnounceStoreUnlocks,
   achievementCaptureSouvenir,
-  achievementTestNotification,
   steamAchievementProbe,
   steamFindStoreApp,
   steamGetAchievementCommunity,
@@ -67,6 +67,7 @@ import {
   steamWriteEmulatorAchievements,
   type AchievementSourceConfig,
   type SteamAchievementProbe,
+  type StoreUnlockAnnouncement,
 } from "../../steam";
 
 export const steamAchSourceCache = new Map<string, AchievementSourceConfig>();
@@ -3331,74 +3332,30 @@ async function resolveCustomGameSteamAppId(customGame: {
   return "";
 }
 
-function classifyStoreRarityTier(
-  rarityPercent: number | null | undefined,
-  tierName: string | undefined,
-  unlockedCount: number,
-  totalCount: number,
-): number {
-  if (totalCount > 0 && unlockedCount >= totalCount) return 4;
-  if (typeof rarityPercent === "number" && Number.isFinite(rarityPercent)) {
-    if (rarityPercent <= 3.5) return 3;
-    if (rarityPercent <= 12.0) return 2;
-    if (rarityPercent <= 30.0) return 1;
-    return 0;
-  }
-  switch ((tierName || "").toLowerCase()) {
-    case "platinum":
-      return 4;
-    case "ultra":
-    case "diamond":
-      return 3;
-    case "gold":
-      return 2;
-    case "silver":
-      return 1;
-    default:
-      return 0;
-  }
-}
-
-function emitStoreAchievementUnlock(
+/**
+ * Sends one burst to Rust: the card, the chime and the per-achievement events
+ * are decided there, so a save load cannot queue one card per achievement.
+ */
+function announceStoreUnlocks(
   appName: string,
-  ach: {
-    name: string;
-    display_name?: string;
-    description?: string;
-    icon_link?: string;
-    rarity?: { percent?: number | null } | null;
-    tier?: { name?: string } | null;
-  },
+  newly: EpicAchievementItem[],
   unlockedCount: number,
   totalCount: number,
 ): void {
-  if (!S.achievementNotificationOptions.enabled) return;
-  if (!achGameNotificationsEnabled(appName)) return;
-  const storeKey = sourceOfKey(appName);
-  if ((S.achievementNotificationOptions.disabledStores || []).includes(storeKey)) {
-    return;
-  }
-  const pct = ach.rarity?.percent ?? null;
-  // The threshold only filters what it can measure. A store that ships no
-  // rarity figure keeps its card; hiding an unlock we cannot rate would be a
-  // silent lie about the player's progress.
-  const minRarity = Number(S.achievementNotificationOptions.minRarityPercent) || 0;
-  if (minRarity > 0 && pct != null && pct > 0 && pct > minRarity) {
-    return;
-  }
-  const tierCode = classifyStoreRarityTier(pct, ach.tier?.name, unlockedCount, totalCount);
-  const title = ach.display_name?.trim() || ach.name;
-  const body = ach.description || "";
-  void achievementTestNotification(
-    title,
-    body,
-    tierCode,
+  if (newly.length === 0) return;
+  const unlocks: StoreUnlockAnnouncement[] = newly.map((ach) => ({
+    name: ach.name,
+    displayName: ach.display_name?.trim() || ach.name,
+    description: ach.description || "",
+    iconUrl: ach.icon_link || "",
+    rarityPercent: ach.rarity?.percent ?? null,
+    tierName: ach.tier?.name ?? null,
+  }));
+  void achievementAnnounceStoreUnlocks(
     appName,
-    ach.name,
-    ach.icon_link || "",
     unlockedCount,
     totalCount,
-    true,
+    unlocks,
   ).catch(() => {});
 }
 
@@ -3441,19 +3398,19 @@ function checkAndEmitNewStoreUnlocks(appName: string): number {
     sessionUnlockedBaseline.set(appName, baseline);
     return 0;
   }
-  let newlyUnlocked = 0;
-  let lead: string | null = null;
+  const newly: EpicAchievementItem[] = [];
   const totalCount = Math.max(data.total_achievements || 0, data.achievements.length);
   for (const ach of data.achievements) {
     if (!ach.unlocked || baseline.has(ach.name)) continue;
     baseline.add(ach.name);
-    newlyUnlocked += 1;
-    if (!lead) lead = ach.name;
-    emitStoreAchievementUnlock(appName, ach, baseline.size, totalCount);
+    newly.push(ach);
   }
+  if (newly.length === 0) return 0;
+  // One card, one chime and one set of events for the whole burst.
+  announceStoreUnlocks(appName, newly, baseline.size, totalCount);
   // One souvenir per burst, attached to the first unlock of the group.
-  if (lead) void captureStoreSouvenir(appName, lead);
-  return newlyUnlocked;
+  void captureStoreSouvenir(appName, newly[0].name);
+  return newly.length;
 }
 
 /**
@@ -3482,15 +3439,22 @@ function stopStoreAchievementPoll(appName: string): void {
 export function startStoreAchievementSession(appName: string): void {
   if (!isTauri || appName.startsWith("steam::")) return;
   const source = sourceOfKey(appName);
+  // Mirror the per-game mute before the store poll or an emulator watcher can
+  // announce anything. Rust owns the card decision for the whole burst now.
+  void steamSetAchievementNotifications(appName, achGameNotificationsEnabled(appName)).catch(
+    () => {},
+  );
   if (appName.startsWith("custom::")) {
     const game = S.customGames.find((item) => item.id === appName);
     if (!game) return;
     const exeDir = game.exePath?.replace(/[\\/][^\\/]*$/, "");
     void resolveCustomGameSteamAppId(game).then((appId) => {
-      void steamSetAchievementNotifications(appId, achGameNotificationsEnabled(appName)).catch(
+      // The wire app id stays the Steam AppID (the cache and emulator file are
+      // keyed by it), while the event name and the per-game mute use the
+      // launcher key so the overlay and the bell can find the custom game.
+      void steamStartEmulatorWatcher(appId, exeDir, currentLanguage(), appName).catch(
         () => {},
       );
-      void steamStartEmulatorWatcher(appId, exeDir, currentLanguage()).catch(() => {});
     });
     // RetroAchievements keeps its state on the server: poll the mapped game
     // while it runs. The page fetch caches the answer for a minute, so this

@@ -56,7 +56,7 @@ import { initAutoUpdate } from "../downloads/auto-update";
 import { noteDownloadActivity, noteDownloadFinished, noteDownloadInterrupted } from "../downloads/finish-action";
 import { installArtFallback } from "../library/art-fallback";
 import { initAppUpdater } from "../updates/update-manager";
-import { CONTROLLER_BRIDGE_KEY, AUTOSTART_INIT_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, OVERLAY_DISABLED_KEY, isTauri } from "../../core/constants";
+import { CONTROLLER_BRIDGE_KEY, AUTOSTART_INIT_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HINT_SEEN_KEY, OVERLAY_HUD_KEY, OVERLAY_DISABLED_KEY, isTauri } from "../../core/constants";
 import { overlayAntiCheatOverride, overlayEnabled, overlayHotkey, overlayHotkeyLabel } from "../../core/page-visibility";
 import { achGameNotificationsEnabled } from "../../core/ach-game-prefs";
 import { appMinimize, appSetAutostart } from "../../core/window";
@@ -958,9 +958,20 @@ export async function initApp(hooks: {
         // fresh start: show its Running state, but do not toast, flash the
         // overlay, or minimize the window the user just opened.
         if (!initial && !bootQuiet) {
-          // Point at the Shift+Tab overlay on the first start of the title, unless
-          // the overlay is off globally or the user opted this game out.
-          if (localStorage.getItem(OVERLAY_ENABLED_KEY) !== "false" && !overlayBlocked) {
+          // Point at the Shift+Tab overlay once per install, unless the overlay
+          // is off globally or the user opted this game out. Repeating the same
+          // five-second card on every launch was noise, not a hint.
+          if (
+            localStorage.getItem(OVERLAY_ENABLED_KEY) !== "false" &&
+            localStorage.getItem(OVERLAY_HINT_SEEN_KEY) !== "true" &&
+            S.achievementNotificationOptions.overlay !== false &&
+            !overlayBlocked
+          ) {
+            try {
+              localStorage.setItem(OVERLAY_HINT_SEEN_KEY, "true");
+            } catch {
+              /* private mode */
+            }
             void invoke("overlay_flash_hint", {
               title: t("overlay.enabledTitle", { key: overlayHotkeyLabel() }),
               body: t("overlay.startHint", { key: overlayHotkeyLabel() }),

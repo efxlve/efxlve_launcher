@@ -2902,15 +2902,19 @@ pub fn achievement_test_notification(
     let total = total_count.or(default_total).unwrap_or(0);
     if should_notify {
         if options.overlay {
-            let generation = crate::overlay::toast::show(
-                &app,
-                toast_payload(&options, tier, unlocked, total, default_pct, &title, &body),
-            );
+            let mut card = toast_payload(&options, tier, unlocked, total, default_pct, &title, &body);
+            // The chime belongs to the card so it cannot ring before a queued
+            // card's turn. A card that never reaches the screen still plays it.
+            card.sound = true;
+            card.sound_tier = tier;
+            let generation = crate::overlay::toast::show(&app, card);
             if let Some(ref url) = icon_url {
                 attach_achievement_icon(&app, url, generation);
             }
+        } else {
+            // No card to wait for: the sound is the whole notification.
+            play_achievement_notification_sound(&app, &options, tier);
         }
-        play_achievement_notification_sound(&app, &options, tier);
     }
     let payload = AchievementUnlockedPayload {
         app_id: resolved_app_id,
@@ -2927,6 +2931,43 @@ pub fn achievement_test_notification(
         screenshot: None,
     };
     let _ = app.emit("achievement-unlocked", payload);
+}
+
+/// One call for a whole store poll burst: the frontend sends every newly
+/// unlocked achievement once, Rust decides the card, sound and notification
+/// flags, and one event per achievement keeps the lists and the bell current.
+/// This is the non-Steam counterpart of the watcher's
+/// `emit_new_achievement_unlocks`.
+#[tauri::command]
+pub fn achievement_announce_store_unlocks(
+    app: tauri::AppHandle,
+    app_id: String,
+    unlocked_count: u32,
+    total_count: u32,
+    unlocks: Vec<AnnounceItem>,
+) {
+    let app_id = app_id.trim();
+    if app_id.is_empty() || unlocks.is_empty() {
+        return;
+    }
+    let newly_count = unlocks.len() as u32;
+    let unlocked_count = if total_count > 0 {
+        unlocked_count.max(newly_count).min(total_count)
+    } else {
+        unlocked_count.max(newly_count)
+    };
+    let store_key = notification_store_key(app_id);
+    let burst = prepare_burst(&app, app_id, store_key, &unlocks);
+    notify_burst_start(&app, &burst, &unlocks, unlocked_count, total_count);
+    emit_burst_events(
+        &app,
+        app_id,
+        &burst,
+        &unlocks,
+        unlocked_count,
+        total_count,
+        None,
+    );
 }
 
 /// Captures the moment for a non-Steam unlock. The frontend poll asks once per
@@ -2980,6 +3021,8 @@ fn toast_payload(
         hold_ms: options.duration_ms.clamp(2_000, 15_000),
         palette: launcher_palette(),
         tagless: false,
+        sound: false,
+        sound_tier: 0,
         icon: None,
         batch: 0,
         batch_names: Vec::new(),
@@ -2989,6 +3032,10 @@ fn toast_payload(
 /// Game-start / overlay hints: the same card, without the rarity line.
 pub fn show_system_hint(app: &tauri::AppHandle, title: &str, body: &str) {
     let options = achievement_notification_options(app);
+    // Hints are overlay cards too: the in-game toast switch must silence them.
+    if !options.overlay {
+        return;
+    }
     let mut payload = toast_payload(&options, 2, 0, 0, None, title, body);
     payload.theme = "launcher".to_string();
     payload.tagless = true;
@@ -2996,6 +3043,12 @@ pub fn show_system_hint(app: &tauri::AppHandle, title: &str, body: &str) {
     crate::overlay::toast::show(app, payload);
 }
 
+/// Plays the chime for a card that just reached the screen. The options are
+/// read again so a volume or style change applies to a card already queued.
+pub fn play_achievement_card_sound(app: &tauri::AppHandle, tier: u8) {
+    let options = achievement_notification_options(app);
+    play_achievement_notification_sound(app, &options, tier);
+}
 
 /// One achievement snapshot for the live watcher: the Steam client's own stats
 /// when available, otherwise the emulator file plus the public definition list.
@@ -3165,6 +3218,222 @@ fn capture_unlock_souvenir() -> Option<String> {
         .map(|item| item.file_path)
 }
 
+/// One unlock a notification burst can announce. The watcher builds it from a
+/// parsed `AchievementItem`; the store poll sends the same shape over IPC and
+/// the Rust side decides which cards, sounds and bell entries it earns.
+#[derive(Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AnnounceItem {
+    pub name: String,
+    #[serde(default)]
+    pub display_name: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub icon_url: String,
+    #[serde(default)]
+    pub rarity_percent: Option<f64>,
+    #[serde(default)]
+    pub tier_name: Option<String>,
+}
+
+impl AnnounceItem {
+    fn from_achievement(ach: &AchievementItem) -> Self {
+        Self {
+            name: ach.name.clone(),
+            display_name: ach.display_name.clone(),
+            description: ach.description.clone(),
+            icon_url: ach.icon_link.clone(),
+            rarity_percent: ach.rarity.as_ref().and_then(|rarity| rarity.percent),
+            tier_name: ach.tier.as_ref().map(|tier| tier.name.clone()),
+        }
+    }
+
+    fn display_label(&self) -> String {
+        if self.display_name.trim().is_empty() {
+            self.name.clone()
+        } else {
+            self.display_name.clone()
+        }
+    }
+}
+
+/// The shared decision for one unlock burst: who may be announced, and which
+/// of those earn a visible card.
+#[derive(Clone)]
+struct Burst {
+    options: AchievementNotificationOptions,
+    base_notify: bool,
+    store_enabled: bool,
+    game_enabled: bool,
+    cards_blocked: bool,
+    announced: Vec<usize>,
+    announced_names: std::collections::HashSet<String>,
+}
+
+fn prepare_burst(
+    app: &tauri::AppHandle,
+    payload_key: &str,
+    store_key: &str,
+    newly: &[AnnounceItem],
+) -> Burst {
+    let options = achievement_notification_options(app);
+    let store_enabled = !options.disabled_stores.iter().any(|s| s == store_key);
+    let game_enabled = achievement_game_notifications_enabled(payload_key);
+    let cards_blocked = crate::overlay::achievement_notifications_blocked();
+    let announced: Vec<usize> = newly
+        .iter()
+        .enumerate()
+        .filter(|(_, item)| rarity_allows_notification(&options, item.rarity_percent))
+        .map(|(index, _)| index)
+        .collect();
+    let announced_names = announced
+        .iter()
+        .map(|&index| newly[index].name.clone())
+        .collect();
+    Burst {
+        base_notify: options.enabled && store_enabled && game_enabled && !cards_blocked,
+        options,
+        store_enabled,
+        game_enabled,
+        cards_blocked,
+        announced,
+        announced_names,
+    }
+}
+
+/// The rarest tier in the burst drives the card glow and the chime.
+fn burst_tier(burst: &Burst, newly: &[AnnounceItem], unlocked: u32, total: u32) -> u8 {
+    burst
+        .announced
+        .iter()
+        .map(|&index| {
+            let item = &newly[index];
+            classify_achievement_rarity_tier(
+                item.rarity_percent,
+                item.tier_name.as_deref(),
+                unlocked,
+                total,
+            )
+            .0
+        })
+        .max()
+        .unwrap_or(2)
+}
+
+/// One card for the whole burst: the lead achievement's title and picture, the
+/// batch count and names when more than one unlock earned the card.
+fn show_burst_card(
+    app: &tauri::AppHandle,
+    burst: &Burst,
+    newly: &[AnnounceItem],
+    unlocked: u32,
+    total: u32,
+) {
+    if !burst.options.overlay {
+        return;
+    }
+    let Some(&lead_index) = burst.announced.first() else {
+        return;
+    };
+    let lead = &newly[lead_index];
+    let tier = burst_tier(burst, newly, unlocked, total);
+    let rarest = burst
+        .announced
+        .iter()
+        .filter_map(|&index| newly[index].rarity_percent)
+        .fold(None::<f64>, |acc, pct| Some(acc.map_or(pct, |best| best.min(pct))));
+    let mut payload = toast_payload(
+        &burst.options,
+        tier,
+        unlocked,
+        total,
+        rarest,
+        &lead.display_label(),
+        &lead.description,
+    );
+    // The chime waits for the card to reach the screen; a card that is dropped
+    // for the panel still rings from `toast::show_now`.
+    payload.sound = true;
+    payload.sound_tier = tier;
+    if burst.announced.len() > 1 {
+        payload.batch = burst.announced.len() as u32;
+        payload.batch_names = burst
+            .announced
+            .iter()
+            .map(|&index| newly[index].display_label())
+            .collect();
+    }
+    let generation = crate::overlay::toast::show(app, payload);
+    attach_achievement_icon(app, &lead.icon_url, generation);
+}
+
+/// Card and chime for a burst. With the in-game card switched off the chime is
+/// still the notification, so it plays immediately instead of waiting for a
+/// card that will never exist.
+fn notify_burst_start(
+    app: &tauri::AppHandle,
+    burst: &Burst,
+    newly: &[AnnounceItem],
+    unlocked: u32,
+    total: u32,
+) {
+    if !burst.base_notify || burst.announced.is_empty() {
+        return;
+    }
+    if burst.options.overlay {
+        show_burst_card(app, burst, newly, unlocked, total);
+    } else {
+        let tier = burst_tier(burst, newly, unlocked, total);
+        play_achievement_notification_sound(app, &burst.options, tier);
+    }
+}
+
+/// Every unlock still reaches the lists and the bell, whether or not a card
+/// played for it. A burst screenshot belongs to the lead advertised unlock.
+fn emit_burst_events(
+    app: &tauri::AppHandle,
+    payload_key: &str,
+    burst: &Burst,
+    newly: &[AnnounceItem],
+    unlocked: u32,
+    total: u32,
+    screenshot: Option<String>,
+) {
+    let lead_name = burst
+        .announced
+        .first()
+        .map(|&index| newly[index].name.as_str());
+    for item in newly {
+        let (_, resolved_tier_name) = classify_achievement_rarity_tier(
+            item.rarity_percent,
+            item.tier_name.as_deref(),
+            unlocked,
+            total,
+        );
+        let notified = burst.base_notify && burst.announced_names.contains(&item.name);
+        let payload = AchievementUnlockedPayload {
+            app_id: payload_key.to_string(),
+            name: item.name.clone(),
+            display_name: item.display_label(),
+            description: item.description.clone(),
+            icon_url: item.icon_url.clone(),
+            notification: notified,
+            card: notified && burst.options.overlay,
+            rarity_percent: item.rarity_percent,
+            tier: Some(resolved_tier_name),
+            unlocked_count: Some(unlocked),
+            total_count: Some(total),
+            screenshot: if lead_name == Some(item.name.as_str()) {
+                screenshot.clone()
+            } else {
+                None
+            },
+        };
+        let _ = app.emit("achievement-unlocked", payload);
+    }
+}
+
 /// Emits the card, sound and frontend event for every achievement that was not
 /// in `unlocked_set` yet.
 ///
@@ -3189,19 +3458,18 @@ fn emit_new_achievement_unlocks(
         .max(response.achievements.len() as u32);
 
     // Collect first: the card decision needs the whole burst.
-    let mut newly: Vec<&AchievementItem> = Vec::new();
+    let mut newly: Vec<AnnounceItem> = Vec::new();
     for ach in &response.achievements {
         if !ach.unlocked || unlocked_set.contains(&ach.name) {
             continue;
         }
         unlocked_set.insert(ach.name.clone());
-        newly.push(ach);
+        newly.push(AnnounceItem::from_achievement(ach));
     }
     if newly.is_empty() {
         return;
     }
 
-    let options = achievement_notification_options(app);
     let store_key = if write_cache {
         "steam"
     } else if payload_app_id.is_some() {
@@ -3210,130 +3478,55 @@ fn emit_new_achievement_unlocks(
     } else {
         "custom"
     };
-    let store_enabled = !options.disabled_stores.iter().any(|s| s == store_key);
-    let game_enabled = achievement_game_notifications_enabled(payload_key);
-    let cards_blocked = crate::overlay::achievement_notifications_blocked();
-    let base_notify = options.enabled && store_enabled && game_enabled && !cards_blocked;
-
-    // Achievements that earn a visible card. The threshold only filters what it
-    // can measure; a store without a rarity figure always passes.
-    let announced: Vec<&AchievementItem> = newly
-        .iter()
-        .copied()
-        .filter(|ach| {
-            rarity_allows_notification(
-                &options,
-                ach.rarity.as_ref().and_then(|r| r.percent),
-            )
-        })
-        .collect();
-
+    let burst = prepare_burst(app, payload_key, store_key, &newly);
     let unlocked_count = (unlocked_set.len() as u32).min(total_count.max(1));
-    let lead_name = announced.first().map(|ach| ach.name.clone());
+
+    // The card and the chime go out before the souvenir capture: a save-load
+    // burst must not wait for a screenshot.
+    notify_burst_start(app, &burst, &newly, unlocked_count, total_count);
+
     // A souvenir of the moment: one frame per burst, at most every 15 seconds.
     // The capture refuses when the game window is not foreground, so an
     // alt-tabbed desktop never ends up in the game's gallery. The store and
     // game mutes still apply; the master card switch does not, because a saved
     // frame is not a notification.
-    let souvenir = if options.unlock_screenshots
-        && store_enabled
-        && game_enabled
-        && !cards_blocked
-        && !announced.is_empty()
-        && unlock_screenshot_allowed()
-    {
-        capture_unlock_souvenir()
-    } else {
-        None
-    };
-    if base_notify && !announced.is_empty() {
-        let tier_of = |ach: &AchievementItem| {
-            classify_achievement_rarity_tier(
-                ach.rarity.as_ref().and_then(|r| r.percent),
-                ach.tier.as_ref().map(|t| t.name.as_str()),
+    let souvenir = burst.options.unlock_screenshots
+        && burst.store_enabled
+        && burst.game_enabled
+        && !burst.cards_blocked
+        && !burst.announced.is_empty()
+        && unlock_screenshot_allowed();
+    if souvenir {
+        // The events follow the capture, so the lead achievement's history row
+        // gets the saved frame without holding back the card that just played.
+        let app = app.clone();
+        let payload_key = payload_key.to_string();
+        let newly = newly.clone();
+        let burst = burst.clone();
+        std::thread::spawn(move || {
+            let screenshot = capture_unlock_souvenir();
+            emit_burst_events(
+                &app,
+                &payload_key,
+                &burst,
+                &newly,
                 unlocked_count,
                 total_count,
-            )
-            .0
-        };
-        // One chime for the burst, tuned to its rarest member.
-        let card_tier = announced.iter().map(|ach| tier_of(ach)).max().unwrap_or(2);
-        let rarest = announced
-            .iter()
-            .filter_map(|ach| ach.rarity.as_ref().and_then(|r| r.percent))
-            .fold(None::<f64>, |acc, pct| Some(acc.map_or(pct, |best| best.min(pct))));
-        let lead = announced[0];
-        let lead_display = if lead.display_name.trim().is_empty() {
-            lead.name.clone()
-        } else {
-            lead.display_name.clone()
-        };
-
-        if options.overlay {
-            let mut payload = toast_payload(
-                &options,
-                card_tier,
-                unlocked_count,
-                total_count,
-                rarest,
-                &lead_display,
-                &lead.description,
+                screenshot,
             );
-            if announced.len() > 1 {
-                payload.batch = announced.len() as u32;
-                payload.batch_names = announced
-                    .iter()
-                    .map(|ach| {
-                        if ach.display_name.trim().is_empty() {
-                            ach.name.clone()
-                        } else {
-                            ach.display_name.clone()
-                        }
-                    })
-                    .collect();
-            }
-            let generation = crate::overlay::toast::show(app, payload);
-            attach_achievement_icon(app, &lead.icon_link, generation);
-        }
-        play_achievement_notification_sound(app, &options, card_tier);
-    }
-
-    // Every new unlock still reaches the lists and the bell, whether or not a
-    // card played for it.
-    for ach in &newly {
-        let display = if ach.display_name.trim().is_empty() {
-            ach.name.clone()
-        } else {
-            ach.display_name.clone()
-        };
-        let rarity_percent = ach.rarity.as_ref().and_then(|r| r.percent);
-        let (_, resolved_tier_name) = classify_achievement_rarity_tier(
-            rarity_percent,
-            ach.tier.as_ref().map(|t| t.name.as_str()),
+        });
+    } else {
+        emit_burst_events(
+            app,
+            payload_key,
+            &burst,
+            &newly,
             unlocked_count,
             total_count,
+            None,
         );
-        let notified = base_notify && announced.iter().any(|entry| entry.name == ach.name);
-        let payload = AchievementUnlockedPayload {
-            app_id: payload_key.to_string(),
-            name: ach.name.clone(),
-            display_name: display,
-            description: ach.description.clone(),
-            icon_url: ach.icon_link.clone(),
-            notification: notified,
-            card: notified && options.overlay,
-            rarity_percent,
-            tier: Some(resolved_tier_name),
-            unlocked_count: Some(unlocked_count),
-            total_count: Some(total_count),
-            screenshot: if lead_name.as_deref() == Some(ach.name.as_str()) {
-                souvenir.clone()
-            } else {
-                None
-            },
-        };
-        let _ = app.emit("achievement-unlocked", payload);
     }
+
     // The drawer and the library summary read this file; an unlock must land
     // there without waiting for the next page open. Emulator-only titles have
     // no Steam client entry, so they keep their own store.
