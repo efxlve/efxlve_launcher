@@ -44,7 +44,7 @@ fn write_source_sized(root: &Path, data_len: usize) -> PathBuf {
 }
 
 fn pack(source: &Path, target: &Path, disc_layout: bool) -> PathBuf {
-    pack_with(source, target, disc_layout, None, None, None)
+    pack_with(source, target, disc_layout, None, None, None, false)
 }
 
 fn pack_custom(
@@ -60,6 +60,23 @@ fn pack_custom(
         None,
         Some(volume_bytes),
         Some(parity_shards),
+        false,
+    )
+}
+
+fn pack_full_volume(
+    source: &Path,
+    target: &Path,
+    volume_bytes: u64,
+) -> PathBuf {
+    pack_with(
+        source,
+        target,
+        true,
+        None,
+        Some(volume_bytes),
+        None,
+        true,
     )
 }
 
@@ -70,6 +87,7 @@ fn pack_with(
     xtool: Option<&Path>,
     volume_bytes: Option<u64>,
     parity_shards: Option<usize>,
+    full_volume_recovery: bool,
 ) -> PathBuf {
     let mut command = Command::new(env!("CARGO_BIN_EXE_efxlve-pack-fixture"));
     command.arg("--source").arg(source).arg("--target").arg(target);
@@ -84,6 +102,9 @@ fn pack_with(
     }
     if let Some(parity_shards) = parity_shards {
         command.arg("--parity-shards").arg(parity_shards.to_string());
+    }
+    if full_volume_recovery {
+        command.arg("--full-volume-parity");
     }
     let output = command.output().expect("run the fixture packer");
     assert!(
@@ -352,6 +373,44 @@ fn the_built_binary_finds_disc_folders_and_restores_them() {
 }
 
 #[test]
+fn the_built_binary_rebuilds_a_multi_shard_disc_with_full_parity() {
+    let root = temp_root("full-volume-parity");
+    let source = write_source_sized(&root, 2 * 1024 * 1024);
+    let archive_root = root.join("archive");
+    let manifest = pack_full_volume(&source, &archive_root, 1024 * 1024);
+    let archive = manifest.parent().unwrap().to_path_buf();
+    let manifest_json: serde_json::Value =
+        serde_json::from_slice(&fs::read(&manifest).unwrap()).unwrap();
+    let data_shards = manifest_json["parity"]["dataShards"]
+        .as_u64()
+        .expect("dataShards");
+    let parity_shards = manifest_json["parity"]["parityShards"]
+        .as_u64()
+        .expect("parityShards");
+    assert!(data_shards > 4, "the fixture must exceed four data shards");
+    assert!(
+        parity_shards >= data_shards,
+        "full-volume parity must cover every data shard"
+    );
+    assert!(
+        archive.join("disc-2").is_dir(),
+        "the fixture should have a second disc folder"
+    );
+    fs::remove_dir_all(archive.join("disc-2")).unwrap();
+
+    let restore_parent = root.join("restored");
+    let output = restore(&archive, &restore_parent, &[]);
+    assert!(
+        output.status.success(),
+        "full-parity missing-disc repair failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_same_tree(&source, &restore_parent.join("Game"));
+
+    let _ = fs::remove_dir_all(&root);
+}
+
+#[test]
 fn the_built_binary_rebuilds_a_deleted_disc_from_cross_disc_parity() {
     let root = temp_root("missing-disc");
     let source = write_source(&root);
@@ -382,7 +441,15 @@ fn the_built_binary_restores_an_xtool_archive() {
     let source = write_source(&root);
     let archive_root = root.join("archive");
     let xtool = fake_xtool(&root);
-    let manifest = pack_with(&source, &archive_root, false, Some(&xtool), None, None);
+    let manifest = pack_with(
+        &source,
+        &archive_root,
+        false,
+        Some(&xtool),
+        None,
+        None,
+        false,
+    );
     let archive = manifest.parent().unwrap().to_path_buf();
     let manifest_json: serde_json::Value =
         serde_json::from_slice(&fs::read(&manifest).unwrap()).unwrap();

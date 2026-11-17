@@ -4175,6 +4175,8 @@
   "archive.stageVerifying": "Yedek doğrulanıyor",
   "archive.verifyDone": "Yedek doğrulandı.",
   "archive.verifyAfterBackup": "Yedek bitince doğrula",
+  "archive.fullRecovery": "Tam hacim kurtarma (yaklaşık 2x alan)",
+  "archive.fullRecoveryHint": "Parity'yi artırarak kaybolan bir diskin tamamının diğerlerinden yeniden oluşturulmasını sağlar. Arşiv yaklaşık iki katına çıkar.",
   "archive.verifySummary": "{blocks} blok, {volumes} parça doğrulandı.",
   "archive.restoreDone": "Geri yükleme tamamlandı",
   "archive.partsReadyToast": "Tüm parçalar bulundu.",

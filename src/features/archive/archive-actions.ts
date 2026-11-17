@@ -583,6 +583,7 @@ async function startBackup(): Promise<void> {
       customMib: S.archiveCustomMib,
       level: S.archiveLevel,
       xtoolPath: S.archiveXtoolPath,
+      fullVolumeRecovery: S.archiveFullRecovery,
     });
     S.archiveResult = result;
     S.archiveProgress = null;
@@ -1077,6 +1078,11 @@ export function handleArchiveChange(target: HTMLElement): boolean {
   }
   if (act === "archive-verify-after") {
     S.archiveVerifyAfterBackup = (target as HTMLInputElement).checked;
+    return true;
+  }
+  if (act === "archive-full-recovery") {
+    S.archiveFullRecovery = (target as HTMLInputElement).checked;
+    scheduleRender();
     return true;
   }
   return false;

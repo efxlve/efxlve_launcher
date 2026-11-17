@@ -224,6 +224,7 @@ export const archiveStart = (args: {
   customMib?: number;
   level: string;
   xtoolPath?: string;
+  fullVolumeRecovery?: boolean;
 }) =>
   invoke<ArchiveSummary>("archive_start", {
     appName: args.appName,
@@ -234,6 +235,7 @@ export const archiveStart = (args: {
     customMib: args.customMib ?? null,
     level: args.level,
     xtoolPath: args.xtoolPath?.trim() ? args.xtoolPath.trim() : null,
+    fullVolumeRecovery: args.fullVolumeRecovery ?? false,
   });
 
 export const archiveCancel = (appName: string) =>

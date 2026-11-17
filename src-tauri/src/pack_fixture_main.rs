@@ -128,12 +128,14 @@ fn run() -> Result<(), String> {
     let mut xtool_path = None;
     let mut volume_bytes = 32 * 1024u64;
     let mut parity_shards = 4usize;
+    let mut full_volume_recovery = false;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--source" => source = Some(PathBuf::from(next_value(&mut args, "--source")?)),
             "--target" => target = Some(PathBuf::from(next_value(&mut args, "--target")?)),
             "--disc-layout" => disc_layout = true,
+            "--full-volume-parity" => full_volume_recovery = true,
             "--xtool" => xtool_path = Some(next_value(&mut args, "--xtool")?),
             "--volume-bytes" => {
                 volume_bytes = next_value(&mut args, "--volume-bytes")?
@@ -165,6 +167,7 @@ fn run() -> Result<(), String> {
         level: 3,
         window_log: 20,
         parity_shards,
+        full_volume_recovery,
         xtool: match xtool_path {
             Some(path) => Some(Xtool::new(&path)?),
             None => None,

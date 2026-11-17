@@ -1386,6 +1386,8 @@ mod tests {
             level: 3,
             window_log: 20,
             parity_shards: 4,
+
+            full_volume_recovery: false,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
@@ -1552,6 +1554,8 @@ mod tests {
             level: 3,
             window_log: 20,
             parity_shards: 4,
+
+            full_volume_recovery: false,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
@@ -1620,6 +1624,8 @@ mod tests {
             level: 3,
             window_log: 20,
             parity_shards: 4,
+
+            full_volume_recovery: false,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
@@ -1791,6 +1797,8 @@ mod tests {
                 level: 3,
                 window_log: 20,
                 parity_shards: 4,
+
+                full_volume_recovery: false,
                 xtool,
                 store_meta: StoreMeta::default(),
                 sink: Arc::new(NoopSink),
@@ -1890,6 +1898,8 @@ mod tests {
             level: 3,
             window_log: 20,
             parity_shards: 4,
+
+            full_volume_recovery: false,
             xtool: Some(xtool.clone()),
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
@@ -1972,6 +1982,8 @@ mod tests {
             level: 3,
             window_log: 20,
             parity_shards: 4,
+
+            full_volume_recovery: false,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),

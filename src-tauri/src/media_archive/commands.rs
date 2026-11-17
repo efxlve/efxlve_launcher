@@ -306,6 +306,7 @@ pub async fn archive_start(
     custom_mib: Option<u64>,
     level: String,
     xtool_path: Option<String>,
+    full_volume_recovery: bool,
 ) -> Result<ArchiveSummary, String> {
     let profile = profile::resolve(&profile_id, custom_mib)?;
     let (compression_level, window_log) = compression_setting(&level)?;
@@ -372,6 +373,7 @@ pub async fn archive_start(
         level: compression_level,
         window_log,
         parity_shards: super::pack::DEFAULT_PARITY_SHARDS,
+        full_volume_recovery,
         xtool,
         store_meta,
         sink: sink.clone(),

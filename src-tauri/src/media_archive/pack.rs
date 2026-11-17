@@ -76,6 +76,10 @@ pub struct PackJob {
     pub window_log: u32,
     /// Reed-Solomon parity shards per volume; 0 disables parity.
     pub parity_shards: usize,
+    /// When set, the packer raises the parity count to the volume's data-shard
+    /// count so a whole lost volume can be rebuilt from parity on other media.
+    /// This doubles the archive size.
+    pub full_volume_recovery: bool,
     /// Optional precompressor. The tar stream is piped through it before zstd.
     pub xtool: Option<Xtool>,
     pub store_meta: StoreMeta,
@@ -220,7 +224,12 @@ pub fn pack_game(mut job: PackJob) -> Result<PackOutcome, String> {
     // A v3 volume carries parity files inside the same media budget. Reserve a
     // share proportional to the requested parity count so the data volume plus
     // parity still fits the disc/USB profile.
-    if job.parity_shards > 0 && job.profile.volume_bytes > 0 {
+    if job.full_volume_recovery && job.profile.volume_bytes > 0 {
+        // Full-volume recovery needs parity equal to the data-shard count, so
+        // reserve a little over half of the media for the data volume.
+        let reserve = (job.profile.volume_bytes.saturating_mul(52) / 100).max(1);
+        job.profile.volume_bytes = job.profile.volume_bytes.saturating_sub(reserve).max(1);
+    } else if job.parity_shards > 0 && job.profile.volume_bytes > 0 {
         let reserve = job
             .profile
             .volume_bytes
@@ -357,11 +366,23 @@ fn write_parity(
     staging: &Path,
     volumes: &[VolumeInfo],
     parity_shards: usize,
+    full_volume_recovery: bool,
 ) -> Result<(Option<ParityInfo>, u64), String> {
+    let (shard_bytes, data_shards) = parity_shape(
+        volumes,
+        if full_volume_recovery { 0 } else { parity_shards },
+    );
+    let parity_shards = if full_volume_recovery {
+        data_shards
+    } else {
+        parity_shards
+    };
     if parity_shards == 0 {
         return Ok((None, 0));
     }
-    let (shard_bytes, data_shards) = parity_shape(volumes, parity_shards);
+    if data_shards + parity_shards > 255 {
+        return Err(parity_write("too many shards for Reed-Solomon"));
+    }
     let layout = ParityLayout::new(data_shards, parity_shards).map_err(parity_write)?;
     let mut parity_volumes = Vec::with_capacity(volumes.len());
     let mut volume_paths = Vec::with_capacity(volumes.len());
@@ -578,7 +599,12 @@ fn pack_into(
         .map_err(|error| tar_error(error, &job.cancel))?;
     let writer = sink.finish()?;
     let volumes = writer.finish()?;
-    let (parity, parity_bytes) = write_parity(staging, &volumes, job.parity_shards)?;
+    let (parity, parity_bytes) = write_parity(
+        staging,
+        &volumes,
+        job.parity_shards,
+        job.full_volume_recovery,
+    )?;
     let stored_bytes = volumes
         .iter()
         .fold(0u64, |total, volume| total.saturating_add(volume.bytes))
@@ -1289,6 +1315,8 @@ mod tests {
             level: 3,
             window_log: 20,
             parity_shards: 4,
+
+            full_volume_recovery: false,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
@@ -1346,6 +1374,8 @@ mod tests {
             level: 3,
             window_log: 20,
             parity_shards: 4,
+
+            full_volume_recovery: false,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
@@ -1390,6 +1420,8 @@ mod tests {
             level: 3,
             window_log: 20,
             parity_shards: 4,
+
+            full_volume_recovery: false,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
@@ -1451,6 +1483,8 @@ mod tests {
             level: 3,
             window_log: 20,
             parity_shards: 4,
+
+            full_volume_recovery: false,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
@@ -1495,6 +1529,8 @@ mod tests {
             level: 3,
             window_log: 20,
             parity_shards: 4,
+
+            full_volume_recovery: false,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),

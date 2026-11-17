@@ -4175,6 +4175,8 @@
   "archive.stageVerifying": "Verifying backup",
   "archive.verifyDone": "Backup verified.",
   "archive.verifyAfterBackup": "Verify the backup when it finishes",
+  "archive.fullRecovery": "Full volume recovery (about 2x space)",
+  "archive.fullRecoveryHint": "Raises parity so any one whole disc can be rebuilt from the others. The archive roughly doubles in size.",
   "archive.verifySummary": "Verified {blocks} blocks across {volumes} parts.",
   "archive.restoreDone": "اكتملت الاستعادة",
   "archive.partsReadyToast": "تم العثور على جميع الأجزاء.",

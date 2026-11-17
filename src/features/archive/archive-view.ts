@@ -260,6 +260,11 @@ function renderBackupTab(): string {
       <input type="checkbox" data-act="archive-verify-after" ${S.archiveVerifyAfterBackup ? "checked" : ""} ${running ? "disabled" : ""} />
       <span>${t("archive.verifyAfterBackup")}</span>
     </label>
+    <label class="archive-check">
+      <input type="checkbox" data-act="archive-full-recovery" ${S.archiveFullRecovery ? "checked" : ""} ${running ? "disabled" : ""} />
+      <span>${t("archive.fullRecovery")}</span>
+    </label>
+    <div class="archive-note">${t("archive.fullRecoveryHint")}</div>
     <div class="archive-actions">
       ${
         running
