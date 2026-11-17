@@ -785,9 +785,10 @@ function renderController(): string {
   );
   const status = S.controllerBridge;
   // A running bridge presents the physical pad to the WebView as a virtual
-  // Xbox pad, so the PlayStation pad behind it is active too.
+  // Xbox pad, so the PlayStation pad behind it is active too. Until the worker
+  // has actually opened that pad it is still pending, not active.
   const activeKinds = new Set(pads.map((g) => controllerKind(g.id)));
-  if (status?.bridgeRunning) activeKinds.add("playstation");
+  if (status?.bridgeRunning && status.bridgeDevice) activeKinds.add("playstation");
   // Chromium hides a connected pad from the Gamepad API until one of its
   // buttons is pressed; the HID list still shows it, one press short of active.
   const pendingPads = S.connectedControllers.filter((pad) => !activeKinds.has(pad.kind));
@@ -2581,6 +2582,50 @@ export async function loadControllerView(force = false): Promise<void> {
   render();
 }
 
+let bridgeRefreshTimer = 0;
+
+/**
+ * Re-reads the bridge fields after the worker has had time to open or drop the
+ * pad. Starting the bridge returns before HidApi hands over the physical pad,
+ * so an immediate read would keep the chip on "waiting for controller" even
+ * though the virtual pad is already live.
+ */
+export function scheduleControllerBridgeRefresh(delay = 1200, forcePadList = false): void {
+  if (!isTauri) return;
+  if (bridgeRefreshTimer) window.clearTimeout(bridgeRefreshTimer);
+  bridgeRefreshTimer = window.setTimeout(() => {
+    bridgeRefreshTimer = 0;
+    void refreshControllerBridgeStatus(forcePadList);
+  }, delay);
+}
+
+/**
+ * Re-reads the bridge fields and, when the worker changed the pad, the HID
+ * list. `forcePadList` covers a toggle, where the caller has already written
+ * the new bridge state and a plain comparison would look unchanged.
+ */
+async function refreshControllerBridgeStatus(forcePadList = false): Promise<void> {
+  if (!isTauri || S.view !== "settings" || S.settingsSection !== "controller") return;
+  const status = await controllerSupportStatus().catch(() => null);
+  if (!status) return;
+  // The section can change while the IPC call is in flight.
+  if (S.view !== "settings" || S.settingsSection !== "controller") return;
+  const current = S.controllerBridge;
+  const deviceChanged = current ? current.bridgeDevice !== status.bridgeDevice : true;
+  const statusChanged =
+    !current ||
+    current.viEmBus !== status.viEmBus ||
+    current.bridgeRunning !== status.bridgeRunning ||
+    deviceChanged;
+  if (!statusChanged && !forcePadList) return;
+  S.controllerBridge = status;
+  // The worker can pick up a pad that the 15-second HID watch has not seen yet,
+  // and a stopped worker leaves the virtual pad in the list until a fresh read.
+  if (deviceChanged || forcePadList) await refreshConnectedControllers(true);
+  if (S.view !== "settings" || S.settingsSection !== "controller") return;
+  render();
+}
+
 /**
  * Repaints the section when the pad list changes, and when the Gamepad API
  * flips a pad from "press a button" to active.
@@ -2590,9 +2635,20 @@ function repaintControllerSection(): void {
   render();
 }
 
-window.addEventListener("gamepadconnected", repaintControllerSection);
-window.addEventListener("gamepaddisconnected", repaintControllerSection);
-window.addEventListener("controller-list-changed", repaintControllerSection);
+window.addEventListener("gamepadconnected", () => {
+  repaintControllerSection();
+  // The virtual pad appears when the worker opens the physical one; read the
+  // bridge again so a slow open still names the pad.
+  scheduleControllerBridgeRefresh(600);
+});
+window.addEventListener("gamepaddisconnected", () => {
+  repaintControllerSection();
+  scheduleControllerBridgeRefresh(600);
+});
+window.addEventListener("controller-list-changed", () => {
+  repaintControllerSection();
+  scheduleControllerBridgeRefresh();
+});
 
 /** Loads the store client rows for Settings > Launchers. */
 export async function loadLaunchersView(force = false): Promise<void> {

@@ -161,7 +161,7 @@ import {
   renderNotificationPanel,
   selectNotifTab,
 } from "../notifications/notifications";
-import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, refreshUbiDirectProbe, handleSettingsAction, resetSettingsSearch } from "../settings/settings-view";
+import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, refreshUbiDirectProbe, handleSettingsAction, resetSettingsSearch, scheduleControllerBridgeRefresh } from "../settings/settings-view";
 import { loadCompatView } from "../settings/compat-view";
 import { probeUbisoftClientDownloads } from "../downloads/downloads-view";
 import { openInstallDialog } from "../install/install-dialog";
@@ -1487,6 +1487,9 @@ document.addEventListener("click", (e) => {
           S.controllerBridge.bridgeDevice = bridge.device;
         }
         render();
+        // The worker opens the pad just after start returns; name it then, and
+        // force the HID list so a removed virtual pad leaves it on stop.
+        scheduleControllerBridgeRefresh(1200, true);
       })
       .catch((e: unknown) => {
         localStorage.setItem(CONTROLLER_BRIDGE_KEY, "false");
