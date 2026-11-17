@@ -979,6 +979,25 @@ html.sb-narrow .sb-toggle-label {
   line-height: 1;
   flex-shrink: 0;
 }
+/* A custom image sits over its letter fallback until it loads. */
+.store-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.store-icon-wrap .store-custom-icon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+/* A site's favicon is tinted white; an uploaded image keeps its own colours. */
+.store-icon-wrap .store-custom-icon.store-icon-mono {
+  filter: grayscale(1) brightness(0) invert(1);
+}
 /* Logos-only mode: every tab is its mark; the open store smoothly reveals its full name. */
 .store-tabs.logos-only .tab .store-tab-label {
   display: inline-block;

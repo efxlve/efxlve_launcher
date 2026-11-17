@@ -259,6 +259,29 @@ export interface CustomStore {
   id: string;
   name: string;
   url: string;
+  /** `lucide:<name>`, an uploaded `data:image` URL, a site icon URL, or "" for the letter. */
+  icon: string;
+}
+
+/** Monochrome line marks the icon picker offers for user-added storefronts. */
+export const STORE_ICON_GLYPHS = ["store", "package", "globe", "gamepad-2", "star", "rocket"] as const;
+
+/** A 64px WebP icon stays far below this; a hand-edited record must not fill localStorage. */
+export const MAX_STORE_ICON_CHARS = 120_000;
+
+function normalizeStoreIcon(raw: unknown): string {
+  if (typeof raw !== "string" || !raw) return "";
+  if (raw.startsWith("lucide:")) {
+    const name = raw.slice("lucide:".length);
+    return (STORE_ICON_GLYPHS as readonly string[]).includes(name) ? raw : "";
+  }
+  if (/^data:image\/(png|webp|jpeg);base64,/i.test(raw)) {
+    return raw.length <= MAX_STORE_ICON_CHARS ? raw : "";
+  }
+  if (/^https?:\/\//i.test(raw)) {
+    return raw.length <= 2048 ? raw : "";
+  }
+  return "";
 }
 
 /** Store tabs the Stores bar can show at once. More tabs scroll away and stop fitting. */
@@ -291,11 +314,11 @@ export function customStores(): CustomStore[] {
     if (!Array.isArray(raw)) return [];
     return raw.flatMap((entry): CustomStore[] => {
       if (!entry || typeof entry !== "object") return [];
-      const { id, name, url } = entry as Record<string, unknown>;
+      const { id, name, url, icon } = entry as Record<string, unknown>;
       if (typeof id !== "string" || !/^custom-[a-z0-9-]{1,32}$/.test(id)) return [];
       if (typeof name !== "string" || !name.trim()) return [];
       if (typeof url !== "string" || !/^https?:\/\//i.test(url)) return [];
-      return [{ id, name: name.trim().slice(0, 48), url }];
+      return [{ id, name: name.trim().slice(0, 48), url, icon: normalizeStoreIcon(icon) }];
     });
   } catch {
     return [];
@@ -308,6 +331,25 @@ function saveCustomStores(list: CustomStore[]): void {
 
 export function customStore(id: string): CustomStore | undefined {
   return customStores().find((store) => store.id === id);
+}
+
+/** Mark for a store row/tab: bundled logo, the user's icon, or the name's letter. */
+export function storeMark(id: string, size = 18, className = "settings-store-logo"): string {
+  const custom = customStore(id);
+  return storeLogo(id, size, className, custom?.name ?? "", custom?.icon ?? "");
+}
+
+/** Replaces one user-added storefront's icon and repaints its tab. */
+export function setCustomStoreIcon(id: string, icon: string): boolean {
+  const list = customStores();
+  const index = list.findIndex((store) => store.id === id);
+  if (index < 0) return false;
+  list[index] = { ...list[index], icon: normalizeStoreIcon(icon) };
+  saveCustomStores(list);
+  const btn = document.getElementById("store-switcher")?.querySelector<HTMLElement>(`[data-store="${id}"]`);
+  if (btn) delete btn.dataset.rendered;
+  applyStoreTabs();
+  return true;
 }
 
 /** Display name of a built-in or user-added storefront. */
@@ -468,7 +510,7 @@ export function addCustomStore(name: string, url: string): AddCustomStoreResult 
   // Check the bar before the new store joins the order, or its own free slot
   // would make every add look full.
   const hidden = visibleStoreCount() >= MAX_VISIBLE_STORE_TABS;
-  saveCustomStores([...list, { id, name: cleanName, url: normalized }]);
+  saveCustomStores([...list, { id, name: cleanName, url: normalized, icon: "" }]);
   if (hidden) S.hiddenStores.add(id);
   else S.hiddenStores.delete(id);
   saveHiddenStores();
@@ -956,8 +998,7 @@ export function setView(next: View): void {
  */
 function renderStoreTab(btn: HTMLButtonElement, id: string): void {
   if (btn.dataset.rendered === "1") return;
-  const label = storeLabel(id);
-  btn.innerHTML = `${storeLogo(id, 16, "store-tab-logo", label)}<span class="store-tab-label">${esc(label)}</span>`;
+  btn.innerHTML = `${storeMark(id, 16, "store-tab-logo")}<span class="store-tab-label">${esc(storeLabel(id))}</span>`;
   btn.dataset.rendered = "1";
 }
 

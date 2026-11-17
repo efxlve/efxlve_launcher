@@ -108,7 +108,7 @@ import { handleCompatAction, loadCompatView, renderCompatSection } from "./compa
 import { keepDiscordOpen } from "../discord/discord-view";
 import { pcCheckResultHtml } from "./pc-check";
 import { storeLogo } from "../store/store-logos";
-import { MAX_CUSTOM_STORES, MAX_VISIBLE_STORE_TABS, customStores, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeLabel, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, getSteamTryRate, visibleStoreCount } from "../store/store-view";
+import { MAX_CUSTOM_STORES, MAX_VISIBLE_STORE_TABS, customStores, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeLabel, storeMark, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, getSteamTryRate, visibleStoreCount } from "../store/store-view";
 import { companionGetClientSettings, eaDefaultInstallDir, eaDirectStatus, eaInstallDir, ubiDefaultInstallDir, ubiDirectProbe, ubiDirectStatus, ubiInstallDir } from "../../companion";
 import { controllerKind, refreshConnectedControllers } from "../gamepad/gamepad";
 import {
@@ -1092,13 +1092,14 @@ function renderStores(): string {
           <input type="checkbox" data-act="toggle-store-visible" data-store="${id}" ${hidden ? "" : "checked"} ${lastVisible ? "disabled" : ""} />
           <span class="track"></span>
         </label>
+        ${userStoreIds.has(id) ? `<button type="button" class="btn icon-only ghost tiny" data-act="store-change-icon" data-store="${id}" title="${t("settings.storeIconTitle")}" aria-label="${t("settings.storeIconTitle")}">${icon("image", 13)}</button>` : ""}
         ${userStoreIds.has(id) ? `<button type="button" class="btn icon-only ghost tiny danger" data-act="remove-custom-store" data-store="${id}" title="${t("settings.storeRemove")}" aria-label="${t("settings.storeRemove")}">${icon("trash", 13)}</button>` : ""}
       </div>`;
 
     const statusBadge = hidden ? ` <span class="badge muted" style="margin-left:8px;font-size:11px;opacity:0.75;">${t("settings.storeHiddenBadge")}</span>` : "";
 
     return row(
-      `<div style="display:flex;align-items:center;gap:4px;${hidden ? "opacity:0.6;" : ""}">${storeLogo(id, 18, "settings-store-logo", label)}<span>${esc(label)}</span>${statusBadge}</div>`,
+      `<div style="display:flex;align-items:center;gap:4px;${hidden ? "opacity:0.6;" : ""}">${storeMark(id, 18, "settings-store-logo")}<span>${esc(label)}</span>${statusBadge}</div>`,
       userStore ? `<span class="custom-store-url">${esc(userStore.url)}</span>` : null,
       controls,
     );

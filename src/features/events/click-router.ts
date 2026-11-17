@@ -150,6 +150,7 @@ import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { closeStorageMenus } from "../storage/storage-view";
 import { BATTLENET_ACCOUNT_URL, MAX_CUSTOM_STORES, MAX_VISIBLE_STORE_TABS, addCustomStore, loadPlayerProfile, moveStoreOrder, openStore, openStoreUrl, playerProfileStale, purgeStoreViews, removeCustomStore, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, storeEpicAssistantEnabled, setStoreEpicAssistant, storeSteamCurrencyEnabled, setStoreSteamCurrency, storeUrlFor, visibleHeaderStores } from "../store/store-view";
+import { applyStoreIcon, closeStoreIconPicker, openStoreIconPicker, pickStoreIconFile, useStoreSiteIcon } from "../store/store-icon";
 import {
   clearNotifications,
   closeNotifPanel,
@@ -1600,6 +1601,21 @@ document.addEventListener("click", (e) => {
       toast(i18nT("settings.storeRemoved"), "ok");
       render();
     }
+  } else if (act === "store-change-icon") {
+    const id = t.dataset.store;
+    if (id) openStoreIconPicker(id);
+  } else if (act === "store-icon-close") {
+    closeStoreIconPicker();
+  } else if (act === "store-icon-backdrop") {
+    if (targetEl === t) closeStoreIconPicker();
+  } else if (act === "store-icon-letter") {
+    applyStoreIcon("");
+  } else if (act === "store-icon-glyph") {
+    applyStoreIcon(t.dataset.icon ?? "");
+  } else if (act === "store-icon-site") {
+    void useStoreSiteIcon();
+  } else if (act === "store-icon-upload") {
+    pickStoreIconFile();
   } else if (act === "store-order-up") {
     const store = t.dataset.store;
     if (store) {

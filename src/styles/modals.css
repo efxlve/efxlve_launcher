@@ -2273,6 +2273,27 @@
 .panel-avatar-modal-info h4 { margin: 0 0 4px; font-size: 14px; }
 .panel-avatar-modal-info p { margin: 0; font-size: 12px; color: var(--text-3); }
 
+/* --- Store icon picker (Settings > Stores) --- */
+.store-icon-modal { width: min(520px, 100%); }
+.store-icon-body { flex-direction: column; align-items: center; gap: 10px; padding: 18px 24px 4px; }
+.store-icon-preview {
+  width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2);
+}
+.store-icon-preview-mark { width: 56px; height: 56px; }
+.store-icon-hint { margin: 0; max-width: 420px; text-align: center; font-size: 12px; line-height: 1.5; color: var(--text-3); }
+.store-icon-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(54px, 1fr)); gap: 8px; padding: 14px 24px 4px; }
+.store-icon-choice {
+  height: 54px; display: flex; align-items: center; justify-content: center;
+  padding: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-1);
+  color: var(--text-2); cursor: pointer;
+  transition: border-color var(--ease), color var(--ease), background-color var(--ease);
+}
+.store-icon-choice:hover { color: var(--text); border-color: var(--accent); }
+.store-icon-choice.active { color: var(--accent); border-color: var(--accent); background: var(--accent-tint); }
+.store-icon-choice-letter { font-size: 21px; font-weight: 700; }
+.store-icon-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; padding: 14px 24px 20px; }
+
 /* --- Hide several library games --- */
 .hide-list-dialog { width: min(520px, 100%); height: min(640px, 88vh); overscroll-behavior: contain; }
 .hide-list-body {

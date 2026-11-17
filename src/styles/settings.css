@@ -963,6 +963,7 @@
 .custom-store-limit { margin-top: 4px; color: var(--err); }
 /* The letter mark is a span, not an image: keep its letter centred. */
 .settings-store-logo.store-mark-fallback { display: inline-flex; align-items: center; justify-content: center; }
+.settings-store-logo.store-icon-wrap { display: inline-flex; align-items: center; justify-content: center; }
 
 
 /* Physical Case Style Visual Picker in Settings */
