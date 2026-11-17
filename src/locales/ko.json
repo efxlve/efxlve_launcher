@@ -4174,6 +4174,7 @@
   "archive.verifyHint": "Reads every block and checks its SHA-256. It does not write anything or need xtool.",
   "archive.stageVerifying": "Verifying backup",
   "archive.verifyDone": "Backup verified.",
+  "archive.verifyAfterBackup": "Verify the backup when it finishes",
   "archive.verifySummary": "Verified {blocks} blocks across {volumes} parts.",
   "archive.restoreDone": "복원 완료",
   "archive.partsReadyToast": "모든 파츠를 찾았습니다.",

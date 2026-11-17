@@ -4174,6 +4174,7 @@
   "archive.verifyHint": "Her bloğu okuyup SHA-256 değerini kontrol eder. Hiçbir şey yazmaz ve xtool gerektirmez.",
   "archive.stageVerifying": "Yedek doğrulanıyor",
   "archive.verifyDone": "Yedek doğrulandı.",
+  "archive.verifyAfterBackup": "Yedek bitince doğrula",
   "archive.verifySummary": "{blocks} blok, {volumes} parça doğrulandı.",
   "archive.restoreDone": "Geri yükleme tamamlandı",
   "archive.partsReadyToast": "Tüm parçalar bulundu.",

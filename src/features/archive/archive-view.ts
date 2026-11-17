@@ -256,6 +256,10 @@ function renderBackupTab(): string {
     ${renderPlanSummary(plan)}
     ${renderEstimate()}
     <div class="archive-note archive-start-hint">${t("archive.startHint")}</div>
+    <label class="archive-check">
+      <input type="checkbox" data-act="archive-verify-after" ${S.archiveVerifyAfterBackup ? "checked" : ""} ${running ? "disabled" : ""} />
+      <span>${t("archive.verifyAfterBackup")}</span>
+    </label>
     <div class="archive-actions">
       ${
         running
@@ -265,8 +269,9 @@ function renderBackupTab(): string {
           : `<button type="button" class="btn primary" data-act="archive-start" ${!plan || !archiveFits(plan.freeBytes, plan.requiredBytes, S.archiveEstimate?.estimatedBytes ?? null) || !plan.volumeFits || S.archiveBurning !== null || S.archiveErasing || S.archiveEstimating || S.archiveXtoolInstalling ? "disabled" : ""}>${icon("package", 14)} ${t("archive.start")}</button>`
       }
     </div>
-    ${S.archiveResult ? "" : renderProgress(S.archiveProgress, "archive")}
+    ${S.archiveRunning || !S.archiveResult ? renderProgress(S.archiveProgress, "archive") : ""}
     ${renderBackupResult(S.archiveResult)}
+    ${renderVerifyResult()}
     ${S.archiveResult?.discLayout && IS_WINDOWS ? renderBurnPanel(S.archiveResult.manifestPath) : ""}
   `;
 }

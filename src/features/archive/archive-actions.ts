@@ -567,8 +567,12 @@ async function startBackup(): Promise<void> {
   S.archiveActiveId = game.key;
   S.archiveProgress = null;
   S.archiveResult = null;
+  S.archiveVerifyResult = null;
   clearBurnState();
   scheduleRender();
+  const verifyAfter = S.archiveVerifyAfterBackup;
+  let verifyPath = "";
+  let verifyApp = "";
   try {
     const result = await archiveStart({
       appName: game.key,
@@ -582,6 +586,8 @@ async function startBackup(): Promise<void> {
     });
     S.archiveResult = result;
     S.archiveProgress = null;
+    verifyPath = result.manifestPath;
+    verifyApp = result.appName;
     if (result.discLayout) {
       void loadArchiveDiscs(result.manifestPath);
       void loadBurnRecorders(true);
@@ -598,6 +604,9 @@ async function startBackup(): Promise<void> {
     S.archiveRunning = false;
     S.archiveActiveId = "";
     scheduleRender();
+  }
+  if (verifyAfter && verifyPath) {
+    await verifyArchive(verifyPath, verifyApp);
   }
 }
 
@@ -681,10 +690,9 @@ async function addPartsFolder(): Promise<void> {
 }
 
 /** Read-only block check: no target, free space or xtool is needed. */
-async function verifyArchive(manifestPath: string): Promise<void> {
-  const found = S.archiveFound?.find((item) => item.manifestPath === manifestPath);
+async function verifyArchive(manifestPath: string, appName = ""): Promise<void> {
   if (
-    !found ||
+    !manifestPath ||
     S.archiveRunning ||
     S.archiveBurning !== null ||
     S.archiveErasing ||
@@ -693,8 +701,10 @@ async function verifyArchive(manifestPath: string): Promise<void> {
   ) {
     return;
   }
+  const found = S.archiveFound?.find((item) => item.manifestPath === manifestPath);
+  const id = appName || found?.manifest.appName || "";
   S.archiveRunning = true;
-  S.archiveActiveId = found.manifest.appName;
+  S.archiveActiveId = id;
   S.archiveProgress = null;
   S.archiveVerifyResult = null;
   scheduleRender();
@@ -1063,6 +1073,10 @@ export function handleArchiveChange(target: HTMLElement): boolean {
     S.archiveEraseFull = (target as HTMLInputElement).checked;
     S.archiveEraseArmed = false;
     scheduleRender();
+    return true;
+  }
+  if (act === "archive-verify-after") {
+    S.archiveVerifyAfterBackup = (target as HTMLInputElement).checked;
     return true;
   }
   return false;

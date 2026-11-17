@@ -9,6 +9,20 @@ const ipc = vi.hoisted(() => ({
   burn: vi.fn(async () => undefined),
   estimate: vi.fn(async () => ({}) as ArchiveEstimate),
   cancel: vi.fn(async () => true),
+  start: vi.fn(async () => ({
+    appName: "steam::1",
+    title: "Game",
+    store: "steam",
+    folder: "C:\\archives\\game",
+    manifestPath: "C:\\archives\\game\\manifest.efxmeta.json",
+    originalBytes: 10,
+    storedBytes: 5,
+    volumeCount: 1,
+    volumes: [],
+    compression: {},
+    createdAt: 0,
+    discLayout: false,
+  })),
   verify: vi.fn(async () => ({
     appName: "steam::1",
     title: "Game",
@@ -28,6 +42,7 @@ vi.mock("../../archive", async (importOriginal) => {
     discBurnFolder: ipc.burn,
     archiveEstimate: ipc.estimate,
     archiveCancel: ipc.cancel,
+    archiveStart: ipc.start,
     archiveVerify: ipc.verify,
   };
 });
@@ -75,6 +90,8 @@ beforeEach(() => {
   S.archiveEstimate = null;
   S.archiveFound = null;
   S.archiveVerifyResult = null;
+  S.archiveVerifyAfterBackup = false;
+  S.runningGames.clear();
   S.allGamesMap.clear();
   ipc.scan.mockClear();
   ipc.install.mockClear();
@@ -83,6 +100,7 @@ beforeEach(() => {
   ipc.burn.mockClear();
   ipc.estimate.mockClear();
   ipc.cancel.mockClear();
+  ipc.start.mockClear();
   ipc.verify.mockClear();
 });
 
@@ -229,5 +247,32 @@ describe("archive busy guards", () => {
     );
     await vi.waitFor(() => expect(S.archiveVerifyResult?.blocks).toBe(1));
     expect(S.archiveRunning).toBe(false);
+  });
+
+  it("verifies the new backup when the option is on", async () => {
+    S.allGamesMap.set("steam::1", {
+      key: "steam::1",
+      title: "Game",
+      installed: true,
+      installPath: "C:\\Game",
+    } as unknown as LibraryItem);
+    S.archiveSelectedApp = "steam::1";
+    S.archiveVerifyAfterBackup = true;
+
+    expect(handleArchiveAction("archive-start", undefined, document.body)).toBe(
+      true,
+    );
+
+    await vi.waitFor(() => expect(ipc.start).toHaveBeenCalled());
+    await vi.waitFor(() =>
+      expect(ipc.verify).toHaveBeenCalledWith(
+        "C:\\archives\\game\\manifest.efxmeta.json",
+        [],
+      ),
+    );
+    await vi.waitFor(() => expect(S.archiveRunning).toBe(false));
+    expect(S.archiveResult?.manifestPath).toBe(
+      "C:\\archives\\game\\manifest.efxmeta.json",
+    );
   });
 });

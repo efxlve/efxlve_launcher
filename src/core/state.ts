@@ -632,6 +632,7 @@ export const S = {
   archivePlanLoading: false,
   archiveEstimate: (null) as ArchiveEstimate | null,
   archiveEstimating: false,
+  archiveVerifyAfterBackup: false,
   archiveProgress: (null) as ArchiveProgress | null,
   archiveRunning: false,
   /** Backend job id for the running backup/restore, so an early cancel targets it. */
