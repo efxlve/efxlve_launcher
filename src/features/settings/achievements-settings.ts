@@ -11,7 +11,6 @@ import { icon, type IconName } from "../../core/icons";
 import { render } from "../../core/render";
 import { S } from "../../core/state";
 import { achievementCardPalette, syncAchievementCardTheme } from "../../core/achievement-card-theme";
-import { IS_WINDOWS } from "../../core/platform";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
 import {
@@ -358,17 +357,15 @@ export function playWebAudioAchievementChime(
 }
 
 /**
- * Auditions the sound the player will actually hear. Windows plays the custom
- * file through the real notification worker; the other desktops keep the Web
- * Audio chime because the native player is Windows-only for now.
+ * Auditions the sound the player will actually hear. The native worker plays
+ * the real custom file on every desktop; the Web Audio chime is the fallback
+ * when the command itself cannot run.
  */
 function previewAchievementSound(tier = previewRarityTier): void {
   const options = S.achievementNotificationOptions;
-  if (IS_WINDOWS) {
-    void achievementAuditionSound(options, tier).catch(() => undefined);
-    return;
-  }
-  playWebAudioAchievementChime(options.volume, options.animStyle || "prism", tier);
+  void achievementAuditionSound(options, tier).catch(() => {
+    playWebAudioAchievementChime(options.volume, options.animStyle || "prism", tier);
+  });
 }
 
 let stagePreviewTimer: number | null = null;

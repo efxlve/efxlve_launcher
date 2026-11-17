@@ -2,20 +2,17 @@
 //! style and rarity tier, or the custom file picked in Settings.
 //!
 //! One worker owns the default output stream and reuses it for every chime, so
-//! a notification does not pay the WASAPI device-open cost each time. A newer
+//! a notification does not pay the audio-device open cost each time. A newer
 //! sound stops the sink that is still ringing.
 
-#[cfg(windows)]
 use std::path::Path;
 
 use super::AchievementNotificationOptions;
 
-#[cfg(windows)]
 const AUDIO_IDLE_RELEASE: std::time::Duration = std::time::Duration::from_secs(300);
 
 /// Smoothly raises from 0.0 to 1.0 over `attack_s` using a cosine curve so note
 /// onsets never click.
-#[cfg(windows)]
 #[inline]
 fn smooth_attack(dt: f32, attack_s: f32) -> f32 {
     if dt <= 0.0 {
@@ -31,7 +28,6 @@ fn smooth_attack(dt: f32, attack_s: f32) -> f32 {
 /// Synthesizes a stereo 44.1 kHz 16-bit PCM WAV chime tailored to the active
 /// animation style ("prism", "cyber", "shatter", "jackpot") and rarity tier
 /// (0 = bronze, 1 = silver, 2 = gold, 3 = ultra-rare diamond, 4 = platinum).
-#[cfg(windows)]
 pub(super) fn synthesize_dopamine_chime_wav(style: &str, tier: u8) -> Vec<u8> {
     const SAMPLE_RATE: u32 = 44_100;
     let duration_secs: f32 = match tier {
@@ -272,7 +268,6 @@ pub(super) fn synthesize_dopamine_chime_wav(style: &str, tier: u8) -> Vec<u8> {
 }
 
 /// One decoded request for the audio worker.
-#[cfg(windows)]
 struct SoundRequest {
     bytes: Vec<u8>,
     volume: u8,
@@ -281,11 +276,9 @@ struct SoundRequest {
 /// The worker is started on the first sound and keeps the default output
 /// stream for five idle minutes; a long game session does not reopen WASAPI
 /// for every achievement.
-#[cfg(windows)]
 static SOUND_TX: std::sync::Mutex<Option<std::sync::mpsc::Sender<SoundRequest>>> =
     std::sync::Mutex::new(None);
 
-#[cfg(windows)]
 fn enqueue_sound(bytes: Vec<u8>, volume: u8) {
     let mut slot = match SOUND_TX.lock() {
         Ok(slot) => slot,
@@ -305,7 +298,6 @@ fn enqueue_sound(bytes: Vec<u8>, volume: u8) {
     }
 }
 
-#[cfg(windows)]
 fn run_sound_worker(rx: std::sync::mpsc::Receiver<SoundRequest>) {
     let mut stream: Option<rodio::OutputStream> = None;
     let mut sink: Option<rodio::Sink> = None;
@@ -317,9 +309,7 @@ fn run_sound_worker(rx: std::sync::mpsc::Receiver<SoundRequest>) {
                     match rodio::OutputStreamBuilder::open_default_stream() {
                         Ok(next) => stream = Some(next),
                         Err(_) => {
-                            unsafe {
-                                MessageBeep(0x00000040);
-                            }
+                            beep();
                             continue;
                         }
                     }
@@ -334,9 +324,7 @@ fn run_sound_worker(rx: std::sync::mpsc::Receiver<SoundRequest>) {
                 };
                 let Ok(decoder) = rodio::Decoder::try_from(std::io::Cursor::new(request.bytes))
                 else {
-                    unsafe {
-                        MessageBeep(0x00000040);
-                    }
+                    beep();
                     continue;
                 };
                 let next = rodio::Sink::connect_new(active.mixer());
@@ -361,7 +349,6 @@ fn run_sound_worker(rx: std::sync::mpsc::Receiver<SoundRequest>) {
 
 /// Reads and validates a custom notification file before handing it to the
 /// worker. Rodio decodes by content, so WAV, MP3, OGG, FLAC and M4A all work.
-#[cfg(windows)]
 fn play_custom_sound(path: &str, volume: u8) -> bool {
     let Ok(bytes) = std::fs::read(path) else {
         return false;
@@ -379,7 +366,6 @@ fn play_custom_sound(path: &str, volume: u8) -> bool {
     true
 }
 
-#[cfg(windows)]
 fn play_achievement_sound(
     app: &tauri::AppHandle,
     options: &AchievementNotificationOptions,
@@ -407,7 +393,6 @@ fn play_achievement_sound(
     enqueue_sound(bytes, options.volume);
 }
 
-#[cfg(windows)]
 pub(super) fn play_achievement_notification_sound(
     app: &tauri::AppHandle,
     options: &AchievementNotificationOptions,
@@ -421,7 +406,6 @@ pub(super) fn play_achievement_notification_sound(
 
 /// Settings preview: the sound switch must not silence an explicit audition,
 /// but the custom file and volume still follow the current options.
-#[cfg(windows)]
 pub(super) fn audition_achievement_notification_sound(
     app: &tauri::AppHandle,
     options: &AchievementNotificationOptions,
@@ -430,20 +414,13 @@ pub(super) fn audition_achievement_notification_sound(
     play_achievement_sound(app, options, tier);
 }
 
-#[cfg(not(windows))]
-pub(super) fn play_achievement_notification_sound(
-    _app: &tauri::AppHandle,
-    _options: &AchievementNotificationOptions,
-    _tier: u8,
-) {
-}
-
-#[cfg(not(windows))]
-pub(super) fn audition_achievement_notification_sound(
-    _app: &tauri::AppHandle,
-    _options: &AchievementNotificationOptions,
-    _tier: u8,
-) {
+/// Best-effort system beep when the output device cannot be opened. Unix has
+/// no portable equivalent, so that failure is silent there.
+fn beep() {
+    #[cfg(windows)]
+    unsafe {
+        MessageBeep(0x00000040);
+    }
 }
 
 #[cfg(windows)]

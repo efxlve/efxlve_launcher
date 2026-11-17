@@ -3956,7 +3956,6 @@ fn steam_achievements_summary_for(
 mod tests {
     use super::*;
 
-    #[cfg(windows)]
     use super::sound::synthesize_dopamine_chime_wav;
 
     use crate::legendary::models::{AchievementItem, GameAchievementsResponse};
@@ -4474,7 +4473,6 @@ mod tests {
         );
     }
 
-    #[cfg(windows)]
     #[test]
     fn synthesized_dopamine_chime_produces_valid_riff_wav() {
         let wav = synthesize_dopamine_chime_wav("prism", 3);
