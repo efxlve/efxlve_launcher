@@ -7,7 +7,6 @@
  */
 
 import { icon } from "../../core/icons";
-import { render } from "../../core/render";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
@@ -16,6 +15,17 @@ import { STORE_ICON_GLYPHS, MAX_STORE_ICON_CHARS, customStore, setCustomStoreIco
 const MODAL_ID = "store-icon-modal";
 const UPLOAD_LIMIT = 4 * 1024 * 1024;
 const ICON_SIZE = 64;
+/** Stores whose site icon was already tried this session; a failed probe is not re-run. */
+const siteProbed = new Set<string>();
+
+function iconCandidates(origin: string): string[] {
+  return [
+    `${origin}/favicon.png`,
+    `${origin}/favicon.ico`,
+    `${origin}/apple-touch-icon.png`,
+    `${origin}/apple-touch-icon-precomposed.png`,
+  ];
+}
 
 function modalStoreId(): string {
   return document.getElementById(MODAL_ID)?.dataset.store ?? "";
@@ -28,8 +38,30 @@ function modalStillShows(id: string): boolean {
 function applyStoreIconTo(id: string, value: string): void {
   if (!setCustomStoreIcon(id, value)) return;
   closeStoreIconPicker();
-  render();
   toast(t("settings.storeIconSaved"), "ok");
+}
+
+/**
+ * Silently adopts the store's own favicon when a new store is added (or an
+ * older one still has no icon). A failed probe keeps the letter mark.
+ */
+export async function suggestStoreSiteIcon(id: string): Promise<void> {
+  if (siteProbed.has(id)) return;
+  siteProbed.add(id);
+  const store = customStore(id);
+  if (!store || store.icon) return;
+  let origin = "";
+  try {
+    origin = new URL(store.url).origin;
+  } catch {
+    return;
+  }
+  for (const url of iconCandidates(origin)) {
+    if (!(await loadsAsImage(url))) continue;
+    const current = customStore(id);
+    if (current && !current.icon) setCustomStoreIcon(id, url);
+    return;
+  }
 }
 
 export function closeStoreIconPicker(): void {
@@ -101,13 +133,7 @@ export async function useStoreSiteIcon(): Promise<void> {
     button.innerHTML = `<span class="spinner" style="width:12px;height:12px;"></span> ${t("settings.storeIconSite")}`;
   }
   try {
-    const candidates = [
-      `${origin}/favicon.png`,
-      `${origin}/favicon.ico`,
-      `${origin}/apple-touch-icon.png`,
-      `${origin}/apple-touch-icon-precomposed.png`,
-    ];
-    for (const url of candidates) {
+    for (const url of iconCandidates(origin)) {
       if (await loadsAsImage(url)) {
         // The picker may have closed or moved to another store while the
         // request was in flight; only apply the answer to its own row.

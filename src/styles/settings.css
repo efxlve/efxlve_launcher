@@ -191,6 +191,16 @@
 .settings-row-title { font-size: 13px; font-weight: 500; overflow-wrap: break-word; }
 /* Store mark inside a settings row title (Settings > Appearance > Store tabs). */
 .settings-store-logo { display: inline-block; vertical-align: -4px; margin-right: 8px; object-fit: contain; transition: filter var(--ease), opacity var(--ease); }
+/* Store rows: the user store's own actions sit next to the name, keeping the
+   arrow/switch column aligned with the built-in rows. */
+.settings-store-title { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.settings-store-title.is-hidden { opacity: 0.6; }
+.settings-store-mark-slot { display: inline-flex; align-items: center; flex-shrink: 0; }
+.settings-store-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-store-actions { display: inline-flex; align-items: center; gap: 2px; margin-left: 4px; flex-shrink: 0; }
+.settings-store-actions .btn.icon-only { width: 24px; height: 24px; padding: 0; color: var(--text-3); }
+.settings-store-actions .btn.icon-only:hover { color: var(--text); background: var(--surface-2); }
+.settings-store-actions .btn.icon-only.danger:hover { color: var(--err); background: var(--err-tint); }
 .settings-row-desc { font-size: 12px; color: var(--text-3); line-height: 1.5; margin-top: 2px; overflow-wrap: break-word; }
 .settings-row-desc code, .settings-panel code {
   font-family: Consolas, monospace; font-size: 12px; color: var(--text-2);

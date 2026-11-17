@@ -349,6 +349,10 @@ export function setCustomStoreIcon(id: string, icon: string): boolean {
   const btn = document.getElementById("store-switcher")?.querySelector<HTMLElement>(`[data-store="${id}"]`);
   if (btn) delete btn.dataset.rendered;
   applyStoreTabs();
+  // The settings page stays open under the picker; update its row without a
+  // full repaint so a half-typed store name keeps its focus.
+  const rowMark = document.querySelector<HTMLElement>(`[data-store-row-mark="${id}"]`);
+  if (rowMark) rowMark.innerHTML = storeMark(id, 18, "settings-store-logo");
   return true;
 }
 
@@ -481,7 +485,12 @@ function newCustomStoreId(name: string, list: CustomStore[]): string {
   return id;
 }
 
-export type AddCustomStoreResult = "added" | "added-hidden" | "invalid" | "duplicate" | "limit";
+export type AddCustomStoreStatus = "added" | "added-hidden" | "invalid" | "duplicate" | "limit";
+export interface AddCustomStoreResult {
+  status: AddCustomStoreStatus;
+  /** Id of the store that was created; present only for the two `added` paths. */
+  id?: string;
+}
 
 /**
  * Adds a third-party storefront. A new tab joins the bar only while there is a
@@ -489,14 +498,14 @@ export type AddCustomStoreResult = "added" | "added-hidden" | "invalid" | "dupli
  */
 export function addCustomStore(name: string, url: string): AddCustomStoreResult {
   const cleanName = name.trim().replace(/\s+/g, " ").slice(0, 48);
-  if (!cleanName) return "invalid";
+  if (!cleanName) return { status: "invalid" };
   const list = customStores();
-  if (list.length >= MAX_CUSTOM_STORES) return "limit";
+  if (list.length >= MAX_CUSTOM_STORES) return { status: "limit" };
   const normalized = normalizeStoreUrl(url);
-  if (!normalized) return "invalid";
+  if (!normalized) return { status: "invalid" };
   const parsed = new URL(normalized);
   const host = parsed.hostname.toLowerCase();
-  if (host === "efxlve.local" || isBuiltinStoreHost(host)) return "duplicate";
+  if (host === "efxlve.local" || isBuiltinStoreHost(host)) return { status: "duplicate" };
   const knownHost = (raw: string): string | null => {
     try {
       return new URL(raw).host.toLowerCase();
@@ -504,7 +513,7 @@ export function addCustomStore(name: string, url: string): AddCustomStoreResult 
       return null;
     }
   };
-  if (list.some((store) => knownHost(store.url) === parsed.host.toLowerCase())) return "duplicate";
+  if (list.some((store) => knownHost(store.url) === parsed.host.toLowerCase())) return { status: "duplicate" };
 
   const id = newCustomStoreId(cleanName, list);
   // Check the bar before the new store joins the order, or its own free slot
@@ -515,7 +524,7 @@ export function addCustomStore(name: string, url: string): AddCustomStoreResult 
   else S.hiddenStores.delete(id);
   saveHiddenStores();
   applyStoreTabs();
-  return hidden ? "added-hidden" : "added";
+  return { status: hidden ? "added-hidden" : "added", id };
 }
 
 /** Drops a user-added storefront and every trace of it outside localStorage. */

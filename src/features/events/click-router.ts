@@ -1584,15 +1584,15 @@ document.addEventListener("click", (e) => {
   } else if (act === "add-custom-store") {
     const name = document.getElementById("custom-store-name") as HTMLInputElement | null;
     const url = document.getElementById("custom-store-url") as HTMLInputElement | null;
-    const result = addCustomStore(name?.value ?? "", url?.value ?? "");
-    if (result === "invalid") {
+    const added = addCustomStore(name?.value ?? "", url?.value ?? "");
+    if (added.status === "invalid") {
       toast(i18nT("settings.storeInvalidUrl"), "err");
-    } else if (result === "duplicate") {
+    } else if (added.status === "duplicate") {
       toast(i18nT("settings.storeExists"), "err");
-    } else if (result === "limit") {
+    } else if (added.status === "limit") {
       toast(i18nT("settings.storeCustomLimit", { max: MAX_CUSTOM_STORES }), "err");
     } else {
-      toast(i18nT(result === "added-hidden" ? "settings.storeAddedHidden" : "settings.storeAdded"), "ok");
+      toast(i18nT(added.status === "added-hidden" ? "settings.storeAddedHidden" : "settings.storeAdded"), "ok");
       render();
     }
   } else if (act === "remove-custom-store") {
