@@ -119,6 +119,53 @@ fn the_built_binary_restores_a_flat_archive_byte_for_byte() {
 }
 
 #[test]
+fn the_built_binary_rejects_a_corrupted_volume_without_writing_files() {
+    let root = temp_root("corrupt");
+    let source = write_source(&root);
+    let archive_root = root.join("archive");
+    let manifest = pack(&source, &archive_root, false);
+    let archive = manifest.parent().unwrap().to_path_buf();
+    let volume = fs::read_dir(&archive)
+        .unwrap()
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.path())
+        .find(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.contains(".efxpak."))
+        })
+        .expect("a volume file");
+    let mut bytes = fs::read(&volume).unwrap();
+    assert!(bytes.len() > 72, "volume is too small to corrupt");
+    bytes[64 + 8] ^= 0xFF;
+    fs::write(&volume, &bytes).unwrap();
+
+    let restore_parent = root.join("restored");
+    let output = restore(&archive, &restore_parent, &[]);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let lower = stderr.to_lowercase();
+    assert!(
+        !output.status.success(),
+        "corrupt restore unexpectedly succeeded"
+    );
+    assert!(
+        (lower.contains("block") || lower.contains("volume"))
+            && (lower.contains("corrupt") || lower.contains("sha-256")),
+        "expected a block/volume corruption message, got: {stderr}"
+    );
+    assert!(
+        !restore_parent.join("Game").exists(),
+        "a target folder was created despite the corrupt volume"
+    );
+    let empty = fs::read_dir(&restore_parent)
+        .map(|mut entries| entries.next().is_none())
+        .unwrap_or(true);
+    assert!(empty, "staging or target files were left behind");
+
+    let _ = fs::remove_dir_all(&root);
+}
+
+#[test]
 fn the_built_binary_finds_disc_folders_and_restores_them() {
     let root = temp_root("discs");
     let source = write_source(&root);
