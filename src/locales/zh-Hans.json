@@ -3139,7 +3139,7 @@
   "settings.storeHiddenBadge": "已隐藏",
   "settings.storeOrderNote": "使用箭头按钮调整商店标签顺序。排在首位的可见商店将默认打开。",
   "settings.storeThirdPartyTitle": "第三方商店",
-  "settings.storeThirdPartyNote": "将任意网页商店添加到商店栏。当前 {max} 个标签中有 {active} 个处于启用状态；额外商店会保持隐藏，直到你关闭另一个标签。",
+  "settings.storeThirdPartyNote": "可添加任意网页商店。最多同时启用 {max} 个标签（当前 {active}/{max}）。有空间时新商店会立即显示；否则会以隐藏状态添加，隐藏一个标签后即可显示。最多可保留 {customMax} 个自定义商店。",
   "settings.storeAddName": "商店名称",
   "settings.storeAddUrl": "https://store.example.com/",
   "settings.storeAdd": "添加商店",

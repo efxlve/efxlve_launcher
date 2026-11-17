@@ -3139,7 +3139,7 @@
   "settings.storeHiddenBadge": "Gizli",
   "settings.storeOrderNote": "Ok butonlarını kullanarak mağaza sekmelerini dilediğiniz sıraya taşıyabilirsiniz. En üstteki görünür mağaza varsayılan olarak açılır.",
   "settings.storeThirdPartyTitle": "Üçüncü taraf mağazalar",
-  "settings.storeThirdPartyNote": "Mağazalar çubuğuna istediğiniz web mağazasını ekleyin. Şu anda {active}/{max} sekme aktif; yeni mağazalar siz başka bir sekmeyi kapatana kadar gizli kalır.",
+  "settings.storeThirdPartyNote": "İstediğiniz web mağazasını ekleyin. Aynı anda en fazla {max} sekme aktif olabilir (şu anda {active}/{max}). Boş yer varsa yeni mağaza hemen görünür; yoksa gizli başlar ve bir sekmeyi gizleyince gösterebilirsiniz. Toplamda en fazla {customMax} özel mağaza tutabilirsiniz.",
   "settings.storeAddName": "Mağaza adı",
   "settings.storeAddUrl": "https://store.example.com/",
   "settings.storeAdd": "Mağaza ekle",

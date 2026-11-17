@@ -3139,7 +3139,7 @@
   "settings.storeHiddenBadge": "Masqué",
   "settings.storeOrderNote": "Utilisez les flèches pour réorganiser les onglets des boutiques. La première boutique visible s'ouvre par défaut.",
   "settings.storeThirdPartyTitle": "Boutiques tierces",
-  "settings.storeThirdPartyNote": "Ajoutez n'importe quelle boutique web à la barre des boutiques. {active} onglets sur {max} sont actifs ; les boutiques supplémentaires restent masquées jusqu'à ce que vous désactiviez un autre onglet.",
+  "settings.storeThirdPartyNote": "Ajoutez n'importe quelle boutique web. Au maximum {max} onglets peuvent être actifs à la fois (actuellement {active}/{max}). Une nouvelle boutique apparaît immédiatement s'il reste de la place ; sinon elle démarre masquée et peut être affichée après avoir masqué un onglet. Vous pouvez conserver jusqu'à {customMax} boutiques personnalisées.",
   "settings.storeAddName": "Nom de la boutique",
   "settings.storeAddUrl": "https://store.example.com/",
   "settings.storeAdd": "Ajouter la boutique",

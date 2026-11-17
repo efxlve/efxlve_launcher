@@ -3139,7 +3139,7 @@
   "settings.storeHiddenBadge": "छिपा हुआ",
   "settings.storeOrderNote": "स्टोर टैब का क्रम बदलने के लिए तीरों का उपयोग करें। शीर्ष दृश्यमान स्टोर डिफ़ॉल्ट रूप से खुलता है।",
   "settings.storeThirdPartyTitle": "तृतीय-पक्ष स्टोर",
-  "settings.storeThirdPartyNote": "स्टोर बार में कोई भी वेब स्टोर जोड़ें। {max} में से {active} टैब सक्रिय हैं; अतिरिक्त स्टोर तब तक छिपे रहते हैं जब तक आप कोई दूसरा टैब बंद नहीं करते।",
+  "settings.storeThirdPartyNote": "कोई भी वेब स्टोर जोड़ें। एक साथ अधिकतम {max} टैब सक्रिय रह सकते हैं (अभी {active}/{max})। जगह होने पर नया स्टोर तुरंत दिखता है; वरना छिपा हुआ जुड़ता है और किसी टैब को छिपाने पर दिखाया जा सकता है। आप अधिकतम {customMax} कस्टम स्टोर रख सकते हैं।",
   "settings.storeAddName": "स्टोर का नाम",
   "settings.storeAddUrl": "https://store.example.com/",
   "settings.storeAdd": "स्टोर जोड़ें",

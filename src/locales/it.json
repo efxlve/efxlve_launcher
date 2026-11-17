@@ -3139,7 +3139,7 @@
   "settings.storeHiddenBadge": "Nascosto",
   "settings.storeOrderNote": "Usa i pulsanti freccia per riordinare le schede dei negozi. Il primo negozio visibile si apre per impostazione predefinita.",
   "settings.storeThirdPartyTitle": "Store di terze parti",
-  "settings.storeThirdPartyNote": "Aggiungi qualsiasi store web alla barra degli store. {active} schede su {max} sono attive; gli store extra restano nascosti finché non disattivi un'altra scheda.",
+  "settings.storeThirdPartyNote": "Aggiungi qualsiasi store web. Al massimo {max} schede possono essere attive contemporaneamente (ora {active}/{max}). Un nuovo store appare subito se c'è spazio; altrimenti parte nascosto e può essere mostrato dopo aver nascosto una scheda. Puoi mantenere fino a {customMax} store personalizzati.",
   "settings.storeAddName": "Nome dello store",
   "settings.storeAddUrl": "https://store.example.com/",
   "settings.storeAdd": "Aggiungi store",

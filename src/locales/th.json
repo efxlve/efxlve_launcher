@@ -3139,7 +3139,7 @@
   "settings.storeHiddenBadge": "ซ่อนอยู่",
   "settings.storeOrderNote": "ใช้ปุ่มลูกศรเพื่อเรียงลำดับแท็บร้านค้า ร้านค้าแรกที่มองเห็นจะเปิดขึ้นตามค่าเริ่มต้น",
   "settings.storeThirdPartyTitle": "ร้านค้าบุคคลที่สาม",
-  "settings.storeThirdPartyNote": "เพิ่มร้านค้าเว็บใดก็ได้ลงในแถบร้านค้า มีแท็บที่ใช้งานอยู่ {active} จาก {max} แท็บ ร้านค้าเพิ่มเติมจะยังคงซ่อนอยู่จนกว่าคุณจะปิดแท็บอื่น",
+  "settings.storeThirdPartyNote": "เพิ่มร้านค้าเว็บใดก็ได้ คุณสามารถเปิดใช้งานแท็บได้สูงสุด {max} แท็บพร้อมกัน (ตอนนี้ {active}/{max}) ร้านค้าใหม่จะแสดงทันทีหากมีที่ว่าง มิฉะนั้นจะเริ่มแบบซ่อนและแสดงได้เมื่อคุณซ่อนแท็บอื่น คุณเก็บร้านค้าที่กำหนดเองได้สูงสุด {customMax} ร้าน",
   "settings.storeAddName": "ชื่อร้านค้า",
   "settings.storeAddUrl": "https://store.example.com/",
   "settings.storeAdd": "เพิ่มร้านค้า",

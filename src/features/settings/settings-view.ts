@@ -1105,7 +1105,7 @@ function renderStores(): string {
   }).join("") +
   row(
     t("settings.storeThirdPartyTitle"),
-    t("settings.storeThirdPartyNote", { active: activeTabs, max: MAX_VISIBLE_STORE_TABS }) +
+    t("settings.storeThirdPartyNote", { active: activeTabs, max: MAX_VISIBLE_STORE_TABS, customMax: MAX_CUSTOM_STORES }) +
       (addDisabled ? `<div class="custom-store-limit">${t("settings.storeCustomLimit", { max: MAX_CUSTOM_STORES })}</div>` : ""),
     `<div class="custom-store-form">
       <input id="custom-store-name" class="input settings-path-input" maxlength="48" placeholder="${esc(t("settings.storeAddName"))}" aria-label="${esc(t("settings.storeAddName"))}" autocomplete="off" spellcheck="false" />

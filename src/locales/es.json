@@ -3139,7 +3139,7 @@
   "settings.storeHiddenBadge": "Oculto",
   "settings.storeOrderNote": "Usa los botones de flecha para reordenar las pestañas de las tiendas. La primera tienda visible se abre por defecto.",
   "settings.storeThirdPartyTitle": "Tiendas de terceros",
-  "settings.storeThirdPartyNote": "Añade cualquier tienda web a la barra de tiendas. Hay {active} de {max} pestañas activas; las tiendas extra permanecen ocultas hasta que desactives otra pestaña.",
+  "settings.storeThirdPartyNote": "Añade cualquier tienda web. Como máximo {max} pestañas pueden estar activas a la vez (ahora {active}/{max}). Una tienda nueva aparece al instante si hay hueco; si no, empieza oculta y puedes mostrarla al ocultar otra pestaña. Puedes guardar hasta {customMax} tiendas personalizadas.",
   "settings.storeAddName": "Nombre de la tienda",
   "settings.storeAddUrl": "https://store.example.com/",
   "settings.storeAdd": "Añadir tienda",

@@ -3139,7 +3139,7 @@
   "settings.storeHiddenBadge": "Hidden",
   "settings.storeOrderNote": "Use the arrow buttons to reorder storefront tabs. The top visible store opens by default.",
   "settings.storeThirdPartyTitle": "Third-party stores",
-  "settings.storeThirdPartyNote": "Add any web store you want in the Stores bar. {active} of {max} tabs are active; extra stores stay hidden until you turn another tab off.",
+  "settings.storeThirdPartyNote": "Add any web store you want. Up to {max} tabs can be active at once (currently {active}/{max}). A new store appears immediately while there is room; otherwise it starts hidden and can be shown after you hide a tab. You can keep up to {customMax} custom stores.",
   "settings.storeAddName": "Store name",
   "settings.storeAddUrl": "https://store.example.com/",
   "settings.storeAdd": "Add store",

@@ -3139,7 +3139,7 @@
   "settings.storeHiddenBadge": "مخفي",
   "settings.storeOrderNote": "استخدم الأسهم لإعادة ترتيب علامات تبويب المتاجر. يتم فتح أول متجر مرئي افتراضياً.",
   "settings.storeThirdPartyTitle": "متاجر خارجية",
-  "settings.storeThirdPartyNote": "أضف أي متجر ويب إلى شريط المتاجر. {active} من {max} علامات تبويب نشطة؛ تبقى المتاجر الإضافية مخفية حتى توقف علامة تبويب أخرى.",
+  "settings.storeThirdPartyNote": "أضف أي متجر ويب تريده. يمكن أن تكون {max} علامات تبويب نشطة في وقت واحد كحد أقصى (حاليًا {active}/{max}). يظهر المتجر الجديد فورًا إذا توفر مكان؛ وإلا يبدأ مخفيًا ويمكن إظهاره بعد إخفاء علامة تبويب. يمكنك الاحتفاظ بما يصل إلى {customMax} متجرًا مخصصًا.",
   "settings.storeAddName": "اسم المتجر",
   "settings.storeAddUrl": "https://store.example.com/",
   "settings.storeAdd": "إضافة متجر",

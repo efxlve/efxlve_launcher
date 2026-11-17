@@ -3139,7 +3139,7 @@
   "settings.storeHiddenBadge": "非表示",
   "settings.storeOrderNote": "矢印ボタンでストアタブの並び順を変更できます。最上位の表示中ストアがデフォルトで開きます。",
   "settings.storeThirdPartyTitle": "サードパーティストア",
-  "settings.storeThirdPartyNote": "ストアバーに任意のウェブストアを追加できます。現在 {max} 個中 {active} 個のタブが有効です。追加したストアは、別のタブをオフにするまで非表示になります。",
+  "settings.storeThirdPartyNote": "任意のウェブストアを追加できます。同時に有効にできるタブは最大 {max} 個です（現在 {active}/{max}）。空きがあれば新しいストアはすぐ表示され、ない場合は非表示で追加され、タブを非表示にすると表示できます。カスタムストアは最大 {customMax} 個まで保持できます。",
   "settings.storeAddName": "ストア名",
   "settings.storeAddUrl": "https://store.example.com/",
   "settings.storeAdd": "ストアを追加",

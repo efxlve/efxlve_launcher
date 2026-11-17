@@ -3139,7 +3139,7 @@
   "settings.storeHiddenBadge": "Ukryty",
   "settings.storeOrderNote": "Użyj strzałek, aby zmienić kolejność kart sklepów. Pierwszy widoczny sklep otwiera się domyślnie.",
   "settings.storeThirdPartyTitle": "Sklepy innych firm",
-  "settings.storeThirdPartyNote": "Dodaj dowolny sklep internetowy do paska sklepów. Aktywne są {active} z {max} kart; dodatkowe sklepy pozostają ukryte, dopóki nie wyłączysz innej karty.",
+  "settings.storeThirdPartyNote": "Dodaj dowolny sklep internetowy. Jednocześnie może być aktywnych najwyżej {max} kart (teraz {active}/{max}). Nowy sklep pojawia się od razu, jeśli jest miejsce; w przeciwnym razie zaczyna jako ukryty i można go pokazać po ukryciu karty. Możesz zachować do {customMax} niestandardowych sklepów.",
   "settings.storeAddName": "Nazwa sklepu",
   "settings.storeAddUrl": "https://store.example.com/",
   "settings.storeAdd": "Dodaj sklep",

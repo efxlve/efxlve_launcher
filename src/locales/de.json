@@ -3139,7 +3139,7 @@
   "settings.storeHiddenBadge": "Ausgeblendet",
   "settings.storeOrderNote": "Verwenden Sie die Pfeile, um Storefront-Tabs neu anzuordnen. Der oberste sichtbare Store öffnet standardmäßig.",
   "settings.storeThirdPartyTitle": "Drittanbieter-Stores",
-  "settings.storeThirdPartyNote": "Fügen Sie der Store-Leiste beliebige Web-Stores hinzu. {active} von {max} Tabs sind aktiv; weitere Stores bleiben ausgeblendet, bis Sie einen anderen Tab abschalten.",
+  "settings.storeThirdPartyNote": "Fügen Sie beliebige Web-Stores hinzu. Höchstens {max} Tabs können gleichzeitig aktiv sein (aktuell {active}/{max}). Bei freiem Platz erscheint ein neuer Store sofort; sonst startet er ausgeblendet und lässt sich zeigen, sobald Sie einen Tab ausblenden. Sie können bis zu {customMax} eigene Stores behalten.",
   "settings.storeAddName": "Storname",
   "settings.storeAddUrl": "https://store.example.com/",
   "settings.storeAdd": "Store hinzufügen",
