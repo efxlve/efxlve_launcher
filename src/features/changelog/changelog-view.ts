@@ -42,6 +42,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         tr: "Windows, her parçayı yerleşik IMAPI2 motoruyla yazabiliyor; takılı medyayı ve boş alanı gösteriyor, yeniden yazılabilir diski kullanmadan önce hızlı veya tam silme yapabiliyor.",
       },
       {
+        en: "Disc burning also has Linux (`xorriso`) and macOS (`drutil`) paths: the same disc-folder flow works outside Windows, including quick and full erase.",
+        tr: "Disk yazma artık Linux (`xorriso`) ve macOS (`drutil`) yollarına da sahip: aynı disc klasörü akışı Windows dışında da çalışıyor, hızlı ve tam silme dahil.",
+      },
+      {
         en: "`efxlve-restore.exe` recovers an archive on a PC without the launcher and can check every block with `--verify`. Steam, Epic and Amazon games still need their client and an account that owns the game.",
         tr: "`efxlve-restore.exe`, launcher kurulu olmayan bir bilgisayarda arşivi geri açıyor ve `--verify` ile tüm blokları kontrol edebiliyor. Steam, Epic ve Amazon oyunları için istemci ve oyunu satın almış bir hesap hâlâ gerekli.",
       },

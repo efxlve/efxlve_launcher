@@ -9,6 +9,10 @@ use serde::{Deserialize, Serialize};
 
 use super::format::{read_manifest, MANIFEST_FILE};
 
+#[cfg(any(target_os = "linux", target_os = "macos", test))]
+#[path = "unix_disc.rs"]
+mod unix_disc;
+
 /// One optical operation at a time. Two commands sharing one IMAPI2 recorder
 /// can make a burn fail halfway through.
 static DISC_BUSY: AtomicBool = AtomicBool::new(false);
@@ -76,7 +80,15 @@ struct RecorderList {
 }
 
 pub fn list_recorders() -> Result<Vec<DiscRecorder>, String> {
-    #[cfg(not(windows))]
+    #[cfg(target_os = "linux")]
+    {
+        return unix_disc::list_xorriso(&unix_disc::SystemRunner);
+    }
+    #[cfg(target_os = "macos")]
+    {
+        return unix_disc::list_drutil(&unix_disc::SystemRunner);
+    }
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     {
         return Ok(Vec::new());
     }
@@ -198,7 +210,15 @@ fn file_systems_for(volume_bytes: u64) -> i32 {
 }
 
 pub fn burn_folder(folder: &Path, recorder_id: &str) -> Result<(), String> {
-    #[cfg(not(windows))]
+    #[cfg(target_os = "linux")]
+    {
+        return unix_disc::burn_xorriso(&unix_disc::SystemRunner, folder, recorder_id);
+    }
+    #[cfg(target_os = "macos")]
+    {
+        return unix_disc::burn_drutil(&unix_disc::SystemRunner, folder, recorder_id);
+    }
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     {
         let _ = (folder, recorder_id);
         return Err("@t:disc.unsupported".to_string());
@@ -332,7 +352,15 @@ try {{
 /// Erases a rewritable disc. Quick erase resets the table of contents; a full
 /// erase overwrites the surface as well and takes much longer.
 pub fn erase(recorder_id: &str, full: bool) -> Result<(), String> {
-    #[cfg(not(windows))]
+    #[cfg(target_os = "linux")]
+    {
+        return unix_disc::erase_xorriso(&unix_disc::SystemRunner, recorder_id, full);
+    }
+    #[cfg(target_os = "macos")]
+    {
+        return unix_disc::erase_drutil(&unix_disc::SystemRunner, recorder_id, full);
+    }
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     {
         let _ = (recorder_id, full);
         return Err("@t:disc.unsupported".to_string());

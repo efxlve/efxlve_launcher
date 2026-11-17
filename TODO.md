@@ -67,10 +67,9 @@ Open work only. Delete the item when it lands.
 
 ## Media archive (disc / USB)
 
-- Windows IMAPI2 burning and erase are implemented in `media_archive/disc.rs` and
-  marked experimental. They still need a pass on real CD-R, DVD-R, BD-R and
-  BD-RE media, including full erase; Linux `xorriso` and macOS `drutil` remain
-  open.
+- Windows IMAPI2, Linux `xorriso` and macOS `drutil` burn/erase paths are
+  implemented and covered by mocked-tool tests. They still need a pass on real
+  CD-R, DVD-R, BD-R and BD-RE media on each platform.
 - Reed-Solomon parity is wired into pack and restore. Format version 3 writes
   four `.efxpar.NNN` files per volume and places them on the next disc/folder,
   stores a SHA-256 for every data shard and every parity file, and restores up
