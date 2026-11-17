@@ -4369,5 +4369,20 @@
   "xbox.buy": "購買",
   "xbox.buyHint": "你尚未擁有此遊戲。開啟 Microsoft Store 購買。",
   "xbox.subscribe": "訂閱",
-  "xbox.subscribeHint": "此遊戲包含在 Game Pass 中。訂閱或購買後即可遊玩。"
+  "xbox.subscribeHint": "此遊戲包含在 Game Pass 中。訂閱或購買後即可遊玩。",
+  "overlay.discordSocial": "社交",
+  "overlay.discordChat": "聊天",
+  "overlay.perfProcessor": "Processor",
+  "overlay.perfGpuActive": "3D Active",
+  "overlay.perfGpuSystem": "System 3D",
+  "overlay.perfMemory": "Memory",
+  "overlay.perfIdle": "Idle",
+  "overlay.perfAvg": "Avg",
+  "overlay.perfPeak": "Peak",
+  "overlay.perfNow": "Now",
+  "overlay.shotsGameFilter": "Game Filter",
+  "overlay.shotsFilter": "Filter",
+  "overlay.shotsClear": "Clear",
+  "overlay.shotsAll": "All",
+  "overlay.shotsCount": "{count} screenshots"
 }

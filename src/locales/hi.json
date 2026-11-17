@@ -4369,5 +4369,20 @@
   "xbox.buy": "खरीदें",
   "xbox.buyHint": "आपके पास यह गेम नहीं है। इसे खरीदने के लिए Microsoft Store खोलें।",
   "xbox.subscribe": "सब्सक्राइब",
-  "xbox.subscribeHint": "यह गेम Game Pass में शामिल है। खेलने के लिए सब्सक्राइब करें या इसे खरीदें।"
+  "xbox.subscribeHint": "यह गेम Game Pass में शामिल है। खेलने के लिए सब्सक्राइब करें या इसे खरीदें।",
+  "overlay.discordSocial": "सामाजिक",
+  "overlay.discordChat": "चैट",
+  "overlay.perfProcessor": "Processor",
+  "overlay.perfGpuActive": "3D Active",
+  "overlay.perfGpuSystem": "System 3D",
+  "overlay.perfMemory": "Memory",
+  "overlay.perfIdle": "Idle",
+  "overlay.perfAvg": "Avg",
+  "overlay.perfPeak": "Peak",
+  "overlay.perfNow": "Now",
+  "overlay.shotsGameFilter": "Game Filter",
+  "overlay.shotsFilter": "Filter",
+  "overlay.shotsClear": "Clear",
+  "overlay.shotsAll": "All",
+  "overlay.shotsCount": "{count} screenshots"
 }

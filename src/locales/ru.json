@@ -4369,5 +4369,20 @@
   "xbox.buy": "Купить",
   "xbox.buyHint": "У вас нет этой игры. Откройте Microsoft Store, чтобы купить её.",
   "xbox.subscribe": "Подписаться",
-  "xbox.subscribeHint": "Эта игра входит в Game Pass. Оформите подписку или купите игру, чтобы играть."
+  "xbox.subscribeHint": "Эта игра входит в Game Pass. Оформите подписку или купите игру, чтобы играть.",
+  "overlay.discordSocial": "Общение",
+  "overlay.discordChat": "Чат",
+  "overlay.perfProcessor": "Processor",
+  "overlay.perfGpuActive": "3D Active",
+  "overlay.perfGpuSystem": "System 3D",
+  "overlay.perfMemory": "Memory",
+  "overlay.perfIdle": "Idle",
+  "overlay.perfAvg": "Avg",
+  "overlay.perfPeak": "Peak",
+  "overlay.perfNow": "Now",
+  "overlay.shotsGameFilter": "Game Filter",
+  "overlay.shotsFilter": "Filter",
+  "overlay.shotsClear": "Clear",
+  "overlay.shotsAll": "All",
+  "overlay.shotsCount": "{count} screenshots"
 }

@@ -2740,6 +2740,12 @@ pub fn achievement_set_notification_options(
     )));
     settings.achievement_unlock_screenshots = Some(options.unlock_screenshots);
     crate::save_settings(&app, &settings);
+    // The overlay panel can change the same switches; the main window's copy
+    // has to follow without waiting for a restart.
+    let _ = app.emit(
+        "achievement-notification-options",
+        achievement_notification_options(&app),
+    );
     Ok(())
 }
 

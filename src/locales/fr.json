@@ -4369,5 +4369,20 @@
   "xbox.buy": "Acheter",
   "xbox.buyHint": "Vous ne possédez pas ce jeu. Ouvrez le Microsoft Store pour l'acheter.",
   "xbox.subscribe": "S'abonner",
-  "xbox.subscribeHint": "Ce jeu est inclus dans Game Pass. Abonnez-vous ou achetez-le pour jouer."
+  "xbox.subscribeHint": "Ce jeu est inclus dans Game Pass. Abonnez-vous ou achetez-le pour jouer.",
+  "overlay.discordSocial": "Social",
+  "overlay.discordChat": "Discussion",
+  "overlay.perfProcessor": "Processor",
+  "overlay.perfGpuActive": "3D Active",
+  "overlay.perfGpuSystem": "System 3D",
+  "overlay.perfMemory": "Memory",
+  "overlay.perfIdle": "Idle",
+  "overlay.perfAvg": "Avg",
+  "overlay.perfPeak": "Peak",
+  "overlay.perfNow": "Now",
+  "overlay.shotsGameFilter": "Game Filter",
+  "overlay.shotsFilter": "Filter",
+  "overlay.shotsClear": "Clear",
+  "overlay.shotsAll": "All",
+  "overlay.shotsCount": "{count} screenshots"
 }

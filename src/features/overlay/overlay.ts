@@ -52,8 +52,16 @@ import {
 import { applyAchievementEdits } from "../../core/achievement-edits";
 import { CROSSHAIR_HOTKEYS, applyCrosshairConfig, loadCrosshair, sanitizeCrosshair, saveCrosshair, setCrosshairVisible, type CrosshairConfig, type CrosshairHotkey, type CrosshairShape } from "../../core/crosshair";
 import { esc, fmtAchDate, fmtDecimal1, stripEmoji } from "../../core/utils";
-import { steamGetAchievementCommunity, type SteamAchievementCommunity } from "../../steam";
-import { currentLanguage, initialLanguage, localizeMessage, setLanguage, t } from "../../i18n";
+import {
+  achievementGetNotificationOptions,
+  achievementSetNotificationOptions,
+  steamGetAchievementCommunity,
+  steamSetAchievementNotifications,
+  type AchievementNotificationOptions,
+  type SteamAchievementCommunity,
+} from "../../steam";
+import { achGameNotificationsEnabled, setAchGameNotifications } from "../../core/ach-game-prefs";
+import { currentLanguage, initialLanguage, localizeMessage, setLanguage, t, t as i18nT } from "../../i18n";
 import {
   formatTime as formatSpotifyTime,
   spotifyPlaybackControl,
@@ -239,7 +247,7 @@ const TABS: { id: TabId; icon: IconName; key: string }[] = [
   { id: "music", icon: "spotify", key: "overlay.tabSpotify" },
   { id: "audio", icon: "volume-2", key: "overlay.tabAudio" },
   { id: "discord", icon: "discord", key: "overlay.tabDiscord" },
-  { id: "chat", icon: "discord", key: "overlay.discordReplyTitle" },
+  { id: "chat", icon: "discord", key: "overlay.discordChat" },
   { id: "ach", icon: "trophy", key: "overlay.tabAchievements" },
   { id: "browser", icon: "globe", key: "overlay.tabBrowser" },
   { id: "notes", icon: "edit", key: "overlay.tabNotes" },
@@ -267,6 +275,25 @@ let context: OpenPayload = { appName: "", title: "" };
 let panelOpened = false;
 /** Opened without a tracked game (over the launcher or any other window). */
 let launcherMode = false;
+/** Achievement notification options, mirrored from the launcher settings. */
+let overlayNotificationOptions: AchievementNotificationOptions = {
+  enabled: true,
+  sound: true,
+  overlay: true,
+  volume: 100,
+  durationMs: 5000,
+  position: "top-right",
+  size: "normal",
+  customSound: false,
+  customSoundName: null,
+  cardTheme: "rarity",
+  animStyle: "prism",
+  exitStyle: "auto",
+  disabledStores: [],
+  minRarityPercent: 0,
+  unlockScreenshots: false,
+};
+let overlayNotificationOptionsFetched = false;
 let metrics: MetricsSample | null = null;
 type PerfMetric = "cpu" | "gpu" | "vram" | "ram" | "fps";
 let activePerfMetric: PerfMetric = "cpu";
@@ -1541,7 +1568,7 @@ function shellHtml(): string {
             <header class="ov-widget-header" data-widget-drag="${tab.id}">
               <div class="ov-widget-title">
                 ${icon(tab.icon, 14)}
-                <span>${esc(tab.id === "discord" ? t("overlay.tabDiscord") + " Sosyal" : tab.id === "chat" ? t("overlay.tabDiscord") + " Sohbet" : t(tab.key))}</span>
+                <span>${esc(tab.id === "discord" ? t("overlay.discordSocial") : tab.id === "chat" ? t("overlay.discordChat") : t(tab.key))}</span>
               </div>
               <div class="ov-widget-header-actions">
                 ${tab.id === "music" ? `
@@ -2035,22 +2062,25 @@ function getTelemetryReadings(m: MetricsSample | null) {
   const fpsVal = m?.fps != null ? Math.round(m.fps) : null;
   const fpsBarPct = fpsVal != null ? Math.min(100, Math.round((fpsVal / 144) * 100)) : 0;
 
-  const isTr = (localStorage.getItem("efxlve_lang") || "").startsWith("tr");
-
   const cpuTemp = m?.cpuTempC != null ? `${Math.round(m.cpuTempC)}°C` : "";
   const cpuPower = m?.cpuPowerW != null ? `${Math.round(m.cpuPowerW)}W` : "";
   const gpuTemp = m?.gpuTempC != null ? `${Math.round(m.gpuTempC)}°C` : "";
   const gpuPower = m?.gpuPowerW != null ? `${Math.round(m.gpuPowerW)}W` : "";
-  const cpuSub = [m?.cpuGhz ? `${m.cpuGhz.toFixed(2)} GHz` : (isTr ? "İşlemci" : "Processor"), cpuTemp, cpuPower]
+  const cpuSub = [m?.cpuGhz ? `${m.cpuGhz.toFixed(2)} GHz` : t("overlay.perfProcessor"), cpuTemp, cpuPower]
     .filter(Boolean)
     .join(" · ");
-  const gpuState = m?.running ? (isTr ? "3D Aktif" : "3D Active") : (isTr ? "Sistem 3D" : "System 3D");
+  const gpuState = m?.running ? t("overlay.perfGpuActive") : t("overlay.perfGpuSystem");
   const gpuSub = [gpuState, gpuTemp, gpuPower].filter(Boolean).join(" · ");
-  const ramSub = ramUsed > 0 ? fmtMb(ramUsed) : (isTr ? "Bellek" : "Memory");
-  const vramSub = vramUsed > 0 ? fmtMb(vramUsed) : (isTr ? "Bellek" : "Memory");
+  const ramSub = ramUsed > 0 ? fmtMb(ramUsed) : t("overlay.perfMemory");
+  const vramSub = vramUsed > 0 ? fmtMb(vramUsed) : t("overlay.perfMemory");
   const ramSubTitle = `${fmtMb(ramUsed)} / ${fmtMb(ramTotal)}`;
   const vramSubTitle = `${fmtMb(vramUsed)} / ${fmtMb(vramTotal)}`;
-  const subFps = m?.frameMs != null ? `${m.frameMs.toFixed(1)} ms` : (m?.running ? "..." : (isTr ? "Beklemede" : "Idle"));
+  const subFps =
+    m?.frameMs != null
+      ? `${m.frameMs.toFixed(1)} ms`
+      : m?.running
+        ? "..."
+        : t("overlay.perfIdle");
   const low1 = m?.low1Fps != null ? Math.round(m.low1Fps) : null;
   const low01 = m?.low01Fps != null ? Math.round(m.low01Fps) : null;
   const lowsText =
@@ -2181,7 +2211,6 @@ function getTelemetryReadings(m: MetricsSample | null) {
     peakVal,
     avgVal,
     minVal,
-    isTr,
   };
 }
 
@@ -2272,8 +2301,8 @@ function renderPerf(): void {
           </div>
           <div class="ov-perf-scope-stats">
             <span>Min <b id="ov-stat-min-val">${t.minVal}</b></span>
-            <span>${t.isTr ? "Ort" : "Avg"} <b id="ov-stat-avg-val">${t.avgVal}</b></span>
-            <span>${t.isTr ? "Zirve" : "Peak"} <b id="ov-stat-peak-val">${t.peakVal}</b></span>
+            <span>${i18nT("overlay.perfAvg")} <b id="ov-stat-avg-val">${t.avgVal}</b></span>
+            <span>${i18nT("overlay.perfPeak")} <b id="ov-stat-peak-val">${t.peakVal}</b></span>
           </div>
         </div>
 
@@ -2283,7 +2312,7 @@ function renderPerf(): void {
 
         <div class="ov-perf-timeline">
           <span id="ov-perf-window-label">${t.windowLabel}</span>
-          <span>${t.isTr ? "Şimdi" : "Now"}</span>
+          <span>${i18nT("overlay.perfNow")}</span>
         </div>
       </div>
     </div>`;
@@ -3102,8 +3131,6 @@ async function loadScreenshots(force = false): Promise<void> {
     cachedScreenshots = loaded;
   }
 
-  const isTr = (localStorage.getItem("efxlve_lang") || "").startsWith("tr");
-
   // Build game counts map
   const gameCounts = new Map<string, number>();
   for (const item of cachedScreenshots) {
@@ -3134,19 +3161,19 @@ async function loadScreenshots(force = false): Promise<void> {
         class="btn ghost small ov-shots-filter-btn ${activeFilterCount > 0 ? "active" : ""}"
         data-ov="shots-filter-toggle"
         type="button"
-        title="${isTr ? "Oyun Filtresi" : "Game Filter"}"
+        title="${esc(t("overlay.shotsGameFilter"))}"
       >
         ${icon("sliders", 13)}
-        <span>${isTr ? "Filtrele" : "Filter"}</span>
+        <span>${esc(t("overlay.shotsFilter"))}</span>
         ${activeFilterCount > 0 ? `<span class="ov-shots-filter-active-count">${activeFilterCount}</span>` : ""}
         ${icon("chevron-down", 11)}
       </button>
       <div class="ov-shots-filter-popover ${filterPopoverOpen ? "open" : ""}" id="ov-shots-filter-popover">
         <div class="ov-shots-filter-popover-header">
-          <span class="ov-shots-filter-popover-title">${isTr ? "Oyun Filtresi" : "Game Filter"}</span>
+          <span class="ov-shots-filter-popover-title">${esc(t("overlay.shotsGameFilter"))}</span>
           ${activeFilterCount > 0 ? `
             <button class="btn ghost tiny ov-shots-filter-clear-btn" data-ov="shots-filter-clear" type="button">
-              ${isTr ? "Temizle" : "Clear"}
+              ${esc(t("overlay.shotsClear"))}
             </button>
           ` : ""}
         </div>
@@ -3155,7 +3182,7 @@ async function loadScreenshots(force = false): Promise<void> {
             <div class="ov-shots-filter-checkbox ${selectedGameFilters.size === 0 ? "checked" : ""}">
               ${selectedGameFilters.size === 0 ? icon("check", 12) : ""}
             </div>
-            <span class="ov-shots-filter-label">${isTr ? "Tümü" : "All"}</span>
+            <span class="ov-shots-filter-label">${esc(t("overlay.shotsAll"))}</span>
             <span class="ov-shots-filter-row-count">${cachedScreenshots.length}</span>
           </div>
           <div class="ov-shots-filter-popover-divider"></div>
@@ -3180,7 +3207,7 @@ async function loadScreenshots(force = false): Promise<void> {
       <div style="display:flex;align-items:center;gap:8px">
         ${icon("camera", 20)}
         <span>${titleText}</span>
-        <span class="ov-shots-count-pill" title="${visibleShots.length} ${isTr ? "ekran görüntüsü" : "screenshots"}">${visibleShots.length}</span>
+        <span class="ov-shots-count-pill" title="${esc(t("overlay.shotsCount", { count: String(visibleShots.length) }))}">${visibleShots.length}</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         ${filterBtnHtml}
@@ -4724,7 +4751,7 @@ function mergeHistory(friendId: string, messages: HistoryMessage[]): void {
   if ((isWidgetOpen("discord") || isWidgetOpen("chat")) && !document.hidden) repaintDiscord();
 }
 
-/* --- Area 1: Discord Sosyal (Friends List & Voice) --- */
+/* --- Area 1: Discord Social (Friends List & Voice) --- */
 
 function socialProfileHtml(): string {
   const me = sdkState.me;
@@ -5093,7 +5120,7 @@ function statusBodyHtml(): string {
     .join("");
 }
 
-/* --- Area 2: Discord Sohbet (Chat & Messages) --- */
+/* --- Area 2: Discord Chat (Chat & Messages) --- */
 
 function chatEmptyPlaceholderHtml(): string {
   return `
@@ -5580,9 +5607,55 @@ function commitHudConfig(next: HudConfig): void {
   }
 }
 
+/** Pulls the launcher's achievement notification options once per panel open. */
+function loadOverlayNotificationOptions(): void {
+  if (overlayNotificationOptionsFetched) return;
+  overlayNotificationOptionsFetched = true;
+  void achievementGetNotificationOptions()
+    .then((options) => {
+      overlayNotificationOptions = options;
+      if (isWidgetOpen("settings")) {
+        const body = viewEl("settings");
+        const scroll = body?.scrollTop ?? 0;
+        renderSettings();
+        if (body) body.scrollTop = scroll;
+      }
+    })
+    .catch(() => undefined);
+}
+
+function saveOverlayNotificationOptions(next: AchievementNotificationOptions): void {
+  overlayNotificationOptions = next;
+  void achievementSetNotificationOptions(next).catch((error) =>
+    toast(String(error), "err"),
+  );
+}
+
+/** The panel's version of the game-page bell: storage, the Rust watcher map and
+ *  the anti-cheat opt-in always move together. */
+function setGameAchievementNotifications(enabled: boolean): void {
+  if (launcherMode || !context.appName) return;
+  const title = context.title || context.appName;
+  setAchGameNotifications(context.appName, enabled, title);
+  void steamSetAchievementNotifications(context.appName, enabled).catch(() => undefined);
+  if (context.appName.startsWith("steam::")) {
+    const appId = context.appName.slice("steam::".length);
+    if (appId) {
+      void steamSetAchievementNotifications(appId, enabled).catch(() => undefined);
+    }
+  }
+  void invoke("overlay_set_anti_cheat_notifications", {
+    appName: context.appName,
+    title,
+    allowed: enabled,
+  }).catch(() => undefined);
+  toast(t(enabled ? "ach.gameNotifOn" : "ach.gameNotifOff"), enabled ? "ok" : "");
+}
+
 function renderSettings(): void {
   const el = viewEl("settings");
   if (!el) return;
+  loadOverlayNotificationOptions();
   // The capture-off list lives in Rust (the hotkey listener reads it): pull it
   // once, then paint the per-game row from it.
   if (!overlayDisabledGamesFetched) {
@@ -5603,6 +5676,11 @@ function renderSettings(): void {
   const disabledList = disabledGames();
   const hp = getHomepage();
   const isPresetHp = ["https://www.google.com/", "https://duckduckgo.com/", "https://www.bing.com/", "https://yandex.com/"].includes(hp);
+  const notification = overlayNotificationOptions;
+  const showGameNotificationRow = !launcherMode && Boolean(context.appName);
+  const gameNotificationsOn = showGameNotificationRow
+    ? achGameNotificationsEnabled(context.appName, context.title || context.appName)
+    : true;
 
   el.innerHTML = `
     <div class="ov-settings-wrap">
@@ -5627,6 +5705,47 @@ function renderSettings(): void {
               <div class="ov-setting-desc">${esc(t("overlay.hudDesc"))}</div>
             </div>
             <label class="switch"><input type="checkbox" data-ov-toggle="hud" ${hud ? "checked" : ""} /><span class="track"></span></label>
+          </div>` : ""}
+        </div>
+      </section>
+
+      <!-- Section: Achievements & notifications -->
+      <section class="ov-settings-section">
+        <header class="ov-settings-section-header">
+          ${icon("bell", 13)}
+          <span>${esc(t("settings.secAchievements"))}</span>
+        </header>
+        <div class="ov-settings-group">
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("settings.achNotifyTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("settings.achNotifyDesc"))}</div>
+            </div>
+            <label class="switch"><input type="checkbox" data-ov-toggle="ach-notifications" ${notification.enabled ? "checked" : ""} /><span class="track"></span></label>
+          </div>
+
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("settings.achOverlayTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("settings.achOverlayDesc"))}</div>
+            </div>
+            <label class="switch"><input type="checkbox" data-ov-toggle="ach-overlay" ${notification.overlay ? "checked" : ""} /><span class="track"></span></label>
+          </div>
+
+          <div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("settings.achSoundTitle"))}</div>
+              <div class="ov-setting-desc">${esc(t("settings.achSoundDesc"))}</div>
+            </div>
+            <label class="switch"><input type="checkbox" data-ov-toggle="ach-sound" ${notification.sound ? "checked" : ""} /><span class="track"></span></label>
+          </div>
+
+          ${showGameNotificationRow ? `<div class="ov-setting-item">
+            <div class="ov-setting-info">
+              <div class="ov-setting-name">${esc(t("ach.gameNotifToggle"))}</div>
+              <div class="ov-setting-desc">${esc(t("settings.achNotifyDesc"))}</div>
+            </div>
+            <label class="switch"><input type="checkbox" data-ov-toggle="ach-game-notif" ${gameNotificationsOn ? "checked" : ""} /><span class="track"></span></label>
           </div>` : ""}
         </div>
       </section>
@@ -6649,7 +6768,15 @@ function wireEvents(): void {
       return;
     }
     const toggle = input.dataset.ovToggle;
-    if (toggle === "enabled") {
+    if (toggle === "ach-notifications") {
+      saveOverlayNotificationOptions({ ...overlayNotificationOptions, enabled: input.checked });
+    } else if (toggle === "ach-overlay") {
+      saveOverlayNotificationOptions({ ...overlayNotificationOptions, overlay: input.checked });
+    } else if (toggle === "ach-sound") {
+      saveOverlayNotificationOptions({ ...overlayNotificationOptions, sound: input.checked });
+    } else if (toggle === "ach-game-notif") {
+      setGameAchievementNotifications(input.checked);
+    } else if (toggle === "enabled") {
       localStorage.setItem(ENABLED_KEY, String(input.checked));
       void invoke("overlay_set_enabled", { enabled: input.checked });
     } else if (toggle === "hud") {
@@ -7495,6 +7622,7 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   // the open undo it.
   if (!ghostMode) setGhostMode(false);
   context = payload;
+  overlayNotificationOptionsFetched = false;
   metrics = null;
   fpsHistory = [];
   cpuHistory = [];
@@ -7634,6 +7762,19 @@ async function boot(): Promise<void> {
     startOverlayLoops();
     startClipPolling();
     void onOpen(event.payload);
+  });
+
+  // The main Settings page writes the same switches. Take its normalized
+  // answer instead of keeping a second stale copy in the panel.
+  await listen<AchievementNotificationOptions>("achievement-notification-options", (event) => {
+    overlayNotificationOptions = event.payload;
+    overlayNotificationOptionsFetched = true;
+    if (isWidgetOpen("settings")) {
+      const body = viewEl("settings");
+      const scroll = body?.scrollTop ?? 0;
+      renderSettings();
+      if (body) body.scrollTop = scroll;
+    }
   });
 
   // The panel became a click-through HUD: keep only the pinned cards, drop the

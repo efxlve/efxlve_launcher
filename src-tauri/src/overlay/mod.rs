@@ -488,6 +488,19 @@ pub fn overlay_set_active_game(
             let ghost = STATE.lock().map(|s| s.ghost).unwrap_or(false);
             if ghost {
                 hide_now(&app);
+            } else {
+                // A panel that stays open belongs to the new game now. Replay
+                // the open payload so the session timer, achievements and quick
+                // actions follow the switch instead of showing the old title.
+                let payload = STATE.lock().ok().and_then(|s| {
+                    s.visible.then(|| OverlayOpenPayload {
+                        app_name: s.game_app.clone(),
+                        title: s.game_title.clone(),
+                    })
+                });
+                if let Some(payload) = payload {
+                    let _ = app.emit_to(OVERLAY_LABEL, "overlay-open", payload);
+                }
             }
         }
         // A game start is the moment the saved crosshair preference becomes
@@ -550,7 +563,9 @@ pub(crate) fn panel_visible() -> bool {
 #[tauri::command]
 pub fn overlay_clear_active_game(app: AppHandle, app_name: String) {
     let cleared = if let Ok(mut s) = STATE.lock() {
-        if s.game_app == app_name || s.game_disabled {
+        // Only the game that owns the context may clear it. A stop event for a
+        // second title must not wipe the game the panel is currently over.
+        if s.game_app == app_name {
             s.game_app.clear();
             s.game_title.clear();
             s.game_install.clear();

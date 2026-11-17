@@ -62,7 +62,11 @@ import { achGameNotificationsEnabled } from "../../core/ach-game-prefs";
 import { appMinimize, appSetAutostart } from "../../core/window";
 import { modalRoot } from "../../core/dom";
 
-import { steamLaunchPrefs, steamLoginAccounts } from "../../steam";
+import {
+  steamLaunchPrefs,
+  steamLoginAccounts,
+  type AchievementNotificationOptions,
+} from "../../steam";
 import { clearLaunchStatus, refreshEpicInstalled, epicPlay, updateLaunchStatus } from "../../core/epic-actions";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadSteamLibrary, refreshSteamInstalled, startSteamLibraryWatch } from "../library/steam-library";
@@ -1045,6 +1049,24 @@ export async function initApp(hooks: {
         if (sum && S.currentModalAppName === id) paintGameMeta(sum);
         if (S.currentModalAppName === id) refreshGameActionUi(id);
         void invoke("overlay_clear_active_game", { appName: id }).catch(() => {});
+        // A second title may still be running. Keep the overlay armed for it
+        // instead of leaving the service contextless until the next start event.
+        const remainingGame = [...S.runningGames].pop();
+        if (remainingGame) {
+          const nextSummary = summaryOf(remainingGame);
+          const nextTitle = nextSummary?.title || remainingGame;
+          void invoke("overlay_set_active_game", {
+            appName: remainingGame,
+            title: nextTitle,
+            disabled: overlayDisabledFor(remainingGame, nextTitle),
+            installPath: nextSummary?.installPath || "",
+            allowAntiCheat: overlayAntiCheatOverride(remainingGame, nextTitle),
+            allowAchievementNotifications: achGameNotificationsEnabled(
+              remainingGame,
+              nextTitle,
+            ),
+          }).catch(() => {});
+        }
         if (totalSeconds !== undefined) {
           // The local counter only knows the sessions this launcher started.
           // Replacing the map with it would drop a 300h game to 1h, so the
@@ -1347,6 +1369,12 @@ export async function initApp(hooks: {
         void fetchAndRenderAchievements(key, true);
       }
     }
+  });
+
+  // The overlay panel can flip the same notification switches. Keep the main
+  // window's in-memory copy in step so the next settings render is current.
+  listenLater<AchievementNotificationOptions>("achievement-notification-options", (event) => {
+    S.achievementNotificationOptions = event.payload;
   });
 
   // Game clips: the recorder runs in Rust; the UI only mirrors its state.

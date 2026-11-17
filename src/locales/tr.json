@@ -4369,5 +4369,20 @@
   "xbox.buy": "Satın al",
   "xbox.buyHint": "Bu oyuna sahip değilsin. Satın almak için Microsoft Store'u aç.",
   "xbox.subscribe": "Abone ol",
-  "xbox.subscribeHint": "Bu oyun Game Pass'ta. Tekrar oynamak için abone ol veya satın al."
+  "xbox.subscribeHint": "Bu oyun Game Pass'ta. Tekrar oynamak için abone ol veya satın al.",
+  "overlay.discordSocial": "Sosyal",
+  "overlay.discordChat": "Sohbet",
+  "overlay.perfProcessor": "İşlemci",
+  "overlay.perfGpuActive": "3D Aktif",
+  "overlay.perfGpuSystem": "Sistem 3D",
+  "overlay.perfMemory": "Bellek",
+  "overlay.perfIdle": "Beklemede",
+  "overlay.perfAvg": "Ort",
+  "overlay.perfPeak": "Zirve",
+  "overlay.perfNow": "Şimdi",
+  "overlay.shotsGameFilter": "Oyun Filtresi",
+  "overlay.shotsFilter": "Filtrele",
+  "overlay.shotsClear": "Temizle",
+  "overlay.shotsAll": "Tümü",
+  "overlay.shotsCount": "{count} ekran görüntüsü"
 }

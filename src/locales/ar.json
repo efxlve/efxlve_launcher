@@ -4369,5 +4369,20 @@
   "xbox.buy": "شراء",
   "xbox.buyHint": "أنت لا تملك هذه اللعبة. افتح Microsoft Store لشرائها.",
   "xbox.subscribe": "اشترك",
-  "xbox.subscribeHint": "هذه اللعبة متضمنة في Game Pass. اشترك أو اشترِ اللعبة للعب."
+  "xbox.subscribeHint": "هذه اللعبة متضمنة في Game Pass. اشترك أو اشترِ اللعبة للعب.",
+  "overlay.discordSocial": "اجتماعي",
+  "overlay.discordChat": "محادثة",
+  "overlay.perfProcessor": "Processor",
+  "overlay.perfGpuActive": "3D Active",
+  "overlay.perfGpuSystem": "System 3D",
+  "overlay.perfMemory": "Memory",
+  "overlay.perfIdle": "Idle",
+  "overlay.perfAvg": "Avg",
+  "overlay.perfPeak": "Peak",
+  "overlay.perfNow": "Now",
+  "overlay.shotsGameFilter": "Game Filter",
+  "overlay.shotsFilter": "Filter",
+  "overlay.shotsClear": "Clear",
+  "overlay.shotsAll": "All",
+  "overlay.shotsCount": "{count} screenshots"
 }
