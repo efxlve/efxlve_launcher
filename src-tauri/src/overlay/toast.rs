@@ -77,6 +77,10 @@ pub struct ToastPayload {
     /// The achievement picture, when it landed before the card was emitted.
     #[serde(default)]
     pub icon: Option<String>,
+    /// The remote picture URL. The page paints it in the first frame, then
+    /// swaps to the cached `icon` data URL when it arrives.
+    #[serde(default)]
+    pub icon_url: Option<String>,
     /// Greater than one when this card stands for a burst of unlocks (a save
     /// load can unlock twenty at once). The page then paints the localized
     /// "N achievements unlocked" title and `batch_names` as the body, so one
@@ -713,6 +717,7 @@ mod tests {
             sound: false,
             sound_tier: 0,
             icon: None,
+            icon_url: None,
             batch: 0,
             batch_names: Vec::new(),
         }

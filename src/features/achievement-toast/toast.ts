@@ -31,6 +31,8 @@ interface ToastPayload {
   palette: AchCardPalette;
   tagless?: boolean;
   icon?: string;
+  /** Remote picture painted in the first frame; `icon` replaces it when cached. */
+  iconUrl?: string;
   /** Greater than one when the card stands for a burst of unlocks. */
   batch?: number;
   batchNames?: string[];
@@ -103,12 +105,18 @@ function renderToast(payload: ToastPayload): void {
     palette,
     seq: sequence,
     glyph: isHint ? "layers" : "trophy",
-    iconSrc: payload.icon || undefined,
+    iconSrc: payload.icon || payload.iconUrl || undefined,
     hint: isHint,
   })}</div>`;
 
   const card = root.querySelector<HTMLElement>(".ach-hud-toast");
   if (!card) return;
+  // A remote icon that cannot load reveals the trophy underneath instead of
+  // leaving a broken-image glyph on the card. The cached data URL replaces the
+  // picture through `ach-toast-icon` when it arrives.
+  root
+    .querySelectorAll<HTMLImageElement>(".ach-hud-ach-icon, .ach-hint-app-icon")
+    .forEach((img) => img.addEventListener("error", () => img.remove(), { once: true }));
   playAchCardEntry(card, payload.style, payload.tier);
 
   clearExitTimer();

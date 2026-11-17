@@ -144,7 +144,8 @@ export function achCardHtml(m: AchCardModel): string {
         <div class="ach-fx-particles">${particlesHtml()}</div>
         <div class="ach-hud-medallion">
           <span class="ach-medallion-ring"></span>
-          ${art || `<span class="ach-hud-trophy-ico">${icon(m.glyph, 18)}</span>`}
+          <span class="ach-hud-trophy-ico">${icon(m.glyph, 18)}</span>
+          ${art}
         </div>
       </div>
 

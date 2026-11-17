@@ -2494,6 +2494,7 @@ fn main() {
             steam::achievement_pick_custom_sound,
             steam::achievement_clear_custom_sound,
             steam::achievement_test_notification,
+            steam::achievement_audition_sound,
             steam::achievement_announce_store_unlocks,
             steam::achievement_set_notification_colors,
             steam::steam_start_emulator_watcher,

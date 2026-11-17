@@ -365,6 +365,16 @@ export const achievementSetNotificationOptions = (options: AchievementNotificati
 export const achievementSetNotificationColors = (colors: AchievementCardColors) =>
   invoke<void>("achievement_set_notification_colors", { colors });
 
+/** Plays the configured chime or custom sound once, without a card. */
+export const achievementAuditionSound = (
+  options: AchievementNotificationOptions,
+  tier: number,
+) =>
+  invoke<void>("achievement_audition_sound", {
+    options,
+    tier: Math.max(0, Math.min(4, tier)),
+  });
+
 /** One newly unlocked achievement in a store poll burst. */
 export interface StoreUnlockAnnouncement {
   name: string;

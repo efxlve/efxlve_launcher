@@ -9,6 +9,16 @@ export interface AchCardAnimation {
   easing: string;
 }
 
+/** The CSS media query already stops the looping FX; the JS choreography
+ *  needs the same guard so a reduced-motion player gets a simple fade. */
+function reducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
 /** Default closing move for an opening style (the UI no longer exposes it). */
 export function resolveEffectiveExitStyle(animStyle: string, exitStyle?: string): string {
   if (exitStyle && exitStyle !== "auto") return exitStyle;
@@ -359,6 +369,13 @@ export function achExitKeyframes(exitStyle: string, animStyle: string): AchCardA
 export function playAchCardEntry(card: HTMLElement, animStyle: string, tier = 2): void {
   if (typeof card.animate !== "function") return;
   card.getAnimations().forEach((animation) => animation.cancel());
+  if (reducedMotion()) {
+    card.animate([{ opacity: 0 }, { opacity: 1 }], {
+      duration: 150,
+      fill: "both",
+    });
+    return;
+  }
 
   // Distinct, buttery-smooth entrance for overlay system hints
   if (card.classList.contains("ach-hud-hint")) {
@@ -481,6 +498,14 @@ export function playAchCardExit(
   if (typeof card.animate !== "function") {
     onDone?.();
     return null;
+  }
+  if (reducedMotion()) {
+    const animation = card.animate([{ opacity: 1 }, { opacity: 0 }], {
+      duration: 150,
+      fill: "both",
+    });
+    animation.onfinish = () => onDone?.();
+    return animation;
   }
   const exit = achExitKeyframes(exitStyle || "auto", animStyle);
   const animation = card.animate(exit.frames, {

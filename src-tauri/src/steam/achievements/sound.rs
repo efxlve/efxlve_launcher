@@ -1,17 +1,17 @@
 //! Achievement unlock sound: a synthesized chime for the active animation
 //! style and rarity tier, or the custom file picked in Settings.
 //!
-//! Playback runs on a background thread; a newer sound cancels the one that is
-//! still ringing.
+//! One worker owns the default output stream and reuses it for every chime, so
+//! a notification does not pay the WASAPI device-open cost each time. A newer
+//! sound stops the sink that is still ringing.
 
 #[cfg(windows)]
 use std::path::Path;
 
 use super::AchievementNotificationOptions;
 
-/// Bumped by every new sound so the previous sink stops early.
 #[cfg(windows)]
-static SOUND_PLAY_GEN: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+const AUDIO_IDLE_RELEASE: std::time::Duration = std::time::Duration::from_secs(300);
 
 /// Smoothly raises from 0.0 to 1.0 over `attack_s` using a cosine curve so note
 /// onsets never click.
@@ -271,59 +271,120 @@ pub(super) fn synthesize_dopamine_chime_wav(style: &str, tier: u8) -> Vec<u8> {
     wav
 }
 
-/// Runs a Rodio decoder on a background thread and cancels early if a newer
-/// achievement sound starts before it finishes.
+/// One decoded request for the audio worker.
 #[cfg(windows)]
-fn spawn_cancellable_sink<R>(decoder: rodio::Decoder<R>, volume: u8)
-where
-    R: std::io::Read + std::io::Seek + Send + Sync + 'static,
-{
-    let my_gen = SOUND_PLAY_GEN.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
-    let vol = (volume.min(100) as f32) / 100.0;
-    std::thread::spawn(move || {
-        let Ok(stream) = rodio::OutputStreamBuilder::open_default_stream() else {
-            unsafe {
-                MessageBeep(0x00000040);
-            }
-            return;
-        };
-        let sink = rodio::Sink::connect_new(stream.mixer());
-        sink.set_volume(vol);
-        sink.append(decoder);
-        while !sink.empty() {
-            if SOUND_PLAY_GEN.load(std::sync::atomic::Ordering::Relaxed) != my_gen {
-                sink.stop();
-                break;
-            }
-            std::thread::sleep(std::time::Duration::from_millis(25));
-        }
-    });
+struct SoundRequest {
+    bytes: Vec<u8>,
+    volume: u8,
 }
 
-/// Plays a custom notification file on a background thread so the watcher
-/// never waits for the sound. Rodio decodes by content, so WAV, MP3, OGG,
-/// FLAC, and M4A all work through the same path.
+/// The worker is started on the first sound and keeps the default output
+/// stream for five idle minutes; a long game session does not reopen WASAPI
+/// for every achievement.
+#[cfg(windows)]
+static SOUND_TX: std::sync::Mutex<Option<std::sync::mpsc::Sender<SoundRequest>>> =
+    std::sync::Mutex::new(None);
+
+#[cfg(windows)]
+fn enqueue_sound(bytes: Vec<u8>, volume: u8) {
+    let mut slot = match SOUND_TX.lock() {
+        Ok(slot) => slot,
+        Err(_) => return,
+    };
+    if slot.is_none() {
+        let (tx, rx) = std::sync::mpsc::channel::<SoundRequest>();
+        std::thread::spawn(move || run_sound_worker(rx));
+        *slot = Some(tx);
+    }
+    let Some(tx) = slot.as_ref() else {
+        return;
+    };
+    if tx.send(SoundRequest { bytes, volume }).is_err() {
+        // The worker died: the next sound starts a fresh one.
+        *slot = None;
+    }
+}
+
+#[cfg(windows)]
+fn run_sound_worker(rx: std::sync::mpsc::Receiver<SoundRequest>) {
+    let mut stream: Option<rodio::OutputStream> = None;
+    let mut sink: Option<rodio::Sink> = None;
+    let mut idle_since = std::time::Instant::now();
+    loop {
+        match rx.recv_timeout(std::time::Duration::from_secs(1)) {
+            Ok(request) => {
+                if stream.is_none() {
+                    match rodio::OutputStreamBuilder::open_default_stream() {
+                        Ok(next) => stream = Some(next),
+                        Err(_) => {
+                            unsafe {
+                                MessageBeep(0x00000040);
+                            }
+                            continue;
+                        }
+                    }
+                }
+                // A new unlock replaces the chime that is still ringing instead
+                // of layering the two.
+                if let Some(previous) = sink.take() {
+                    previous.stop();
+                }
+                let Some(active) = stream.as_ref() else {
+                    continue;
+                };
+                let Ok(decoder) = rodio::Decoder::try_from(std::io::Cursor::new(request.bytes))
+                else {
+                    unsafe {
+                        MessageBeep(0x00000040);
+                    }
+                    continue;
+                };
+                let next = rodio::Sink::connect_new(active.mixer());
+                next.set_volume((request.volume.min(100) as f32) / 100.0);
+                next.append(decoder);
+                sink = Some(next);
+                idle_since = std::time::Instant::now();
+            }
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                let idle = sink.as_ref().map(|sink| sink.empty()).unwrap_or(true);
+                if idle && stream.is_some() && idle_since.elapsed() >= AUDIO_IDLE_RELEASE {
+                    // Release the device after a quiet stretch. The next sound
+                    // pays one device-open cost and then stays warm again.
+                    sink = None;
+                    stream = None;
+                }
+            }
+            Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
+        }
+    }
+}
+
+/// Reads and validates a custom notification file before handing it to the
+/// worker. Rodio decodes by content, so WAV, MP3, OGG, FLAC and M4A all work.
 #[cfg(windows)]
 fn play_custom_sound(path: &str, volume: u8) -> bool {
     let Ok(bytes) = std::fs::read(path) else {
         return false;
     };
-    let Ok(decoder) = rodio::Decoder::try_from(std::io::Cursor::new(bytes)) else {
+    if bytes.is_empty() {
         return false;
-    };
-    spawn_cancellable_sink(decoder, volume);
+    }
+    // Reject a corrupt file here so the caller can fall back to the built-in
+    // chime. The decoder needs an owned cursor, so the bytes are cloned once;
+    // a notification file is small compared with the playback it starts.
+    if rodio::Decoder::try_from(std::io::Cursor::new(bytes.clone())).is_err() {
+        return false;
+    }
+    enqueue_sound(bytes, volume);
     true
 }
 
 #[cfg(windows)]
-pub(super) fn play_achievement_notification_sound(
+fn play_achievement_sound(
     app: &tauri::AppHandle,
     options: &AchievementNotificationOptions,
     tier: u8,
 ) {
-    if !options.sound {
-        return;
-    }
     if options.custom_sound {
         let settings = crate::load_settings(app);
         if let Some(path) = settings
@@ -337,22 +398,48 @@ pub(super) fn play_achievement_notification_sound(
         }
     }
     let wav_bytes = synthesize_dopamine_chime_wav(&options.anim_style, tier);
-    if let Ok(decoder) = rodio::Decoder::try_from(std::io::Cursor::new(wav_bytes)) {
-        spawn_cancellable_sink(decoder, options.volume);
-        return;
-    }
     const DEFAULT_CHIME: &[u8] = include_bytes!("../../../assets/achievement-chime.wav");
-    if let Ok(decoder) = rodio::Decoder::try_from(std::io::Cursor::new(DEFAULT_CHIME)) {
-        spawn_cancellable_sink(decoder, options.volume);
+    let bytes = if wav_bytes.is_empty() {
+        DEFAULT_CHIME.to_vec()
+    } else {
+        wav_bytes
+    };
+    enqueue_sound(bytes, options.volume);
+}
+
+#[cfg(windows)]
+pub(super) fn play_achievement_notification_sound(
+    app: &tauri::AppHandle,
+    options: &AchievementNotificationOptions,
+    tier: u8,
+) {
+    if !options.sound {
         return;
     }
-    unsafe {
-        MessageBeep(0x00000040);
-    }
+    play_achievement_sound(app, options, tier);
+}
+
+/// Settings preview: the sound switch must not silence an explicit audition,
+/// but the custom file and volume still follow the current options.
+#[cfg(windows)]
+pub(super) fn audition_achievement_notification_sound(
+    app: &tauri::AppHandle,
+    options: &AchievementNotificationOptions,
+    tier: u8,
+) {
+    play_achievement_sound(app, options, tier);
 }
 
 #[cfg(not(windows))]
 pub(super) fn play_achievement_notification_sound(
+    _app: &tauri::AppHandle,
+    _options: &AchievementNotificationOptions,
+    _tier: u8,
+) {
+}
+
+#[cfg(not(windows))]
+pub(super) fn audition_achievement_notification_sound(
     _app: &tauri::AppHandle,
     _options: &AchievementNotificationOptions,
     _tier: u8,

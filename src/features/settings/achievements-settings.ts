@@ -11,9 +11,11 @@ import { icon, type IconName } from "../../core/icons";
 import { render } from "../../core/render";
 import { S } from "../../core/state";
 import { achievementCardPalette, syncAchievementCardTheme } from "../../core/achievement-card-theme";
+import { IS_WINDOWS } from "../../core/platform";
 import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
 import {
+  achievementAuditionSound,
   achievementClearCustomSound,
   achievementGetNotificationOptions,
   achievementPickCustomSound,
@@ -353,6 +355,20 @@ export function playWebAudioAchievementChime(
   } catch {
     /* browser audio blocked or unavailable */
   }
+}
+
+/**
+ * Auditions the sound the player will actually hear. Windows plays the custom
+ * file through the real notification worker; the other desktops keep the Web
+ * Audio chime because the native player is Windows-only for now.
+ */
+function previewAchievementSound(tier = previewRarityTier): void {
+  const options = S.achievementNotificationOptions;
+  if (IS_WINDOWS) {
+    void achievementAuditionSound(options, tier).catch(() => undefined);
+    return;
+  }
+  playWebAudioAchievementChime(options.volume, options.animStyle || "prism", tier);
 }
 
 let stagePreviewTimer: number | null = null;
@@ -1177,7 +1193,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       render();
       runStagePreviewChoreography("entry");
       if (next.sound) {
-        playWebAudioAchievementChime(next.volume, animStyle, previewRarityTier);
+        previewAchievementSound();
       }
       return true;
     }
@@ -1202,11 +1218,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       render();
       runStagePreviewChoreography("entry");
       if (S.achievementNotificationOptions.sound) {
-        playWebAudioAchievementChime(
-          S.achievementNotificationOptions.volume,
-          S.achievementNotificationOptions.animStyle,
-          previewRarityTier,
-        );
+        previewAchievementSound();
       }
       return true;
     }
@@ -1216,11 +1228,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       render();
       runStagePreviewChoreography("cycle");
       if (S.achievementNotificationOptions.sound) {
-        playWebAudioAchievementChime(
-          S.achievementNotificationOptions.volume,
-          S.achievementNotificationOptions.animStyle,
-          previewRarityTier,
-        );
+        previewAchievementSound();
       }
       return true;
     }
@@ -1255,7 +1263,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       S.achievementNotificationOptions = next;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();
-      playWebAudioAchievementChime(volume, next.animStyle, previewRarityTier);
+      previewAchievementSound();
       return true;
     }
 
@@ -1269,11 +1277,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     }
 
     case "ach-audition-sound": {
-      playWebAudioAchievementChime(
-        S.achievementNotificationOptions.volume,
-        S.achievementNotificationOptions.animStyle,
-        previewRarityTier,
-      );
+      previewAchievementSound();
       return true;
     }
 

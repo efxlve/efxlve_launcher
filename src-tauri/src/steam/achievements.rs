@@ -2907,6 +2907,10 @@ pub fn achievement_test_notification(
             // card's turn. A card that never reaches the screen still plays it.
             card.sound = true;
             card.sound_tier = tier;
+            card.icon_url = icon_url
+                .as_ref()
+                .map(|url| url.trim().to_string())
+                .filter(|url| !url.is_empty());
             let generation = crate::overlay::toast::show(&app, card);
             if let Some(ref url) = icon_url {
                 attach_achievement_icon(&app, url, generation);
@@ -2933,6 +2937,18 @@ pub fn achievement_test_notification(
     let _ = app.emit("achievement-unlocked", payload);
 }
 
+/// Settings preview: plays the configured chime or custom file without a card.
+/// The sound switch is ignored because the button is an explicit audition; the
+/// custom file and volume still follow the options passed by the page.
+#[tauri::command]
+pub fn achievement_audition_sound(
+    app: tauri::AppHandle,
+    options: AchievementNotificationOptions,
+    tier: u8,
+) {
+    sound::audition_achievement_notification_sound(&app, &options, tier.min(4));
+}
+
 /// One call for a whole store poll burst: the frontend sends every newly
 /// unlocked achievement once, Rust decides the card, sound and notification
 /// flags, and one event per achievement keeps the lists and the bell current.
@@ -2948,6 +2964,10 @@ pub fn achievement_announce_store_unlocks(
 ) {
     let app_id = app_id.trim();
     if app_id.is_empty() || unlocks.is_empty() {
+        return;
+    }
+    let unlocks = announce_once(app_id, unlocks);
+    if unlocks.is_empty() {
         return;
     }
     let newly_count = unlocks.len() as u32;
@@ -3024,6 +3044,7 @@ fn toast_payload(
         sound: false,
         sound_tier: 0,
         icon: None,
+        icon_url: None,
         batch: 0,
         batch_names: Vec::new(),
     }
@@ -3258,6 +3279,34 @@ impl AnnounceItem {
     }
 }
 
+/// The native watcher and the store poll can see the same unlock from two
+/// directions. Whichever announces it first owns the card, the chime and the
+/// bell entry; the other source drops it instead of duplicating the burst.
+static ANNOUNCED: StdMutex<Option<std::collections::HashMap<String, u64>>> = StdMutex::new(None);
+
+/// Ten minutes covers the poll and file-flush gap between the two sources
+/// without hiding a genuinely new unlock later in a long session.
+const ANNOUNCED_TTL_SECS: u64 = 10 * 60;
+
+fn announce_once(payload_key: &str, items: Vec<AnnounceItem>) -> Vec<AnnounceItem> {
+    let now = now_secs();
+    let Ok(mut lock) = ANNOUNCED.lock() else {
+        return items;
+    };
+    let map = lock.get_or_insert_with(std::collections::HashMap::new);
+    map.retain(|_, at| now.saturating_sub(*at) < ANNOUNCED_TTL_SECS);
+    let mut kept = Vec::with_capacity(items.len());
+    for item in items {
+        let key = format!("{payload_key}\u{0}{}", item.name);
+        if map.contains_key(&key) {
+            continue;
+        }
+        map.insert(key, now);
+        kept.push(item);
+    }
+    kept
+}
+
 /// The shared decision for one unlock burst: who may be announced, and which
 /// of those earn a visible card.
 #[derive(Clone)]
@@ -3356,6 +3405,13 @@ fn show_burst_card(
     // for the panel still rings from `toast::show_now`.
     payload.sound = true;
     payload.sound_tier = tier;
+    // Paint the remote picture in the first frame; the cached data URL follows
+    // through `set_icon` when the download finishes.
+    payload.icon_url = if lead.icon_url.trim().is_empty() {
+        None
+    } else {
+        Some(lead.icon_url.clone())
+    };
     if burst.announced.len() > 1 {
         payload.batch = burst.announced.len() as u32;
         payload.batch_names = burst
@@ -3470,61 +3526,69 @@ fn emit_new_achievement_unlocks(
         return;
     }
 
-    let store_key = if write_cache {
-        "steam"
-    } else if payload_app_id.is_some() {
-        // A store game bridged through a local emulator keeps its own mute.
-        notification_store_key(payload_key)
-    } else {
-        "custom"
-    };
-    let burst = prepare_burst(app, payload_key, store_key, &newly);
+    // The store poll may have announced this unlock first. The watcher still
+    // records it in its own set and refreshes the cache below, but it must not
+    // ring or show a second card for the same moment.
+    let newly = announce_once(payload_key, newly);
     let unlocked_count = (unlocked_set.len() as u32).min(total_count.max(1));
 
-    // The card and the chime go out before the souvenir capture: a save-load
-    // burst must not wait for a screenshot.
-    notify_burst_start(app, &burst, &newly, unlocked_count, total_count);
+    if !newly.is_empty() {
+        let store_key = if write_cache {
+            "steam"
+        } else if payload_app_id.is_some() {
+            // A store game bridged through a local emulator keeps its own mute.
+            notification_store_key(payload_key)
+        } else {
+            "custom"
+        };
+        let burst = prepare_burst(app, payload_key, store_key, &newly);
 
-    // A souvenir of the moment: one frame per burst, at most every 15 seconds.
-    // The capture refuses when the game window is not foreground, so an
-    // alt-tabbed desktop never ends up in the game's gallery. The store and
-    // game mutes still apply; the master card switch does not, because a saved
-    // frame is not a notification.
-    let souvenir = burst.options.unlock_screenshots
-        && burst.store_enabled
-        && burst.game_enabled
-        && !burst.cards_blocked
-        && !burst.announced.is_empty()
-        && unlock_screenshot_allowed();
-    if souvenir {
-        // The events follow the capture, so the lead achievement's history row
-        // gets the saved frame without holding back the card that just played.
-        let app = app.clone();
-        let payload_key = payload_key.to_string();
-        let newly = newly.clone();
-        let burst = burst.clone();
-        std::thread::spawn(move || {
-            let screenshot = capture_unlock_souvenir();
+        // The card and the chime go out before the souvenir capture: a save-load
+        // burst must not wait for a screenshot.
+        notify_burst_start(app, &burst, &newly, unlocked_count, total_count);
+
+        // A souvenir of the moment: one frame per burst, at most every 15
+        // seconds. The capture refuses when the game window is not foreground,
+        // so an alt-tabbed desktop never ends up in the game's gallery. The
+        // store and game mutes still apply; the master card switch does not,
+        // because a saved frame is not a notification.
+        let souvenir = burst.options.unlock_screenshots
+            && burst.store_enabled
+            && burst.game_enabled
+            && !burst.cards_blocked
+            && !burst.announced.is_empty()
+            && unlock_screenshot_allowed();
+        if souvenir {
+            // The events follow the capture, so the lead achievement's history
+            // row gets the saved frame without holding back the card that just
+            // played.
+            let app = app.clone();
+            let payload_key = payload_key.to_string();
+            let newly = newly.clone();
+            let burst = burst.clone();
+            std::thread::spawn(move || {
+                let screenshot = capture_unlock_souvenir();
+                emit_burst_events(
+                    &app,
+                    &payload_key,
+                    &burst,
+                    &newly,
+                    unlocked_count,
+                    total_count,
+                    screenshot,
+                );
+            });
+        } else {
             emit_burst_events(
-                &app,
-                &payload_key,
+                app,
+                payload_key,
                 &burst,
                 &newly,
                 unlocked_count,
                 total_count,
-                screenshot,
+                None,
             );
-        });
-    } else {
-        emit_burst_events(
-            app,
-            payload_key,
-            &burst,
-            &newly,
-            unlocked_count,
-            total_count,
-            None,
-        );
+        }
     }
 
     // The drawer and the library summary read this file; an unlock must land
@@ -4579,5 +4643,26 @@ mod tests {
         assert_eq!(two["earned"], serde_json::json!(false));
         assert_eq!(two["icon_gray"], serde_json::json!(""));
         assert_eq!(definitions.len(), 2);
+    }
+
+    #[test]
+    fn an_unlock_is_announced_once_across_sources() {
+        let key = format!("test::dedupe::{}", std::process::id());
+        let item = |name: &str| AnnounceItem {
+            name: name.into(),
+            display_name: name.into(),
+            description: String::new(),
+            icon_url: String::new(),
+            rarity_percent: None,
+            tier_name: None,
+        };
+        let first = announce_once(&key, vec![item("ACH_ONE"), item("ACH_TWO")]);
+        assert_eq!(first.len(), 2);
+        let second = announce_once(
+            &key,
+            vec![item("ACH_ONE"), item("ACH_TWO"), item("ACH_THREE")],
+        );
+        assert_eq!(second.len(), 1);
+        assert_eq!(second[0].name, "ACH_THREE");
     }
 }
