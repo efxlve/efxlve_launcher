@@ -11,6 +11,12 @@ name = "efxlve-restore"
 path = "src/restore_main.rs"
 test = false
 
+[[bin]]
+name = "efxlve-pack-fixture"
+path = "src/pack_fixture_main.rs"
+test = false
+required-features = ["restore-fixture"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
@@ -60,6 +66,7 @@ ctrlc = "3"
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+restore-fixture = []
 
 [target.'cfg(windows)'.dependencies]
 hidapi = "2"

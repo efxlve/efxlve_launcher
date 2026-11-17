@@ -68,6 +68,9 @@ jobs:
       - name: Standalone restorer helper tests
         run: cargo test --manifest-path src-tauri/Cargo.toml restore_cli
 
+      - name: Standalone restorer end-to-end test
+        run: cargo test --manifest-path src-tauri/Cargo.toml --features restore-fixture --test restore_cli_e2e
+
       - name: Standalone restore build
         run: cargo build --manifest-path src-tauri/Cargo.toml --bin efxlve-restore
 
@@ -121,6 +124,9 @@ jobs:
       - name: Standalone restorer helper tests
         run: cargo test --manifest-path src-tauri/Cargo.toml restore_cli
 
+      - name: Standalone restorer end-to-end test
+        run: cargo test --manifest-path src-tauri/Cargo.toml --features restore-fixture --test restore_cli_e2e
+
       - name: Standalone restore build
         run: cargo build --manifest-path src-tauri/Cargo.toml --bin efxlve-restore
 
@@ -161,6 +167,9 @@ jobs:
 
       - name: Standalone restorer helper tests
         run: cargo test --manifest-path src-tauri/Cargo.toml restore_cli
+
+      - name: Standalone restorer end-to-end test
+        run: cargo test --manifest-path src-tauri/Cargo.toml --features restore-fixture --test restore_cli_e2e
 
       - name: Standalone restore build
         run: cargo build --manifest-path src-tauri/Cargo.toml --bin efxlve-restore
