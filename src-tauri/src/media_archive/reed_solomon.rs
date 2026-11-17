@@ -98,6 +98,11 @@ impl ParityLayout {
             out[row] = 1;
             return out;
         }
+        if self.parity_shards == 1 {
+            // A single XOR parity row is the cheapest MDS case: with
+            // `[I; 1..1]` any one missing data shard is the XOR of the rest.
+            return vec![1u8; self.data_shards];
+        }
         let parity_row = row - self.data_shards;
         (0..self.data_shards)
             .map(|column| {
@@ -128,9 +133,19 @@ pub fn encode(layout: ParityLayout, data: &[Vec<u8>]) -> Result<Vec<Vec<u8>>, St
     for parity_row in 0..layout.parity_shards {
         let mut out = vec![0u8; shard_len];
         for (column, shard) in data.iter().enumerate() {
-            let factor = gf_inv((parity_row as u8) ^ ((layout.parity_shards + column) as u8));
-            for (target, byte) in out.iter_mut().zip(shard) {
-                *target ^= gf_mul(*byte, factor);
+            let factor = if layout.parity_shards == 1 {
+                1
+            } else {
+                gf_inv((parity_row as u8) ^ ((layout.parity_shards + column) as u8))
+            };
+            if factor == 1 {
+                for (target, byte) in out.iter_mut().zip(shard) {
+                    *target ^= *byte;
+                }
+            } else {
+                for (target, byte) in out.iter_mut().zip(shard) {
+                    *target ^= gf_mul(*byte, factor);
+                }
             }
         }
         parity.push(out);
@@ -173,6 +188,40 @@ pub fn recover(layout: ParityLayout, shards: &[Option<Vec<u8>>]) -> Result<Vec<V
         .any(|shard| shard.len() != shard_len)
     {
         return Err("available shards must all have the same length".to_string());
+    }
+
+    if layout.parity_shards == 1 {
+        let missing_data: Vec<usize> = (0..layout.data_shards)
+            .filter(|index| shards[*index].is_none())
+            .collect();
+        if missing_data.is_empty() {
+            return Ok(shards[..layout.data_shards]
+                .iter()
+                .map(|shard| shard.clone().unwrap_or_default())
+                .collect());
+        }
+        if missing_data.len() == 1 {
+            let Some(parity) = shards[layout.data_shards].as_ref() else {
+                return Err("the parity shard is missing".to_string());
+            };
+            let mut recovered = parity.clone();
+            for (index, shard) in shards[..layout.data_shards].iter().enumerate() {
+                if index == missing_data[0] {
+                    continue;
+                }
+                if let Some(shard) = shard {
+                    for (target, byte) in recovered.iter_mut().zip(shard) {
+                        *target ^= *byte;
+                    }
+                }
+            }
+            let mut data: Vec<Vec<u8>> = shards[..layout.data_shards]
+                .iter()
+                .map(|shard| shard.clone().unwrap_or_default())
+                .collect();
+            data[missing_data[0]] = recovered;
+            return Ok(data);
+        }
     }
 
     let selected: Vec<usize> = available.into_iter().take(layout.data_shards).collect();
@@ -320,6 +369,30 @@ mod tests {
         shards[2] = None;
         shards[5] = None;
 
+        assert_eq!(recover(layout, &shards).unwrap(), original);
+    }
+
+    #[test]
+    fn a_single_parity_shard_is_an_xor() {
+        let layout = ParityLayout::new(5, 1).unwrap();
+        let original = data(5, 32);
+        let parity = encode(layout, &original).unwrap();
+        assert_eq!(parity.len(), 1);
+        let mut xor = vec![0u8; 32];
+        for shard in &original {
+            for (target, byte) in xor.iter_mut().zip(shard) {
+                *target ^= *byte;
+            }
+        }
+        assert_eq!(parity[0], xor);
+
+        let mut shards: Vec<Option<Vec<u8>>> = original
+            .iter()
+            .cloned()
+            .map(Some)
+            .chain(parity.into_iter().map(Some))
+            .collect();
+        shards[2] = None;
         assert_eq!(recover(layout, &shards).unwrap(), original);
     }
 

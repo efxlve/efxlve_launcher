@@ -226,6 +226,9 @@ pub fn localize(message: &str) -> String {
             "xtool or its _libraries folder is missing."
         }
         "@t:archive.xtoolFailed" => "xtool could not decode the archive.",
+        "@t:archive.parityTooMany" => "Too many damaged shards to repair from parity.",
+        "@t:archive.parityFailed" => "The parity data could not repair this backup.",
+        "@t:archive.parityWrite" => "Writing parity files failed.",
         "@t:archive.readFailed" => "Reading the archive failed.",
         "@t:archive.writeFailed" => "Writing the restored files failed.",
         "@t:archive.unsafePath" => "The archive contains an unsafe path.",

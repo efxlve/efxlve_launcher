@@ -2,7 +2,7 @@
 //! zstd frames, and rotate to a new volume before the current media is full.
 
 use std::fs::File;
-use std::io::{self, BufReader, BufWriter, Read, Write};
+use std::io::{self, BufReader, BufWriter, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin};
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
@@ -16,12 +16,21 @@ use zstd::bulk::Compressor;
 
 use super::bypass::should_store_raw;
 use super::format::{
-    encode_block_header, sha256_bytes, write_manifest, CompressionInfo, MediaManifest, StoreMeta,
-    VolumeInfo, BLOCK_FLAG_STORED, FORMAT_NAME, FORMAT_VERSION, MANIFEST_FILE,
+    encode_block_header, sha256_bytes, write_manifest, CompressionInfo, MediaManifest, ParityFileInfo,
+    ParityInfo, ParityVolumeInfo, StoreMeta, VolumeInfo, BLOCK_FLAG_STORED, FORMAT_NAME,
+    FORMAT_VERSION, MANIFEST_FILE,
 };
 use super::profile::{worst_case_volumes, MediaProfileInfo};
+use super::reed_solomon::{encode, ParityLayout};
 use super::xtool::Xtool;
 use super::ArchiveProgress;
+
+/// One XOR/Reed-Solomon parity shard per volume keeps the first v3 integration
+/// fast and cheap; the codec and manifest already support more parity shards.
+const PARITY_SHARDS: usize = 1;
+const PARITY_TARGET_DATA_SHARDS: u64 = 64;
+const PARITY_CHUNK_BYTES: usize = 1024 * 1024;
+const PARITY_MIN_SHARD_BYTES: u64 = 64 * 1024;
 
 /// Progress events leave the engine through a trait so the pack tests never
 /// need a Tauri application handle.
@@ -204,7 +213,14 @@ pub fn unique_archive_folder(target_root: &Path, title: &str) -> String {
     candidate
 }
 
-pub fn pack_game(job: PackJob) -> Result<PackOutcome, String> {
+pub fn pack_game(mut job: PackJob) -> Result<PackOutcome, String> {
+    // A v3 volume carries one parity file inside the same media budget. Reserve
+    // a small slice so the data volume plus parity still fits the disc/USB
+    // profile instead of failing at burn time.
+    if job.profile.volume_bytes > 0 {
+        let reserve = (job.profile.volume_bytes / 50).max(1);
+        job.profile.volume_bytes = job.profile.volume_bytes.saturating_sub(reserve).max(1);
+    }
     let install = job
         .install_path
         .canonicalize()
@@ -290,6 +306,126 @@ pub fn pack_game(job: PackJob) -> Result<PackOutcome, String> {
             Err(error)
         }
     }
+}
+
+fn parity_shape(volumes: &[VolumeInfo]) -> (u64, usize) {
+    let max_bytes = volumes.iter().map(|volume| volume.bytes).max().unwrap_or(0);
+    let mut shard_bytes = PARITY_MIN_SHARD_BYTES.max(max_bytes.div_ceil(PARITY_TARGET_DATA_SHARDS));
+    let mut data_shards = max_bytes.div_ceil(shard_bytes).max(1) as usize;
+    if data_shards + PARITY_SHARDS > 255 {
+        shard_bytes = max_bytes.div_ceil((255 - PARITY_SHARDS) as u64).max(1);
+        data_shards = max_bytes.div_ceil(shard_bytes).max(1) as usize;
+    }
+    (shard_bytes, data_shards)
+}
+
+fn find_packed_volume(staging: &Path, file_name: &str) -> Option<PathBuf> {
+    let direct = staging.join(file_name);
+    if direct.is_file() {
+        return Some(direct);
+    }
+    let entries = std::fs::read_dir(staging).ok()?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            let candidate = path.join(file_name);
+            if candidate.is_file() {
+                return Some(candidate);
+            }
+        }
+    }
+    None
+}
+
+fn parity_write(error: impl std::fmt::Display) -> String {
+    format!("@t:archive.parityWrite\u{1f}{error}")
+}
+
+/// Writes one parity file next to every volume. Data shards are contiguous
+/// slices of the padded volume; the parity file name carries the volume name so
+/// a disc folder stays self-contained.
+fn write_parity(staging: &Path, volumes: &[VolumeInfo]) -> Result<ParityInfo, String> {
+    let (shard_bytes, data_shards) = parity_shape(volumes);
+    let layout = ParityLayout::new(data_shards, PARITY_SHARDS).map_err(parity_write)?;
+    let mut parity_volumes = Vec::with_capacity(volumes.len());
+
+    for volume in volumes {
+        let path = find_packed_volume(staging, &volume.file_name)
+            .ok_or_else(|| parity_write(format!("missing volume {}", volume.file_name)))?;
+        let parent = path.parent().unwrap_or(staging);
+        let mut writers = Vec::with_capacity(PARITY_SHARDS);
+        let mut parity_hashers = Vec::with_capacity(PARITY_SHARDS);
+        let mut names = Vec::with_capacity(PARITY_SHARDS);
+        for index in 1..=PARITY_SHARDS {
+            let name = format!("{}.efxpar.{index:03}", volume.file_name);
+            let file = File::create(parent.join(&name)).map_err(parity_write)?;
+            writers.push(BufWriter::new(file));
+            parity_hashers.push(Sha256::new());
+            names.push(name);
+        }
+
+        let mut source = File::open(&path).map_err(parity_write)?;
+        let mut shard_hashers: Vec<Sha256> =
+            (0..data_shards).map(|_| Sha256::new()).collect();
+        let mut offset = 0u64;
+        while offset < shard_bytes {
+            let chunk_len = (shard_bytes - offset).min(PARITY_CHUNK_BYTES as u64) as usize;
+            let mut data = Vec::with_capacity(data_shards);
+            for (shard, hasher) in shard_hashers.iter_mut().enumerate() {
+                let start = shard as u64 * shard_bytes + offset;
+                let mut buffer = vec![0u8; chunk_len];
+                if start < volume.bytes {
+                    let read_len = ((volume.bytes - start).min(chunk_len as u64)) as usize;
+                    source
+                        .seek(SeekFrom::Start(start))
+                        .map_err(parity_write)?;
+                    source
+                        .read_exact(&mut buffer[..read_len])
+                        .map_err(parity_write)?;
+                }
+                hasher.update(&buffer);
+                data.push(buffer);
+            }
+            let parity = encode(layout, &data).map_err(parity_write)?;
+            for (index, (writer, hasher)) in
+                writers.iter_mut().zip(parity_hashers.iter_mut()).enumerate()
+            {
+                writer.write_all(&parity[index]).map_err(parity_write)?;
+                hasher.update(&parity[index]);
+            }
+            offset += chunk_len as u64;
+        }
+        for writer in &mut writers {
+            writer.flush().map_err(parity_write)?;
+        }
+
+        let data_sha256 = shard_hashers
+            .into_iter()
+            .map(|hasher| format!("{:x}", hasher.finalize()))
+            .collect();
+        let files = names
+            .into_iter()
+            .zip(parity_hashers)
+            .enumerate()
+            .map(|(index, (file_name, hasher))| ParityFileInfo {
+                index: index as u32 + 1,
+                file_name,
+                sha256: format!("{:x}", hasher.finalize()),
+            })
+            .collect();
+        parity_volumes.push(ParityVolumeInfo {
+            volume_index: volume.index,
+            data_sha256,
+            files,
+        });
+    }
+
+    Ok(ParityInfo {
+        data_shards: data_shards as u32,
+        parity_shards: PARITY_SHARDS as u32,
+        shard_bytes,
+        volumes: parity_volumes,
+    })
 }
 
 fn pack_into(
@@ -396,6 +532,7 @@ fn pack_into(
         .map_err(|error| tar_error(error, &job.cancel))?;
     let writer = sink.finish()?;
     let volumes = writer.finish()?;
+    let parity = write_parity(staging, &volumes)?;
     let stored_bytes = volumes
         .iter()
         .fold(0u64, |total, volume| total.saturating_add(volume.bytes));
@@ -429,7 +566,7 @@ fn pack_into(
         store_meta: job.store_meta.clone(),
         complete: true,
         disc_layout: job.profile.disc_layout(),
-        parity: None,
+        parity: Some(parity),
     };
     ctx.emit("finalizing", 100.0, "");
     Ok((manifest, stored_bytes))

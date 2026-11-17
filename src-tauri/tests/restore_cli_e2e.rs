@@ -95,7 +95,7 @@ fn volume_paths(archive: &Path) -> Vec<PathBuf> {
         .filter(|path| {
             path.file_name()
                 .and_then(|name| name.to_str())
-                .is_some_and(|name| name.contains(".efxpak."))
+                .is_some_and(|name| name.contains(".efxpak.") && !name.contains(".efxpar."))
         })
         .collect();
     volumes.sort();
@@ -163,7 +163,50 @@ fn the_built_binary_restores_a_flat_archive_byte_for_byte() {
 }
 
 #[test]
-fn the_built_binary_rejects_a_corrupted_volume_without_writing_files() {
+fn the_built_binary_repairs_a_damaged_shard_from_parity() {
+    let root = temp_root("parity");
+    let source = write_source(&root);
+    let archive_root = root.join("archive");
+    let manifest = pack(&source, &archive_root, false);
+    let archive = manifest.parent().unwrap().to_path_buf();
+    let manifest_json: serde_json::Value =
+        serde_json::from_slice(&fs::read(&manifest).unwrap()).unwrap();
+    assert_eq!(manifest_json["formatVersion"], 3);
+    assert!(
+        manifest_json["parity"]["volumes"]
+            .as_array()
+            .is_some_and(|volumes| !volumes.is_empty()),
+        "the fixture should carry parity metadata"
+    );
+
+    let volumes = volume_paths(&archive);
+    let volume = volumes.first().expect("a volume file");
+    let mut bytes = fs::read(volume).unwrap();
+    assert!(bytes.len() > 72, "volume is too small to damage");
+    bytes[64 + 8] ^= 0xFF;
+    fs::write(volume, &bytes).unwrap();
+    assert!(
+        fs::read_dir(&archive).unwrap().any(|entry| entry
+            .ok()
+            .and_then(|entry| entry.file_name().to_str().map(str::to_string))
+            .is_some_and(|name| name.contains(".efxpar."))),
+        "the fixture should write a parity file"
+    );
+
+    let restore_parent = root.join("restored");
+    let output = restore(&archive, &restore_parent, &[]);
+    assert!(
+        output.status.success(),
+        "parity repair failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_same_tree(&source, &restore_parent.join("Game"));
+
+    let _ = fs::remove_dir_all(&root);
+}
+
+#[test]
+fn the_built_binary_rejects_a_volume_whose_parity_is_also_damaged() {
     let root = temp_root("corrupt");
     let source = write_source(&root);
     let archive_root = root.join("archive");
@@ -176,6 +219,20 @@ fn the_built_binary_rejects_a_corrupted_volume_without_writing_files() {
     bytes[64 + 8] ^= 0xFF;
     fs::write(volume, &bytes).unwrap();
 
+    let parity = fs::read_dir(&archive)
+        .unwrap()
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.path())
+        .find(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.contains(".efxpar."))
+        })
+        .expect("a parity file");
+    let mut parity_bytes = fs::read(&parity).unwrap();
+    parity_bytes[0] ^= 0xFF;
+    fs::write(&parity, &parity_bytes).unwrap();
+
     let restore_parent = root.join("restored");
     let output = restore(&archive, &restore_parent, &[]);
     let stderr = String::from_utf8_lossy(&output.stderr);
@@ -185,9 +242,8 @@ fn the_built_binary_rejects_a_corrupted_volume_without_writing_files() {
         "corrupt restore unexpectedly succeeded"
     );
     assert!(
-        (lower.contains("block") || lower.contains("volume"))
-            && (lower.contains("corrupt") || lower.contains("sha-256")),
-        "expected a block/volume corruption message, got: {stderr}"
+        lower.contains("parity") || lower.contains("shard"),
+        "expected a parity failure message, got: {stderr}"
     );
     assert!(
         !restore_parent.join("Game").exists(),

@@ -207,7 +207,11 @@ pub async fn archive_plan(
     };
     let folder_name = unique_archive_folder(&target_path, &title);
     let archive_path = target_path.join(&folder_name);
-    let required_bytes = scan.total_bytes.saturating_add(64 * 1024 * 1024);
+    let parity_reserve = scan.total_bytes / 50;
+    let required_bytes = scan
+        .total_bytes
+        .saturating_add(parity_reserve)
+        .saturating_add(64 * 1024 * 1024);
     let target_info = profile::target_info(&target_path);
     let free = target_info.free_bytes;
     let fat32 = target_info

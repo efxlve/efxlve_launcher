@@ -8,10 +8,10 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 pub const FORMAT_NAME: &str = "efxlve-media-archive";
-/// Version 2 can contain stored blocks and an xtool-wrapped stream. An older
-/// launcher reads the version first and refuses the archive instead of
-/// restoring zstd frames that are actually raw bytes.
-pub const FORMAT_VERSION: u32 = 2;
+/// Version 2 added stored blocks and an xtool-wrapped stream. Version 3 adds
+/// per-volume Reed-Solomon parity files (`.efxpar.NNN`). Older launchers reject
+/// v3 by version before they can misread the extra files.
+pub const FORMAT_VERSION: u32 = 3;
 pub const MANIFEST_FILE: &str = "manifest.efxmeta.json";
 pub const BLOCK_MAGIC: [u8; 4] = *b"EFXB";
 pub const BLOCK_VERSION: u16 = 1;
@@ -42,9 +42,9 @@ pub struct VolumeInfo {
     pub blocks: u32,
 }
 
-/// One parity file planned for format version 3. The payload is a single
-/// Reed-Solomon parity shard; the manifest keeps its name and SHA-256 so a
-/// damaged parity file is treated as missing rather than trusted.
+/// One parity file for a volume. The payload is a single Reed-Solomon parity
+/// shard; the manifest keeps its name and SHA-256 so a damaged parity file is
+/// treated as missing rather than trusted.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ParityFileInfo {
@@ -53,17 +53,26 @@ pub struct ParityFileInfo {
     pub sha256: String,
 }
 
-/// Planned format version 3 metadata. It is not written by the packer and a
-/// version 2 manifest carrying it is rejected: v3 must bump `FORMAT_VERSION`
-/// and teach packing and restore to split the stream into equal shards before
-/// this can go live.
+/// Parity metadata for one volume. `data_sha256` has one hash per padded data
+/// shard, so restore can identify which shards need recovery.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ParityVolumeInfo {
+    pub volume_index: u32,
+    pub data_sha256: Vec<String>,
+    pub files: Vec<ParityFileInfo>,
+}
+
+/// Format version 3 parity metadata. The packer writes one set per volume; the
+/// restorer verifies the shard and parity hashes and can rebuild up to
+/// `parity_shards` damaged shards per volume.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ParityInfo {
     pub data_shards: u32,
     pub parity_shards: u32,
     pub shard_bytes: u64,
-    pub files: Vec<ParityFileInfo>,
+    pub volumes: Vec<ParityVolumeInfo>,
 }
 
 impl ParityInfo {
@@ -72,19 +81,37 @@ impl ParityInfo {
         if self.data_shards == 0 || self.parity_shards == 0 || total > 255 {
             return Err("@t:archive.manifestInvalid\u{1f}parityShards".to_string());
         }
-        if self.shard_bytes == 0 || self.shard_bytes > 1024 * 1024 * 1024 {
+        if self.shard_bytes == 0 || self.shard_bytes > 8 * 1024 * 1024 * 1024 {
             return Err("@t:archive.manifestInvalid\u{1f}parityShard".to_string());
         }
-        if self.files.len() != self.parity_shards as usize {
-            return Err("@t:archive.manifestInvalid\u{1f}parityFiles".to_string());
+        if self.volumes.is_empty() {
+            return Err("@t:archive.manifestInvalid\u{1f}parityVolumes".to_string());
         }
-        for (index, file) in self.files.iter().enumerate() {
-            if file.index as usize != index + 1
-                || !safe_component(&file.file_name)
-                || file.sha256.len() != 64
-                || !file.sha256.bytes().all(|byte| byte.is_ascii_hexdigit())
+        let mut volume_indices = std::collections::HashSet::new();
+        let mut file_names = std::collections::HashSet::new();
+        for volume in &self.volumes {
+            if volume.volume_index == 0 || !volume_indices.insert(volume.volume_index) {
+                return Err("@t:archive.manifestInvalid\u{1f}parityVolumes".to_string());
+            }
+            if volume.data_sha256.len() != self.data_shards as usize
+                || volume.data_sha256.iter().any(|hash| {
+                    hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit())
+                })
             {
-                return Err("@t:archive.manifestInvalid\u{1f}parityFile".to_string());
+                return Err("@t:archive.manifestInvalid\u{1f}parityShards".to_string());
+            }
+            if volume.files.len() != self.parity_shards as usize {
+                return Err("@t:archive.manifestInvalid\u{1f}parityFiles".to_string());
+            }
+            for (index, file) in volume.files.iter().enumerate() {
+                if file.index as usize != index + 1
+                    || !safe_component(&file.file_name)
+                    || !file_names.insert(file.file_name.clone())
+                    || file.sha256.len() != 64
+                    || !file.sha256.bytes().all(|byte| byte.is_ascii_hexdigit())
+                {
+                    return Err("@t:archive.manifestInvalid\u{1f}parityFile".to_string());
+                }
             }
         }
         Ok(())
@@ -155,14 +182,26 @@ impl MediaManifest {
             ));
         }
         if let Some(parity) = &self.parity {
-            // The metadata is validated now so the v3 design has tests; the
-            // current format still refuses to restore a parity archive until
-            // packing and restore are wired to Reed-Solomon.
+            if self.format_version < 3 {
+                return Err(format!(
+                    "@t:archive.manifestVersion\u{1f}{}",
+                    FORMAT_VERSION
+                ));
+            }
             parity.validate()?;
-            return Err(format!(
-                "@t:archive.manifestVersion\u{1f}{}",
-                FORMAT_VERSION + 1
-            ));
+            if parity.volumes.len() != self.volumes.len()
+                || self
+                    .volumes
+                    .iter()
+                    .any(|volume| {
+                        !parity
+                            .volumes
+                            .iter()
+                            .any(|entry| entry.volume_index == volume.index)
+                    })
+            {
+                return Err("@t:archive.manifestInvalid\u{1f}parityVolumes".to_string());
+            }
         }
         if !self.complete {
             return Err("@t:archive.manifestIncomplete".to_string());
@@ -406,13 +445,17 @@ mod tests {
             data_shards: 4,
             parity_shards: 2,
             shard_bytes: 64 * 1024 * 1024,
-            files: (1..=2)
-                .map(|index| ParityFileInfo {
-                    index,
-                    file_name: format!("game.efxpar.{index:03}"),
-                    sha256: "a".repeat(64),
-                })
-                .collect(),
+            volumes: vec![ParityVolumeInfo {
+                volume_index: 1,
+                data_sha256: vec!["a".repeat(64); 4],
+                files: (1..=2)
+                    .map(|index| ParityFileInfo {
+                        index,
+                        file_name: format!("game.efxpak.001.efxpar.{index:03}"),
+                        sha256: "a".repeat(64),
+                    })
+                    .collect(),
+            }],
         }
     }
 
@@ -483,6 +526,8 @@ mod tests {
             .contains("\"parity\""));
         let mut with_parity = manifest.clone();
         with_parity.parity = Some(parity_plan());
+        assert!(with_parity.validate().is_ok());
+        with_parity.format_version = 2;
         let error = with_parity.validate().unwrap_err();
         assert!(error.contains("manifestVersion"), "{error}");
         let mut dangerous = manifest.clone();
@@ -547,26 +592,30 @@ mod tests {
         assert!(plan.validate().is_err());
 
         plan = parity_plan();
-        plan.shard_bytes = 2 * 1024 * 1024 * 1024;
+        plan.shard_bytes = 9 * 1024 * 1024 * 1024;
         assert!(plan.validate().is_err());
     }
 
     #[test]
     fn parity_plan_requires_sequential_safe_files() {
         let mut plan = parity_plan();
-        plan.files.pop();
+        plan.volumes[0].files.pop();
         assert!(plan.validate().is_err());
 
         plan = parity_plan();
-        plan.files[1].index = 3;
+        plan.volumes[0].files[1].index = 3;
         assert!(plan.validate().is_err());
 
         plan = parity_plan();
-        plan.files[0].file_name = "../evil".to_string();
+        plan.volumes[0].files[0].file_name = "../evil".to_string();
         assert!(plan.validate().is_err());
 
         plan = parity_plan();
-        plan.files[0].sha256 = "x".to_string();
+        plan.volumes[0].files[0].sha256 = "x".to_string();
+        assert!(plan.validate().is_err());
+
+        plan = parity_plan();
+        plan.volumes[0].data_sha256.pop();
         assert!(plan.validate().is_err());
     }
 

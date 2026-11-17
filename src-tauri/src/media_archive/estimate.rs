@@ -266,7 +266,10 @@ pub fn estimate_archive(
         .saturating_add(compressed)
         .saturating_add(overhead);
     let blocks = body.div_ceil(profile.frame_bytes.max(1));
-    let estimated_bytes = body.saturating_add(blocks.saturating_mul(BLOCK_HEADER));
+    let parity_reserve = body / 50;
+    let estimated_bytes = body
+        .saturating_add(blocks.saturating_mul(BLOCK_HEADER))
+        .saturating_add(parity_reserve);
     let stored_ratio = if scan.total_bytes > 0 {
         estimated_bytes as f64 / scan.total_bytes as f64
     } else {

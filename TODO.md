@@ -71,12 +71,12 @@ Open work only. Delete the item when it lands.
   marked experimental. They still need a pass on real CD-R, DVD-R, BD-R and
   BD-RE media, including full erase; Linux `xorriso` and macOS `drutil` remain
   open.
-- Reed-Solomon parity is partially started: the GF(256) codec and the planned
-  v3 `ParityInfo` manifest schema live in `reed_solomon.rs` and `format.rs`,
-  with encode/recover/too-many-errors tests. Packing and restore do not split
-  volumes into shards or write/read `.efxpar` files yet, and a v2 manifest
-  carrying parity metadata is rejected. Scratch discs and USB bit rot still
-  cannot be repaired until that wiring and the v3 format bump land.
+- Reed-Solomon parity is wired into pack and restore. Format version 3 writes
+  one `.efxpar.NNN` per volume, stores a SHA-256 for every data shard and every
+  parity file, and restores up to `parityShards` damaged shards per volume
+  (the current packer writes one XOR parity shard). A whole missing volume, a
+  scratch that damages more shards than parity, and real-media validation are
+  still open. Older launchers reject v3 instead of misreading the extra files.
 - The standalone `efxlve-restore.exe` (`src/restore_main.rs`) ships with the
   portable zip and as a release asset. It still needs a pass on a clean Windows
   machine without the launcher. Scope it as file recovery, not a store

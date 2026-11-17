@@ -43,6 +43,9 @@ mod media_archive {
     #[path = "pack.rs"]
     pub mod pack;
 
+    #[path = "reed_solomon.rs"]
+    pub mod reed_solomon;
+
     /// `pack.rs`'s disc-layout test asks the command layer for the disc list.
     /// The fixture binary has no Tauri commands; this test-only shim keeps the
     /// shared test module compiling under `cargo check --all-targets`.
