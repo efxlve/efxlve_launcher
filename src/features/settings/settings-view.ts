@@ -1099,25 +1099,28 @@ function renderStores(): string {
         </label>
       </div>`;
 
-    // A user store's own actions sit next to its name, so the arrow/switch
-    // column lines up with the built-in rows.
-    const customActions = userStore
-      ? `<span class="settings-store-actions">
-          <button type="button" class="btn icon-only ghost tiny" data-act="store-change-icon" data-store="${id}" title="${t("settings.storeIconTitle")}" aria-label="${t("settings.storeIconTitle")}">${icon("image", 13)}</button>
-          <button type="button" class="btn icon-only ghost tiny danger" data-act="remove-custom-store" data-store="${id}" title="${t("settings.storeRemove")}" aria-label="${t("settings.storeRemove")}">${icon("trash", 13)}</button>
+    // Changing the mark belongs on the mark itself; the destructive action
+    // moves to the secondary URL line so the title row stays clean.
+    const mark = `<span class="settings-store-mark-slot" data-store-row-mark="${id}">${storeMark(id, 18, "settings-store-logo")}</span>`;
+    const markEl = userStore
+      ? `<button type="button" class="settings-store-mark-btn" data-act="store-change-icon" data-store="${id}" title="${t("settings.storeIconTitle")}" aria-label="${t("settings.storeIconTitle")}">${mark}</button>`
+      : mark;
+    const desc = userStore
+      ? `<span class="custom-store-meta">
+          <span class="custom-store-url" title="${esc(userStore.url)}">${esc(userStore.url)}</span>
+          <button type="button" class="btn icon-only ghost tiny danger settings-store-remove" data-act="remove-custom-store" data-store="${id}" title="${t("settings.storeRemove")}" aria-label="${t("settings.storeRemove")}">${icon("trash", 12)}</button>
         </span>`
-      : "";
+      : null;
 
     const statusBadge = hidden ? ` <span class="badge muted" style="margin-left:8px;font-size:11px;opacity:0.75;">${t("settings.storeHiddenBadge")}</span>` : "";
 
     return row(
       `<div class="settings-store-title${hidden ? " is-hidden" : ""}">
-        <span class="settings-store-mark-slot" data-store-row-mark="${id}">${storeMark(id, 18, "settings-store-logo")}</span>
+        ${markEl}
         <span class="settings-store-name">${esc(label)}</span>
         ${statusBadge}
-        ${customActions}
       </div>`,
-      userStore ? `<span class="custom-store-url">${esc(userStore.url)}</span>` : null,
+      desc,
       controls,
     );
   }).join("") +
