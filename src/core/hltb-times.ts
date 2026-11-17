@@ -64,7 +64,12 @@ export function hltbKnownOf(appName: string, title?: string): boolean {
 
 /** Records a live answer under every key the library uses for the game. */
 export function recordLiveHltb(appName: string, title: string, data: HltbData): void {
-  for (const key of candidateKeys(appName, title)) S.hltbTimes.set(key, data);
+  for (const key of candidateKeys(appName, title)) {
+    // A miss for a sibling copy must not erase a hit another store already
+    // found for the same game; the exact app key still takes the new answer.
+    if (key !== appName && S.hltbTimes.get(key)?.supported && !data.supported) continue;
+    S.hltbTimes.set(key, data);
+  }
   S.libraryDataRev++;
 }
 

@@ -277,6 +277,12 @@ pub async fn get_hltb_data(
         }
     }
 
+    // A search that never reached the site may mean the discovered endpoint
+    // moved; drop it so the next game loads the site bundle again.
+    if !reached {
+        forget_search_endpoint().await;
+    }
+
     // A definitive answer is stored either way. A stored miss keeps the page
     // from asking HowLongToBeat again on every open; a network failure is not
     // stored, so the next open retries it.
@@ -297,18 +303,24 @@ const HLTB_UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537
 /// The search endpoint is read from the site's own JavaScript bundle. It only
 /// changes when HowLongToBeat ships a new build, so one discovery per app run is
 /// enough: the library length pass would otherwise load the homepage for every
-/// game it asks about.
-static SEARCH_ENDPOINT: tokio::sync::OnceCell<String> = tokio::sync::OnceCell::const_new();
+/// game it asks about. A failed discovery is not cached, and a request that
+/// never reached the site clears the answer so the next game tries again.
+static SEARCH_ENDPOINT: tokio::sync::Mutex<Option<String>> = tokio::sync::Mutex::const_new(None);
 
 async fn detect_search_endpoint(client: &reqwest::Client) -> String {
-    SEARCH_ENDPOINT
-        .get_or_init(|| async {
-            discover_search_endpoint(client)
-                .await
-                .unwrap_or_else(|| "/api/search/site".to_string())
-        })
-        .await
-        .clone()
+    let cached = SEARCH_ENDPOINT.lock().await.clone();
+    if let Some(endpoint) = cached {
+        return endpoint;
+    }
+    let discovered = discover_search_endpoint(client).await;
+    if let Some(endpoint) = discovered.clone() {
+        *SEARCH_ENDPOINT.lock().await = Some(endpoint);
+    }
+    discovered.unwrap_or_else(|| "/api/search/site".to_string())
+}
+
+async fn forget_search_endpoint() {
+    *SEARCH_ENDPOINT.lock().await = None;
 }
 
 async fn discover_search_endpoint(client: &reqwest::Client) -> Option<String> {
