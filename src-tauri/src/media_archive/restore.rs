@@ -1826,6 +1826,7 @@ mod tests {
             3,
             20,
             Some(&xtool),
+            false,
             &AtomicBool::new(false),
         )
         .unwrap();

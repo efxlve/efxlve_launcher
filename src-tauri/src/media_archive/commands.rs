@@ -22,6 +22,20 @@ use super::ArchiveProgress;
 const SCAN_DEPTH: u8 = 3;
 const SCAN_BUDGET: usize = 2_000;
 
+fn parity_reserve_bytes(total: u64, full_volume_recovery: bool) -> u64 {
+    if full_volume_recovery {
+        total
+    } else {
+        total / 12
+    }
+}
+
+fn required_archive_bytes(total: u64, full_volume_recovery: bool) -> u64 {
+    total
+        .saturating_add(parity_reserve_bytes(total, full_volume_recovery))
+        .saturating_add(64 * 1024 * 1024)
+}
+
 static ACTIVE: OnceLock<Mutex<HashMap<String, Arc<AtomicBool>>>> = OnceLock::new();
 
 fn active_map() -> &'static Mutex<HashMap<String, Arc<AtomicBool>>> {
@@ -181,6 +195,7 @@ pub async fn archive_plan(
     target_root: String,
     profile_id: String,
     custom_mib: Option<u64>,
+    full_volume_recovery: bool,
 ) -> Result<ArchivePlan, String> {
     let profile = profile::resolve(&profile_id, custom_mib)?;
     let install = PathBuf::from(&install_path);
@@ -207,11 +222,7 @@ pub async fn archive_plan(
     };
     let folder_name = unique_archive_folder(&target_path, &title);
     let archive_path = target_path.join(&folder_name);
-    let parity_reserve = scan.total_bytes / 12;
-    let required_bytes = scan
-        .total_bytes
-        .saturating_add(parity_reserve)
-        .saturating_add(64 * 1024 * 1024);
+    let required_bytes = required_archive_bytes(scan.total_bytes, full_volume_recovery);
     let target_info = profile::target_info(&target_path);
     let free = target_info.free_bytes;
     let fat32 = target_info
@@ -232,7 +243,11 @@ pub async fn archive_plan(
         frame_bytes: profile.frame_bytes,
         estimated_volumes: profile::worst_case_volumes(
             scan.total_bytes,
-            profile.volume_bytes,
+            super::pack::effective_volume_bytes(
+                profile.volume_bytes,
+                super::pack::DEFAULT_PARITY_SHARDS,
+                full_volume_recovery,
+            ),
         ),
         target_root: target,
         folder_name,
@@ -253,6 +268,7 @@ pub async fn archive_estimate(
     custom_mib: Option<u64>,
     level: String,
     xtool_path: Option<String>,
+    full_volume_recovery: bool,
 ) -> Result<ArchiveEstimate, String> {
     let (_active, cancel) = begin(&app_name)?;
     let profile = profile::resolve(&profile_id, custom_mib)?;
@@ -272,6 +288,7 @@ pub async fn archive_estimate(
             compression_level,
             window_log,
             xtool.as_ref(),
+            full_volume_recovery,
             &cancel,
         )
     })
@@ -903,6 +920,45 @@ pub async fn archive_verify(
         blocks: outcome.blocks,
         volume_count: outcome.volume_count,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn full_volume_recovery_doubles_the_free_space_reserve() {
+        let total = 1_000_000_000u64;
+        let normal = required_archive_bytes(total, false);
+        let full = required_archive_bytes(total, true);
+        assert!(full > normal);
+        assert!(full >= total.saturating_mul(2));
+        assert!(normal < total.saturating_mul(2));
+        assert!(full >= normal.saturating_mul(3) / 2);
+    }
+
+    #[test]
+    fn full_volume_recovery_needs_more_discs() {
+        let volume_bytes = 4_700_000_000u64;
+        let normal_volume = crate::media_archive::pack::effective_volume_bytes(
+            volume_bytes,
+            crate::media_archive::pack::DEFAULT_PARITY_SHARDS,
+            false,
+        );
+        let full_volume = crate::media_archive::pack::effective_volume_bytes(
+            volume_bytes,
+            crate::media_archive::pack::DEFAULT_PARITY_SHARDS,
+            true,
+        );
+        assert!(full_volume < normal_volume);
+        let normal = crate::media_archive::profile::worst_case_volumes(volume_bytes, normal_volume);
+        let full = crate::media_archive::profile::worst_case_volumes(volume_bytes, full_volume);
+        assert!(full > normal, "full={full} normal={normal}");
+        assert_eq!(
+            crate::media_archive::pack::effective_volume_bytes(0, 4, true),
+            0
+        );
+    }
 }
 
 

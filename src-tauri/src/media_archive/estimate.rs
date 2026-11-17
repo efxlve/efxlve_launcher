@@ -145,6 +145,14 @@ fn compress_with_xtool(
     result
 }
 
+fn parity_reserve(body: u64, full_volume_recovery: bool) -> u64 {
+    if full_volume_recovery {
+        body
+    } else {
+        body / 12
+    }
+}
+
 /// Tar header and padding for every member, plus the two zero blocks that end
 /// the archive.
 fn tar_overhead(scan: &ScanResult) -> u64 {
@@ -172,6 +180,7 @@ pub fn estimate_archive(
     level: i32,
     window_log: u32,
     xtool: Option<&Xtool>,
+    full_volume_recovery: bool,
     cancel: &AtomicBool,
 ) -> Result<ArchiveEstimate, String> {
     let scan = scan_tree(install)?;
@@ -266,10 +275,9 @@ pub fn estimate_archive(
         .saturating_add(compressed)
         .saturating_add(overhead);
     let blocks = body.div_ceil(profile.frame_bytes.max(1));
-    let parity_reserve = body / 12;
-    let estimated_bytes = body
-        .saturating_add(blocks.saturating_mul(BLOCK_HEADER))
-        .saturating_add(parity_reserve);
+    let stored_body = body.saturating_add(blocks.saturating_mul(BLOCK_HEADER));
+    let reserve = parity_reserve(body, full_volume_recovery);
+    let estimated_bytes = stored_body.saturating_add(reserve);
     let stored_ratio = if scan.total_bytes > 0 {
         estimated_bytes as f64 / scan.total_bytes as f64
     } else {
@@ -281,7 +289,14 @@ pub fn estimate_archive(
         original_bytes: scan.total_bytes,
         estimated_bytes,
         ratio: (stored_ratio * 10_000.0).round() / 10_000.0,
-        estimated_volumes: profile::worst_case_volumes(estimated_bytes, profile.volume_bytes),
+        estimated_volumes: profile::worst_case_volumes(
+            stored_body,
+            super::pack::effective_volume_bytes(
+                profile.volume_bytes,
+                super::pack::DEFAULT_PARITY_SHARDS,
+                full_volume_recovery,
+            ),
+        ),
         sampled_files,
         sampled_bytes,
         bypassed_files,
@@ -342,7 +357,8 @@ mod tests {
         std::fs::write(root.join("movie.mp4"), noisy(300 * 1024, 3)).unwrap();
         let profile = resolve("fat32", None).unwrap();
         let estimate =
-            estimate_archive(&root, &profile, 3, 20, None, &AtomicBool::new(false)).unwrap();
+            estimate_archive(&root, &profile, 3, 20, None, false, &AtomicBool::new(false))
+                .unwrap();
         assert!(!estimate.uses_xtool);
         assert_eq!(estimate.bypassed_files, 1);
         assert_eq!(estimate.bypassed_bytes, 300 * 1024);
@@ -356,7 +372,7 @@ mod tests {
     fn an_empty_folder_is_refused() {
         let root = temp_root("empty");
         let profile = resolve("fat32", None).unwrap();
-        assert!(estimate_archive(&root, &profile, 3, 20, None, &AtomicBool::new(false)).is_err());
+        assert!(estimate_archive(&root, &profile, 3, 20, None, false, &AtomicBool::new(false)).is_err());
         let _ = std::fs::remove_dir_all(&root);
     }
 
@@ -365,9 +381,28 @@ mod tests {
         let root = temp_root("cancelled");
         std::fs::write(root.join("data.bin"), noisy(1024 * 1024, 9)).unwrap();
         let profile = resolve("fat32", None).unwrap();
-        let error = estimate_archive(&root, &profile, 3, 20, None, &AtomicBool::new(true))
+        let error = estimate_archive(&root, &profile, 3, 20, None, false, &AtomicBool::new(true))
             .unwrap_err();
         assert!(error.contains("cancelled"), "{error}");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn full_volume_recovery_reserves_a_second_copy() {
+        let root = temp_root("full-parity");
+        std::fs::write(root.join("data.bin"), noisy(2 * 1024 * 1024, 7)).unwrap();
+        let profile = resolve("fat32", None).unwrap();
+        let normal =
+            estimate_archive(&root, &profile, 3, 20, None, false, &AtomicBool::new(false)).unwrap();
+        let full =
+            estimate_archive(&root, &profile, 3, 20, None, true, &AtomicBool::new(false)).unwrap();
+        assert!(full.estimated_bytes > normal.estimated_bytes);
+        assert!(
+            full.estimated_bytes >= normal.estimated_bytes.saturating_mul(3) / 2,
+            "full={} normal={}",
+            full.estimated_bytes,
+            normal.estimated_bytes
+        );
         let _ = std::fs::remove_dir_all(&root);
     }
 
@@ -385,6 +420,7 @@ mod tests {
             3,
             24,
             Some(&xtool),
+            false,
             &AtomicBool::new(false),
         )
         .unwrap();

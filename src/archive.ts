@@ -205,6 +205,7 @@ export const archivePlan = (args: {
   targetRoot: string;
   profileId: string;
   customMib?: number;
+  fullVolumeRecovery?: boolean;
 }) =>
   invoke<ArchivePlan>("archive_plan", {
     appName: args.appName,
@@ -213,6 +214,7 @@ export const archivePlan = (args: {
     targetRoot: args.targetRoot,
     profileId: args.profileId,
     customMib: args.customMib ?? null,
+    fullVolumeRecovery: args.fullVolumeRecovery ?? false,
   });
 
 export const archiveStart = (args: {
@@ -251,6 +253,7 @@ export const archiveEstimate = (args: {
   customMib?: number;
   level: string;
   xtoolPath?: string;
+  fullVolumeRecovery?: boolean;
 }) =>
   invoke<ArchiveEstimate>("archive_estimate", {
     appName: args.appName,
@@ -259,6 +262,7 @@ export const archiveEstimate = (args: {
     customMib: args.customMib ?? null,
     level: args.level,
     xtoolPath: args.xtoolPath?.trim() ? args.xtoolPath.trim() : null,
+    fullVolumeRecovery: args.fullVolumeRecovery ?? false,
   });
 
 export const archiveScanFolder = (root: string) =>

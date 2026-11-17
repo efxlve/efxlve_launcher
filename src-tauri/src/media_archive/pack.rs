@@ -220,23 +220,38 @@ pub fn unique_archive_folder(target_root: &Path, title: &str) -> String {
     candidate
 }
 
+/// Media budget left for the data volume once parity files share the same
+/// disc/folder. Full-volume recovery reserves just over half for parity, so
+/// roughly twice as many data volumes (and discs) are needed.
+pub fn effective_volume_bytes(
+    volume_bytes: u64,
+    parity_shards: usize,
+    full_volume_recovery: bool,
+) -> u64 {
+    if volume_bytes == 0 {
+        return 0;
+    }
+    let reserve = if full_volume_recovery {
+        (volume_bytes.saturating_mul(52) / 100).max(1)
+    } else if parity_shards > 0 {
+        volume_bytes
+            .saturating_mul((parity_shards + 1) as u64)
+            / (PARITY_TARGET_DATA_SHARDS + parity_shards as u64)
+    } else {
+        0
+    };
+    volume_bytes.saturating_sub(reserve).max(1)
+}
+
 pub fn pack_game(mut job: PackJob) -> Result<PackOutcome, String> {
     // A v3 volume carries parity files inside the same media budget. Reserve a
     // share proportional to the requested parity count so the data volume plus
     // parity still fits the disc/USB profile.
-    if job.full_volume_recovery && job.profile.volume_bytes > 0 {
-        // Full-volume recovery needs parity equal to the data-shard count, so
-        // reserve a little over half of the media for the data volume.
-        let reserve = (job.profile.volume_bytes.saturating_mul(52) / 100).max(1);
-        job.profile.volume_bytes = job.profile.volume_bytes.saturating_sub(reserve).max(1);
-    } else if job.parity_shards > 0 && job.profile.volume_bytes > 0 {
-        let reserve = job
-            .profile
-            .volume_bytes
-            .saturating_mul((job.parity_shards + 1) as u64)
-            / (PARITY_TARGET_DATA_SHARDS + job.parity_shards as u64);
-        job.profile.volume_bytes = job.profile.volume_bytes.saturating_sub(reserve).max(1);
-    }
+    job.profile.volume_bytes = effective_volume_bytes(
+        job.profile.volume_bytes,
+        job.parity_shards,
+        job.full_volume_recovery,
+    );
     let install = job
         .install_path
         .canonicalize()

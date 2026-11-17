@@ -8,6 +8,7 @@ const ipc = vi.hoisted(() => ({
   discs: vi.fn(async () => []),
   burn: vi.fn(async () => undefined),
   estimate: vi.fn(async () => ({}) as ArchiveEstimate),
+  plan: vi.fn(async () => ({}) as ArchivePlan),
   cancel: vi.fn(async () => true),
   start: vi.fn(async () => ({
     appName: "steam::1",
@@ -41,6 +42,7 @@ vi.mock("../../archive", async (importOriginal) => {
     discListRecorders: ipc.recorders,
     discBurnFolder: ipc.burn,
     archiveEstimate: ipc.estimate,
+    archivePlan: ipc.plan,
     archiveCancel: ipc.cancel,
     archiveStart: ipc.start,
     archiveVerify: ipc.verify,
@@ -53,7 +55,7 @@ vi.mock("../../core/toast", () => ({
   progressToast: vi.fn(() => ({ update: vi.fn(), close: vi.fn() })),
 }));
 
-import type { ArchiveEstimate, ArchiveSummary, FoundArchive } from "../../archive";
+import type { ArchiveEstimate, ArchivePlan, ArchiveSummary, FoundArchive } from "../../archive";
 import { S } from "../../core/state";
 import type { LibraryItem } from "../../core/types";
 import {
@@ -91,6 +93,7 @@ beforeEach(() => {
   S.archiveFound = null;
   S.archiveVerifyResult = null;
   S.archiveVerifyAfterBackup = false;
+  S.archiveFullRecovery = false;
   S.runningGames.clear();
   S.allGamesMap.clear();
   ipc.scan.mockClear();
@@ -99,6 +102,7 @@ beforeEach(() => {
   ipc.discs.mockClear();
   ipc.burn.mockClear();
   ipc.estimate.mockClear();
+  ipc.plan.mockClear();
   ipc.cancel.mockClear();
   ipc.start.mockClear();
   ipc.verify.mockClear();
@@ -221,6 +225,31 @@ describe("archive busy guards", () => {
 
     expect(S.archiveEraseFull).toBe(true);
     expect(S.archiveEraseArmed).toBe(false);
+  });
+
+  it("drops the estimate and reloads the plan when full recovery is toggled", async () => {
+    S.allGamesMap.set("steam::1", {
+      key: "steam::1",
+      title: "Game",
+      installed: true,
+      installPath: "C:\\Game",
+    } as unknown as LibraryItem);
+    S.archiveSelectedApp = "steam::1";
+    S.archiveTarget = "C:\\archives";
+    S.archiveEstimate = { estimatedBytes: 10 } as ArchiveEstimate;
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = true;
+    input.dataset.act = "archive-full-recovery";
+
+    expect(handleArchiveChange(input)).toBe(true);
+
+    expect(S.archiveFullRecovery).toBe(true);
+    expect(S.archiveEstimate).toBeNull();
+    await vi.waitFor(() => expect(ipc.plan).toHaveBeenCalled());
+    expect(ipc.plan).toHaveBeenCalledWith(
+      expect.objectContaining({ fullVolumeRecovery: true }),
+    );
   });
 
   it("verifies the selected archive without a restore target", async () => {

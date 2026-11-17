@@ -164,7 +164,7 @@ export async function loadArchivePlan(): Promise<void> {
     window.clearTimeout(planTimer);
     planTimer = undefined;
   }
-  const key = `${game.key}|${S.archiveProfile}|${S.archiveCustomMib}|${S.archiveTarget}`;
+  const key = `${game.key}|${S.archiveProfile}|${S.archiveCustomMib}|${S.archiveTarget}|${S.archiveFullRecovery}`;
   if (planInFlightKey === key) return;
   planInFlightKey = key;
   const token = ++planToken;
@@ -178,6 +178,7 @@ export async function loadArchivePlan(): Promise<void> {
       targetRoot: S.archiveTarget,
       profileId: S.archiveProfile,
       customMib: S.archiveCustomMib,
+      fullVolumeRecovery: S.archiveFullRecovery,
     });
     if (token !== planToken) return;
     S.archivePlan = plan;
@@ -233,6 +234,7 @@ export async function requestEstimate(): Promise<void> {
       customMib: S.archiveCustomMib,
       level: S.archiveLevel,
       xtoolPath: S.archiveXtoolPath,
+      fullVolumeRecovery: S.archiveFullRecovery,
     });
     if (token === estimateToken) S.archiveEstimate = estimate;
   } catch (error) {
@@ -1082,6 +1084,8 @@ export function handleArchiveChange(target: HTMLElement): boolean {
   }
   if (act === "archive-full-recovery") {
     S.archiveFullRecovery = (target as HTMLInputElement).checked;
+    invalidateEstimate();
+    schedulePlan();
     scheduleRender();
     return true;
   }
