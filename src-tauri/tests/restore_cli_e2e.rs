@@ -58,6 +58,21 @@ fn pack(source: &Path, target: &Path, disc_layout: bool) -> PathBuf {
     )
 }
 
+fn volume_paths(archive: &Path) -> Vec<PathBuf> {
+    let mut volumes: Vec<PathBuf> = fs::read_dir(archive)
+        .unwrap()
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.path())
+        .filter(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.contains(".efxpak."))
+        })
+        .collect();
+    volumes.sort();
+    volumes
+}
+
 fn restore(manifest: &Path, target: &Path, extra: &[&str]) -> Output {
     let mut command = Command::new(env!("CARGO_BIN_EXE_efxlve-restore"));
     command
@@ -125,20 +140,12 @@ fn the_built_binary_rejects_a_corrupted_volume_without_writing_files() {
     let archive_root = root.join("archive");
     let manifest = pack(&source, &archive_root, false);
     let archive = manifest.parent().unwrap().to_path_buf();
-    let volume = fs::read_dir(&archive)
-        .unwrap()
-        .filter_map(|entry| entry.ok())
-        .map(|entry| entry.path())
-        .find(|path| {
-            path.file_name()
-                .and_then(|name| name.to_str())
-                .is_some_and(|name| name.contains(".efxpak."))
-        })
-        .expect("a volume file");
-    let mut bytes = fs::read(&volume).unwrap();
+    let volumes = volume_paths(&archive);
+    let volume = volumes.first().expect("a volume file");
+    let mut bytes = fs::read(volume).unwrap();
     assert!(bytes.len() > 72, "volume is too small to corrupt");
     bytes[64 + 8] ^= 0xFF;
-    fs::write(&volume, &bytes).unwrap();
+    fs::write(volume, &bytes).unwrap();
 
     let restore_parent = root.join("restored");
     let output = restore(&archive, &restore_parent, &[]);
@@ -185,6 +192,44 @@ fn the_built_binary_finds_disc_folders_and_restores_them() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert_same_tree(&source, &restore_parent.join("Game"));
+
+    let _ = fs::remove_dir_all(&root);
+}
+
+#[test]
+fn the_built_binary_reports_a_missing_volume_without_writing_files() {
+    let root = temp_root("missing");
+    let source = write_source(&root);
+    let archive_root = root.join("archive");
+    let manifest = pack(&source, &archive_root, false);
+    let archive = manifest.parent().unwrap().to_path_buf();
+    let volumes = volume_paths(&archive);
+    assert!(
+        volumes.len() > 1,
+        "the fixture should span several volumes"
+    );
+    fs::remove_file(&volumes[1]).unwrap();
+
+    let restore_parent = root.join("restored");
+    let output = restore(&archive, &restore_parent, &[]);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let lower = stderr.to_lowercase();
+    assert!(
+        !output.status.success(),
+        "missing-volume restore unexpectedly succeeded"
+    );
+    assert!(
+        lower.contains("volume") && lower.contains("missing"),
+        "expected a missing-volume message, got: {stderr}"
+    );
+    assert!(
+        !restore_parent.join("Game").exists(),
+        "a target folder was created despite the missing volume"
+    );
+    let empty = fs::read_dir(&restore_parent)
+        .map(|mut entries| entries.next().is_none())
+        .unwrap_or(true);
+    assert!(empty, "staging or target files were left behind");
 
     let _ = fs::remove_dir_all(&root);
 }
