@@ -17,6 +17,12 @@ path = "src/pack_fixture_main.rs"
 test = false
 required-features = ["restore-fixture"]
 
+[[bin]]
+name = "efxlve-fake-xtool"
+path = "src/fake_xtool_main.rs"
+test = false
+required-features = ["restore-fixture"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 

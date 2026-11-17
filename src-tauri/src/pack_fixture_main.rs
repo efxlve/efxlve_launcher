@@ -8,6 +8,7 @@ use std::sync::Arc;
 use media_archive::format::StoreMeta;
 use media_archive::pack::{pack_game, PackJob, ProgressSink};
 use media_archive::profile::MediaProfileInfo;
+use media_archive::xtool::Xtool;
 use media_archive::ArchiveProgress;
 
 struct NoopSink;
@@ -121,12 +122,14 @@ fn run() -> Result<(), String> {
     let mut source = None;
     let mut target = None;
     let mut disc_layout = false;
+    let mut xtool_path = None;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--source" => source = Some(PathBuf::from(next_value(&mut args, "--source")?)),
             "--target" => target = Some(PathBuf::from(next_value(&mut args, "--target")?)),
             "--disc-layout" => disc_layout = true,
+            "--xtool" => xtool_path = Some(next_value(&mut args, "--xtool")?),
             other => return Err(format!("unknown argument `{other}`")),
         }
     }
@@ -146,7 +149,10 @@ fn run() -> Result<(), String> {
         },
         level: 3,
         window_log: 20,
-        xtool: None,
+        xtool: match xtool_path {
+            Some(path) => Some(Xtool::new(&path)?),
+            None => None,
+        },
         store_meta: StoreMeta::default(),
         sink: Arc::new(NoopSink),
         cancel: Arc::new(AtomicBool::new(false)),

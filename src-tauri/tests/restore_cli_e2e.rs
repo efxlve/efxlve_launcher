@@ -40,10 +40,22 @@ fn write_source(root: &Path) -> PathBuf {
 }
 
 fn pack(source: &Path, target: &Path, disc_layout: bool) -> PathBuf {
+    pack_with(source, target, disc_layout, None)
+}
+
+fn pack_with(
+    source: &Path,
+    target: &Path,
+    disc_layout: bool,
+    xtool: Option<&Path>,
+) -> PathBuf {
     let mut command = Command::new(env!("CARGO_BIN_EXE_efxlve-pack-fixture"));
     command.arg("--source").arg(source).arg("--target").arg(target);
     if disc_layout {
         command.arg("--disc-layout");
+    }
+    if let Some(xtool) = xtool {
+        command.arg("--xtool").arg(xtool);
     }
     let output = command.output().expect("run the fixture packer");
     assert!(
@@ -56,6 +68,23 @@ fn pack(source: &Path, target: &Path, disc_layout: bool) -> PathBuf {
             .trim()
             .to_string(),
     )
+}
+
+fn fake_xtool(root: &Path) -> PathBuf {
+    let folder = root.join("fake-xtool");
+    fs::create_dir_all(folder.join("_libraries")).unwrap();
+    let name = if cfg!(windows) { "xtool.exe" } else { "xtool" };
+    let path = folder.join(name);
+    fs::copy(env!("CARGO_BIN_EXE_efxlve-fake-xtool"), &path).unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+
+        let mut permissions = fs::metadata(&path).unwrap().permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(&path, permissions).unwrap();
+    }
+    path
 }
 
 fn volume_paths(archive: &Path) -> Vec<PathBuf> {
@@ -192,6 +221,56 @@ fn the_built_binary_finds_disc_folders_and_restores_them() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert_same_tree(&source, &restore_parent.join("Game"));
+
+    let _ = fs::remove_dir_all(&root);
+}
+
+#[test]
+fn the_built_binary_restores_an_xtool_archive() {
+    let root = temp_root("xtool");
+    let source = write_source(&root);
+    let archive_root = root.join("archive");
+    let xtool = fake_xtool(&root);
+    let manifest = pack_with(&source, &archive_root, false, Some(&xtool));
+    let archive = manifest.parent().unwrap().to_path_buf();
+    let manifest_json: serde_json::Value =
+        serde_json::from_slice(&fs::read(&manifest).unwrap()).unwrap();
+    assert_eq!(
+        manifest_json["compression"]["precompressor"], "xtool",
+        "the fixture should be marked as xtool-precompressed"
+    );
+
+    let restore_parent = root.join("restored");
+    let xtool_arg = xtool.to_string_lossy().to_string();
+    let output = restore(&archive, &restore_parent, &["--xtool", &xtool_arg]);
+    assert!(
+        output.status.success(),
+        "xtool restore failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_same_tree(&source, &restore_parent.join("Game"));
+
+    let verify = restore(&manifest, &root.join("unused"), &["--verify"]);
+    assert!(
+        verify.status.success(),
+        "verify failed: {}",
+        String::from_utf8_lossy(&verify.stderr)
+    );
+    assert!(String::from_utf8_lossy(&verify.stdout).contains("Verified"));
+
+    let failure_parent = root.join("no-xtool");
+    let failure = restore(&archive, &failure_parent, &[]);
+    assert!(
+        !failure.status.success(),
+        "an xtool archive restored without --xtool"
+    );
+    assert!(
+        String::from_utf8_lossy(&failure.stderr)
+            .to_lowercase()
+            .contains("xtool"),
+        "expected an xtool error"
+    );
+    assert!(!failure_parent.join("Game").exists());
 
     let _ = fs::remove_dir_all(&root);
 }
