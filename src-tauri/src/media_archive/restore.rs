@@ -49,19 +49,26 @@ pub struct VerifyOutcome {
 }
 
 /// Resolves every volume of a backup. Each file is searched in the manifest
-/// folder first, then in the folders the user added for other discs.
+/// folder first, then in the folders the user added for other discs. Sibling
+/// (and child) `disc-*` folders are searched automatically, so a disc-layout
+/// backup opens without adding every part by hand.
 pub fn locate_volumes(
     manifest: &MediaManifest,
     manifest_dir: &Path,
     extra_dirs: &[PathBuf],
 ) -> (Vec<PathBuf>, Vec<u32>) {
+    let auto_dirs = if manifest.disc_layout {
+        disc_folders(manifest_dir)
+    } else {
+        Vec::new()
+    };
     let mut paths = Vec::with_capacity(manifest.volumes.len());
     let mut missing = Vec::new();
     for volume in &manifest.volumes {
         let mut found =
             find_volume_file(manifest_dir, &volume.file_name, volume.bytes, 2);
         if found.is_none() {
-            for dir in extra_dirs {
+            for dir in auto_dirs.iter().chain(extra_dirs.iter()) {
                 if dir == manifest_dir {
                     continue;
                 }
@@ -77,6 +84,40 @@ pub fn locate_volumes(
         }
     }
     (paths, missing)
+}
+
+/// Sibling `disc-N` folders next to the manifest, plus child `disc-N` folders
+/// when the manifest sits at the archive root.
+fn disc_folders(manifest_dir: &Path) -> Vec<PathBuf> {
+    let mut dirs = Vec::new();
+    if let Some(parent) = manifest_dir.parent() {
+        if let Ok(entries) = std::fs::read_dir(parent) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path != manifest_dir && path.is_dir() && is_disc_folder(&path) {
+                    dirs.push(path);
+                }
+            }
+        }
+    }
+    if let Ok(entries) = std::fs::read_dir(manifest_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() && is_disc_folder(&path) {
+                dirs.push(path);
+            }
+        }
+    }
+    dirs.sort();
+    dirs.dedup();
+    dirs
+}
+
+fn is_disc_folder(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .map(|name| name.to_ascii_lowercase().starts_with("disc-"))
+        .unwrap_or(false)
 }
 
 fn file_size(path: &Path) -> Option<u64> {
@@ -1267,19 +1308,12 @@ mod tests {
         let disc1 = packed.folder.join("disc-1");
         let manifest =
             crate::media_archive::format::read_manifest(&disc1.join(MANIFEST_FILE)).unwrap();
-        let extras: Vec<PathBuf> = packed
-            .manifest
-            .volumes
-            .iter()
-            .skip(1)
-            .map(|volume| packed.folder.join(format!("disc-{}", volume.index)))
-            .collect();
         let disc_target = root.join("disc-target");
         std::fs::create_dir_all(&disc_target).unwrap();
         let from_disc = restore_game(RestoreJob {
             manifest,
             manifest_dir: disc1,
-            extra_dirs: extras,
+            extra_dirs: Vec::new(),
             xtool: None,
             target_parent: disc_target,
             overwrite: false,
