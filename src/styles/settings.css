@@ -945,6 +945,24 @@
   justify-content: flex-end;
   padding: 10px 14px 4px;
 }
+/* Settings > Stores: user-added storefronts and their add form. */
+.custom-store-url {
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 11px;
+  color: var(--text-3);
+  overflow-wrap: anywhere;
+}
+.custom-store-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.custom-store-form .settings-path-input { flex: 1 1 180px; }
+.custom-store-limit { margin-top: 4px; color: var(--err); }
+/* The letter mark is a span, not an image: keep its letter centred. */
+.settings-store-logo.store-mark-fallback { display: inline-flex; align-items: center; justify-content: center; }
 
 
 /* Physical Case Style Visual Picker in Settings */

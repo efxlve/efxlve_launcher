@@ -149,7 +149,7 @@ import { closeControllerKeyboard, controllerKeyboardPress } from "../gamepad/on-
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { closeStorageMenus } from "../storage/storage-view";
-import { BATTLENET_ACCOUNT_URL, isHeaderStore, loadPlayerProfile, moveStoreOrder, openStore, openStoreUrl, playerProfileStale, purgeStoreViews, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, storeEpicAssistantEnabled, setStoreEpicAssistant, storeSteamCurrencyEnabled, setStoreSteamCurrency, storeUrlFor, visibleHeaderStores } from "../store/store-view";
+import { BATTLENET_ACCOUNT_URL, MAX_CUSTOM_STORES, MAX_VISIBLE_STORE_TABS, addCustomStore, loadPlayerProfile, moveStoreOrder, openStore, openStoreUrl, playerProfileStale, purgeStoreViews, removeCustomStore, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, storeEpicAssistantEnabled, setStoreEpicAssistant, storeSteamCurrencyEnabled, setStoreSteamCurrency, storeUrlFor, visibleHeaderStores } from "../store/store-view";
 import {
   clearNotifications,
   closeNotifPanel,
@@ -479,7 +479,7 @@ document.addEventListener("click", (e) => {
   } else if (act === "to-top") {
     viewEl.scrollTo({ top: 0, behavior: "smooth" });
   } else if (act === "open-store") {
-    let store = (t.dataset.store as any) || S.activeStore;
+    let store = t.dataset.store || S.activeStore;
     const firstVisible = visibleHeaderStores()[0] ?? "epic";
     if (!store || S.hiddenStores.has(store)) {
       store = firstVisible;
@@ -1574,17 +1574,40 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-store-visible") {
     const id = t.dataset.store;
     if (id) {
-      setStoreHidden(id, !S.hiddenStores.has(id));
+      const result = setStoreHidden(id, !S.hiddenStores.has(id));
+      if (result === "limit") {
+        toast(i18nT("settings.storeTabLimit", { max: MAX_VISIBLE_STORE_TABS }), "err");
+      }
       scheduleRender();
     }
+  } else if (act === "add-custom-store") {
+    const name = document.getElementById("custom-store-name") as HTMLInputElement | null;
+    const url = document.getElementById("custom-store-url") as HTMLInputElement | null;
+    const result = addCustomStore(name?.value ?? "", url?.value ?? "");
+    if (result === "invalid") {
+      toast(i18nT("settings.storeInvalidUrl"), "err");
+    } else if (result === "duplicate") {
+      toast(i18nT("settings.storeExists"), "err");
+    } else if (result === "limit") {
+      toast(i18nT("settings.storeCustomLimit", { max: MAX_CUSTOM_STORES }), "err");
+    } else {
+      toast(i18nT(result === "added-hidden" ? "settings.storeAddedHidden" : "settings.storeAdded"), "ok");
+      render();
+    }
+  } else if (act === "remove-custom-store") {
+    const id = t.dataset.store;
+    if (id && removeCustomStore(id)) {
+      toast(i18nT("settings.storeRemoved"), "ok");
+      render();
+    }
   } else if (act === "store-order-up") {
-    const store = t.dataset.store as any;
+    const store = t.dataset.store;
     if (store) {
       moveStoreOrder(store, -1);
       scheduleRender();
     }
   } else if (act === "store-order-down") {
-    const store = t.dataset.store as any;
+    const store = t.dataset.store;
     if (store) {
       moveStoreOrder(store, 1);
       scheduleRender();

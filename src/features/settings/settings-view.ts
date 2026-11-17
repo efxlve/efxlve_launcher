@@ -108,7 +108,7 @@ import { handleCompatAction, loadCompatView, renderCompatSection } from "./compa
 import { keepDiscordOpen } from "../discord/discord-view";
 import { pcCheckResultHtml } from "./pc-check";
 import { storeLogo } from "../store/store-logos";
-import { HEADER_STORES, STORE_LABELS, type StoreId, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, getSteamTryRate } from "../store/store-view";
+import { MAX_CUSTOM_STORES, MAX_VISIBLE_STORE_TABS, customStores, moveStoreOrder, resetStoreOrder, storeIdleTimeout, storeLabel, storeOrder, storePrewarmEnabled, storeWarmLimit, storeEpicAssistantEnabled, storeSteamCurrencyEnabled, getSteamTryRate, visibleStoreCount } from "../store/store-view";
 import { companionGetClientSettings, eaDefaultInstallDir, eaDirectStatus, eaInstallDir, ubiDefaultInstallDir, ubiDirectProbe, ubiDirectStatus, ubiInstallDir } from "../../companion";
 import { controllerKind, refreshConnectedControllers } from "../gamepad/gamepad";
 import {
@@ -1067,11 +1067,18 @@ function renderStores(): string {
     row(t("settings.storePurgeTitle"), t("settings.storePurgeDesc"), purgeBtn);
 
   const order = storeOrder();
+  const activeTabs = visibleStoreCount();
+  const userStores = customStores();
+  const userStoreIds = new Set(userStores.map((store) => store.id));
+  const addDisabled = userStores.length >= MAX_CUSTOM_STORES;
+
   const tabsRows = order.map((id, idx) => {
     const hidden = S.hiddenStores.has(id);
     const lastVisible = !hidden && order.every((store) => store === id || S.hiddenStores.has(store));
     const isFirst = idx === 0;
     const isLast = idx === order.length - 1;
+    const label = storeLabel(id);
+    const userStore = userStores.find((store) => store.id === id);
 
     const controls = `
       <div class="store-order-controls">
@@ -1085,16 +1092,28 @@ function renderStores(): string {
           <input type="checkbox" data-act="toggle-store-visible" data-store="${id}" ${hidden ? "" : "checked"} ${lastVisible ? "disabled" : ""} />
           <span class="track"></span>
         </label>
+        ${userStoreIds.has(id) ? `<button type="button" class="btn icon-only ghost tiny danger" data-act="remove-custom-store" data-store="${id}" title="${t("settings.storeRemove")}" aria-label="${t("settings.storeRemove")}">${icon("trash", 13)}</button>` : ""}
       </div>`;
 
     const statusBadge = hidden ? ` <span class="badge muted" style="margin-left:8px;font-size:11px;opacity:0.75;">${t("settings.storeHiddenBadge")}</span>` : "";
 
     return row(
-      `<div style="display:flex;align-items:center;gap:4px;${hidden ? "opacity:0.6;" : ""}">${storeLogo(id, 18, "settings-store-logo")}<span>${STORE_LABELS[id]}</span>${statusBadge}</div>`,
-      null,
+      `<div style="display:flex;align-items:center;gap:4px;${hidden ? "opacity:0.6;" : ""}">${storeLogo(id, 18, "settings-store-logo", label)}<span>${esc(label)}</span>${statusBadge}</div>`,
+      userStore ? `<span class="custom-store-url">${esc(userStore.url)}</span>` : null,
       controls,
     );
   }).join("") +
+  row(
+    t("settings.storeThirdPartyTitle"),
+    t("settings.storeThirdPartyNote", { active: activeTabs, max: MAX_VISIBLE_STORE_TABS }) +
+      (addDisabled ? `<div class="custom-store-limit">${t("settings.storeCustomLimit", { max: MAX_CUSTOM_STORES })}</div>` : ""),
+    `<div class="custom-store-form">
+      <input id="custom-store-name" class="input settings-path-input" maxlength="48" placeholder="${esc(t("settings.storeAddName"))}" aria-label="${esc(t("settings.storeAddName"))}" autocomplete="off" spellcheck="false" />
+      <input id="custom-store-url" class="input settings-path-input" maxlength="2048" placeholder="${esc(t("settings.storeAddUrl"))}" aria-label="${esc(t("settings.storeAddUrl"))}" autocomplete="off" spellcheck="false" />
+      <button type="button" class="btn primary small" data-act="add-custom-store" ${addDisabled ? "disabled" : ""}>${icon("plus", 13)} ${t("settings.storeAdd")}</button>
+    </div>`,
+    true,
+  ) +
   `<div class="store-order-footer">
     <button type="button" class="btn ghost small" data-act="store-order-reset">
       ${icon("refresh", 13)} ${t("settings.storeResetOrder")}

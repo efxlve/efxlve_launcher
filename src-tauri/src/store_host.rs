@@ -177,6 +177,25 @@ fn store_id_for_url(url: &str) -> &'static str {
     }
 }
 
+/// Store id requested by the frontend, or the domain fallback when it is
+/// missing. Only lowercase ASCII letters, digits and dashes survive, so a tab
+/// id can never escape the `store-view-<id>` webview label.
+fn normalize_store_id(requested: Option<&str>, url: &str) -> String {
+    if let Some(raw) = requested {
+        let id: String = raw
+            .trim()
+            .to_ascii_lowercase()
+            .chars()
+            .filter(|c| c.is_ascii_alphanumeric() || *c == '-')
+            .take(32)
+            .collect();
+        if !id.is_empty() {
+            return id;
+        }
+    }
+    store_id_for_url(url).to_string()
+}
+
 /// Store label (`store-view-<id>`) back to its store id.
 fn store_id_for_label(label: &str) -> String {
     label
@@ -652,7 +671,7 @@ fn create_store_builder(
     app: &AppHandle,
     target_label: String,
     parsed: url::Url,
-    store_id: &'static str,
+    store_id: &str,
     owned_label_js: &str,
     owned_games: &str,
     epic_assistant: bool,
@@ -661,6 +680,10 @@ fn create_store_builder(
 ) -> tauri::WebviewBuilder<tauri::Wry> {
     use tauri::{WebviewBuilder, WebviewUrl};
     let app_nav = app.clone();
+    // The page/navigation closures outlive this call, so they own their copy of
+    // the id instead of borrowing the caller's string.
+    let page_store_id = store_id.to_string();
+    let popup_store_id = store_id.to_string();
     // additional_browser_args blanks this child webview. Leave the builder without it.
     let mut builder = WebviewBuilder::new(target_label.clone(), WebviewUrl::External(parsed))
         // Native WebView2 background is pure obsidian: white flashes (FOUC) during page transitions are prevented.
@@ -673,10 +696,10 @@ fn create_store_builder(
             // script alone does not stick for child webviews (the Epic store
             // needs the same belt-and-braces eval), so re-apply it on every
             // finished load; the store is a single-page app.
-            if store_id == "xbox" {
+            if page_store_id == "xbox" {
                 let _ = webview.eval(crate::store_theme::XBOX_DARK_SCRIPT);
             }
-            if store_id == "steam" {
+            if page_store_id == "steam" {
                 // Child webviews have been observed to miss the document-start
                 // script, so the TRY flags are set again and the price scan is
                 // re-armed on every finished load.
@@ -775,7 +798,7 @@ fn create_store_builder(
                         return tauri::webview::NewWindowResponse::Deny;
                     }
                 }
-                if store_id == "ubisoft" && is_ubisoft_auth_url(&url) {
+                if popup_store_id == "ubisoft" && is_ubisoft_auth_url(&url) {
                     if let Some(view) = app_popup.get_webview(&popup_label) {
                         // The popup is gone, but the store's in-page modal is
                         // the path that ends with its own UPlayConnect-Login
@@ -1208,6 +1231,7 @@ pub fn uninstall_store_extension(app: AppHandle, id: String) -> Result<serde_jso
 pub async fn prewarm_store_view(
     app: AppHandle,
     url: String,
+    store_id: Option<String>,
     owned_label: Option<String>,
     epic_assistant: Option<bool>,
     steam_currency: Option<bool>,
@@ -1217,7 +1241,7 @@ pub async fn prewarm_store_view(
         .get_window("main")
         .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
 
-    let store_id = store_id_for_url(&url);
+    let store_id = normalize_store_id(store_id.as_deref(), &url);
     let target_label = format!("store-view-{store_id}");
 
     if store_views(&window)
@@ -1244,7 +1268,7 @@ pub async fn prewarm_store_view(
         &app,
         target_label.clone(),
         parsed,
-        store_id,
+        &store_id,
         &owned_label_js,
         &owned_games,
         epic_assistant.unwrap_or(true),
@@ -1276,6 +1300,7 @@ pub async fn show_store_view(
     height: f64,
     bottom: Option<f64>,
     url: String,
+    store_id: Option<String>,
     recreate: bool,
     owned_label: Option<String>,
     epic_assistant: Option<bool>,
@@ -1298,7 +1323,7 @@ pub async fn show_store_view(
         *slot = None;
     }
 
-    let store_id = store_id_for_url(&url);
+    let store_id = normalize_store_id(store_id.as_deref(), &url);
     // Only the Epic storefront is decorated with the owned library, and building
     // that payload reads and serialises every owned game: the other storefronts
     // skip it entirely. The empty array keeps the injected script valid.
@@ -1445,7 +1470,7 @@ pub async fn show_store_view(
         &app,
         target_label.clone(),
         parsed,
-        store_id,
+        &store_id,
         &owned_label_js,
         &owned_games,
         epic_assistant.unwrap_or(true),
@@ -1823,6 +1848,29 @@ mod tests {
             "steam"
         );
         assert_eq!(super::store_id_for_url("https://example.com/"), "epic");
+    }
+
+    #[test]
+    fn requested_store_ids_are_sanitized_for_webview_labels() {
+        // A user-added store keeps the id the frontend generated.
+        assert_eq!(
+            super::normalize_store_id(Some("custom-humble-store"), "https://example.com/"),
+            "custom-humble-store"
+        );
+        // Case, spaces and path characters cannot reach the label.
+        assert_eq!(
+            super::normalize_store_id(Some(" Custom/GOG 2! "), "https://example.com/"),
+            "customgog2"
+        );
+        // No usable id falls back to the storefront the URL names.
+        assert_eq!(
+            super::normalize_store_id(Some("  "), "https://www.gog.com/"),
+            "gog"
+        );
+        assert_eq!(
+            super::normalize_store_id(None, "https://example.com/"),
+            "epic"
+        );
     }
 
     #[test]

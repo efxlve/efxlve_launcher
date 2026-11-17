@@ -20,7 +20,7 @@ import { esc } from "./utils";
 import { icon } from "./icons";
 import { t } from "../i18n";
 import { epicGetQueue, epicPortrait } from "../epic";
-import { openStoreUrl, setView, syncStoreTabsPill } from "../features/store/store-view";
+import { openStoreUrl, setView, syncStoreTabsPill, updateStoreTabsArrows } from "../features/store/store-view";
 import { loadSettingsView } from "../features/settings/settings-view";
 import { loadNotesView } from "../features/notes/notes-view";
 import { loadScreenshotsPage } from "../features/screenshots/screenshots-page";
@@ -159,7 +159,10 @@ export function updatePageHeader(): void {
       // The strip is display:none until now, so a measure taken while it was
       // hidden saw a zero box and the pill either stayed invisible or glided
       // in from the corner. Measure after layout.
-      if (wasHidden) requestAnimationFrame(() => syncStoreTabsPill());
+      if (wasHidden) requestAnimationFrame(() => {
+        syncStoreTabsPill();
+        updateStoreTabsArrows();
+      });
     }
   }
   const showLibFilters = S.view === "library" && !S.currentModalAppName;

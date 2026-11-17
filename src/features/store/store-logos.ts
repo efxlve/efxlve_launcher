@@ -19,6 +19,7 @@ import discord from "../../assets/stores/discord.png";
 import spotify from "../../assets/stores/spotify.png";
 import type { StoreId } from "./store-view";
 import { icon } from "../../core/icons";
+import { esc } from "../../core/utils";
 
 export const STORE_LOGOS: Record<StoreId, string> = {
   epic,
@@ -43,12 +44,15 @@ export function storeLogoUrl(id: string): string | null {
   return STORE_LOGOS[id as StoreId] || EXTRA_LOGOS[id] || null;
 }
 
-/** Logo markup for a store card. */
-export function storeLogo(id: string, size = 24, className = "acc-store-logo"): string {
+/** Logo markup for a store card. User-added stores fall back to a letter mark. */
+export function storeLogo(id: string, size = 24, className = "acc-store-logo", label = ""): string {
   // Custom games have no storefront mark; a gamepad keeps their rows from
   // rendering a blank icon slot.
   if (id === "custom") return icon("gamepad-2", size, className);
   const src = storeLogoUrl(id);
-  if (!src) return "";
-  return `<img class="${className}" src="${src}" width="${size}" height="${size}" alt="" draggable="false" />`;
+  if (src) return `<img class="${className}" src="${src}" width="${size}" height="${size}" alt="" draggable="false" />`;
+  const letter = (Array.from(label.trim())[0] ?? "").toUpperCase();
+  if (!letter) return "";
+  const font = Math.max(8, Math.round(size * 0.55));
+  return `<span class="${className} store-mark-fallback" style="width:${size}px;height:${size}px;font-size:${font}px" aria-hidden="true">${esc(letter)}</span>`;
 }

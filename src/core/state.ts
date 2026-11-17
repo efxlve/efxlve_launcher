@@ -333,7 +333,7 @@ export const S = {
   /** Accounts page: show the sign-in form under an already connected Epic account. */
   accountsAddMode: false,
   storeShown: false,
-  activeStore: ("epic") as "epic" | "gog" | "steam" | "battlenet" | "ubisoft" | "ea" | "xbox" | "luna",
+  activeStore: ("epic") as string,
   /** Store ids hidden from the Stores bar (Settings > Appearance). */
   hiddenStores: (() => {
     try {

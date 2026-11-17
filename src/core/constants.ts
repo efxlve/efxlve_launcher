@@ -79,6 +79,8 @@ export const CONTROLLER_BRIDGE_KEY = "efxlve-controller-bridge";
 
 /** Store ids the user hid from the Stores bar (JSON array). */
 export const HIDDEN_STORES_KEY = "efxlve-hidden-stores";
+/** User-added third-party storefronts (JSON array of `{ id, name, url }`). */
+export const CUSTOM_STORES_KEY = "efxlve-custom-stores";
 /** Custom display order of storefront tabs in the header (JSON array of StoreId). */
 export const STORE_ORDER_KEY = "efxlve-store-order";
 /** Pre-warm default store webview on startup (disabled by default to preserve RAM). */

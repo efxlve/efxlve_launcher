@@ -9,7 +9,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { childBounds } from "../../core/child-bounds";
-import { isTauri, HIDDEN_STORES_KEY, STORE_IDLE_TIMEOUT_KEY, STORE_ORDER_KEY, STORE_PREWARM_KEY, STORE_WARM_LIMIT_KEY, STORE_EPIC_ASSISTANT_KEY, STORE_STEAM_CURRENCY_KEY, STEAM_TRY_RATE_KEY, STEAM_TRY_RATE_TIME_KEY } from "../../core/constants";
+import { isTauri, CUSTOM_STORES_KEY, HIDDEN_STORES_KEY, STORE_IDLE_TIMEOUT_KEY, STORE_ORDER_KEY, STORE_PREWARM_KEY, STORE_WARM_LIMIT_KEY, STORE_EPIC_ASSISTANT_KEY, STORE_STEAM_CURRENCY_KEY, STEAM_TRY_RATE_KEY, STEAM_TRY_RATE_TIME_KEY } from "../../core/constants";
+import { esc } from "../../core/utils";
 import { loadEpicAchSummaries } from "../../core/achievement-summaries";
 import { storeLogo } from "./store-logos";
 import { closeAllModals, render, scheduleRender } from "../../core/render";
@@ -224,7 +225,7 @@ export function releaseStoreForPalette(): void {
  * Rust reports as pending).
  */
 function storeLoadingTitle(): string {
-  const name = STORE_LABELS[S.activeStore] ?? STORE_LABELS.epic;
+  const name = storeLabel(S.activeStore) || STORE_LABELS.epic;
   return `${name} · ${t("store.starting")}`;
 }
 
@@ -253,6 +254,18 @@ export function paintStoreLoadingScreen(host: HTMLElement): void {
 /** Storefronts that can live in the embedded store webview, in menu order. */
 export type StoreId = "epic" | "gog" | "steam" | "battlenet" | "ubisoft" | "ea" | "xbox" | "luna";
 
+/** A storefront the user added; its URL lives in localStorage, not in the bundle. */
+export interface CustomStore {
+  id: string;
+  name: string;
+  url: string;
+}
+
+/** Store tabs the Stores bar can show at once. More tabs scroll away and stop fitting. */
+export const MAX_VISIBLE_STORE_TABS = 12;
+/** Keeps the settings list and the stored record bounded while hidden stores pile up. */
+export const MAX_CUSTOM_STORES = 24;
+
 /** Brand names are not translated: they read the same in every locale. */
 export const STORE_LABELS: Record<StoreId, string> = {
   epic: "Epic Games",
@@ -267,32 +280,82 @@ export const STORE_LABELS: Record<StoreId, string> = {
 
 /** Storefronts shown in the Stores header. */
 export const DEFAULT_HEADER_STORES: StoreId[] = ["epic", "gog", "steam", "xbox", "battlenet", "ubisoft", "ea", "luna"];
-export const HEADER_STORES: StoreId[] = DEFAULT_HEADER_STORES;
 
-export function storeOrder(): StoreId[] {
+/**
+ * User-added storefronts, oldest first. A record that no longer matches the
+ * shape an embedded tab needs is dropped instead of breaking the Stores bar.
+ */
+export function customStores(): CustomStore[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(CUSTOM_STORES_KEY) || "[]") as unknown;
+    if (!Array.isArray(raw)) return [];
+    return raw.flatMap((entry): CustomStore[] => {
+      if (!entry || typeof entry !== "object") return [];
+      const { id, name, url } = entry as Record<string, unknown>;
+      if (typeof id !== "string" || !/^custom-[a-z0-9-]{1,32}$/.test(id)) return [];
+      if (typeof name !== "string" || !name.trim()) return [];
+      if (typeof url !== "string" || !/^https?:\/\//i.test(url)) return [];
+      return [{ id, name: name.trim().slice(0, 48), url }];
+    });
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomStores(list: CustomStore[]): void {
+  localStorage.setItem(CUSTOM_STORES_KEY, JSON.stringify(list));
+}
+
+export function customStore(id: string): CustomStore | undefined {
+  return customStores().find((store) => store.id === id);
+}
+
+/** Display name of a built-in or user-added storefront. */
+export function storeLabel(id: string): string {
+  if (Object.prototype.hasOwnProperty.call(STORE_LABELS, id)) {
+    return (STORE_LABELS as Record<string, string>)[id];
+  }
+  return customStore(id)?.name ?? id;
+}
+
+function knownStoreIds(): string[] {
+  return [...DEFAULT_HEADER_STORES, ...customStores().map((store) => store.id)];
+}
+
+function saveHiddenStores(): void {
+  try {
+    localStorage.setItem(HIDDEN_STORES_KEY, JSON.stringify([...S.hiddenStores]));
+  } catch {
+    // Storage is best-effort; the session value still applies.
+  }
+}
+
+export function storeOrder(): string[] {
+  const known = knownStoreIds();
   try {
     const raw = localStorage.getItem(STORE_ORDER_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        const valid = parsed.filter((id): id is StoreId => (DEFAULT_HEADER_STORES as string[]).includes(id));
-        const missing = DEFAULT_HEADER_STORES.filter((id) => !valid.includes(id));
+        const valid = parsed.filter((id): id is string => typeof id === "string" && known.includes(id));
+        const missing = known.filter((id) => !valid.includes(id));
         return [...valid, ...missing];
       }
     }
   } catch {}
-  return [...DEFAULT_HEADER_STORES];
+  return [...known];
 }
 
-export function setStoreOrder(order: StoreId[]): void {
-  const valid = order.filter((id): id is StoreId => (DEFAULT_HEADER_STORES as string[]).includes(id));
-  const missing = DEFAULT_HEADER_STORES.filter((id) => !valid.includes(id));
+export function setStoreOrder(order: string[]): void {
+  const known = knownStoreIds();
+  const valid = order.filter((id) => known.includes(id));
+  const missing = known.filter((id) => !valid.includes(id));
   const combined = [...valid, ...missing];
   localStorage.setItem(STORE_ORDER_KEY, JSON.stringify(combined));
   applyStoreTabs();
 }
 
-export function moveStoreOrder(id: StoreId, direction: -1 | 1): void {
+export function moveStoreOrder(id: string, direction: -1 | 1): void {
   const current = storeOrder();
   const idx = current.indexOf(id);
   if (idx < 0) return;
@@ -310,12 +373,129 @@ export function resetStoreOrder(): void {
 }
 
 /** Header stores the user kept visible, sorted in custom user order. */
-export function visibleHeaderStores(): StoreId[] {
+export function visibleHeaderStores(): string[] {
   return storeOrder().filter((id) => !S.hiddenStores.has(id));
 }
 
+export function visibleStoreCount(): number {
+  return visibleHeaderStores().length;
+}
+
 export function isHeaderStore(id: string): boolean {
-  return (DEFAULT_HEADER_STORES as string[]).includes(id);
+  return (DEFAULT_HEADER_STORES as string[]).includes(id) || customStores().some((store) => store.id === id);
+}
+
+/** Hosts owned by the built-in storefronts; a custom tab may not shadow one. */
+const BUILTIN_STORE_HOSTS = [
+  "epicgames.com",
+  "gog.com",
+  "steampowered.com",
+  "battle.net",
+  "ubisoft.com",
+  "ubi.com",
+  "ea.com",
+  "xbox.com",
+  "microsoft.com",
+  "luna.amazon.com",
+];
+
+function isBuiltinStoreHost(host: string): boolean {
+  return BUILTIN_STORE_HOSTS.some((domain) => host === domain || host.endsWith(`.${domain}`));
+}
+
+/** Accepts a bare host too, so "store.example.com" becomes an https URL. */
+function normalizeStoreUrl(raw: string): string | null {
+  const text = raw.trim();
+  if (!text) return null;
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `https://${text}`;
+  try {
+    const url = new URL(withScheme);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    if (!url.hostname.includes(".")) return null;
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function newCustomStoreId(name: string, list: CustomStore[]): string {
+  const slug = name
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 24)
+    .replace(/-+$/g, "");
+  const base = `custom-${slug || "store"}`;
+  const taken = new Set(list.map((store) => store.id));
+  let id = base;
+  let suffix = 2;
+  while (taken.has(id)) {
+    id = `${base}-${suffix}`;
+    suffix += 1;
+  }
+  return id;
+}
+
+export type AddCustomStoreResult = "added" | "added-hidden" | "invalid" | "duplicate" | "limit";
+
+/**
+ * Adds a third-party storefront. A new tab joins the bar only while there is a
+ * free slot; otherwise it lands hidden and the user frees a slot first.
+ */
+export function addCustomStore(name: string, url: string): AddCustomStoreResult {
+  const cleanName = name.trim().replace(/\s+/g, " ").slice(0, 48);
+  if (!cleanName) return "invalid";
+  const list = customStores();
+  if (list.length >= MAX_CUSTOM_STORES) return "limit";
+  const normalized = normalizeStoreUrl(url);
+  if (!normalized) return "invalid";
+  const parsed = new URL(normalized);
+  const host = parsed.hostname.toLowerCase();
+  if (host === "efxlve.local" || isBuiltinStoreHost(host)) return "duplicate";
+  const knownHost = (raw: string): string | null => {
+    try {
+      return new URL(raw).host.toLowerCase();
+    } catch {
+      return null;
+    }
+  };
+  if (list.some((store) => knownHost(store.url) === parsed.host.toLowerCase())) return "duplicate";
+
+  const id = newCustomStoreId(cleanName, list);
+  // Check the bar before the new store joins the order, or its own free slot
+  // would make every add look full.
+  const hidden = visibleStoreCount() >= MAX_VISIBLE_STORE_TABS;
+  saveCustomStores([...list, { id, name: cleanName, url: normalized }]);
+  if (hidden) S.hiddenStores.add(id);
+  else S.hiddenStores.delete(id);
+  saveHiddenStores();
+  applyStoreTabs();
+  return hidden ? "added-hidden" : "added";
+}
+
+/** Drops a user-added storefront and every trace of it outside localStorage. */
+export function removeCustomStore(id: string): boolean {
+  if (!customStore(id)) return false;
+  // If the deleted tab owns the URL the store view last showed, point history
+  // at a store that still exists before the record disappears.
+  const needsFallback = S.activeStore === id || storeIdForUrl(S.lastStoreUrl) === id;
+  saveCustomStores(customStores().filter((store) => store.id !== id));
+  if (S.hiddenStores.delete(id)) saveHiddenStores();
+  try {
+    const next = storeOrder().filter((entry) => entry !== id);
+    localStorage.setItem(STORE_ORDER_KEY, JSON.stringify(next));
+  } catch {}
+  warmStores.delete(id);
+  if (needsFallback) {
+    S.activeStore = visibleHeaderStores()[0] ?? "epic";
+    S.lastStoreUrl = storeUrlFor(S.activeStore);
+    S.storeMode = "store";
+  }
+  applyStoreTabs();
+  return true;
 }
 
 export const GOG_STORE_URL = "https://www.gog.com/";
@@ -348,8 +528,10 @@ const STORE_URLS: Record<StoreId, string> = {
 };
 
 /** Storefront a URL belongs to (drives the header tabs and the warm cache). */
-export function storeIdForUrl(url: string): StoreId {
+export function storeIdForUrl(url: string): string {
   const lower = url.toLowerCase();
+  const custom = customStores().find((store) => lower.startsWith(store.url.toLowerCase()));
+  if (custom) return custom.id;
   if (lower.includes("gog.com")) return "gog";
   if (lower.includes("steampowered.com")) return "steam";
   if (lower.includes("battle.net")) return "battlenet";
@@ -361,8 +543,8 @@ export function storeIdForUrl(url: string): StoreId {
 }
 
 /** Home URL of a storefront. */
-export function storeUrlFor(store: StoreId): string {
-  return STORE_URLS[store] ?? EPIC_STORE_URL;
+export function storeUrlFor(store: string): string {
+  return STORE_URLS[store as StoreId] ?? customStore(store)?.url ?? EPIC_STORE_URL;
 }
 
 /**
@@ -370,17 +552,17 @@ export function storeUrlFor(store: StoreId): string {
  * a show, not a load, so the loading screen and the progress sweep stay out of
  * the way; Rust reports the ones it closes to stay inside its memory budget.
  */
-const warmStores = new Set<StoreId>();
+const warmStores = new Set<string>();
 
 /**
  * Rust keeps only a few storefronts alive (each one is a renderer process) and
  * reports the rest, plus tells us when a cold storefront has painted.
  */
 if (isTauri) {
-  void listen<{ store: StoreId }>("efxlve-store-closed", (event) => {
+  void listen<{ store: string }>("efxlve-store-closed", (event) => {
     warmStores.delete(event.payload.store);
   });
-  void listen<{ store: StoreId }>("efxlve-store-ready", (event) => {
+  void listen<{ store: string }>("efxlve-store-ready", (event) => {
     // The storefront painted and is now on screen.
     warmStores.add(event.payload.store);
     if (S.activeStore === event.payload.store && (S.view === "store" || embeddedStoreRect !== null)) {
@@ -401,7 +583,7 @@ if (isTauri) {
  */
 let storeLoadingTimer: number | null = null;
 
-function armStoreLoadingGuard(store: StoreId): void {
+function armStoreLoadingGuard(store: string): void {
   if (storeLoadingTimer !== null) window.clearTimeout(storeLoadingTimer);
   if (!S.storeLoading) {
     storeLoadingTimer = null;
@@ -416,9 +598,9 @@ function armStoreLoadingGuard(store: StoreId): void {
   }, 25 * 1000);
 }
 
-export async function openStore(store: StoreId = "epic"): Promise<void> {
+export async function openStore(store: string = "epic"): Promise<void> {
   S.activeStore = store;
-  await openStoreUrl(storeUrlFor(store), "store");
+  await openStoreUrl(storeUrlFor(store), "store", store);
 }
 
 /**
@@ -523,7 +705,7 @@ export function triggerStorePrewarmIfEnabled(): void {
   window.setTimeout(() => {
     if (S.view !== "store") {
       const topStore = visibleHeaderStores()[0] ?? "epic";
-      invoke("prewarm_store_view", { url: storeUrlFor(topStore), ownedLabel: t("store.inLibrary"), epicAssistant: storeEpicAssistantEnabled(), steamCurrency: storeSteamCurrencyEnabled(), steamRate: getSteamTryRate() }).catch(() => {});
+      invoke("prewarm_store_view", { url: storeUrlFor(topStore), storeId: topStore, ownedLabel: t("store.inLibrary"), epicAssistant: storeEpicAssistantEnabled(), steamCurrency: storeSteamCurrencyEnabled(), steamRate: getSteamTryRate() }).catch(() => {});
     }
   }, 4000);
 }
@@ -567,10 +749,10 @@ function setStoreProgress(visible: boolean): void {
   if (p) p.classList.toggle("hidden", !visible);
 }
 
-export async function openStoreUrl(url: string, mode: "store" | "profile"): Promise<void> {
+export async function openStoreUrl(url: string, mode: "store" | "profile", storeHint?: string): Promise<void> {
   closeAllModals();
   cancelStoreDestroy();
-  const store = storeIdForUrl(url);
+  const store = storeHint && isHeaderStore(storeHint) ? storeHint : storeIdForUrl(url);
   S.activeStore = store;
   if (S.view === "store" && S.storeShown && S.lastStoreUrl === url && S.storeMode === mode) return;
   const epoch = ++storeOpenEpoch;
@@ -588,7 +770,7 @@ export async function openStoreUrl(url: string, mode: "store" | "profile"): Prom
   setStoreProgress(!warm);
   render();
   try {
-    const result = await invoke<string>("show_store_view", { ...storeRect(), url, recreate: false, ownedLabel: t("store.inLibrary"), epicAssistant: storeEpicAssistantEnabled(), steamCurrency: storeSteamCurrencyEnabled(), steamRate: getSteamTryRate() });
+    const result = await invoke<string>("show_store_view", { ...storeRect(), url, storeId: store, recreate: false, ownedLabel: t("store.inLibrary"), epicAssistant: storeEpicAssistantEnabled(), steamCurrency: storeSteamCurrencyEnabled(), steamRate: getSteamTryRate() });
     if (epoch !== storeOpenEpoch || S.view !== "store") {
       setStoreProgress(false);
       // Only the player leaving the store takes it down. A newer openStoreUrl owns
@@ -699,6 +881,7 @@ export async function showEmbeddedStore(url: string, rect: StoreRect): Promise<v
     const result = await invoke<string>("show_store_view", {
       ...childBounds(rect),
       url,
+      storeId: store,
       recreate: false,
       ownedLabel: t("store.inLibrary"),
       epicAssistant: storeEpicAssistantEnabled(),
@@ -768,22 +951,38 @@ export function setView(next: View): void {
 }
 
 /**
- * Puts each storefront's mark next to its name in the header. Runs once: the
- * tab buttons are static in `index.html`, the labels live here.
+ * Puts a storefront's mark and name inside its tab. Built-in tabs are static in
+ * `index.html`; a user-added tab is created by `syncCustomStoreTabs`.
  */
-function decorateStoreTabs(): void {
-  const switcher = document.getElementById("store-switcher");
-  if (!switcher || switcher.dataset.logos === "1") return;
-  switcher.dataset.logos = "1";
-  switcher.querySelectorAll<HTMLElement>("[data-store]").forEach((btn) => {
-    const id = btn.dataset.store as StoreId;
-    const label = STORE_LABELS[id];
-    const logo = storeLogo(id, 16, "store-tab-logo");
-    if (!label || !logo) return;
-    btn.innerHTML = `${logo}<span class="store-tab-label">${label}</span>`;
-  });
+function renderStoreTab(btn: HTMLButtonElement, id: string): void {
+  if (btn.dataset.rendered === "1") return;
+  const label = storeLabel(id);
+  btn.innerHTML = `${storeLogo(id, 16, "store-tab-logo", label)}<span class="store-tab-label">${esc(label)}</span>`;
+  btn.dataset.rendered = "1";
 }
-decorateStoreTabs();
+
+/** Creates the tab buttons for user-added stores and drops deleted ones. */
+function syncCustomStoreTabs(switcher: HTMLElement): void {
+  const wanted = new Set(customStores().map((store) => store.id));
+  switcher.querySelectorAll<HTMLElement>('[data-store][data-custom="1"]').forEach((btn) => {
+    if (!wanted.has(btn.dataset.store ?? "")) btn.remove();
+  });
+  const present = new Set<string>();
+  switcher.querySelectorAll<HTMLElement>("[data-store]").forEach((btn) => {
+    if (btn.dataset.store) present.add(btn.dataset.store);
+  });
+  for (const store of customStores()) {
+    if (present.has(store.id)) continue;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "tab";
+    btn.dataset.act = "open-store";
+    btn.dataset.store = store.id;
+    btn.dataset.custom = "1";
+    btn.setAttribute("aria-current", "false");
+    switcher.append(btn);
+  }
+}
 
 /**
  * Applies the store-bar settings: hidden stores leave the strip, tabs stay
@@ -793,12 +992,15 @@ decorateStoreTabs();
 export function applyStoreTabs(): void {
   const switcher = document.getElementById("store-switcher");
   if (!switcher) return;
-  // The buttons are static markup, so the saved order is applied by moving
-  // them. Hiding alone left the Stores bar in its built-in order.
-  const byStore = new Map<string, HTMLElement>();
-  switcher.querySelectorAll<HTMLElement>("[data-store]").forEach((btn) => {
+  syncCustomStoreTabs(switcher);
+  // The saved order is applied by moving the buttons. Hiding alone left the
+  // Stores bar in its built-in order.
+  const byStore = new Map<string, HTMLButtonElement>();
+  switcher.querySelectorAll<HTMLButtonElement>("[data-store]").forEach((btn) => {
     const id = btn.dataset.store;
-    if (id) byStore.set(id, btn);
+    if (!id) return;
+    byStore.set(id, btn);
+    renderStoreTab(btn, id);
   });
   for (const id of storeOrder()) {
     const btn = byStore.get(id);
@@ -814,23 +1016,27 @@ export function applyStoreTabs(): void {
   if (!activeVisible) {
     const first = switcher.querySelector<HTMLElement>("[data-store]:not([hidden])");
     const id = first?.dataset.store;
-    if (id && isHeaderStore(id)) S.activeStore = id as StoreId;
+    if (id) S.activeStore = id;
   }
   updateStoreTabsArrows();
 }
 
-/** Persists a store's visibility. The last visible store cannot be hidden. */
-export function setStoreHidden(id: string, hidden: boolean): void {
-  if (!isHeaderStore(id)) return;
+export type StoreVisibilityResult = "ok" | "limit" | "last";
+
+/** Persists a store's visibility. The cap and the last visible store hold. */
+export function setStoreHidden(id: string, hidden: boolean): StoreVisibilityResult {
+  if (!isHeaderStore(id)) return "last";
   if (hidden) {
-    const remaining = HEADER_STORES.filter((store) => store !== id && !S.hiddenStores.has(store));
-    if (remaining.length === 0) return;
+    const remaining = knownStoreIds().filter((store) => store !== id && !S.hiddenStores.has(store));
+    if (remaining.length === 0) return "last";
     S.hiddenStores.add(id);
   } else {
+    if (visibleStoreCount() >= MAX_VISIBLE_STORE_TABS) return "limit";
     S.hiddenStores.delete(id);
   }
-  localStorage.setItem(HIDDEN_STORES_KEY, JSON.stringify([...S.hiddenStores]));
+  saveHiddenStores();
   applyStoreTabs();
+  return "ok";
 }
 
 /**
@@ -851,8 +1057,9 @@ export function syncStoreTabsPill(): void {
   }
 }
 
-// The tab strip is static markup: apply the stored choices once at boot and
-// keep the active tab and scroll arrows in step with every later switch.
+// The strip is built from static markup plus the user's own tabs: apply the
+// stored choices once at boot and keep the active tab and scroll arrows in step
+// with every later switch or new tab.
 applyStoreTabs();
 syncStoreTabsPill();
 if (typeof MutationObserver !== "undefined") {
@@ -864,8 +1071,11 @@ if (typeof MutationObserver !== "undefined") {
       if (arrowTimer) clearTimeout(arrowTimer);
       arrowTimer = setTimeout(updateStoreTabsArrows, 260);
     });
-    switcher.querySelectorAll("[data-store]").forEach((btn) => {
-      watch.observe(btn, { attributes: true, attributeFilter: ["class", "hidden"] });
+    watch.observe(switcher, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "hidden"],
     });
   }
 }
@@ -874,7 +1084,7 @@ if (typeof MutationObserver !== "undefined") {
  * Shows the tab scroll arrows only while the tab strip overflows, and dims the
  * arrow on the side that has nothing more to scroll.
  */
-function updateStoreTabsArrows(): void {
+export function updateStoreTabsArrows(): void {
   const bar = document.getElementById("store-tabs-bar");
   const scroller = document.getElementById("store-switcher");
   if (!bar || !scroller) return;
