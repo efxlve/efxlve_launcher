@@ -266,7 +266,7 @@ pub fn estimate_archive(
         .saturating_add(compressed)
         .saturating_add(overhead);
     let blocks = body.div_ceil(profile.frame_bytes.max(1));
-    let parity_reserve = body / 50;
+    let parity_reserve = body / 12;
     let estimated_bytes = body
         .saturating_add(blocks.saturating_mul(BLOCK_HEADER))
         .saturating_add(parity_reserve);

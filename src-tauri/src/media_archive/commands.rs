@@ -207,7 +207,7 @@ pub async fn archive_plan(
     };
     let folder_name = unique_archive_folder(&target_path, &title);
     let archive_path = target_path.join(&folder_name);
-    let parity_reserve = scan.total_bytes / 50;
+    let parity_reserve = scan.total_bytes / 12;
     let required_bytes = scan
         .total_bytes
         .saturating_add(parity_reserve)
@@ -371,6 +371,7 @@ pub async fn archive_start(
         profile,
         level: compression_level,
         window_log,
+        parity_shards: super::pack::DEFAULT_PARITY_SHARDS,
         xtool,
         store_meta,
         sink: sink.clone(),

@@ -25,9 +25,10 @@ use super::reed_solomon::{encode, ParityLayout};
 use super::xtool::Xtool;
 use super::ArchiveProgress;
 
-/// One XOR/Reed-Solomon parity shard per volume keeps the first v3 integration
-/// fast and cheap; the codec and manifest already support more parity shards.
-const PARITY_SHARDS: usize = 1;
+/// One parity file is written per parity shard. The codec supports up to 255
+/// total shards; four parity shards repair four damaged shards per volume by
+/// default.
+pub const DEFAULT_PARITY_SHARDS: usize = 4;
 const PARITY_TARGET_DATA_SHARDS: u64 = 64;
 const PARITY_CHUNK_BYTES: usize = 1024 * 1024;
 const PARITY_MIN_SHARD_BYTES: u64 = 64 * 1024;
@@ -73,6 +74,8 @@ pub struct PackJob {
     pub profile: MediaProfileInfo,
     pub level: i32,
     pub window_log: u32,
+    /// Reed-Solomon parity shards per volume; 0 disables parity.
+    pub parity_shards: usize,
     /// Optional precompressor. The tar stream is piped through it before zstd.
     pub xtool: Option<Xtool>,
     pub store_meta: StoreMeta,
@@ -214,11 +217,15 @@ pub fn unique_archive_folder(target_root: &Path, title: &str) -> String {
 }
 
 pub fn pack_game(mut job: PackJob) -> Result<PackOutcome, String> {
-    // A v3 volume carries one parity file inside the same media budget. Reserve
-    // a small slice so the data volume plus parity still fits the disc/USB
-    // profile instead of failing at burn time.
-    if job.profile.volume_bytes > 0 {
-        let reserve = (job.profile.volume_bytes / 50).max(1);
+    // A v3 volume carries parity files inside the same media budget. Reserve a
+    // share proportional to the requested parity count so the data volume plus
+    // parity still fits the disc/USB profile.
+    if job.parity_shards > 0 && job.profile.volume_bytes > 0 {
+        let reserve = job
+            .profile
+            .volume_bytes
+            .saturating_mul((job.parity_shards + 1) as u64)
+            / (PARITY_TARGET_DATA_SHARDS + job.parity_shards as u64);
         job.profile.volume_bytes = job.profile.volume_bytes.saturating_sub(reserve).max(1);
     }
     let install = job
@@ -308,12 +315,14 @@ pub fn pack_game(mut job: PackJob) -> Result<PackOutcome, String> {
     }
 }
 
-fn parity_shape(volumes: &[VolumeInfo]) -> (u64, usize) {
+fn parity_shape(volumes: &[VolumeInfo], parity_shards: usize) -> (u64, usize) {
     let max_bytes = volumes.iter().map(|volume| volume.bytes).max().unwrap_or(0);
     let mut shard_bytes = PARITY_MIN_SHARD_BYTES.max(max_bytes.div_ceil(PARITY_TARGET_DATA_SHARDS));
     let mut data_shards = max_bytes.div_ceil(shard_bytes).max(1) as usize;
-    if data_shards + PARITY_SHARDS > 255 {
-        shard_bytes = max_bytes.div_ceil((255 - PARITY_SHARDS) as u64).max(1);
+    if data_shards + parity_shards > 255 {
+        shard_bytes = max_bytes
+            .div_ceil((255usize.saturating_sub(parity_shards)).max(1) as u64)
+            .max(1);
         data_shards = max_bytes.div_ceil(shard_bytes).max(1) as usize;
     }
     (shard_bytes, data_shards)
@@ -344,19 +353,26 @@ fn parity_write(error: impl std::fmt::Display) -> String {
 /// Writes one parity file next to every volume. Data shards are contiguous
 /// slices of the padded volume; the parity file name carries the volume name so
 /// a disc folder stays self-contained.
-fn write_parity(staging: &Path, volumes: &[VolumeInfo]) -> Result<ParityInfo, String> {
-    let (shard_bytes, data_shards) = parity_shape(volumes);
-    let layout = ParityLayout::new(data_shards, PARITY_SHARDS).map_err(parity_write)?;
+fn write_parity(
+    staging: &Path,
+    volumes: &[VolumeInfo],
+    parity_shards: usize,
+) -> Result<Option<ParityInfo>, String> {
+    if parity_shards == 0 {
+        return Ok(None);
+    }
+    let (shard_bytes, data_shards) = parity_shape(volumes, parity_shards);
+    let layout = ParityLayout::new(data_shards, parity_shards).map_err(parity_write)?;
     let mut parity_volumes = Vec::with_capacity(volumes.len());
 
     for volume in volumes {
         let path = find_packed_volume(staging, &volume.file_name)
             .ok_or_else(|| parity_write(format!("missing volume {}", volume.file_name)))?;
         let parent = path.parent().unwrap_or(staging);
-        let mut writers = Vec::with_capacity(PARITY_SHARDS);
-        let mut parity_hashers = Vec::with_capacity(PARITY_SHARDS);
-        let mut names = Vec::with_capacity(PARITY_SHARDS);
-        for index in 1..=PARITY_SHARDS {
+        let mut writers = Vec::with_capacity(parity_shards);
+        let mut parity_hashers = Vec::with_capacity(parity_shards);
+        let mut names = Vec::with_capacity(parity_shards);
+        for index in 1..=parity_shards {
             let name = format!("{}.efxpar.{index:03}", volume.file_name);
             let file = File::create(parent.join(&name)).map_err(parity_write)?;
             writers.push(BufWriter::new(file));
@@ -420,12 +436,12 @@ fn write_parity(staging: &Path, volumes: &[VolumeInfo]) -> Result<ParityInfo, St
         });
     }
 
-    Ok(ParityInfo {
+    Ok(Some(ParityInfo {
         data_shards: data_shards as u32,
-        parity_shards: PARITY_SHARDS as u32,
+        parity_shards: parity_shards as u32,
         shard_bytes,
         volumes: parity_volumes,
-    })
+    }))
 }
 
 fn pack_into(
@@ -532,7 +548,7 @@ fn pack_into(
         .map_err(|error| tar_error(error, &job.cancel))?;
     let writer = sink.finish()?;
     let volumes = writer.finish()?;
-    let parity = write_parity(staging, &volumes)?;
+    let parity = write_parity(staging, &volumes, job.parity_shards)?;
     let stored_bytes = volumes
         .iter()
         .fold(0u64, |total, volume| total.saturating_add(volume.bytes));
@@ -566,7 +582,7 @@ fn pack_into(
         store_meta: job.store_meta.clone(),
         complete: true,
         disc_layout: job.profile.disc_layout(),
-        parity: Some(parity),
+        parity,
     };
     ctx.emit("finalizing", 100.0, "");
     Ok((manifest, stored_bytes))
@@ -1241,6 +1257,7 @@ mod tests {
             },
             level: 3,
             window_log: 20,
+            parity_shards: 4,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
@@ -1297,6 +1314,7 @@ mod tests {
             },
             level: 3,
             window_log: 20,
+            parity_shards: 4,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
@@ -1340,6 +1358,7 @@ mod tests {
             },
             level: 3,
             window_log: 20,
+            parity_shards: 4,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
@@ -1400,6 +1419,7 @@ mod tests {
             },
             level: 3,
             window_log: 20,
+            parity_shards: 4,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
@@ -1443,6 +1463,7 @@ mod tests {
             profile: resolve("fat32", None).unwrap(),
             level: 3,
             window_log: 20,
+            parity_shards: 4,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),

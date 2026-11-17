@@ -126,6 +126,8 @@ fn run() -> Result<(), String> {
     let mut target = None;
     let mut disc_layout = false;
     let mut xtool_path = None;
+    let mut volume_bytes = 32 * 1024u64;
+    let mut parity_shards = 4usize;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -133,6 +135,16 @@ fn run() -> Result<(), String> {
             "--target" => target = Some(PathBuf::from(next_value(&mut args, "--target")?)),
             "--disc-layout" => disc_layout = true,
             "--xtool" => xtool_path = Some(next_value(&mut args, "--xtool")?),
+            "--volume-bytes" => {
+                volume_bytes = next_value(&mut args, "--volume-bytes")?
+                    .parse()
+                    .map_err(|_| "--volume-bytes needs a number".to_string())?;
+            }
+            "--parity-shards" => {
+                parity_shards = next_value(&mut args, "--parity-shards")?
+                    .parse()
+                    .map_err(|_| "--parity-shards needs a number".to_string())?;
+            }
             other => return Err(format!("unknown argument `{other}`")),
         }
     }
@@ -146,12 +158,13 @@ fn run() -> Result<(), String> {
         target_root: target,
         profile: MediaProfileInfo {
             id: if disc_layout { "dvd5" } else { "test" }.to_string(),
-            volume_bytes: 32 * 1024,
+            volume_bytes,
             frame_bytes: 16 * 1024,
             file_system: if disc_layout { "UDF" } else { "test" }.to_string(),
         },
         level: 3,
         window_log: 20,
+        parity_shards,
         xtool: match xtool_path {
             Some(path) => Some(Xtool::new(&path)?),
             None => None,

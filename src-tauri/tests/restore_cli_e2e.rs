@@ -31,16 +31,36 @@ fn noisy(len: usize) -> Vec<u8> {
 }
 
 fn write_source(root: &Path) -> PathBuf {
+    write_source_sized(root, 80 * 1024)
+}
+
+fn write_source_sized(root: &Path, data_len: usize) -> PathBuf {
     let game = root.join("Game");
     fs::create_dir_all(game.join("bin")).unwrap();
     fs::create_dir_all(game.join("empty")).unwrap();
-    fs::write(game.join("bin").join("a.dat"), noisy(80 * 1024)).unwrap();
+    fs::write(game.join("bin").join("a.dat"), noisy(data_len)).unwrap();
     fs::write(game.join("readme.txt"), b"hello fixture").unwrap();
     game
 }
 
 fn pack(source: &Path, target: &Path, disc_layout: bool) -> PathBuf {
-    pack_with(source, target, disc_layout, None)
+    pack_with(source, target, disc_layout, None, None, None)
+}
+
+fn pack_custom(
+    source: &Path,
+    target: &Path,
+    volume_bytes: u64,
+    parity_shards: usize,
+) -> PathBuf {
+    pack_with(
+        source,
+        target,
+        false,
+        None,
+        Some(volume_bytes),
+        Some(parity_shards),
+    )
 }
 
 fn pack_with(
@@ -48,6 +68,8 @@ fn pack_with(
     target: &Path,
     disc_layout: bool,
     xtool: Option<&Path>,
+    volume_bytes: Option<u64>,
+    parity_shards: Option<usize>,
 ) -> PathBuf {
     let mut command = Command::new(env!("CARGO_BIN_EXE_efxlve-pack-fixture"));
     command.arg("--source").arg(source).arg("--target").arg(target);
@@ -56,6 +78,12 @@ fn pack_with(
     }
     if let Some(xtool) = xtool {
         command.arg("--xtool").arg(xtool);
+    }
+    if let Some(volume_bytes) = volume_bytes {
+        command.arg("--volume-bytes").arg(volume_bytes.to_string());
+    }
+    if let Some(parity_shards) = parity_shards {
+        command.arg("--parity-shards").arg(parity_shards.to_string());
     }
     let output = command.output().expect("run the fixture packer");
     assert!(
@@ -206,6 +234,45 @@ fn the_built_binary_repairs_a_damaged_shard_from_parity() {
 }
 
 #[test]
+fn the_built_binary_repairs_several_damaged_shards() {
+    let root = temp_root("parity-multi");
+    let source = write_source_sized(&root, 1024 * 1024);
+    let archive_root = root.join("archive");
+    let manifest = pack_custom(&source, &archive_root, 512 * 1024, 4);
+    let archive = manifest.parent().unwrap().to_path_buf();
+    let manifest_json: serde_json::Value =
+        serde_json::from_slice(&fs::read(&manifest).unwrap()).unwrap();
+    assert_eq!(manifest_json["parity"]["parityShards"], 4);
+    let data_shards = manifest_json["parity"]["dataShards"]
+        .as_u64()
+        .expect("dataShards");
+    assert!(data_shards >= 5, "fixture has too few data shards");
+    let shard_bytes = manifest_json["parity"]["shardBytes"]
+        .as_u64()
+        .expect("shardBytes") as usize;
+
+    let volumes = volume_paths(&archive);
+    let volume = volumes.first().expect("a volume file");
+    let mut bytes = fs::read(volume).unwrap();
+    assert!(bytes.len() > shard_bytes * 4, "volume is too small");
+    for shard in 0..4 {
+        bytes[shard * shard_bytes] ^= 0xFF;
+    }
+    fs::write(volume, &bytes).unwrap();
+
+    let restore_parent = root.join("restored");
+    let output = restore(&archive, &restore_parent, &[]);
+    assert!(
+        output.status.success(),
+        "multi-shard parity repair failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_same_tree(&source, &restore_parent.join("Game"));
+
+    let _ = fs::remove_dir_all(&root);
+}
+
+#[test]
 fn the_built_binary_rejects_a_volume_whose_parity_is_also_damaged() {
     let root = temp_root("corrupt");
     let source = write_source(&root);
@@ -219,19 +286,22 @@ fn the_built_binary_rejects_a_volume_whose_parity_is_also_damaged() {
     bytes[64 + 8] ^= 0xFF;
     fs::write(volume, &bytes).unwrap();
 
-    let parity = fs::read_dir(&archive)
+    let parity_files: Vec<PathBuf> = fs::read_dir(&archive)
         .unwrap()
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
-        .find(|path| {
+        .filter(|path| {
             path.file_name()
                 .and_then(|name| name.to_str())
                 .is_some_and(|name| name.contains(".efxpar."))
         })
-        .expect("a parity file");
-    let mut parity_bytes = fs::read(&parity).unwrap();
-    parity_bytes[0] ^= 0xFF;
-    fs::write(&parity, &parity_bytes).unwrap();
+        .collect();
+    assert!(!parity_files.is_empty(), "the fixture should have parity files");
+    for parity in &parity_files {
+        let mut parity_bytes = fs::read(parity).unwrap();
+        parity_bytes[0] ^= 0xFF;
+        fs::write(parity, &parity_bytes).unwrap();
+    }
 
     let restore_parent = root.join("restored");
     let output = restore(&archive, &restore_parent, &[]);
@@ -287,7 +357,7 @@ fn the_built_binary_restores_an_xtool_archive() {
     let source = write_source(&root);
     let archive_root = root.join("archive");
     let xtool = fake_xtool(&root);
-    let manifest = pack_with(&source, &archive_root, false, Some(&xtool));
+    let manifest = pack_with(&source, &archive_root, false, Some(&xtool), None, None);
     let archive = manifest.parent().unwrap().to_path_buf();
     let manifest_json: serde_json::Value =
         serde_json::from_slice(&fs::read(&manifest).unwrap()).unwrap();

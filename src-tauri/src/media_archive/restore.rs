@@ -1304,9 +1304,17 @@ mod tests {
     }
 
     fn pack_fixture(root: &Path, volume_bytes: u64) -> (PathBuf, PathBuf, PathBuf) {
+        pack_fixture_sized(root, volume_bytes, 80 * 1024)
+    }
+
+    fn pack_fixture_sized(
+        root: &Path,
+        volume_bytes: u64,
+        data_len: usize,
+    ) -> (PathBuf, PathBuf, PathBuf) {
         let game = root.join("Game");
         std::fs::create_dir_all(game.join("bin")).unwrap();
-        std::fs::write(game.join("bin").join("a.dat"), noisy(80 * 1024, 42)).unwrap();
+        std::fs::write(game.join("bin").join("a.dat"), noisy(data_len, 42)).unwrap();
         std::fs::write(game.join("readme.txt"), b"hello world").unwrap();
         std::fs::create_dir_all(game.join("empty")).unwrap();
         let media = root.join("media");
@@ -1324,6 +1332,7 @@ mod tests {
             },
             level: 3,
             window_log: 20,
+            parity_shards: 4,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
@@ -1489,6 +1498,7 @@ mod tests {
             },
             level: 3,
             window_log: 20,
+            parity_shards: 4,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
@@ -1556,6 +1566,7 @@ mod tests {
             },
             level: 3,
             window_log: 20,
+            parity_shards: 4,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
@@ -1726,6 +1737,7 @@ mod tests {
                 profile: profile.clone(),
                 level: 3,
                 window_log: 20,
+                parity_shards: 4,
                 xtool,
                 store_meta: StoreMeta::default(),
                 sink: Arc::new(NoopSink),
@@ -1824,6 +1836,7 @@ mod tests {
             },
             level: 3,
             window_log: 20,
+            parity_shards: 4,
             xtool: Some(xtool.clone()),
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
@@ -1905,6 +1918,7 @@ mod tests {
             },
             level: 3,
             window_log: 20,
+            parity_shards: 4,
             xtool: None,
             store_meta: StoreMeta::default(),
             sink: Arc::new(NoopSink),
@@ -2029,16 +2043,17 @@ mod tests {
     #[test]
     fn too_many_damaged_shards_are_rejected() {
         let root = temp_root("parity-too-many");
-        let (_game, folder, manifest_path) = pack_fixture(&root, 128 * 1024);
+        let (_game, folder, manifest_path) = pack_fixture_sized(&root, 512 * 1024, 1024 * 1024);
         let manifest = crate::media_archive::format::read_manifest(&manifest_path).unwrap();
         let parity = manifest.parity.as_ref().unwrap();
-        assert!(parity.data_shards >= 2);
+        assert!(parity.data_shards >= 5);
         let shard_bytes = parity.shard_bytes as usize;
         let path = folder.join(&manifest.volumes[0].file_name);
         let mut bytes = std::fs::read(&path).unwrap();
-        assert!(bytes.len() > shard_bytes);
-        bytes[0] ^= 0xff;
-        bytes[shard_bytes] ^= 0xff;
+        assert!(bytes.len() > shard_bytes * 5);
+        for shard in 0..5 {
+            bytes[shard * shard_bytes] ^= 0xff;
+        }
         std::fs::write(&path, bytes).unwrap();
 
         let target = root.join("target");
