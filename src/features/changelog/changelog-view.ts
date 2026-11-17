@@ -34,8 +34,8 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
     date: "2026-11-17",
     added: [
       {
-        en: "Game Archive: back up an installed Steam, Epic, GOG, Amazon or custom game to USB or disc-sized parts, with a size estimate, optional xtool precompression and checksums on every block; restore it later without downloading the game again.",
-        tr: "Oyun Arşivi: kurulu bir Steam, Epic, GOG, Amazon veya özel oyunu USB'ye ya da disk boyutunda parçalara yedekleyin; boyut tahmini, isteğe bağlı xtool ön sıkıştırması ve her blokta sağlama toplamı var. Oyunu daha sonra yeniden indirmeden geri yükleyin.",
+        en: "Game Archive: back up an installed Steam, Epic, GOG, Amazon or custom game to USB or disc-sized parts, with a size estimate, optional xtool precompression and checksums on every block; restore it later without downloading the game again. Each part carries Reed-Solomon parity, so a damaged shard can be repaired during restore.",
+        tr: "Oyun Arşivi: kurulu bir Steam, Epic, GOG, Amazon veya özel oyunu USB'ye ya da disk boyutunda parçalara yedekleyin; boyut tahmini, isteğe bağlı xtool ön sıkıştırması ve her blokta sağlama toplamı var. Oyunu daha sonra yeniden indirmeden geri yükleyin. Her parça Reed-Solomon parity taşıyor; hasarlı bir shard geri yükleme sırasında onarılabiliyor.",
       },
       {
         en: "Windows can burn each part with the built-in IMAPI2 engine, show the inserted media and free space, and quick- or full-erase a rewritable disc before reuse.",
