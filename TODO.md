@@ -71,8 +71,12 @@ Open work only. Delete the item when it lands.
   marked experimental. They still need a pass on real CD-R, DVD-R, BD-R and
   BD-RE media, including full erase; Linux `xorriso` and macOS `drutil` remain
   open.
-- Reed-Solomon parity for scratched discs and long-term USB bit rot is not
-  implemented. Block SHA-256 detects damage but cannot repair it.
+- Reed-Solomon parity is partially started: the GF(256) codec and the planned
+  v3 `ParityInfo` manifest schema live in `reed_solomon.rs` and `format.rs`,
+  with encode/recover/too-many-errors tests. Packing and restore do not split
+  volumes into shards or write/read `.efxpar` files yet, and a v2 manifest
+  carrying parity metadata is rejected. Scratch discs and USB bit rot still
+  cannot be repaired until that wiring and the v3 format bump land.
 - The standalone `efxlve-restore.exe` (`src/restore_main.rs`) ships with the
   portable zip and as a release asset. It still needs a pass on a clean Windows
   machine without the launcher. Scope it as file recovery, not a store

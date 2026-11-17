@@ -15,6 +15,8 @@ mod estimate;
 mod format;
 mod pack;
 mod profile;
+#[allow(dead_code)]
+mod reed_solomon;
 mod restore;
 mod store;
 mod xtool;

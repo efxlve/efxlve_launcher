@@ -42,6 +42,55 @@ pub struct VolumeInfo {
     pub blocks: u32,
 }
 
+/// One parity file planned for format version 3. The payload is a single
+/// Reed-Solomon parity shard; the manifest keeps its name and SHA-256 so a
+/// damaged parity file is treated as missing rather than trusted.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ParityFileInfo {
+    pub index: u32,
+    pub file_name: String,
+    pub sha256: String,
+}
+
+/// Planned format version 3 metadata. It is not written by the packer and a
+/// version 2 manifest carrying it is rejected: v3 must bump `FORMAT_VERSION`
+/// and teach packing and restore to split the stream into equal shards before
+/// this can go live.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ParityInfo {
+    pub data_shards: u32,
+    pub parity_shards: u32,
+    pub shard_bytes: u64,
+    pub files: Vec<ParityFileInfo>,
+}
+
+impl ParityInfo {
+    pub fn validate(&self) -> Result<(), String> {
+        let total = u64::from(self.data_shards) + u64::from(self.parity_shards);
+        if self.data_shards == 0 || self.parity_shards == 0 || total > 255 {
+            return Err("@t:archive.manifestInvalid\u{1f}parityShards".to_string());
+        }
+        if self.shard_bytes == 0 || self.shard_bytes > 1024 * 1024 * 1024 {
+            return Err("@t:archive.manifestInvalid\u{1f}parityShard".to_string());
+        }
+        if self.files.len() != self.parity_shards as usize {
+            return Err("@t:archive.manifestInvalid\u{1f}parityFiles".to_string());
+        }
+        for (index, file) in self.files.iter().enumerate() {
+            if file.index as usize != index + 1
+                || !safe_component(&file.file_name)
+                || file.sha256.len() != 64
+                || !file.sha256.bytes().all(|byte| byte.is_ascii_hexdigit())
+            {
+                return Err("@t:archive.manifestInvalid\u{1f}parityFile".to_string());
+            }
+        }
+        Ok(())
+    }
+}
+
 /// Store bookkeeping captured before packing. The download stores keep their
 /// install state in small text files; carrying them inside the archive is what
 /// makes a restore show up as installed instead of starting a new download.
@@ -89,6 +138,9 @@ pub struct MediaManifest {
     /// copy of the manifest, so the folder can be burned as one disc.
     #[serde(default)]
     pub disc_layout: bool,
+    /// Planned v3 parity metadata; v2 manifests omit it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parity: Option<ParityInfo>,
 }
 
 impl MediaManifest {
@@ -100,6 +152,16 @@ impl MediaManifest {
             return Err(format!(
                 "@t:archive.manifestVersion\u{1f}{}",
                 self.format_version
+            ));
+        }
+        if let Some(parity) = &self.parity {
+            // The metadata is validated now so the v3 design has tests; the
+            // current format still refuses to restore a parity archive until
+            // packing and restore are wired to Reed-Solomon.
+            parity.validate()?;
+            return Err(format!(
+                "@t:archive.manifestVersion\u{1f}{}",
+                FORMAT_VERSION + 1
             ));
         }
         if !self.complete {
@@ -339,6 +401,21 @@ pub fn decode_block_header(header: &[u8; BLOCK_HEADER_BYTES]) -> Result<BlockHea
 mod tests {
     use super::*;
 
+    fn parity_plan() -> ParityInfo {
+        ParityInfo {
+            data_shards: 4,
+            parity_shards: 2,
+            shard_bytes: 64 * 1024 * 1024,
+            files: (1..=2)
+                .map(|index| ParityFileInfo {
+                    index,
+                    file_name: format!("game.efxpar.{index:03}"),
+                    sha256: "a".repeat(64),
+                })
+                .collect(),
+        }
+    }
+
     #[test]
     fn block_header_round_trips() {
         let sha = sha256_bytes(b"hello");
@@ -392,6 +469,7 @@ mod tests {
             store_meta: StoreMeta::default(),
             complete: true,
             disc_layout: false,
+            parity: None,
         };
         let dir = std::env::temp_dir().join(format!("efxlve-manifest-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
@@ -400,6 +478,13 @@ mod tests {
         assert_eq!(loaded.app_name, "steam::1");
         assert_eq!(loaded.volume_for_blocks(), vec![1]);
         assert_eq!(loaded.stored_bytes(), 10);
+        assert!(!serde_json::to_string(&manifest)
+            .unwrap()
+            .contains("\"parity\""));
+        let mut with_parity = manifest.clone();
+        with_parity.parity = Some(parity_plan());
+        let error = with_parity.validate().unwrap_err();
+        assert!(error.contains("manifestVersion"), "{error}");
         let mut dangerous = manifest.clone();
         dangerous.store_meta.steam_app_id = Some(r"..\..\evil".to_string());
         assert!(dangerous.validate().is_err());
@@ -435,6 +520,54 @@ mod tests {
         assert!(!safe_component(r"..\Game"));
         assert!(!safe_component(r"C:\Game"));
         assert!(!safe_component("a/b"));
+    }
+
+    #[test]
+    fn parity_plan_accepts_a_complete_plan() {
+        assert!(parity_plan().validate().is_ok());
+    }
+
+    #[test]
+    fn parity_plan_rejects_bad_counts_and_sizes() {
+        let mut plan = parity_plan();
+        plan.data_shards = 0;
+        assert!(plan.validate().is_err());
+
+        plan = parity_plan();
+        plan.parity_shards = 0;
+        assert!(plan.validate().is_err());
+
+        plan = parity_plan();
+        plan.data_shards = 200;
+        plan.parity_shards = 56;
+        assert!(plan.validate().is_err());
+
+        plan = parity_plan();
+        plan.shard_bytes = 0;
+        assert!(plan.validate().is_err());
+
+        plan = parity_plan();
+        plan.shard_bytes = 2 * 1024 * 1024 * 1024;
+        assert!(plan.validate().is_err());
+    }
+
+    #[test]
+    fn parity_plan_requires_sequential_safe_files() {
+        let mut plan = parity_plan();
+        plan.files.pop();
+        assert!(plan.validate().is_err());
+
+        plan = parity_plan();
+        plan.files[1].index = 3;
+        assert!(plan.validate().is_err());
+
+        plan = parity_plan();
+        plan.files[0].file_name = "../evil".to_string();
+        assert!(plan.validate().is_err());
+
+        plan = parity_plan();
+        plan.files[0].sha256 = "x".to_string();
+        assert!(plan.validate().is_err());
     }
 
     #[test]

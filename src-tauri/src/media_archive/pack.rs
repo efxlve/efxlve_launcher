@@ -429,6 +429,7 @@ fn pack_into(
         store_meta: job.store_meta.clone(),
         complete: true,
         disc_layout: job.profile.disc_layout(),
+        parity: None,
     };
     ctx.emit("finalizing", 100.0, "");
     Ok((manifest, stored_bytes))
