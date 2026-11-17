@@ -30,6 +30,30 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.60",
+    date: "2026-11-17",
+    added: [
+      {
+        en: "Game Archive: back up an installed Steam, Epic, GOG, Amazon or custom game to USB or disc-sized parts, with a size estimate, optional xtool precompression and checksums on every block; restore it later without downloading the game again.",
+        tr: "Oyun Arşivi: kurulu bir Steam, Epic, GOG, Amazon veya özel oyunu USB'ye ya da disk boyutunda parçalara yedekleyin; boyut tahmini, isteğe bağlı xtool ön sıkıştırması ve her blokta sağlama toplamı var. Oyunu daha sonra yeniden indirmeden geri yükleyin.",
+      },
+      {
+        en: "Windows can burn each part with the built-in IMAPI2 engine, show the inserted media and free space, and quick- or full-erase a rewritable disc before reuse.",
+        tr: "Windows, her parçayı yerleşik IMAPI2 motoruyla yazabiliyor; takılı medyayı ve boş alanı gösteriyor, yeniden yazılabilir diski kullanmadan önce hızlı veya tam silme yapabiliyor.",
+      },
+      {
+        en: "`efxlve-restore.exe` recovers an archive on a PC without the launcher and can check every block with `--verify`. Steam, Epic and Amazon games still need their client and an account that owns the game.",
+        tr: "`efxlve-restore.exe`, launcher kurulu olmayan bir bilgisayarda arşivi geri açıyor ve `--verify` ile tüm blokları kontrol edebiliyor. Steam, Epic ve Amazon oyunları için istemci ve oyunu satın almış bir hesap hâlâ gerekli.",
+      },
+    ],
+    improved: [
+      {
+        en: "A disc backup's other folders are found automatically, a finished backup can be verified immediately, and archive jobs keep the panel and their cancel button in place.",
+        tr: "Disk yedeğinin diğer klasörleri otomatik bulunuyor, biten yedek hemen doğrulanabiliyor ve arşiv işleri sürerken panel ile iptal düğmesi yerinde kalıyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.59",
     date: "2026-11-15",
     fixed: [
