@@ -16,16 +16,34 @@ import {
   BOOKMARKS_STORAGE_KEY,
   DEFAULT_BOOKMARKS,
   HOMEPAGE_STORAGE_KEY,
-  getHomepage,
   loadBookmarks,
 } from "./browser-shared";
+import {
+  activeCrosshair,
+  applyNotificationOptions,
+  commitCrosshair,
+  commitHudConfig,
+  handleSettingsToggle,
+  paintCrosshairPreview,
+  renderSettingsView,
+  resetNotificationOptionsSession,
+  scheduleCrosshairConfig,
+  type SettingsDeps,
+} from "./overlay-settings";
+import {
+  applyHudConfig,
+  loadHudConfig,
+  type HudConfig,
+  type HudCorner,
+  type HudMode,
+} from "./overlay-hud-config";
 import { OVERLAY_DISABLED_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HUD_KEY, OVERLAY_OPACITY_KEY } from "../../core/constants";
 import { HAS_NATIVE_CAPTURE, IS_WINDOWS } from "../../core/platform";
 import { ensureNotesMigration, notesFontSize, onNotesChanged } from "../notes/notes-client";
 import { handleOverlayNotesAction, overlayNotesScope, refreshOverlayNotes, renderOverlayNotes, setOverlayNotesScope, setOverlayNotesSettingsRepaint } from "../notes/overlay-notes";
 import { ssDensity, ssFavorites, ssNotifyOn, ssSort, ssSortItems, ssSoundOn, ssToggleFavorite } from "../screenshots/ss-settings";
 import { clipEnabled, clipFps, clipHotkeyName } from "../screenshots/ss-settings";
-import { epicGetScreenshotDisabledGames, epicSetScreenshotDisabledGames, epicOpenFolderPath } from "../../epic";
+import { epicOpenFolderPath } from "../../epic";
 import {
   clipList,
   clipStart,
@@ -35,7 +53,7 @@ import {
   type ClipItem,
   type ClipStatus,
 } from "../../epic";
-import { SS_DENSITY_KEY, SS_NOTIFY_KEY, SS_SORT_KEY, SS_SOUND_KEY } from "../../core/constants";
+import { SS_DENSITY_KEY, SS_SORT_KEY } from "../../core/constants";
 import { discordPageVisible, overlayHotkeyLabel, spotifyPageVisible } from "../../core/page-visibility";
 import { icon, type IconName } from "../../core/icons";
 import {
@@ -50,17 +68,13 @@ import {
   rarityMultiplier,
 } from "../../core/achievements";
 import { applyAchievementEdits } from "../../core/achievement-edits";
-import { CROSSHAIR_HOTKEYS, applyCrosshairConfig, loadCrosshair, sanitizeCrosshair, saveCrosshair, setCrosshairVisible, type CrosshairConfig, type CrosshairHotkey, type CrosshairShape } from "../../core/crosshair";
+import { applyCrosshairConfig, type CrosshairConfig, type CrosshairHotkey, type CrosshairShape } from "../../core/crosshair";
 import { esc, fmtAchDate, fmtDecimal1, stripEmoji } from "../../core/utils";
 import {
-  achievementGetNotificationOptions,
-  achievementSetNotificationOptions,
   steamGetAchievementCommunity,
-  steamSetAchievementNotifications,
   type AchievementNotificationOptions,
   type SteamAchievementCommunity,
 } from "../../steam";
-import { achGameNotificationsEnabled, setAchGameNotifications } from "../../core/ach-game-prefs";
 import { currentLanguage, initialLanguage, localizeMessage, setLanguage, t, t as i18nT } from "../../i18n";
 import {
   formatTime as formatSpotifyTime,
@@ -98,44 +112,23 @@ function showBatteryPercent(): boolean {
   return localStorage.getItem(BATTERY_PERCENT_KEY) === "true";
 }
 
+/** Stored panel opacity, clamped to the slider's range. */
+function savedOpacity(): number {
+  const raw = Number(localStorage.getItem(OPACITY_KEY) ?? "100");
+  return Number.isFinite(raw) ? Math.max(0, Math.min(100, Math.round(raw))) : 100;
+}
+
+function applyOpacity(val: number): void {
+  const shell = document.getElementById("ov-shell");
+  if (!shell) return;
+  const pct = Math.max(0, Math.min(100, val)) / 100;
+  shell.style.setProperty("--ov-panel-alpha", String(pct));
+  // 100% keeps the palette's designed scrim; lower values fade it with the
+  // panels so the game really shows through instead of hitting a 60% floor.
+  shell.style.setProperty("--ov-scrim-alpha", String(pct * 0.45));
+}
+
 /* ---------- Native HUD appearance ---------- */
-
-type HudMode = "minimal" | "compact" | "full";
-type HudCorner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
-
-interface HudConfig {
-  mode: HudMode;
-  corner: HudCorner;
-  color: string;
-}
-
-const HUD_MODE_KEY = "efxlve-overlay-hud-mode";
-const HUD_CORNER_KEY = "efxlve-overlay-hud-corner";
-const HUD_COLOR_KEY = "efxlve-overlay-hud-color";
-
-function loadHudConfig(): HudConfig {
-  const mode = localStorage.getItem(HUD_MODE_KEY);
-  const corner = localStorage.getItem(HUD_CORNER_KEY);
-  const color = localStorage.getItem(HUD_COLOR_KEY) ?? "";
-  return {
-    mode: mode === "minimal" || mode === "full" ? mode : "compact",
-    corner:
-      corner === "top-right" || corner === "bottom-left" || corner === "bottom-right"
-        ? corner
-        : "top-left",
-    color: /^#[0-9a-fA-F]{6}$/.test(color) ? color : "#f2f2f2",
-  };
-}
-
-function saveHudConfig(config: HudConfig): void {
-  localStorage.setItem(HUD_MODE_KEY, config.mode);
-  localStorage.setItem(HUD_CORNER_KEY, config.corner);
-  localStorage.setItem(HUD_COLOR_KEY, config.color);
-}
-
-function applyHudConfig(config: HudConfig = loadHudConfig()): void {
-  void invoke("overlay_set_hud_config", { config }).catch(() => undefined);
-}
 
 /* ---------- Data Types ---------- */
 
@@ -275,25 +268,6 @@ let context: OpenPayload = { appName: "", title: "" };
 let panelOpened = false;
 /** Opened without a tracked game (over the launcher or any other window). */
 let launcherMode = false;
-/** Achievement notification options, mirrored from the launcher settings. */
-let overlayNotificationOptions: AchievementNotificationOptions = {
-  enabled: true,
-  sound: true,
-  overlay: true,
-  volume: 100,
-  durationMs: 5000,
-  position: "top-right",
-  size: "normal",
-  customSound: false,
-  customSoundName: null,
-  cardTheme: "rarity",
-  animStyle: "prism",
-  exitStyle: "auto",
-  disabledStores: [],
-  minRarityPercent: 0,
-  unlockScreenshots: false,
-};
-let overlayNotificationOptionsFetched = false;
 let metrics: MetricsSample | null = null;
 type PerfMetric = "cpu" | "gpu" | "vram" | "ram" | "fps";
 let activePerfMetric: PerfMetric = "cpu";
@@ -312,7 +286,6 @@ let audioHoldUntil = 0;
 const audioVolumeTimers = new Map<string, number>();
 let audioMasterTimer: number | null = null;
 /** Crosshair slider writes are coalesced: one native update per 50 ms. */
-let crosshairApplyTimer: number | null = null;
 /** The launcher's Connect receiver (the only source the overlay shows). */
 let spotifyEngineOn = false;
 let spotifyPaired = false;
@@ -5502,691 +5475,44 @@ function voiceDisplay(): { channel: VoiceChannel; people: VoiceParticipant[]; st
   return { channel: display.channel, people: display.people, stale: !live && !web };
 }
 /* 9. Settings View */
-const CROSSHAIR_PROFILES_KEY = "efxlve-overlay-crosshair-profiles";
-
-/** Per-game crosshair overrides, keyed by app name. */
-function loadCrosshairProfiles(): Record<string, CrosshairConfig> {
-  try {
-    const raw = localStorage.getItem(CROSSHAIR_PROFILES_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as Record<string, Partial<CrosshairConfig>>;
-    const map: Record<string, CrosshairConfig> = {};
-    for (const [app, config] of Object.entries(parsed)) {
-      if (config && typeof config === "object") map[app] = sanitizeCrosshair(config);
-    }
-    return map;
-  } catch {
-    return {};
-  }
-}
-
-function saveCrosshairProfiles(map: Record<string, CrosshairConfig>): void {
-  localStorage.setItem(CROSSHAIR_PROFILES_KEY, JSON.stringify(map));
-}
-
-/** The game's override when it has one, otherwise the global settings. */
-function activeCrosshair(): CrosshairConfig {
-  if (!context.appName) return loadCrosshair();
-  return loadCrosshairProfiles()[context.appName] ?? loadCrosshair();
-}
-
-function hasCrosshairProfile(): boolean {
-  return Boolean(context.appName && loadCrosshairProfiles()[context.appName]);
-}
-
-/** Writes the global settings, and the game's override when one exists. */
-function saveCrosshairForContext(next: CrosshairConfig): void {
-  saveCrosshair(next);
-  if (!context.appName) return;
-  const map = loadCrosshairProfiles();
-  if (!map[context.appName]) return;
-  map[context.appName] = next;
-  saveCrosshairProfiles(map);
-}
-
-function setCrosshairProfile(on: boolean): void {
-  if (!context.appName) return;
-  const map = loadCrosshairProfiles();
-  if (on) map[context.appName] = activeCrosshair();
-  else delete map[context.appName];
-  saveCrosshairProfiles(map);
-  applyCrosshairConfig(activeCrosshair());
-}
-
-/** Saves and pushes the crosshair settings. `repaint` is for the shape/colour
- *  buttons; the sliders update their own badge without losing focus. */
-function commitCrosshair(next: CrosshairConfig, repaint = false): void {
-  if (crosshairApplyTimer !== null) {
-    window.clearTimeout(crosshairApplyTimer);
-    crosshairApplyTimer = null;
-  }
-  saveCrosshairForContext(next);
-  applyCrosshairConfig(next);
-  setCrosshairVisible(next.enabled);
-  if (repaint && isWidgetOpen("settings")) {
-    const body = viewEl("settings");
-    const scroll = body?.scrollTop ?? 0;
-    renderSettings();
-    if (body) body.scrollTop = scroll;
-  }
-}
-
-/** Repaints the CSS preview without re-rendering the Settings view (which
- *  would drop the focus of the slider under the pointer). */
-function paintCrosshairPreview(config: CrosshairConfig): void {
-  const el = document.querySelector<HTMLElement>(".ov-crosshair-preview");
-  if (!el) return;
-  el.style.setProperty("--ch-size", `${config.size}px`);
-  el.style.setProperty("--ch-gap", `${config.gap}px`);
-  el.style.setProperty("--ch-thickness", `${config.thickness}px`);
-  el.style.setProperty("--ch-color", config.color);
-  el.style.setProperty("--ch-opacity", String(config.opacity));
-}
-
-/** Slider input: store immediately, but coalesce the native update so a drag
- *  does not flood IPC. */
-function scheduleCrosshairConfig(next: CrosshairConfig): void {
-  saveCrosshairForContext(next);
-  if (crosshairApplyTimer !== null) window.clearTimeout(crosshairApplyTimer);
-  crosshairApplyTimer = window.setTimeout(() => {
-    crosshairApplyTimer = null;
-    applyCrosshairConfig(next);
-    if (next.enabled) setCrosshairVisible(true);
-  }, 50);
-}
-
-/** Saves the native HUD appearance and repaints the settings view in place. */
-function commitHudConfig(next: HudConfig): void {
-  saveHudConfig(next);
-  applyHudConfig(next);
-  if (isWidgetOpen("settings")) {
-    const body = viewEl("settings");
-    const scroll = body?.scrollTop ?? 0;
-    renderSettings();
-    if (body) body.scrollTop = scroll;
-  }
-}
-
-/** Pulls the launcher's achievement notification options once per panel open. */
-function loadOverlayNotificationOptions(): void {
-  if (overlayNotificationOptionsFetched) return;
-  overlayNotificationOptionsFetched = true;
-  void achievementGetNotificationOptions()
-    .then((options) => {
-      overlayNotificationOptions = options;
-      if (isWidgetOpen("settings")) {
-        const body = viewEl("settings");
-        const scroll = body?.scrollTop ?? 0;
-        renderSettings();
-        if (body) body.scrollTop = scroll;
-      }
-    })
-    .catch(() => undefined);
-}
-
-function saveOverlayNotificationOptions(next: AchievementNotificationOptions): void {
-  overlayNotificationOptions = next;
-  void achievementSetNotificationOptions(next).catch((error) =>
-    toast(String(error), "err"),
-  );
-}
-
-/** The panel's version of the game-page bell: storage, the Rust watcher map and
- *  the anti-cheat opt-in always move together. */
-function setGameAchievementNotifications(enabled: boolean): void {
-  if (launcherMode || !context.appName) return;
-  const title = context.title || context.appName;
-  setAchGameNotifications(context.appName, enabled, title);
-  void steamSetAchievementNotifications(context.appName, enabled).catch(() => undefined);
-  if (context.appName.startsWith("steam::")) {
-    const appId = context.appName.slice("steam::".length);
-    if (appId) {
-      void steamSetAchievementNotifications(appId, enabled).catch(() => undefined);
-    }
-  }
-  void invoke("overlay_set_anti_cheat_notifications", {
-    appName: context.appName,
-    title,
-    allowed: enabled,
-  }).catch(() => undefined);
-  toast(t(enabled ? "ach.gameNotifOn" : "ach.gameNotifOff"), enabled ? "ok" : "");
+// Rendering lives in overlay-settings.ts; this wrapper supplies the
+// overlay-owned state that module must not import.
+function settingsDeps(): SettingsDeps {
+  return {
+    context: () => context,
+    launcherMode: () => launcherMode,
+    isSettingsOpen: () => isWidgetOpen("settings"),
+    settingsBody: () => viewEl("settings"),
+    repaint: () => {
+      const body = viewEl("settings");
+      const scroll = body?.scrollTop ?? 0;
+      renderSettingsView(settingsDeps());
+      if (body) body.scrollTop = scroll;
+    },
+    savedOpacity,
+    overlayDisabledGames: () => overlayDisabledGames,
+    setOverlayDisabledGames: (list) => {
+      overlayDisabledGames = list;
+    },
+    overlayDisabledGamesFetched: () => overlayDisabledGamesFetched,
+    markOverlayDisabledGamesFetched: () => {
+      overlayDisabledGamesFetched = true;
+    },
+    disabledGames,
+    saveDisabled,
+    isDisabledGame,
+    clockSeconds: showClockSeconds,
+    batteryPercent: showBatteryPercent,
+    updateClock,
+    paintBattery,
+    tabs: () => TABS,
+    pinnedTabs: () => [...widgetPins],
+    ghostOpacity: (tab) => ghostOpacity(tab as TabId),
+  };
 }
 
 function renderSettings(): void {
-  const el = viewEl("settings");
-  if (!el) return;
-  loadOverlayNotificationOptions();
-  // The capture-off list lives in Rust (the hotkey listener reads it): pull it
-  // once, then paint the per-game row from it.
-  if (!overlayDisabledGamesFetched) {
-    overlayDisabledGamesFetched = true;
-    void epicGetScreenshotDisabledGames()
-      .then((list) => {
-        overlayDisabledGames = Array.isArray(list) ? list : [];
-        if (isWidgetOpen("settings")) renderSettings();
-      })
-      .catch(() => undefined);
-  }
-  const enabled = localStorage.getItem(ENABLED_KEY) !== "false";
-  const hud = localStorage.getItem(HUD_KEY) === "true";
-  const opacity = savedOpacity();
-  const crosshair = activeCrosshair();
-  const hudConfig = loadHudConfig();
-  const disabled = isDisabledGame(context.appName);
-  const disabledList = disabledGames();
-  const hp = getHomepage();
-  const isPresetHp = ["https://www.google.com/", "https://duckduckgo.com/", "https://www.bing.com/", "https://yandex.com/"].includes(hp);
-  const notification = overlayNotificationOptions;
-  const showGameNotificationRow = !launcherMode && Boolean(context.appName);
-  const gameNotificationsOn = showGameNotificationRow
-    ? achGameNotificationsEnabled(context.appName, context.title || context.appName)
-    : true;
-
-  el.innerHTML = `
-    <div class="ov-settings-wrap">
-      <!-- Section: General -->
-      <section class="ov-settings-section">
-        <header class="ov-settings-section-header">
-          ${icon("sliders", 13)}
-          <span>${esc(t("overlay.settingsGeneral"))}</span>
-        </header>
-        <div class="ov-settings-group">
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(IS_WINDOWS ? t("overlay.enabledTitle", { key: overlayHotkeyLabel() }) : t("overlay.overlayLabel"))}</div>
-              <div class="ov-setting-desc">${esc(IS_WINDOWS ? t("overlay.enabledDesc", { key: overlayHotkeyLabel() }) : t("settings.overlayLauncherNote"))}</div>
-            </div>
-            <label class="switch"><input type="checkbox" data-ov-toggle="enabled" ${enabled ? "checked" : ""} /><span class="track"></span></label>
-          </div>
-
-          ${IS_WINDOWS ? `<div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.hudTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.hudDesc"))}</div>
-            </div>
-            <label class="switch"><input type="checkbox" data-ov-toggle="hud" ${hud ? "checked" : ""} /><span class="track"></span></label>
-          </div>` : ""}
-        </div>
-      </section>
-
-      <!-- Section: Achievements & notifications -->
-      <section class="ov-settings-section">
-        <header class="ov-settings-section-header">
-          ${icon("bell", 13)}
-          <span>${esc(t("settings.secAchievements"))}</span>
-        </header>
-        <div class="ov-settings-group">
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("settings.achNotifyTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("settings.achNotifyDesc"))}</div>
-            </div>
-            <label class="switch"><input type="checkbox" data-ov-toggle="ach-notifications" ${notification.enabled ? "checked" : ""} /><span class="track"></span></label>
-          </div>
-
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("settings.achOverlayTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("settings.achOverlayDesc"))}</div>
-            </div>
-            <label class="switch"><input type="checkbox" data-ov-toggle="ach-overlay" ${notification.overlay ? "checked" : ""} /><span class="track"></span></label>
-          </div>
-
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("settings.achSoundTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("settings.achSoundDesc"))}</div>
-            </div>
-            <label class="switch"><input type="checkbox" data-ov-toggle="ach-sound" ${notification.sound ? "checked" : ""} /><span class="track"></span></label>
-          </div>
-
-          ${showGameNotificationRow ? `<div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("ach.gameNotifToggle"))}</div>
-              <div class="ov-setting-desc">${esc(t("settings.achNotifyDesc"))}</div>
-            </div>
-            <label class="switch"><input type="checkbox" data-ov-toggle="ach-game-notif" ${gameNotificationsOn ? "checked" : ""} /><span class="track"></span></label>
-          </div>` : ""}
-        </div>
-      </section>
-
-      <!-- Section: Appearance -->
-      <section class="ov-settings-section">
-        <header class="ov-settings-section-header">
-          ${icon("monitor", 13)}
-          <span>${esc(t("overlay.settingsAppearance"))}</span>
-        </header>
-        <div class="ov-settings-group">
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.clockSecondsTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.clockSecondsDesc"))}</div>
-            </div>
-            <label class="switch"><input type="checkbox" data-ov-toggle="clock-seconds" ${showClockSeconds() ? "checked" : ""} /><span class="track"></span></label>
-          </div>
-
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.batteryPercentTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.batteryPercentDesc"))}</div>
-            </div>
-            <label class="switch"><input type="checkbox" data-ov-toggle="battery-percent" ${showBatteryPercent() ? "checked" : ""} /><span class="track"></span></label>
-          </div>
-
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.opacityTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.opacityDesc"))}</div>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px">
-              <input type="range" min="0" max="100" step="1" value="${opacity}" data-ov-opacity style="width:130px" />
-              <span id="ov-opacity-val" style="font-variant-numeric: tabular-nums; font-size: 12px; color: var(--text-2); min-width: 34px; text-align: right;">${opacity}%</span>
-            </div>
-          </div>
-
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.resetLayoutTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.resetLayoutDesc"))}</div>
-            </div>
-            <button class="btn ghost small" data-ov="reset-widget-layout">
-              ${icon("refresh", 12)}
-              <span>${esc(t("overlay.resetLayoutAction"))}</span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section: HUD appearance -->
-      ${IS_WINDOWS ? `<section class="ov-settings-section">
-        <header class="ov-settings-section-header">
-          ${icon("activity", 13)}
-          <span>${esc(t("overlay.hudAppearanceTitle"))}</span>
-        </header>
-        <div class="ov-settings-group">
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.hudModeTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.hudModeDesc"))}</div>
-            </div>
-            <div class="seg" role="radiogroup">
-              ${([["minimal", "overlay.hudMinimal"], ["compact", "overlay.hudCompact"], ["full", "overlay.hudFull"]] as const)
-                .map(([value, key]) => `<button class="${hudConfig.mode === value ? "active" : ""}" data-ov="hud-mode" data-mode="${value}">${esc(t(key))}</button>`)
-                .join("")}
-            </div>
-          </div>
-
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.hudCornerTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.hudCornerDesc"))}</div>
-            </div>
-            <div class="seg" role="radiogroup">
-              ${([["top-left", "overlay.hudTopLeft"], ["top-right", "overlay.hudTopRight"], ["bottom-left", "overlay.hudBottomLeft"], ["bottom-right", "overlay.hudBottomRight"]] as const)
-                .map(([value, key]) => `<button class="${hudConfig.corner === value ? "active" : ""}" data-ov="hud-corner" data-corner="${value}">${esc(t(key))}</button>`)
-                .join("")}
-            </div>
-          </div>
-
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.hudColorTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.hudColorDesc"))}</div>
-            </div>
-            <div class="ov-crosshair-colors">
-              ${["#f2f2f2", "#22c55e", "#f59e0b", "#ef4444", "#38bdf8"]
-                .map((color) => `<button class="ov-crosshair-swatch${hudConfig.color.toLowerCase() === color ? " active" : ""}" data-ov="hud-color" data-color="${color}" style="--swatch:${color}" title="${color}"></button>`)
-                .join("")}
-            </div>
-          </div>
-        </div>
-      </section>` : ""}
-
-      <!-- Section: Ghost HUD opacity -->
-      ${IS_WINDOWS ? `<section class="ov-settings-section">
-        <header class="ov-settings-section-header">
-          ${icon("layers", 13)}
-          <span>${esc(t("overlay.ghostOpacityTitle"))}</span>
-        </header>
-        <div class="ov-settings-group">
-          ${widgetPins.size === 0
-            ? `<div class="ov-setting-desc">${esc(t("overlay.ghostOpacityEmpty"))}</div>`
-            : [...widgetPins].map((tab) => {
-                const meta = TABS.find((entry) => entry.id === tab);
-                const pct = Math.round(ghostOpacity(tab) * 100);
-                return `<div class="ov-setting-item">
-                  <div class="ov-setting-info">
-                    <div class="ov-setting-name">${esc(meta ? t(meta.key) : tab)}</div>
-                    <div class="ov-setting-desc">${esc(t("overlay.ghostOpacityDesc"))}</div>
-                  </div>
-                  <div class="ov-crosshair-range">
-                    <input type="range" min="25" max="100" step="1" value="${pct}" data-ghost-opacity="${tab}" />
-                    <span id="ov-ghost-opacity-${tab}">${pct}%</span>
-                  </div>
-                </div>`;
-              }).join("")}
-        </div>
-      </section>` : ""}
-
-      <!-- Section: Crosshair -->
-      ${IS_WINDOWS ? `<section class="ov-settings-section">
-        <header class="ov-settings-section-header">
-          ${icon("crosshair", 13)}
-          <span>${esc(t("overlay.crosshairTitle"))}</span>
-        </header>
-        <div class="ov-crosshair-preview" style="--ch-size:${crosshair.size}px;--ch-gap:${crosshair.gap}px;--ch-thickness:${crosshair.thickness}px;--ch-color:${crosshair.color};--ch-opacity:${crosshair.opacity}">
-          <div class="ov-crosshair-stage">
-            <div class="ov-ch shape-${crosshair.shape}">
-              <span class="ov-ch-arm ov-ch-up"></span>
-              <span class="ov-ch-arm ov-ch-down"></span>
-              <span class="ov-ch-arm ov-ch-left"></span>
-              <span class="ov-ch-arm ov-ch-right"></span>
-              <span class="ov-ch-ring"></span>
-              <span class="ov-ch-point"></span>
-            </div>
-          </div>
-        </div>
-        <div class="ov-settings-group">
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.crosshairEnableTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.crosshairEnableDesc"))}</div>
-            </div>
-            <label class="switch"><input type="checkbox" data-ov-toggle="crosshair-enabled" ${crosshair.enabled ? "checked" : ""} /><span class="track"></span></label>
-          </div>
-
-          ${context.appName && !launcherMode ? `<div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.crosshairProfileTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.crosshairProfileDesc"))}</div>
-            </div>
-            <label class="switch"><input type="checkbox" data-ov-toggle="crosshair-profile" ${hasCrosshairProfile() ? "checked" : ""} /><span class="track"></span></label>
-          </div>` : ""}
-
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.crosshairShapeTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.crosshairShapeDesc"))}</div>
-            </div>
-            <div class="seg" role="radiogroup">
-              ${([["dot", "overlay.crosshairDot"], ["cross", "overlay.crosshairCross"], ["circle", "overlay.crosshairCircle"], ["t", "overlay.crosshairT"]] as const)
-                .map(([value, key]) => `<button class="${crosshair.shape === value ? "active" : ""}" data-ov="crosshair-shape" data-shape="${value}">${esc(t(key))}</button>`)
-                .join("")}
-            </div>
-          </div>
-
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.crosshairColorTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.crosshairColorDesc"))}</div>
-            </div>
-            <div class="ov-crosshair-colors">
-              ${["#ffffff", "#22c55e", "#ef4444", "#38bdf8", "#f59e0b", "#e879f9"]
-                .map((color) => `<button class="ov-crosshair-swatch${crosshair.color.toLowerCase() === color ? " active" : ""}" data-ov="crosshair-color" data-color="${color}" style="--swatch:${color}" title="${color}"></button>`)
-                .join("")}
-            </div>
-          </div>
-
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.crosshairSizeTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.crosshairSizeDesc"))}</div>
-            </div>
-            <div class="ov-crosshair-range">
-              <input type="range" min="8" max="64" step="1" value="${crosshair.size}" data-crosshair-size />
-              <span id="ov-crosshair-size-val">${Math.round(crosshair.size)}px</span>
-            </div>
-          </div>
-
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.crosshairGapTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.crosshairGapDesc"))}</div>
-            </div>
-            <div class="ov-crosshair-range">
-              <input type="range" min="0" max="16" step="1" value="${crosshair.gap}" data-crosshair-gap />
-              <span id="ov-crosshair-gap-val">${Math.round(crosshair.gap)}px</span>
-            </div>
-          </div>
-
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.crosshairThicknessTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.crosshairThicknessDesc"))}</div>
-            </div>
-            <div class="ov-crosshair-range">
-              <input type="range" min="1" max="5" step="0.5" value="${crosshair.thickness}" data-crosshair-thickness />
-              <span id="ov-crosshair-thickness-val">${crosshair.thickness.toFixed(1)}px</span>
-            </div>
-          </div>
-
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.crosshairOpacityTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.crosshairOpacityDesc"))}</div>
-            </div>
-            <div class="ov-crosshair-range">
-              <input type="range" min="10" max="100" step="1" value="${Math.round(crosshair.opacity * 100)}" data-crosshair-opacity />
-              <span id="ov-crosshair-opacity-val">${Math.round(crosshair.opacity * 100)}%</span>
-            </div>
-          </div>
-
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.crosshairHotkeyTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.crosshairHotkeyDesc"))}</div>
-            </div>
-            <select class="input select small" data-crosshair-hotkey style="min-width:130px">
-              ${CROSSHAIR_HOTKEYS.map((hotkey) => `<option value="${hotkey}" ${crosshair.hotkey === hotkey ? "selected" : ""}>${hotkey}</option>`).join("")}
-            </select>
-          </div>
-        </div>
-      </section>` : ""}
-
-      <!-- Section: Screenshots (the launcher's settings, kept in step) -->
-      <section class="ov-settings-section">
-        <header class="ov-settings-section-header">
-          ${icon("camera", 13)}
-          <span>${esc(t("settings.screenshotsTitle"))}</span>
-        </header>
-        <div class="ov-settings-group">
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("ss.sortTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("ss.sortDesc"))}</div>
-            </div>
-            <div class="seg" role="radiogroup">
-              ${([["newest", "ss.sortNewest"], ["oldest", "ss.sortOldest"], ["name", "ss.sortName"], ["size", "ss.sortSize"]] as const)
-                .map(
-                  ([value, key]) =>
-                    `<button class="${ssSort() === value ? "active" : ""}" data-ov="ss-sort" data-sort="${value}">${esc(t(key))}</button>`,
-                )
-                .join("")}
-            </div>
-          </div>
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("ss.densityTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("ss.densityDesc"))}</div>
-            </div>
-            <div class="seg" role="radiogroup">
-              ${([["s", "ss.densitySmall"], ["m", "ss.densityMedium"], ["l", "ss.densityLarge"]] as const)
-                .map(
-                  ([value, key]) =>
-                    `<button class="${ssDensity() === value ? "active" : ""}" data-ov="ss-density" data-density="${value}">${esc(t(key))}</button>`,
-                )
-                .join("")}
-            </div>
-          </div>
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("ss.soundTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("ss.soundDesc"))}</div>
-            </div>
-            <label class="switch"><input type="checkbox" data-ov-toggle="ss-sound" ${ssSoundOn() ? "checked" : ""} /><span class="track"></span></label>
-          </div>
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("ss.notifyTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("ss.notifyDesc"))}</div>
-            </div>
-            <label class="switch"><input type="checkbox" data-ov-toggle="ss-notify" ${ssNotifyOn() ? "checked" : ""} /><span class="track"></span></label>
-          </div>
-          ${
-            !launcherMode && context.appName
-              ? `<div class="ov-setting-item">
-                  <div class="ov-setting-info">
-                    <div class="ov-setting-name">${esc(t("ss.gameCaptureOff"))}</div>
-                    <div class="ov-setting-desc">${esc(t("ss.gameCaptureTip"))}</div>
-                  </div>
-                  <label class="switch"><input type="checkbox" data-ov-toggle="ss-capture-game" ${overlayDisabledGames.includes(context.appName) ? "checked" : ""} /><span class="track"></span></label>
-                </div>`
-              : ""
-          }
-        </div>
-      </section>
-
-      <!-- Section: Notes (the Notes page's settings, kept in step) -->
-      <section class="ov-settings-section">
-        <header class="ov-settings-section-header">
-          ${icon("edit", 13)}
-          <span>${esc(t("settings.secNotes"))}</span>
-        </header>
-        <div class="ov-settings-group">
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("notes.fontSize"))}</div>
-              <div class="ov-setting-desc">${esc(t("notes.fontSizeDesc"))}</div>
-            </div>
-            <div class="seg" role="radiogroup">
-              ${(["s", "m", "l"] as const)
-                .map(
-                  (size) =>
-                    `<button class="${notesFontSize() === size ? "active" : ""}" data-ov="ov-note-font" data-size="${size}">${esc(t(size === "s" ? "notes.fontSmall" : size === "m" ? "notes.fontMedium" : "notes.fontLarge"))}</button>`,
-                )
-                .join("")}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section: Browser -->
-      <section class="ov-settings-section">
-        <header class="ov-settings-section-header">
-          ${icon("globe", 13)}
-          <span>${esc(t("overlay.settingsBrowser"))}</span>
-        </header>
-        <div class="ov-settings-group">
-          <div class="ov-setting-item" style="flex-direction:column;align-items:stretch;gap:8px">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-              <div class="ov-setting-info">
-                <div class="ov-setting-name">${esc(t("overlay.browserHomepageTitle"))}</div>
-                <div class="ov-setting-desc">${esc(t("overlay.browserHomepageDesc"))}</div>
-              </div>
-              <select class="input select small" id="ov-setting-browser-hp-select" style="min-width:130px">
-                <option value="https://www.google.com/" ${hp === "https://www.google.com/" ? "selected" : ""}>Google</option>
-                <option value="https://duckduckgo.com/" ${hp === "https://duckduckgo.com/" ? "selected" : ""}>DuckDuckGo</option>
-                <option value="https://www.bing.com/" ${hp === "https://www.bing.com/" ? "selected" : ""}>Bing</option>
-                <option value="https://yandex.com/" ${hp === "https://yandex.com/" ? "selected" : ""}>Yandex</option>
-                <option value="custom" ${!isPresetHp ? "selected" : ""}>${esc(t("overlay.browserCustomUrl"))}</option>
-              </select>
-            </div>
-            <input type="text" class="input small" id="ov-setting-browser-hp-custom" value="${esc(hp)}" placeholder="https://..." style="${isPresetHp ? "display:none;" : ""}width:100%" />
-          </div>
-
-          <div class="ov-setting-item" style="flex-direction:column;align-items:stretch;gap:8px">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-              <div class="ov-setting-info">
-                <div class="ov-setting-name">${esc(t("overlay.browserBookmarksTitle"))}</div>
-                <div class="ov-setting-desc">${esc(t("overlay.browserBookmarksDesc"))}</div>
-              </div>
-              <button class="btn ghost small" data-ov="reset-browser-bookmarks" title="${esc(t("overlay.browserBookmarkReset"))}" style="flex-shrink:0">
-                ${icon("refresh", 12)}
-                <span>${esc(t("overlay.browserBookmarkReset"))}</span>
-              </button>
-            </div>
-
-            <!-- Add Bookmark Form -->
-            <div class="ov-bm-form">
-              <input type="text" class="input small" id="ov-add-bm-label" placeholder="${esc(t("overlay.browserBookmarkLabel"))}" />
-              <input type="text" class="input small" id="ov-add-bm-url" placeholder="${esc(t("overlay.browserBookmarkUrl"))}" />
-              <button class="btn primary small" data-ov="add-browser-bookmark">
-                ${icon("plus", 13)}
-                <span>${esc(t("overlay.browserBookmarkAdd"))}</span>
-              </button>
-            </div>
-
-            <!-- Bookmarks List -->
-            <div class="ov-bm-list">
-              ${loadBookmarks().map((bm, idx) => `
-                <div class="ov-bm-item">
-                  <div style="display:flex;align-items:center;gap:9px;overflow:hidden;flex:1;margin-right:8px">
-                    <span class="ov-bm-icon-pill">${icon(bm.iconName || "globe", 13)}</span>
-                    <div style="display:flex;flex-direction:column;min-width:0;overflow:hidden">
-                      <span style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(bm.label)}</span>
-                      <span style="font-size:11px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:monospace">${esc(bm.url)}</span>
-                    </div>
-                  </div>
-                  <button class="btn ghost small danger" data-ov="delete-browser-bookmark" data-index="${idx}" title="${esc(t("common.delete"))}" style="padding:4px 6px">
-                    ${icon("trash", 12)}
-                  </button>
-                </div>
-              `).join("")}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section: Game Settings -->
-      ${!launcherMode && context.appName ? `
-      <section class="ov-settings-section">
-        <header class="ov-settings-section-header">
-          ${icon("gamepad-2", 13)}
-          <span>${esc(t("overlay.settingsGame"))}</span>
-        </header>
-        <div class="ov-settings-group">
-          <div class="ov-setting-item">
-            <div class="ov-setting-info">
-              <div class="ov-setting-name">${esc(t("overlay.disableTitle"))}</div>
-              <div class="ov-setting-desc">${esc(t("overlay.disableDesc"))}</div>
-            </div>
-            <label class="switch"><input type="checkbox" data-ov-toggle="disable-game" ${disabled ? "checked" : ""} /><span class="track"></span></label>
-          </div>
-        </div>
-      </section>` : ""}
-
-      ${disabledList.length > 0 ? `
-      <section class="ov-settings-section">
-        <div class="ov-card">
-          <div style="font-size:13px;font-weight:600;margin-bottom:4px">${esc(t("overlay.disabledListTitle"))}</div>
-          <div style="font-size:12px;color:var(--text-3);margin-bottom:12px">${esc(t("overlay.disabledListDesc"))}</div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            ${disabledList.map((g) => `
-              <div style="display:flex;align-items:center;justify-content:space-between">
-                <span style="font-size:13px">${esc(g.title)}</span>
-                <button class="btn ghost small" data-ov="restore-game" data-key="${esc(g.key)}">${esc(t("overlay.restore"))}</button>
-              </div>`).join("")}
-          </div>
-        </div>
-      </section>` : ""}
-    </div>
-  `;
-}
-
-/** Stored panel opacity, clamped to the slider's range. */
-function savedOpacity(): number {
-  const raw = Number(localStorage.getItem(OPACITY_KEY) ?? "100");
-  return Number.isFinite(raw) ? Math.max(0, Math.min(100, Math.round(raw))) : 100;
-}
-
-function applyOpacity(val: number): void {
-  const shell = document.getElementById("ov-shell");
-  if (!shell) return;
-  const pct = Math.max(0, Math.min(100, val)) / 100;
-  shell.style.setProperty("--ov-panel-alpha", String(pct));
-  // 100% keeps the palette's designed scrim; lower values fade it with the
-  // panels so the game really shows through instead of hitting a 60% floor.
-  shell.style.setProperty("--ov-scrim-alpha", String(pct * 0.45));
+  renderSettingsView(settingsDeps());
 }
 
 /* ---------- Screenshot Lightbox ---------- */
@@ -6768,74 +6094,10 @@ function wireEvents(): void {
       return;
     }
     const toggle = input.dataset.ovToggle;
-    if (toggle === "ach-notifications") {
-      saveOverlayNotificationOptions({ ...overlayNotificationOptions, enabled: input.checked });
-    } else if (toggle === "ach-overlay") {
-      saveOverlayNotificationOptions({ ...overlayNotificationOptions, overlay: input.checked });
-    } else if (toggle === "ach-sound") {
-      saveOverlayNotificationOptions({ ...overlayNotificationOptions, sound: input.checked });
-    } else if (toggle === "ach-game-notif") {
-      setGameAchievementNotifications(input.checked);
-    } else if (toggle === "enabled") {
-      localStorage.setItem(ENABLED_KEY, String(input.checked));
-      void invoke("overlay_set_enabled", { enabled: input.checked });
-    } else if (toggle === "hud") {
-      localStorage.setItem(HUD_KEY, String(input.checked));
-      void invoke("overlay_set_hud", { enabled: input.checked });
-      // Sync other checkboxes if present
-      document.querySelectorAll<HTMLInputElement>('input[data-ov-toggle="hud"]').forEach((chk) => {
-        chk.checked = input.checked;
-      });
-    } else if (toggle === "clock-seconds") {
-      localStorage.setItem(CLOCK_SECONDS_KEY, String(input.checked));
-      updateClock();
-    } else if (toggle === "battery-percent") {
-      localStorage.setItem(BATTERY_PERCENT_KEY, String(input.checked));
-      paintBattery();
-    } else if (toggle === "crosshair-enabled") {
-      commitCrosshair({ ...activeCrosshair(), enabled: input.checked });
-    } else if (toggle === "crosshair-profile") {
-      setCrosshairProfile(input.checked);
-      if (isWidgetOpen("settings")) {
-        const body = viewEl("settings");
-        const scroll = body?.scrollTop ?? 0;
-        renderSettings();
-        if (body) body.scrollTop = scroll;
-      }
-    } else if (toggle === "ss-sound") {
-      localStorage.setItem(SS_SOUND_KEY, String(input.checked));
-    } else if (toggle === "ss-notify") {
-      localStorage.setItem(SS_NOTIFY_KEY, String(input.checked));
-    } else if (toggle === "ss-capture-game") {
-      const key = context.appName;
-      if (key) {
-        const next = input.checked
-          ? [...new Set([...overlayDisabledGames, key])]
-          : overlayDisabledGames.filter((item) => item !== key);
-        overlayDisabledGames = next;
-        void epicSetScreenshotDisabledGames(next).catch(() => undefined);
-      }
-    } else if (toggle === "disable-game") {
-      // The panel over the launcher/desktop is not a game: blocking it would
-      // hide the overlay from the only place its blocklist can be edited.
-      if (launcherMode) {
-        input.checked = false;
-        return;
-      }
-      const next = input.checked
-        ? [...disabledGames().filter((i) => i.key !== context.appName), { key: context.appName, title: context.title || context.appName }]
-        : disabledGames().filter((i) => i.key !== context.appName);
-      saveDisabled(next);
-      // Tell the service right away: "off for this game" must stop the panel,
-      // not just hide the hint.
-      void invoke("overlay_set_active_game", {
-        appName: context.appName,
-        title: context.title || context.appName,
-        disabled: input.checked,
-        installPath: "",
-      }).catch(() => {});
-      if (input.checked) void invoke("overlay_hide");
-    } else if (input.id === "ov-setting-browser-hp-select") {
+    if (toggle && handleSettingsToggle(toggle, input, settingsDeps())) {
+      return;
+    }
+    if (input.id === "ov-setting-browser-hp-select") {
       const sel = input as unknown as HTMLSelectElement;
       const customInput = document.getElementById("ov-setting-browser-hp-custom") as HTMLInputElement | null;
       if (sel.value === "custom") {
@@ -7622,7 +6884,7 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   // the open undo it.
   if (!ghostMode) setGhostMode(false);
   context = payload;
-  overlayNotificationOptionsFetched = false;
+  resetNotificationOptionsSession();
   metrics = null;
   fpsHistory = [];
   cpuHistory = [];
@@ -7747,7 +7009,7 @@ async function boot(): Promise<void> {
   // Keep the native crosshair in step with the saved settings. Visibility is
   // owned by the launcher boot and the Settings toggle, so a hotkey toggle-off
   // survives this page load.
-  applyCrosshairConfig(activeCrosshair());
+  applyCrosshairConfig(activeCrosshair(context.appName));
   applyHudConfig();
 
   // A first open can be closed before `onOpen` runs. Tell Rust about the pins
@@ -7767,14 +7029,7 @@ async function boot(): Promise<void> {
   // The main Settings page writes the same switches. Take its normalized
   // answer instead of keeping a second stale copy in the panel.
   await listen<AchievementNotificationOptions>("achievement-notification-options", (event) => {
-    overlayNotificationOptions = event.payload;
-    overlayNotificationOptionsFetched = true;
-    if (isWidgetOpen("settings")) {
-      const body = viewEl("settings");
-      const scroll = body?.scrollTop ?? 0;
-      renderSettings();
-      if (body) body.scrollTop = scroll;
-    }
+    applyNotificationOptions(event.payload);
   });
 
   // The panel became a click-through HUD: keep only the pinned cards, drop the
