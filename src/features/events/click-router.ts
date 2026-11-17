@@ -135,6 +135,7 @@ import { clearReleaseCalendarSearch, closeReleaseCalendar, closeReleaseStores, i
 import { handleLibraryOptionAction, syncDensityControl, syncDensityMenu } from "../library/library-options";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
+import { syncHltbLengths } from "../library/hltb-lengths";
 import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaContentCancel, eaContentPlan, eaContentUninstall, eaContentVerify, eaDirectSetEnabled, eaLoginOpen, isTransientUbisoftError, ubiDirectAdopt, ubiDirectCancel, ubiDirectCloudSaves, ubiDirectImportSaves, ubiDirectMove, ubiDirectRelease, ubiDirectSetEnabled, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, ubiStoreSignin, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxOpenGamePass, xboxOpenStore, xboxUninstall, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { collectionGames } from "../../core/game-collections";
@@ -736,6 +737,7 @@ document.addEventListener("click", (e) => {
     S.activeCollectionId = (!colId || colId === "none" || colId === "all") ? null : colId;
     S.epicFilter = "all";
     applyTabSort();
+    syncHltbLengths();
     if (!updateLibraryFilterInPlace()) {
       resetCardChunk();
       render();
@@ -767,6 +769,7 @@ document.addEventListener("click", (e) => {
     S.isColDropdownOpen = false;
     // Each tab keeps its own order: the one it remembers applies on arrival.
     applyTabSort();
+    syncHltbLengths();
     const sortMenu = document.getElementById("sort-dropdown-menu");
     if (sortMenu) sortMenu.classList.remove("show");
     const storeMenu = document.getElementById("store-dropdown-menu");
@@ -799,6 +802,8 @@ document.addEventListener("click", (e) => {
       resetCardChunk();
       render();
     }
+    // A story-length sort fills the rest of the shelf in the background.
+    syncHltbLengths();
   } else if (act === "open-palette") {
     openPalette();
   } else if (act === "toggle-fullscreen-mode") {

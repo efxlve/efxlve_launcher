@@ -168,6 +168,16 @@ pub async fn epic_get_hltb(
     Ok(crate::legendary::hltb::get_hltb_data(&title, &app_name, force, year).await)
 }
 
+/// HowLongToBeat hits already stored on disk; no network call. The library
+/// sorts by story length from this list and then fills the rest in the
+/// background.
+#[tauri::command]
+pub async fn epic_cached_hltb_times() -> Vec<crate::legendary::hltb::HltbData> {
+    tauri::async_runtime::spawn_blocking(crate::legendary::hltb::cached_times)
+        .await
+        .unwrap_or_default()
+}
+
 /// Fetches and returns critic and review data (OpenCritic, Metacritic, IGDB).
 #[tauri::command]
 pub async fn epic_get_critic(

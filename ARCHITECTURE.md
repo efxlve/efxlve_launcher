@@ -103,7 +103,10 @@ behind the page. A stored miss is retried after a month, so a game that reaches
 a store later is picked up without pinning the page to an old answer. The
 library's rating sort and rating facet read the critic files already on disk
 (`epic_cached_critic_scores`, `src/core/game-ratings.ts`) instead of opening a
-page per game.
+page per game. The story-length sort works the same way from the HowLongToBeat
+answers (`epic_cached_hltb_times`, `src/core/hltb-times.ts`), then fills the
+games that have no stored answer in a quiet background pass
+(`src/features/library/hltb-lengths.ts`).
 
 ---
 

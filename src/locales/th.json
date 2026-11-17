@@ -1613,6 +1613,8 @@
   "lib.sortAlpha": "ชื่อ (A-Z)",
   "lib.sortAlphaDesc": "ชื่อ (Z-A)",
   "lib.sortPlayed": "เล่นมากที่สุด",
+  "lib.sortStoryShort": "เนื้อเรื่องสั้นที่สุด",
+  "lib.sortStoryLong": "เนื้อเรื่องยาวที่สุด",
   "lib.sortAchievements": "ความสำเร็จ",
   "lib.sortInstalled": "ติดตั้งแล้วก่อน",
   "lib.running": "กำลังทำงาน",

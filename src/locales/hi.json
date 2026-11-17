@@ -1713,6 +1713,8 @@
   "lib.sortAlpha": "शीर्षक (A-Z)",
   "lib.sortAlphaDesc": "शीर्षक (Z-A)",
   "lib.sortPlayed": "सर्वाधिक खेले गए",
+  "lib.sortStoryShort": "सबसे छोटी कहानी",
+  "lib.sortStoryLong": "सबसे लंबी कहानी",
   "lib.sortAchievements": "उपलब्धियां",
   "lib.sortInstalled": "पहले इंस्टॉल किए गए",
   "lib.running": "चल रहा है",

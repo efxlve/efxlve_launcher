@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -77,6 +78,56 @@ fn dirs_config_dir() -> Option<PathBuf> {
         .map(|p| p.join(".config"))
 }
 
+/// Every HowLongToBeat hit already stored on disk.
+///
+/// The library's story-length sort reads this once at boot, so the order covers
+/// the games whose page was opened before without one network lookup per game.
+/// A stored miss stays out: it has no length to sort, and the page keeps owning
+/// its monthly retry. The same game can have a file per release year; the newer
+/// answer wins.
+pub fn cached_times() -> Vec<HltbData> {
+    let Ok(entries) = std::fs::read_dir(hltb_cache_dir()) else {
+        return Vec::new();
+    };
+    let mut by_app: HashMap<String, (HltbData, u64)> = HashMap::new();
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|ext| ext.to_str()) != Some("json") {
+            continue;
+        }
+        let Ok(text) = std::fs::read_to_string(&path) else {
+            continue;
+        };
+        let Ok(data) = serde_json::from_str::<HltbData>(&text) else {
+            continue;
+        };
+        if data.app_name.trim().is_empty() || !data.supported {
+            continue;
+        }
+        let written = entry
+            .metadata()
+            .ok()
+            .and_then(|meta| meta.modified().ok())
+            .and_then(|at| at.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|elapsed| elapsed.as_secs())
+            .unwrap_or(0);
+        match by_app.get_mut(&data.app_name) {
+            Some((stored, stored_at)) => {
+                if written >= *stored_at {
+                    *stored = data;
+                    *stored_at = written;
+                }
+            }
+            None => {
+                by_app.insert(data.app_name.clone(), (data, written));
+            }
+        }
+    }
+    let mut rows: Vec<HltbData> = by_app.into_values().map(|(data, _)| data).collect();
+    rows.sort_by(|a, b| a.app_name.cmp(&b.app_name));
+    rows
+}
+
 pub async fn get_hltb_data(
     title: &str,
     app_name: &str,
@@ -142,51 +193,8 @@ pub async fn get_hltb_data(
         }
     };
 
-    // 1. Dynamically detect the search endpoint (default: /api/search/site)
-    let mut search_endpoint = "/api/search/site".to_string();
-    if let Ok(home_resp) = client
-        .get("https://howlongtobeat.com/")
-        .header("User-Agent", ua)
-        .send()
-        .await
-    {
-        if let Ok(home_html) = home_resp.text().await {
-            for part in home_html.split("src=\"") {
-                if let Some(end) = part.find('\"') {
-                    let path = &part[..end];
-                    if path.contains("/_next/static/chunks/") {
-                        let script_url = format!("https://howlongtobeat.com{}", path);
-                        if let Ok(s_resp) = client
-                            .get(&script_url)
-                            .header("User-Agent", ua)
-                            .send()
-                            .await
-                        {
-                            if let Ok(js_content) = s_resp.text().await {
-                                if let Some(idx) = js_content.find("/api/search/") {
-                                    let sub = &js_content[idx..];
-                                    if let Some(end_quote) =
-                                        sub.find(['\"', '\'', '`', '?', ' ', '$'])
-                                    {
-                                        let mut ep =
-                                            sub[..end_quote].trim_end_matches('/').to_string();
-                                        if let Some(pos) = ep.find("/init") {
-                                            ep = ep[..pos].to_string();
-                                        }
-                                        let ep = ep.trim_end_matches('/').to_string();
-                                        if !ep.is_empty() {
-                                            search_endpoint = ep;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    // 1. Search endpoint, discovered once per app run (see `detect_search_endpoint`).
+    let search_endpoint = detect_search_endpoint(&client).await;
 
     // 2. Auth token & dynamic key/val al
     let now = std::time::SystemTime::now()
@@ -285,6 +293,70 @@ pub async fn get_hltb_data(
 
 /// Browser UA for every HLTB request (their endpoint rejects bare clients).
 const HLTB_UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+/// The search endpoint is read from the site's own JavaScript bundle. It only
+/// changes when HowLongToBeat ships a new build, so one discovery per app run is
+/// enough: the library length pass would otherwise load the homepage for every
+/// game it asks about.
+static SEARCH_ENDPOINT: tokio::sync::OnceCell<String> = tokio::sync::OnceCell::const_new();
+
+async fn detect_search_endpoint(client: &reqwest::Client) -> String {
+    SEARCH_ENDPOINT
+        .get_or_init(|| async {
+            discover_search_endpoint(client)
+                .await
+                .unwrap_or_else(|| "/api/search/site".to_string())
+        })
+        .await
+        .clone()
+}
+
+async fn discover_search_endpoint(client: &reqwest::Client) -> Option<String> {
+    let home_resp = client
+        .get("https://howlongtobeat.com/")
+        .header("User-Agent", HLTB_UA)
+        .send()
+        .await
+        .ok()?;
+    let home_html = home_resp.text().await.ok()?;
+    for part in home_html.split("src=\"") {
+        let Some(end) = part.find('"') else {
+            continue;
+        };
+        let path = &part[..end];
+        if !path.contains("/_next/static/chunks/") {
+            continue;
+        }
+        let script_url = format!("https://howlongtobeat.com{}", path);
+        let Ok(resp) = client
+            .get(&script_url)
+            .header("User-Agent", HLTB_UA)
+            .send()
+            .await
+        else {
+            continue;
+        };
+        let Ok(js_content) = resp.text().await else {
+            continue;
+        };
+        let Some(idx) = js_content.find("/api/search/") else {
+            continue;
+        };
+        let sub = &js_content[idx..];
+        let Some(end_quote) = sub.find(['"', '\'', '`', '?', ' ', '$']) else {
+            continue;
+        };
+        let mut ep = sub[..end_quote].trim_end_matches('/').to_string();
+        if let Some(pos) = ep.find("/init") {
+            ep = ep[..pos].to_string();
+        }
+        let ep = ep.trim_end_matches('/').to_string();
+        if !ep.is_empty() {
+            return Some(ep);
+        }
+    }
+    None
+}
 
 fn empty_hltb(app_name: &str, title: &str) -> HltbData {
     HltbData {

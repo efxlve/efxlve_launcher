@@ -254,6 +254,8 @@ const EPIC_SORTS: readonly EpicSort[] = [
   "rating",
   "recent",
   "played",
+  "storyShort",
+  "storyLong",
   "achievements",
   "installed",
 ];
@@ -492,6 +494,8 @@ export const S = {
   showModalSgdbKey: false,
   showModalSgdbInfo: false,
   loadedHltb: (new Map()) as Map<string, HltbData>,
+  /** Stored and live HLTB answers keyed by library key or `meta:<normalizedTitle>`. */
+  hltbTimes: (new Map()) as Map<string, HltbData>,
   loadingHltbFor: new Set<string>(),
   loadedCritic: (new Map()) as Map<string, CriticData>,
   /** Best cached review score per library key, loaded from the disk cache. */

@@ -1613,6 +1613,8 @@
   "lib.sortAlpha": "제목 (A-Z)",
   "lib.sortAlphaDesc": "제목 (Z-A)",
   "lib.sortPlayed": "가장 많이 플레이",
+  "lib.sortStoryShort": "짧은 스토리",
+  "lib.sortStoryLong": "긴 스토리",
   "lib.sortAchievements": "업적",
   "lib.sortInstalled": "설치된 항목 먼저",
   "lib.running": "실행 중",

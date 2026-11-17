@@ -143,6 +143,7 @@ import { pushClipSettings } from "../screenshots/ss-settings";
 import { notifyBackgrounded } from "../../core/system-notify";
 import { prefetchRecentPicturesWhenIdle } from "../../core/picture-cache";
 import { ensureGameRatingsLoaded } from "../../core/game-ratings";
+import { syncHltbLengths } from "../library/hltb-lengths";
 import { initHoverPrefetch, prefetchGamePagesWhenIdle, prefetchVisibleAchievements } from "../drawer/game-prefetch";
 import { feedbackRecoveryPending } from "../../feedback";
 import { openFeedback } from "../feedback/feedback-view";
@@ -310,6 +311,9 @@ export async function initApp(hooks: {
   // The rating sort reads the game page's disk cache; the scan is local and
   // never starts a network lookup for an unopened game.
   ensureGameRatingsLoaded();
+  // The story-length sort reads the HLTB disk cache first; a stored sort then
+  // fills the rest of the shelf in the background.
+  syncHltbLengths(3500);
 
   // Kick off the library load immediately: it must not wait for listener
   // registration, settings fetches or window-chrome IPC.

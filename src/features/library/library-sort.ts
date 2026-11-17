@@ -28,6 +28,8 @@ export function getSortOptions(): { id: EpicSort; label: string }[] {
     { id: "rating", label: t("lib.sortRating") },
     { id: "recent", label: t("lib.sortRecent") },
     { id: "played", label: t("lib.sortPlayed") },
+    { id: "storyShort", label: t("lib.sortStoryShort") },
+    { id: "storyLong", label: t("lib.sortStoryLong") },
     { id: "achievements", label: t("lib.sortAchievements") },
     { id: "installed", label: t("lib.sortInstalled") },
     { id: "alphaDesc", label: t("lib.sortAlphaDesc") },

@@ -189,6 +189,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_backup_save` | `epicBackupSave({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_backup_save_if_changed` | `epicBackupSaveIfChanged({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_cached_critic_scores` | `epicCachedCriticScores({ ... })` | `src-tauri/src/legendary/commands/metadata.rs` |
+| `epic_cached_hltb_times` | `epicCachedHltbTimes({ ... })` | `src-tauri/src/legendary/commands/metadata.rs` |
 | `epic_cached_library` | `epicCachedLibrary({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_cancel_download` | `epicCancelDownload({ ... })` | `src-tauri/src/legendary/transfers/queue.rs` |
 | `epic_cancel_move_game` | `epicCancelMoveGame({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |

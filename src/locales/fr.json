@@ -1613,6 +1613,8 @@
   "lib.sortAlpha": "Titre (A-Z)",
   "lib.sortAlphaDesc": "Titre (Z-A)",
   "lib.sortPlayed": "Les plus joués",
+  "lib.sortStoryShort": "Histoire la plus courte",
+  "lib.sortStoryLong": "Histoire la plus longue",
   "lib.sortAchievements": "Succès",
   "lib.sortInstalled": "Installés d'abord",
   "lib.running": "En cours",

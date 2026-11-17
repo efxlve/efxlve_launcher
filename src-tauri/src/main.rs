@@ -2229,6 +2229,7 @@ fn main() {
             legendary::commands::epic_get_achievements_summary,
             legendary::commands::epic_get_system_requirements,
             legendary::commands::epic_get_hltb,
+            legendary::commands::epic_cached_hltb_times,
             legendary::commands::epic_get_critic,
             legendary::commands::epic_cached_critic_scores,
             legendary::wiki::epic_get_wiki_about,

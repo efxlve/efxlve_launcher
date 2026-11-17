@@ -1713,6 +1713,8 @@
   "lib.sortAlpha": "Title (A-Z)",
   "lib.sortAlphaDesc": "Title (Z-A)",
   "lib.sortPlayed": "Most played",
+  "lib.sortStoryShort": "Shortest story",
+  "lib.sortStoryLong": "Longest story",
   "lib.sortAchievements": "Achievements",
   "lib.sortInstalled": "Installed first",
   "lib.running": "Running",

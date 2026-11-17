@@ -40,6 +40,7 @@ import { storeLogo } from "../store/store-logos";
 import { holdStoreForCover } from "../store/store-view";
 import { customLogoOf, getLogoLayout, initLogoHeroDrag, logoStyleVars, LOGO_ANCHOR_ORDER } from "../cover/logo-layout";
 import { recordLiveCritic, recordLiveSteamDetails } from "../../core/game-ratings";
+import { recordLiveHltb } from "../../core/hltb-times";
 import { setGameSceneArt } from "../../core/game-scene";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -1106,6 +1107,7 @@ function ensureOverviewData(s: EpicSummary): void {
     epicGetHltb(lookupTitle, appName, false, year)
       .then((data) => {
         S.loadedHltb.set(appName, data);
+        recordLiveHltb(appName, lookupTitle, data);
         if (S.currentModalAppName === appName) updateHltbUI(appName, data);
       })
       .catch(() => {
@@ -4213,7 +4215,10 @@ export async function prefetchGamePage(appName: string): Promise<void> {
   if (!S.loadedHltb.has(appName)) {
     jobs.push(
       epicGetHltb(lookupTitle, appName, false, year)
-        .then((data) => { S.loadedHltb.set(appName, data); })
+        .then((data) => {
+          S.loadedHltb.set(appName, data);
+          recordLiveHltb(appName, lookupTitle, data);
+        })
         .catch(() => undefined),
     );
   }

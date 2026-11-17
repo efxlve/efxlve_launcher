@@ -34,6 +34,8 @@ export type EpicSort =
   | "rating"
   | "recent"
   | "played"
+  | "storyShort"
+  | "storyLong"
   | "achievements"
   | "installed";
 /** Library layout mode: cover grid or dense list. */

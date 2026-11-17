@@ -1713,6 +1713,8 @@
   "lib.sortAlpha": "Başlık (A-Z)",
   "lib.sortAlphaDesc": "Başlık (Z-A)",
   "lib.sortPlayed": "En çok oynanan",
+  "lib.sortStoryShort": "En kısa hikâye",
+  "lib.sortStoryLong": "En uzun hikâye",
   "lib.sortAchievements": "Başarımlar",
   "lib.sortInstalled": "Önce yüklü olanlar",
   "lib.running": "Çalışıyor",

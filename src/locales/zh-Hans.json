@@ -1613,6 +1613,8 @@
   "lib.sortAlpha": "标题 (A-Z)",
   "lib.sortAlphaDesc": "标题 (Z-A)",
   "lib.sortPlayed": "游玩最多",
+  "lib.sortStoryShort": "故事最短",
+  "lib.sortStoryLong": "故事最长",
   "lib.sortAchievements": "成就",
   "lib.sortInstalled": "已安装优先",
   "lib.running": "运行中",

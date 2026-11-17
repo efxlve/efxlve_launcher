@@ -1613,6 +1613,8 @@
   "lib.sortAlpha": "タイトル (A-Z)",
   "lib.sortAlphaDesc": "タイトル (Z-A)",
   "lib.sortPlayed": "プレイ時間が多い順",
+  "lib.sortStoryShort": "ストーリーが短い順",
+  "lib.sortStoryLong": "ストーリーが長い順",
   "lib.sortAchievements": "実績",
   "lib.sortInstalled": "インストール済みを先に",
   "lib.running": "実行中",

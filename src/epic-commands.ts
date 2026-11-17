@@ -884,6 +884,9 @@ export const epicGetHltb = (
   year: number | null = null,
 ) => invoke<HltbData>("epic_get_hltb", { title, appName, forceRefresh, year });
 
+/** Every HLTB hit already stored on disk. No network call. */
+export const epicCachedHltbTimes = () => invoke<HltbData[]>("epic_cached_hltb_times");
+
 /* ---------- Critic scores (OpenCritic / Metacritic) ---------- */
 
 export interface CriticData {

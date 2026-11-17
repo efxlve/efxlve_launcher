@@ -1613,6 +1613,8 @@
   "lib.sortAlpha": "Название (А–Я)",
   "lib.sortAlphaDesc": "Название (Я–А)",
   "lib.sortPlayed": "Больше всего играли",
+  "lib.sortStoryShort": "Короткий сюжет",
+  "lib.sortStoryLong": "Длинный сюжет",
   "lib.sortAchievements": "Достижения",
   "lib.sortInstalled": "Сначала установленные",
   "lib.running": "Запущена",

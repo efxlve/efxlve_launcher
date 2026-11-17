@@ -17,6 +17,7 @@ import { isCollectionPinned, pinnedCollectionsForTabs, reorderPinnedCollections 
 import { allStoreSummaries, canonicalGameTitle, compareLibraryRecent, libraryItemToSummary, libraryPlaytime, rawOf, sourceOfKey, storeKeysForTitle, summaryOf, totalLibraryGamesCount } from "../../core/selectors";
 import { collectionMarker, isCollectionIcon } from "../../core/collection-icons";
 import { ensureGameRatingsLoaded, gameRatingOf } from "../../core/game-ratings";
+import { hltbStoryHoursOf } from "../../core/hltb-times";
 import { primeGameScene } from "../../core/game-scene";
 import { isSmartCollection, smartCollection } from "./smart-collections";
 import { storeLogo } from "../store/store-logos";
@@ -256,6 +257,22 @@ export function epicVisibleSummaries(): EpicSummary[] {
         (a, b) => libraryPlaytime(b).seconds - libraryPlaytime(a).seconds || byTitle(a, b),
       );
       break;
+    case "storyShort":
+    case "storyLong": {
+      // Missing lengths always sit at the bottom, whichever direction is picked.
+      const hours = new Map<string, number | null>();
+      for (const item of list) hours.set(item.appName, hltbStoryHoursOf(item.appName, item.title));
+      const direction = S.epicSort === "storyShort" ? 1 : -1;
+      result = [...list].sort((a, b) => {
+        const left = hours.get(a.appName) ?? null;
+        const right = hours.get(b.appName) ?? null;
+        if (left === null && right === null) return byTitle(a, b);
+        if (left === null) return 1;
+        if (right === null) return -1;
+        return direction * (left - right) || byTitle(a, b);
+      });
+      break;
+    }
     case "achievements":
       result = [...list].sort((a, b) => achievementRank(b.appName) - achievementRank(a.appName) || byTitle(a, b));
       break;
