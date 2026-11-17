@@ -5,7 +5,6 @@
 //! their client and an account that owns the game. It never bypasses DRM.
 
 use std::io::{self, Write};
-use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -15,6 +14,13 @@ use media_archive::pack::ProgressSink;
 use media_archive::restore::{locate_volumes, restore_game, verify_archive, RestoreJob};
 use media_archive::xtool::Xtool;
 use media_archive::ArchiveProgress;
+
+#[path = "restore_cli.rs"]
+mod restore_cli;
+
+use restore_cli::{
+    auto_disc_dirs, display_path, fmt_bytes, localize, parse_args, resolve_manifest, store_hint,
+};
 
 #[path = "slug.rs"]
 mod slug;
@@ -114,17 +120,6 @@ mod media_archive {
     }
 }
 
-#[derive(Default)]
-struct Args {
-    manifest: Option<PathBuf>,
-    target: Option<PathBuf>,
-    overwrite: bool,
-    xtool: Option<String>,
-    extra_dirs: Vec<PathBuf>,
-    verify: bool,
-    help: bool,
-}
-
 fn main() -> ExitCode {
     match run() {
         Ok(()) => ExitCode::SUCCESS,
@@ -136,7 +131,7 @@ fn main() -> ExitCode {
 }
 
 fn run() -> Result<(), String> {
-    let args = parse_args()?;
+    let args = parse_args(std::env::args().skip(1))?;
     if args.help || (args.manifest.is_none() && args.target.is_none()) {
         print_help();
         return Ok(());
@@ -145,6 +140,7 @@ fn run() -> Result<(), String> {
     let manifest_path = resolve_manifest(
         args.manifest
             .ok_or_else(|| "--manifest is required; use --help".to_string())?,
+        MANIFEST_FILE,
     )?;
     let manifest_dir = manifest_path
         .parent()
@@ -237,46 +233,6 @@ fn run() -> Result<(), String> {
     Ok(())
 }
 
-fn parse_args() -> Result<Args, String> {
-    let mut args = Args::default();
-    let mut iter = std::env::args().skip(1);
-    while let Some(arg) = iter.next() {
-        match arg.as_str() {
-            "-h" | "--help" => args.help = true,
-            "-m" | "--manifest" => {
-                args.manifest = Some(PathBuf::from(next_value(&mut iter, "--manifest")?));
-            }
-            "-t" | "--target" => {
-                args.target = Some(PathBuf::from(next_value(&mut iter, "--target")?));
-            }
-            "--overwrite" => args.overwrite = true,
-            "--verify" => args.verify = true,
-            "--xtool" => args.xtool = Some(next_value(&mut iter, "--xtool")?),
-            "--extra" => args
-                .extra_dirs
-                .push(PathBuf::from(next_value(&mut iter, "--extra")?)),
-            other if other.starts_with("--manifest=") => {
-                args.manifest = Some(PathBuf::from(&other["--manifest=".len()..]));
-            }
-            other if other.starts_with("--target=") => {
-                args.target = Some(PathBuf::from(&other["--target=".len()..]));
-            }
-            other if other.starts_with("--extra=") => {
-                args.extra_dirs
-                    .push(PathBuf::from(&other["--extra=".len()..]));
-            }
-            other => return Err(format!("unknown argument `{other}`; use --help")),
-        }
-    }
-    Ok(args)
-}
-
-fn next_value(iter: &mut impl Iterator<Item = String>, flag: &str) -> Result<String, String> {
-    iter.next()
-        .filter(|value| !value.is_empty())
-        .ok_or_else(|| format!("{flag} needs a value"))
-}
-
 fn print_help() {
     println!(
         "efxlve-restore - recover an Efxlve media archive without the launcher
@@ -298,85 +254,6 @@ Notes:
   need their client and an account that owns the game; this tool only writes
   files and never bypasses DRM."
     );
-}
-
-fn resolve_manifest(path: PathBuf) -> Result<PathBuf, String> {
-    if path.is_file() {
-        return Ok(path);
-    }
-    if !path.is_dir() {
-        return Err(format!("manifest not found: {}", path.display()));
-    }
-    let direct = path.join(MANIFEST_FILE);
-    if direct.is_file() {
-        return Ok(direct);
-    }
-    let mut discs = std::fs::read_dir(&path)
-        .map_err(|error| format!("cannot read {}: {error}", path.display()))?
-        .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.file_type().map(|kind| kind.is_dir()).unwrap_or(false))
-        .map(|entry| entry.path())
-        .filter(|candidate| {
-            candidate
-                .file_name()
-                .and_then(|name| name.to_str())
-                .map(|name| name.to_ascii_lowercase().starts_with("disc-"))
-                .unwrap_or(false)
-        })
-        .collect::<Vec<_>>();
-    discs.sort();
-    for dir in discs {
-        let candidate = dir.join(MANIFEST_FILE);
-        if candidate.is_file() {
-            return Ok(candidate);
-        }
-    }
-    Err(format!(
-        "no {MANIFEST_FILE} in {} or its disc folders",
-        path.display()
-    ))
-}
-
-fn auto_disc_dirs(manifest_dir: &Path) -> Vec<PathBuf> {
-    let Some(parent) = manifest_dir.parent() else {
-        return Vec::new();
-    };
-    let Ok(entries) = std::fs::read_dir(parent) else {
-        return Vec::new();
-    };
-    let mut dirs = entries
-        .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.file_type().map(|kind| kind.is_dir()).unwrap_or(false))
-        .map(|entry| entry.path())
-        .filter(|candidate| candidate != manifest_dir)
-        .filter(|candidate| {
-            candidate
-                .file_name()
-                .and_then(|name| name.to_str())
-                .map(|name| name.to_ascii_lowercase().starts_with("disc-"))
-                .unwrap_or(false)
-        })
-        .collect::<Vec<_>>();
-    dirs.sort();
-    dirs
-}
-
-fn store_hint(store: &str) -> &'static str {
-    match store {
-        "gog" | "custom" => {
-            "This archive is DRM-free; run the game from the restored folder."
-        }
-        "steam" => {
-            "Steam and an account that owns the game are required. Add the folder to a Steam library, then use Install/Verify."
-        }
-        "epic" => {
-            "Epic Games Launcher or Legendary and an owning account are required; use its import/verify step."
-        }
-        "amazon" => {
-            "Amazon Games and an owning account are required; use its import/verify step."
-        }
-        _ => "The store client may be required to launch this game.",
-    }
 }
 
 struct ConsoleSink {
@@ -413,71 +290,4 @@ impl ProgressSink for ConsoleSink {
     }
 }
 
-fn display_path(path: &Path) -> String {
-    let text = path.display().to_string();
-    #[cfg(windows)]
-    {
-        if let Some(rest) = text.strip_prefix(r"\\?\UNC\") {
-            return format!(r"\\{rest}");
-        }
-        if let Some(rest) = text.strip_prefix(r"\\?\") {
-            return rest.to_string();
-        }
-    }
-    text
-}
 
-fn fmt_bytes(bytes: u64) -> String {
-    const UNITS: [&str; 5] = ["B", "KiB", "MiB", "GiB", "TiB"];
-    let mut value = bytes as f64;
-    let mut unit = 0;
-    while value >= 1024.0 && unit + 1 < UNITS.len() {
-        value /= 1024.0;
-        unit += 1;
-    }
-    if unit == 0 {
-        format!("{bytes} B")
-    } else {
-        format!("{value:.1} {}", UNITS[unit])
-    }
-}
-
-fn localize(message: &str) -> String {
-    let mut parts = message.split('\u{1f}');
-    let key = parts.next().unwrap_or(message);
-    let detail = parts
-        .filter(|part| !part.is_empty())
-        .collect::<Vec<_>>()
-        .join(" ");
-    let base = match key {
-        "@t:archive.cancelled" => "Cancelled.",
-        "@t:archive.missingVolume" => "A volume is missing.",
-        "@t:archive.blockCorrupt" => "A block failed its SHA-256 check.",
-        "@t:archive.volumeCorrupt" => "A volume is corrupt or does not match the manifest.",
-        "@t:archive.manifestMissing" => "The manifest is missing.",
-        "@t:archive.manifestInvalid" => "The manifest is invalid.",
-        "@t:archive.manifestIncomplete" => "The manifest is incomplete.",
-        "@t:archive.manifestVersion" => "This manifest version is not supported.",
-        "@t:archive.invalidTarget" => "That target folder is not allowed.",
-        "@t:archive.targetNotEmpty" => "The game folder already exists; pass --overwrite.",
-        "@t:archive.notEnoughSpaceBackend" => "There is not enough free space.",
-        "@t:archive.xtoolRequired" => "This archive needs xtool; pass --xtool.",
-        "@t:archive.xtoolMissing" | "@t:archive.xtoolLibraries" => {
-            "xtool or its _libraries folder is missing."
-        }
-        "@t:archive.xtoolFailed" => "xtool could not decode the archive.",
-        "@t:archive.readFailed" => "Reading the archive failed.",
-        "@t:archive.writeFailed" => "Writing the restored files failed.",
-        "@t:archive.unsafePath" => "The archive contains an unsafe path.",
-        "@t:archive.fat32Limit" => "A volume is too large for FAT32.",
-        "@t:archive.targetFailed" => "The target folder could not be prepared.",
-        "@t:archive.targetInsideSource" => "The target is inside the source folder.",
-        other if other.starts_with("@t:") => other,
-        other => other,
-    };
-    if detail.is_empty() {
-        base.to_string()
-    } else {
-        format!("{base} ({detail})")
-    }
-}

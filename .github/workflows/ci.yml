@@ -65,6 +65,9 @@ jobs:
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml
 
+      - name: Standalone restorer helper tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml restore_cli
+
       - name: Standalone restore build
         run: cargo build --manifest-path src-tauri/Cargo.toml --bin efxlve-restore
 
@@ -115,6 +118,9 @@ jobs:
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml
 
+      - name: Standalone restorer helper tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml restore_cli
+
       - name: Standalone restore build
         run: cargo build --manifest-path src-tauri/Cargo.toml --bin efxlve-restore
 
@@ -152,6 +158,9 @@ jobs:
 
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml
+
+      - name: Standalone restorer helper tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml restore_cli
 
       - name: Standalone restore build
         run: cargo build --manifest-path src-tauri/Cargo.toml --bin efxlve-restore

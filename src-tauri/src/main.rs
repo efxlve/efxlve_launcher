@@ -38,6 +38,8 @@ mod perf;
 mod pc_check;
 mod power;
 mod release_calendar;
+#[cfg(test)]
+mod restore_cli;
 #[cfg(windows)]
 mod portable;
 mod task_manager;
