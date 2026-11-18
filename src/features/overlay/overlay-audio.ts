@@ -11,7 +11,7 @@ import { icon } from "../../core/icons";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 import { toast } from "../../core/toast";
-import { emptyBlockHtml } from "./overlay-music";
+import { emptyBlockHtml } from "./overlay-view-helpers";
 
 export interface AudioSession {
   id: string;

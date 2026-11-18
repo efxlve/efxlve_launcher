@@ -11,6 +11,7 @@ import { IS_WINDOWS } from "../../core/platform";
 import { icon } from "../../core/icons";
 import { esc } from "../../core/utils";
 import { t, t as i18nT } from "../../i18n";
+import { setText } from "./overlay-view-helpers";
 
 export interface MetricsSample {
   running: boolean;
@@ -655,14 +656,6 @@ export function drawPerfCanvas(): void {
       }
     }
   }
-}
-
-/* Patches the live numbers in place. */
-export function setText(id: string, text: string, empty = false): void {
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (el.textContent !== text) el.textContent = text;
-  el.classList.toggle("is-empty", empty);
 }
 
 export function updateMetricsUi(): void {

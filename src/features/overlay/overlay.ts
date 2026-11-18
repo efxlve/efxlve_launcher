@@ -78,7 +78,6 @@ import {
   renderPerf,
   resetPerformanceSession,
   setPerformanceMetric,
-  setText,
   updateMetricsUi,
   type MetricsSample,
   type PerfMetric,
@@ -116,7 +115,6 @@ import {
   getOverlayMedia,
   mediaCardInnerHtml,
   mediaCardTitleHtml,
-  openDiscordInLauncher,
   openSpotifyLink,
   overlaySpotifyControl,
   paintSpotifyProgress,
@@ -165,6 +163,7 @@ import {
   onMouseActivity,
   refreshDock,
   removeGamepadFocus,
+  resetControllerSession,
   scheduleGamepadFrame,
   stopGamepadPolling,
   suppressGamepadInput,
@@ -210,6 +209,7 @@ import {
   muteDiscordCall,
   noteIncoming,
   notifyIncomingCall,
+  openDiscordInLauncher,
   renderDiscordChat,
   renderDiscordSocial,
   runUserSearch,
@@ -225,6 +225,7 @@ import {
   deleteReply,
   refreshWebVoice,
   refreshSdkState,
+  resetDiscordSession,
   type DiscordFriendsState,
   type DiscordVoiceState,
   type HistoryMessage,
@@ -1312,6 +1313,8 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   resetAchievementsSession();
   resetScreenshotsSession();
   resetMusicSession();
+  resetDiscordSession();
+  resetControllerSession();
   sessionStartEpoch = Date.now();
   suppressGamepadInput();
 
@@ -1397,28 +1400,6 @@ async function boot(): Promise<void> {
   document.documentElement.dataset.surface = "soft";
   await setLanguage(initialLanguage());
 
-  const root = document.getElementById("ov-root");
-  if (root && !document.getElementById("ov-shell")) {
-    root.innerHTML = shellHtml();
-    wireEvents();
-    initWidgetDragging();
-    initWidgetResizing();
-  }
-  // Apply the saved opacity before the first paint, not only when a game opens
-  // the overlay, so the window never flashes the default scrim.
-  applyOpacity(savedOpacity());
-
-  // Keep the native crosshair in step with the saved settings. Visibility is
-  // owned by the launcher boot and the Settings toggle, so a hotkey toggle-off
-  // survives this page load.
-  applyCrosshairConfig(activeCrosshair(context.appName));
-  applyHudConfig();
-
-  // A first open can be closed before `onOpen` runs. Tell Rust about the pins
-  // the page remembers now, so that close already knows a ghost HUD is wanted.
-  openWidgets = loadOpenWidgets();
-  syncPinnedToRust();
-
   configureClipWidget({
     isOpen: () => isWidgetOpen("clip"),
     body: () => viewEl("clip"),
@@ -1494,6 +1475,29 @@ async function boot(): Promise<void> {
     isWidgetOpen: (tab) => isWidgetOpen(tab as TabId),
     isWidgetPinned: (tab) => isWidgetPinned(tab),
   });
+
+  const root = document.getElementById("ov-root");
+  if (root && !document.getElementById("ov-shell")) {
+    root.innerHTML = shellHtml();
+    wireEvents();
+    initWidgetDragging();
+    initWidgetResizing();
+  }
+  // Apply the saved opacity before the first paint, not only when a game opens
+  // the overlay, so the window never flashes the default scrim.
+  applyOpacity(savedOpacity());
+
+  // Keep the native crosshair in step with the saved settings. Visibility is
+  // owned by the launcher boot and the Settings toggle, so a hotkey toggle-off
+  // survives this page load.
+  applyCrosshairConfig(activeCrosshair(context.appName));
+  applyHudConfig();
+
+  // A first open can be closed before `onOpen` runs. Tell Rust about the pins
+  // the page remembers now, so that close already knows a ghost HUD is wanted.
+  openWidgets = loadOpenWidgets();
+  syncPinnedToRust();
+
   startOverlayLoops();
 
   await listen<OpenPayload>("overlay-open", (event) => {
@@ -1546,6 +1550,8 @@ async function boot(): Promise<void> {
     setGhostMode(false);
     hideLightbox();
     removeGamepadFocus();
+    resetControllerSession();
+    closeRecentMenu();
     document.body.classList.remove("ov-using-gamepad");
     stopOverlayLoops();
     stopClipPolling();

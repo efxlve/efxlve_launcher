@@ -8,7 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { icon, type IconName } from "../../core/icons";
+import { icon } from "../../core/icons";
 import { IS_WINDOWS } from "../../core/platform";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
@@ -25,7 +25,7 @@ import {
   type PlaylistSummary,
   type TrackSummary,
 } from "../music/spotify-client";
-import { setText } from "./overlay-performance";
+import { emptyBlockHtml, setText } from "./overlay-view-helpers";
 
 interface MusicDeps {
   isWidgetOpen: (tab: "music") => boolean;
@@ -414,17 +414,6 @@ function skeletonHtml(): string {
   ).join("")}</div>`;
 }
 
-/** Shared centered empty/error block for the library panes. */
-export function emptyBlockHtml(iconName: IconName, title: string, desc = "", action = ""): string {
-  return `
-    <div class="ov-empty-block">
-      <div class="ov-empty-icon">${icon(iconName, 24)}</div>
-      <div class="ov-empty-title">${esc(title)}</div>
-      ${desc ? `<div class="ov-empty-desc">${esc(desc)}</div>` : ""}
-      ${action}
-    </div>`;
-}
-
 export function retryButtonHtml(): string {
   return `<button class="btn ghost small" data-ov="sp-refresh-library">${icon("refresh", 13)} ${esc(t("overlay.retry"))}</button>`;
 }
@@ -625,20 +614,6 @@ export async function openSpotifyLink(): Promise<void> {
   void openUrl(url).catch(() => undefined);
 }
 
-/**
- * Opens a conversation in the launcher's own Discord client and brings the
- * launcher forward: typing and joining stay in the real client, so the overlay
- * never writes anything by itself.
- */
-export async function openDiscordInLauncher(url: string): Promise<void> {
-  try {
-    await invoke("discord_open_conversation", { url });
-  } catch {
-    // Older hosts have no such command; the launcher still comes forward.
-  }
-  void invoke("overlay_show_launcher").catch(() => undefined);
-}
-
 /** Forces a library refresh (the Rust caches are bypassed). */
 export async function refreshLibrary(): Promise<void> {
   if (musicViewMode === "tracks" && selectedPlaylist) {
@@ -789,6 +764,8 @@ export function resetMusicSession(): void {
   spotifyBaseMs = 0;
   spotifyBaseAt = 0;
   lastMediaActive = false;
+  // The open library tab, mini-view and search are panel UI, not the Connect
+  // session: they survive a close/reopen by design. Only the engine resets.
   if (!selectedPlaylist) musicViewMode = "playlists";
 }
 

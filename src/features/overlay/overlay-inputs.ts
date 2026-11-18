@@ -66,6 +66,7 @@ interface InputsDeps {
 }
 
 let deps: InputsDeps | null = null;
+let inputEventsWired = false;
 
 function contextAppName(): string {
   return deps?.contextAppName() ?? "";
@@ -335,6 +336,8 @@ function onOverlayKeydown(event: KeyboardEvent): void {
 /** Registers the change, input and keydown listeners once. */
 export function wireInputEvents(inputDeps: InputsDeps): void {
   deps = inputDeps;
+  if (inputEventsWired) return;
+  inputEventsWired = true;
   document.addEventListener("change", onOverlayChange);
   document.addEventListener("change", onSpotifyVolumeChange);
   document.addEventListener("input", onOverlayInput);

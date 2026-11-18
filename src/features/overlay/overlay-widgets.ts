@@ -21,6 +21,9 @@ let deps: WidgetDeps | null = null;
 
 export function configureWidgets(next: WidgetDeps): void {
   deps = next;
+  // The saved pins can only be validated against the tab list now: at module
+  // load the deps are still null, and filtering then would erase every pin.
+  widgetPins = loadWidgetPins();
 }
 
 function tabList(): string[] {
@@ -32,7 +35,7 @@ function tabList(): string[] {
 /** A pinned widget keeps its place and size, and stays over the game as a
  *  click-through HUD when the panel closes. */
 const PIN_KEY = "efxlve-overlay-pins";
-let widgetPins = loadWidgetPins();
+let widgetPins: Set<TabId> = new Set();
 
 export function loadWidgetPins(): Set<TabId> {
   try {

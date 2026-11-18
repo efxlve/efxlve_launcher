@@ -1375,6 +1375,7 @@ export async function initApp(hooks: {
   // window's in-memory copy in step so the next settings render is current.
   listenLater<AchievementNotificationOptions>("achievement-notification-options", (event) => {
     S.achievementNotificationOptions = event.payload;
+    if (S.view === "settings") hooks.scheduleRender();
   });
 
   // Game clips: the recorder runs in Rust; the UI only mirrors its state.

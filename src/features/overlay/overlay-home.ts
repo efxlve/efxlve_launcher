@@ -257,8 +257,8 @@ function renderHomeLauncher(el: HTMLElement): void {
       <div class="ov-card ov-span-12 ov-launcher-hero">
         <div class="ov-launcher-mark">${icon("layers", 28)}</div>
         <div class="ov-launcher-meta">
-          <div class="ov-launcher-title">${esc(t("overlay.D().launcherMode()Title"))}</div>
-          <div class="ov-launcher-desc">${esc(t("overlay.D().launcherMode()Desc"))}</div>
+          <div class="ov-launcher-title">${esc(t("overlay.launcherModeTitle"))}</div>
+          <div class="ov-launcher-desc">${esc(t("overlay.launcherModeDesc"))}</div>
         </div>
         <div class="ov-launcher-actions">
           <button class="btn" data-ov="launcher">${icon("external", 14)} ${esc(t("overlay.openLauncher"))}</button>

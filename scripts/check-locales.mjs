@@ -46,7 +46,9 @@ function scanSourceForKeys(scanDir) {
       if (entry.name !== "locales") results.push(...scanSourceForKeys(full));
     } else if (entry.name.endsWith(".ts") || entry.name.endsWith(".js") || entry.name.endsWith(".html")) {
       const content = readFileSync(full, "utf8");
-      const regex = /\bt\(\s*["']([a-zA-Z0-9_.-]+)["']/g;
+      // Match any literal key, including one with a stray parenthesis: the old
+      // [a-zA-Z0-9_.-] class silently skipped a mangled `t("overlay.D()...")`.
+      const regex = /\bt\(\s*["']([^"'`$]+)["']/g;
       let m;
       while ((m = regex.exec(content)) !== null) {
         if (!enSet.has(m[1])) {

@@ -599,6 +599,7 @@ export async function loadAchievements(force = false): Promise<void> {
 
 /** A new panel session starts from a clean achievements/tracker context. */
 export function resetAchievementsSession(): void {
+  stopTrackerPolling();
   cachedAchievements = null;
   achLoading = false;
   achLoadGeneration += 1;

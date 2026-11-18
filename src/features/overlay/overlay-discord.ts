@@ -12,7 +12,7 @@ import { icon } from "../../core/icons";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
 import { toast } from "../../core/toast";
-import { emptyBlockHtml, openDiscordInLauncher } from "./overlay-music";
+import { emptyBlockHtml } from "./overlay-view-helpers";
 
 interface DiscordDeps {
   viewEl: (tab: "discord" | "chat") => HTMLElement | null;
@@ -1565,4 +1565,29 @@ export function clearDiscordFilter(): void {
 
 export function isDiscordCallMuted(): boolean {
   return callState.muted;
+}
+
+/** A new panel session drops the transient pickers, not the typed drafts. */
+export function resetDiscordSession(): void {
+  replySending = false;
+  editingEntryId = null;
+  searchQuery = "";
+  friendsFilterQuery = "";
+  searchRan = false;
+  searchResults = [];
+  pickerMode = "friends";
+}
+
+/**
+ * Opens a conversation in the launcher's own Discord client and brings the
+ * launcher forward: typing and joining stay in the real client, so the overlay
+ * never writes anything by itself.
+ */
+export async function openDiscordInLauncher(url: string): Promise<void> {
+  try {
+    await invoke("discord_open_conversation", { url });
+  } catch {
+    // Older hosts have no such command; the launcher still comes forward.
+  }
+  void invoke("overlay_show_launcher").catch(() => undefined);
 }
