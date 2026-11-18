@@ -371,8 +371,19 @@ fn play_achievement_sound(
     options: &AchievementNotificationOptions,
     tier: u8,
 ) {
+    let settings = crate::load_settings(app);
+    if tier >= 3 {
+        if let Some(rare_path) = settings
+            .achievement_notifications_rare_sound_path
+            .as_deref()
+            .filter(|path| Path::new(path).is_file())
+        {
+            if play_custom_sound(rare_path, options.volume) {
+                return;
+            }
+        }
+    }
     if options.custom_sound {
-        let settings = crate::load_settings(app);
         if let Some(path) = settings
             .achievement_notifications_sound_path
             .as_deref()

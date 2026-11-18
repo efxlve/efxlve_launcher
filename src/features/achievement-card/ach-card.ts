@@ -40,6 +40,12 @@ export interface AchCardModel {
   iconSrc?: string;
   /** When true, renders the distinct system / overlay hint UI rather than an achievement trophy. */
   hint?: boolean;
+  /** 50..100 */
+  opacity?: number;
+  /** "standard" | "compact" */
+  layout?: string;
+  hideTag?: boolean;
+  hideDesc?: boolean;
 }
 
 export interface AchCardParticle {
@@ -77,8 +83,9 @@ function particlesHtml(): string {
 }
 
 /** CSS custom properties that colour the card and its FX layers. */
-export function achCardVars(palette: AchCardPalette): string {
-  return `--ach-bg:${palette.background};--ach-accent:${palette.accent};--ach-border:${palette.border};--ach-icon:${palette.icon};--ach-title:${palette.title};--ach-body:${palette.body};`;
+export function achCardVars(palette: AchCardPalette, opacity = 100): string {
+  const op = Math.max(50, Math.min(100, opacity)) / 100;
+  return `--ach-bg:${palette.background};--ach-accent:${palette.accent};--ach-border:${palette.border};--ach-icon:${palette.icon};--ach-title:${palette.title};--ach-body:${palette.body};--ach-opacity:${op};`;
 }
 
 /**
@@ -112,8 +119,9 @@ function achHintCardHtml(m: AchCardModel): string {
   const art = m.iconSrc
     ? `<img class="ach-hint-app-icon" src="${esc(m.iconSrc)}" alt="" />`
     : `<span class="ach-hint-ico">${icon(m.glyph || "layers", 20)}</span>`;
+  const layoutClass = m.layout === "compact" ? "layout-compact" : "layout-standard";
   return `
-    <div class="ach-hud-toast ach-hud-hint size-${esc(m.size)} style-${esc(m.style)} theme-${esc(m.theme)} seq-${m.seq % 2}" data-seq="${m.seq}" style="${achCardVars(m.palette)}">
+    <div class="ach-hud-toast ach-hud-hint size-${esc(m.size)} style-${esc(m.style)} theme-${esc(m.theme)} ${layoutClass} seq-${m.seq % 2}" data-seq="${m.seq}" style="${achCardVars(m.palette, m.opacity)}">
       <div class="ach-hint-badge">
         ${art}
       </div>
@@ -132,8 +140,12 @@ export function achCardHtml(m: AchCardModel): string {
   const art = m.iconSrc
     ? `<img class="ach-hud-ach-icon" src="${esc(m.iconSrc)}" alt="" />`
     : "";
+  const layoutClass = m.layout === "compact" ? "layout-compact" : "layout-standard";
+  const tagHtml = !m.hideTag && m.tag ? `<span class="ach-hud-tag">${esc(m.tag)}</span>` : "";
+  const descHtml = !m.hideDesc && m.desc ? `<span class="ach-hud-desc">${esc(m.desc)}</span>` : "";
+
   return `
-    <div class="ach-hud-toast size-${esc(m.size)} style-${esc(m.style)} theme-${esc(m.theme)} tier-${m.tier} seq-${m.seq % 2}" data-seq="${m.seq}" style="${achCardVars(m.palette)}">
+    <div class="ach-hud-toast size-${esc(m.size)} style-${esc(m.style)} theme-${esc(m.theme)} tier-${m.tier} ${layoutClass} seq-${m.seq % 2}" data-seq="${m.seq}" style="${achCardVars(m.palette, m.opacity)}">
       <svg class="ach-fx-border-beam" aria-hidden="true"><rect pathLength="100" /></svg>
       <div class="ach-fx-godrays"></div>
       <div class="ach-hud-gold-bar"></div>
@@ -150,9 +162,9 @@ export function achCardHtml(m: AchCardModel): string {
       </div>
 
       <div class="ach-hud-text-col">
-        ${m.tag ? `<span class="ach-hud-tag">${esc(m.tag)}</span>` : ""}
+        ${tagHtml}
         <span class="ach-hud-title">${esc(m.title)}</span>
-        <span class="ach-hud-desc">${esc(m.desc)}</span>
+        ${descHtml}
       </div>
     </div>`;
 }

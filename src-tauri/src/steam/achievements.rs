@@ -2473,6 +2473,54 @@ pub struct AchievementNotificationOptions {
     /// burst of achievements unlocks.
     #[serde(default)]
     pub unlock_screenshots: bool,
+    #[serde(default = "default_opacity")]
+    pub opacity: u8,
+    #[serde(default)]
+    pub custom_accent: Option<String>,
+    #[serde(default = "default_offset")]
+    pub offset: u32,
+    #[serde(default)]
+    pub hide_tag: bool,
+    #[serde(default)]
+    pub hide_desc: bool,
+    #[serde(default = "default_layout")]
+    pub layout: String,
+    #[serde(default)]
+    pub rare_custom_sound: bool,
+    #[serde(default)]
+    pub rare_custom_sound_name: Option<String>,
+}
+
+fn default_opacity() -> u8 {
+    100
+}
+
+fn normalize_opacity(value: Option<u8>) -> u8 {
+    value.unwrap_or(100).clamp(50, 100)
+}
+
+fn default_offset() -> u32 {
+    18
+}
+
+fn normalize_offset(value: Option<u32>) -> u32 {
+    value.unwrap_or(18).clamp(0, 100)
+}
+
+fn default_layout() -> String {
+    "standard".to_string()
+}
+
+fn normalize_layout(value: Option<&str>) -> String {
+    match value {
+        Some("compact") => "compact",
+        _ => "standard",
+    }
+    .to_string()
+}
+
+fn normalize_custom_accent(value: Option<&str>) -> Option<String> {
+    value.map(str::trim).filter(|s| !s.is_empty()).map(str::to_string)
 }
 
 impl Default for AchievementNotificationOptions {
@@ -2493,6 +2541,14 @@ impl Default for AchievementNotificationOptions {
             disabled_stores: Vec::new(),
             min_rarity_percent: 0,
             unlock_screenshots: false,
+            opacity: default_opacity(),
+            custom_accent: None,
+            offset: default_offset(),
+            hide_tag: false,
+            hide_desc: false,
+            layout: default_layout(),
+            rare_custom_sound: false,
+            rare_custom_sound_name: None,
         }
     }
 }
@@ -2510,6 +2566,7 @@ fn normalize_card_theme(value: Option<&str>) -> String {
         Some("emerald") => "emerald",
         Some("crimson") => "crimson",
         Some("amethyst") => "amethyst",
+        Some("custom") => "custom",
         _ => "rarity",
     }
     .to_string()
@@ -2655,6 +2712,11 @@ pub fn achievement_notification_options(app: &tauri::AppHandle) -> AchievementNo
         .as_deref()
         .filter(|path| !path.trim().is_empty() && Path::new(path).is_file());
     let custom_sound = sound_path.is_some();
+    let rare_sound_path = settings
+        .achievement_notifications_rare_sound_path
+        .as_deref()
+        .filter(|path| !path.trim().is_empty() && Path::new(path).is_file());
+    let rare_custom_sound = rare_sound_path.is_some();
     AchievementNotificationOptions {
         enabled: settings.achievement_notifications_enabled.unwrap_or(true),
         sound: settings.achievement_notifications_sound.unwrap_or(true),
@@ -2699,6 +2761,25 @@ pub fn achievement_notification_options(app: &tauri::AppHandle) -> AchievementNo
             settings.achievement_notifications_min_rarity,
         ),
         unlock_screenshots: settings.achievement_unlock_screenshots.unwrap_or(false),
+        opacity: normalize_opacity(settings.achievement_notifications_opacity),
+        custom_accent: normalize_custom_accent(settings.achievement_notifications_custom_accent.as_deref()),
+        offset: normalize_offset(settings.achievement_notifications_offset),
+        hide_tag: settings.achievement_notifications_hide_tag.unwrap_or(false),
+        hide_desc: settings.achievement_notifications_hide_desc.unwrap_or(false),
+        layout: normalize_layout(settings.achievement_notifications_layout.as_deref()),
+        rare_custom_sound,
+        rare_custom_sound_name: if rare_custom_sound {
+            settings.achievement_notifications_rare_sound_name.clone().or_else(|| {
+                rare_sound_path.and_then(|path| {
+                    Path::new(path)
+                        .file_name()
+                        .and_then(|name| name.to_str())
+                        .map(str::to_string)
+                })
+            })
+        } else {
+            None
+        },
     }
 }
 
@@ -2739,6 +2820,12 @@ pub fn achievement_set_notification_options(
         options.min_rarity_percent,
     )));
     settings.achievement_unlock_screenshots = Some(options.unlock_screenshots);
+    settings.achievement_notifications_opacity = Some(normalize_opacity(Some(options.opacity)));
+    settings.achievement_notifications_custom_accent = normalize_custom_accent(options.custom_accent.as_deref());
+    settings.achievement_notifications_offset = Some(normalize_offset(Some(options.offset)));
+    settings.achievement_notifications_hide_tag = Some(options.hide_tag);
+    settings.achievement_notifications_hide_desc = Some(options.hide_desc);
+    settings.achievement_notifications_layout = Some(normalize_layout(Some(options.layout.as_str())));
     crate::save_settings(&app, &settings);
     // The overlay panel can change the same switches; the main window's copy
     // has to follow without waiting for a restart.
@@ -2842,6 +2929,92 @@ pub fn achievement_clear_custom_sound(app: tauri::AppHandle) -> Result<(), Strin
         let _ = std::fs::remove_file(path);
     }
     settings.achievement_notifications_sound_name = None;
+    crate::save_settings(&app, &settings);
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn achievement_pick_rare_custom_sound(
+    app: tauri::AppHandle,
+) -> Result<Option<String>, String> {
+    #[cfg(windows)]
+    {
+        let chosen = tokio::task::spawn_blocking(move || {
+            let script = r#"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;
+Add-Type -AssemblyName System.Windows.Forms;
+$f = New-Object System.Windows.Forms.OpenFileDialog;
+$f.Title = 'Select rare notification sound';
+$f.Filter = 'Audio (*.wav;*.mp3;*.ogg;*.flac;*.m4a;*.aac)|*.wav;*.mp3;*.ogg;*.flac;*.m4a;*.aac';
+if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $f.FileName }
+"#;
+            let mut cmd = std::process::Command::new("powershell");
+            cmd.args(["-NoProfile", "-NonInteractive", "-Command", script]);
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x08000000);
+            let output = cmd.output().map_err(|error| error.to_string())?;
+            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            Ok::<Option<String>, String>(if path.is_empty() { None } else { Some(path) })
+        })
+        .await
+        .map_err(|error| error.to_string())??;
+        let Some(chosen) = chosen else {
+            return Ok(None);
+        };
+        let source = PathBuf::from(&chosen);
+        if !source.is_file() {
+            return Err("The selected sound file does not exist".into());
+        }
+        let extension = source
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .unwrap_or("")
+            .to_lowercase();
+        if !matches!(extension.as_str(), "wav" | "mp3" | "ogg" | "flac" | "m4a" | "aac") {
+            return Err("Choose a WAV, MP3, OGG, FLAC, M4A, or AAC audio file".into());
+        }
+        let metadata = std::fs::metadata(&source).map_err(|error| error.to_string())?;
+        if metadata.len() > 10 * 1024 * 1024 {
+            return Err("The notification sound must be smaller than 10 MB".into());
+        }
+        let source_file = std::fs::File::open(&source).map_err(|error| error.to_string())?;
+        if rodio::Decoder::try_from(source_file).is_err() {
+            return Err("This audio file is not supported".into());
+        }
+        let target = achievement_sound_dir(&app).join(format!(
+            "achievement-rare-{}.{}",
+            now_secs(),
+            extension
+        ));
+        std::fs::copy(&source, &target).map_err(|error| error.to_string())?;
+        let mut settings = crate::load_settings(&app);
+        if let Some(old) = settings.achievement_notifications_rare_sound_path.take() {
+            if Path::new(&old) != target.as_path() {
+                let _ = std::fs::remove_file(old);
+            }
+        }
+        settings.achievement_notifications_rare_sound_path =
+            Some(target.to_string_lossy().to_string());
+        settings.achievement_notifications_rare_sound_name = source
+            .file_name()
+            .and_then(|name| name.to_str())
+            .map(str::to_string);
+        crate::save_settings(&app, &settings);
+        Ok(settings.achievement_notifications_rare_sound_name)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = app;
+        Ok(None)
+    }
+}
+
+#[tauri::command]
+pub fn achievement_clear_rare_custom_sound(app: tauri::AppHandle) -> Result<(), String> {
+    let mut settings = crate::load_settings(&app);
+    if let Some(path) = settings.achievement_notifications_rare_sound_path.take() {
+        let _ = std::fs::remove_file(path);
+    }
+    settings.achievement_notifications_rare_sound_name = None;
     crate::save_settings(&app, &settings);
     Ok(())
 }
@@ -3053,6 +3226,12 @@ fn toast_payload(
         icon_url: None,
         batch: 0,
         batch_names: Vec::new(),
+        opacity: options.opacity,
+        custom_accent: options.custom_accent.clone(),
+        offset: options.offset,
+        hide_tag: options.hide_tag,
+        hide_desc: options.hide_desc,
+        layout: options.layout.clone(),
     }
 }
 

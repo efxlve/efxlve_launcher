@@ -9,8 +9,10 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `achievement_audition_sound` | `achievementAuditionSound({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `achievement_capture_souvenir` | `achievementCaptureSouvenir({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `achievement_clear_custom_sound` | `achievementClearCustomSound({ ... })` | `src-tauri/src/steam/achievements.rs` |
+| `achievement_clear_rare_custom_sound` | `achievementClearRareCustomSound({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `achievement_get_notification_options` | `achievementGetNotificationOptions({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `achievement_pick_custom_sound` | `achievementPickCustomSound({ ... })` | `src-tauri/src/steam/achievements.rs` |
+| `achievement_pick_rare_custom_sound` | `achievementPickRareCustomSound({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `achievement_set_notification_colors` | `achievementSetNotificationColors({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `achievement_set_notification_options` | `achievementSetNotificationOptions({ ... })` | `src-tauri/src/steam/achievements.rs` |
 | `achievement_test_notification` | `achievementTestNotification({ ... })` | `src-tauri/src/steam/achievements.rs` |

@@ -152,11 +152,31 @@ function toHex(color: Rgba): string {
   return `#${channel(color[0])}${channel(color[1])}${channel(color[2])}`;
 }
 
+export function customCardPalette(accentHex?: string): AchievementCardColors {
+  const accentStr = (accentHex || "").trim() || "#00f0ff";
+  const rgba = readColor(accentStr) || [0, 240, 255, 1];
+  const bg: Rgba = [12, 14, 20, 1];
+  const border = over([rgba[0], rgba[1], rgba[2], 0.55], bg);
+  const icon = over([rgba[0], rgba[1], rgba[2], 0.85], [255, 255, 255, 1]);
+  return {
+    background: "#0c0e14",
+    accent: toHex(rgba),
+    border: toHex(border),
+    icon: toHex(icon),
+    title: "#ffffff",
+    body: "#b0b8c4",
+  };
+}
+
 /**
  * Resolves the selected mode against the live CSS tokens. Translucent theme
  * tokens are flattened over the plate so the toast and the preview agree.
  */
-export function achievementCardPalette(cardTheme: string, rarityTier = 2): AchievementCardColors {
+export function achievementCardPalette(
+  cardTheme: string,
+  rarityTier = 2,
+  customAccent?: string,
+): AchievementCardColors {
   switch (cardTheme) {
     case "gold":
       return GOLD_ACHIEVEMENT_CARD;
@@ -168,6 +188,8 @@ export function achievementCardPalette(cardTheme: string, rarityTier = 2): Achie
       return CRIMSON_ACHIEVEMENT_CARD;
     case "amethyst":
       return AMETHYST_ACHIEVEMENT_CARD;
+    case "custom":
+      return customCardPalette(customAccent);
     case "rarity":
       return rarityCardPalette(rarityTier);
     case "launcher": {

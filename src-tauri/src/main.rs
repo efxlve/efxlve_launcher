@@ -466,6 +466,29 @@ pub struct EpicSettings {
     /// the game's screenshot folder. Off by default: it is a screen capture.
     #[serde(default)]
     pub achievement_unlock_screenshots: Option<bool>,
+    /// Card opacity in percent (50-100, default 100).
+    #[serde(default)]
+    pub achievement_notifications_opacity: Option<u8>,
+    /// Custom accent color hex (e.g. "#00f0ff") when card_theme is "custom".
+    #[serde(default)]
+    pub achievement_notifications_custom_accent: Option<String>,
+    /// Screen padding/inset offset in px (0-100, default 18).
+    #[serde(default)]
+    pub achievement_notifications_offset: Option<u32>,
+    /// When true, hides the top rarity/count tag line on the card.
+    #[serde(default)]
+    pub achievement_notifications_hide_tag: Option<bool>,
+    /// When true, hides the achievement description text (spoiler/minimalist).
+    #[serde(default)]
+    pub achievement_notifications_hide_desc: Option<bool>,
+    /// Card layout style: "standard" or "compact".
+    #[serde(default)]
+    pub achievement_notifications_layout: Option<String>,
+    /// Optional separate sound path for Rare (Tier 3) / Platinum (Tier 4) unlocks.
+    #[serde(default)]
+    pub achievement_notifications_rare_sound_path: Option<String>,
+    #[serde(default)]
+    pub achievement_notifications_rare_sound_name: Option<String>,
     /// RetroAchievements username; paired with the web API key below. The key
     /// is write-only: the frontend only ever learns whether one is stored.
     #[serde(default)]
@@ -2497,6 +2520,8 @@ fn main() {
             steam::achievement_set_notification_options,
             steam::achievement_pick_custom_sound,
             steam::achievement_clear_custom_sound,
+            steam::achievement_pick_rare_custom_sound,
+            steam::achievement_clear_rare_custom_sound,
             steam::achievement_test_notification,
             steam::achievement_audition_sound,
             steam::achievement_announce_store_unlocks,

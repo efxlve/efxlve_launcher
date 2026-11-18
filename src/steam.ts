@@ -344,6 +344,21 @@ export interface AchievementNotificationOptions {
   minRarityPercent?: number;
   /** Save a screenshot of the moment to the game's screenshot folder. */
   unlockScreenshots?: boolean;
+  /** Card opacity 50-100 (percentage). */
+  opacity?: number;
+  /** Custom accent color hex (e.g. "#00f0ff") when cardTheme is "custom". */
+  customAccent?: string;
+  /** Screen edge margin offset in px (0-100). */
+  offset?: number;
+  /** When true, hides the top rarity/count tag line on the card. */
+  hideTag?: boolean;
+  /** When true, hides the achievement description text. */
+  hideDesc?: boolean;
+  /** Card layout: "standard" or "compact". */
+  layout?: string;
+  /** True when a separate rare/platinum sound is configured. */
+  rareCustomSound?: boolean;
+  rareCustomSoundName?: string | null;
 }
 
 /** The card palette, resolved from the live CSS tokens by the frontend. */
@@ -431,6 +446,12 @@ export const achievementPickCustomSound = () =>
 
 export const achievementClearCustomSound = () =>
   invoke<void>("achievement_clear_custom_sound");
+
+export const achievementPickRareCustomSound = () =>
+  invoke<string | null>("achievement_pick_rare_custom_sound");
+
+export const achievementClearRareCustomSound = () =>
+  invoke<void>("achievement_clear_rare_custom_sound");
 
 export const steamStartAchievementWatcher = (appId: string, language?: string) =>
   invoke<void>("steam_start_achievement_watcher", { appId, language: language ?? null });

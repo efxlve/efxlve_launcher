@@ -538,6 +538,17 @@ document.addEventListener("change", (e) => {
     }
     return;
   }
+  const achColorInput = target?.closest?.<HTMLInputElement>('input[data-act="set-ach-custom-accent"]');
+  if (achColorInput) {
+    const hex = achColorInput.value;
+    if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+      const next = { ...S.achievementNotificationOptions, customAccent: hex, cardTheme: "custom" };
+      S.achievementNotificationOptions = next;
+      void import("../../steam").then((mod) => mod.achievementSetNotificationOptions(next)).catch(() => {});
+      render();
+    }
+    return;
+  }
   if (target?.classList?.contains("selective-checkbox") && target.closest(".settings-hidden-list")) {
     const btn = document.getElementById("hidden-show-selected") as HTMLButtonElement | null;
     if (btn) btn.disabled = !document.querySelector(".settings-hidden-list .selective-checkbox:checked");

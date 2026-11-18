@@ -89,6 +89,30 @@ pub struct ToastPayload {
     pub batch: u32,
     #[serde(default)]
     pub batch_names: Vec<String>,
+    #[serde(default = "default_opacity")]
+    pub opacity: u8,
+    #[serde(default)]
+    pub custom_accent: Option<String>,
+    #[serde(default = "default_offset")]
+    pub offset: u32,
+    #[serde(default)]
+    pub hide_tag: bool,
+    #[serde(default)]
+    pub hide_desc: bool,
+    #[serde(default = "default_layout")]
+    pub layout: String,
+}
+
+fn default_opacity() -> u8 {
+    100
+}
+
+fn default_offset() -> u32 {
+    18
+}
+
+fn default_layout() -> String {
+    "standard".to_string()
 }
 
 #[derive(Serialize, Clone)]
@@ -720,6 +744,12 @@ mod tests {
             icon_url: None,
             batch: 0,
             batch_names: Vec::new(),
+            opacity: 100,
+            custom_accent: None,
+            offset: 18,
+            hide_tag: false,
+            hide_desc: false,
+            layout: "standard".into(),
         }
     }
 

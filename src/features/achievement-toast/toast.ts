@@ -36,6 +36,12 @@ interface ToastPayload {
   /** Greater than one when the card stands for a burst of unlocks. */
   batch?: number;
   batchNames?: string[];
+  opacity?: number;
+  customAccent?: string;
+  offset?: number;
+  hideTag?: boolean;
+  hideDesc?: boolean;
+  layout?: string;
 }
 
 interface ToastIconPayload {
@@ -80,7 +86,7 @@ function renderToast(payload: ToastPayload): void {
   const palette =
     theme === "launcher"
       ? payload.palette
-      : achievementCardPalette(payload.theme, payload.tier);
+      : achievementCardPalette(payload.theme, payload.tier, payload.customAccent);
   // A save load can unlock a whole set at once; one card then names the count
   // and the first few achievements instead of twenty cards overwriting itself.
   const batch = Math.max(0, payload.batch ?? 0);
@@ -92,7 +98,8 @@ function renderToast(payload: ToastPayload): void {
   const desc = isBatch
     ? `${shown.join(" · ")}${extra > 0 ? ` +${extra}` : ""}`
     : payload.body;
-  root.innerHTML = `<div class="ach-toast-layer pos-${position}">${achCardHtml({
+  const offset = Math.max(0, Math.min(100, payload.offset ?? 18));
+  root.innerHTML = `<div class="ach-toast-layer pos-${position}" style="padding: ${offset}px;">${achCardHtml({
     tag: isHint
       ? ""
       : achTagLine(payload.tier, payload.unlocked, payload.total, payload.rarityPercent),
@@ -107,6 +114,10 @@ function renderToast(payload: ToastPayload): void {
     glyph: isHint ? "layers" : "trophy",
     iconSrc: payload.icon || payload.iconUrl || undefined,
     hint: isHint,
+    opacity: payload.opacity,
+    layout: payload.layout,
+    hideTag: payload.hideTag,
+    hideDesc: payload.hideDesc,
   })}</div>`;
 
   const card = root.querySelector<HTMLElement>(".ach-hud-toast");

@@ -20,7 +20,7 @@ body.ach-toast-page {
   position: fixed;
   inset: 0;
   display: flex;
-  padding: 18px;
+  padding: var(--ach-offset, 18px);
   pointer-events: none;
 }
 

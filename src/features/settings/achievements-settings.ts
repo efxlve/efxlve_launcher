@@ -16,8 +16,10 @@ import { esc } from "../../core/utils";
 import {
   achievementAuditionSound,
   achievementClearCustomSound,
+  achievementClearRareCustomSound,
   achievementGetNotificationOptions,
   achievementPickCustomSound,
+  achievementPickRareCustomSound,
   achievementSetNotificationOptions,
   achievementTestNotification,
 } from "../../steam";
@@ -484,8 +486,9 @@ export function renderAchievementsSettingsView(): string {
       ? "small"
       : "normal";
 
-  const allowedThemes = ["gold", "rarity", "launcher", "cyber", "emerald", "crimson", "amethyst"];
+  const allowedThemes = ["gold", "rarity", "launcher", "cyber", "emerald", "crimson", "amethyst", "custom"];
   const cardTheme = allowedThemes.includes(options.cardTheme) ? options.cardTheme : "rarity";
+  const customAccent = options.customAccent || "#00f0ff";
 
   const allowedStyles = ["prism", "cyber", "shatter", "jackpot", "xbox", "playstation", "epic"];
   const animStyle = allowedStyles.includes(options.animStyle) ? options.animStyle : "prism";
@@ -495,7 +498,12 @@ export function renderAchievementsSettingsView(): string {
     ? (options.exitStyle as string)
     : "auto";
 
-  const palette = achievementCardPalette(cardTheme, previewRarityTier);
+  const opacity = typeof options.opacity === "number" ? Math.max(50, Math.min(100, options.opacity)) : 100;
+  const offset = typeof options.offset === "number" ? Math.max(0, Math.min(80, options.offset)) : 18;
+  const currentLayout = options.layout === "compact" ? "compact" : "standard";
+  const rareSoundName = options.rareCustomSoundName || t("settings.achRareSoundSame");
+
+  const palette = achievementCardPalette(cardTheme, previewRarityTier, customAccent);
   const tierMeta = getPreviewTierMeta(previewRarityTier);
 
   const generalStoreList: Array<{ id: string; label: string; logoId?: string; ico?: IconName }> = [
@@ -638,6 +646,67 @@ export function renderAchievementsSettingsView(): string {
     )
     .join("");
 
+  const exitStyleOptions: Array<{ id: string; label: string; ico: IconName }> = [
+    { id: "auto", label: t("settings.achExitAuto"), ico: "refresh" },
+    { id: "collapse", label: t("settings.achExitCollapse"), ico: "circle" },
+    { id: "glide", label: t("settings.achExitGlide"), ico: "sparkles" },
+    { id: "fold", label: t("settings.achExitFold"), ico: "layers" },
+    { id: "laser", label: t("settings.achExitLaser"), ico: "zap" },
+    { id: "implode", label: t("settings.achExitImplode"), ico: "star" },
+    { id: "zoom", label: t("settings.achExitZoom"), ico: "maximize-2" },
+  ];
+
+  const exitStyleButtons = exitStyleOptions
+    .map(
+      (opt) => `
+        <button type="button" class="ach-style-chip ${exitStyle === opt.id ? "active" : ""}" data-act="set-ach-exit-style" data-val="${opt.id}">
+          ${icon(opt.ico, 13)}
+          <span>${esc(opt.label)}</span>
+        </button>
+      `,
+    )
+    .join("");
+
+  const layoutOptions: Array<{ id: string; label: string }> = [
+    { id: "standard", label: t("settings.achLayoutStandard") },
+    { id: "compact", label: t("settings.achLayoutCompact") },
+  ];
+
+  const layoutButtons = layoutOptions
+    .map(
+      (opt) => `
+        <button type="button" class="${currentLayout === opt.id ? "active" : ""}" data-act="set-ach-layout" data-val="${opt.id}">
+          ${esc(opt.label)}
+        </button>
+      `,
+    )
+    .join("");
+
+  const opacityButtons = [60, 75, 90, 100]
+    .map(
+      (val) => `
+        <button type="button" class="${opacity === val ? "active" : ""}" data-act="set-ach-opacity" data-val="${val}">
+          %${val}
+        </button>
+      `,
+    )
+    .join("");
+
+  const offsetButtons = [
+    [0, "0px"],
+    [18, "18px"],
+    [36, "36px"],
+    [60, "60px"],
+  ]
+    .map(
+      ([val, label]) => `
+        <button type="button" class="${offset === val ? "active" : ""}" data-act="set-ach-offset" data-val="${val}">
+          ${label}
+        </button>
+      `,
+    )
+    .join("");
+
   const cardThemeButtons = [
     { id: "rarity", label: t("settings.achCardThemeRarity"), swatch: "conic-gradient(#cd7f32, #94a3b8, #f59e0b, #22d3ee, #e879f9)" },
     { id: "gold", label: t("settings.achCardThemeGold"), swatch: "#f59e0b" },
@@ -646,6 +715,7 @@ export function renderAchievementsSettingsView(): string {
     { id: "emerald", label: t("settings.achCardThemeEmerald"), swatch: "#10b981" },
     { id: "crimson", label: t("settings.achCardThemeCrimson"), swatch: "#f43f5e" },
     { id: "amethyst", label: t("settings.achCardThemeAmethyst"), swatch: "#a855f7" },
+    { id: "custom", label: t("settings.achCardThemeCustom"), swatch: customAccent },
   ]
     .map(
       (option) => `
@@ -653,6 +723,15 @@ export function renderAchievementsSettingsView(): string {
           <span class="ach-theme-swatch" style="background: ${option.swatch};"></span>
           <span>${esc(option.label)}</span>
         </button>
+      `,
+    )
+    .join("");
+
+  const customAccentPresets = ["#00f0ff", "#ff007f", "#76ff03", "#a855f7", "#ffab00", "#ff1744", "#3b82f6"];
+  const presetDots = customAccentPresets
+    .map(
+      (c) => `
+        <button type="button" class="ach-preset-dot ${customAccent.toLowerCase() === c.toLowerCase() ? "active" : ""}" data-act="set-ach-custom-accent" data-val="${c}" style="background: ${c};" title="${c}"></button>
       `,
     )
     .join("");
@@ -868,7 +947,7 @@ export function renderAchievementsSettingsView(): string {
           <span class="settings-value">${esc(t("settings.achPositionTitle"))}: <strong>${esc(position)}</strong></span>
         </div>
 
-        <div class="ach-stage-screen pos-${esc(position)} tier-${previewRarityTier}" style="${achCardVars(palette)}--ach-progress:${tierMeta.progressPct}%;">
+        <div class="ach-stage-screen pos-${esc(position)} tier-${previewRarityTier}" style="${achCardVars(palette, opacity)}--ach-progress:${tierMeta.progressPct}%; padding: ${offset}px;">
           <div class="ach-stage-backdrop"></div>
           <div class="ach-stage-aura"></div>
 
@@ -884,6 +963,10 @@ export function renderAchievementsSettingsView(): string {
             palette,
             seq: stageReplaySeq,
             glyph: tierMeta.iconName,
+            opacity,
+            layout: currentLayout,
+            hideTag: options.hideTag,
+            hideDesc: options.hideDesc,
           })}
         </div>
       </div>
@@ -898,6 +981,28 @@ export function renderAchievementsSettingsView(): string {
           </div>
           <div class="settings-row-control" style="width: 100%;">
             <div class="ach-style-grid" role="group">${animStyleButtons}</div>
+          </div>
+        </div>
+
+        <!-- Closing Animation Style -->
+        <div class="row settings-row stacked">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achExitStyleTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achExitStyleDesc"))}</div>
+          </div>
+          <div class="settings-row-control" style="width: 100%;">
+            <div class="ach-style-grid" role="group">${exitStyleButtons}</div>
+          </div>
+        </div>
+
+        <!-- Card Layout: Standard vs Slim Capsule -->
+        <div class="row settings-row">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achLayoutTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achLayoutDesc"))}</div>
+          </div>
+          <div class="settings-row-control">
+            <div class="seg" role="group">${layoutButtons}</div>
           </div>
         </div>
 
@@ -931,6 +1036,19 @@ export function renderAchievementsSettingsView(): string {
           </div>
           <div class="settings-row-control" style="width: 100%;">
             <div class="ach-theme-grid" role="group">${cardThemeButtons}</div>
+            ${
+              cardTheme === "custom"
+                ? `
+              <div class="ach-custom-accent-row">
+                <span class="settings-row-desc" style="margin: 0; font-size: 12px;">${esc(t("settings.achCustomAccentTitle"))}:</span>
+                <input type="color" class="ach-color-input" data-act="set-ach-custom-accent" value="${esc(customAccent)}" title="${esc(t("settings.achCustomAccentTitle"))}" />
+                <span class="settings-value tabular-nums" style="font-size: 12px; margin-right: 6px;">${esc(customAccent)}</span>
+                <div style="display: flex; gap: 6px; align-items: center; margin-left: auto;">
+                  ${presetDots}
+                </div>
+              </div>`
+                : ""
+            }
           </div>
         </div>
 
@@ -942,6 +1060,55 @@ export function renderAchievementsSettingsView(): string {
           </div>
           <div class="settings-row-control">
             <div class="seg" role="group">${sizeButtons}</div>
+          </div>
+        </div>
+
+        <!-- Opacity Selector -->
+        <div class="row settings-row">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achOpacityTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achOpacityDesc"))}</div>
+          </div>
+          <div class="settings-row-control">
+            <div class="seg" role="group">${opacityButtons}</div>
+          </div>
+        </div>
+
+        <!-- Screen Margin Offset Selector -->
+        <div class="row settings-row">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achOffsetTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achOffsetDesc"))}</div>
+          </div>
+          <div class="settings-row-control">
+            <div class="seg" role="group">${offsetButtons}</div>
+          </div>
+        </div>
+
+        <!-- Content Visibility Toggles -->
+        <div class="row settings-row">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achHideTagTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achHideTagDesc"))}</div>
+          </div>
+          <div class="settings-row-control">
+            <label class="switch">
+              <input type="checkbox" data-act="toggle-ach-hide-tag" ${options.hideTag ? "checked" : ""} />
+              <span class="track"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="row settings-row">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achHideDescTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achHideDescDesc"))}</div>
+          </div>
+          <div class="settings-row-control">
+            <label class="switch">
+              <input type="checkbox" data-act="toggle-ach-hide-desc" ${options.hideDesc ? "checked" : ""} />
+              <span class="track"></span>
+            </label>
           </div>
         </div>
 
@@ -1016,6 +1183,30 @@ export function renderAchievementsSettingsView(): string {
               </button>
               ${options.customSound ? `
                 <button type="button" class="btn ghost small danger" data-act="ach-clear-sound" title="${esc(t("settings.achSoundClear"))}">
+                  ${icon("trash", 13)}
+                </button>
+              ` : ""}
+            </div>
+          </div>
+        </div>
+
+        <!-- Rare & Platinum Sound row -->
+        <div class="row settings-row">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achRareSoundTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achRareSoundDesc"))}</div>
+          </div>
+          <div class="settings-row-control">
+            <div class="ach-sound-control-wrap">
+              <span class="ach-sound-file-label" title="${esc(rareSoundName)}">${esc(rareSoundName)}</span>
+              <button type="button" class="btn ghost small" data-act="ach-audition-rare-sound" title="${esc(t("settings.achAuditionBtn"))}">
+                ${icon("volume-2", 13)} <span>${esc(t("settings.achAuditionBtn"))}</span>
+              </button>
+              <button type="button" class="btn ghost small" data-act="ach-pick-rare-sound">
+                ${icon("folder", 13)} <span>${esc(t("settings.achSoundChoose"))}</span>
+              </button>
+              ${options.rareCustomSound ? `
+                <button type="button" class="btn ghost small danger" data-act="ach-clear-rare-sound" title="${esc(t("settings.achSoundClear"))}">
                   ${icon("trash", 13)}
                 </button>
               ` : ""}
@@ -1196,13 +1387,92 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     }
 
     case "set-ach-card-theme": {
-      const allowed = ["gold", "rarity", "launcher", "cyber", "emerald", "crimson", "amethyst"];
+      const allowed = ["gold", "rarity", "launcher", "cyber", "emerald", "crimson", "amethyst", "custom"];
       const cardTheme = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "rarity";
       const next = { ...S.achievementNotificationOptions, cardTheme };
       S.achievementNotificationOptions = next;
       stageReplaySeq++;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       syncAchievementCardTheme();
+      render();
+      runStagePreviewChoreography("entry");
+      return true;
+    }
+
+    case "set-ach-custom-accent": {
+      const val = (el.dataset.val || (el as HTMLInputElement).value || "").trim();
+      if (!val) return true;
+      const next = { ...S.achievementNotificationOptions, customAccent: val, cardTheme: "custom" };
+      S.achievementNotificationOptions = next;
+      stageReplaySeq++;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      runStagePreviewChoreography("entry");
+      return true;
+    }
+
+    case "set-ach-exit-style": {
+      const allowed = ["auto", "collapse", "glide", "fold", "laser", "implode", "zoom"];
+      const exitStyle = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "auto";
+      const next = { ...S.achievementNotificationOptions, exitStyle };
+      S.achievementNotificationOptions = next;
+      stageReplaySeq++;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      runStagePreviewChoreography("exit");
+      return true;
+    }
+
+    case "set-ach-layout": {
+      const layout = el.dataset.val === "compact" ? "compact" : "standard";
+      const next = { ...S.achievementNotificationOptions, layout };
+      S.achievementNotificationOptions = next;
+      stageReplaySeq++;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      runStagePreviewChoreography("entry");
+      return true;
+    }
+
+    case "set-ach-opacity": {
+      const opacity = Math.max(50, Math.min(100, Number(el.dataset.val) || 100));
+      const next = { ...S.achievementNotificationOptions, opacity };
+      S.achievementNotificationOptions = next;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      return true;
+    }
+
+    case "set-ach-offset": {
+      const offset = Math.max(0, Math.min(80, Number(el.dataset.val) || 18));
+      const next = { ...S.achievementNotificationOptions, offset };
+      S.achievementNotificationOptions = next;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      return true;
+    }
+
+    case "toggle-ach-hide-tag": {
+      const next = {
+        ...S.achievementNotificationOptions,
+        hideTag: (el as HTMLInputElement).checked,
+      };
+      S.achievementNotificationOptions = next;
+      stageReplaySeq++;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      runStagePreviewChoreography("entry");
+      return true;
+    }
+
+    case "toggle-ach-hide-desc": {
+      const next = {
+        ...S.achievementNotificationOptions,
+        hideDesc: (el as HTMLInputElement).checked,
+      };
+      S.achievementNotificationOptions = next;
+      stageReplaySeq++;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();
       runStagePreviewChoreography("entry");
       return true;
@@ -1296,6 +1566,38 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       void (async () => {
         try {
           await achievementClearCustomSound();
+          S.achievementNotificationOptions = await achievementGetNotificationOptions();
+          render();
+        } catch (e) {
+          toast(String(e), "err");
+        }
+      })();
+      return true;
+    }
+
+    case "ach-audition-rare-sound": {
+      previewAchievementSound(4);
+      return true;
+    }
+
+    case "ach-pick-rare-sound": {
+      void (async () => {
+        try {
+          const name = await achievementPickRareCustomSound();
+          if (!name) return;
+          S.achievementNotificationOptions = await achievementGetNotificationOptions();
+          render();
+        } catch (e) {
+          toast(String(e), "err");
+        }
+      })();
+      return true;
+    }
+
+    case "ach-clear-rare-sound": {
+      void (async () => {
+        try {
+          await achievementClearRareCustomSound();
           S.achievementNotificationOptions = await achievementGetNotificationOptions();
           render();
         } catch (e) {
