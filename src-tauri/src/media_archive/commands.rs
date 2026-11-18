@@ -758,12 +758,33 @@ fn can_write_under(path: &Path) -> bool {
     }
 }
 
-fn removable_backup_root() -> Option<PathBuf> {
+fn path_on_mount(path: &Path, mount: &Path) -> bool {
+    #[cfg(windows)]
+    {
+        let path = path
+            .to_string_lossy()
+            .replace('/', "\\")
+            .to_ascii_lowercase();
+        let mount = mount
+            .to_string_lossy()
+            .replace('/', "\\")
+            .to_ascii_lowercase();
+        let mount = mount.trim_end_matches('\\');
+        path == mount || path.starts_with(&format!("{mount}\\"))
+    }
+    #[cfg(not(windows))]
+    {
+        path.starts_with(mount)
+    }
+}
+
+fn removable_backup_root(install: &Path) -> Option<PathBuf> {
     let disks = sysinfo::Disks::new_with_refreshed_list();
     disks
         .iter()
         .filter(|disk| disk.is_removable() && disk.available_space() > 0)
         .filter(|disk| !disk.file_system().is_empty())
+        .filter(|disk| !path_on_mount(install, disk.mount_point()))
         .filter(|disk| can_write_under(disk.mount_point()))
         .max_by_key(|disk| disk.available_space())
         .map(|disk| disk.mount_point().to_path_buf())
@@ -793,7 +814,10 @@ fn documents_backup_root() -> PathBuf {
             }
             return home.join("Efxlve").join("Backups");
         }
-        PathBuf::from(r"C:\Games")
+        std::env::var_os("PUBLIC")
+            .map(PathBuf::from)
+            .map(|public| public.join("Documents").join("Efxlve Backups"))
+            .unwrap_or_else(|| std::env::temp_dir().join("Efxlve").join("Backups"))
     } else {
         std::env::var_os("HOME")
             .map(PathBuf::from)
@@ -836,7 +860,7 @@ fn default_target(
     }
     let parent = if backup {
         preferred_backup_root(preferred)
-            .or_else(removable_backup_root)
+            .or_else(|| removable_backup_root(&install))
             .unwrap_or_else(documents_backup_root)
     } else {
         parent
@@ -1078,6 +1102,28 @@ mod tests {
         assert!(!can_write_under(&file));
         assert!(can_write_under(&root));
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_install_mounts_match() {
+        assert!(path_on_mount(Path::new(r"E:\Games\Game"), Path::new(r"E:\")));
+        assert!(path_on_mount(Path::new(r"e:\games\game"), Path::new(r"E:\")));
+        assert!(path_on_mount(Path::new("e:/games/game"), Path::new(r"E:\")));
+        assert!(!path_on_mount(Path::new(r"D:\Games\Game"), Path::new(r"E:\")));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn unix_install_mounts_match() {
+        assert!(path_on_mount(
+            Path::new("/media/usb/Games/Game"),
+            Path::new("/media/usb")
+        ));
+        assert!(!path_on_mount(
+            Path::new("/media/usb2/Games/Game"),
+            Path::new("/media/usb")
+        ));
     }
 
     #[test]
