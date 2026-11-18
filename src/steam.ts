@@ -356,6 +356,10 @@ export interface AchievementNotificationOptions {
   hideDesc?: boolean;
   /** Card layout: "standard" or "compact". */
   layout?: string;
+  /** Glow intensity: "none", "subtle", or "vibrant". */
+  glow?: string;
+  /** When true, renders an animated set progress bar across the bottom of the card. */
+  showProgress?: boolean;
   /** True when a separate rare/platinum sound is configured. */
   rareCustomSound?: boolean;
   rareCustomSoundName?: string | null;

@@ -4416,5 +4416,12 @@
   "settings.achAnimSteam": "Steam",
   "settings.achAnimRetro": "Retro 8-Bit",
   "settings.achAnimMinimal": "Minimalistisch",
-  "settings.achAnimFantasy": "Fantasy-RPG"
+  "settings.achAnimFantasy": "Fantasy-RPG",
+  "settings.achGlowTitle": "Glüh- und Bloom-Intensität",
+  "settings.achGlowDesc": "Passen Sie volumetrische Strahlen, Neon-Glühen und Rahmenlicht an.",
+  "settings.achGlowNone": "Aus",
+  "settings.achGlowSubtle": "Dezent",
+  "settings.achGlowVibrant": "Lebendig",
+  "settings.achShowProgressTitle": "Fortschrittsbalken anzeigen",
+  "settings.achShowProgressDesc": "Zeigt einen animierten Fortschrittsbalken auf der Karte an."
 }

@@ -4416,5 +4416,12 @@
   "settings.achAnimSteam": "Steam",
   "settings.achAnimRetro": "復古 8-Bit",
   "settings.achAnimMinimal": "極簡主義",
-  "settings.achAnimFantasy": "奇幻 RPG"
+  "settings.achAnimFantasy": "奇幻 RPG",
+  "settings.achGlowTitle": "發光與光暈強度",
+  "settings.achGlowDesc": "調節體積光線、霓虹光暈和邊框光效亮度。",
+  "settings.achGlowNone": "關閉",
+  "settings.achGlowSubtle": "柔和",
+  "settings.achGlowVibrant": "鮮明",
+  "settings.achShowProgressTitle": "顯示進度條",
+  "settings.achShowProgressDesc": "在卡片上顯示動態成就完成進度條。"
 }

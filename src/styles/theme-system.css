@@ -1103,6 +1103,43 @@
   display: none;
 }
 
+/* Scaled glow & bloom support via --ach-glow */
+.ach-hud-toast .ach-fx-godrays {
+  opacity: calc(0.55 * var(--ach-glow, 1));
+}
+.ach-hud-toast.tier-3 .ach-fx-godrays,
+.ach-hud-toast.tier-4 .ach-fx-godrays {
+  opacity: calc(0.92 * var(--ach-glow, 1));
+}
+.ach-hud-toast .ach-fx-border-beam {
+  opacity: var(--ach-glow, 1);
+}
+.ach-hud-toast .ach-fx-shockwave {
+  opacity: var(--ach-glow, 1);
+}
+
+/* Progress Track & Fill */
+.ach-hud-progress-track {
+  position: relative;
+  width: 100%;
+  height: 3.5px;
+  margin-top: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.ach-hud-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ach-accent, #f59e0b), var(--ach-icon, #fbbf24));
+  border-radius: 999px;
+  box-shadow: 0 0 8px var(--ach-accent, #f59e0b);
+  transition: width 0.4s ease-out;
+}
+.ach-hud-toast.layout-compact .ach-hud-progress-track {
+  margin-top: 3px;
+  height: 2px;
+}
+
 /* ==========================================================================
    Visual Card Design Archetypes
    ========================================================================== */

@@ -4416,5 +4416,12 @@
   "settings.achAnimSteam": "Steam Deck",
   "settings.achAnimRetro": "Retro 8-Bit",
   "settings.achAnimMinimal": "Minimalist",
-  "settings.achAnimFantasy": "Fantasy RPG"
+  "settings.achAnimFantasy": "Fantasy RPG",
+  "settings.achGlowTitle": "Glow & Bloom Intensity",
+  "settings.achGlowDesc": "Adjust volumetric rays, outer neon bloom, and border beam brightness.",
+  "settings.achGlowNone": "Off",
+  "settings.achGlowSubtle": "Subtle",
+  "settings.achGlowVibrant": "Vibrant",
+  "settings.achShowProgressTitle": "Show Progress Bar",
+  "settings.achShowProgressDesc": "Display an animated completion progress bar across the card."
 }

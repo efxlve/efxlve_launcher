@@ -4416,5 +4416,12 @@
   "settings.achAnimSteam": "Steam",
   "settings.achAnimRetro": "レトロ 8-Bit",
   "settings.achAnimMinimal": "ミニマリスト",
-  "settings.achAnimFantasy": "ファンタジーRPG"
+  "settings.achAnimFantasy": "ファンタジーRPG",
+  "settings.achGlowTitle": "グローと発光の強度",
+  "settings.achGlowDesc": "光線、ネオングロー、境界線の光の強さを調整します。",
+  "settings.achGlowNone": "オフ",
+  "settings.achGlowSubtle": "控えめ",
+  "settings.achGlowVibrant": "鮮やか",
+  "settings.achShowProgressTitle": "進行状況バーを表示",
+  "settings.achShowProgressDesc": "カード上にアニメーション付きの達成度プログレスバーを表示します。"
 }

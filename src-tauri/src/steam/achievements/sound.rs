@@ -213,6 +213,82 @@ pub(super) fn synthesize_dopamine_chime_wav(style: &str, tier: u8) -> Vec<u8> {
                     }
                 }
             }
+            "steam" => {
+                // Modern Steam deck / client chime: warm two-tone wooden mallet bell (F4 -> C5)
+                let notes: [f32; 6] = [349.23, 523.25, 698.46, 880.00, 1046.50, 1396.91];
+                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
+                    let onset = if idx == 0 {
+                        0.0
+                    } else if idx == 1 {
+                        0.11
+                    } else {
+                        0.22 + (idx - 2) as f32 * 0.072
+                    };
+                    if t >= onset {
+                        let dt = t - onset;
+                        let attack = smooth_attack(dt, 0.008);
+                        let decay = (-dt * (2.4 - (tier.min(4) as f32) * 0.16)).exp();
+                        let fund_l = (dt * freq * 0.999 * tau).sin();
+                        let fund_r = (dt * freq * 1.001 * tau).sin();
+                        let mallet = (dt * freq * 2.76 * tau).sin() * (-dt * 6.8).exp() * 0.22;
+                        let amp = attack * decay * 0.155;
+                        left += (fund_l + mallet) * amp;
+                        right += (fund_r - mallet) * amp;
+                    }
+                }
+            }
+            "retro" => {
+                // Retro 8-Bit Arcade: authentic stepped square-wave victory arpeggio
+                let notes: [f32; 6] = [659.25, 830.61, 987.77, 1318.51, 1661.22, 1975.53];
+                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
+                    let onset = idx as f32 * 0.052;
+                    if t >= onset && t < onset + 0.55 {
+                        let dt = t - onset;
+                        let attack = smooth_attack(dt, 0.004);
+                        let decay = (-dt * 3.8).exp();
+                        // 50% square wave synthesized additively (odd harmonics)
+                        let sq = (dt * freq * tau).sin().signum() * 0.7
+                            + (dt * freq * 3.0 * tau).sin().signum() * 0.2;
+                        let amp = attack * decay * 0.115;
+                        left += sq * amp * 0.92;
+                        right += sq * amp * 1.08;
+                    }
+                }
+            }
+            "minimal" => {
+                // Minimalist Stealth: discrete, pure high-frequency acoustic micro-ping
+                let freq = 1046.50; // High C6
+                let attack = smooth_attack(t, 0.005);
+                let decay = (-t * 3.2).exp();
+                let fund = (t * freq * tau).sin();
+                let soft_over = (t * freq * 2.0 * tau).sin() * (-t * 7.0).exp() * 0.15;
+                let amp = attack * decay * 0.16;
+                left += (fund + soft_over) * amp;
+                right += (fund + soft_over) * amp;
+            }
+            "fantasy" => {
+                // Fantasy RPG Mühür: regal brass fifths & resonant antique cathedral bell chime
+                let brass_env = smooth_attack(t, 0.06) * (-t * 1.6).exp() * 0.13;
+                left += ((t * 146.83 * tau).sin() + 0.65 * (t * 220.00 * tau).sin()) * brass_env;
+                right += ((t * 147.20 * tau).sin() + 0.65 * (t * 219.60 * tau).sin()) * brass_env;
+
+                let notes: [f32; 6] = [293.66, 440.00, 587.33, 739.99, 880.00, 1174.66];
+                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
+                    let onset = 0.06 + idx as f32 * 0.078;
+                    if t >= onset {
+                        let dt = t - onset;
+                        let attack = smooth_attack(dt, 0.016);
+                        let decay = (-dt * (1.75 - (tier.min(4) as f32) * 0.12)).exp();
+                        let bell_l = (dt * freq * 0.9985 * tau).sin();
+                        let bell_r = (dt * freq * 1.0015 * tau).sin();
+                        let over = (dt * freq * 2.0 * tau).sin() * (-dt * 3.2).exp() * 0.32;
+                        let shimmer = (dt * freq * 3.8 * tau).sin() * (-dt * 5.4).exp() * 0.14;
+                        let amp = attack * decay * 0.14;
+                        left += (bell_l + over + shimmer) * amp;
+                        right += (bell_r + over - shimmer) * amp;
+                    }
+                }
+            }
             _ => {
                 // Prism Unfurl (default): warm D-Maj9 crystal pad + chime arpeggio
                 let pad_env = smooth_attack(t, 0.045) * (-t * 1.45).exp() * 0.09;

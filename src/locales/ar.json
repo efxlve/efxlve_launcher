@@ -4416,5 +4416,12 @@
   "settings.achAnimSteam": "ستيم",
   "settings.achAnimRetro": "ريترو 8-بت",
   "settings.achAnimMinimal": "تبسيطي",
-  "settings.achAnimFantasy": "آر بي جي خيالي"
+  "settings.achAnimFantasy": "آر بي جي خيالي",
+  "settings.achGlowTitle": "كثافة التوهج والسطوع",
+  "settings.achGlowDesc": "اضبط الأشعة الحجمية وتوهج النيون وسطوع حافة الإطار.",
+  "settings.achGlowNone": "معطل",
+  "settings.achGlowSubtle": "خفيف",
+  "settings.achGlowVibrant": "نابض",
+  "settings.achShowProgressTitle": "إظهار شريط التقدم",
+  "settings.achShowProgressDesc": "عرض شريط تقدم متحرك على بطاقة الإنجاز."
 }

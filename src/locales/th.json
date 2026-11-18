@@ -4416,5 +4416,12 @@
   "settings.achAnimSteam": "Steam",
   "settings.achAnimRetro": "ย้อนยุค 8-Bit",
   "settings.achAnimMinimal": "มินิมอล",
-  "settings.achAnimFantasy": "แฟนตาซี RPG"
+  "settings.achAnimFantasy": "แฟนตาซี RPG",
+  "settings.achGlowTitle": "ความสว่างของการเรืองแสง",
+  "settings.achGlowDesc": "ปรับลำแสงและแสงนีออนรอบขอบการแจ้งเตือน",
+  "settings.achGlowNone": "ปิด",
+  "settings.achGlowSubtle": "นุ่มนวล",
+  "settings.achGlowVibrant": "สดใส",
+  "settings.achShowProgressTitle": "แสดงแถบความคืบหน้า",
+  "settings.achShowProgressDesc": "แสดงแถบความคืบหน้าแบบเคลื่อนไหวบนการ์ด"
 }

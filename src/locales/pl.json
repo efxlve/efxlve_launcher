@@ -4416,5 +4416,12 @@
   "settings.achAnimSteam": "Steam",
   "settings.achAnimRetro": "Retro 8-bit",
   "settings.achAnimMinimal": "Minimalistyczny",
-  "settings.achAnimFantasy": "Fantasy RPG"
+  "settings.achAnimFantasy": "Fantasy RPG",
+  "settings.achGlowTitle": "Intensywność poświaty",
+  "settings.achGlowDesc": "Dostosuj promienie wolumetryczne, neonową poświatę i blask krawędzi.",
+  "settings.achGlowNone": "Wył.",
+  "settings.achGlowSubtle": "Subtelna",
+  "settings.achGlowVibrant": "Żywa",
+  "settings.achShowProgressTitle": "Pokaż pasek postępu",
+  "settings.achShowProgressDesc": "Wyświetla animowany pasek postępu na karcie."
 }

@@ -4416,5 +4416,12 @@
   "settings.achAnimSteam": "Steam",
   "settings.achAnimRetro": "रेट्रो 8-बिट",
   "settings.achAnimMinimal": "मिनिमलिस्ट",
-  "settings.achAnimFantasy": "फैंटेसी आरपीजी"
+  "settings.achAnimFantasy": "फैंटेसी आरपीजी",
+  "settings.achGlowTitle": "चमक और प्रकाश तीव्रता",
+  "settings.achGlowDesc": "किरणों, नीयन चमक और बॉर्डर प्रकाश चमक को समायोजित करें।",
+  "settings.achGlowNone": "बंद",
+  "settings.achGlowSubtle": "हल्का",
+  "settings.achGlowVibrant": "सक्रिय",
+  "settings.achShowProgressTitle": "प्रगति बार दिखाएं",
+  "settings.achShowProgressDesc": "कार्ड पर एनिमेटेड प्रगति बार प्रदर्शित करें।"
 }

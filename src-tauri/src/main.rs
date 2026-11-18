@@ -489,6 +489,12 @@ pub struct EpicSettings {
     pub achievement_notifications_rare_sound_path: Option<String>,
     #[serde(default)]
     pub achievement_notifications_rare_sound_name: Option<String>,
+    /// Glow intensity level: "none", "subtle", or "vibrant" (default).
+    #[serde(default)]
+    pub achievement_notifications_glow: Option<String>,
+    /// When true, renders an animated set progress bar across the bottom of the card.
+    #[serde(default)]
+    pub achievement_notifications_show_progress: Option<bool>,
     /// RetroAchievements username; paired with the web API key below. The key
     /// is write-only: the frontend only ever learns whether one is stored.
     #[serde(default)]

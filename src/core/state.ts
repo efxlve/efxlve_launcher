@@ -432,6 +432,8 @@ export const S = {
     hideTag: false,
     hideDesc: false,
     layout: "standard",
+    glow: "vibrant",
+    showProgress: false,
     rareCustomSound: false,
     rareCustomSoundName: null,
   } as import("../steam").AchievementNotificationOptions,

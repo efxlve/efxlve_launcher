@@ -4416,5 +4416,12 @@
   "settings.achAnimSteam": "Steam",
   "settings.achAnimRetro": "Ретро 8-бит",
   "settings.achAnimMinimal": "Минимализм",
-  "settings.achAnimFantasy": "Фэнтези RPG"
+  "settings.achAnimFantasy": "Фэнтези RPG",
+  "settings.achGlowTitle": "Интенсивность свечения и ореола",
+  "settings.achGlowDesc": "Настройка объемных лучей, неонового свечения и подсветки рамки.",
+  "settings.achGlowNone": "Выкл.",
+  "settings.achGlowSubtle": "Мягкое",
+  "settings.achGlowVibrant": "Яркое",
+  "settings.achShowProgressTitle": "Показывать шкалу прогресса",
+  "settings.achShowProgressDesc": "Отображает анимированную полосу завершения на карточке."
 }

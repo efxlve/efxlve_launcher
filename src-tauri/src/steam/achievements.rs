@@ -2485,10 +2485,27 @@ pub struct AchievementNotificationOptions {
     pub hide_desc: bool,
     #[serde(default = "default_layout")]
     pub layout: String,
+    #[serde(default = "default_glow")]
+    pub glow: String,
+    #[serde(default)]
+    pub show_progress: bool,
     #[serde(default)]
     pub rare_custom_sound: bool,
     #[serde(default)]
     pub rare_custom_sound_name: Option<String>,
+}
+
+fn default_glow() -> String {
+    "vibrant".to_string()
+}
+
+fn normalize_glow(value: Option<&str>) -> String {
+    match value {
+        Some("none") => "none",
+        Some("subtle") => "subtle",
+        _ => "vibrant",
+    }
+    .to_string()
 }
 
 fn default_opacity() -> u8 {
@@ -2547,6 +2564,8 @@ impl Default for AchievementNotificationOptions {
             hide_tag: false,
             hide_desc: false,
             layout: default_layout(),
+            glow: default_glow(),
+            show_progress: false,
             rare_custom_sound: false,
             rare_custom_sound_name: None,
         }
@@ -2771,6 +2790,8 @@ pub fn achievement_notification_options(app: &tauri::AppHandle) -> AchievementNo
         hide_tag: settings.achievement_notifications_hide_tag.unwrap_or(false),
         hide_desc: settings.achievement_notifications_hide_desc.unwrap_or(false),
         layout: normalize_layout(settings.achievement_notifications_layout.as_deref()),
+        glow: normalize_glow(settings.achievement_notifications_glow.as_deref()),
+        show_progress: settings.achievement_notifications_show_progress.unwrap_or(false),
         rare_custom_sound,
         rare_custom_sound_name: if rare_custom_sound {
             settings.achievement_notifications_rare_sound_name.clone().or_else(|| {
@@ -2830,6 +2851,8 @@ pub fn achievement_set_notification_options(
     settings.achievement_notifications_hide_tag = Some(options.hide_tag);
     settings.achievement_notifications_hide_desc = Some(options.hide_desc);
     settings.achievement_notifications_layout = Some(normalize_layout(Some(options.layout.as_str())));
+    settings.achievement_notifications_glow = Some(normalize_glow(Some(options.glow.as_str())));
+    settings.achievement_notifications_show_progress = Some(options.show_progress);
     crate::save_settings(&app, &settings);
     // The overlay panel can change the same switches; the main window's copy
     // has to follow without waiting for a restart.
@@ -3236,6 +3259,8 @@ fn toast_payload(
         hide_tag: options.hide_tag,
         hide_desc: options.hide_desc,
         layout: options.layout.clone(),
+        glow: options.glow.clone(),
+        show_progress: options.show_progress,
     }
 }
 

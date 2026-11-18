@@ -4416,5 +4416,12 @@
   "settings.achAnimSteam": "Steam",
   "settings.achAnimRetro": "Retro 8-Bit",
   "settings.achAnimMinimal": "Minimalista",
-  "settings.achAnimFantasy": "RPG Fantasy"
+  "settings.achAnimFantasy": "RPG Fantasy",
+  "settings.achGlowTitle": "Intensità bagliore e riflesso",
+  "settings.achGlowDesc": "Regola raggi volumetrici, bagliore al neon e luminosità del bordo.",
+  "settings.achGlowNone": "Disattivato",
+  "settings.achGlowSubtle": "Fisico",
+  "settings.achGlowVibrant": "Vivace",
+  "settings.achShowProgressTitle": "Mostra barra di avanzamento",
+  "settings.achShowProgressDesc": "Visualizza una barra di avanzamento animata sulla scheda."
 }

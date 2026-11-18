@@ -266,6 +266,103 @@ export function playWebAudioAchievementChime(
         osc.start(at);
         osc.stop(at + 1.3);
       });
+    } else if (animStyle === "steam") {
+      // Modern Steam deck / client chime: warm two-tone wooden mallet bell (F4 -> C5)
+      const freqs = [349.23, 523.25, 698.46, 880.0, 1046.5, 1396.91].slice(0, noteCount);
+      freqs.forEach((hz, idx) => {
+        const at = now + (idx === 0 ? 0 : idx === 1 ? 0.11 : 0.22 + (idx - 2) * 0.072);
+        const osc = ctx.createOscillator();
+        const over = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const overGain = ctx.createGain();
+        osc.type = "sine";
+        over.type = "triangle";
+        osc.frequency.setValueAtTime(hz, at);
+        over.frequency.setValueAtTime(hz * 2.76, at);
+        overGain.gain.setValueAtTime(0.22, at);
+        gain.gain.setValueAtTime(0.0001, at);
+        gain.gain.linearRampToValueAtTime(vol * 0.48, at + 0.008);
+        const decay = 1.1 + rarityTier * 0.12;
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + decay);
+        over.connect(overGain);
+        overGain.connect(gain);
+        osc.connect(gain);
+        gain.connect(masterFilter);
+        osc.start(at);
+        over.start(at);
+        osc.stop(at + decay + 0.05);
+        over.stop(at + decay + 0.05);
+      });
+    } else if (animStyle === "retro") {
+      // Retro 8-Bit Arcade: authentic stepped square-wave victory arpeggio
+      const freqs = [659.25, 830.61, 987.77, 1318.51, 1661.22, 1975.53].slice(0, noteCount);
+      freqs.forEach((hz, idx) => {
+        const at = now + idx * 0.052;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "square";
+        osc.frequency.setValueAtTime(hz, at);
+        gain.gain.setValueAtTime(0.0001, at);
+        gain.gain.linearRampToValueAtTime(vol * 0.32, at + 0.004);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.45);
+        osc.connect(gain);
+        gain.connect(masterFilter);
+        osc.start(at);
+        osc.stop(at + 0.5);
+      });
+    } else if (animStyle === "minimal") {
+      // Minimalist Stealth: discrete, pure high-frequency acoustic micro-ping
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(1046.5, now);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(vol * 0.4, now + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.75);
+      osc.connect(gain);
+      gain.connect(masterFilter);
+      osc.start(now);
+      osc.stop(now + 0.8);
+    } else if (animStyle === "fantasy") {
+      // Fantasy RPG Mühür: regal brass fifths & resonant cathedral bell chime
+      [146.83, 220.0].forEach((padHz) => {
+        const padOsc = ctx.createOscillator();
+        const padGain = ctx.createGain();
+        padOsc.type = "sawtooth";
+        padOsc.frequency.setValueAtTime(padHz, now);
+        padGain.gain.setValueAtTime(0.0001, now);
+        padGain.gain.linearRampToValueAtTime(vol * 0.2, now + 0.06);
+        padGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
+        padOsc.connect(padGain);
+        padGain.connect(masterFilter);
+        padOsc.start(now);
+        padOsc.stop(now + 1.85);
+      });
+      const freqs = [293.66, 440.0, 587.33, 739.99, 880.0, 1174.66].slice(0, noteCount);
+      freqs.forEach((hz, idx) => {
+        const at = now + 0.06 + idx * 0.078;
+        const osc = ctx.createOscillator();
+        const bell = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const bellGain = ctx.createGain();
+        osc.type = "sine";
+        bell.type = "triangle";
+        osc.frequency.setValueAtTime(hz, at);
+        bell.frequency.setValueAtTime(hz * 2.0, at);
+        bellGain.gain.setValueAtTime(0.3, at);
+        gain.gain.setValueAtTime(0.0001, at);
+        gain.gain.linearRampToValueAtTime(vol * 0.45, at + 0.016);
+        const decay = 1.6 + rarityTier * 0.15;
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + decay);
+        bell.connect(bellGain);
+        bellGain.connect(gain);
+        osc.connect(gain);
+        gain.connect(masterFilter);
+        osc.start(at);
+        bell.start(at);
+        osc.stop(at + decay + 0.05);
+        bell.stop(at + decay + 0.05);
+      });
     } else if (animStyle === "epic") {
       // Epic Games EOS Portal: modern crisp ascending triad + warm sub-octave resonance (C4..B5)
       const freqs = [261.63, 392.0, 587.33, 659.25, 783.99, 987.77].slice(0, noteCount);
@@ -711,6 +808,22 @@ export function renderAchievementsSettingsView(): string {
     )
     .join("");
 
+  const glow = options.glow || "vibrant";
+  const glowOptions: Array<{ id: string; label: string }> = [
+    { id: "none", label: t("settings.achGlowNone") },
+    { id: "subtle", label: t("settings.achGlowSubtle") },
+    { id: "vibrant", label: t("settings.achGlowVibrant") },
+  ];
+  const glowButtons = glowOptions
+    .map(
+      (opt) => `
+        <button type="button" class="${glow === opt.id ? "active" : ""}" data-act="set-ach-glow" data-val="${opt.id}">
+          ${esc(opt.label)}
+        </button>
+      `,
+    )
+    .join("");
+
   const cardThemeButtons = [
     { id: "rarity", label: t("settings.achCardThemeRarity"), swatch: "conic-gradient(#cd7f32, #94a3b8, #f59e0b, #22d3ee, #e879f9)" },
     { id: "gold", label: t("settings.achCardThemeGold"), swatch: "#f59e0b" },
@@ -951,7 +1064,7 @@ export function renderAchievementsSettingsView(): string {
           <span class="settings-value">${esc(t("settings.achPositionTitle"))}: <strong>${esc(position)}</strong></span>
         </div>
 
-        <div class="ach-stage-screen pos-${esc(position)} tier-${previewRarityTier}" style="${achCardVars(palette, opacity)}--ach-progress:${tierMeta.progressPct}%; padding: ${offset}px;">
+        <div class="ach-stage-screen pos-${esc(position)} tier-${previewRarityTier}" style="${achCardVars(palette, opacity, glow)}--ach-progress:${tierMeta.progressPct}%; padding: ${offset}px;">
           <div class="ach-stage-backdrop"></div>
           <div class="ach-stage-aura"></div>
 
@@ -971,6 +1084,9 @@ export function renderAchievementsSettingsView(): string {
             layout: currentLayout,
             hideTag: options.hideTag,
             hideDesc: options.hideDesc,
+            glow,
+            showProgress: options.showProgress,
+            progressPct: tierMeta.progressPct,
           })}
         </div>
       </div>
@@ -1086,6 +1202,31 @@ export function renderAchievementsSettingsView(): string {
           </div>
           <div class="settings-row-control">
             <div class="seg" role="group">${offsetButtons}</div>
+          </div>
+        </div>
+
+        <!-- Glow Intensity Selector -->
+        <div class="row settings-row">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achGlowTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achGlowDesc"))}</div>
+          </div>
+          <div class="settings-row-control">
+            <div class="seg" role="group">${glowButtons}</div>
+          </div>
+        </div>
+
+        <!-- Progress Bar Display Toggle -->
+        <div class="row settings-row">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achShowProgressTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achShowProgressDesc"))}</div>
+          </div>
+          <div class="settings-row-control">
+            <label class="switch">
+              <input type="checkbox" data-act="toggle-ach-show-progress" ${options.showProgress ? "checked" : ""} />
+              <span class="track"></span>
+            </label>
           </div>
         </div>
 
@@ -1376,7 +1517,19 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     }
 
     case "set-ach-anim-style": {
-      const allowed = ["prism", "cyber", "shatter", "jackpot", "xbox", "playstation", "epic"];
+      const allowed = [
+        "steam",
+        "xbox",
+        "playstation",
+        "retro",
+        "cyber",
+        "minimal",
+        "fantasy",
+        "prism",
+        "shatter",
+        "jackpot",
+        "epic",
+      ];
       const animStyle = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "prism";
       const next = { ...S.achievementNotificationOptions, animStyle, exitStyle: "auto" };
       S.achievementNotificationOptions = next;
@@ -1453,6 +1606,31 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       S.achievementNotificationOptions = next;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();
+      return true;
+    }
+
+    case "set-ach-glow": {
+      const allowed = ["none", "subtle", "vibrant"];
+      const glow = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "vibrant";
+      const next = { ...S.achievementNotificationOptions, glow };
+      S.achievementNotificationOptions = next;
+      stageReplaySeq++;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      runStagePreviewChoreography("entry");
+      return true;
+    }
+
+    case "toggle-ach-show-progress": {
+      const next = {
+        ...S.achievementNotificationOptions,
+        showProgress: (el as HTMLInputElement).checked,
+      };
+      S.achievementNotificationOptions = next;
+      stageReplaySeq++;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      runStagePreviewChoreography("entry");
       return true;
     }
 

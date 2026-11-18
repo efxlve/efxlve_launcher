@@ -101,6 +101,10 @@ pub struct ToastPayload {
     pub hide_desc: bool,
     #[serde(default = "default_layout")]
     pub layout: String,
+    #[serde(default = "default_glow")]
+    pub glow: String,
+    #[serde(default)]
+    pub show_progress: bool,
 }
 
 fn default_opacity() -> u8 {
@@ -113,6 +117,10 @@ fn default_offset() -> u32 {
 
 fn default_layout() -> String {
     "standard".to_string()
+}
+
+fn default_glow() -> String {
+    "vibrant".to_string()
 }
 
 #[derive(Serialize, Clone)]
@@ -750,6 +758,8 @@ mod tests {
             hide_tag: false,
             hide_desc: false,
             layout: "standard".into(),
+            glow: "vibrant".into(),
+            show_progress: false,
         }
     }
 

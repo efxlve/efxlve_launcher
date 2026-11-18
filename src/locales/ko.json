@@ -4416,5 +4416,12 @@
   "settings.achAnimSteam": "Steam",
   "settings.achAnimRetro": "레트로 8비트",
   "settings.achAnimMinimal": "미니멀리스트",
-  "settings.achAnimFantasy": "판타지 RPG"
+  "settings.achAnimFantasy": "판타지 RPG",
+  "settings.achGlowTitle": "광채 및 발광 강도",
+  "settings.achGlowDesc": "볼륨 광선, 네온 광채 및 테두리 빛 강도를 조절합니다.",
+  "settings.achGlowNone": "끄기",
+  "settings.achGlowSubtle": "은은하게",
+  "settings.achGlowVibrant": "선명하게",
+  "settings.achShowProgressTitle": "진행률 바 표시",
+  "settings.achShowProgressDesc": "카드에 애니메이션 진행률 바를 표시합니다."
 }

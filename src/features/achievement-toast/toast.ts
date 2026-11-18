@@ -42,6 +42,8 @@ interface ToastPayload {
   hideTag?: boolean;
   hideDesc?: boolean;
   layout?: string;
+  glow?: string;
+  showProgress?: boolean;
 }
 
 interface ToastIconPayload {
@@ -99,6 +101,7 @@ function renderToast(payload: ToastPayload): void {
     ? `${shown.join(" · ")}${extra > 0 ? ` +${extra}` : ""}`
     : payload.body;
   const offset = Math.max(0, Math.min(100, payload.offset ?? 18));
+  const progressPct = payload.total > 0 ? (payload.unlocked / payload.total) * 100 : 0;
   root.innerHTML = `<div class="ach-toast-layer pos-${position}" style="padding: ${offset}px;">${achCardHtml({
     tag: isHint
       ? ""
@@ -118,6 +121,9 @@ function renderToast(payload: ToastPayload): void {
     layout: payload.layout,
     hideTag: payload.hideTag,
     hideDesc: payload.hideDesc,
+    glow: payload.glow,
+    showProgress: payload.showProgress,
+    progressPct,
   })}</div>`;
 
   const card = root.querySelector<HTMLElement>(".ach-hud-toast");

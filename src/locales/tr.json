@@ -4416,5 +4416,12 @@
   "settings.achAnimSteam": "Steam",
   "settings.achAnimRetro": "Retro 8-Bit",
   "settings.achAnimMinimal": "Minimalist",
-  "settings.achAnimFantasy": "Fantezi RPG"
+  "settings.achAnimFantasy": "Fantezi RPG",
+  "settings.achGlowTitle": "Işıma & Parıltı Yoğunluğu",
+  "settings.achGlowDesc": "Volumetrik ışınlar, neon parıltısı ve kenarlık ışığı parlaklığını ayarlar.",
+  "settings.achGlowNone": "Kapalı",
+  "settings.achGlowSubtle": "Yumuşak",
+  "settings.achGlowVibrant": "Canlı",
+  "settings.achShowProgressTitle": "İlerleme Çubuğunu Göster",
+  "settings.achShowProgressDesc": "Kart üzerinde oyunun başarım tamamlama ilerlemesini gösteren çubuk çizer."
 }
