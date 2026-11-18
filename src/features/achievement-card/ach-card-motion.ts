@@ -23,15 +23,20 @@ function reducedMotion(): boolean {
 export function resolveEffectiveExitStyle(animStyle: string, exitStyle?: string): string {
   if (exitStyle && exitStyle !== "auto") return exitStyle;
   switch (animStyle) {
+    case "steam":
+    case "playstation":
+      return "glide";
+    case "retro":
+    case "cyber":
+      return "laser";
+    case "minimal":
     case "xbox":
     case "prism":
       return "collapse";
-    case "playstation":
-      return "glide";
+    case "fantasy":
+      return "zoom";
     case "epic":
       return "fold";
-    case "cyber":
-      return "laser";
     case "shatter":
       return "implode";
     case "jackpot":
@@ -43,6 +48,98 @@ export function resolveEffectiveExitStyle(animStyle: string, exitStyle?: string)
 
 export function achEntryKeyframes(animStyle: string): AchCardAnimation {
   switch (animStyle) {
+    case "steam":
+      return {
+        duration: 540,
+        easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+        frames: [
+          {
+            opacity: 0,
+            transform: "translateY(28px) scale(0.95)",
+            filter: "brightness(1.5)",
+            offset: 0,
+          },
+          {
+            opacity: 1,
+            transform: "translateY(-3px) scale(1.01)",
+            filter: "brightness(1.1)",
+            offset: 0.65,
+          },
+          {
+            opacity: 1,
+            transform: "translateY(0px) scale(1)",
+            filter: "brightness(1)",
+            offset: 1,
+          },
+        ],
+      };
+    case "retro":
+      return {
+        duration: 480,
+        easing: "steps(4, jump-end)",
+        frames: [
+          {
+            opacity: 0,
+            transform: "scale(0.4)",
+            filter: "contrast(200%) brightness(1.6)",
+            offset: 0,
+          },
+          {
+            opacity: 1,
+            transform: "scale(1.18)",
+            filter: "contrast(140%)",
+            offset: 0.5,
+          },
+          {
+            opacity: 1,
+            transform: "scale(1)",
+            filter: "contrast(100%)",
+            offset: 1,
+          },
+        ],
+      };
+    case "minimal":
+      return {
+        duration: 280,
+        easing: "cubic-bezier(0.2, 0.9, 0.3, 1)",
+        frames: [
+          {
+            opacity: 0,
+            transform: "translateY(10px) scale(0.98)",
+            offset: 0,
+          },
+          {
+            opacity: 1,
+            transform: "translateY(0px) scale(1)",
+            offset: 1,
+          },
+        ],
+      };
+    case "fantasy":
+      return {
+        duration: 880,
+        easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+        frames: [
+          {
+            opacity: 0,
+            transform: "scale(0.82) translateY(-14px)",
+            filter: "brightness(2.2) drop-shadow(0 0 24px rgba(234, 179, 8, 0.6))",
+            offset: 0,
+          },
+          {
+            opacity: 1,
+            transform: "scale(1.04) translateY(2px)",
+            filter: "brightness(1.2)",
+            offset: 0.6,
+          },
+          {
+            opacity: 1,
+            transform: "scale(1) translateY(0px)",
+            filter: "brightness(1)",
+            offset: 1,
+          },
+        ],
+      };
     case "xbox":
       return {
         duration: 920,

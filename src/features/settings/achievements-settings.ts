@@ -626,11 +626,15 @@ export function renderAchievementsSettingsView(): string {
     .join("");
 
   const animStyleOptions: Array<{ id: string; label: string; ico: IconName }> = [
+    { id: "steam", label: t("settings.achAnimSteam"), ico: "gamepad-2" },
     { id: "xbox", label: t("settings.achAnimXbox"), ico: "circle" },
     { id: "playstation", label: t("settings.achAnimPlaystation"), ico: "sparkles" },
+    { id: "retro", label: t("settings.achAnimRetro"), ico: "cpu" },
+    { id: "cyber", label: t("settings.achAnimCyber"), ico: "zap" },
+    { id: "minimal", label: t("settings.achAnimMinimal"), ico: "square" },
+    { id: "fantasy", label: t("settings.achAnimFantasy"), ico: "crown" },
     { id: "epic", label: t("settings.achAnimEpic"), ico: "layers" },
     { id: "prism", label: t("settings.achAnimPrism"), ico: "maximize-2" },
-    { id: "cyber", label: t("settings.achAnimCyber"), ico: "zap" },
     { id: "shatter", label: t("settings.achAnimShatter"), ico: "star" },
     { id: "jackpot", label: t("settings.achAnimJackpot"), ico: "trophy" },
   ];

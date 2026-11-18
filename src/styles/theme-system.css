@@ -1097,29 +1097,337 @@
     0 0 20px color-mix(in srgb, var(--ach-accent, #94a3b8) 22%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
-/* Laser Slice: sharp 8px tech corners with neon glow */
-.ach-hud-toast.style-cyber {
-  border-radius: 8px !important;
-  border-color: color-mix(in srgb, var(--ach-accent, #00f0ff) 75%, transparent) !important;
+/* Base FX elements hidden by default */
+.ach-fx-scanlines,
+.ach-fx-tech-brackets {
+  display: none;
 }
 
-/* True Stadium Capsule Pill Shape */
+/* ==========================================================================
+   Visual Card Design Archetypes
+   ========================================================================== */
+
+/* 1. Steam Deck / Modern Steam Card */
+.ach-hud-toast.style-steam {
+  border-radius: 6px !important;
+  background: linear-gradient(135deg, #1b2838 0%, #171d25 100%) !important;
+  border: 1px solid rgba(102, 192, 244, 0.4) !important;
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.88),
+    0 0 20px rgba(102, 192, 244, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+.ach-hud-toast.style-steam .ach-hud-gold-bar {
+  background: linear-gradient(90deg, #66c0f4, #1999e3) !important;
+  height: 2px !important;
+  opacity: 0.9 !important;
+}
+.ach-hud-toast.style-steam .ach-hud-medallion {
+  border-radius: 6px !important;
+  background: #101822 !important;
+  border: 1.5px solid rgba(102, 192, 244, 0.5) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 0 8px rgba(102, 192, 244, 0.2) !important;
+}
+.ach-hud-toast.style-steam .ach-medallion-ring {
+  border-radius: 4px !important;
+  border-color: rgba(102, 192, 244, 0.3) !important;
+}
+.ach-hud-toast.style-steam .ach-hud-tag {
+  color: #66c0f4 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+}
+.ach-hud-toast.style-steam .ach-hud-desc {
+  color: #8f98a0 !important;
+}
+.ach-hud-toast.style-steam .ach-fx-border-beam rect {
+  rx: 5px;
+  ry: 5px;
+  stroke: #66c0f4 !important;
+}
+
+/* 2. Classic Xbox 360 Capsule */
 .ach-hud-toast.style-xbox {
   border-radius: 999px !important;
   padding-left: 18px !important;
   padding-right: 28px !important;
+  background:
+    radial-gradient(circle at 14% 50%, rgba(16, 124, 16, 0.38) 0%, transparent 62%),
+    #0c0f12 !important;
+  border: 1.5px solid rgba(16, 124, 16, 0.65) !important;
+  box-shadow:
+    0 16px 38px rgba(0, 0, 0, 0.92),
+    0 0 26px rgba(16, 124, 16, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
 }
 .ach-hud-toast.style-xbox .ach-hud-gold-bar {
   display: none !important;
 }
-
-/* Silk Glide: sleek glass card with diagonal prism sheen */
-.ach-hud-toast.style-playstation {
-  border-radius: 18px !important;
-  backdrop-filter: blur(18px);
+.ach-hud-toast.style-xbox .ach-hud-medallion {
+  border-radius: 50% !important;
+  background: radial-gradient(circle at 35% 35%, #52b043 0%, #107c10 70%, #063506 100%) !important;
+  border: 2px solid #52b043 !important;
+  box-shadow: 0 0 16px rgba(16, 124, 16, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.5) !important;
+  color: #ffffff !important;
+}
+.ach-hud-toast.style-xbox .ach-hud-trophy-ico {
+  color: #ffffff !important;
+}
+.ach-hud-toast.style-xbox .ach-hud-tag {
+  color: #52b043 !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+}
+.ach-hud-toast.style-xbox .ach-fx-border-beam rect {
+  rx: 999px;
+  ry: 999px;
+  stroke: #52b043 !important;
 }
 
-/* Epic Games EOS Portal: crisp modern frame */.ach-hud-toast.style-epic {
+/* 3. PlayStation 5 Luxury Glass */
+.ach-hud-toast.style-playstation {
+  border-radius: 20px !important;
+  backdrop-filter: blur(28px) saturate(180%) !important;
+  background: linear-gradient(135deg, rgba(28, 30, 42, 0.86) 0%, rgba(12, 14, 20, 0.94) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow:
+    0 22px 50px rgba(0, 0, 0, 0.78),
+    inset 0 1px 1px rgba(255, 255, 255, 0.32),
+    0 0 32px rgba(140, 180, 255, 0.18) !important;
+}
+.ach-hud-toast.style-playstation .ach-hud-medallion {
+  border-radius: 14px !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+.ach-hud-toast.style-playstation .ach-hud-gold-bar {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent) !important;
+  height: 1px !important;
+}
+.ach-hud-toast.style-playstation .ach-hud-tag {
+  letter-spacing: 0.12em !important;
+  font-weight: 600 !important;
+  opacity: 0.88;
+}
+.ach-hud-toast.style-playstation .ach-fx-border-beam rect {
+  rx: 19px;
+  ry: 19px;
+  stroke: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* 4. Retro 8-Bit Arcade */
+.ach-hud-toast.style-retro {
+  border-radius: 0 !important;
+  clip-path: polygon(
+    0 8px, 4px 8px, 4px 4px, 8px 4px, 8px 0,
+    calc(100% - 8px) 0, calc(100% - 8px) 4px, calc(100% - 4px) 4px, calc(100% - 4px) 8px, 100% 8px,
+    100% calc(100% - 8px), calc(100% - 4px) calc(100% - 8px), calc(100% - 4px) calc(100% - 4px), calc(100% - 8px) calc(100% - 4px), calc(100% - 8px) 100%,
+    8px 100%, 8px calc(100% - 4px), 4px calc(100% - 4px), 4px calc(100% - 8px), 0 calc(100% - 8px)
+  ) !important;
+  background: #0d0c14 !important;
+  border: 2px solid #facc15 !important;
+  box-shadow:
+    0 0 0 2px #000,
+    0 0 22px rgba(250, 204, 21, 0.45),
+    0 16px 36px rgba(0, 0, 0, 0.92) !important;
+}
+.ach-hud-toast.style-retro .ach-fx-scanlines {
+  display: block;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.4) 0px,
+    rgba(0, 0, 0, 0.4) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+  z-index: 5;
+  opacity: 0.65;
+}
+.ach-hud-toast.style-retro .ach-hud-medallion {
+  border-radius: 0 !important;
+  border: 2px dashed #facc15 !important;
+  background: #1b162c !important;
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.6) !important;
+}
+.ach-hud-toast.style-retro .ach-medallion-ring {
+  display: none !important;
+}
+.ach-hud-toast.style-retro .ach-hud-gold-bar {
+  height: 3px !important;
+  background: repeating-linear-gradient(
+    90deg,
+    #facc15 0px, #facc15 8px,
+    #ef4444 8px, #ef4444 16px,
+    #3b82f6 16px, #3b82f6 24px
+  ) !important;
+}
+.ach-hud-toast.style-retro .ach-hud-title {
+  font-family: monospace, "Courier New", sans-serif !important;
+  letter-spacing: 0.05em !important;
+  font-weight: 700 !important;
+}
+.ach-hud-toast.style-retro .ach-hud-tag {
+  font-family: monospace, "Courier New", sans-serif !important;
+  color: #facc15 !important;
+  text-shadow: 0 0 6px #facc15;
+}
+.ach-hud-toast.style-retro .ach-fx-border-beam {
+  display: none !important;
+}
+
+/* 5. Cyberpunk / Tactical Sci-Fi HUD */
+.ach-hud-toast.style-cyber {
+  border-radius: 0 !important;
+  clip-path: polygon(
+    14px 0, 100% 0, 100% calc(100% - 14px),
+    calc(100% - 14px) 100%, 0 100%, 0 14px
+  ) !important;
+  background: linear-gradient(135deg, rgba(8, 14, 26, 0.96) 0%, rgba(3, 7, 14, 0.98) 100%) !important;
+  border: 1.5px solid #00f0ff !important;
+  box-shadow:
+    0 0 24px rgba(0, 240, 255, 0.4),
+    inset 0 0 16px rgba(0, 240, 255, 0.15),
+    0 18px 42px rgba(0, 0, 0, 0.92) !important;
+}
+.ach-hud-toast.style-cyber .ach-fx-scanlines {
+  display: block;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 42%,
+    rgba(0, 240, 255, 0.22) 50%,
+    transparent 58%
+  );
+  background-size: 100% 200%;
+  animation: ach-cyber-scanner 2.4s linear infinite;
+  z-index: 5;
+}
+@keyframes ach-cyber-scanner {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 0% 200%; }
+}
+.ach-hud-toast.style-cyber .ach-hud-medallion {
+  border-radius: 4px !important;
+  transform: rotate(45deg);
+  background: rgba(0, 240, 255, 0.16) !important;
+  border: 1.5px solid #00f0ff !important;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.6) !important;
+}
+.ach-hud-toast.style-cyber .ach-hud-medallion > * {
+  transform: rotate(-45deg);
+}
+.ach-hud-toast.style-cyber .ach-hud-gold-bar {
+  background: linear-gradient(90deg, #00f0ff, #ff007f) !important;
+  height: 2px !important;
+}
+.ach-hud-toast.style-cyber .ach-hud-tag {
+  font-family: monospace, "Consolas", monospace !important;
+  color: #00f0ff !important;
+  letter-spacing: 0.14em !important;
+}
+.ach-hud-toast.style-cyber .ach-fx-border-beam {
+  display: none !important;
+}
+
+/* 6. Minimalist Stealth Monolith */
+.ach-hud-toast.style-minimal {
+  border-radius: 4px !important;
+  background: #0d0f14 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.88) !important;
+}
+.ach-hud-toast.style-minimal .ach-fx-godrays,
+.ach-hud-toast.style-minimal .ach-fx-particles,
+.ach-hud-toast.style-minimal .ach-fx-shockwave,
+.ach-hud-toast.style-minimal .ach-fx-border-beam,
+.ach-hud-toast.style-minimal .ach-hud-gold-bar {
+  display: none !important;
+}
+.ach-hud-toast.style-minimal .ach-hud-medallion {
+  border-radius: 4px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: none !important;
+}
+.ach-hud-toast.style-minimal .ach-hud-tag {
+  font-size: 10px !important;
+  letter-spacing: 0.07em !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+.ach-hud-toast.style-minimal .ach-hud-title {
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+}
+.ach-hud-toast.style-minimal .ach-hud-desc {
+  color: rgba(255, 255, 255, 0.52) !important;
+  font-size: 12px !important;
+}
+
+/* 7. Fantasy / RPG Mühür */
+.ach-hud-toast.style-fantasy {
+  border-radius: 6px !important;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(95, 50, 15, 0.35) 0%, transparent 72%),
+    #130e0c !important;
+  border: 2px solid #c89b3c !important;
+  box-shadow:
+    0 0 28px rgba(200, 155, 60, 0.4),
+    inset 0 0 22px rgba(200, 155, 60, 0.18),
+    0 22px 48px rgba(0, 0, 0, 0.92) !important;
+}
+.ach-hud-toast.style-fantasy .ach-fx-tech-brackets {
+  display: block;
+  position: absolute;
+  inset: 3px;
+  pointer-events: none;
+  border: 1px solid rgba(200, 155, 60, 0.38);
+}
+.ach-hud-toast.style-fantasy .ach-hud-gold-bar {
+  height: 2px !important;
+  background: linear-gradient(90deg, transparent, #eab308, #c89b3c, transparent) !important;
+}
+.ach-hud-toast.style-fantasy .ach-hud-medallion {
+  border-radius: 50% !important;
+  background: radial-gradient(circle at 35% 35%, #b91c1c 0%, #7f1d1d 70%, #450a0a 100%) !important;
+  border: 2px solid #eab308 !important;
+  box-shadow: 0 0 18px rgba(234, 179, 8, 0.55), inset 0 0 10px rgba(0, 0, 0, 0.6) !important;
+  color: #fef08a !important;
+}
+.ach-hud-toast.style-fantasy .ach-hud-trophy-ico {
+  color: #fef08a !important;
+}
+.ach-hud-toast.style-fantasy .ach-hud-tag {
+  color: #fef08a !important;
+  font-family: Georgia, serif !important;
+  letter-spacing: 0.12em !important;
+  font-style: italic !important;
+}
+.ach-hud-toast.style-fantasy .ach-hud-title {
+  font-family: Georgia, serif !important;
+  color: #fffbeb !important;
+  font-size: 15px !important;
+  letter-spacing: 0.04em !important;
+}
+.ach-hud-toast.style-fantasy .ach-hud-desc {
+  font-family: Georgia, serif !important;
+  color: #fde68a !important;
+  opacity: 0.82 !important;
+}
+.ach-hud-toast.style-fantasy .ach-fx-border-beam rect {
+  rx: 5px;
+  ry: 5px;
+  stroke: #c89b3c !important;
+}
+
+/* Epic Games EOS Portal: crisp modern frame */
+.ach-hud-toast.style-epic {
   border-radius: 10px !important;
 }
 
@@ -1150,21 +1458,9 @@
   opacity: 0;
 }
 
-.ach-hud-toast.style-cyber .ach-fx-border-beam rect {
-  rx: 7px;
-  ry: 7px;
-}
 .ach-hud-toast.style-epic .ach-fx-border-beam rect {
   rx: 9px;
   ry: 9px;
-}
-.ach-hud-toast.style-playstation .ach-fx-border-beam rect {
-  rx: 17px;
-  ry: 17px;
-}
-.ach-hud-toast.style-xbox .ach-fx-border-beam rect {
-  rx: 999px;
-  ry: 999px;
 }
 
 .ach-hud-toast.seq-0 .ach-fx-border-beam rect {
@@ -1563,6 +1859,32 @@
   display: inline-flex;
   filter: drop-shadow(0 0 8px var(--ach-accent, #f59e0b));
   animation: ach-trophy-pulse 2.2s ease-in-out infinite alternate;
+}
+
+.ach-hud-ach-icon {
+  position: absolute;
+  inset: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.ach-hud-toast.style-steam .ach-hud-ach-icon {
+  border-radius: 4px !important;
+}
+.ach-hud-toast.style-retro .ach-hud-ach-icon {
+  border-radius: 0 !important;
+  image-rendering: pixelated;
+}
+.ach-hud-toast.style-cyber .ach-hud-ach-icon {
+  border-radius: 2px !important;
+}
+.ach-hud-toast.style-minimal .ach-hud-ach-icon {
+  border-radius: 2px !important;
+}
+.ach-hud-toast.style-playstation .ach-hud-ach-icon {
+  border-radius: 10px !important;
 }
 
 @keyframes ach-trophy-pulse {

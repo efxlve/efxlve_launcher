@@ -4412,5 +4412,9 @@
   "settings.achLayoutCompact": "Kompakt Kapsül",
   "settings.achRareSoundTitle": "Nadir ve Platin Sesi",
   "settings.achRareSoundDesc": "Ultra Nadir (<%5) ve Platin başarımlar için çalınacak isteğe bağlı özel zafer sesi.",
-  "settings.achRareSoundSame": "Varsayılan ses ile aynı"
+  "settings.achRareSoundSame": "Varsayılan ses ile aynı",
+  "settings.achAnimSteam": "Steam",
+  "settings.achAnimRetro": "Retro 8-Bit",
+  "settings.achAnimMinimal": "Minimalist",
+  "settings.achAnimFantasy": "Fantezi RPG"
 }

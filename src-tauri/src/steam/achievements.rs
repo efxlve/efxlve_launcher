@@ -2578,11 +2578,15 @@ fn default_anim_style() -> String {
 
 fn normalize_anim_style(value: Option<&str>) -> String {
     match value {
-        Some("cyber") => "cyber",
-        Some("shatter") => "shatter",
-        Some("jackpot") => "jackpot",
+        Some("steam") => "steam",
         Some("xbox") => "xbox",
         Some("playstation") => "playstation",
+        Some("retro") => "retro",
+        Some("cyber") => "cyber",
+        Some("minimal") => "minimal",
+        Some("fantasy") => "fantasy",
+        Some("shatter") => "shatter",
+        Some("jackpot") => "jackpot",
         Some("epic") => "epic",
         _ => "prism",
     }
@@ -4618,11 +4622,15 @@ mod tests {
         assert_eq!(normalize_card_theme(Some("crimson")), "crimson");
         assert_eq!(normalize_card_theme(Some("amethyst")), "amethyst");
         assert_eq!(normalize_anim_style(None), "prism");
-        assert_eq!(normalize_anim_style(Some("cyber")), "cyber");
-        assert_eq!(normalize_anim_style(Some("shatter")), "shatter");
-        assert_eq!(normalize_anim_style(Some("jackpot")), "jackpot");
+        assert_eq!(normalize_anim_style(Some("steam")), "steam");
         assert_eq!(normalize_anim_style(Some("xbox")), "xbox");
         assert_eq!(normalize_anim_style(Some("playstation")), "playstation");
+        assert_eq!(normalize_anim_style(Some("retro")), "retro");
+        assert_eq!(normalize_anim_style(Some("cyber")), "cyber");
+        assert_eq!(normalize_anim_style(Some("minimal")), "minimal");
+        assert_eq!(normalize_anim_style(Some("fantasy")), "fantasy");
+        assert_eq!(normalize_anim_style(Some("shatter")), "shatter");
+        assert_eq!(normalize_anim_style(Some("jackpot")), "jackpot");
         assert_eq!(normalize_anim_style(Some("epic")), "epic");
         assert_eq!(normalize_anim_style(Some("unknown")), "prism");
         assert_eq!(normalize_exit_style(None), "auto");

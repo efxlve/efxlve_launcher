@@ -4412,5 +4412,9 @@
   "settings.achLayoutCompact": "Slim Capsule",
   "settings.achRareSoundTitle": "Rare & Platinum Sound",
   "settings.achRareSoundDesc": "Optional separate audio chime for Ultra-Rare (<5%) and Platinum achievement unlocks.",
-  "settings.achRareSoundSame": "Same as default sound"
+  "settings.achRareSoundSame": "Same as default sound",
+  "settings.achAnimSteam": "Steam",
+  "settings.achAnimRetro": "ย้อนยุค 8-Bit",
+  "settings.achAnimMinimal": "มินิมอล",
+  "settings.achAnimFantasy": "แฟนตาซี RPG"
 }

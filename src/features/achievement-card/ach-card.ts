@@ -28,7 +28,7 @@ export interface AchCardModel {
   tier: number;
   /** small | normal | large */
   size: string;
-  /** prism | cyber | shatter | jackpot | xbox | playstation | epic */
+  /** steam | xbox | playstation | retro | cyber | minimal | fantasy | epic | prism | shatter | jackpot */
   style: string;
   /** Card theme id, kept as a class for theme-specific rules. */
   theme: string;
@@ -149,6 +149,8 @@ export function achCardHtml(m: AchCardModel): string {
       <svg class="ach-fx-border-beam" aria-hidden="true"><rect pathLength="100" /></svg>
       <div class="ach-fx-godrays"></div>
       <div class="ach-hud-gold-bar"></div>
+      <div class="ach-fx-scanlines" aria-hidden="true"></div>
+      <div class="ach-fx-tech-brackets" aria-hidden="true"></div>
 
       <div class="ach-hud-medallion-wrap">
         <span class="ach-fx-shockwave ring-1"></span>
