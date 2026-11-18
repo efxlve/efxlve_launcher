@@ -57,6 +57,9 @@ static WATCH_WANTED: AtomicBool = AtomicBool::new(false);
 static STOPPED_AT: Mutex<Option<Instant>> = Mutex::new(None);
 /// One worker thread at a time.
 static WORKER_RUNNING: AtomicBool = AtomicBool::new(false);
+/// The consent prompt is asked at most once per app run: a network outage must
+/// not put the same OAuth window in front of the user on every reconnect.
+static CONSENT_ASKED: AtomicBool = AtomicBool::new(false);
 /// Debug mirror of the worker log (`<app_data>/logs/discord-rpc.log`).
 static LOG_FILE: Mutex<Option<std::fs::File>> = Mutex::new(None);
 /// Base instant for log timestamps, reset on every watch start.
@@ -263,13 +266,14 @@ fn worker(app: &AppHandle) {
         emit_voice(app, "connecting", None, Vec::new(), None);
         emit_friends(app, "connecting", Vec::new(), 0, None);
         if let Err(error) = session(app) {
-            plog(&format!("session ended: {error}"));
-            emit_voice(app, "error", None, Vec::new(), Some(error.clone()));
-            emit_friends(app, "error", Vec::new(), 0, Some(error.clone()));
+            let message = token_error_message(&error).to_string();
+            plog(&format!("session ended: {message}"));
+            emit_voice(app, "error", None, Vec::new(), Some(message.clone()));
+            emit_friends(app, "error", Vec::new(), 0, Some(message.clone()));
             // A declined consent is a decision, not a hiccup: retrying put the
             // same prompt in front of the user every 30 seconds until they gave
             // up on the app (reported from the beta). One ask per app start.
-            if error.contains("declined") {
+            if message.contains("declined") {
                 plog("consent declined; the worker stops asking until the next start");
                 break;
             }
@@ -757,6 +761,22 @@ fn clear_token(app: &AppHandle) {
     }
 }
 
+/// Prefixes let a caller tell a network hiccup from a rejected grant. A failed
+/// request must never throw away a refresh token or open the consent prompt.
+const TOKEN_TRANSIENT: &str = "@transient ";
+const TOKEN_REJECTED: &str = "@rejected ";
+
+fn token_error_is_transient(error: &str) -> bool {
+    error.starts_with(TOKEN_TRANSIENT)
+}
+
+fn token_error_message(error: &str) -> &str {
+    error
+        .strip_prefix(TOKEN_TRANSIENT)
+        .or_else(|| error.strip_prefix(TOKEN_REJECTED))
+        .unwrap_or(error)
+}
+
 /// Stored token when fresh and complete, a refresh when possible, and the
 /// consent prompt when neither works.
 fn access_token(app: &AppHandle, conn: &mut Pipe) -> Result<String, String> {
@@ -775,13 +795,34 @@ fn access_token(app: &AppHandle, conn: &mut Pipe) -> Result<String, String> {
                     return Ok(fresh.access_token);
                 }
                 Ok(_) => plog("refreshed token is missing scopes; asking again"),
-                Err(error) => plog(&format!("refresh failed: {error}; asking again")),
+                Err(error) => {
+                    let message = token_error_message(&error);
+                    if token_error_is_transient(&error) {
+                        // Offline, a proxy or a 5xx is not a decision: keep the
+                        // session and retry on the next reconnect instead of
+                        // putting the consent prompt in front of the user.
+                        plog(&format!(
+                            "refresh failed: {message}; keeping the stored token"
+                        ));
+                        return Err(message.to_string());
+                    }
+                    plog(&format!("refresh failed: {message}; asking again"));
+                }
             }
         }
         clear_token(app);
     }
+    if CONSENT_ASKED.swap(true, Ordering::SeqCst) {
+        // A failed/closed prompt is not a reason to reopen it every 30 s. The
+        // next app start may ask again; an explicit connect can be added later.
+        plog("consent already requested in this run; not asking again");
+        return Err("consent already requested".into());
+    }
     let fresh = authorize(app, conn)?;
     save_token(app, &fresh);
+    // A stored session is a working connection: a later rejected refresh may
+    // ask once more, but the network-outage guard stays for this run.
+    CONSENT_ASKED.store(false, Ordering::SeqCst);
     Ok(fresh.access_token)
 }
 
@@ -870,11 +911,11 @@ fn post_token(form: &[(&str, &str)]) -> Result<StoredToken, String> {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
-        .map_err(|error| error.to_string())?;
+        .map_err(|error| format!("{TOKEN_TRANSIENT}{error}"))?;
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(20))
         .build()
-        .map_err(|error| error.to_string())?;
+        .map_err(|error| format!("{TOKEN_TRANSIENT}{error}"))?;
     let response = runtime
         .block_on(async {
             client
@@ -883,18 +924,25 @@ fn post_token(form: &[(&str, &str)]) -> Result<StoredToken, String> {
                 .send()
                 .await
         })
-        .map_err(|error| error.to_string())?;
+        .map_err(|error| format!("{TOKEN_TRANSIENT}{error}"))?;
     let status = response.status();
     let text = runtime.block_on(response.text()).unwrap_or_default();
     let parsed = serde_json::from_str::<Value>(&text).unwrap_or(Value::Null);
     plog(&format!("token endpoint HTTP {status}: {}", compact(&parsed)));
     if !status.is_success() {
-        return Err(format!("token endpoint HTTP {status}"));
+        // 5xx and 429 are the server asking us to come back later; a 4xx is a
+        // grant Discord actually rejected and the only case that needs consent.
+        let kind = if status.is_server_error() || status.as_u16() == 429 {
+            TOKEN_TRANSIENT
+        } else {
+            TOKEN_REJECTED
+        };
+        return Err(format!("{kind}token endpoint HTTP {status}"));
     }
     let access_token = parsed
         .get("access_token")
         .and_then(Value::as_str)
-        .ok_or("token response had no access_token")?
+        .ok_or_else(|| format!("{TOKEN_REJECTED}token response had no access_token"))?
         .to_string();
     let refresh_token = parsed
         .get("refresh_token")
@@ -1313,5 +1361,20 @@ mod tests {
         };
         assert!(token_covers(&covered));
         assert!(!token_covers(&stale));
+    }
+
+    #[test]
+    fn a_network_failure_keeps_the_stored_session() {
+        // A dropped connection or a 5xx must not be treated as a rejected
+        // grant: that path clears the token and opens the consent prompt.
+        let transient = format!("{TOKEN_TRANSIENT}error sending request");
+        let rejected = format!("{TOKEN_REJECTED}token endpoint HTTP 400 Bad Request");
+        assert!(token_error_is_transient(&transient));
+        assert!(!token_error_is_transient(&rejected));
+        assert_eq!(token_error_message(&transient), "error sending request");
+        assert_eq!(
+            token_error_message(&rejected),
+            "token endpoint HTTP 400 Bad Request"
+        );
     }
 }
