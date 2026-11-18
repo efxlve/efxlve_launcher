@@ -587,7 +587,19 @@ export function renderAchievementsSettingsView(): string {
   const cardTheme = allowedThemes.includes(options.cardTheme) ? options.cardTheme : "rarity";
   const customAccent = options.customAccent || "#00f0ff";
 
-  const allowedStyles = ["prism", "cyber", "shatter", "jackpot", "xbox", "playstation", "epic"];
+  const allowedStyles = [
+    "steam",
+    "xbox",
+    "playstation",
+    "retro",
+    "cyber",
+    "minimal",
+    "fantasy",
+    "epic",
+    "prism",
+    "shatter",
+    "jackpot",
+  ];
   const animStyle = allowedStyles.includes(options.animStyle) ? options.animStyle : "prism";
 
   const allowedExitStyles = ["auto", "collapse", "glide", "fold", "laser", "implode", "zoom"];

@@ -12,6 +12,7 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
+import { isTauri } from "./core/constants";
 
 export interface SteamStatus {
   installed: boolean;
@@ -376,23 +377,49 @@ export interface AchievementCardColors {
 }
 
 export const achievementGetNotificationOptions = () =>
-  invoke<AchievementNotificationOptions>("achievement_get_notification_options");
+  isTauri
+    ? invoke<AchievementNotificationOptions>("achievement_get_notification_options")
+    : Promise.resolve({
+        enabled: true,
+        overlay: true,
+        position: "top-right",
+        durationMs: 5000,
+        sound: true,
+        volume: 100,
+        size: "normal",
+        customSound: false,
+        customSoundName: null,
+        cardTheme: "rarity",
+        customAccent: "#00f0ff",
+        opacity: 100,
+        layout: "standard",
+        animStyle: "steam",
+        exitStyle: "auto",
+        glow: "vibrant",
+        showProgress: true,
+      } as unknown as AchievementNotificationOptions);
 
 export const achievementSetNotificationOptions = (options: AchievementNotificationOptions) =>
-  invoke<void>("achievement_set_notification_options", { options });
+  isTauri
+    ? invoke<void>("achievement_set_notification_options", { options })
+    : Promise.resolve();
 
 export const achievementSetNotificationColors = (colors: AchievementCardColors) =>
-  invoke<void>("achievement_set_notification_colors", { colors });
+  isTauri
+    ? invoke<void>("achievement_set_notification_colors", { colors })
+    : Promise.resolve();
 
 /** Plays the configured chime or custom sound once, without a card. */
 export const achievementAuditionSound = (
   options: AchievementNotificationOptions,
   tier: number,
 ) =>
-  invoke<void>("achievement_audition_sound", {
-    options,
-    tier: Math.max(0, Math.min(4, tier)),
-  });
+  isTauri
+    ? invoke<void>("achievement_audition_sound", {
+        options,
+        tier: Math.max(0, Math.min(4, tier)),
+      })
+    : Promise.resolve();
 
 /** One newly unlocked achievement in a store poll burst. */
 export interface StoreUnlockAnnouncement {
