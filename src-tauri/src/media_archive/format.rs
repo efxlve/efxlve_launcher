@@ -350,9 +350,12 @@ pub fn sha256_bytes(bytes: &[u8]) -> [u8; 32] {
 
 /// A single path component that may be joined under a chosen folder. A drive
 /// prefix, `..` or a separator would let a manifest write outside the target.
+///
+/// Both separators are rejected on every host: an archive packed on Linux can be
+/// restored on Windows, where a backslash in a name would split the path.
 pub fn safe_component(value: &str) -> bool {
     let trimmed = value.trim();
-    if trimmed.is_empty() {
+    if trimmed.is_empty() || trimmed.contains('/') || trimmed.contains('\\') {
         return false;
     }
     let mut components = Path::new(trimmed).components();

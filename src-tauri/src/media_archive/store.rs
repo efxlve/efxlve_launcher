@@ -550,11 +550,10 @@ mod tests {
 
     #[test]
     fn a_steamapps_ancestor_is_found() {
-        let path = Path::new(r"D:\SteamLibrary\steamapps\common\Portal 2");
-        assert_eq!(
-            steamapps_ancestor(path),
-            Some(Path::new(r"D:\SteamLibrary\steamapps"))
-        );
-        assert!(steamapps_ancestor(Path::new(r"C:\Games\Portal 2")).is_none());
+        // Build the paths with the host separator so the test also runs on Unix.
+        let steamapps = Path::new("SteamLibrary").join("steamapps");
+        let game = steamapps.join("common").join("Portal 2");
+        assert_eq!(steamapps_ancestor(&game), Some(steamapps.as_path()));
+        assert!(steamapps_ancestor(&Path::new("Games").join("Portal 2")).is_none());
     }
 }
