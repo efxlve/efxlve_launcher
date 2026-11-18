@@ -4126,7 +4126,7 @@
   "archive.levelFast": "Быстрое",
   "archive.levelBalanced": "Сбалансированное",
   "archive.levelMax": "Максимальное",
-  "archive.target": "Папка назначения",
+  "archive.target": "Backup location",
   "archive.targetDesc": "Внутри неё будет создана папка игры. Выберите USB-накопитель, внешний диск или папку для последующей записи на оптический диск.",
   "archive.targetPlaceholder": "Выберите диск или папку",
   "archive.chooseFolder": "Выбрать папку",

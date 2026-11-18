@@ -4126,7 +4126,7 @@
   "archive.levelFast": "तेज़",
   "archive.levelBalanced": "संतुलित",
   "archive.levelMax": "अधिकतम",
-  "archive.target": "लक्ष्य फ़ोल्डर",
+  "archive.target": "Backup location",
   "archive.targetDesc": "इसके अंदर एक गेम फ़ोल्डर बनाया जाता है। USB ड्राइव, बाहरी डिस्क या उस फ़ोल्डर का उपयोग करें जिसे आप डिस्क पर लिखेंगे।",
   "archive.targetPlaceholder": "कोई ड्राइव या फ़ोल्डर चुनें",
   "archive.chooseFolder": "फ़ोल्डर चुनें",

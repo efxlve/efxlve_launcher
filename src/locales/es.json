@@ -4126,7 +4126,7 @@
   "archive.levelFast": "Rápida",
   "archive.levelBalanced": "Equilibrada",
   "archive.levelMax": "Máxima",
-  "archive.target": "Carpeta de destino",
+  "archive.target": "Backup location",
   "archive.targetDesc": "Dentro se creará una carpeta para el juego. Usa una unidad USB, un disco externo o una carpeta que vayas a grabar en un disco.",
   "archive.targetPlaceholder": "Elige una unidad o carpeta",
   "archive.chooseFolder": "Elegir carpeta",

@@ -4126,7 +4126,7 @@
   "archive.levelFast": "빠름",
   "archive.levelBalanced": "균형",
   "archive.levelMax": "최대",
-  "archive.target": "대상 폴더",
+  "archive.target": "Backup location",
   "archive.targetDesc": "이 폴더 안에 게임 폴더가 생성됩니다. USB 드라이브, 외장 디스크 또는 디스크로 구울 폴더를 선택하세요.",
   "archive.targetPlaceholder": "드라이브 또는 폴더 선택",
   "archive.chooseFolder": "폴더 선택",

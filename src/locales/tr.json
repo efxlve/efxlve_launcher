@@ -4126,7 +4126,7 @@
   "archive.levelFast": "Hızlı",
   "archive.levelBalanced": "Dengeli",
   "archive.levelMax": "Maksimum",
-  "archive.target": "Hedef klasör",
+  "archive.target": "Yedek konumu",
   "archive.targetDesc": "İçinde oyun klasörü oluşturulur. USB bellek, harici disk veya diske yazacağın bir klasör seç.",
   "archive.targetPlaceholder": "Bir sürücü veya klasör seç",
   "archive.chooseFolder": "Klasör seç",

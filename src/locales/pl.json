@@ -4126,7 +4126,7 @@
   "archive.levelFast": "Szybka",
   "archive.levelBalanced": "Zrównoważona",
   "archive.levelMax": "Maksymalna",
-  "archive.target": "Folder docelowy",
+  "archive.target": "Backup location",
   "archive.targetDesc": "Wewnątrz zostanie utworzony folder gry. Użyj pamięci USB, dysku zewnętrznego lub folderu, który nagrasz na płytę.",
   "archive.targetPlaceholder": "Wybierz dysk lub folder",
   "archive.chooseFolder": "Wybierz folder",

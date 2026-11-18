@@ -4126,7 +4126,7 @@
   "archive.levelFast": "Schnell",
   "archive.levelBalanced": "Ausgewogen",
   "archive.levelMax": "Maximal",
-  "archive.target": "Zielordner",
+  "archive.target": "Backup location",
   "archive.targetDesc": "Darin wird ein Spielordner erstellt. Nutze ein USB-Laufwerk, eine externe Festplatte oder einen Ordner, den du auf Disc brennen möchtest.",
   "archive.targetPlaceholder": "Laufwerk oder Ordner wählen",
   "archive.chooseFolder": "Ordner wählen",

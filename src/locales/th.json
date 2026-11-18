@@ -4126,7 +4126,7 @@
   "archive.levelFast": "เร็ว",
   "archive.levelBalanced": "สมดุล",
   "archive.levelMax": "สูงสุด",
-  "archive.target": "โฟลเดอร์ปลายทาง",
+  "archive.target": "Backup location",
   "archive.targetDesc": "จะมีการสร้างโฟลเดอร์ของเกมไว้ด้านใน แนะนำให้ใช้ไดรฟ์ USB ฮาร์ดดิสก์พกพา หรือโฟลเดอร์ที่คุณจะนำไปเขียนลงแผ่นดิสก์",
   "archive.targetPlaceholder": "เลือกไดรฟ์หรือโฟลเดอร์",
   "archive.chooseFolder": "เลือกโฟลเดอร์",

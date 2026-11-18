@@ -4126,7 +4126,7 @@
   "archive.levelFast": "Fast",
   "archive.levelBalanced": "Balanced",
   "archive.levelMax": "Maximum",
-  "archive.target": "Target folder",
+  "archive.target": "Backup location",
   "archive.targetDesc": "A game folder is created inside it. Use a USB drive, an external disk or a folder you will burn to a disc.",
   "archive.targetPlaceholder": "Choose a drive or folder",
   "archive.chooseFolder": "Choose folder",

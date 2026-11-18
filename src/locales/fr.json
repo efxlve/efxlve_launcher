@@ -4126,7 +4126,7 @@
   "archive.levelFast": "Rapide",
   "archive.levelBalanced": "Équilibrée",
   "archive.levelMax": "Maximale",
-  "archive.target": "Dossier cible",
+  "archive.target": "Backup location",
   "archive.targetDesc": "Un dossier de jeu y sera créé. Utilisez une clé USB, un disque externe ou un dossier que vous graverez sur disque.",
   "archive.targetPlaceholder": "Choisir un lecteur ou un dossier",
   "archive.chooseFolder": "Choisir un dossier",

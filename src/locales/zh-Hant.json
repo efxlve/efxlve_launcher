@@ -4126,7 +4126,7 @@
   "archive.levelFast": "快速",
   "archive.levelBalanced": "平衡",
   "archive.levelMax": "最高",
-  "archive.target": "目標資料夾",
+  "archive.target": "Backup location",
   "archive.targetDesc": "將在其中建立一個遊戲資料夾。可使用 USB 隨身碟、外接硬碟或準備燒錄到光碟的資料夾。",
   "archive.targetPlaceholder": "選擇磁碟機或資料夾",
   "archive.chooseFolder": "選擇資料夾",

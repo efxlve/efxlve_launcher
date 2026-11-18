@@ -4126,7 +4126,7 @@
   "archive.levelFast": "高速",
   "archive.levelBalanced": "バランス",
   "archive.levelMax": "最大",
-  "archive.target": "保存先フォルダー",
+  "archive.target": "Backup location",
   "archive.targetDesc": "この中にゲーム用のフォルダーが作成されます。USB メモリ、外付けドライブ、またはディスクに書き込む予定のフォルダーを指定してください。",
   "archive.targetPlaceholder": "ドライブまたはフォルダーを選択",
   "archive.chooseFolder": "フォルダーを選択",

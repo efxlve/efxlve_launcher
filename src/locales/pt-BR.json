@@ -4126,7 +4126,7 @@
   "archive.levelFast": "Rápida",
   "archive.levelBalanced": "Equilibrada",
   "archive.levelMax": "Máxima",
-  "archive.target": "Pasta de destino",
+  "archive.target": "Backup location",
   "archive.targetDesc": "Uma pasta do jogo é criada dentro dela. Use um pendrive USB, um disco externo ou uma pasta que você gravará em disco.",
   "archive.targetPlaceholder": "Escolha uma unidade ou pasta",
   "archive.chooseFolder": "Escolher pasta",

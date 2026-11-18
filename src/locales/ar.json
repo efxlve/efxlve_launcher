@@ -4126,7 +4126,7 @@
   "archive.levelFast": "سريع",
   "archive.levelBalanced": "متوازن",
   "archive.levelMax": "أقصى",
-  "archive.target": "المجلد الهدف",
+  "archive.target": "Backup location",
   "archive.targetDesc": "يُنشأ مجلد للعبة بداخله. استخدم ذاكرة USB أو قرصًا خارجيًا أو مجلدًا ستنسخه لاحقًا على قرص ضوئي.",
   "archive.targetPlaceholder": "اختر قرصًا أو مجلدًا",
   "archive.chooseFolder": "اختر مجلدًا",

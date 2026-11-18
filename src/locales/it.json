@@ -4126,7 +4126,7 @@
   "archive.levelFast": "Rapida",
   "archive.levelBalanced": "Bilanciata",
   "archive.levelMax": "Massima",
-  "archive.target": "Cartella di destinazione",
+  "archive.target": "Backup location",
   "archive.targetDesc": "Al suo interno viene creata una cartella del gioco. Usa un'unità USB, un disco esterno o una cartella da masterizzare su disco.",
   "archive.targetPlaceholder": "Scegli un'unità o una cartella",
   "archive.chooseFolder": "Scegli cartella",
