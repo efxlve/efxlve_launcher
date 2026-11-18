@@ -31,7 +31,7 @@ export interface ChangelogRelease {
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
     version: "0.1.60",
-    date: "2026-11-17",
+    date: "2026-11-18",
     added: [
       {
         en: "Game Archive: back up an installed Steam, Epic, GOG, Amazon or custom game to USB or disc-sized parts, with a size estimate, optional xtool precompression and checksums on every block; restore it later without downloading the game again. Each part carries Reed-Solomon parity, so a damaged shard can be repaired during restore. An optional full-volume mode doubles the archive size so a whole lost disc can be rebuilt.",

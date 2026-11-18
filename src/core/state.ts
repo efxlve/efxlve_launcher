@@ -1068,7 +1068,7 @@ export const S = {
   steamLibrarySyncing: false,
   /** Saved Steam accounts in the sealed vault (switcher rows). */
   steamSavedAccounts: ([]) as import("../steam").SteamSavedAccount[],
-  appVersion: "0.1.59",
+  appVersion: "0.1.60",
   appUpdateStatus: ("idle") as AppUpdateStatus,
   appUpdateVersion: "",
   appUpdateNotes: "",
