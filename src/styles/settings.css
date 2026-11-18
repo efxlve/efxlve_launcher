@@ -1271,6 +1271,7 @@
 .archive-profile-size { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; }
 .archive-profile-fs { font-size: 10.5px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
 .archive-inline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%; }
+.archive-drive-suggestions { margin-top: 8px; }
 .archive-inline-label { color: var(--text-2); font-size: 12px; }
 .archive-inline-unit { color: var(--text-3); font-size: 11px; }
 .archive-path { flex: 1; min-width: 220px; }

@@ -14,6 +14,7 @@ const ipc = vi.hoisted(() => ({
     installDirName: "Game",
     finalPath: "D:\\Backups\\Game",
   })),
+  removable: vi.fn(async () => [] as RemovableDrive[]),
   cancel: vi.fn(async () => true),
   start: vi.fn(async () => ({
     appName: "steam::1",
@@ -49,6 +50,7 @@ vi.mock("../../archive", async (importOriginal) => {
     archiveEstimate: ipc.estimate,
     archivePlan: ipc.plan,
     archiveDefaultTarget: ipc.defaultTarget,
+    archiveRemovableDrives: ipc.removable,
     archiveCancel: ipc.cancel,
     archiveStart: ipc.start,
     archiveVerify: ipc.verify,
@@ -63,7 +65,13 @@ vi.mock("../../core/toast", () => ({
 
 vi.mock("../../core/render", () => ({ scheduleRender: vi.fn() }));
 
-import type { ArchiveEstimate, ArchivePlan, ArchiveSummary, FoundArchive } from "../../archive";
+import type {
+  ArchiveEstimate,
+  ArchivePlan,
+  ArchiveSummary,
+  FoundArchive,
+  RemovableDrive,
+} from "../../archive";
 import { ARCHIVE_LAST_TARGET_KEY } from "../../core/constants";
 import { scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
@@ -76,6 +84,7 @@ import {
   loadArchiveDiscs,
   loadArchivePlan,
   loadBurnRecorders,
+  loadRemovableDrives,
   openArchiveForGame,
   requestEstimate,
 } from "./archive-actions";
@@ -100,6 +109,8 @@ beforeEach(() => {
   S.archiveSelectedApp = "";
   S.archiveTarget = "";
   S.archiveProfiles = null;
+  S.archiveRemovables = null;
+  S.archiveProfile = "fat32";
   S.archiveSource = "";
   S.archiveDiscsManifest = "";
   S.archiveBurnRecorder = "";
@@ -119,6 +130,7 @@ beforeEach(() => {
   ipc.estimate.mockClear();
   ipc.plan.mockClear();
   ipc.defaultTarget.mockClear();
+  ipc.removable.mockClear();
   ipc.cancel.mockClear();
   ipc.start.mockClear();
   ipc.verify.mockClear();
@@ -317,6 +329,56 @@ describe("archive busy guards", () => {
 
     await vi.waitFor(() => expect(S.archiveResult).not.toBeNull());
     expect(localStorage.getItem(ARCHIVE_LAST_TARGET_KEY)).toBe("D:\\Backups");
+  });
+
+  it("lists writable removable drives for the target row", async () => {
+    S.allGamesMap.set("steam::2", {
+      key: "steam::2",
+      title: "Game 2",
+      installed: true,
+      installPath: "C:\\Game2",
+    } as unknown as LibraryItem);
+    S.archiveSelectedApp = "steam::2";
+    ipc.removable.mockResolvedValueOnce([
+      {
+        mount: "E:\\",
+        label: "USB",
+        freeBytes: 100 * 1024,
+        fileSystem: "FAT32",
+      },
+    ]);
+
+    await loadRemovableDrives();
+
+    expect(S.archiveRemovables).toEqual([
+      {
+        mount: "E:\\",
+        label: "USB",
+        freeBytes: 100 * 1024,
+        fileSystem: "FAT32",
+      },
+    ]);
+  });
+
+  it("uses a suggested drive and reloads the plan", async () => {
+    S.allGamesMap.set("steam::1", {
+      key: "steam::1",
+      title: "Game",
+      installed: true,
+      installPath: "C:\\Game",
+    } as unknown as LibraryItem);
+    S.archiveSelectedApp = "steam::1";
+    S.archiveTarget = "C:\\Backups";
+    const button = document.createElement("button");
+    button.dataset.drive = "E:\\";
+
+    expect(handleArchiveAction("archive-use-drive", undefined, button)).toBe(
+      true,
+    );
+
+    expect(S.archiveTarget).toBe("E:\\");
+    expect(S.archivePlan).toBeNull();
+    await vi.waitFor(() => expect(ipc.plan).toHaveBeenCalled());
   });
 
   it("drops the estimate and reloads the plan when full recovery is toggled", async () => {

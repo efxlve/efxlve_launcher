@@ -32,6 +32,14 @@ export interface ArchivePlan {
   enoughSpace: boolean;
   volumeFits: boolean;
   writable: boolean;
+  sameDrive: boolean;
+}
+
+export interface RemovableDrive {
+  mount: string;
+  label: string;
+  freeBytes: number;
+  fileSystem: string;
 }
 
 export interface ArchiveProgress {
@@ -298,6 +306,11 @@ export const archiveDefaultTarget = (
     installPath,
     purpose: purpose ?? null,
     preferred: preferred?.trim() ? preferred.trim() : null,
+  });
+
+export const archiveRemovableDrives = (installPath?: string) =>
+  invoke<RemovableDrive[]>("archive_removable_drives", {
+    installPath: installPath?.trim() ? installPath.trim() : null,
   });
 
 export const archiveRestore = (args: {

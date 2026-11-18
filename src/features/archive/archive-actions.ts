@@ -20,6 +20,7 @@ import {
   archiveLocate,
   archivePlan,
   archiveProfiles,
+  archiveRemovableDrives,
   archiveRestore,
   archiveScanFolder,
   archiveStart,
@@ -37,6 +38,8 @@ let planToken = 0;
 let planTimer: number | undefined;
 let planInFlightKey = "";
 let lastPlanError = "";
+let removableKey = "";
+let removableToken = 0;
 let estimateToken = 0;
 let estimateKey = "";
 let estimateCancelling = false;
@@ -141,7 +144,10 @@ async function ensureArchiveSelection(): Promise<void> {
   if (!S.archiveTarget) {
     await applyDefaultTarget(selectedArchiveGame());
   }
-  if (S.archiveTab === "backup") await loadArchivePlan();
+  if (S.archiveTab === "backup") {
+    await loadRemovableDrives(selectedArchiveGame());
+    await loadArchivePlan();
+  }
 }
 
 async function applyDefaultTarget(game: LibraryItem | undefined): Promise<void> {
@@ -164,6 +170,27 @@ async function applyDefaultTarget(game: LibraryItem | undefined): Promise<void> 
   } catch {
     S.archiveTarget = "";
   }
+}
+
+/** Lists writable removable drives for the backup target suggestion row. */
+export async function loadRemovableDrives(game?: LibraryItem): Promise<void> {
+  const selected = game ?? selectedArchiveGame();
+  if (!selected?.installPath || S.archiveProfile !== "fat32") {
+    removableKey = "";
+    S.archiveRemovables = null;
+    return;
+  }
+  const key = `${selected.key}|${selected.installPath}|${S.archiveProfile}`;
+  if (removableKey === key) return;
+  removableKey = key;
+  const token = ++removableToken;
+  try {
+    const drives = await archiveRemovableDrives(selected.installPath);
+    if (token === removableToken) S.archiveRemovables = drives;
+  } catch {
+    if (token === removableToken) S.archiveRemovables = null;
+  }
+  scheduleRender();
 }
 
 export async function loadArchivePlan(): Promise<void> {
@@ -851,6 +878,7 @@ export function handleArchiveAction(
     busy &&
     [
       "archive-pick-target",
+      "archive-use-drive",
       "archive-pick-source",
       "archive-scan",
       "archive-select-found",
@@ -886,6 +914,7 @@ export function handleArchiveAction(
       S.archivePlan = null;
       S.archiveResult = null;
       invalidateEstimate();
+      void loadRemovableDrives();
       schedulePlan();
       scheduleRender();
     }
@@ -897,6 +926,17 @@ export function handleArchiveAction(
   }
   if (act === "archive-estimate-cancel") {
     void cancelEstimate();
+    return true;
+  }
+  if (act === "archive-use-drive") {
+    const drive = target.dataset.drive?.trim();
+    if (drive && drive !== S.archiveTarget) {
+      S.archiveTarget = drive;
+      S.archivePlan = null;
+      S.archiveResult = null;
+      scheduleRender();
+      void loadArchivePlan();
+    }
     return true;
   }
   if (act === "archive-pick-target") {

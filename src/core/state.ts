@@ -19,6 +19,7 @@ import type {
   DiscRecorder,
   FoundArchive,
   MediaProfileInfo,
+  RemovableDrive,
   RestoreResult,
   XtoolProgress,
 } from "../archive";
@@ -623,6 +624,7 @@ export const S = {
   /** Media archive: one game folder compressed into disc-sized volumes. */
   archiveTab: ("backup") as "backup" | "restore" | "guide",
   archiveProfiles: (null) as MediaProfileInfo[] | null,
+  archiveRemovables: (null) as RemovableDrive[] | null,
   archiveSelectedApp: "",
   archiveProfile: "fat32",
   archiveCustomMib: 8_000,

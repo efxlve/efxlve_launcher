@@ -2271,6 +2271,7 @@ fn main() {
             media_archive::commands::archive_locate,
             media_archive::commands::archive_discs,
             media_archive::commands::archive_default_target,
+            media_archive::commands::archive_removable_drives,
             media_archive::commands::archive_restore,
             media_archive::commands::archive_verify,
             media_archive::commands::disc_list_recorders,

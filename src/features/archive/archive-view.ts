@@ -154,6 +154,12 @@ function renderBackupTab(): string {
   if (S.archiveSelectedApp !== game.key) S.archiveSelectedApp = game.key;
   const profiles = S.archiveProfiles ?? [];
   const plan = S.archivePlan;
+  const removable =
+    S.archiveProfile === "fat32"
+      ? (S.archiveRemovables ?? []).filter(
+          (drive) => drive.mount !== S.archiveTarget,
+        )
+      : [];
   const running = S.archiveRunning;
   const busy = running || S.archiveBurning !== null || S.archiveErasing;
   const xtoolBusy = busy || S.archiveEstimating;
@@ -252,6 +258,19 @@ function renderBackupTab(): string {
           <input id="archive-target-input" class="input archive-path" type="text" value="${esc(S.archiveTarget)}" placeholder="${esc(t("archive.targetPlaceholder"))}" data-act="archive-target-input" ${busy ? "disabled" : ""} />
           <button type="button" class="btn ghost small" data-act="archive-pick-target" ${busy ? "disabled" : ""}>${icon("folder", 13)} ${t("archive.chooseFolder")}</button>
         </div>
+        ${
+          removable.length
+            ? `<div class="archive-inline archive-drive-suggestions">
+                 <span class="archive-k">${t("archive.suggestedDrive")}</span>
+                 ${removable
+                   .map(
+                     (drive) =>
+                       `<button type="button" class="btn ghost small" data-act="archive-use-drive" data-drive="${esc(drive.mount)}" ${busy ? "disabled" : ""}>${icon("hard-drive", 13)} ${t("archive.useDrive")} ${esc(drive.mount)} · ${fmtBytes(drive.freeBytes)}</button>`,
+                   )
+                   .join("")}
+               </div>`
+            : ""
+        }
       </div>
     </div>
     ${renderPlanSummary(plan)}
@@ -318,6 +337,11 @@ function renderPlanSummary(plan: ArchivePlan | null): string {
       ${
         sameAsGame
           ? `<div class="archive-note archive-target-warning">${icon("info", 13)} ${t("archive.targetIsGameParent")}</div>`
+          : ""
+      }
+      ${
+        plan.sameDrive && !sameAsGame
+          ? `<div class="archive-note">${icon("info", 13)} ${t("archive.sameDriveWarning")}</div>`
           : ""
       }
       ${

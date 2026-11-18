@@ -122,6 +122,17 @@ pub struct ArchivePlan {
     /// False when the target folder (or its nearest existing parent) cannot be
     /// written to without elevation, e.g. `C:\Program Files`.
     pub writable: bool,
+    /// True when the target and the installed game sit on the same volume.
+    pub same_drive: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemovableDrive {
+    pub mount: String,
+    pub label: String,
+    pub free_bytes: u64,
+    pub file_system: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -227,6 +238,10 @@ pub async fn archive_plan(
     let archive_path = target_path.join(&folder_name);
     let required_bytes = required_archive_bytes(scan.total_bytes, full_volume_recovery);
     let writable = can_write_under(&target_path);
+    let same_drive = match (mount_of(&target_path), mount_of(&install)) {
+        (Some(target_mount), Some(install_mount)) => target_mount == install_mount,
+        _ => false,
+    };
     let target_info = profile::target_info(&target_path);
     let free = target_info.free_bytes;
     let fat32 = target_info
@@ -262,6 +277,7 @@ pub async fn archive_plan(
         enough_space: free.map(|bytes| bytes >= required_bytes).unwrap_or(true),
         volume_fits,
         writable,
+        same_drive,
     })
 }
 
@@ -707,6 +723,36 @@ pub async fn disc_erase(recorder_id: String, full: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn archive_removable_drives(install_path: Option<String>) -> Vec<RemovableDrive> {
+    let install = install_path
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from);
+    let disks = sysinfo::Disks::new_with_refreshed_list();
+    let mut drives: Vec<RemovableDrive> = disks
+        .iter()
+        .filter(|disk| disk.is_removable() && disk.available_space() > 0)
+        .filter(|disk| !disk.file_system().is_empty())
+        .filter(|disk| {
+            install
+                .as_deref()
+                .map(|path| !path_on_mount(path, disk.mount_point()))
+                .unwrap_or(true)
+        })
+        .filter(|disk| can_write_under(disk.mount_point()))
+        .map(|disk| RemovableDrive {
+            mount: disk.mount_point().display().to_string(),
+            label: disk.name().to_string_lossy().to_string(),
+            free_bytes: disk.available_space(),
+            file_system: disk.file_system().to_string_lossy().to_string(),
+        })
+        .collect();
+    drives.sort_by(|left, right| right.free_bytes.cmp(&left.free_bytes));
+    drives
+}
+
+#[tauri::command]
 pub fn archive_default_target(
     app_name: String,
     install_path: String,
@@ -722,6 +768,8 @@ pub fn archive_default_target(
 }
 
 static WRITE_PROBE: AtomicU64 = AtomicU64::new(0);
+#[cfg(windows)]
+const FILE_FLAG_DELETE_ON_CLOSE: u32 = 0x0400_0000;
 
 /// Tests the nearest existing ancestor, so a backup folder that will be created
 /// later is still checked against the permissions of its parent.
@@ -745,12 +793,16 @@ fn can_write_under(path: &Path) -> bool {
         WRITE_PROBE.fetch_add(1, Ordering::Relaxed)
     );
     let candidate = probe.join(name);
-    match std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&candidate)
+    let mut options = std::fs::OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(windows)]
     {
-        Ok(_) => {
+        use std::os::windows::fs::OpenOptionsExt;
+        options.custom_flags(FILE_FLAG_DELETE_ON_CLOSE);
+    }
+    match options.open(&candidate) {
+        Ok(file) => {
+            drop(file);
             let _ = std::fs::remove_file(&candidate);
             true
         }
@@ -776,6 +828,15 @@ fn path_on_mount(path: &Path, mount: &Path) -> bool {
     {
         path.starts_with(mount)
     }
+}
+
+fn mount_of(path: &Path) -> Option<PathBuf> {
+    let disks = sysinfo::Disks::new_with_refreshed_list();
+    disks
+        .iter()
+        .filter(|disk| path_on_mount(path, disk.mount_point()))
+        .max_by_key(|disk| disk.mount_point().to_string_lossy().len())
+        .map(|disk| disk.mount_point().to_path_buf())
 }
 
 fn removable_backup_root(install: &Path) -> Option<PathBuf> {
@@ -1124,6 +1185,16 @@ mod tests {
             Path::new("/media/usb2/Games/Game"),
             Path::new("/media/usb")
         ));
+    }
+
+    #[test]
+    fn temp_folders_share_a_mount() {
+        let first = temp_root("mount-first");
+        let second = temp_root("mount-second");
+        assert!(mount_of(&first).is_some());
+        assert_eq!(mount_of(&first), mount_of(&second));
+        let _ = std::fs::remove_dir_all(&first);
+        let _ = std::fs::remove_dir_all(&second);
     }
 
     #[test]

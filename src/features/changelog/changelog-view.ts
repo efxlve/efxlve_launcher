@@ -59,6 +59,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "The backup screen opens in the last used or another writable folder, prefers a connected USB drive over the game's install drive, and blocks the start button when the target cannot be written.",
         tr: "Yedekleme ekranı son kullanılan veya yazılabilir bir klasörde açılıyor, oyunun kurulu olduğu sürücü yerine takılı USB sürücüyü tercih ediyor ve hedefe yazılamıyorsa başlat düğmesini kilitliyor.",
       },
+      {
+        en: "Connected USB drives appear next to the target field, and the screen warns when the backup would sit on the same drive as the game.",
+        tr: "Takılı USB sürücüler hedef alanının yanında görünüyor; yedek oyunla aynı sürücüye düşecekse ekran uyarıyor.",
+      },
     ],
   },
   {
