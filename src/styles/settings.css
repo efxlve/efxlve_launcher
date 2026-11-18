@@ -957,15 +957,45 @@
   color: var(--text);
   background: var(--surface-2);
 }
-.store-order-footer {
-  display: flex;
-  justify-content: flex-end;
-  padding: 10px 14px 4px;
+.store-order-controls .btn.icon-only.danger:hover:not(:disabled) {
+  color: var(--err);
+  background: var(--err-tint);
 }
+.store-order-divider {
+  width: 1px;
+  height: 16px;
+  margin: 0 1px;
+  flex-shrink: 0;
+  background: var(--line);
+}
+/* The reorder note carries the reset action inline, instead of a lone CTA
+   floating under the list. */
+.store-tabs-note { align-items: center; flex-wrap: wrap; }
+.store-tabs-note > svg { margin-top: 0; }
+.store-tabs-note-text { flex: 1 1 220px; min-width: 0; }
+.store-tabs-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-3);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color var(--ease), background-color var(--ease);
+}
+.store-tabs-reset:hover { color: var(--text); background: var(--surface-2); }
+.store-tabs-note .store-tabs-reset svg { color: inherit; margin-top: 0; }
 /* Settings > Stores: user-added storefronts and their add form. */
-.custom-store-meta { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
 .custom-store-url {
-  min-width: 0;
+  display: block;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -973,8 +1003,6 @@
   font-size: 11px;
   color: var(--text-3);
 }
-.custom-store-meta .settings-store-remove { width: 22px; height: 22px; padding: 0; flex-shrink: 0; color: var(--text-3); }
-.custom-store-meta .settings-store-remove:hover { color: var(--err); background: var(--err-tint); }
 .custom-store-form {
   display: flex;
   flex-wrap: wrap;

@@ -1088,6 +1088,7 @@ function renderStores(): string {
 
     const controls = `
       <div class="store-order-controls">
+        ${userStore ? `<button type="button" class="btn icon-only ghost tiny danger" data-act="remove-custom-store" data-store="${id}" title="${t("settings.storeRemove")}" aria-label="${t("settings.storeRemove")}">${icon("trash", 13)}</button><span class="store-order-divider" aria-hidden="true"></span>` : ""}
         <button type="button" class="btn icon-only ghost tiny" data-act="store-order-up" data-store="${id}" ${isFirst ? "disabled" : ""} title="${t("settings.storeMoveUp")}" aria-label="${t("settings.storeMoveUp")}">
           ${icon("chevron-up", 13)}
         </button>
@@ -1100,17 +1101,13 @@ function renderStores(): string {
         </label>
       </div>`;
 
-    // Changing the mark belongs on the mark itself; the destructive action
-    // moves to the secondary URL line so the title row stays clean.
+    // Changing the mark belongs on the mark itself; the title row stays clean.
     const mark = `<span class="settings-store-mark-slot" data-store-row-mark="${id}">${storeMark(id, 18, "settings-store-logo")}</span>`;
     const markEl = userStore
       ? `<button type="button" class="settings-store-mark-btn" data-act="store-change-icon" data-store="${id}" title="${t("settings.storeIconTitle")}" aria-label="${t("settings.storeIconTitle")}">${mark}</button>`
       : mark;
     const desc = userStore
-      ? `<span class="custom-store-meta">
-          <span class="custom-store-url" title="${esc(userStore.url)}">${esc(userStore.url)}</span>
-          <button type="button" class="btn icon-only ghost tiny danger settings-store-remove" data-act="remove-custom-store" data-store="${id}" title="${t("settings.storeRemove")}" aria-label="${t("settings.storeRemove")}">${icon("trash", 12)}</button>
-        </span>`
+      ? `<span class="custom-store-url" title="${esc(userStore.url)}">${esc(userStore.url)}</span>`
       : null;
 
     const statusBadge = hidden ? ` <span class="badge muted" style="margin-left:8px;font-size:11px;opacity:0.75;">${t("settings.storeHiddenBadge")}</span>` : "";
@@ -1135,17 +1132,20 @@ function renderStores(): string {
       <button type="button" class="btn primary small" data-act="add-custom-store" ${addDisabled ? "disabled" : ""}>${icon("plus", 13)} ${t("settings.storeAdd")}</button>
     </div>`,
     true,
-  ) +
-  `<div class="store-order-footer">
-    <button type="button" class="btn ghost small" data-act="store-order-reset">
-      ${icon("refresh", 13)} ${t("settings.storeResetOrder")}
+  );
+
+  const orderNote = `<div class="info-box store-tabs-note">
+    ${icon("info", 14)}
+    <span class="store-tabs-note-text">${t("settings.storeOrderNote")}</span>
+    <button type="button" class="store-tabs-reset" data-act="store-order-reset">
+      ${icon("refresh", 12)} ${t("settings.storeResetOrder")}
     </button>
   </div>`;
 
   return (
     group(extRows, t("settings.storeExtGroupTitle"), infoBox("settings.storeExtNote")) +
     group(perfRows, t("settings.storePerfGroupTitle"), infoBox("settings.storePerfNote")) +
-    group(tabsRows, t("settings.secStoreTabs"), infoBox("settings.storeOrderNote")) +
+    group(tabsRows, t("settings.secStoreTabs"), orderNote) +
     group(
       row(t("settings.storeCacheTitle"), t("settings.storeCacheDesc"), ""),
       t("settings.storeCacheGroupTitle"),
