@@ -4346,6 +4346,7 @@
   "archive.levelXtoolHint": "تم تفعيل xtool: المستوى «سريع» كافٍ. يضغط xtool بيانات اللعبة بالفعل، بينما يضيف مستوى zstd الأعلى وقت انتظار في الغالب.",
   "archive.guideXtoolSecurity": "قد يعرض Windows تحذيرًا بشأن ملف xtool التنفيذي غير الموقّع. يتحقق المشغّل من الملف الذي ينزّله مقابل بصمة SHA-256 مثبّتة قبل فك ضغطه.",
   "archive.targetIsGameParent": "يحتوي هذا المجلد بالفعل على اللعبة المثبّتة. ستُكتب النسخة الاحتياطية بجانبها؛ اختر ذاكرة USB أو قرصًا آخر لإبقاء النسخة الاحتياطية منفصلة.",
+  "archive.targetNotWritable": "No write permission for this folder. Run the launcher as administrator or choose a different folder.",
   "archive.xtoolExtracting": "جارٍ فك ضغط xtool…",
   "archive.mediaEmpty": "لا يوجد قرص في المحرك",
   "archive.mediaUnknown": "وسيط غير معروف",

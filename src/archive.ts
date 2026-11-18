@@ -31,6 +31,7 @@ export interface ArchivePlan {
   requiredBytes: number;
   enoughSpace: boolean;
   volumeFits: boolean;
+  writable: boolean;
 }
 
 export interface ArchiveProgress {
@@ -286,8 +287,18 @@ export const discBurnFolder = (folder: string, recorderId: string) =>
 export const discErase = (recorderId: string, full: boolean) =>
   invoke<void>("disc_erase", { recorderId, full });
 
-export const archiveDefaultTarget = (appName: string, installPath: string) =>
-  invoke<ArchiveDefaultTarget>("archive_default_target", { appName, installPath });
+export const archiveDefaultTarget = (
+  appName: string,
+  installPath: string,
+  purpose?: "backup" | "restore",
+  preferred?: string | null,
+) =>
+  invoke<ArchiveDefaultTarget>("archive_default_target", {
+    appName,
+    installPath,
+    purpose: purpose ?? null,
+    preferred: preferred?.trim() ? preferred.trim() : null,
+  });
 
 export const archiveRestore = (args: {
   manifestPath: string;

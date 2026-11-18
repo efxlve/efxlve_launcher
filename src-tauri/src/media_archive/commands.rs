@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use serde::Serialize;
@@ -119,6 +119,9 @@ pub struct ArchivePlan {
     pub required_bytes: u64,
     pub enough_space: bool,
     pub volume_fits: bool,
+    /// False when the target folder (or its nearest existing parent) cannot be
+    /// written to without elevation, e.g. `C:\Program Files`.
+    pub writable: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -200,7 +203,7 @@ pub async fn archive_plan(
     let profile = profile::resolve(&profile_id, custom_mib)?;
     let install = PathBuf::from(&install_path);
     let target = if target_root.trim().is_empty() {
-        default_target(&app_name, &install_path).target_parent
+        default_target(&app_name, &install_path, Some("backup"), None).target_parent
     } else {
         target_root
     };
@@ -223,6 +226,7 @@ pub async fn archive_plan(
     let folder_name = unique_archive_folder(&target_path, &title);
     let archive_path = target_path.join(&folder_name);
     let required_bytes = required_archive_bytes(scan.total_bytes, full_volume_recovery);
+    let writable = can_write_under(&target_path);
     let target_info = profile::target_info(&target_path);
     let free = target_info.free_bytes;
     let fat32 = target_info
@@ -257,6 +261,7 @@ pub async fn archive_plan(
         required_bytes,
         enough_space: free.map(|bytes| bytes >= required_bytes).unwrap_or(true),
         volume_fits,
+        writable,
     })
 }
 
@@ -344,7 +349,7 @@ pub async fn archive_start(
     let sink: Arc<dyn ProgressSink> = Arc::new(AppProgressSink { app: app.clone() });
     let install = PathBuf::from(&install_path);
     let target = if target_root.trim().is_empty() {
-        default_target(&app_name, &install_path).target_parent
+        default_target(&app_name, &install_path, Some("backup"), None).target_parent
     } else {
         target_root
     };
@@ -702,11 +707,108 @@ pub async fn disc_erase(recorder_id: String, full: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn archive_default_target(app_name: String, install_path: String) -> DefaultTarget {
-    default_target(&app_name, &install_path)
+pub fn archive_default_target(
+    app_name: String,
+    install_path: String,
+    purpose: Option<String>,
+    preferred: Option<String>,
+) -> DefaultTarget {
+    default_target(
+        &app_name,
+        &install_path,
+        purpose.as_deref(),
+        preferred.as_deref(),
+    )
 }
 
-fn default_target(app_name: &str, install_path: &str) -> DefaultTarget {
+static WRITE_PROBE: AtomicU64 = AtomicU64::new(0);
+
+/// Tests the nearest existing ancestor, so a backup folder that will be created
+/// later is still checked against the permissions of its parent.
+fn can_write_under(path: &Path) -> bool {
+    let mut probe = path.to_path_buf();
+    while !probe.exists() {
+        let Some(parent) = probe.parent() else {
+            return false;
+        };
+        if parent == probe {
+            return false;
+        }
+        probe = parent.to_path_buf();
+    }
+    if !probe.is_dir() {
+        return false;
+    }
+    let name = format!(
+        ".efxlve-write-{}-{}.tmp",
+        std::process::id(),
+        WRITE_PROBE.fetch_add(1, Ordering::Relaxed)
+    );
+    let candidate = probe.join(name);
+    match std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&candidate)
+    {
+        Ok(_) => {
+            let _ = std::fs::remove_file(&candidate);
+            true
+        }
+        Err(_) => false,
+    }
+}
+
+fn removable_backup_root() -> Option<PathBuf> {
+    let disks = sysinfo::Disks::new_with_refreshed_list();
+    disks
+        .iter()
+        .filter(|disk| disk.is_removable() && disk.available_space() > 0)
+        .filter(|disk| !disk.file_system().is_empty())
+        .filter(|disk| can_write_under(disk.mount_point()))
+        .max_by_key(|disk| disk.available_space())
+        .map(|disk| disk.mount_point().to_path_buf())
+}
+
+/// A last-used target is reused only when it is an absolute path that can still
+/// be written to; an unplugged USB or a removed folder falls through.
+fn preferred_backup_root(preferred: Option<&str>) -> Option<PathBuf> {
+    let trimmed = preferred?.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    let path = PathBuf::from(trimmed);
+    if !path.is_absolute() || !can_write_under(&path) {
+        return None;
+    }
+    Some(path)
+}
+
+fn documents_backup_root() -> PathBuf {
+    if cfg!(windows) {
+        if let Some(home) = std::env::var_os("USERPROFILE") {
+            let home = PathBuf::from(home);
+            let documents = home.join("Documents").join("Efxlve Backups");
+            if home.join("Documents").is_dir() && can_write_under(&documents) {
+                return documents;
+            }
+            return home.join("Efxlve").join("Backups");
+        }
+        PathBuf::from(r"C:\Games")
+    } else {
+        std::env::var_os("HOME")
+            .map(PathBuf::from)
+            .map(|home| home.join("Efxlve").join("Backups"))
+            .unwrap_or_else(|| PathBuf::from("."))
+    }
+}
+
+fn default_target(
+    app_name: &str,
+    install_path: &str,
+    purpose: Option<&str>,
+    preferred: Option<&str>,
+) -> DefaultTarget {
+    let backup = purpose == Some("backup");
     let install = PathBuf::from(install_path.trim());
     let install_dir_name = install
         .file_name()
@@ -715,7 +817,7 @@ fn default_target(app_name: &str, install_path: &str) -> DefaultTarget {
         .unwrap_or("Game")
         .to_string();
     let mut parent = None;
-    if store::store_of(app_name) == "steam" {
+    if !backup && store::store_of(app_name) == "steam" {
         parent = install
             .ancestors()
             .find(|path| {
@@ -732,23 +834,30 @@ fn default_target(app_name: &str, install_path: &str) -> DefaultTarget {
             }
         }
     }
-    let parent = parent.or_else(|| {
-        install
-            .parent()
-            .filter(|value| !value.as_os_str().is_empty() && value.is_dir())
-            .map(Path::to_path_buf)
-    });
-    let parent = parent.unwrap_or_else(|| {
-        if cfg!(windows) {
-            PathBuf::from(r"C:\Games")
-        } else {
-            std::env::var_os("HOME")
-                .map(PathBuf::from)
-                .unwrap_or_default()
-                .join("Games")
-                .join("Efxlve")
-        }
-    });
+    let parent = if backup {
+        preferred_backup_root(preferred)
+            .or_else(removable_backup_root)
+            .unwrap_or_else(documents_backup_root)
+    } else {
+        parent
+            .or_else(|| {
+                install
+                    .parent()
+                    .filter(|value| !value.as_os_str().is_empty() && value.is_dir())
+                    .map(Path::to_path_buf)
+            })
+            .unwrap_or_else(|| {
+                if cfg!(windows) {
+                    PathBuf::from(r"C:\Games")
+                } else {
+                    std::env::var_os("HOME")
+                        .map(PathBuf::from)
+                        .unwrap_or_default()
+                        .join("Games")
+                        .join("Efxlve")
+                }
+            })
+    };
     let final_path = parent.join(&install_dir_name);
     DefaultTarget {
         target_parent: parent.display().to_string(),
@@ -790,7 +899,7 @@ pub async fn archive_restore(
     let (guard, cancel) = begin(&id)?;
     let sink: Arc<dyn ProgressSink> = Arc::new(AppProgressSink { app: app.clone() });
     let target = if target_parent.trim().is_empty() {
-        default_target(&id, &manifest.original_install_path).target_parent
+        default_target(&id, &manifest.original_install_path, None, None).target_parent
     } else {
         target_parent
     };
@@ -925,6 +1034,51 @@ pub async fn archive_verify(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn temp_root(name: &str) -> PathBuf {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve-archive-plan-{name}-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        root
+    }
+
+    #[test]
+    fn backup_default_prefers_a_writable_last_target() {
+        let root = temp_root("preferred");
+        let install = root.join("Games").join("Game");
+        let target = default_target(
+            "epic::1",
+            &install.display().to_string(),
+            Some("backup"),
+            Some(&root.display().to_string()),
+        );
+        assert_eq!(PathBuf::from(target.target_parent), root);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn restore_default_keeps_the_install_parent() {
+        let root = temp_root("restore");
+        let install_parent = root.join("Games");
+        let install = install_parent.join("Game");
+        std::fs::create_dir_all(&install).unwrap();
+        let target = default_target("epic::1", &install.display().to_string(), None, None);
+        assert_eq!(PathBuf::from(target.target_parent), install_parent);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_file_is_not_a_writable_target() {
+        let root = temp_root("writable");
+        let file = root.join("save.sav");
+        std::fs::write(&file, b"data").unwrap();
+        assert!(!can_write_under(&file));
+        assert!(can_write_under(&root));
+        let _ = std::fs::remove_dir_all(&root);
+    }
 
     #[test]
     fn full_volume_recovery_doubles_the_free_space_reserve() {

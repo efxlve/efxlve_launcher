@@ -4346,6 +4346,7 @@
   "archive.levelXtoolHint": "xtool が設定されています: 「高速」で十分です。ゲームデータの圧縮は xtool が行うため、zstd のレベルを上げても主に待ち時間が増えるだけです。",
   "archive.guideXtoolSecurity": "署名されていない xtool バイナリについて Windows が警告を表示する場合があります。ランチャーは展開前に固定された SHA-256 と照合してダウンロードを検証します。",
   "archive.targetIsGameParent": "このフォルダーにはインストール済みのゲームが入っています。バックアップはその横に書き込まれます。別々に保管する場合は USB メモリまたは別のディスクを選択してください。",
+  "archive.targetNotWritable": "No write permission for this folder. Run the launcher as administrator or choose a different folder.",
   "archive.xtoolExtracting": "xtool を展開中…",
   "archive.mediaEmpty": "ドライブにディスクがありません",
   "archive.mediaUnknown": "不明なメディア",

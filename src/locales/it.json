@@ -4346,6 +4346,7 @@
   "archive.levelXtoolHint": "xtool è impostato: «Rapida» è sufficiente. xtool comprime già i dati del gioco e un livello zstd più alto aggiunge soprattutto tempo di attesa.",
   "archive.guideXtoolSecurity": "Windows potrebbe mostrare un avviso sul binario xtool non firmato. Il launcher verifica il proprio download rispetto a un checksum SHA-256 fissato prima di estrarlo.",
   "archive.targetIsGameParent": "Questa cartella contiene già il gioco installato. Il backup verrà scritto accanto ad esso; scegli l'unità USB o un altro disco per mantenere il backup separato.",
+  "archive.targetNotWritable": "No write permission for this folder. Run the launcher as administrator or choose a different folder.",
   "archive.xtoolExtracting": "Estrazione di xtool…",
   "archive.mediaEmpty": "Nessun disco nell'unità",
   "archive.mediaUnknown": "Supporto sconosciuto",

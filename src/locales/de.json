@@ -4346,6 +4346,7 @@
   "archive.levelXtoolHint": "xtool ist aktiv: „Schnell“ reicht aus. xtool komprimiert die Spieldaten bereits, und eine höhere zstd-Stufe verlängert hauptsächlich die Wartezeit.",
   "archive.guideXtoolSecurity": "Windows zeigt möglicherweise eine Warnung wegen der nicht signierten xtool-Programmdatei an. Der Launcher überprüft seinen eigenen Download vor dem Entpacken anhand einer hinterlegten SHA-256-Prüfsumme.",
   "archive.targetIsGameParent": "Dieser Ordner enthält bereits das installierte Spiel. Das Backup wird direkt daneben angelegt; wähle das USB-Laufwerk oder einen anderen Datenträger, um das Backup getrennt aufzubewahren.",
+  "archive.targetNotWritable": "No write permission for this folder. Run the launcher as administrator or choose a different folder.",
   "archive.xtoolExtracting": "xtool wird entpackt…",
   "archive.mediaEmpty": "Keine Disc im Laufwerk",
   "archive.mediaUnknown": "Unbekanntes Medium",

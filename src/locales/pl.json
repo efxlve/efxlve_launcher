@@ -4346,6 +4346,7 @@
   "archive.levelXtoolHint": "Włączono xtool: poziom „Szybka” wystarczy. xtool już kompresuje dane gry, a wyższy poziom zstd głównie wydłuża czas oczekiwania.",
   "archive.guideXtoolSecurity": "System Windows może wyświetlić ostrzeżenie o niepodpisanym pliku wykonywalnym xtool. Przed rozpakowaniem launcher weryfikuje pobrany plik względem przypiętej sumy SHA-256.",
   "archive.targetIsGameParent": "Ten folder zawiera już zainstalowaną grę. Kopia zapasowa zostanie zapisana obok niej; wybierz pamięć USB lub inny dysk, aby przechowywać kopię osobno.",
+  "archive.targetNotWritable": "No write permission for this folder. Run the launcher as administrator or choose a different folder.",
   "archive.xtoolExtracting": "Rozpakowywanie xtool…",
   "archive.mediaEmpty": "Brak płyty w napędzie",
   "archive.mediaUnknown": "Nieznany nośnik",

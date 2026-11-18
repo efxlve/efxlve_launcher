@@ -4346,6 +4346,7 @@
   "archive.levelXtoolHint": "已设置 xtool：选择“快速”即可。xtool 已经负责压缩游戏数据，调高 zstd 级别主要只会增加等待时间。",
   "archive.guideXtoolSecurity": "Windows 可能会对未签名的 xtool 程序发出警告。启动器在解压自带下载包前会先核对固定的 SHA-256 校验和。",
   "archive.targetIsGameParent": "此文件夹已包含已安装的游戏，备份将会写在它旁边；若要将备份分开存放，请选择 U 盘或其他磁盘。",
+  "archive.targetNotWritable": "No write permission for this folder. Run the launcher as administrator or choose a different folder.",
   "archive.xtoolExtracting": "正在解压 xtool…",
   "archive.mediaEmpty": "光驱中无光盘",
   "archive.mediaUnknown": "未知介质",

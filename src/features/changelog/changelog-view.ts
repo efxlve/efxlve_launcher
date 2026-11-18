@@ -55,6 +55,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "A disc backup's other folders are found automatically, a finished backup can be verified immediately, and archive jobs keep the panel and their cancel button in place.",
         tr: "Disk yedeğinin diğer klasörleri otomatik bulunuyor, biten yedek hemen doğrulanabiliyor ve arşiv işleri sürerken panel ile iptal düğmesi yerinde kalıyor.",
       },
+      {
+        en: "The backup screen opens in the last used or another writable folder, prefers a connected USB drive over the game's install folder, and blocks the start button when the target cannot be written.",
+        tr: "Yedekleme ekranı son kullanılan veya yazılabilir bir klasörde açılıyor, oyunun kurulu olduğu klasör yerine takılı USB sürücüyü tercih ediyor ve hedefe yazılamıyorsa başlat düğmesini kilitliyor.",
+      },
     ],
   },
   {

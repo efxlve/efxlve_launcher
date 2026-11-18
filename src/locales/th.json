@@ -4346,6 +4346,7 @@
   "archive.levelXtoolHint": "ตั้งค่า xtool แล้ว: ระดับ เร็ว ก็เพียงพอ เพราะ xtool บีบอัดข้อมูลเกมให้อยู่แล้ว การใช้ระดับ zstd ที่สูงขึ้นมักเพิ่มเวลาในการรอเท่านั้น",
   "archive.guideXtoolSecurity": "Windows อาจแจ้งเตือนเกี่ยวกับไฟล์ไบนารี xtool ที่ไม่ได้ลงนามรับรอง ตัวเรียกเกมจะตรวจสอบไฟล์ที่ดาวน์โหลดเทียบกับค่า SHA-256 ที่ระบุไว้ก่อนแตกไฟล์เสมอ",
   "archive.targetIsGameParent": "โฟลเดอร์นี้มีตัวเกมที่ติดตั้งอยู่แล้ว ข้อมูลสำรองจะถูกเขียนไว้ข้างๆ กัน โปรดเลือกไดรฟ์ USB หรือดิสก์อื่นเพื่อแยกข้อมูลสำรองออกจากตัวเกม",
+  "archive.targetNotWritable": "No write permission for this folder. Run the launcher as administrator or choose a different folder.",
   "archive.xtoolExtracting": "กำลังแตกไฟล์ xtool…",
   "archive.mediaEmpty": "ไม่มีแผ่นดิสก์ในไดรฟ์",
   "archive.mediaUnknown": "ไม่ทราบชนิดสื่อ",

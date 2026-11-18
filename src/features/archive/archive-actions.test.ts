@@ -9,6 +9,11 @@ const ipc = vi.hoisted(() => ({
   burn: vi.fn(async () => undefined),
   estimate: vi.fn(async () => ({}) as ArchiveEstimate),
   plan: vi.fn(async () => ({}) as ArchivePlan),
+  defaultTarget: vi.fn(async () => ({
+    targetParent: "D:\\Backups",
+    installDirName: "Game",
+    finalPath: "D:\\Backups\\Game",
+  })),
   cancel: vi.fn(async () => true),
   start: vi.fn(async () => ({
     appName: "steam::1",
@@ -43,6 +48,7 @@ vi.mock("../../archive", async (importOriginal) => {
     discBurnFolder: ipc.burn,
     archiveEstimate: ipc.estimate,
     archivePlan: ipc.plan,
+    archiveDefaultTarget: ipc.defaultTarget,
     archiveCancel: ipc.cancel,
     archiveStart: ipc.start,
     archiveVerify: ipc.verify,
@@ -58,6 +64,7 @@ vi.mock("../../core/toast", () => ({
 vi.mock("../../core/render", () => ({ scheduleRender: vi.fn() }));
 
 import type { ArchiveEstimate, ArchivePlan, ArchiveSummary, FoundArchive } from "../../archive";
+import { ARCHIVE_LAST_TARGET_KEY } from "../../core/constants";
 import { scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
@@ -91,6 +98,8 @@ beforeEach(() => {
   S.archiveResult = null;
   S.archivePlan = null;
   S.archiveSelectedApp = "";
+  S.archiveTarget = "";
+  S.archiveProfiles = null;
   S.archiveSource = "";
   S.archiveDiscsManifest = "";
   S.archiveBurnRecorder = "";
@@ -109,9 +118,11 @@ beforeEach(() => {
   ipc.burn.mockClear();
   ipc.estimate.mockClear();
   ipc.plan.mockClear();
+  ipc.defaultTarget.mockClear();
   ipc.cancel.mockClear();
   ipc.start.mockClear();
   ipc.verify.mockClear();
+  localStorage.clear();
   vi.mocked(scheduleRender).mockClear();
   vi.mocked(toast).mockClear();
 });
@@ -265,6 +276,47 @@ describe("archive busy guards", () => {
 
     expect(S.archivePlan).toBeNull();
     expect(toast).toHaveBeenCalled();
+  });
+
+  it("passes the last backup target to the backend when the screen opens", async () => {
+    S.allGamesMap.set("steam::1", {
+      key: "steam::1",
+      title: "Game",
+      installed: true,
+      installPath: "C:\\Game",
+    } as unknown as LibraryItem);
+    S.archiveProfiles = [];
+    localStorage.setItem(ARCHIVE_LAST_TARGET_KEY, "E:\\USB");
+
+    openArchiveForGame("steam::1");
+
+    await vi.waitFor(() =>
+      expect(ipc.defaultTarget).toHaveBeenCalledWith(
+        "steam::1",
+        "C:\\Game",
+        "backup",
+        "E:\\USB",
+      ),
+    );
+    expect(S.archiveTarget).toBe("D:\\Backups");
+  });
+
+  it("remembers the target after a successful backup", async () => {
+    S.allGamesMap.set("steam::1", {
+      key: "steam::1",
+      title: "Game",
+      installed: true,
+      installPath: "C:\\Game",
+    } as unknown as LibraryItem);
+    S.archiveSelectedApp = "steam::1";
+    S.archiveTarget = "D:\\Backups";
+
+    expect(handleArchiveAction("archive-start", undefined, document.body)).toBe(
+      true,
+    );
+
+    await vi.waitFor(() => expect(S.archiveResult).not.toBeNull());
+    expect(localStorage.getItem(ARCHIVE_LAST_TARGET_KEY)).toBe("D:\\Backups");
   });
 
   it("drops the estimate and reloads the plan when full recovery is toggled", async () => {

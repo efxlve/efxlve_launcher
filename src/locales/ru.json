@@ -4346,6 +4346,7 @@
   "archive.levelXtoolHint": "Включён xtool: уровня «Быстрое» достаточно. xtool уже выполняет глубокое сжатие данных игры, а более высокий уровень zstd в основном только увеличит время ожидания.",
   "archive.guideXtoolSecurity": "Windows может показать предупреждение о неподписанном исполняемом файле xtool. Лаунчер проверяет скачанный архив по закреплённой сумме SHA-256 перед распаковкой.",
   "archive.targetIsGameParent": "В этой папке уже лежит установленная игра. Архив будет записан рядом с ней; выберите USB-накопитель или другой диск, чтобы хранить резервную копию отдельно.",
+  "archive.targetNotWritable": "No write permission for this folder. Run the launcher as administrator or choose a different folder.",
   "archive.xtoolExtracting": "Распаковка xtool…",
   "archive.mediaEmpty": "Нет диска в приводе",
   "archive.mediaUnknown": "Неизвестный носитель",

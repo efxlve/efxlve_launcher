@@ -6,7 +6,7 @@
 import { S } from "../../core/state";
 import { scheduleRender } from "../../core/render";
 import { toast } from "../../core/toast";
-import { ARCHIVE_XTOOL_KEY } from "../../core/constants";
+import { ARCHIVE_LAST_TARGET_KEY, ARCHIVE_XTOOL_KEY } from "../../core/constants";
 import type { LibraryItem } from "../../core/types";
 import { fmtBytes, fmtSpeed } from "../../core/utils";
 import { t, localizeMessage } from "../../i18n";
@@ -147,7 +147,19 @@ async function ensureArchiveSelection(): Promise<void> {
 async function applyDefaultTarget(game: LibraryItem | undefined): Promise<void> {
   if (!game) return;
   try {
-    const target = await archiveDefaultTarget(game.key, game.installPath ?? "");
+    let preferred = "";
+    try {
+      preferred = localStorage.getItem(ARCHIVE_LAST_TARGET_KEY) ?? "";
+    } catch {
+      // A locked-down webview profile can reject storage; fall back to the
+      // backend chain instead of failing the whole plan.
+    }
+    const target = await archiveDefaultTarget(
+      game.key,
+      game.installPath ?? "",
+      "backup",
+      preferred,
+    );
     S.archiveTarget = target.targetParent;
   } catch {
     S.archiveTarget = "";
@@ -597,6 +609,13 @@ async function startBackup(): Promise<void> {
       fullVolumeRecovery: S.archiveFullRecovery,
     });
     S.archiveResult = result;
+    if (S.archiveTarget) {
+      try {
+        localStorage.setItem(ARCHIVE_LAST_TARGET_KEY, S.archiveTarget);
+      } catch {
+        // Remembering the folder is optional; the backend chain still works.
+      }
+    }
     S.archiveProgress = null;
     verifyPath = result.manifestPath;
     verifyApp = result.appName;

@@ -4346,6 +4346,7 @@
   "archive.levelXtoolHint": "xtool ayarlı: Hızlı yeterli. Ağır sıkıştırmayı zaten xtool yapar; daha yüksek zstd seviyesi çoğunlukla bekleme süresi ekler.",
   "archive.guideXtoolSecurity": "Windows imzasız xtool çalıştırılabilir dosyası için uyarı gösterebilir. Başlatıcı kendi indirdiği dosyayı çıkarmadan önce sabitlenmiş SHA-256 ile doğrular.",
   "archive.targetIsGameParent": "Bu klasörde kurulu oyun var. Yedek onun yanına yazılacak; yedeği ayrı tutmak için USB'yi veya başka bir diski seç.",
+  "archive.targetNotWritable": "Bu klasöre yazma izni yok. Launcher'ı yönetici olarak çalıştırın veya farklı bir klasör seçin.",
   "archive.xtoolExtracting": "xtool açılıyor…",
   "archive.mediaEmpty": "Sürücüde disk yok",
   "archive.mediaUnknown": "Bilinmeyen medya",

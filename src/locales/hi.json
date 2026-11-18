@@ -4346,6 +4346,7 @@
   "archive.levelXtoolHint": "xtool सेट है: तेज़ पर्याप्त है। xtool पहले से ही गेम डेटा को संपीड़ित करता है, और उच्च zstd स्तर मुख्य रूप से प्रतीक्षा समय बढ़ाता है।",
   "archive.guideXtoolSecurity": "Windows अहस्ताक्षरित xtool बाइनरी के बारे में चेतावनी दे सकता है। लॉन्चर अनपैक करने से पहले अपने डाउनलोड को पिन किए गए SHA-256 से सत्यापित करता है।",
   "archive.targetIsGameParent": "इस फ़ोल्डर में पहले से ही इंस्टॉल किया गया गेम है। बैकअप उसके बगल में लिखा जाएगा; बैकअप को अलग रखने के लिए USB ड्राइव या दूसरी डिस्क चुनें।",
+  "archive.targetNotWritable": "No write permission for this folder. Run the launcher as administrator or choose a different folder.",
   "archive.xtoolExtracting": "xtool अनपैक हो रहा है…",
   "archive.mediaEmpty": "ड्राइव में कोई डिस्क नहीं है",
   "archive.mediaUnknown": "अज्ञात मीडिया",

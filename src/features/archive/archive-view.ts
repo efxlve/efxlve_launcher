@@ -272,7 +272,7 @@ function renderBackupTab(): string {
           ? registering
             ? `<button type="button" class="btn ghost small" disabled>${icon("refresh", 13, "spin")} ${t("archive.stageRegistering")}</button>`
             : `<button type="button" class="btn danger small" data-act="archive-cancel">${icon("x", 13)} ${t("archive.cancel")}</button>`
-          : `<button type="button" class="btn primary" data-act="archive-start" ${!plan || !archiveFits(plan.freeBytes, plan.requiredBytes, S.archiveEstimate?.estimatedBytes ?? null) || !plan.volumeFits || S.archiveBurning !== null || S.archiveErasing || S.archiveEstimating || S.archiveXtoolInstalling ? "disabled" : ""}>${icon("package", 14)} ${t("archive.start")}</button>`
+          : `<button type="button" class="btn primary" data-act="archive-start" ${!plan || plan.writable === false || !archiveFits(plan.freeBytes, plan.requiredBytes, S.archiveEstimate?.estimatedBytes ?? null) || !plan.volumeFits || S.archiveBurning !== null || S.archiveErasing || S.archiveEstimating || S.archiveXtoolInstalling ? "disabled" : ""}>${icon("package", 14)} ${t("archive.start")}</button>`
       }
     </div>
     ${S.archiveRunning || !S.archiveResult ? renderProgress(S.archiveProgress, "archive") : ""}
@@ -318,6 +318,11 @@ function renderPlanSummary(plan: ArchivePlan | null): string {
       ${
         sameAsGame
           ? `<div class="archive-note archive-target-warning">${icon("info", 13)} ${t("archive.targetIsGameParent")}</div>`
+          : ""
+      }
+      ${
+        plan.writable === false
+          ? `<div class="archive-note archive-target-warning">${icon("alert-triangle", 13)} ${t("archive.targetNotWritable")}</div>`
           : ""
       }
       ${

@@ -4346,6 +4346,7 @@
   "archive.levelXtoolHint": "已設定 xtool：選擇「快速」即可。xtool 已經負責壓縮遊戲資料，調高 zstd 等級主要只會增加等待時間。",
   "archive.guideXtoolSecurity": "Windows 可能會對未簽署的 xtool 執行檔發出警告。啟動器在解壓縮內建下載套件前會先核對固定的 SHA-256 總和檢查碼。",
   "archive.targetIsGameParent": "此資料夾已包含已安裝的遊戲，備份將會寫在它旁邊；若要將備份分開存放，請選擇 USB 隨身碟或其他磁碟。",
+  "archive.targetNotWritable": "No write permission for this folder. Run the launcher as administrator or choose a different folder.",
   "archive.xtoolExtracting": "正在解壓縮 xtool…",
   "archive.mediaEmpty": "光碟機中無光碟",
   "archive.mediaUnknown": "未知媒體",
