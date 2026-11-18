@@ -110,7 +110,7 @@ The short version: **Settings → Cloud → Enable**, choose a provider, fill th
 
 ### Prerequisites
 - Windows 10/11 with the MSVC toolchain, or Linux/macOS with the platform Tauri prerequisites below
-- Node.js 20+
+- Node.js 24+
 - Rust stable
 
 **Windows**
