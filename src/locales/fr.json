@@ -4272,6 +4272,7 @@
   "archive.partSize": "Taille des parties",
   "archive.selectedMedia": "Support sélectionné",
   "archive.mediaHint": "USB (FAT32) utilise des parties de 3,9 Go car FAT32 ne peut pas stocker un fichier unique de plus de 4 Go ; la clé elle-même peut être de n'importe quelle capacité. Les profils optiques créent un dossier disc-N par disque ; le mode USB garde toutes les parties dans un seul dossier. La gravure démarre une fois la sauvegarde terminée.",
+  "archive.mediaProfileHint": "The media profile only sets the part size and file system. Choose where the backup is written under Target folder.",
   "archive.startHint": "Cela crée les fichiers de parties ; aucun disque n'est gravé à cette étape.",
   "archive.estimateAction": "Estimer la taille",
   "archive.estimating": "Estimation…",

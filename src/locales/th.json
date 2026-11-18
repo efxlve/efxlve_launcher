@@ -4272,6 +4272,7 @@
   "archive.partSize": "ขนาดพาร์ท",
   "archive.selectedMedia": "สื่อที่เลือก",
   "archive.mediaHint": "USB (FAT32) ใช้พาร์ทขนาด 3.9 GB เนื่องจาก FAT32 ไม่สามารถเก็บไฟล์เดียวที่ใหญ่เกิน 4 GB ได้ ส่วนความจุรวมของไดรฟ์จะมีขนาดเท่าใดก็ได้ โปรไฟล์แผ่นดิสก์จะสร้างโฟลเดอร์ disc-N แยกตามแต่ละแผ่น ส่วน USB จะเก็บทุกพาร์ทไว้ในโฟลเดอร์เดียว การเขียนแผ่นจะเริ่มหลังจากสำรองข้อมูลเสร็จ",
+  "archive.mediaProfileHint": "The media profile only sets the part size and file system. Choose where the backup is written under Target folder.",
   "archive.startHint": "ขั้นตอนนี้จะสร้างเฉพาะไฟล์พาร์ท ยังไม่ได้เขียนลงแผ่นดิสก์",
   "archive.estimateAction": "ประเมินขนาด",
   "archive.estimating": "กำลังประเมิน…",

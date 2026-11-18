@@ -36,6 +36,7 @@ import {
 let planToken = 0;
 let planTimer: number | undefined;
 let planInFlightKey = "";
+let lastPlanError = "";
 let estimateToken = 0;
 let estimateKey = "";
 let estimateCancelling = false;
@@ -182,9 +183,17 @@ export async function loadArchivePlan(): Promise<void> {
     });
     if (token !== planToken) return;
     S.archivePlan = plan;
+    lastPlanError = "";
     if (!S.archiveTarget) S.archiveTarget = plan.targetRoot;
-  } catch {
-    if (token === planToken) S.archivePlan = null;
+  } catch (error) {
+    if (token === planToken) {
+      S.archivePlan = null;
+      const raw = String(error);
+      if (!raw.includes("archive.cancelled") && raw !== lastPlanError) {
+        lastPlanError = raw;
+        toast(localizeMessage(raw), "err");
+      }
+    }
   } finally {
     if (planInFlightKey === key) planInFlightKey = "";
     if (token === planToken) {
@@ -1045,6 +1054,7 @@ export function handleArchiveChange(target: HTMLElement): boolean {
     S.archiveTarget = (target as HTMLInputElement).value;
     S.archivePlan = null;
     S.archiveResult = null;
+    scheduleRender();
     schedulePlan();
     return true;
   }

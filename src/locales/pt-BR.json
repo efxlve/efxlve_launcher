@@ -4272,6 +4272,7 @@
   "archive.partSize": "Tamanho da parte",
   "archive.selectedMedia": "Mídia selecionada",
   "archive.mediaHint": "O perfil USB (FAT32) usa partes de 3,9 GB porque o FAT32 não comporta um único arquivo acima de 4 GB; o pendrive em si pode ter qualquer tamanho. Perfis ópticos criam uma pasta disc-N por disco; o perfil USB mantém todas as partes em uma só pasta. A gravação começa após o término do backup.",
+  "archive.mediaProfileHint": "The media profile only sets the part size and file system. Choose where the backup is written under Target folder.",
   "archive.startHint": "Isto cria os arquivos de partes; não grava um disco.",
   "archive.estimateAction": "Estimar tamanho",
   "archive.estimating": "Estimando…",

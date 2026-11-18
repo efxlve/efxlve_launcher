@@ -200,6 +200,7 @@ function renderBackupTab(): string {
                </div>`
             : ""
         }
+        <div class="archive-note">${t("archive.mediaProfileHint")}</div>
         <div class="archive-note">${t("archive.mediaHint")}</div>
       </div>
       <div class="row settings-row">

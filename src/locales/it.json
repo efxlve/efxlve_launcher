@@ -4272,6 +4272,7 @@
   "archive.partSize": "Dimensione parte",
   "archive.selectedMedia": "Supporto selezionato",
   "archive.mediaHint": "USB (FAT32) usa parti da 3,9 GB perché FAT32 non può memorizzare un singolo file superiore a 4 GB; l'unità stessa può essere di qualsiasi capacità. I profili ottici creano una cartella disc-N per ciascun disco; USB mantiene tutte le parti in una sola cartella. La masterizzazione parte al termine del backup.",
+  "archive.mediaProfileHint": "The media profile only sets the part size and file system. Choose where the backup is written under Target folder.",
   "archive.startHint": "Questa operazione crea i file delle parti; non scrive ancora su disco.",
   "archive.estimateAction": "Stima dimensione",
   "archive.estimating": "Stima in corso…",

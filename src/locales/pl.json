@@ -4272,6 +4272,7 @@
   "archive.partSize": "Rozmiar części",
   "archive.selectedMedia": "Wybrany nośnik",
   "archive.mediaHint": "Profil USB (FAT32) używa części po 3,9 GB, ponieważ FAT32 nie obsługuje pojedynczych plików powyżej 4 GB; sam dysk może mieć dowolną pojemność. Profile optyczne tworzą osobny folder disc-N dla każdej płyty; profil USB trzyma wszystkie części w jednym folderze. Nagrywanie rozpoczyna się po ukończeniu kopii zapasowej.",
+  "archive.mediaProfileHint": "The media profile only sets the part size and file system. Choose where the backup is written under Target folder.",
   "archive.startHint": "Ta operacja tworzy pliki części; nie nagrywa jeszcze płyty.",
   "archive.estimateAction": "Oszacuj rozmiar",
   "archive.estimating": "Szacowanie…",

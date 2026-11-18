@@ -55,14 +55,19 @@ vi.mock("../../core/toast", () => ({
   progressToast: vi.fn(() => ({ update: vi.fn(), close: vi.fn() })),
 }));
 
+vi.mock("../../core/render", () => ({ scheduleRender: vi.fn() }));
+
 import type { ArchiveEstimate, ArchivePlan, ArchiveSummary, FoundArchive } from "../../archive";
+import { scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
+import { toast } from "../../core/toast";
 import type { LibraryItem } from "../../core/types";
 import {
   cancelEstimate,
   handleArchiveAction,
   handleArchiveChange,
   loadArchiveDiscs,
+  loadArchivePlan,
   loadBurnRecorders,
   openArchiveForGame,
   requestEstimate,
@@ -84,6 +89,7 @@ beforeEach(() => {
   S.archiveEraseArmed = false;
   S.archiveEraseFull = false;
   S.archiveResult = null;
+  S.archivePlan = null;
   S.archiveSelectedApp = "";
   S.archiveSource = "";
   S.archiveDiscsManifest = "";
@@ -106,6 +112,8 @@ beforeEach(() => {
   ipc.cancel.mockClear();
   ipc.start.mockClear();
   ipc.verify.mockClear();
+  vi.mocked(scheduleRender).mockClear();
+  vi.mocked(toast).mockClear();
 });
 
 describe("archive busy guards", () => {
@@ -225,6 +233,38 @@ describe("archive busy guards", () => {
 
     expect(S.archiveEraseFull).toBe(true);
     expect(S.archiveEraseArmed).toBe(false);
+  });
+
+  it("clears the stale plan as soon as the target folder changes", () => {
+    S.archivePlan = {
+      archivePath: "C:\\Program Files\\Epic Games\\old",
+    } as ArchivePlan;
+    const input = document.createElement("input");
+    input.value = "D:\\Backups";
+    input.dataset.act = "archive-target-input";
+
+    expect(handleArchiveChange(input)).toBe(true);
+
+    expect(S.archiveTarget).toBe("D:\\Backups");
+    expect(S.archivePlan).toBeNull();
+    expect(scheduleRender).toHaveBeenCalled();
+  });
+
+  it("reports a failed plan instead of leaving the old summary", async () => {
+    S.allGamesMap.set("steam::1", {
+      key: "steam::1",
+      title: "Game",
+      installed: true,
+      installPath: "C:\\Game",
+    } as unknown as LibraryItem);
+    S.archiveSelectedApp = "steam::1";
+    S.archiveTarget = "C:\\archives";
+    ipc.plan.mockRejectedValueOnce("planner failed");
+
+    await loadArchivePlan();
+
+    expect(S.archivePlan).toBeNull();
+    expect(toast).toHaveBeenCalled();
   });
 
   it("drops the estimate and reloads the plan when full recovery is toggled", async () => {

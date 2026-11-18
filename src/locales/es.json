@@ -4272,6 +4272,7 @@
   "archive.partSize": "Tamaño de parte",
   "archive.selectedMedia": "Medio seleccionado",
   "archive.mediaHint": "USB (FAT32) utiliza partes de 3,9 GB porque FAT32 no admite archivos individuales de más de 4 GB; la unidad en sí puede ser de cualquier capacidad. Los perfiles ópticos crean una carpeta disc-N por disco; USB mantiene todas las partes en una sola carpeta. La grabación comienza cuando termina la copia.",
+  "archive.mediaProfileHint": "The media profile only sets the part size and file system. Choose where the backup is written under Target folder.",
   "archive.startHint": "Esto crea los archivos de partes; no graba ningún disco todavía.",
   "archive.estimateAction": "Estimar tamaño",
   "archive.estimating": "Estimando…",

@@ -4272,6 +4272,7 @@
   "archive.partSize": "Teilgröße",
   "archive.selectedMedia": "Gewähltes Medium",
   "archive.mediaHint": "USB (FAT32) verwendet 3,9-GB-Teile, da FAT32 keine Einzeldateien über 4 GB speichern kann; das Laufwerk selbst kann beliebig groß sein. Optische Profile erstellen pro Disc einen disc-N-Ordner; bei USB bleiben alle Teile in einem Ordner. Das Brennen startet nach Abschluss des Backups.",
+  "archive.mediaProfileHint": "The media profile only sets the part size and file system. Choose where the backup is written under Target folder.",
   "archive.startHint": "Hiermit werden Teildateien erstellt; es wird noch keine Disc beschrieben.",
   "archive.estimateAction": "Größe schätzen",
   "archive.estimating": "Wird geschätzt…",

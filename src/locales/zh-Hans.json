@@ -4272,6 +4272,7 @@
   "archive.partSize": "分卷大小",
   "archive.selectedMedia": "所选介质",
   "archive.mediaHint": "由于 FAT32 无法保存超过 4 GB 的单个文件，USB (FAT32) 使用 3.9 GB 分卷（驱动器本身容量不限）。光盘配置会为每张光盘创建一个 disc-N 文件夹；USB 配置会将所有分卷保存在同一文件夹中。刻录会在备份完成后开始。",
+  "archive.mediaProfileHint": "The media profile only sets the part size and file system. Choose where the backup is written under Target folder.",
   "archive.startHint": "此操作仅生成分卷文件，不会直接写入光盘。",
   "archive.estimateAction": "预估大小",
   "archive.estimating": "正在预估…",

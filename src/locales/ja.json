@@ -4272,6 +4272,7 @@
   "archive.partSize": "パーツのサイズ",
   "archive.selectedMedia": "選択中のメディア",
   "archive.mediaHint": "FAT32 は 4 GB を超える単一ファイルを保存できないため、USB (FAT32) は 3.9 GB のパーツを使用します（ドライブ自体の容量は問いません）。光学プロファイルはディスクごとに disc-N フォルダーを作成し、USB はすべてのパーツを 1 つのフォルダーにまとめます。ディスクへの書き込みはバックアップ完了後に開始できます。",
+  "archive.mediaProfileHint": "The media profile only sets the part size and file system. Choose where the backup is written under Target folder.",
   "archive.startHint": "パーツファイルを作成するだけで、ディスクへの書き込みは行いません。",
   "archive.estimateAction": "サイズを見積もる",
   "archive.estimating": "見積もり中…",

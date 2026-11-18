@@ -4272,6 +4272,7 @@
   "archive.partSize": "حجم الجزء",
   "archive.selectedMedia": "الوسيط المحدد",
   "archive.mediaHint": "يستخدم USB (FAT32) أجزاء بحجم 3.9 غيغابايت لأن نظام FAT32 لا يستوعب ملفًا منفردًا يتجاوز 4 غيغابايت؛ بينما يمكن أن تكون سعة ذاكرة USB نفسها بأي حجم. تنشئ الملفات التعريفية الضوئية مجلد disc-N لكل قرص؛ بينما يحتفظ USB بجميع الأجزاء في مجلد واحد. يبدأ النسخ على القرص بعد انتهاء النسخ الاحتياطي.",
+  "archive.mediaProfileHint": "The media profile only sets the part size and file system. Choose where the backup is written under Target folder.",
   "archive.startHint": "ينشئ هذا الإجراء ملفات الأجزاء؛ ولا يكتب على قرص ضوئي مباشرة.",
   "archive.estimateAction": "تقدير الحجم",
   "archive.estimating": "جارٍ التقدير…",

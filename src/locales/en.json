@@ -4272,6 +4272,7 @@
   "archive.partSize": "Part size",
   "archive.selectedMedia": "Selected media",
   "archive.mediaHint": "USB (FAT32) uses 3.9 GB parts because FAT32 cannot hold a single file over 4 GB; the drive itself can be any size. Optical profiles create one disc-N folder per disc; USB keeps every part in one folder. Burning starts after the backup finishes.",
+  "archive.mediaProfileHint": "The media profile only sets the part size and file system. Choose where the backup is written under Target folder.",
   "archive.startHint": "This creates part files; it does not write a disc.",
   "archive.estimateAction": "Estimate size",
   "archive.estimating": "Estimating…",

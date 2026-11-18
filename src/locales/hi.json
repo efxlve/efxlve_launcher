@@ -4272,6 +4272,7 @@
   "archive.partSize": "पार्ट का आकार",
   "archive.selectedMedia": "चयनित मीडिया",
   "archive.mediaHint": "USB (FAT32) 3.9 GB पार्ट्स का उपयोग करता है क्योंकि FAT32 में 4 GB से बड़ी एकल फ़ाइल नहीं आ सकती; ड्राइव स्वयं किसी भी आकार का हो सकता है। ऑप्टिकल प्रोफ़ाइल प्रति डिस्क एक disc-N फ़ोल्डर बनाते हैं; USB सभी पार्ट्स को एक ही फ़ोल्डर में रखता है। डिस्क लेखन बैकअप समाप्त होने के बाद शुरू होता है।",
+  "archive.mediaProfileHint": "The media profile only sets the part size and file system. Choose where the backup is written under Target folder.",
   "archive.startHint": "यह पार्ट फ़ाइलें बनाता है; यह सीधे डिस्क नहीं लिखता।",
   "archive.estimateAction": "आकार का अनुमान लगाएँ",
   "archive.estimating": "अनुमान लगाया जा रहा है…",

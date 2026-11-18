@@ -4272,6 +4272,7 @@
   "archive.partSize": "分割檔大小",
   "archive.selectedMedia": "所選媒體",
   "archive.mediaHint": "由於 FAT32 無法儲存超過 4 GB 的單一檔案，USB (FAT32) 使用 3.9 GB 分割檔（隨身碟本身容量不限）。光碟設定檔會為每張光碟建立一個 disc-N 資料夾；USB 設定檔則會將所有分割檔保存在同一資料夾中。燒錄會在備份完成後開始。",
+  "archive.mediaProfileHint": "The media profile only sets the part size and file system. Choose where the backup is written under Target folder.",
   "archive.startHint": "此操作僅建立分割檔，不會直接寫入光碟。",
   "archive.estimateAction": "預估大小",
   "archive.estimating": "正在預估…",

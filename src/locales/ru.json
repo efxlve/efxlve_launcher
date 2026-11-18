@@ -4272,6 +4272,7 @@
   "archive.partSize": "Размер части",
   "archive.selectedMedia": "Выбранный носитель",
   "archive.mediaHint": "Профиль USB (FAT32) делит архив на части по 3,9 ГБ, так как FAT32 не поддерживает файлы больше 4 ГБ (сама флешка может быть любого объёма). Оптические профили создают отдельную папку disc-N для каждого диска; профиль USB хранит все части в одной папке. Запись на диск начинается после завершения архивации.",
+  "archive.mediaProfileHint": "The media profile only sets the part size and file system. Choose where the backup is written under Target folder.",
   "archive.startHint": "Это действие создаёт файлы частей и не начинает запись на оптический диск.",
   "archive.estimateAction": "Оценить размер",
   "archive.estimating": "Оценка…",
