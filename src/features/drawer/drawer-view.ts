@@ -2097,8 +2097,11 @@ async function loadEaLaunchMode(appName: string, eaKey: string): Promise<void> {
   }
 }
 
-/** Small external-link card: mod sources, wiki and the Steam database. */
-function renderGameLinks(s: EpicSummary): string {
+/** Steam's store category for a game that takes workshop items. */
+const STEAM_CAT_WORKSHOP = 30;
+
+/** The rows inside the link card; repainted when Steam details arrive late. */
+function gameLinkRows(s: EpicSummary): string {
   const query = encodeURIComponent(s.title.trim());
   const steamApp = s.appName.startsWith("steam::") ? s.appName.slice(7) : "";
   const steamUrl = /^\d+$/.test(steamApp)
@@ -2106,23 +2109,37 @@ function renderGameLinks(s: EpicSummary): string {
     : `https://steamdb.info/search/?a=app&q=${query}`;
   // The mod rows come from the shared table, so every store's game page opens
   // the same checked pages instead of a search the site no longer honours.
-  const modRows = modSourceLinks({ title: s.title, steamAppId: steamApp }).map((link) => ({
-    label: link.label,
-    url: link.url,
-  }));
+  // An app id means the game is on Steam, not that it takes workshop items:
+  // the store category is the only signal that says the workshop exists.
+  const categories = S.steamDetails.get(s.appName)?.categories ?? [];
+  const modRows = modSourceLinks({
+    title: s.title,
+    steamAppId: steamApp,
+    hasWorkshop: categories.includes(STEAM_CAT_WORKSHOP),
+  }).map((link) => ({ label: link.label, url: link.url }));
   const links = [
     ...modRows,
     { label: t("drawer.pcgamingwiki"), url: `https://www.pcgamingwiki.com/w/index.php?search=${query}` },
     { label: t("drawer.steamdb"), url: steamUrl },
   ];
-  const rows = links
+  return links
     .map(
       (link) => `<button type="button" class="gp-link-row" data-act="open-external-url" data-url="${esc(link.url)}" title="${esc(link.label)}">
         <span>${esc(link.label)}</span>${icon("external", 11)}
       </button>`,
     )
     .join("");
-  return sideCard(s.appName, "links", t("drawer.linksTitle"), "link", `<div class="gp-links">${rows}</div>`);
+}
+
+/** Small external-link card: mod sources, wiki and the Steam database. */
+function renderGameLinks(s: EpicSummary): string {
+  return sideCard(
+    s.appName,
+    "links",
+    t("drawer.linksTitle"),
+    "link",
+    `<div class="gp-links" id="gp-links-body">${gameLinkRows(s)}</div>`,
+  );
 }
 
 export function renderDrawerOverview(
@@ -4290,6 +4307,10 @@ async function loadSteamDetails(appName: string, force = false): Promise<void> {
         S.loadedCritic.set(appName, merged);
         updateCriticUI(appName, merged);
       }
+      // The workshop row depends on a store category that only arrived with
+      // these details, so the card's rows are rebuilt in place.
+      const linksBody = modalRoot.querySelector<HTMLElement>("#gp-links-body");
+      if (linksBody) linksBody.innerHTML = gameLinkRows(s);
     }
   } catch {
     S.loadedRequirements.set(appName, { supported: false, systems: [], languages: [], appName });

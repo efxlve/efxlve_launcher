@@ -17,6 +17,12 @@ export interface ModSourceGame {
   title: string;
   /** Steam app id, digits only, when the library has one. */
   steamAppId?: string | null;
+  /**
+   * The store lists the game as having a Steam Workshop. An app id alone means
+   * the game is on Steam, not that it takes workshop items: Dead by Daylight
+   * has an app id and no workshop at all.
+   */
+  hasWorkshop?: boolean;
 }
 
 export type ModSourceKey = "workshop" | "nexus" | "thunderstore";
@@ -98,15 +104,16 @@ function rowFor(game: ModSourceGame): SourceRow | undefined {
 /**
  * The card's rows, in display order.
  *
- * The Steam Workshop row needs an app id and nothing else, which is why it is
- * the one exact row a game gets for free.
+ * The Steam Workshop row opens the game's own workshop only when the store says
+ * the game has one. Some games list a workshop category but have no items yet;
+ * the page still exists and is still the right place.
  */
 export function modSourceLinks(game: ModSourceGame): ModSourceLink[] {
   const row = rowFor(game);
   const steam = digits(game.steamAppId);
   const links: ModSourceLink[] = [];
 
-  if (steam) {
+  if (steam && game.hasWorkshop === true) {
     links.push({
       key: "workshop",
       label: "Steam Workshop",

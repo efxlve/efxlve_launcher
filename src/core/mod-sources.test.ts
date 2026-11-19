@@ -6,7 +6,7 @@ const urlOf = (links: ReturnType<typeof modSourceLinks>, key: string) =>
 
 describe("modSourceLinks", () => {
   it("opens the exact pages for a game with a full row", () => {
-    const links = modSourceLinks({ title: "Valheim", steamAppId: "892970" });
+    const links = modSourceLinks({ title: "Valheim", steamAppId: "892970", hasWorkshop: true });
     expect(links.map((link) => link.key)).toEqual(["workshop", "nexus", "thunderstore"]);
     expect(urlOf(links, "workshop")).toMatchObject({
       url: "https://steamcommunity.com/app/892970/workshop/",
@@ -20,6 +20,13 @@ describe("modSourceLinks", () => {
       url: "https://thunderstore.io/c/valheim/",
       exact: true,
     });
+  });
+
+  it("has no workshop row for a Steam game without workshop items", () => {
+    // Dead by Daylight: a Steam app id, no workshop category.
+    const links = modSourceLinks({ title: "Dead by Daylight", steamAppId: "381210" });
+    expect(links.some((link) => link.key === "workshop")).toBe(false);
+    expect(links.map((link) => link.key)).toEqual(["nexus", "thunderstore"]);
   });
 
   it("matches a store copy that only has the title", () => {
@@ -55,7 +62,11 @@ describe("modSourceLinks", () => {
   });
 
   it("ignores a malformed app id but still resolves the title", () => {
-    const links = modSourceLinks({ title: "Cyberpunk 2077", steamAppId: "not-an-id" });
+    const links = modSourceLinks({
+      title: "Cyberpunk 2077",
+      steamAppId: "not-an-id",
+      hasWorkshop: true,
+    });
     expect(links.some((link) => link.key === "workshop")).toBe(false);
     expect(urlOf(links, "nexus")?.url).toBe("https://www.nexusmods.com/games/cyberpunk2077");
   });
