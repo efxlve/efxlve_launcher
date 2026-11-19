@@ -28,6 +28,7 @@ import { storeLogo } from "../store/store-logos";
 import { t } from "../../i18n";
 import { achCardHtml, achCardVars, achTagParts } from "../achievement-card/ach-card";
 import { playAchCardEntry, playAchCardExit } from "../achievement-card/ach-card-motion";
+import { sortedAchievementHistory } from "../../core/achievement-history";
 import {
   clearAchievementEdits,
   editedAchievementGames,
@@ -140,6 +141,18 @@ function previewAchievementSound(tier = previewRarityTier): void {
 let stagePreviewTimer: number | null = null;
 
 /**
+ * A real achievement picture for the preview: the newest unlock in the local
+ * history, so the stage shows the same art path a live card uses. A launcher
+ * with no recorded unlock yet keeps the trophy fallback.
+ */
+function previewAchievementArt(): string | undefined {
+  const icon = sortedAchievementHistory()
+    .map((entry) => entry.icon.trim())
+    .find((value) => value.length > 0);
+  return icon || undefined;
+}
+
+/**
  * Drives the live preview stage card using the Web Animations API so that
  * opening and closing animations ALWAYS play visibly on every click. The
  * keyframes come from the same module as the in-game toast.
@@ -149,6 +162,13 @@ export function runStagePreviewChoreography(mode: "entry" | "exit" | "cycle" = "
     window.clearTimeout(stagePreviewTimer);
     stagePreviewTimer = null;
   }
+  // An art URL that cannot load must reveal the trophy underneath instead of
+  // leaving an empty tile.
+  document
+    .querySelectorAll<HTMLImageElement>(".ach-stage-screen .ach-hud-ach-icon")
+    .forEach((image) => {
+      image.onerror = () => image.remove();
+    });
   window.requestAnimationFrame(() => {
     const card = document.querySelector<HTMLElement>(".ach-stage-screen .ach-hud-toast");
     if (!card) return;
@@ -227,6 +247,7 @@ export function renderAchievementsSettingsView(): string {
 
   const palette = achievementCardPalette(cardTheme, previewRarityTier, customAccent);
   const tierMeta = getPreviewTierMeta(previewRarityTier);
+  const previewArt = previewAchievementArt();
 
   const generalStoreList: Array<{ id: string; label: string; logoId?: string; ico?: IconName }> = [
     { id: "steam", label: "Steam", logoId: "steam" },
@@ -622,6 +643,7 @@ export function renderAchievementsSettingsView(): string {
             size: currentSize,
             palette,
             glyph: tierMeta.iconName,
+            iconSrc: previewArt,
             opacity,
             hideTag: options.hideTag,
             hideDesc: options.hideDesc,
@@ -1217,10 +1239,15 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     case "ach-test-notification": {
       stopWebAudioAchievementChime();
       const meta = getPreviewTierMeta(previewRarityTier);
+      // The test card paints the same picture the stage shows, so the preview
+      // and the in-game notification stay one design.
       void achievementTestNotification(
         meta.title,
         meta.desc,
         previewRarityTier,
+        undefined,
+        undefined,
+        previewAchievementArt(),
       ).catch((e) => toast(String(e), "err"));
       return true;
     }
