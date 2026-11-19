@@ -43,6 +43,15 @@ A wrong link is the only failure mode that matters here, so the table is data
 that can be corrected without touching code, and a missing row degrades to
 search instead of guessing.
 
+Two checks behind that rule, made against the live sites:
+
+- Nexus Mods ignores a keyword on its search page (`/search?gsearch=` renders an
+  empty result), so the fallback is the games index, not a query. `riskofrain2`
+  is a 404 while `riskofrain` is a different game: deriving the slug from a
+  title is exactly the mistake this table exists to prevent.
+- Thunderstore's communities page filters in the browser only, so it has no
+  query URL either. Its community list is the fallback.
+
 ## The table
 
 One row per game. Every field is optional and independent:

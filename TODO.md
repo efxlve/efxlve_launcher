@@ -300,10 +300,11 @@ stays on the client. Open work:
 
 Model, phases and acceptance criteria live in `docs/MOD_SUPPORT.md`.
 
-- Phase 1 is unstarted: `src/core/mod-sources.ts` does not exist, and the game
-  page's link card still hardcodes three search URLs in
-  `src/features/drawer/drawer-view.ts` (`renderGameLinks`).
-- The source table has no rows yet. Steam Workshop is the only source that
+- Phase 1 is half done: `src/core/mod-sources.ts` resolves a game to its mod
+  pages and `src/core/mod-sources.test.ts` covers the fallbacks. The game page's
+  link card still hardcodes its URLs in `src/features/drawer/drawer-view.ts`
+  (`renderGameLinks`), so nothing calls the resolver yet.
+- The source table has eleven rows. Steam Workshop is the only source that
   resolves exactly without one, because the app id is already in the summary.
 - The card is Epic-only today; the Steam game page and custom games have no
   equivalent, which is phase 2.
