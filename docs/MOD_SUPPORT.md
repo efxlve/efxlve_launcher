@@ -13,14 +13,14 @@ added where it pays.
 Each row is a place a player can go. A source resolves to an exact page when the
 game's id is known and to that site's own search when it is not.
 
-| Source | Exact target | Account |
-|---|---|---|
-| Nexus Mods | `nexusmods.com/<slug>` | Free account; Premium for one-click manager downloads |
-| Steam Workshop | `steamcommunity.com/app/<appid>/workshop/` | The game must be owned on Steam |
-| Thunderstore | `thunderstore.io/c/<community>/` | None |
-| mod.io | `mod.io/g/<slug>` | None to browse |
-| GameBanana | `gamebanana.com/games/<id>` | None |
-| PCGamingWiki | the game's wiki page | None |
+| Source | Exact target | Account | In the card |
+|---|---|---|---|
+| Steam Workshop | `steamcommunity.com/app/<appid>/workshop/` | The game must be owned on Steam | Yes, exact by app id alone |
+| Nexus Mods | `nexusmods.com/games/<slug>` | Free account; Premium for one-click manager downloads | Yes, index when no slug |
+| Thunderstore | `thunderstore.io/c/<community>/` | None | Yes, list when no community |
+| PCGamingWiki | the game's wiki page | None | Yes, search |
+| mod.io | `mod.io/g/<slug>` | None to browse | No, no verified fallback yet |
+| GameBanana | `gamebanana.com/games/<id>` | None | No, no verified fallback yet |
 
 A source row never opens a download or a file. It opens a page the player reads
 in their own browser, under their own account. That is why the directory needs
@@ -57,9 +57,11 @@ Two checks behind that rule, made against the live sites:
 One row per game. Every field is optional and independent:
 
 ```json
-{ "steam": "292030", "nexus": "witcher3", "thunderstore": null,
-  "modio": null, "gamebanana": null, "pcgamingwiki": "The_Witcher_3:_Wild_Hunt" }
+{ "steam": "292030", "titles": ["the witcher 3 wild hunt"], "nexus": "witcher3" }
 ```
+
+`steam` and `titles` are both keys to the same row: the app id wins when the
+store gave us one, the normalised title is what an Epic or GOG copy matches on.
 
 Adding a game is one row. It is not a support matrix and it is not required for
 a source to work: only for that source to land on the exact page. The table
@@ -68,8 +70,9 @@ grows from what players actually open, not from a launch-day checklist.
 ## Where the rows appear
 
 One card on the game page, next to the existing external links, driven by
-`src/core/mod-sources.ts`. Every store's game page mounts the same card, so a
-Steam game, an Epic game and a custom entry resolve through the same code.
+`src/core/mod-sources.ts`. It renders from `renderGameLinks` today, where the
+game's own page replaces the old search rows. The Steam game page and custom
+entries follow in phase 2, through the same resolver.
 
 The card is presentation only: no network call, no cache, no IPC. That keeps it
 free on the store page and impossible to break a launch with.
@@ -113,34 +116,31 @@ size stops a zip bomb.
 
 Each phase is one commit with the check that covers it.
 
-**1. Source card.** `src/core/mod-sources.ts` holds the table and the resolver;
-the game page's link card shows every source, exact where the table has an id
-and search everywhere else. Done when a Steam, an Epic and a GOG game each open
-the right page, and a game with no row still opens a useful search.
+**1. Steam page and custom games.** The resolver already drives the link card on
+the Epic-style game page; the Steam game page and a custom entry mount the same
+rows. Done when every library row can reach its sources.
 
-**2. Steam page and custom games.** The same card on the Steam game page and on
-a custom entry, so every library row can reach its sources.
-
-**3. Table growth.** Rows for the games players open most, corrected from
+**2. Table growth.** Rows for the games players open most, corrected from
 reports. Data only.
 
-**4. Install engine.** Staging, deploy, undeploy and the manifest, with tests,
+**3. Install engine.** Staging, deploy, undeploy and the manifest, with tests,
 behind a profile that has no loader. No UI yet.
 
-**5. Install for one game.** The drop-a-zip panel for that profile, with the
+**4. Install for one game.** The drop-a-zip panel for that profile, with the
 store lifecycle hooks wired.
 
-**6. Loaders and a second game.** BepInEx, SMAPI and script extenders arrive as
+**5. Loaders and a second game.** BepInEx, SMAPI and script extenders arrive as
 pinned packages with the launch argument the profile declares.
 
-**7. Remote search.** Thunderstore and mod.io can be searched in place: both
+**6. Remote search.** Thunderstore and mod.io can be searched in place: both
 answer without a key. Nexus stays a link until an application is registered.
 
 ## Files
 
 | Path | Job |
 |---|---|
-| `src/core/mod-sources.ts` | Source table, resolver, per-source caveat |
-| `src/features/mods/mods-card.ts` | Card mounted by a game page |
-| `src-tauri/src/mods/profile.rs` | Per-game install profile (phase 4) |
-| `src-tauri/src/mods/deploy.rs` | Deploy, undeploy, diff (phase 4) |
+| `src/core/mod-sources.ts` | Source table and resolver |
+| `src/core/mod-sources.test.ts` | Fallback and matching tests |
+| `src/features/drawer/drawer-view.ts` | `renderGameLinks` renders the rows |
+| `src-tauri/src/mods/profile.rs` | Per-game install profile (phase 3) |
+| `src-tauri/src/mods/deploy.rs` | Deploy, undeploy, diff (phase 3) |

@@ -301,10 +301,12 @@ stays on the client. Open work:
 Model, phases and acceptance criteria live in `docs/MOD_SUPPORT.md`.
 
 - Phase 1 is half done: `src/core/mod-sources.ts` resolves a game to its mod
-  pages and `src/core/mod-sources.test.ts` covers the fallbacks. The game page's
-  link card still hardcodes its URLs in `src/features/drawer/drawer-view.ts`
-  (`renderGameLinks`), so nothing calls the resolver yet.
+  pages and `src/core/mod-sources.test.ts` covers the fallbacks. The link card
+  now calls it, so the Nexus row opens the game's own page instead of the empty
+  search page the old URL returned.
 - The source table has eleven rows. Steam Workshop is the only source that
   resolves exactly without one, because the app id is already in the summary.
+- mod.io and GameBanana stay out of the card: neither site's search URL could be
+  verified, so each needs a checked fallback before it ships.
 - The card is Epic-only today; the Steam game page and custom games have no
-  equivalent, which is phase 2.
+  equivalent, which is the next phase.
