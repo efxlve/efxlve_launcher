@@ -36,6 +36,14 @@ import { t } from "../../i18n";
 
 type ThemeFilter = "all" | "dark" | "light" | "custom";
 let currentFilter: ThemeFilter = "all";
+const THEME_TAGS: { id: string; labelKey: string }[] = [
+  { id: "cyberpunk", labelKey: "settings.themeCategoryCyberpunk" },
+  { id: "game", labelKey: "settings.themeCategoryGame" },
+  { id: "pastel", labelKey: "settings.themeCategoryPastel" },
+  { id: "minimal", labelKey: "settings.themeCategoryMinimal" },
+  { id: "retro", labelKey: "settings.themeCategoryRetro" },
+];
+let currentTag: string | null = null;
 let themeQuery = "";
 let themeSearchWired = false;
 
@@ -118,12 +126,17 @@ export function renderThemeSection(): string {
   } else if (currentFilter === "custom") {
     filtered = allThemes.filter((th) => Boolean(th.custom));
   }
+  const tag = currentTag;
+  if (tag) {
+    filtered = filtered.filter((theme) => theme.tags?.includes(tag));
+  }
 
   const activeTheme = themeById(S.surface);
   const activeName = activeTheme.name ?? t(activeTheme.labelKey);
   const themeNames = allThemes
     .map((theme) => theme.name ?? (theme.labelKey ? t(theme.labelKey) : theme.id))
     .join(" ");
+  const tagLabels = THEME_TAGS.map((tag) => t(tag.labelKey)).join(" ");
 
   const cardsHtml =
     filtered.length > 0
@@ -136,10 +149,13 @@ export function renderThemeSection(): string {
               ${icon("plus", 13)} ${t("settings.themeAdd")}
             </button>
           </div>`
-        : "";
+        : `<div class="theme-empty-custom">
+            <span style="font-size: 24px; opacity: 0.8;">${icon("search", 28)}</span>
+            <span>${esc(t("settings.searchEmpty"))}</span>
+          </div>`;
 
   return `
-    <div class="theme-section" data-search="${esc(`${t("settings.secThemes")} ${t("settings.themeTitle")} ${t("settings.themeDesc")} theme surface appearance palette ${themeNames}`)}">
+    <div class="theme-section" data-search="${esc(`${t("settings.secThemes")} ${t("settings.themeTitle")} ${t("settings.themeDesc")} theme surface appearance palette ${themeNames} ${tagLabels}`)}">
       <div class="theme-section-header">
         <div class="theme-section-titles">
           <p class="page-sub">${esc(t("settings.themeDesc"))}</p>
@@ -189,6 +205,17 @@ export function renderThemeSection(): string {
           <span class="theme-active-dot"></span>
           <span class="settings-value">${esc(t("settings.themeActive"))}: <strong>${esc(activeName)}</strong></span>
         </div>
+      </div>
+
+      <div class="theme-tag-bar">
+        <button type="button" class="theme-tag-btn ${currentTag === null ? "active" : ""}" data-act="theme-tag" data-tag="">
+          ${esc(t("settings.themeFilterAll"))}
+        </button>
+        ${THEME_TAGS.map(
+          (tag) => `<button type="button" class="theme-tag-btn ${currentTag === tag.id ? "active" : ""}" data-act="theme-tag" data-tag="${tag.id}">
+            ${esc(t(tag.labelKey))}
+          </button>`,
+        ).join("")}
       </div>
 
       <div class="theme-card-grid theme-grid">
@@ -1217,6 +1244,13 @@ export function handleThemeSettingsAction(act: string | undefined, el: HTMLEleme
         currentFilter = filter;
         render();
       }
+      return true;
+    }
+
+    case "theme-tag": {
+      const tag = el.dataset.tag ?? "";
+      currentTag = tag || null;
+      render();
       return true;
     }
 

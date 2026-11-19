@@ -154,8 +154,21 @@ describe("custom theme transfer", () => {
 
   it("rejects a future schema instead of guessing", () => {
     const parsed = JSON.parse(exportThemeJson("neongrid")) as Record<string, unknown>;
-    parsed.efxlve_theme = 3;
+    parsed.efxlve_theme = 4;
     expect(importThemeJson(JSON.stringify(parsed))).toBeNull();
+  });
+
+  it("imports a v2 palette from an older build", () => {
+    const imported = importThemeJson(
+      JSON.stringify({
+        efxlve_theme: 2,
+        name: "Old Theme",
+        bg: "#101014",
+        accent: "#ffffff",
+      }),
+    );
+    expect(imported).not.toBeNull();
+    expect(getCustomThemeInput(imported!.id)?.name).toBe("Old Theme");
   });
 
   it("drops unsafe fields from an imported file but keeps the palette", () => {

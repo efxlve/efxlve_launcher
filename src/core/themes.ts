@@ -436,16 +436,20 @@ export function duplicateTheme(sourceId: string, copySuffix = " Copy"): string {
   });
 }
 
+/** Current `.efxtheme` schema. Import still accepts v2 files from old builds. */
+const THEME_SCHEMA = 3;
+
 /** Exports a theme definition as a JSON string. */
 export function exportThemeJson(id: string): string {
   const custom = getCustomThemeInput(id);
   if (custom) {
     return JSON.stringify(
       {
-        efxlve_theme: 2,
+        efxlve_theme: THEME_SCHEMA,
         name: custom.name,
         author: "User",
         sourceId: custom.sourceId,
+        tags: ["custom"],
         bg: custom.bg,
         surface: custom.surface,
         accent: custom.accent,
@@ -470,8 +474,9 @@ export function exportThemeJson(id: string): string {
   const def = themeById(id);
   return JSON.stringify(
     {
-      efxlve_theme: 2,
+      efxlve_theme: THEME_SCHEMA,
       name: def.name ?? (def.labelKey ? t(def.labelKey) : def.id),
+      tags: def.tags ?? [],
       bg: HEX.test(def.bg) ? def.bg : firstHex(def.bg) ?? "#141418",
       surface: def.surface,
       accent: HEX.test(def.accent) ? def.accent : firstHex(def.accent) ?? "#7c3aed",
@@ -490,7 +495,8 @@ export function importThemeJson(jsonStr: string): { id: string; name: string } |
   try {
     const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
     if (!parsed || typeof parsed !== "object") return null;
-    if (parsed.efxlve_theme !== undefined && Number(parsed.efxlve_theme) !== 2) return null;
+    const schema = Number(parsed.efxlve_theme);
+    if (parsed.efxlve_theme !== undefined && schema !== 2 && schema !== THEME_SCHEMA) return null;
 
     const bg = String(parsed.bg || "");
     const accent = String(parsed.accent || "");
