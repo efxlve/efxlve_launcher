@@ -611,6 +611,9 @@ const PREVIEW_THEME_ID = "custom-preview";
  * `applySurface(S.surface, false)` and restores the previous look.
  */
 export function previewCustomTheme(input: CustomThemeInput): void {
+  if (isTauri && HEX.test(input.bg)) {
+    void invoke("app_set_background_color", { color: input.bg }).catch(() => undefined);
+  }
   paintTheme({
     id: PREVIEW_THEME_ID,
     labelKey: "",
