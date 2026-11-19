@@ -15,7 +15,7 @@ game's id is known and to that site's own search when it is not.
 
 | Source | Exact target | Account | In the card |
 |---|---|---|---|
-| Steam Workshop | `steamcommunity.com/app/<appid>/workshop/` | The game must be owned on Steam | Yes, exact by app id alone |
+| Steam Workshop | `steamcommunity.com/app/<appid>/workshop/` | The game must be owned on Steam | Yes, when the store lists the Workshop category |
 | Nexus Mods | `nexusmods.com/games/<slug>` | Free account; Premium for one-click manager downloads | Yes, index when no slug |
 | Thunderstore | `thunderstore.io/c/<community>/` | None | Yes, list when no community |
 | PCGamingWiki | the game's wiki page | None | Yes, search |
@@ -42,6 +42,12 @@ the Steam app id, the Epic catalog namespace, the GOG product id.
 A wrong link is the only failure mode that matters here, so the table is data
 that can be corrected without touching code, and a missing row degrades to
 search instead of guessing.
+
+A Steam app id says the game is on Steam, not that it takes workshop items:
+Dead by Daylight has an app id and no workshop. The row is therefore hidden
+unless the store's own category list (already cached for the game page by
+`steam_get_game_details`) contains Steam Workshop, and it stays hidden when that
+answer never arrives.
 
 Two checks behind that rule, made against the live sites:
 
