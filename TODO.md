@@ -308,5 +308,7 @@ Model, phases and acceptance criteria live in `docs/MOD_SUPPORT.md`.
   resolves exactly without one, because the app id is already in the summary.
 - mod.io and GameBanana stay out of the card: neither site's search URL could be
   verified, so each needs a checked fallback before it ships.
-- The card is Epic-only today; the Steam game page and custom games have no
-  equivalent, which is the next phase.
+- The card is on the single game drawer, so every store and a custom entry reach
+  it; there is no separate Steam surface to build.
+- Nobody has opened the card in a running app yet. It is verified by the build,
+  the resolver tests and the bundle, not by eye.

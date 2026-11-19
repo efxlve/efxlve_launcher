@@ -70,9 +70,9 @@ grows from what players actually open, not from a launch-day checklist.
 ## Where the rows appear
 
 One card on the game page, next to the existing external links, driven by
-`src/core/mod-sources.ts`. It renders from `renderGameLinks` today, where the
-game's own page replaces the old search rows. The Steam game page and custom
-entries follow in phase 2, through the same resolver.
+`src/core/mod-sources.ts` and rendered by `renderGameLinks`. The drawer is the
+game page for every store, so an Epic, GOG or Amazon purchase, a Steam purchase
+and a custom entry reach the same rows through one code path.
 
 The card is presentation only: no network call, no cache, no IPC. That keeps it
 free on the store page and impossible to break a launch with.
@@ -116,23 +116,19 @@ size stops a zip bomb.
 
 Each phase is one commit with the check that covers it.
 
-**1. Steam page and custom games.** The resolver already drives the link card on
-the Epic-style game page; the Steam game page and a custom entry mount the same
-rows. Done when every library row can reach its sources.
+**1. Table growth.** Rows for the games players open most, corrected from
+reports. Data only, no UI change.
 
-**2. Table growth.** Rows for the games players open most, corrected from
-reports. Data only.
-
-**3. Install engine.** Staging, deploy, undeploy and the manifest, with tests,
+**2. Install engine.** Staging, deploy, undeploy and the manifest, with tests,
 behind a profile that has no loader. No UI yet.
 
-**4. Install for one game.** The drop-a-zip panel for that profile, with the
+**3. Install for one game.** The drop-a-zip panel for that profile, with the
 store lifecycle hooks wired.
 
-**5. Loaders and a second game.** BepInEx, SMAPI and script extenders arrive as
+**4. Loaders and a second game.** BepInEx, SMAPI and script extenders arrive as
 pinned packages with the launch argument the profile declares.
 
-**6. Remote search.** Thunderstore and mod.io can be searched in place: both
+**5. Remote search.** Thunderstore and mod.io can be searched in place: both
 answer without a key. Nexus stays a link until an application is registered.
 
 ## Files
@@ -142,5 +138,5 @@ answer without a key. Nexus stays a link until an application is registered.
 | `src/core/mod-sources.ts` | Source table and resolver |
 | `src/core/mod-sources.test.ts` | Fallback and matching tests |
 | `src/features/drawer/drawer-view.ts` | `renderGameLinks` renders the rows |
-| `src-tauri/src/mods/profile.rs` | Per-game install profile (phase 3) |
-| `src-tauri/src/mods/deploy.rs` | Deploy, undeploy, diff (phase 3) |
+| `src-tauri/src/mods/profile.rs` | Per-game install profile (phase 2) |
+| `src-tauri/src/mods/deploy.rs` | Deploy, undeploy, diff (phase 2) |
