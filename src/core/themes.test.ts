@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   BOOT_THEME_KEY,
   applySurface,
+  clearThemeCache,
   customThemes,
   customTokens,
   duplicateTheme,
@@ -12,6 +13,8 @@ import {
   sanitizeSceneUrl,
   sanitizeThemeTokens,
   PRESET_WALLPAPERS,
+  themeById,
+  themes,
   type CustomThemeInput,
 } from "./themes";
 
@@ -22,7 +25,10 @@ const BASE: CustomThemeInput = {
   light: false,
 };
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  clearThemeCache();
+});
 
 describe("theme tokens", () => {
   it("derives the full radius scale", () => {
@@ -135,6 +141,16 @@ describe("custom theme transfer", () => {
     expect(exported.tokens?.["--accent"]).toBe("#fcee0a");
   });
 
+  it("materializes scene-theme tokens for clone and export", () => {
+    for (const id of ["white", "blades", "gloss", "neongrid"]) {
+      const theme = themes().find((item) => item.id === id);
+      expect(theme?.tokens?.["--bg"], id).toBeTruthy();
+
+      const cloneId = duplicateTheme(id);
+      expect(getCustomThemeInput(cloneId)?.tokens?.["--bg"], id).toBe(theme?.tokens?.["--bg"]);
+    }
+  });
+
   it("recovers missing tokens from a clone's stable source id", () => {
     localStorage.setItem(
       "efxlve-custom-themes",
@@ -152,6 +168,19 @@ describe("custom theme transfer", () => {
 
     const recovered = customThemes().find((theme) => theme.id === "custom-1");
     expect(recovered?.tokens?.["--accent"]).toBe("#fcee0a");
+  });
+
+  it("parses the custom theme list once", () => {
+    saveCustomTheme({ ...BASE });
+    clearThemeCache();
+    customThemes();
+
+    const getItem = vi.spyOn(Storage.prototype, "getItem");
+    themes();
+    themes();
+    themeById("neongrid");
+    expect(getItem).not.toHaveBeenCalled();
+    getItem.mockRestore();
   });
 });
 
@@ -171,5 +200,12 @@ describe("boot snapshot", () => {
     expect(snapshot.scheme).toBe("dark");
     expect(snapshot.bg).toBe("#07080a");
     expect(snapshot.tokens["--accent"]).toBe("#fcee0a");
+  });
+
+  it("paints built-in scene tokens without stripping their url()", () => {
+    applySurface("gloss", false);
+    const css = document.getElementById("efxlve-theme-tokens")?.textContent ?? "";
+    expect(css).toContain("--scene-bg");
+    expect(css).toContain("gloss-scene.svg");
   });
 });

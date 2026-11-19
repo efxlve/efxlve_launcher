@@ -5,89 +5,63 @@
 
 /* ---------- White Mode ---------- */
 
-:root[data-surface="white"] {
-  color-scheme: light;
-  --bg: #f3f4f6;
-  --surface-1: #ffffff;
-  --surface-2: #eef0f4;
-  --surface-3: #e4e7ec;
-  --line: rgba(15, 23, 42, 0.08);
-  --line-strong: rgba(15, 23, 42, 0.16);
-  --text: #111318;
-  --text-2: #4b5563;
-  --text-3: #7b8492;
-  --accent: #111318;
-  --accent-hover: #000000;
-  --accent-tint: rgba(17, 19, 24, 0.07);
-  --on-accent: #ffffff;
-  --ok: #15803d;
-  --ok-hover: #166534;
-  --ok-tint: rgba(21, 128, 61, 0.12);
-  --warn: #a16207;
-  --warn-tint: rgba(161, 98, 7, 0.12);
-  --err: #b91c1c;
-  --err-tint: rgba(185, 28, 28, 0.1);
-  --shadow-pop: 0 12px 32px rgba(15, 23, 42, 0.14);
-  --scrollbar-thumb: rgba(15, 23, 42, 0.32);
-  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.55);
-}
 
-:root[data-surface="white"] body { background: var(--bg); }
-:root[data-surface="white"] #winbar,
-:root[data-surface="white"] #sidebar,
-:root[data-surface="white"] #page-header { border-color: var(--line); }
-:root[data-surface="white"] :is(.ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn) { color: #f8fafc; }
-:root[data-surface="white"] :is(.ss-compressed-tag) { color: #cbd5e1; }
-:root[data-surface="white"] :is(.gp-progress-fill) {
+:root[data-scheme="light"] body { background: var(--bg); }
+:root[data-scheme="light"] #winbar,
+:root[data-scheme="light"] #sidebar,
+:root[data-scheme="light"] #page-header { border-color: var(--line); }
+:root[data-scheme="light"] :is(.ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn) { color: #f8fafc; }
+:root[data-scheme="light"] :is(.ss-compressed-tag) { color: #cbd5e1; }
+:root[data-scheme="light"] :is(.gp-progress-fill) {
   background: rgba(15, 23, 42, 0.55);
 }
-:root[data-surface="white"] .seg > button.active {
+:root[data-scheme="light"] .seg > button.active {
   background: var(--accent);
   color: var(--on-accent);
 }
-:root[data-surface="white"] .switch .track {
+:root[data-scheme="light"] .switch .track {
   background: #d4d7dd;
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.16);
 }
-:root[data-surface="white"] .switch .track::before {
+:root[data-scheme="light"] .switch .track::before {
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.08);
 }
-:root[data-surface="white"] .switch input:checked + .track {
+:root[data-scheme="light"] .switch input:checked + .track {
   background: var(--accent);
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
 }
-:root[data-surface="white"] .switch input:checked + .track::before {
+:root[data-scheme="light"] .switch input:checked + .track::before {
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
-:root[data-surface="white"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo, .pcard-store-logo, .col-store-logo-img, .bk-store-logo) {
+:root[data-scheme="light"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo, .pcard-store-logo, .col-store-logo-img, .bk-store-logo) {
   filter: brightness(0);
   opacity: 0.85;
 }
-:root[data-surface="white"] .release-store-btn .release-store-logo {
+:root[data-scheme="light"] .release-store-btn .release-store-logo {
   filter: brightness(0);
   opacity: 0.85;
 }
-:root[data-surface="white"] .profile-hero-action-btn,
-:root[data-surface="white"] .profile-refresh-btn {
+:root[data-scheme="light"] .profile-hero-action-btn,
+:root[data-scheme="light"] .profile-refresh-btn {
   background: #ffffff;
   border-color: var(--line);
   color: var(--text-2);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
-:root[data-surface="white"] .profile-hero-action-btn:hover,
-:root[data-surface="white"] .profile-refresh-btn:hover {
+:root[data-scheme="light"] .profile-hero-action-btn:hover,
+:root[data-scheme="light"] .profile-refresh-btn:hover {
   background: var(--surface-2);
   color: var(--text);
   border-color: var(--line-strong);
 }
-:root[data-surface="white"] .profile-presence {
+:root[data-scheme="light"] .profile-presence {
   background: var(--surface-2);
   border-color: var(--line);
   color: var(--text-2);
 }
-:root[data-surface="white"] .profile-banner-edit-btn {
+:root[data-scheme="light"] .profile-banner-edit-btn {
   background: rgba(15, 23, 42, 0.75);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -95,30 +69,30 @@
   color: #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
-:root[data-surface="white"] .profile-banner-edit-btn:hover {
+:root[data-scheme="light"] .profile-banner-edit-btn:hover {
   background: rgba(15, 23, 42, 0.9);
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.38);
 }
-:root[data-surface="white"] .profile-hero-store-chip {
+:root[data-scheme="light"] .profile-hero-store-chip {
   background: #ffffff;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
-:root[data-surface="white"] .profile-hero-store-chip:hover {
+:root[data-scheme="light"] .profile-hero-store-chip:hover {
   background: var(--surface-2);
 }
-:root[data-surface="white"] .profile-hero-store-chip.selected {
+:root[data-scheme="light"] .profile-hero-store-chip.selected {
   background: var(--accent-tint);
 }
-:root[data-surface="white"] .profile-hero-banner::after {
+:root[data-scheme="light"] .profile-hero-banner::after {
   background: linear-gradient(180deg, transparent 75%, rgba(0, 0, 0, 0.16) 100%);
 }
-:root[data-surface="white"] .profile-stats {
+:root[data-scheme="light"] .profile-stats {
   background: var(--surface-1);
   border-color: var(--line);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
-:root[data-surface="white"] :is(.search input, .notes-search input, .notes-search-input,
+:root[data-scheme="light"] :is(.search input, .notes-search input, .notes-search-input,
   .calendar-search-input, .palette-input input,
   .storage-search-input, .ss-studio-search, .install-path-input,
   .ced .col-search-wrap .text-input) {
@@ -130,8 +104,8 @@
   padding: 0 !important;
   outline: none !important;
 }
-:root[data-surface="white"] .notes-title-input,
-:root[data-surface="white"] .notes-title-input:focus {
+:root[data-scheme="light"] .notes-title-input,
+:root[data-scheme="light"] .notes-title-input:focus {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -139,269 +113,269 @@
   -webkit-backdrop-filter: none !important;
   outline: none !important;
 }
-:root[data-surface="white"] .notes-search {
+:root[data-scheme="light"] .notes-search {
   background: #ffffff;
   border-color: var(--line);
   border-radius: 8px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
-:root[data-surface="white"] .sb-toggle {
+:root[data-scheme="light"] .sb-toggle {
   border-color: var(--line);
   color: var(--text-2);
 }
-:root[data-surface="white"] .sb-toggle:hover {
+:root[data-scheme="light"] .sb-toggle:hover {
   background: var(--surface-2);
   color: var(--text);
   border-color: var(--line-strong);
 }
-:root[data-surface="white"] .profile-ach-card {
+:root[data-scheme="light"] .profile-ach-card {
   background: #ffffff;
   border-color: var(--line);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 }
-:root[data-surface="white"] .profile-ach-card:hover {
+:root[data-scheme="light"] .profile-ach-card:hover {
   background: #ffffff;
   border-color: var(--line-strong);
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
 }
-:root[data-surface="white"] .profile-ach-card.is-plat {
+:root[data-scheme="light"] .profile-ach-card.is-plat {
   border-color: rgba(37, 99, 235, 0.35);
   background: #ffffff;
   box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
 }
-:root[data-surface="white"] .profile-ach-card.is-plat:hover {
+:root[data-scheme="light"] .profile-ach-card.is-plat:hover {
   border-color: var(--accent);
   box-shadow: 0 8px 20px rgba(37, 99, 235, 0.18);
 }
-:root[data-surface="white"] .profile-ach-pct {
+:root[data-scheme="light"] .profile-ach-pct {
   color: var(--accent);
 }
-:root[data-surface="white"] .profile-ach-card.is-plat .profile-ach-pct {
+:root[data-scheme="light"] .profile-ach-card.is-plat .profile-ach-pct {
   color: var(--accent);
 }
-:root[data-surface="white"] .profile-ach-bar {
+:root[data-scheme="light"] .profile-ach-bar {
   background: rgba(15, 23, 42, 0.08);
 }
-:root[data-surface="white"] .profile-ach-bar > span {
+:root[data-scheme="light"] .profile-ach-bar > span {
   background: var(--text);
   box-shadow: none;
 }
-:root[data-surface="white"] .profile-ach-card.is-plat .profile-ach-bar > span {
+:root[data-scheme="light"] .profile-ach-card.is-plat .profile-ach-bar > span {
   background: var(--accent);
   box-shadow: 0 0 6px var(--accent-tint);
 }
-:root[data-surface="white"] .profile-ach-title {
+:root[data-scheme="light"] .profile-ach-title {
   color: var(--text);
 }
-:root[data-surface="white"] .profile-ach-count {
+:root[data-scheme="light"] .profile-ach-count {
   color: var(--text-2);
 }
-:root[data-surface="white"] .profile-ach-sub-meta {
+:root[data-scheme="light"] .profile-ach-sub-meta {
   color: var(--text-3);
 }
-:root[data-surface="white"] .profile-game-row {
+:root[data-scheme="light"] .profile-game-row {
   border-bottom-color: var(--line);
 }
-:root[data-surface="white"] .profile-game-row:hover {
+:root[data-scheme="light"] .profile-game-row:hover {
   background: var(--surface-2);
 }
-:root[data-surface="white"] .profile-game-row.is-plat {
+:root[data-scheme="light"] .profile-game-row.is-plat {
   background: rgba(37, 99, 235, 0.03);
 }
-:root[data-surface="white"] .profile-table-header {
+:root[data-scheme="light"] .profile-table-header {
   border-bottom-color: var(--line);
   color: var(--text-3);
 }
-:root[data-surface="white"] .notes-filter {
+:root[data-scheme="light"] .notes-filter {
   background: var(--surface-2);
   border-color: var(--line);
   border-radius: 8px;
   padding: 2px;
 }
-:root[data-surface="white"] .notes-row {
+:root[data-scheme="light"] .notes-row {
   background: #ffffff;
   border-color: var(--line);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
-:root[data-surface="white"] .notes-row:hover {
+:root[data-scheme="light"] .notes-row:hover {
   background: var(--surface-2);
 }
-:root[data-surface="white"] .notes-row.is-active {
+:root[data-scheme="light"] .notes-row.is-active {
   background: #ffffff;
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
 }
-:root[data-surface="white"] .notes-editor {
+:root[data-scheme="light"] .notes-editor {
   background: var(--surface-1);
   border-color: var(--line);
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
 }
-:root[data-surface="white"] .compat-note {
+:root[data-scheme="light"] .compat-note {
   color: var(--text);
 }
-:root[data-surface="white"] .profile-stat {
+:root[data-scheme="light"] .profile-stat {
   border-left-color: var(--line);
 }
-:root[data-surface="white"] .settings-nav-scroll::-webkit-scrollbar-thumb {
+:root[data-scheme="light"] .settings-nav-scroll::-webkit-scrollbar-thumb {
   background: rgba(15, 23, 42, 0.2);
 }
-:root[data-surface="white"] .settings-nav-scroll::-webkit-scrollbar-thumb:hover {
+:root[data-scheme="light"] .settings-nav-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(15, 23, 42, 0.35);
 }
-:root[data-surface="white"] button.gp-source {
+:root[data-scheme="light"] button.gp-source {
   background: #ffffff;
   border-color: var(--line);
   color: var(--text);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
 }
-:root[data-surface="white"] button.gp-source:hover,
-:root[data-surface="white"] button.gp-source[aria-expanded="true"] {
+:root[data-scheme="light"] button.gp-source:hover,
+:root[data-scheme="light"] button.gp-source[aria-expanded="true"] {
   background: var(--surface-2);
   border-color: var(--line-strong);
 }
-:root[data-surface="white"] button.gp-source svg {
+:root[data-scheme="light"] button.gp-source svg {
   color: var(--text-2);
 }
-:root[data-surface="white"] .lib-sort-btn {
+:root[data-scheme="light"] .lib-sort-btn {
   background: var(--surface-1);
   border-color: var(--line-strong);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
-:root[data-surface="white"] .lib-sort-btn:hover,
-:root[data-surface="white"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
+:root[data-scheme="light"] .lib-sort-btn:hover,
+:root[data-scheme="light"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
   background: var(--surface-2);
   border-color: var(--line-strong);
 }
-:root[data-surface="white"] .overlay::-webkit-scrollbar-track {
+:root[data-scheme="light"] .overlay::-webkit-scrollbar-track {
   background: rgba(15, 23, 42, 0.05);
   border-left: 1px solid rgba(15, 23, 42, 0.08);
 }
-:root[data-surface="white"] .store-tabs {
+:root[data-scheme="light"] .store-tabs {
   background: var(--surface-2);
   border-color: var(--line);
 }
-:root[data-surface="white"] .store-tabs .tab:not(.active) .store-tab-logo {
+:root[data-scheme="light"] .store-tabs .tab:not(.active) .store-tab-logo {
   filter: brightness(0);
   opacity: 0.65;
 }
-:root[data-surface="white"] .store-tabs .tab:hover .store-tab-logo {
+:root[data-scheme="light"] .store-tabs .tab:hover .store-tab-logo {
   opacity: 0.95;
 }
-:root[data-surface="white"] .store-tabs .tab.active {
+:root[data-scheme="light"] .store-tabs .tab.active {
   background: var(--surface-1);
   color: var(--text);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
 }
-:root[data-surface="white"] .store-tabs .tab.active .store-tab-logo {
+:root[data-scheme="light"] .store-tabs .tab.active .store-tab-logo {
   filter: brightness(0);
   opacity: 0.95;
 }
-:root[data-surface="white"] .gp-store-menu,
-:root[data-surface="white"] .gp-version-menu,
-:root[data-surface="white"] .gp-more-menu,
-:root[data-surface="white"] .col-dropdown-menu,
-:root[data-surface="white"] .sort-dropdown-menu,
-:root[data-surface="white"] .store-dropdown-menu {
+:root[data-scheme="light"] .gp-store-menu,
+:root[data-scheme="light"] .gp-version-menu,
+:root[data-scheme="light"] .gp-more-menu,
+:root[data-scheme="light"] .col-dropdown-menu,
+:root[data-scheme="light"] .sort-dropdown-menu,
+:root[data-scheme="light"] .store-dropdown-menu {
   box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
 }
 
-:root[data-surface="white"] .gp-bar-meta-icon {
+:root[data-scheme="light"] .gp-bar-meta-icon {
   background: var(--surface-2);
   color: var(--text-2);
 }
-:root[data-surface="white"] .gp-bar-meta-icon.is-synced {
+:root[data-scheme="light"] .gp-bar-meta-icon.is-synced {
   color: #059669;
   background: rgba(5, 150, 105, 0.12);
 }
-:root[data-surface="white"] .gp-bar-meta-item.is-clickable:hover {
+:root[data-scheme="light"] .gp-bar-meta-item.is-clickable:hover {
   background: var(--surface-2);
 }
-:root[data-surface="white"] .gp-bar-meta-sep {
+:root[data-scheme="light"] .gp-bar-meta-sep {
   background: var(--line);
 }
 
 /* White Mode: Card elevation & depth */
-:root[data-surface="white"] :is(.card, .list, .lib-list, .settings-group, .cs-hero, .cs-dest, .cs-provider, .bk-section, .cs-config-box, .gp-ac-notice, .gp-about-card, .hub-card, .gp-side-card, .ach-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card, .news-card, .storage-overview-card, .storage-stat-pill, .notes-card, .info-box, .screenshots-empty-panel, .notes-empty-panel, .drawer-notes, .ach-empty-panel, .dlc-empty-panel, .ach-search-empty-wrap) {
+:root[data-scheme="light"] :is(.card, .list, .lib-list, .settings-group, .cs-hero, .cs-dest, .cs-provider, .bk-section, .cs-config-box, .gp-ac-notice, .gp-about-card, .hub-card, .gp-side-card, .ach-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card, .news-card, .storage-overview-card, .storage-stat-pill, .notes-card, .info-box, .screenshots-empty-panel, .notes-empty-panel, .drawer-notes, .ach-empty-panel, .dlc-empty-panel, .ach-search-empty-wrap) {
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 /* White Mode: Title bar chip & library cards */
-:root[data-surface="white"] .winbar-beta-chip {
+:root[data-scheme="light"] .winbar-beta-chip {
   background: var(--text);
   color: var(--bg);
 }
-:root[data-surface="white"] .pgrid > .pcard:not(.pcard-hovering, :focus-visible, .is-case) .pcard-art {
+:root[data-scheme="light"] .pgrid > .pcard:not(.pcard-hovering, :focus-visible, .is-case) .pcard-art {
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
 }
-:root[data-surface="white"] .pgrid > .pcard:is(.pcard-hovering, :focus-visible) .pcard-art {
+:root[data-scheme="light"] .pgrid > .pcard:is(.pcard-hovering, :focus-visible) .pcard-art {
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(15, 23, 42, 0.1);
 }
-:root[data-surface="white"] .pcard-play-btn {
+:root[data-scheme="light"] .pcard-play-btn {
   border-color: rgba(15, 23, 42, 0.16);
   background: rgba(15, 23, 42, 0.06);
   color: var(--text-2);
 }
-:root[data-surface="white"] .pcard:hover .pcard-play-btn {
+:root[data-scheme="light"] .pcard:hover .pcard-play-btn {
   border-color: rgba(15, 23, 42, 0.28);
   background: rgba(15, 23, 42, 0.12);
   color: var(--text);
 }
-:root[data-surface="white"] .pcard-play-btn:hover {
+:root[data-scheme="light"] .pcard-play-btn:hover {
   background: var(--text);
   color: var(--bg);
   border-color: var(--text);
 }
 
 /* White Mode: Inputs & focus rings */
-:root[data-surface="white"] :is(input:not([type="range"], [type="checkbox"], [type="radio"]), select, textarea, .input, .text-input, .search, .page-search, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input) {
+:root[data-scheme="light"] :is(input:not([type="range"], [type="checkbox"], [type="radio"]), select, textarea, .input, .text-input, .search, .page-search, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input) {
   background: #ffffff;
   border-color: var(--line-strong);
 }
-:root[data-surface="white"] .calendar-search {
+:root[data-scheme="light"] .calendar-search {
   border-color: var(--line-strong);
 }
-:root[data-surface="white"] :is(input, select, textarea, .input, .text-input, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input):focus,
-:root[data-surface="white"] .search:focus-within,
-:root[data-surface="white"] .calendar-search:focus-within,
-:root[data-surface="white"] .install-path-input-wrap:focus-within {
+:root[data-scheme="light"] :is(input, select, textarea, .input, .text-input, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input):focus,
+:root[data-scheme="light"] .search:focus-within,
+:root[data-scheme="light"] .calendar-search:focus-within,
+:root[data-scheme="light"] .install-path-input-wrap:focus-within {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(17, 19, 24, 0.08);
 }
 
 /* White Mode: Dialogs, overlays & backdrops */
-:root[data-surface="white"] :is(.selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card, .ss-share-card, .modal-box, .manage-dialog, .storage-dialog, .hide-list-dialog, .changelog-dialog, .custom-game-modal) {
+:root[data-scheme="light"] :is(.selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card, .ss-share-card, .modal-box, .manage-dialog, .storage-dialog, .hide-list-dialog, .changelog-dialog, .custom-game-modal) {
   box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18), 0 2px 8px rgba(15, 23, 42, 0.08);
 }
-:root[data-surface="white"] :is(.selective-overlay, .playtime-overlay, .cover-overlay, .col-modal-backdrop, .col-gallery-backdrop, .move-modal-backdrop, .ss-share-backdrop, .modal-backdrop, .manage-overlay, .changelog-backdrop, .palette-backdrop, .lib-filter-backdrop, .custom-game-backdrop) {
+:root[data-scheme="light"] :is(.selective-overlay, .playtime-overlay, .cover-overlay, .col-modal-backdrop, .col-gallery-backdrop, .move-modal-backdrop, .ss-share-backdrop, .modal-backdrop, .manage-overlay, .changelog-backdrop, .palette-backdrop, .lib-filter-backdrop, .custom-game-backdrop) {
   background: rgba(15, 23, 42, 0.38);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
 
 /* White Mode: Customize Images Dialog */
-:root[data-surface="white"] :is(.cover-inspector-card, .cover-url-card, .cover-dropzone) {
+:root[data-scheme="light"] :is(.cover-inspector-card, .cover-url-card, .cover-dropzone) {
   background: #ffffff;
   border-color: rgba(15, 23, 42, 0.1);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
-:root[data-surface="white"] .cover-target-segment {
+:root[data-scheme="light"] .cover-target-segment {
   background: #f1f5f9;
   border-color: rgba(15, 23, 42, 0.1);
 }
-:root[data-surface="white"] .target-segment-pill.active {
+:root[data-scheme="light"] .target-segment-pill.active {
   background: #ffffff;
   border-color: rgba(15, 23, 42, 0.16);
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
 }
-:root[data-surface="white"] .cover-anchor-btn {
+:root[data-scheme="light"] .cover-anchor-btn {
   background: #ffffff;
   border-color: rgba(15, 23, 42, 0.14);
 }
-:root[data-surface="white"] .cover-anchor-btn.active {
+:root[data-scheme="light"] .cover-anchor-btn.active {
   background: var(--accent);
   color: #ffffff;
 }
-:root[data-surface="white"] :is(.cover-preview-card.logo, .sgdb-grid-logo .sgdb-card) {
+:root[data-scheme="light"] :is(.cover-preview-card.logo, .sgdb-grid-logo .sgdb-card) {
   background-color: #f1f5f9;
   background-image:
     linear-gradient(45deg, rgba(0, 0, 0, 0.05) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, 0.05) 75%),
@@ -409,139 +383,139 @@
 }
 
 /* White Mode: Storage manager & music & context menu */
-:root[data-surface="white"] .storage-stat-dot.dot-games {
+:root[data-scheme="light"] .storage-stat-dot.dot-games {
   background: var(--accent);
   box-shadow: none;
 }
-:root[data-surface="white"] .storage-meter-seg.seg-games {
+:root[data-scheme="light"] .storage-meter-seg.seg-games {
   background: var(--accent);
 }
-:root[data-surface="white"] .storage-drive-tab-badge {
+:root[data-scheme="light"] .storage-drive-tab-badge {
   background: rgba(15, 23, 42, 0.07);
 }
-:root[data-surface="white"] .storage-drive-tab.active .storage-drive-tab-badge {
+:root[data-scheme="light"] .storage-drive-tab.active .storage-drive-tab-badge {
   background: rgba(15, 23, 42, 0.14);
 }
-:root[data-surface="white"] :is(.music-art, .music-track img, .music-track-art) {
+:root[data-scheme="light"] :is(.music-art, .music-track img, .music-track-art) {
   background: var(--surface-3);
 }
-:root[data-surface="white"] .panel-context-item.is-current {
+:root[data-scheme="light"] .panel-context-item.is-current {
   background: var(--surface-2);
 }
-:root[data-surface="white"] .sb-resize:hover,
-:root[data-surface="white"] body.sb-resizing .sb-resize {
+:root[data-scheme="light"] .sb-resize:hover,
+:root[data-scheme="light"] body.sb-resizing .sb-resize {
   background: rgba(15, 23, 42, 0.08);
 }
-:root[data-surface="white"] .notif-panel {
+:root[data-scheme="light"] .notif-panel {
   box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
 }
-:root[data-surface="white"] .notif-item.unread {
+:root[data-scheme="light"] .notif-item.unread {
   background: rgba(17, 19, 24, 0.04);
 }
-:root[data-surface="white"] .lib-filter-panel {
+:root[data-scheme="light"] .lib-filter-panel {
   box-shadow: -12px 0 32px rgba(15, 23, 42, 0.12);
 }
-:root[data-surface="white"] .col-modal-card:not(.ced) .col-game-item:hover {
+:root[data-scheme="light"] .col-modal-card:not(.ced) .col-game-item:hover {
   background: var(--surface-2);
 }
-:root[data-surface="white"] .col-modal-card:not(.ced) .col-game-item.selected {
+:root[data-scheme="light"] .col-modal-card:not(.ced) .col-game-item.selected {
   background: var(--surface-3);
 }
-:root[data-surface="white"] .col-modal-card:not(.ced) .col-custom-cb {
+:root[data-scheme="light"] .col-modal-card:not(.ced) .col-custom-cb {
   border-color: var(--line-strong);
 }
-:root[data-surface="white"] .col-modal-card:not(.ced) .col-custom-cb.checked {
+:root[data-scheme="light"] .col-modal-card:not(.ced) .col-custom-cb.checked {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--on-accent);
 }
-:root[data-surface="white"] .lrow-plat-cup::before {
+:root[data-scheme="light"] .lrow-plat-cup::before {
   background: radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, rgba(14, 165, 233, 0) 70%);
 }
 
 /* White Theme: System Specs Tab */
-:root[data-surface="white"] .hub-feature-row {
+:root[data-scheme="light"] .hub-feature-row {
   background: var(--surface-2);
   border-color: var(--line);
 }
-:root[data-surface="white"] .hub-feature-icon {
+:root[data-scheme="light"] .hub-feature-icon {
   background: var(--surface-1);
   color: var(--text-2);
   border: 1px solid var(--line);
 }
-:root[data-surface="white"] .sys-lang-chip {
+:root[data-scheme="light"] .sys-lang-chip {
   background: var(--surface-1);
   border-color: var(--line);
   color: var(--text);
 }
-:root[data-surface="white"] .sys-lang-chip.is-user-lang {
+:root[data-scheme="light"] .sys-lang-chip.is-user-lang {
   background: rgba(5, 150, 105, 0.12);
   border-color: rgba(5, 150, 105, 0.35);
   color: #059669;
 }
-:root[data-surface="white"] .ctrl-badge.is-full {
+:root[data-scheme="light"] .ctrl-badge.is-full {
   background: rgba(16, 185, 129, 0.12);
   border-color: rgba(4, 120, 87, 0.35);
   color: #047857;
 }
-:root[data-surface="white"] .ctrl-badge.is-partial {
+:root[data-scheme="light"] .ctrl-badge.is-partial {
   background: rgba(245, 158, 11, 0.12);
   border-color: rgba(180, 83, 9, 0.35);
   color: #b45309;
 }
-:root[data-surface="white"] :is(.deck-pill.verified, .awacy-pill.supported) {
+:root[data-scheme="light"] :is(.deck-pill.verified, .awacy-pill.supported) {
   color: #047857;
   border-color: rgba(4, 120, 87, 0.35);
   background: rgba(16, 185, 129, 0.12);
 }
-:root[data-surface="white"] :is(.deck-pill.playable, .protondb-pill.gold, .awacy-pill.running) {
+:root[data-scheme="light"] :is(.deck-pill.playable, .protondb-pill.gold, .awacy-pill.running) {
   color: #b45309;
   border-color: rgba(180, 83, 9, 0.35);
   background: rgba(245, 158, 11, 0.12);
 }
-:root[data-surface="white"] :is(.deck-pill.unsupported, .protondb-pill.borked, .awacy-pill.broken, .awacy-pill.denied) {
+:root[data-scheme="light"] :is(.deck-pill.unsupported, .protondb-pill.borked, .awacy-pill.broken, .awacy-pill.denied) {
   color: #b91c1c;
   border-color: rgba(185, 28, 28, 0.35);
   background: rgba(239, 68, 68, 0.12);
 }
-:root[data-surface="white"] .protondb-pill.platinum {
+:root[data-scheme="light"] .protondb-pill.platinum {
   color: #0369a1;
   border-color: rgba(3, 105, 161, 0.35);
   background: rgba(14, 165, 233, 0.12);
 }
-:root[data-surface="white"] .protondb-pill.silver {
+:root[data-scheme="light"] .protondb-pill.silver {
   color: #475569;
   border-color: rgba(71, 85, 105, 0.35);
   background: rgba(100, 116, 139, 0.12);
 }
-:root[data-surface="white"] .protondb-pill.bronze {
+:root[data-scheme="light"] .protondb-pill.bronze {
   color: #92400e;
   border-color: rgba(146, 64, 14, 0.35);
   background: rgba(217, 119, 6, 0.12);
 }
-:root[data-surface="white"] .awacy-pill.planned {
+:root[data-scheme="light"] .awacy-pill.planned {
   color: #6d28d9;
   border-color: rgba(109, 40, 217, 0.35);
   background: rgba(139, 92, 246, 0.12);
 }
-:root[data-surface="white"] :is(.deck-pill, .protondb-pill, .awacy-pill):is(.pending, .unknown) {
+:root[data-scheme="light"] :is(.deck-pill, .protondb-pill, .awacy-pill):is(.pending, .unknown) {
   color: var(--text-2);
   border-color: var(--line);
   background: var(--surface-1);
 }
-:root[data-surface="white"] :is(.protondb-pill, .deck-pill, .awacy-pill):hover {
+:root[data-scheme="light"] :is(.protondb-pill, .deck-pill, .awacy-pill):hover {
   background: var(--surface-2);
   color: var(--text);
 }
 
 /* Dark media overlays and popovers deliberately keep their own dark surface.
    Their text must not inherit the light theme's dark --text token. */
-:root[data-surface="white"] :is(.gp-hero-tool, .ach-locked-badge, .ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn, .ss-game-chip, .cover-preview-badge, .profile-ach-badge.pct, .profile-ach-badge.store, .profile-banner-item-name, .profile-banner-edit-btn, .account-switch-name),
+:root[data-scheme="light"] :is(.gp-hero-tool, .ach-locked-badge, .ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn, .ss-game-chip, .cover-preview-badge, .profile-ach-badge.pct, .profile-ach-badge.store, .profile-banner-item-name, .profile-banner-edit-btn, .account-switch-name),
 :root[data-surface="gloss"] :is(.gp-hero-tool, .ach-locked-badge, .ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn, .ss-game-chip, .cover-preview-badge, .profile-ach-badge.pct, .profile-ach-badge.store, .profile-banner-item-name, .profile-banner-edit-btn, .account-switch-name) {
   color: #f8fafc;
 }
 
-:root[data-surface="white"] .store-shot-name,
+:root[data-scheme="light"] .store-shot-name,
 :root[data-surface="gloss"] .store-shot-name {
   color: rgba(248, 250, 252, 0.72);
 }
@@ -549,12 +523,12 @@
 /* The collection editor follows the active theme; its fields use the same
    surface and line tokens as the rest of Settings. */
 
-:root[data-surface="white"] .profile-banner-store-pill,
+:root[data-scheme="light"] .profile-banner-store-pill,
 :root[data-surface="gloss"] .profile-banner-store-pill {
   color: rgba(248, 250, 252, 0.72);
 }
 
-:root[data-surface="white"] :is(.ss-compressed-tag, .sgdb-style-tag, .sgdb-score-tag, .sgdb-card-footer),
+:root[data-scheme="light"] :is(.ss-compressed-tag, .sgdb-style-tag, .sgdb-score-tag, .sgdb-card-footer),
 :root[data-surface="gloss"] :is(.ss-compressed-tag, .sgdb-style-tag, .sgdb-score-tag, .sgdb-card-footer) {
   color: rgba(248, 250, 252, 0.72);
 }
@@ -564,41 +538,6 @@
    glass chrome with a top sheen, and glossy split-gradient buttons. No
    backdrop-filter anywhere: the glass is gradients over a static backdrop. */
 
-:root[data-surface="gloss"] {
-  color-scheme: light;
-  --bg: #cdeefc;
-  --surface-1: rgba(255, 255, 255, 0.9);
-  --surface-2: rgba(255, 255, 255, 0.62);
-  --surface-3: rgba(255, 255, 255, 0.44);
-  --line: rgba(16, 78, 130, 0.14);
-  --line-strong: rgba(16, 78, 130, 0.26);
-  --text: #07223b;
-  --text-2: #164267;
-  --text-3: #326084;
-  --accent: #0a78c8;
-  --accent-hover: #0866ab;
-  --accent-tint: rgba(10, 120, 200, 0.12);
-  --on-accent: #ffffff;
-  --ok: #24912e;
-  --ok-hover: #1e7a27;
-  --ok-tint: rgba(36, 145, 46, 0.14);
-  --warn: #b86e00;
-  --warn-tint: rgba(184, 110, 0, 0.15);
-  --err: #cc2f35;
-  --err-tint: rgba(204, 47, 53, 0.13);
-  --r-sm: 7px;
-  --r-md: 12px;
-  --shadow-pop: 0 18px 44px rgba(8, 60, 110, 0.28);
-  --aero-heading: #062a50;
-  --aero-glass-edge: 0 0 0 1px rgba(16, 78, 130, 0.14);
-  --aero-gloss-blue: linear-gradient(180deg, #a8e2ff 0%, #5cbdf3 48%, #1d91e0 50%, #1479c9 100%);
-  --aero-gloss-blue-hover: linear-gradient(180deg, #c4ecff 0%, #74caf7 48%, #2ba0ec 50%, #1a88d8 100%);
-  --aero-gloss-white: linear-gradient(180deg, #ffffff 0%, #f4f9fd 48%, #e2eef8 50%, #eef6fc 100%);
-  --aero-gloss-hover: linear-gradient(180deg, #f6fcff 0%, #e2f4fe 48%, #c8e9fc 50%, #e1f4fe 100%);
-  --scene-bg: #8fd6fa url("../assets/gloss-scene.svg") 0 0 / 100vw 100vh no-repeat fixed;
-  --scrollbar-thumb: rgba(13, 47, 79, 0.38);
-  --scrollbar-thumb-hover: rgba(13, 47, 79, 0.65);
-}
 
 /* Backdrop. The SVG is drawn at viewport size, so every layer that repaints
    it (body, game page) lines up into one continuous scene. The game page
@@ -1198,7 +1137,7 @@
 }
 
 /* Store marks are white logo files, so they sit on a dark glossy tile. */
-:root[data-surface="white"] .acc-store-mark,
+:root[data-scheme="light"] .acc-store-mark,
 :root[data-surface="gloss"] .acc-store-mark {
   border-radius: 9px;
   background: #15181d;
@@ -1638,38 +1577,6 @@
    chrome. Like Aero, this is a scene theme: layered gradients and highlights
    emulating the classic 2005 console dashboard. */
 
-:root[data-surface="blades"] {
-  color-scheme: dark;
-  --bg: #07180d;
-  --surface-1: rgba(16, 38, 22, 0.88);
-  --surface-2: rgba(26, 56, 32, 0.76);
-  --surface-3: rgba(38, 76, 44, 0.65);
-  --line: rgba(170, 226, 118, 0.16);
-  --line-strong: rgba(170, 226, 118, 0.3);
-  --text: #f3ffe9;
-  --text-2: #b8d5a8;
-  --text-3: #7d9a75;
-  --accent: #9bd44a;
-  --accent-hover: #b0e566;
-  --accent-tint: rgba(155, 212, 74, 0.18);
-  --on-accent: #0a1a06;
-  --ok: #6fbf2b;
-  --ok-hover: #7fd13a;
-  --ok-tint: rgba(111, 191, 43, 0.16);
-  --warn: #e0a32e;
-  --warn-tint: rgba(224, 163, 46, 0.14);
-  --err: #e5484d;
-  --err-tint: rgba(229, 72, 77, 0.14);
-  --r-sm: 5px;
-  --r-md: 9px;
-  --shadow-pop: 0 18px 44px rgba(0, 12, 4, 0.6);
-  --scene-bg: #07180d url("../assets/blades-scene.svg") 0 0 / 100vw 100vh no-repeat fixed;
-  --scrollbar-thumb: rgba(155, 212, 74, 0.45);
-  --scrollbar-thumb-hover: rgba(155, 212, 74, 0.85);
-  --x360-gloss: linear-gradient(180deg, #d8f7a0 0%, #a6dc52 46%, #7fbd2e 50%, #6ca726 100%);
-  --x360-gloss-hover: linear-gradient(180deg, #e6ffb8 0%, #b7ea63 46%, #8ecb37 50%, #79b52b 100%);
-  --x360-glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
 
 :root[data-surface="blades"] body {
   background: #07180d url("../assets/blades-scene.svg") 0 0 / 100vw 100vh no-repeat;
@@ -2013,37 +1920,6 @@
    Acid yellow (#FCEE0A) HUD on matte carbon graphite, with a red warning
    (#FF003C) and a cyan signal tone (#00F0FF). */
 
-:root[data-surface="neongrid"] {
-  color-scheme: dark;
-  --bg: #07080a;
-  --surface-1: #0c0e12;
-  --surface-2: #12151b;
-  --surface-3: #191c24;
-  --line: rgba(252, 238, 10, 0.2);
-  --line-strong: rgba(252, 238, 10, 0.45);
-  --text: #fefefe;
-  --text-2: #a6acb8;
-  --text-3: #616774;
-  --accent: #fcee0a;
-  --accent-hover: #ffffff;
-  --accent-tint: rgba(252, 238, 10, 0.16);
-  --on-accent: #000000;
-  --ok: #00f0ff;
-  --ok-hover: #33f3ff;
-  --ok-tint: rgba(0, 240, 255, 0.16);
-  --warn: #fcee0a;
-  --warn-tint: rgba(252, 238, 10, 0.16);
-  --err: #ff003c;
-  --err-tint: rgba(255, 0, 60, 0.18);
-  --r-xs: 2px;
-  --r-sm: 2px;
-  --r-md: 3px;
-  --r-lg: 4px;
-  --shadow-pop: 0 18px 44px rgba(0, 0, 0, 0.85);
-  --scene-bg: #07080a url("../assets/neon-grid-scene.svg") 0 0 / 100vw 100vh no-repeat fixed;
-  --scrollbar-thumb: rgba(252, 238, 10, 0.55);
-  --scrollbar-thumb-hover: #fcee0a;
-}
 
 :root[data-surface="neongrid"] body {
   background: #07080a url("../assets/neon-grid-scene.svg") 0 0 / 100vw 100vh no-repeat;
@@ -2300,7 +2176,7 @@
 :root[data-surface="neongrid"] .profile-stat-plat-ico { color: #fcee0a; }
 
 /* Theme-specific depth for empty marks */
-:root[data-surface="white"] :is(.empty-panel-mark, .empty-state-mark) {
+:root[data-scheme="light"] :is(.empty-panel-mark, .empty-state-mark) {
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 :root[data-surface="gloss"] :is(.empty-panel-mark, .empty-state-mark) {
@@ -2322,7 +2198,7 @@
   border-color: var(--err);
   box-shadow: 0 0 0 3px var(--err-tint);
 }
-:root[data-surface="white"] :is(.feedback-head-mark:not(.is-ok), .feedback-toggle, .feedback-report) {
+:root[data-scheme="light"] :is(.feedback-head-mark:not(.is-ok), .feedback-toggle, .feedback-report) {
   background: #ffffff;
   border-color: var(--line);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
@@ -2396,7 +2272,7 @@ html[data-game-scene="on"] {
   --surface-2: color-mix(in srgb, var(--bg) 52%, rgba(255, 255, 255, 0.1));
   --surface-3: color-mix(in srgb, var(--bg) 44%, rgba(255, 255, 255, 0.15));
 }
-html[data-surface="white"][data-game-scene="on"],
+html[data-scheme="light"][data-game-scene="on"],
 html[data-surface="gloss"][data-game-scene="on"] {
   --surface-1: rgba(255, 255, 255, 0.68);
   --surface-2: rgba(255, 255, 255, 0.78);
@@ -2454,12 +2330,12 @@ html[data-game-scene="on"] .lib-filter-panel {
   background: color-mix(in srgb, var(--bg) 88%, rgba(255, 255, 255, 0.06));
   backdrop-filter: blur(20px) saturate(1.15);
 }
-html[data-surface="white"][data-game-scene="on"] .lib-filter-panel,
+html[data-scheme="light"][data-game-scene="on"] .lib-filter-panel,
 html[data-surface="gloss"][data-game-scene="on"] .lib-filter-panel {
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(20px) saturate(1.1);
 }
-html[data-surface="white"][data-game-scene="on"] #game-scene,
+html[data-scheme="light"][data-game-scene="on"] #game-scene,
 html[data-surface="gloss"][data-game-scene="on"] #game-scene {
   filter: blur(52px) saturate(1.1) brightness(1.06);
 }
@@ -2556,37 +2432,6 @@ html[data-game-scene="on"][data-surface] .col-gallery {
    sterile carbon containment bulkhead panels, surgical emergency crimson action buttons,
    and medical vital ECG telemetry. */
 
-:root[data-surface="quarantine"] {
-  color-scheme: dark;
-  --bg: #05070a;
-  --surface-1: #0c1017;
-  --surface-2: #131822;
-  --surface-3: #1c2331;
-  --line: rgba(220, 38, 38, 0.22);
-  --line-strong: rgba(220, 38, 38, 0.48);
-  --text: #f8fafc;
-  --text-2: #94a3b8;
-  --text-3: #566479;
-  --accent: #dc2626;
-  --accent-hover: #ef4444;
-  --accent-tint: rgba(220, 38, 38, 0.16);
-  --on-accent: #ffffff;
-  --ok: #10b981;
-  --ok-hover: #34d399;
-  --ok-tint: rgba(16, 185, 129, 0.16);
-  --warn: #f59e0b;
-  --warn-tint: rgba(245, 158, 11, 0.16);
-  --err: #dc2626;
-  --err-tint: rgba(220, 38, 38, 0.18);
-  --r-xs: 2px;
-  --r-sm: 3px;
-  --r-md: 4px;
-  --r-lg: 6px;
-  --shadow-pop: 0 18px 44px rgba(0, 0, 0, 0.88);
-  --scene-bg: #05070a url("../assets/quarantine-scene.svg") 0 0 / 100vw 100vh no-repeat fixed;
-  --scrollbar-thumb: rgba(220, 38, 38, 0.5);
-  --scrollbar-thumb-hover: #ef4444;
-}
 
 :root[data-surface="quarantine"] body {
   background: #05070a url("../assets/quarantine-scene.svg") 0 0 / 100vw 100vh no-repeat;
@@ -2846,37 +2691,6 @@ html[data-game-scene="on"][data-surface] .col-gallery {
    Android architecture: sleek CyberLife minimalist backdrop (src/assets/sentience-scene.svg),
    temple LED halo corona, probability telemetry brackets, and holographic cyan interface. */
 
-:root[data-surface="sentience"] {
-  color-scheme: dark;
-  --bg: #05080e;
-  --surface-1: #0b111c;
-  --surface-2: #111a2b;
-  --surface-3: #18253d;
-  --line: rgba(0, 162, 255, 0.22);
-  --line-strong: rgba(0, 162, 255, 0.48);
-  --text: #f0f6fc;
-  --text-2: #93a4be;
-  --text-3: #556885;
-  --accent: #00a2ff;
-  --accent-hover: #38bdf8;
-  --accent-tint: rgba(0, 162, 255, 0.16);
-  --on-accent: #03101d;
-  --ok: #00a2ff;
-  --ok-hover: #38bdf8;
-  --ok-tint: rgba(0, 162, 255, 0.16);
-  --warn: #f59e0b;
-  --warn-tint: rgba(245, 158, 11, 0.16);
-  --err: #ef4444;
-  --err-tint: rgba(239, 68, 68, 0.18);
-  --r-xs: 2px;
-  --r-sm: 3px;
-  --r-md: 4px;
-  --r-lg: 6px;
-  --shadow-pop: 0 18px 44px rgba(0, 0, 0, 0.85);
-  --scene-bg: #05080e url("../assets/sentience-scene.svg") 0 0 / 100vw 100vh no-repeat fixed;
-  --scrollbar-thumb: rgba(0, 162, 255, 0.48);
-  --scrollbar-thumb-hover: #38bdf8;
-}
 
 :root[data-surface="sentience"] body {
   background: #05080e url("../assets/sentience-scene.svg") 0 0 / 100vw 100vh no-repeat;
@@ -3135,37 +2949,6 @@ html[data-game-scene="on"][data-surface] .col-gallery {
    weathered ash stone & obsidian sanctuary slabs, ancient golden rune action buttons,
    and guiding grace particle aura. */
 
-:root[data-surface="sanctum"] {
-  color-scheme: dark;
-  --bg: #090807;
-  --surface-1: #14120e;
-  --surface-2: #1e1a14;
-  --surface-3: #2a241b;
-  --line: rgba(229, 169, 60, 0.22);
-  --line-strong: rgba(229, 169, 60, 0.45);
-  --text: #f9f6ed;
-  --text-2: #c7bc9f;
-  --text-3: #78705c;
-  --accent: #e5a93c;
-  --accent-hover: #f5be57;
-  --accent-tint: rgba(229, 169, 60, 0.16);
-  --on-accent: #120d04;
-  --ok: #34d399;
-  --ok-hover: #6ee7b7;
-  --ok-tint: rgba(52, 211, 153, 0.15);
-  --warn: #e5a93c;
-  --warn-tint: rgba(229, 169, 60, 0.15);
-  --err: #ef4444;
-  --err-tint: rgba(239, 68, 68, 0.18);
-  --r-xs: 2px;
-  --r-sm: 4px;
-  --r-md: 5px;
-  --r-lg: 7px;
-  --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.9);
-  --scene-bg: #090807 url("../assets/sanctum-scene.svg") 0 0 / 100vw 100vh no-repeat fixed;
-  --scrollbar-thumb: rgba(229, 169, 60, 0.48);
-  --scrollbar-thumb-hover: #f5be57;
-}
 
 :root[data-surface="sanctum"] body {
   background: #090807 url("../assets/sanctum-scene.svg") 0 0 / 100vw 100vh no-repeat;
@@ -3446,37 +3229,6 @@ html[data-game-scene="on"][data-surface] .col-gallery {
    reinforced titanium lab consoles, high-visibility HEV hazard orange action buttons,
    and radiation telemetry aura. */
 
-:root[data-surface="resonance"] {
-  color-scheme: dark;
-  --bg: #080a0d;
-  --surface-1: #10151c;
-  --surface-2: #171e28;
-  --surface-3: #222b3a;
-  --line: rgba(249, 115, 22, 0.22);
-  --line-strong: rgba(249, 115, 22, 0.45);
-  --text: #f8fafc;
-  --text-2: #94a3b8;
-  --text-3: #64748b;
-  --accent: #f97316;
-  --accent-hover: #fb923c;
-  --accent-tint: rgba(249, 115, 22, 0.16);
-  --on-accent: #0f0701;
-  --ok: #10b981;
-  --ok-hover: #34d399;
-  --ok-tint: rgba(16, 185, 129, 0.15);
-  --warn: #f97316;
-  --warn-tint: rgba(249, 115, 22, 0.15);
-  --err: #ef4444;
-  --err-tint: rgba(239, 68, 68, 0.18);
-  --r-xs: 2px;
-  --r-sm: 4px;
-  --r-md: 5px;
-  --r-lg: 7px;
-  --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.9);
-  --scene-bg: #080a0d url("../assets/resonance-scene.svg") 0 0 / 100vw 100vh no-repeat fixed;
-  --scrollbar-thumb: rgba(249, 115, 22, 0.48);
-  --scrollbar-thumb-hover: #fb923c;
-}
 
 :root[data-surface="resonance"] body {
   background: #080a0d url("../assets/resonance-scene.svg") 0 0 / 100vw 100vh no-repeat;
@@ -3757,37 +3509,6 @@ html[data-game-scene="on"][data-surface] .col-gallery {
    warm timber dialogue box panels with beveled golden edges, honey amber buttons,
    and cozy lantern firefly glows. */
 
-:root[data-surface="homestead"] {
-  color-scheme: dark;
-  --bg: #08100a;
-  --surface-1: #101c13;
-  --surface-2: #16261a;
-  --surface-3: #1f3424;
-  --line: rgba(234, 179, 8, 0.22);
-  --line-strong: rgba(234, 179, 8, 0.45);
-  --text: #fdfbf7;
-  --text-2: #b4cbb8;
-  --text-3: #739178;
-  --accent: #eab308;
-  --accent-hover: #facc15;
-  --accent-tint: rgba(234, 179, 8, 0.16);
-  --on-accent: #1a0f02;
-  --ok: #22c55e;
-  --ok-hover: #4ade80;
-  --ok-tint: rgba(34, 197, 94, 0.16);
-  --warn: #f97316;
-  --warn-tint: rgba(249, 115, 22, 0.16);
-  --err: #ef4444;
-  --err-tint: rgba(239, 68, 68, 0.18);
-  --r-xs: 3px;
-  --r-sm: 4px;
-  --r-md: 6px;
-  --r-lg: 8px;
-  --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.82);
-  --scene-bg: #08100a url("../assets/homestead-scene.svg") 0 0 / 100vw 100vh no-repeat fixed;
-  --scrollbar-thumb: rgba(234, 179, 8, 0.48);
-  --scrollbar-thumb-hover: #facc15;
-}
 
 :root[data-surface="homestead"] body {
   background: #08100a url("../assets/homestead-scene.svg") 0 0 / 100vw 100vh no-repeat;

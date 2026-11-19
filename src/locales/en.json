@@ -3098,6 +3098,7 @@
   "settings.themeNamePlaceholder": "My theme",
   "settings.themeAdd": "New theme",
   "settings.themeDesc": "Pick a palette, or build your own from a background and an accent.",
+  "settings.themeSearchPlaceholder": "Search themes",
   "settings.surfaceWhite": "Pure White",
   "settings.surfaceGloss": "Gloss",
   "settings.surfaceMidnight": "Midnight Blue",

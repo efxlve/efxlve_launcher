@@ -35,6 +35,28 @@ import { t } from "../../i18n";
 
 type ThemeFilter = "all" | "dark" | "light" | "custom";
 let currentFilter: ThemeFilter = "all";
+let themeQuery = "";
+let themeSearchWired = false;
+
+/** Filters the rendered cards in place, so typing never rebuilds the gallery. */
+function applyThemeSearch(query: string): void {
+  const needle = query.trim().toLowerCase();
+  document.querySelectorAll<HTMLElement>(".theme-card").forEach((card) => {
+    const haystack = `${card.dataset.search ?? ""} ${card.textContent ?? ""}`.toLowerCase();
+    card.classList.toggle("theme-card-hidden", needle.length > 0 && !haystack.includes(needle));
+  });
+}
+
+function wireThemeSearch(): void {
+  if (themeSearchWired) return;
+  themeSearchWired = true;
+  document.addEventListener("input", (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || input.id !== "theme-search") return;
+    themeQuery = input.value;
+    applyThemeSearch(themeQuery);
+  });
+}
 
 /** Theme designer modal state */
 let designerOpen = false;
@@ -147,6 +169,21 @@ export function renderThemeSection(): string {
           </button>
         </div>
 
+        <label class="theme-search-box">
+          ${icon("search", 13)}
+          <input
+            id="theme-search"
+            class="theme-search-input"
+            type="search"
+            value="${esc(themeQuery)}"
+            placeholder="${esc(t("settings.themeSearchPlaceholder"))}"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+          />
+        </label>
+
         <div class="theme-active-indicator">
           <span class="theme-active-dot"></span>
           <span class="settings-value">${esc(t("settings.themeActive"))}: <strong>${esc(activeName)}</strong></span>
@@ -158,6 +195,9 @@ export function renderThemeSection(): string {
       </div>
     </div>
   `;
+
+  wireThemeSearch();
+  queueMicrotask(() => applyThemeSearch(themeQuery));
 }
 
 /** Renders a single rich theme preview card with realistic UI elements. */

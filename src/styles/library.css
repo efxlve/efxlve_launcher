@@ -127,12 +127,10 @@
 :where(.store-dropdown-container:has(> .store-dropdown-menu.show)) .lib-store-chevron {
   color: var(--text-2);
 }
-:root[data-surface="white"] .lib-sort-btn .lib-store-single-logo img,
-:root[data-surface="gloss"] .lib-sort-btn .lib-store-single-logo img {
+:root[data-scheme="light"] .lib-sort-btn .lib-store-single-logo img {
   opacity: 0.48;
 }
-:root[data-surface="white"] :is(.lib-sort-btn:hover, :where(.store-dropdown-container:has(> .store-dropdown-menu.show)) > .lib-sort-btn) .lib-store-single-logo img,
-:root[data-surface="gloss"] :is(.lib-sort-btn:hover, :where(.store-dropdown-container:has(> .store-dropdown-menu.show)) > .lib-sort-btn) .lib-store-single-logo img {
+:root[data-scheme="light"] :is(.lib-sort-btn:hover, :where(.store-dropdown-container:has(> .store-dropdown-menu.show)) > .lib-sort-btn) .lib-store-single-logo img {
   opacity: 0.75;
 }
 .lib-store-icons-row { display: inline-flex; align-items: center; gap: 5px; flex-wrap: nowrap; }

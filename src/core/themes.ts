@@ -20,6 +20,14 @@ export { BUILTIN_THEMES, DEFAULT_THEME, LEGACY_SURFACE_IDS };
 const CUSTOM_KEY = "efxlve-custom-themes";
 const CUSTOM_PREFIX = "custom-";
 const TOKEN_STYLE_ID = "efxlve-theme-tokens";
+/** Parsed user themes; invalidated on save/delete or a cross-window storage event. */
+let customCache: CustomThemeInput[] | null = null;
+
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event) => {
+    if (event.key === CUSTOM_KEY || event.key === null) clearThemeCache();
+  });
+}
 const HEX = /^#[0-9a-f]{6}$/i;
 const THEME_ID = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 const TOKEN_NAME = /^--[a-z0-9-]+$/;
@@ -285,11 +293,18 @@ function sceneRules(id: string, input: CustomThemeInput): string {
 }
 
 function readCustomInputs(): CustomThemeInput[] {
+  if (customCache) return customCache;
   try {
     const raw = localStorage.getItem(CUSTOM_KEY);
-    if (!raw) return [];
+    if (!raw) {
+      customCache = [];
+      return customCache;
+    }
     const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
+    if (!Array.isArray(parsed)) {
+      customCache = [];
+      return customCache;
+    }
     let migrated = false;
     const list = parsed
       .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
@@ -358,9 +373,11 @@ function readCustomInputs(): CustomThemeInput[] {
         };
       });
     if (migrated) writeCustomInputs(list);
+    customCache = list;
     return list;
   } catch {
-    return [];
+    customCache = [];
+    return customCache;
   }
 }
 
@@ -368,10 +385,16 @@ function readCustomInputs(): CustomThemeInput[] {
 function writeCustomInputs(list: CustomThemeInput[]): boolean {
   try {
     localStorage.setItem(CUSTOM_KEY, JSON.stringify(list));
+    customCache = list;
     return true;
   } catch {
     return false;
   }
+}
+
+/** Clears the parsed list after an external storage update (tests, storage event). */
+export function clearThemeCache(): void {
+  customCache = null;
 }
 
 /** User themes, already expanded into registry entries. */
@@ -406,7 +429,7 @@ export function themes(): ThemeDef[] {
 
 /** Saves or updates a user theme and returns its id, or "" when it could not be stored. */
 export function saveCustomTheme(input: CustomThemeInput): string {
-  const list = readCustomInputs();
+  const list = readCustomInputs().slice();
   const targetId =
     isSafeThemeId(input.id) && input.id.startsWith(CUSTOM_PREFIX) ? input.id : `${CUSTOM_PREFIX}${Date.now()}`;
   const existingIdx = list.findIndex((item, idx) => item.id === targetId || `${CUSTOM_PREFIX}${idx}` === targetId);
@@ -452,7 +475,7 @@ export function getCustomThemeInput(id: string): CustomThemeInput | null {
 
 /** Removes a user theme by id. */
 export function deleteCustomTheme(id: string): void {
-  const list = readCustomInputs();
+  const list = readCustomInputs().slice();
   const index = list.findIndex((item, idx) => item.id === id || `${CUSTOM_PREFIX}${idx}` === id);
   if (index === -1) return;
   list.splice(index, 1);
@@ -644,7 +667,8 @@ function paintTheme(theme: ThemeDef): void {
   else root.dataset.surface = theme.id;
   root.dataset.scheme = theme.scheme;
 
-  const body = Object.entries(sanitizeThemeTokens(theme.tokens) ?? {})
+  const tokens = theme.custom || theme.customInput ? sanitizeThemeTokens(theme.tokens) : theme.tokens;
+  const body = Object.entries(tokens ?? {})
     .map(([name, value]) => `${name}: ${value};`)
     .join("");
 
