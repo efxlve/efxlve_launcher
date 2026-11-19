@@ -25,6 +25,7 @@ import {
   storeSteamAppIdFor,
 } from "../../core/store-achievement-prefs";
 import { emptyPanel, emptyState, epicPlatinumIcon, filledTrophy, icon, loadingState, platinumCup, type IconName } from "../../core/icons";
+import { modSourceLinks } from "../../core/mod-sources";
 import { updateNavHistoryUi, updatePageHeader } from "../../core/nav";
 import { cachedImage, warmImages, IMAGE_COVER_WIDTH, IMAGE_HERO_WIDTH, IMAGE_SHOT_WIDTH } from "../../core/picture-cache";
 import { recordSessionSummary, sessionSummaryFor, sessionWhen } from "../../core/session-summary";
@@ -2096,15 +2097,21 @@ async function loadEaLaunchMode(appName: string, eaKey: string): Promise<void> {
   }
 }
 
-/** Small external-link card: mods, wiki and the Steam database. */
+/** Small external-link card: mod sources, wiki and the Steam database. */
 function renderGameLinks(s: EpicSummary): string {
   const query = encodeURIComponent(s.title.trim());
   const steamApp = s.appName.startsWith("steam::") ? s.appName.slice(7) : "";
   const steamUrl = /^\d+$/.test(steamApp)
     ? `https://steamdb.info/app/${steamApp}/`
     : `https://steamdb.info/search/?a=app&q=${query}`;
+  // The mod rows come from the shared table, so every store's game page opens
+  // the same checked pages instead of a search the site no longer honours.
+  const modRows = modSourceLinks({ title: s.title, steamAppId: steamApp }).map((link) => ({
+    label: link.label,
+    url: link.url,
+  }));
   const links = [
-    { label: t("drawer.nexusMods"), url: `https://www.nexusmods.com/search/?gsearch=${query}` },
+    ...modRows,
     { label: t("drawer.pcgamingwiki"), url: `https://www.pcgamingwiki.com/w/index.php?search=${query}` },
     { label: t("drawer.steamdb"), url: steamUrl },
   ];
