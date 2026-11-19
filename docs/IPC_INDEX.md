@@ -206,6 +206,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_detect_egl_games` | `epicDetectEglGames({ ... })` | `src-tauri/src/legendary/commands/metadata.rs` |
 | `epic_detect_eos` | `epicDetectEos({ ... })` | `src-tauri/src/main.rs` |
 | `epic_ensure_binary` | `epicEnsureBinary({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
+| `epic_eos_log_unlocks` | `epicEosLogUnlocks({ ... })` | `src-tauri/src/legendary/commands/achievements.rs` |
 | `epic_export_backup` | `epicExportBackup({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_get_achievements` | `epicGetAchievements({ ... })` | `src-tauri/src/legendary/commands/achievements.rs` |
 | `epic_get_achievements_summary` | `epicGetAchievementsSummary({ ... })` | `src-tauri/src/legendary/commands/achievements.rs` |

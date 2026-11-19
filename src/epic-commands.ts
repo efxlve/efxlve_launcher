@@ -342,6 +342,18 @@ export interface EpicAchievementSummary {
 export const epicGetAchievements = (appName: string, forceRefresh = false) =>
   invoke<EpicAchievementsData>("epic_get_achievements", { appName, forceRefresh });
 
+/**
+ * EOS-only titles publish no Epic Games Store achievement set. Their own log
+ * still records each unlock; this reads it and merges the launcher's cache.
+ */
+export interface EpicEosLogUnlocks {
+  logPath: string | null;
+  unlocks: Record<string, number>;
+}
+
+export const epicEosLogUnlocks = (appName: string, title: string) =>
+  invoke<EpicEosLogUnlocks>("epic_eos_log_unlocks", { appName, title });
+
 export const epicGetAchievementsSummary = () =>
   invoke<Record<string, EpicAchievementSummary>>("epic_get_achievements_summary");
 

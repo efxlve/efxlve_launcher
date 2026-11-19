@@ -12,7 +12,7 @@ mod session;
 mod support;
 mod verify;
 
-// achievements.rs: enrich_achievements_from_metadata, epic_get_achievements, epic_get_achievements_summary, scan_achievements_summary
+// achievements.rs: EosLogUnlocks, enrich_achievements_from_metadata, epic_eos_log_unlocks, epic_get_achievements, epic_get_achievements_summary, scan_achievements_summary
 #[allow(unused_imports)]
 pub use achievements::*;
 

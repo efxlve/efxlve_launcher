@@ -45,7 +45,7 @@ import { setGameSceneArt } from "../../core/game-scene";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, fmtAchDate, fmtBytes, fmtDecimal1, fmtHours, fmtPlaytime } from "../../core/utils";
-import { checkInstallPathState, epicDetectEos, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementItem, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type HltbData, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
+import { checkInstallPathState, epicDetectEos, epicEosLogUnlocks, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementItem, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type HltbData, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
 import { gogGetAchievements, gogGetSystemRequirements } from "../../gog";
 import { loadGogDetails } from "./game-details-cache";
 import { hydrateGameCompatCard } from "./game-compat";
@@ -2515,7 +2515,11 @@ function achievementSourceLabel(s: EpicSummary, data: EpicAchievementsData): str
   if (data.data_source === "ra") return t("ach.raTitle");
   if (ubiAchSource.has(s.appName)) return "Ubisoft Connect";
   if (eaAchSource.has(s.appName)) return "EA App";
-  if (data.data_source === "definitions") return t("ach.sourceSteamDefinitions");
+  if (data.data_source === "definitions") {
+    return eosLogSource.has(s.appName)
+      ? t("ach.sourceLocalFile")
+      : t("ach.sourceSteamDefinitions");
+  }
   if (data.data_source === "local") return t("ach.sourceLocalFile");
   if (s.appName.startsWith("custom::")) return t("ach.sourceEmulator");
   return achievementStoreLabel(s.appName);
@@ -2683,9 +2687,47 @@ async function localEmulatorAchievements(
 }
 
 /**
+ * EOS-only games write one line per unlock into their own log. The Steam list
+ * names the achievements; this folds the log's unlock times into it so the
+ * page shows real progress instead of a fully locked definition list.
+ */
+function applyEosLogUnlocks(
+  data: EpicAchievementsData,
+  unlocks: Record<string, number>,
+): number {
+  let changed = 0;
+  for (const item of data.achievements) {
+    const at = unlocks[item.name];
+    if (at == null || item.unlocked) continue;
+    const date = new Date(at * 1000);
+    const iso = Number.isNaN(date.getTime())
+      ? ""
+      : date.toISOString().slice(0, 10);
+    item.unlocked = true;
+    item.progress = 1;
+    item.unlock_date = iso || item.unlock_date;
+    // An edit already folded the old store facts in; move them with the unlock
+    // so re-applying the edit keeps the truth instead of clearing it again.
+    if (item.store_unlocked !== undefined) {
+      item.store_unlocked = true;
+      item.store_progress = 1;
+      item.store_unlock_date = iso || null;
+    }
+    changed += 1;
+  }
+  if (changed > 0) {
+    data.user_unlocked = data.achievements.filter(isAchievementUnlocked).length;
+    data.is_platinum =
+      data.total_achievements > 0 &&
+      data.user_unlocked >= data.total_achievements;
+  }
+  return changed;
+}
+
+/**
  * A game that keeps its achievements in Epic Online Services has no local
  * unlock file the launcher can read. The Steam definition list still names
- * every achievement, and the existing editor can mark progress by hand.
+ * every achievement, and the game's own log supplies the unlocked ones.
  */
 async function storeDefinitionAchievements(
   appName: string,
@@ -2722,6 +2764,21 @@ async function storeDefinitionAchievements(
   ).catch(() => null);
   if (!definitions || definitions.achievements.length === 0) return null;
   definitions.data_source = "definitions";
+  // EOS-only titles have no store API to answer with progress. Their game log
+  // names the unlocks, and the Rust cache keeps earlier sessions after the log
+  // is replaced on the next launch.
+  if (probe.eos && !probe.steamworks) {
+    const title = summaryOf(appName)?.title ?? "";
+    if (title) {
+      const log = await epicEosLogUnlocks(appName, title).catch(() => null);
+      if (log) {
+        applyEosLogUnlocks(definitions, log.unlocks);
+        if (log.logPath || Object.keys(log.unlocks).length > 0) {
+          eosLogSource.set(appName, title);
+        }
+      }
+    }
+  }
   return definitions;
 }
 
@@ -2794,6 +2851,33 @@ export async function createEmulatorAchievements(appName: string): Promise<void>
   }
 }
 
+/** Finds the EOS log once at launch; the session poll then reads it live. */
+async function primeEosLogSource(appName: string): Promise<void> {
+  const title = summaryOf(appName)?.title ?? "";
+  if (!title) return;
+  const log = await epicEosLogUnlocks(appName, title).catch(() => null);
+  if (!log || (!log.logPath && Object.keys(log.unlocks).length === 0)) return;
+  eosLogSource.set(appName, title);
+  await refreshEosLogUnlocks(appName, title);
+}
+
+/** Reads the EOS log while the game runs and paints a newly found unlock. */
+async function refreshEosLogUnlocks(appName: string, title: string): Promise<void> {
+  const log = await epicEosLogUnlocks(appName, title).catch(() => null);
+  const data = S.loadedAchievements.get(appName);
+  if (!log || !data || data.data_source !== "definitions") return;
+  const added = applyEosLogUnlocks(data, log.unlocks);
+  if (added === 0) return;
+  applyAchievementEdits(appName, data);
+  recordAchievementUnlocks(appName, data, {
+    game: summaryOf(appName)?.title || appName,
+    store: sourceOfKey(appName),
+  });
+  refreshAchievementSummary(appName);
+  checkAndEmitNewStoreUnlocks(appName);
+  recordSessionSummary(appName, { unlocked: added, at: Date.now() });
+}
+
 /** Starts the native watcher for a running store game with an emulator file. */
 async function startStoreEmulatorWatch(appName: string): Promise<void> {
   const installDir = storeInstallDir(appName);
@@ -2803,7 +2887,11 @@ async function startStoreEmulatorWatch(appName: string): Promise<void> {
   // an achievement file, a watcher would scan the folders all session for
   // nothing. The file may still appear on the first run after the config is in
   // place, so the watch starts before it exists in that case.
-  if (!probe.emulator && !probe.appId) return;
+  if (!probe.emulator && !probe.appId) {
+    // EOS-only titles have no local file to watch; their log is the live source.
+    if (probe.eos && !probe.steamworks) void primeEosLogSource(appName);
+    return;
+  }
   const steamAppId = await resolveStoreSteamAppId(appName, probe);
   if (!steamAppId || !S.runningGames.has(appName)) return;
   storeEmulatorAppIds.set(appName, steamAppId);
@@ -3136,7 +3224,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     ? `<div class="ach-source-note">${icon("info", 13)}<span>${t("ach.ubiEpicDesc")}</span></div>`
     : eaAchSource.has(s.appName)
       ? `<div class="ach-source-note">${icon("info", 13)}<span>${t("ach.eaEpicDesc")}</span></div>`
-      : data.data_source === "definitions"
+      : data.data_source === "definitions" && !eosLogSource.has(s.appName)
         ? `<div class="ach-source-note">${icon("list", 13)}<span>${esc(t("ach.definitionsSourceNote"))}</span></div>`
         : "";
 
@@ -3310,8 +3398,11 @@ const sessionPollTimers = new Map<string, number>();
 /** Last store-backed achievement read per game. The native watcher owns local
  * unlocks, so a running session only needs a slow store sync. */
 const storeAchFetchedAt = new Map<string, number>();
+/** Epic games whose EOS-only unlocks the game log can answer (app → title). */
+const eosLogSource = new Map<string, string>();
 const STORE_ACH_POLL_MS = 60_000;
 const UBI_ACH_POLL_MS = 30_000;
+const EOS_LOG_POLL_MS = 3_000;
 
 async function resolveCustomGameSteamAppId(customGame: {
   id: string;
@@ -3492,7 +3583,7 @@ export function startStoreAchievementSession(appName: string): void {
   // The timer only watches the session; the store read itself is slow. Epic's
   // forced answer spawns the legendary CLI, GOG/EA/Xbox hit their APIs, and a
   // local emulator answer is already live through the native watcher. A
-  // definition list does not change during a session either.
+  // definition list is fixed, but an EOS log behind it is not.
   const intervalMs = isUbi ? 3_000 : 4_000;
   const refreshMs = isUbi ? UBI_ACH_POLL_MS : STORE_ACH_POLL_MS;
   storeAchFetchedAt.set(appName, Date.now());
@@ -3502,11 +3593,20 @@ export function startStoreAchievementSession(appName: string): void {
       return;
     }
     const dataSource = S.loadedAchievements.get(appName)?.data_source;
-    if (dataSource === "local" || dataSource === "definitions") return;
+    if (dataSource === "local") return;
+    const now = Date.now();
+    // An EOS-only title reads a local log, so it can poll faster than a store.
+    if (dataSource === "definitions") {
+      const title = eosLogSource.get(appName);
+      if (!title) return;
+      if (now - (storeAchFetchedAt.get(appName) ?? 0) < EOS_LOG_POLL_MS) return;
+      storeAchFetchedAt.set(appName, now);
+      void refreshEosLogUnlocks(appName, title);
+      return;
+    }
     // The store has already told us this title has no achievement set: no
     // amount of polling will change that inside this session.
     if (S.epicAchSummaries[appName]?.supported === false) return;
-    const now = Date.now();
     if (now - (storeAchFetchedAt.get(appName) ?? 0) < refreshMs) return;
     storeAchFetchedAt.set(appName, now);
     void fetchAndRenderAchievements(appName, true, true).then(() => {

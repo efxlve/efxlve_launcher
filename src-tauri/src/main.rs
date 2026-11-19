@@ -2250,6 +2250,7 @@ fn main() {
             legendary::commands::epic_cached_library,
             legendary::commands::epic_get_achievements,
             legendary::commands::epic_get_achievements_summary,
+            legendary::commands::epic_eos_log_unlocks,
             legendary::commands::epic_get_system_requirements,
             legendary::commands::epic_get_hltb,
             legendary::commands::epic_cached_hltb_times,

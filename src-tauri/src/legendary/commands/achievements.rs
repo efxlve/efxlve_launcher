@@ -76,6 +76,265 @@ pub fn enrich_achievements_from_metadata(resp: &mut GameAchievementsResponse, ap
     }
 }
 
+/// EOS achievement unlocks read from a game's own log.
+///
+/// Some Epic titles (Nixxes ports such as Marvel's Spider-Man) publish no Epic
+/// Games Store achievement set, so legendary returns nothing for them. The game
+/// still writes one line per EOS unlock into a per-session log in Documents.
+/// This is a best-effort local source; it never writes to the store.
+#[derive(Debug, Clone, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EosLogUnlocks {
+    pub log_path: Option<String>,
+    pub unlocks: std::collections::BTreeMap<String, i64>,
+}
+
+/// Reads the current game log and merges it with the unlocks this launcher has
+/// already seen. The log is replaced on every launch, so the cache keeps the
+/// earlier sessions from disappearing when the game starts again.
+#[tauri::command]
+pub async fn epic_eos_log_unlocks(
+    app: AppHandle,
+    app_name: String,
+    title: String,
+) -> EosLogUnlocks {
+    tauri::async_runtime::spawn_blocking(move || read_eos_log_unlocks(&app, &app_name, &title))
+        .await
+        .unwrap_or_default()
+}
+
+fn read_eos_log_unlocks(app: &AppHandle, app_name: &str, title: &str) -> EosLogUnlocks {
+    let mut cached = load_eos_unlock_cache(app, app_name);
+    let before = cached.clone();
+    let log_path = find_eos_log(title);
+    if let Some(path) = log_path.as_deref() {
+        if let Some(text) = read_eos_log_text(path) {
+            for (name, at) in parse_eos_unlocks(&text) {
+                cached
+                    .entry(name)
+                    .and_modify(|old| *old = (*old).max(at))
+                    .or_insert(at);
+            }
+        }
+    }
+    if cached != before {
+        save_eos_unlock_cache(app, app_name, &cached);
+    }
+    EosLogUnlocks {
+        log_path: log_path.map(|path| path.to_string_lossy().to_string()),
+        unlocks: cached,
+    }
+}
+
+/// The cache lives beside the other achievement answers but in its own folder,
+/// so the summary scan never mistakes it for a store response.
+fn eos_unlock_cache_file(app: &AppHandle, app_name: &str) -> Option<PathBuf> {
+    if app_name.is_empty()
+        || !app_name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+    {
+        return None;
+    }
+    let dir = app
+        .path()
+        .app_data_dir()
+        .ok()?
+        .join("achievements")
+        .join("eos_log");
+    Some(dir.join(format!("{app_name}.json")))
+}
+
+fn load_eos_unlock_cache(
+    app: &AppHandle,
+    app_name: &str,
+) -> std::collections::BTreeMap<String, i64> {
+    let Some(path) = eos_unlock_cache_file(app, app_name) else {
+        return std::collections::BTreeMap::new();
+    };
+    std::fs::read_to_string(path)
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_default()
+}
+
+fn save_eos_unlock_cache(
+    app: &AppHandle,
+    app_name: &str,
+    unlocks: &std::collections::BTreeMap<String, i64>,
+) {
+    let Some(path) = eos_unlock_cache_file(app, app_name) else {
+        return;
+    };
+    // Two live reads can overlap: merge with what is on disk now so the later
+    // write cannot drop an unlock the other read already saved.
+    let mut merged: std::collections::BTreeMap<String, i64> = std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_default();
+    for (name, at) in unlocks {
+        merged
+            .entry(name.clone())
+            .and_modify(|old| *old = (*old).max(*at))
+            .or_insert(*at);
+    }
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    if let Ok(text) = serde_json::to_string_pretty(&merged) {
+        let _ = std::fs::write(path, text);
+    }
+}
+
+/// Documents can be redirected to OneDrive, and portable Linux builds use
+/// `HOME`; both roots are checked before giving up.
+fn eos_documents_dirs() -> Vec<PathBuf> {
+    let mut roots = Vec::new();
+    for key in ["USERPROFILE", "HOME"] {
+        if let Ok(home) = std::env::var(key) {
+            let docs = PathBuf::from(home).join("Documents");
+            if !roots.contains(&docs) {
+                roots.push(docs);
+            }
+        }
+    }
+    if let Ok(onedrive) = std::env::var("OneDrive") {
+        let docs = PathBuf::from(onedrive).join("Documents");
+        if !roots.contains(&docs) {
+            roots.push(docs);
+        }
+    }
+    roots
+}
+
+fn find_eos_log(title: &str) -> Option<PathBuf> {
+    let wanted = normalize_eos_title(title);
+    if wanted.is_empty() {
+        return None;
+    }
+    for docs in eos_documents_dirs() {
+        for base in [docs.clone(), docs.join("My Games")] {
+            if let Some(path) = find_eos_log_in(&base, &wanted) {
+                return Some(path);
+            }
+        }
+    }
+    None
+}
+
+fn find_eos_log_in(base: &Path, wanted: &str) -> Option<PathBuf> {
+    let entries = std::fs::read_dir(base).ok()?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+        let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        if normalize_eos_title(name) == wanted {
+            if let Some(log) = newest_log_in(&path, wanted) {
+                return Some(log);
+            }
+        }
+    }
+    None
+}
+
+fn newest_log_in(dir: &Path, wanted: &str) -> Option<PathBuf> {
+    let mut best: Option<(bool, std::time::SystemTime, PathBuf)> = None;
+    let entries = std::fs::read_dir(dir).ok()?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let is_log = path
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .map(|ext| ext.eq_ignore_ascii_case("log"))
+            .unwrap_or(false);
+        if !is_log {
+            continue;
+        }
+        let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+        let exact = normalize_eos_title(stem) == wanted;
+        let modified = entry
+            .metadata()
+            .and_then(|meta| meta.modified())
+            .unwrap_or(std::time::UNIX_EPOCH);
+        let replace = match &best {
+            None => true,
+            Some((best_exact, best_time, _)) => {
+                (exact && !best_exact) || (exact == *best_exact && modified > *best_time)
+            }
+        };
+        if replace {
+            best = Some((exact, modified, path));
+        }
+    }
+    best.map(|(_, _, path)| path)
+}
+
+fn read_eos_log_text(path: &Path) -> Option<String> {
+    let meta = std::fs::metadata(path).ok()?;
+    if meta.len() > 8 * 1024 * 1024 {
+        return None;
+    }
+    let bytes = std::fs::read(path).ok()?;
+    Some(String::from_utf8_lossy(&bytes).into_owned())
+}
+
+/// The line the EOS SDK-backed game writes on every unlock:
+/// `[Epic] Achievement <name> unlocked at <unix seconds>`.
+fn parse_eos_unlocks(text: &str) -> std::collections::BTreeMap<String, i64> {
+    const PREFIX: &str = "[Epic] Achievement ";
+    const SUFFIX: &str = " unlocked at ";
+    let mut out: std::collections::BTreeMap<String, i64> = std::collections::BTreeMap::new();
+    for line in text.lines() {
+        let Some(start) = line.find(PREFIX) else {
+            continue;
+        };
+        let rest = &line[start + PREFIX.len()..];
+        let Some(end) = rest.find(SUFFIX) else {
+            continue;
+        };
+        let name = rest[..end].trim();
+        if name.is_empty()
+            || !name
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+        {
+            continue;
+        }
+        let stamp = rest[end + SUFFIX.len()..]
+            .split_whitespace()
+            .next()
+            .unwrap_or("");
+        let Ok(at) = stamp.parse::<i64>() else {
+            continue;
+        };
+        out.entry(name.to_string())
+            .and_modify(|old| *old = (*old).max(at))
+            .or_insert(at);
+    }
+    out
+}
+
+/// Punctuation and edition tails differ between the Epic title and the folder
+/// the game creates, so a case/punctuation-free compare is the only stable key.
+fn normalize_eos_title(title: &str) -> String {
+    let cleaned: String = title
+        .to_lowercase()
+        .chars()
+        .filter_map(|c| match c {
+            // Apostrophes vanish, so "Marvel's" and "Marvels" name one folder.
+            '\'' | '\u{2018}' | '\u{2019}' => None,
+            c if c.is_ascii_alphanumeric() => Some(c),
+            _ => Some(' '),
+        })
+        .collect();
+    cleaned.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 #[tauri::command]
 pub async fn epic_get_achievements(
     app: AppHandle,
@@ -563,5 +822,49 @@ mod tests {
             !t.display_name.is_empty(),
             "TheTower title must not be empty"
         );
+    }
+
+    #[test]
+    fn eos_log_lines_become_unlocks() {
+        let text = "12:52:54:564 (00028584) > [Epic] Achievement innersanctuary unlocked at 1795081973\n\
+                    13:08:21:388 (00028584) > [Epic] Achievement challengefinder unlocked at 1795082900\n\
+                    [Epic] Achievement innersanctuary unlocked at 1795082999\n\
+                    [Epic] Achievement not a name unlocked at 123\n";
+        let unlocks = parse_eos_unlocks(text);
+        assert_eq!(unlocks.get("innersanctuary"), Some(&1795082999));
+        assert_eq!(unlocks.get("challengefinder"), Some(&1795082900));
+        assert_eq!(unlocks.len(), 2);
+    }
+
+    #[test]
+    fn eos_title_normalization_ignores_punctuation_and_apostrophes() {
+        assert_eq!(
+            normalize_eos_title("Marvel's Spider-Man: Miles Morales"),
+            normalize_eos_title("Marvels Spider Man Miles Morales")
+        );
+        assert_eq!(
+            normalize_eos_title("Marvel\u{2019}s Spider-Man Remastered"),
+            normalize_eos_title("Marvel's Spider-Man Remastered")
+        );
+    }
+
+    #[test]
+    fn eos_log_is_found_by_the_documents_folder_name() {
+        let base = std::env::temp_dir().join(format!("efxlve-eos-log-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let title = "Marvel's Spider-Man Remastered";
+        let dir = base.join(title);
+        std::fs::create_dir_all(&dir).unwrap();
+        let log = dir.join(format!("{title}.log"));
+        std::fs::write(
+            &log,
+            "[Epic] Achievement superiorspiderman unlocked at 1795085360\n",
+        )
+        .unwrap();
+
+        let found = find_eos_log_in(&base, &normalize_eos_title(title)).expect("game log");
+        assert_eq!(found, log);
+
+        let _ = std::fs::remove_dir_all(&base);
     }
 }
