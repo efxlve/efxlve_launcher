@@ -331,10 +331,6 @@ export interface AchievementNotificationOptions {
   customSoundName: string | null;
   /** "gold", "launcher", "rarity", "cyber", "emerald", "crimson", or "amethyst". */
   cardTheme: string;
-  /** "prism", "cyber", "shatter", "jackpot", "xbox", "playstation", or "epic". */
-  animStyle: string;
-  /** "auto", "collapse", "glide", "fold", "laser", "implode", or "zoom". */
-  exitStyle?: string;
   /** Store keys whose achievement notifications are disabled ("steam", "epic", "gog", "ubisoft", "ea", "xbox", "custom"). */
   disabledStores?: string[];
   /**
@@ -355,10 +351,6 @@ export interface AchievementNotificationOptions {
   hideTag?: boolean;
   /** When true, hides the achievement description text. */
   hideDesc?: boolean;
-  /** Card layout: "standard" or "compact". */
-  layout?: string;
-  /** Glow intensity: "none", "subtle", or "vibrant". */
-  glow?: string;
   /** When true, renders an animated set progress bar across the bottom of the card. */
   showProgress?: boolean;
   /** True when a separate rare/platinum sound is configured. */
@@ -392,10 +384,6 @@ export const achievementGetNotificationOptions = () =>
         cardTheme: "rarity",
         customAccent: "#00f0ff",
         opacity: 100,
-        layout: "standard",
-        animStyle: "steam",
-        exitStyle: "auto",
-        glow: "vibrant",
         showProgress: true,
       } as unknown as AchievementNotificationOptions);
 

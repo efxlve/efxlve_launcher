@@ -8,7 +8,7 @@ import { listen } from "@tauri-apps/api/event";
 import { isTauri } from "../../core/constants";
 import { achievementCardPalette } from "../../core/achievement-card-theme";
 import { initialLanguage, setLanguage, t } from "../../i18n";
-import { achCardHtml, achTagLine, type AchCardPalette } from "../achievement-card/ach-card";
+import { achCardHtml, achTagParts, type AchCardPalette } from "../achievement-card/ach-card";
 import { playAchCardEntry, playAchCardExit } from "../achievement-card/ach-card-motion";
 import "../../styles/tokens.css";
 import "../../styles/theme-system.css";
@@ -25,8 +25,6 @@ interface ToastPayload {
   theme: string;
   size: string;
   position: string;
-  style: string;
-  exitStyle?: string;
   holdMs: number;
   palette: AchCardPalette;
   tagless?: boolean;
@@ -41,8 +39,6 @@ interface ToastPayload {
   offset?: number;
   hideTag?: boolean;
   hideDesc?: boolean;
-  layout?: string;
-  glow?: string;
   showProgress?: boolean;
 }
 
@@ -51,7 +47,6 @@ interface ToastIconPayload {
   src: string;
 }
 
-let sequence = 1;
 let exitTimer: number | null = null;
 let current: ToastPayload | null = null;
 
@@ -81,7 +76,6 @@ function renderToast(payload: ToastPayload): void {
   const root = document.getElementById("ach-toast-root");
   if (!root) return;
   current = payload;
-  sequence += 1;
   const position = safePosition(payload.position);
   const isHint = Boolean(payload.tagless);
   const theme = isHint ? "launcher" : payload.theme;
@@ -102,26 +96,22 @@ function renderToast(payload: ToastPayload): void {
     : payload.body;
   const offset = Math.max(0, Math.min(100, payload.offset ?? 18));
   const progressPct = payload.total > 0 ? (payload.unlocked / payload.total) * 100 : 0;
+  const tag = isHint
+    ? { label: "", meta: "" }
+    : achTagParts(payload.tier, payload.unlocked, payload.total, payload.rarityPercent);
   root.innerHTML = `<div class="ach-toast-layer pos-${position}" style="padding: ${offset}px;">${achCardHtml({
-    tag: isHint
-      ? ""
-      : achTagLine(payload.tier, payload.unlocked, payload.total, payload.rarityPercent),
+    tagLabel: tag.label,
+    tagMeta: tag.meta,
     title,
     desc,
-    tier: payload.tier,
     size: payload.size,
-    style: payload.style,
-    theme,
     palette,
-    seq: sequence,
     glyph: isHint ? "layers" : "trophy",
     iconSrc: payload.icon || payload.iconUrl || undefined,
     hint: isHint,
     opacity: payload.opacity,
-    layout: payload.layout,
     hideTag: payload.hideTag,
     hideDesc: payload.hideDesc,
-    glow: payload.glow,
     showProgress: payload.showProgress,
     progressPct,
   })}</div>`;
@@ -132,13 +122,13 @@ function renderToast(payload: ToastPayload): void {
   // leaving a broken-image glyph on the card. The cached data URL replaces the
   // picture through `ach-toast-icon` when it arrives.
   root
-    .querySelectorAll<HTMLImageElement>(".ach-hud-ach-icon, .ach-hint-app-icon")
+    .querySelectorAll<HTMLImageElement>(".ach-hud-ach-icon")
     .forEach((img) => img.addEventListener("error", () => img.remove(), { once: true }));
-  playAchCardEntry(card, payload.style, payload.tier);
+  playAchCardEntry(card);
 
   clearExitTimer();
   exitTimer = window.setTimeout(() => {
-    playAchCardExit(card, payload.style, payload.exitStyle || "auto", () => {
+    playAchCardExit(card, () => {
       void invoke("toast_done", { generation: payload.generation }).catch(() => {});
     });
   }, Math.max(1200, payload.holdMs));
@@ -146,21 +136,8 @@ function renderToast(payload: ToastPayload): void {
 
 function applyIcon(payload: ToastIconPayload): void {
   if (!current || payload.generation !== current.generation) return;
-  if (current.tagless) {
-    const badge = document.querySelector<HTMLElement>(".ach-hint-badge");
-    if (!badge) return;
-    badge.querySelector(".ach-hint-ico")?.remove();
-    badge.querySelector(".ach-hint-app-icon")?.remove();
-    const img = document.createElement("img");
-    img.className = "ach-hint-app-icon";
-    img.alt = "";
-    img.src = payload.src;
-    badge.appendChild(img);
-    return;
-  }
   const medal = document.querySelector<HTMLElement>(".ach-hud-medallion");
   if (!medal) return;
-  medal.querySelector(".ach-hud-trophy-ico")?.remove();
   const previous = medal.querySelector(".ach-hud-ach-icon");
   if (previous) previous.remove();
   const img = document.createElement("img");
@@ -176,28 +153,25 @@ function renderDemo(): void {
   const tier = isHint ? 2 : 3;
   const theme = isHint ? "launcher" : "rarity";
   const palette = achievementCardPalette(theme, tier);
-  const style = params.get("style") || "prism";
   const size = params.get("size") || "normal";
   const position = safePosition(params.get("position") || "top-right");
+  const tag = isHint ? { label: "", meta: "" } : achTagParts(3, 31, 34, 1.8);
   const root = document.getElementById("ach-toast-root");
   if (!root) return;
   root.innerHTML = `<div class="ach-toast-layer pos-${position}">${achCardHtml({
-    tag: isHint ? "" : achTagLine(3, 31, 34, 1.8),
+    tagLabel: tag.label,
+    tagMeta: tag.meta,
     title: isHint ? "Shift+Tab overlay" : "The Impossible Dream",
     desc: isHint
       ? "Press Shift+Tab to open the overlay. Esc closes it."
       : "Complete the campaign on Legendary difficulty without dying once.",
-    tier,
     size,
-    style,
-    theme,
     palette,
-    seq: 1,
     glyph: isHint ? "layers" : "trophy",
     hint: isHint,
   })}</div>`;
   const card = root.querySelector<HTMLElement>(".ach-hud-toast");
-  if (card) playAchCardEntry(card, style, tier);
+  if (card) playAchCardEntry(card);
 }
 
 async function boot(): Promise<void> {

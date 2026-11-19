@@ -1,10 +1,10 @@
 /**
- * Modern Achievements & Notifications settings view and live interactive stage.
+ * Achievements & Notifications settings view and live interactive stage.
  *
  * Provides a live monitor stage showing the real-time notification toast at the
- * user's chosen screen position, visual position selector, animation style &
- * theme presets, rarity-tier escalation preview, multi-harmonic audio chime
- * audition, volume/duration controls, and toggle switches.
+ * user's chosen screen position, visual position selector, theme presets,
+ * rarity-tier escalation preview, audio chime audition, volume/duration
+ * controls, and toggle switches.
  */
 
 import { icon, type IconName } from "../../core/icons";
@@ -26,7 +26,7 @@ import {
 import { getGeneralNotifPrefs, setGeneralNotifPrefs } from "../notifications/notifications";
 import { storeLogo } from "../store/store-logos";
 import { t } from "../../i18n";
-import { achCardHtml, achCardVars, achTagLine } from "../achievement-card/ach-card";
+import { achCardHtml, achCardVars, achTagParts } from "../achievement-card/ach-card";
 import { playAchCardEntry, playAchCardExit } from "../achievement-card/ach-card-motion";
 import {
   clearAchievementEdits,
@@ -38,8 +38,6 @@ import { askConfirm } from "../../core/confirm-dialog";
 
 /** Active rarity tier in the interactive stage (0=Bronze, 1=Silver, 2=Gold, 3=Ultra, 4=Platinum). */
 let previewRarityTier = 2;
-/** Incremented on every replay/preset change so CSS animations restart cleanly. */
-let stageReplaySeq = 1;
 
 let sharedAudioCtx: AudioContext | null = null;
 let activeMasterGain: GainNode | null = null;
@@ -67,16 +65,12 @@ function stopWebAudioAchievementChime(): void {
 }
 
 /**
- * Synthesizes the multi-harmonic dopamine chime live in the browser using Web Audio,
- * tailored to the chosen animation style ("prism", "cyber", "shatter", "jackpot")
- * and rarity tier (0..4). Reuses a single AudioContext and stops any previous
- * preview sound so rapid clicks never overlap or clip.
+ * Web Audio fallback for the Settings audition: the same quiet two-note bell
+ * the native worker synthesizes, so the preview never promises a sound the
+ * notification will not make. Reuses one AudioContext and silences a previous
+ * preview so rapid clicks never overlap.
  */
-export function playWebAudioAchievementChime(
-  volumePct = 100,
-  animStyle = S.achievementNotificationOptions.animStyle || "prism",
-  rarityTier = previewRarityTier,
-): void {
+function playWebAudioAchievementChime(volumePct = 100, rarityTier = previewRarityTier): void {
   try {
     const AudioCtx =
       window.AudioContext ||
@@ -92,364 +86,40 @@ export function playWebAudioAchievementChime(
     stopWebAudioAchievementChime();
 
     const now = ctx.currentTime;
-    const vol = (Math.max(0, Math.min(100, volumePct)) / 100) * 0.28;
+    const vol = (Math.max(0, Math.min(100, volumePct)) / 100) * 0.22;
     if (vol <= 0.001) return;
 
     const masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(1.0, now);
+    masterGain.gain.setValueAtTime(1, now);
     activeMasterGain = masterGain;
 
-    const compressor = ctx.createDynamicsCompressor();
-    compressor.threshold.setValueAtTime(-14, now);
-    compressor.knee.setValueAtTime(18, now);
-    compressor.ratio.setValueAtTime(4, now);
-    compressor.attack.setValueAtTime(0.005, now);
-    compressor.release.setValueAtTime(0.18, now);
-
-    const masterFilter = ctx.createBiquadFilter();
-    masterFilter.type = "lowpass";
-    masterFilter.frequency.setValueAtTime(rarityTier >= 3 ? 3800 : 3000, now);
-    masterFilter.Q.setValueAtTime(0.7, now);
-
-    masterFilter.connect(compressor);
-    compressor.connect(masterGain);
+    // The same soft ceiling the native chime has: two notes and a light octave,
+    // no sub-bass thump and no shimmer choir.
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(rarityTier >= 3 ? 7200 : 6000, now);
+    filter.Q.setValueAtTime(0.6, now);
+    filter.connect(masterGain);
     masterGain.connect(ctx.destination);
 
-    // 1. Warm sub-bass thump (96 Hz -> 42 Hz)
-    const subOsc = ctx.createOscillator();
-    const subGain = ctx.createGain();
-    subOsc.type = "sine";
-    subOsc.frequency.setValueAtTime(96, now);
-    subOsc.frequency.exponentialRampToValueAtTime(42, now + 0.22);
-    subGain.gain.setValueAtTime(0.0001, now);
-    subGain.gain.linearRampToValueAtTime(vol * 0.55, now + 0.015);
-    subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
-    subOsc.connect(subGain);
-    subGain.connect(masterFilter);
-    subOsc.start(now);
-    subOsc.stop(now + 0.26);
-
-    const noteCount = rarityTier <= 0 ? 3 : rarityTier === 1 ? 4 : rarityTier === 2 ? 5 : 6;
-
-    if (animStyle === "cyber") {
-      // Cyber Overload: warm analog synth fifths & octave arpeggio (no harsh sawtooth)
-      const freqs = [220.0, 329.63, 440.0, 493.88, 554.37, 659.25].slice(0, noteCount);
-      freqs.forEach((hz, idx) => {
-        const at = now + idx * 0.068;
-        const osc = ctx.createOscillator();
-        const over = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const overGain = ctx.createGain();
-        osc.type = "triangle";
-        over.type = "sine";
-        osc.frequency.setValueAtTime(hz, at);
-        over.frequency.setValueAtTime(hz * 2.0, at);
-        overGain.gain.setValueAtTime(0.28, at);
-        gain.gain.setValueAtTime(0.0001, at);
-        gain.gain.linearRampToValueAtTime(vol * 0.42, at + 0.018);
-        gain.gain.exponentialRampToValueAtTime(0.0001, at + 1.25 + rarityTier * 0.12);
-        over.connect(overGain);
-        overGain.connect(gain);
-        osc.connect(gain);
-        gain.connect(masterFilter);
-        osc.start(at);
-        over.start(at);
-        osc.stop(at + 1.35 + rarityTier * 0.12);
-        over.stop(at + 1.35 + rarityTier * 0.12);
-      });
-    } else if (animStyle === "shatter") {
-      // Crystal Shatter: pure Lydian celesta / vibraphone harmonics (F5..G6)
-      const freqs = [698.46, 783.99, 880.0, 1046.5, 1318.51, 1567.98].slice(0, noteCount);
-      freqs.forEach((hz, idx) => {
-        const at = now + idx * 0.065;
-        for (const [mult, weight, decay] of [
-          [1.0, 0.48, 1.35],
-          [2.0, 0.16, 0.65],
-        ] as const) {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = "sine";
-          osc.frequency.setValueAtTime(hz * mult, at);
-          gain.gain.setValueAtTime(0.0001, at);
-          gain.gain.linearRampToValueAtTime(vol * weight, at + 0.012);
-          gain.gain.exponentialRampToValueAtTime(0.0001, at + decay);
-          osc.connect(gain);
-          gain.connect(masterFilter);
-          osc.start(at);
-          osc.stop(at + decay + 0.05);
-        }
-      });
-    } else if (animStyle === "jackpot") {
-      // Arcade Jackpot: crisp 3-note grace flourish into a lush Major-9th triumph chord
-      [523.25, 659.25, 783.99].forEach((hz, c) => {
-        const at = now + c * 0.062;
+    const notes = rarityTier >= 2 ? [880.0, 1318.51, 1760.0] : [880.0, 1318.51];
+    const decay = 0.9 + Math.min(4, Math.max(0, rarityTier)) * 0.08;
+    notes.forEach((hz, index) => {
+      const at = now + index * 0.105;
+      for (const [mult, weight] of [[1, 1], [2, 0.22]] as const) {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "sine";
-        osc.frequency.setValueAtTime(hz, at);
+        osc.frequency.setValueAtTime(hz * mult, at);
         gain.gain.setValueAtTime(0.0001, at);
-        gain.gain.linearRampToValueAtTime(vol * 0.38, at + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.34);
+        gain.gain.linearRampToValueAtTime(vol * weight, at + 0.008);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + decay * (mult > 1 ? 0.55 : 1));
         osc.connect(gain);
-        gain.connect(masterFilter);
+        gain.connect(filter);
         osc.start(at);
-        osc.stop(at + 0.36);
-      });
-      const chordAt = now + 0.18;
-      [261.63, 523.25, 659.25, 783.99, 987.77, 1174.66].slice(0, noteCount).forEach((hz) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "triangle";
-        osc.frequency.setValueAtTime(hz, chordAt);
-        gain.gain.setValueAtTime(0.0001, chordAt);
-        gain.gain.linearRampToValueAtTime(vol * 0.28, chordAt + 0.026);
-        gain.gain.exponentialRampToValueAtTime(0.0001, chordAt + 1.65);
-        osc.connect(gain);
-        gain.connect(masterFilter);
-        osc.start(chordAt);
-        osc.stop(chordAt + 1.7);
-      });
-    } else if (animStyle === "xbox") {
-      // Xbox Series Capsule: signature warm two-tone sonar chime (A4 -> E5) + rare diamond bell tail
-      const freqs = [440.0, 659.25, 880.0, 1108.73, 1318.51, 1760.0].slice(0, noteCount);
-      freqs.forEach((hz, idx) => {
-        const at = now + (idx === 0 ? 0 : idx === 1 ? 0.135 : 0.26 + (idx - 2) * 0.068);
-        const osc = ctx.createOscillator();
-        const over = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const overGain = ctx.createGain();
-        osc.type = "sine";
-        over.type = "triangle";
-        osc.frequency.setValueAtTime(hz, at);
-        over.frequency.setValueAtTime(hz * 2.0, at);
-        overGain.gain.setValueAtTime(0.22, at);
-        const decay = 1.45 + rarityTier * 0.12;
-        gain.gain.setValueAtTime(0.0001, at);
-        gain.gain.linearRampToValueAtTime(vol * (idx <= 1 ? 0.52 : 0.36), at + 0.015);
-        gain.gain.exponentialRampToValueAtTime(0.0001, at + decay);
-        over.connect(overGain);
-        overGain.connect(gain);
-        osc.connect(gain);
-        gain.connect(masterFilter);
-        osc.start(at);
-        over.start(at);
         osc.stop(at + decay + 0.05);
-        over.stop(at + decay + 0.05);
-      });
-    } else if (animStyle === "playstation") {
-      // Airy celestial synth pad + bright metallic trophy ping (G5 -> D6 -> F#6)
-      [196.0, 293.66].forEach((padHz) => {
-        const padOsc = ctx.createOscillator();
-        const padGain = ctx.createGain();
-        padOsc.type = "sine";
-        padOsc.frequency.setValueAtTime(padHz, now);
-        padGain.gain.setValueAtTime(0.0001, now);
-        padGain.gain.linearRampToValueAtTime(vol * 0.28, now + 0.05);
-        padGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.75);
-        padOsc.connect(padGain);
-        padGain.connect(masterFilter);
-        padOsc.start(now);
-        padOsc.stop(now + 1.8);
-      });
-      const freqs = [783.99, 1174.66, 1479.98, 1567.98, 1975.53, 2349.32].slice(0, noteCount);
-      freqs.forEach((hz, idx) => {
-        const at = now + 0.04 + idx * 0.058;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(hz, at);
-        gain.gain.setValueAtTime(0.0001, at);
-        gain.gain.linearRampToValueAtTime(vol * 0.42, at + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.0001, at + 1.25);
-        osc.connect(gain);
-        gain.connect(masterFilter);
-        osc.start(at);
-        osc.stop(at + 1.3);
-      });
-    } else if (animStyle === "steam") {
-      // Modern Steam deck / client chime: warm two-tone wooden mallet bell (F4 -> C5)
-      const freqs = [349.23, 523.25, 698.46, 880.0, 1046.5, 1396.91].slice(0, noteCount);
-      freqs.forEach((hz, idx) => {
-        const at = now + (idx === 0 ? 0 : idx === 1 ? 0.11 : 0.22 + (idx - 2) * 0.072);
-        const osc = ctx.createOscillator();
-        const over = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const overGain = ctx.createGain();
-        osc.type = "sine";
-        over.type = "triangle";
-        osc.frequency.setValueAtTime(hz, at);
-        over.frequency.setValueAtTime(hz * 2.76, at);
-        overGain.gain.setValueAtTime(0.22, at);
-        gain.gain.setValueAtTime(0.0001, at);
-        gain.gain.linearRampToValueAtTime(vol * 0.48, at + 0.008);
-        const decay = 1.1 + rarityTier * 0.12;
-        gain.gain.exponentialRampToValueAtTime(0.0001, at + decay);
-        over.connect(overGain);
-        overGain.connect(gain);
-        osc.connect(gain);
-        gain.connect(masterFilter);
-        osc.start(at);
-        over.start(at);
-        osc.stop(at + decay + 0.05);
-        over.stop(at + decay + 0.05);
-      });
-    } else if (animStyle === "retro") {
-      // Retro 8-Bit Arcade: authentic stepped square-wave victory arpeggio
-      const freqs = [659.25, 830.61, 987.77, 1318.51, 1661.22, 1975.53].slice(0, noteCount);
-      freqs.forEach((hz, idx) => {
-        const at = now + idx * 0.052;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "square";
-        osc.frequency.setValueAtTime(hz, at);
-        gain.gain.setValueAtTime(0.0001, at);
-        gain.gain.linearRampToValueAtTime(vol * 0.32, at + 0.004);
-        gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.45);
-        osc.connect(gain);
-        gain.connect(masterFilter);
-        osc.start(at);
-        osc.stop(at + 0.5);
-      });
-    } else if (animStyle === "minimal") {
-      // Minimalist Stealth: discrete, pure high-frequency acoustic micro-ping
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(1046.5, now);
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(vol * 0.4, now + 0.005);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.75);
-      osc.connect(gain);
-      gain.connect(masterFilter);
-      osc.start(now);
-      osc.stop(now + 0.8);
-    } else if (animStyle === "fantasy") {
-      // Fantasy RPG Mühür: regal brass fifths & resonant cathedral bell chime
-      [146.83, 220.0].forEach((padHz) => {
-        const padOsc = ctx.createOscillator();
-        const padGain = ctx.createGain();
-        padOsc.type = "sawtooth";
-        padOsc.frequency.setValueAtTime(padHz, now);
-        padGain.gain.setValueAtTime(0.0001, now);
-        padGain.gain.linearRampToValueAtTime(vol * 0.2, now + 0.06);
-        padGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
-        padOsc.connect(padGain);
-        padGain.connect(masterFilter);
-        padOsc.start(now);
-        padOsc.stop(now + 1.85);
-      });
-      const freqs = [293.66, 440.0, 587.33, 739.99, 880.0, 1174.66].slice(0, noteCount);
-      freqs.forEach((hz, idx) => {
-        const at = now + 0.06 + idx * 0.078;
-        const osc = ctx.createOscillator();
-        const bell = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const bellGain = ctx.createGain();
-        osc.type = "sine";
-        bell.type = "triangle";
-        osc.frequency.setValueAtTime(hz, at);
-        bell.frequency.setValueAtTime(hz * 2.0, at);
-        bellGain.gain.setValueAtTime(0.3, at);
-        gain.gain.setValueAtTime(0.0001, at);
-        gain.gain.linearRampToValueAtTime(vol * 0.45, at + 0.016);
-        const decay = 1.6 + rarityTier * 0.15;
-        gain.gain.exponentialRampToValueAtTime(0.0001, at + decay);
-        bell.connect(bellGain);
-        bellGain.connect(gain);
-        osc.connect(gain);
-        gain.connect(masterFilter);
-        osc.start(at);
-        bell.start(at);
-        osc.stop(at + decay + 0.05);
-        bell.stop(at + decay + 0.05);
-      });
-    } else if (animStyle === "epic") {
-      // Epic Games EOS Portal: modern crisp ascending triad + warm sub-octave resonance (C4..B5)
-      const freqs = [261.63, 392.0, 587.33, 659.25, 783.99, 987.77].slice(0, noteCount);
-      freqs.forEach((hz, idx) => {
-        const at = now + idx * 0.062;
-        const osc = ctx.createOscillator();
-        const over = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const overGain = ctx.createGain();
-        osc.type = "triangle";
-        over.type = "sine";
-        osc.frequency.setValueAtTime(hz, at);
-        over.frequency.setValueAtTime(hz * 2.0, at);
-        overGain.gain.setValueAtTime(0.3, at);
-        gain.gain.setValueAtTime(0.0001, at);
-        gain.gain.linearRampToValueAtTime(vol * 0.44, at + 0.012);
-        gain.gain.exponentialRampToValueAtTime(0.0001, at + 1.35);
-        over.connect(overGain);
-        overGain.connect(gain);
-        osc.connect(gain);
-        gain.connect(masterFilter);
-        osc.start(at);
-        over.start(at);
-        osc.stop(at + 1.4);
-        over.stop(at + 1.4);
-      });
-    } else {
-      // Prism Unfurl (default): warm D-Maj9 crystal pad + chime arpeggio
-      [146.83, 220.0].forEach((padHz) => {
-        const padOsc = ctx.createOscillator();
-        const padGain = ctx.createGain();
-        padOsc.type = "sine";
-        padOsc.frequency.setValueAtTime(padHz, now);
-        padGain.gain.setValueAtTime(0.0001, now);
-        padGain.gain.linearRampToValueAtTime(vol * 0.24, now + 0.05);
-        padGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.65);
-        padOsc.connect(padGain);
-        padGain.connect(masterFilter);
-        padOsc.start(now);
-        padOsc.stop(now + 1.7);
-      });
-
-      const freqs = [587.33, 739.99, 880.0, 1108.73, 1318.51, 1760.0].slice(0, noteCount);
-      freqs.forEach((hz, idx) => {
-        const at = now + idx * 0.075;
-        const osc = ctx.createOscillator();
-        const bell = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const bellGain = ctx.createGain();
-        osc.type = "sine";
-        bell.type = "triangle";
-        osc.frequency.setValueAtTime(hz, at);
-        bell.frequency.setValueAtTime(hz * 2.0, at);
-        const decay = 1.4 + rarityTier * 0.14;
-        gain.gain.setValueAtTime(0.0001, at);
-        gain.gain.linearRampToValueAtTime(vol * 0.46, at + 0.016);
-        gain.gain.exponentialRampToValueAtTime(0.0001, at + decay);
-        bellGain.gain.setValueAtTime(0.2, at);
-        bell.connect(bellGain);
-        bellGain.connect(gain);
-        osc.connect(gain);
-        gain.connect(masterFilter);
-        osc.start(at);
-        bell.start(at);
-        osc.stop(at + decay + 0.05);
-        bell.stop(at + decay + 0.05);
-      });
-    }
-
-    // Ultra-Rare / Platinum warm choir shimmer tail
-    if (rarityTier >= 3) {
-      const shimmerFreqs = rarityTier >= 4 ? [1174.66, 1479.98, 1760.0] : [1174.66, 1479.98];
-      shimmerFreqs.forEach((hz, i) => {
-        const at = now + 0.3 + i * 0.065;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(hz, at);
-        gain.gain.setValueAtTime(0.0001, at);
-        gain.gain.linearRampToValueAtTime(vol * 0.22, at + 0.07);
-        gain.gain.exponentialRampToValueAtTime(0.0001, at + 1.8);
-        osc.connect(gain);
-        gain.connect(masterFilter);
-        osc.start(at);
-        osc.stop(at + 1.85);
-      });
-    }
+      }
+    });
   } catch {
     /* browser audio blocked or unavailable */
   }
@@ -463,7 +133,7 @@ export function playWebAudioAchievementChime(
 function previewAchievementSound(tier = previewRarityTier): void {
   const options = S.achievementNotificationOptions;
   void achievementAuditionSound(options, tier).catch(() => {
-    playWebAudioAchievementChime(options.volume, options.animStyle || "prism", tier);
+    playWebAudioAchievementChime(options.volume, tier);
   });
 }
 
@@ -483,17 +153,14 @@ export function runStagePreviewChoreography(mode: "entry" | "exit" | "cycle" = "
     const card = document.querySelector<HTMLElement>(".ach-stage-screen .ach-hud-toast");
     if (!card) return;
 
-    const animStyle = S.achievementNotificationOptions.animStyle || "prism";
-    const exitStyle = S.achievementNotificationOptions.exitStyle || "auto";
-
     const playEntry = () => {
       if (!card.isConnected) return;
-      playAchCardEntry(card, animStyle, previewRarityTier);
+      playAchCardEntry(card);
     };
 
     const playExitThenRestore = () => {
-      playAchCardExit(card, animStyle, exitStyle, () => {
-        stagePreviewTimer = window.setTimeout(playEntry, 220);
+      playAchCardExit(card, () => {
+        stagePreviewTimer = window.setTimeout(playEntry, 240);
       });
     };
 
@@ -508,67 +175,34 @@ export function runStagePreviewChoreography(mode: "entry" | "exit" | "cycle" = "
   });
 }
 
+/** The five stage cards: the same counts the test notification sends. */
+const PREVIEW_TIERS = [
+  { title: "First Steps", unlocked: 11, total: 34, percent: 64.2 },
+  { title: "Keen Observer", unlocked: 19, total: 34, percent: 21.8 },
+  { title: "Master of Time", unlocked: 25, total: 34, percent: 8.4 },
+  { title: "Perfect Sync", unlocked: 31, total: 34, percent: 1.8 },
+  { title: "Platinum Hunter", unlocked: 34, total: 34, percent: 100 },
+] as const;
+
 function getPreviewTierMeta(tier: number): {
-  tag: string;
+  tagLabel: string;
+  tagMeta: string;
   title: string;
   desc: string;
-  rarityBadge: string;
   progressPct: number;
-  progressText: string;
   iconName: IconName;
 } {
-  switch (tier) {
-    case 0:
-      return {
-        tag: achTagLine(0, 11, 34, 64.2),
-        title: "First Steps",
-        desc: t("settings.achTestDesc"),
-        rarityBadge: "%64.2",
-        progressPct: 32,
-        progressText: "11 / 34 • %32",
-        iconName: "trophy",
-      };
-    case 1:
-      return {
-        tag: achTagLine(1, 19, 34, 21.8),
-        title: "Keen Observer",
-        desc: t("settings.achTestDesc"),
-        rarityBadge: "%21.8",
-        progressPct: 56,
-        progressText: "19 / 34 • %56",
-        iconName: "trophy",
-      };
-    case 3:
-      return {
-        tag: achTagLine(3, 31, 34, 1.8),
-        title: "Perfect Sync",
-        desc: t("settings.achTestDesc"),
-        rarityBadge: "%1.8",
-        progressPct: 92,
-        progressText: "31 / 34 • %92",
-        iconName: "trophy",
-      };
-    case 4:
-      return {
-        tag: achTagLine(4, 34, 34, 100),
-        title: "Platinum Hunter",
-        desc: t("ach.platinumEarnedDesc"),
-        rarityBadge: "100% PLATINUM",
-        progressPct: 100,
-        progressText: "34 / 34 • %100",
-        iconName: "trophy",
-      };
-    default:
-      return {
-        tag: achTagLine(2, 25, 34, 8.4),
-        title: "Master of Time",
-        desc: t("settings.achTestDesc"),
-        rarityBadge: "%8.4",
-        progressPct: 74,
-        progressText: "25 / 34 • %74",
-        iconName: "trophy",
-      };
-  }
+  const index = Math.max(0, Math.min(PREVIEW_TIERS.length - 1, tier));
+  const item = PREVIEW_TIERS[index];
+  const tag = achTagParts(index, item.unlocked, item.total, item.percent);
+  return {
+    tagLabel: tag.label,
+    tagMeta: tag.meta,
+    title: item.title,
+    desc: index === 4 ? t("ach.platinumEarnedDesc") : t("settings.achTestDesc"),
+    progressPct: Math.round((item.unlocked / item.total) * 100),
+    iconName: "trophy",
+  };
 }
 
 /** Renders the full modern Achievements & Notifications view with 2 distinct sections. */
@@ -587,29 +221,8 @@ export function renderAchievementsSettingsView(): string {
   const cardTheme = allowedThemes.includes(options.cardTheme) ? options.cardTheme : "rarity";
   const customAccent = options.customAccent || "#00f0ff";
 
-  const allowedStyles = [
-    "steam",
-    "xbox",
-    "playstation",
-    "retro",
-    "cyber",
-    "minimal",
-    "fantasy",
-    "epic",
-    "prism",
-    "shatter",
-    "jackpot",
-  ];
-  const animStyle = allowedStyles.includes(options.animStyle) ? options.animStyle : "prism";
-
-  const allowedExitStyles = ["auto", "collapse", "glide", "fold", "laser", "implode", "zoom"];
-  const exitStyle = allowedExitStyles.includes(options.exitStyle || "auto")
-    ? (options.exitStyle as string)
-    : "auto";
-
   const opacity = typeof options.opacity === "number" ? Math.max(50, Math.min(100, options.opacity)) : 100;
   const offset = typeof options.offset === "number" ? Math.max(0, Math.min(80, options.offset)) : 18;
-  const currentLayout = options.layout === "compact" ? "compact" : "standard";
   const rareSoundName = options.rareCustomSoundName || t("settings.achRareSoundSame");
 
   const palette = achievementCardPalette(cardTheme, previewRarityTier, customAccent);
@@ -734,67 +347,6 @@ export function renderAchievementsSettingsView(): string {
     )
     .join("");
 
-  const animStyleOptions: Array<{ id: string; label: string; ico: IconName }> = [
-    { id: "steam", label: t("settings.achAnimSteam"), ico: "gamepad-2" },
-    { id: "xbox", label: t("settings.achAnimXbox"), ico: "circle" },
-    { id: "playstation", label: t("settings.achAnimPlaystation"), ico: "sparkles" },
-    { id: "retro", label: t("settings.achAnimRetro"), ico: "cpu" },
-    { id: "cyber", label: t("settings.achAnimCyber"), ico: "zap" },
-    { id: "minimal", label: t("settings.achAnimMinimal"), ico: "square" },
-    { id: "fantasy", label: t("settings.achAnimFantasy"), ico: "crown" },
-    { id: "epic", label: t("settings.achAnimEpic"), ico: "layers" },
-    { id: "prism", label: t("settings.achAnimPrism"), ico: "maximize-2" },
-    { id: "shatter", label: t("settings.achAnimShatter"), ico: "star" },
-    { id: "jackpot", label: t("settings.achAnimJackpot"), ico: "trophy" },
-  ];
-
-  const animStyleButtons = animStyleOptions
-    .map(
-      (opt) => `
-        <button type="button" class="ach-style-chip ${animStyle === opt.id ? "active" : ""}" data-act="set-ach-anim-style" data-val="${opt.id}">
-          ${icon(opt.ico, 13)}
-          <span>${esc(opt.label)}</span>
-        </button>
-      `,
-    )
-    .join("");
-
-  const exitStyleOptions: Array<{ id: string; label: string; ico: IconName }> = [
-    { id: "auto", label: t("settings.achExitAuto"), ico: "refresh" },
-    { id: "collapse", label: t("settings.achExitCollapse"), ico: "circle" },
-    { id: "glide", label: t("settings.achExitGlide"), ico: "sparkles" },
-    { id: "fold", label: t("settings.achExitFold"), ico: "layers" },
-    { id: "laser", label: t("settings.achExitLaser"), ico: "zap" },
-    { id: "implode", label: t("settings.achExitImplode"), ico: "star" },
-    { id: "zoom", label: t("settings.achExitZoom"), ico: "maximize-2" },
-  ];
-
-  const exitStyleButtons = exitStyleOptions
-    .map(
-      (opt) => `
-        <button type="button" class="ach-style-chip ${exitStyle === opt.id ? "active" : ""}" data-act="set-ach-exit-style" data-val="${opt.id}">
-          ${icon(opt.ico, 13)}
-          <span>${esc(opt.label)}</span>
-        </button>
-      `,
-    )
-    .join("");
-
-  const layoutOptions: Array<{ id: string; label: string }> = [
-    { id: "standard", label: t("settings.achLayoutStandard") },
-    { id: "compact", label: t("settings.achLayoutCompact") },
-  ];
-
-  const layoutButtons = layoutOptions
-    .map(
-      (opt) => `
-        <button type="button" class="${currentLayout === opt.id ? "active" : ""}" data-act="set-ach-layout" data-val="${opt.id}">
-          ${esc(opt.label)}
-        </button>
-      `,
-    )
-    .join("");
-
   const opacityButtons = [60, 75, 90, 100]
     .map(
       (val) => `
@@ -815,22 +367,6 @@ export function renderAchievementsSettingsView(): string {
       ([val, label]) => `
         <button type="button" class="${offset === val ? "active" : ""}" data-act="set-ach-offset" data-val="${val}">
           ${label}
-        </button>
-      `,
-    )
-    .join("");
-
-  const glow = options.glow || "vibrant";
-  const glowOptions: Array<{ id: string; label: string }> = [
-    { id: "none", label: t("settings.achGlowNone") },
-    { id: "subtle", label: t("settings.achGlowSubtle") },
-    { id: "vibrant", label: t("settings.achGlowVibrant") },
-  ];
-  const glowButtons = glowOptions
-    .map(
-      (opt) => `
-        <button type="button" class="${glow === opt.id ? "active" : ""}" data-act="set-ach-glow" data-val="${opt.id}">
-          ${esc(opt.label)}
         </button>
       `,
     )
@@ -1076,27 +612,19 @@ export function renderAchievementsSettingsView(): string {
           <span class="settings-value">${esc(t("settings.achPositionTitle"))}: <strong>${esc(position)}</strong></span>
         </div>
 
-        <div class="ach-stage-screen pos-${esc(position)} tier-${previewRarityTier}" style="${achCardVars(palette, opacity, glow)}--ach-progress:${tierMeta.progressPct}%; padding: ${offset}px;">
-          <div class="ach-stage-backdrop"></div>
-          <div class="ach-stage-aura"></div>
-
+        <div class="ach-stage-screen pos-${esc(position)}" style="${achCardVars(palette, opacity)} padding: ${offset}px;">
           <!-- The same component the in-game toast renders -->
           ${achCardHtml({
-            tag: tierMeta.tag,
+            tagLabel: tierMeta.tagLabel,
+            tagMeta: tierMeta.tagMeta,
             title: tierMeta.title,
             desc: tierMeta.desc,
-            tier: previewRarityTier,
             size: currentSize,
-            style: animStyle,
-            theme: cardTheme,
             palette,
-            seq: stageReplaySeq,
             glyph: tierMeta.iconName,
             opacity,
-            layout: currentLayout,
             hideTag: options.hideTag,
             hideDesc: options.hideDesc,
-            glow,
             showProgress: options.showProgress,
             progressPct: tierMeta.progressPct,
           })}
@@ -1105,39 +633,6 @@ export function renderAchievementsSettingsView(): string {
 
       <!-- Controls Group -->
       <div class="list settings-group" style="margin-top: 18px;">
-        <!-- Animation Style -->
-        <div class="row settings-row stacked">
-          <div class="row-main">
-            <div class="settings-row-title">${esc(t("settings.achAnimStyleTitle"))}</div>
-            <div class="settings-row-desc">${esc(t("settings.achAnimStyleDesc"))}</div>
-          </div>
-          <div class="settings-row-control" style="width: 100%;">
-            <div class="ach-style-grid" role="group">${animStyleButtons}</div>
-          </div>
-        </div>
-
-        <!-- Closing Animation Style -->
-        <div class="row settings-row stacked">
-          <div class="row-main">
-            <div class="settings-row-title">${esc(t("settings.achExitStyleTitle"))}</div>
-            <div class="settings-row-desc">${esc(t("settings.achExitStyleDesc"))}</div>
-          </div>
-          <div class="settings-row-control" style="width: 100%;">
-            <div class="ach-style-grid" role="group">${exitStyleButtons}</div>
-          </div>
-        </div>
-
-        <!-- Card Layout: Standard vs Slim Capsule -->
-        <div class="row settings-row">
-          <div class="row-main">
-            <div class="settings-row-title">${esc(t("settings.achLayoutTitle"))}</div>
-            <div class="settings-row-desc">${esc(t("settings.achLayoutDesc"))}</div>
-          </div>
-          <div class="settings-row-control">
-            <div class="seg" role="group">${layoutButtons}</div>
-          </div>
-        </div>
-
         <!-- Per-store Achievement Notification Toggles -->
         <div class="row settings-row stacked">
           <div class="row-main">
@@ -1214,17 +709,6 @@ export function renderAchievementsSettingsView(): string {
           </div>
           <div class="settings-row-control">
             <div class="seg" role="group">${offsetButtons}</div>
-          </div>
-        </div>
-
-        <!-- Glow Intensity Selector -->
-        <div class="row settings-row">
-          <div class="row-main">
-            <div class="settings-row-title">${esc(t("settings.achGlowTitle"))}</div>
-            <div class="settings-row-desc">${esc(t("settings.achGlowDesc"))}</div>
-          </div>
-          <div class="settings-row-control">
-            <div class="seg" role="group">${glowButtons}</div>
           </div>
         </div>
 
@@ -1528,39 +1012,11 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       return true;
     }
 
-    case "set-ach-anim-style": {
-      const allowed = [
-        "steam",
-        "xbox",
-        "playstation",
-        "retro",
-        "cyber",
-        "minimal",
-        "fantasy",
-        "prism",
-        "shatter",
-        "jackpot",
-        "epic",
-      ];
-      const animStyle = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "prism";
-      const next = { ...S.achievementNotificationOptions, animStyle, exitStyle: "auto" };
-      S.achievementNotificationOptions = next;
-      stageReplaySeq++;
-      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
-      render();
-      runStagePreviewChoreography("entry");
-      if (next.sound) {
-        previewAchievementSound();
-      }
-      return true;
-    }
-
     case "set-ach-card-theme": {
       const allowed = ["gold", "rarity", "launcher", "cyber", "emerald", "crimson", "amethyst", "custom"];
       const cardTheme = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "rarity";
       const next = { ...S.achievementNotificationOptions, cardTheme };
       S.achievementNotificationOptions = next;
-      stageReplaySeq++;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       syncAchievementCardTheme();
       render();
@@ -1573,30 +1029,6 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       if (!val) return true;
       const next = { ...S.achievementNotificationOptions, customAccent: val, cardTheme: "custom" };
       S.achievementNotificationOptions = next;
-      stageReplaySeq++;
-      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
-      render();
-      runStagePreviewChoreography("entry");
-      return true;
-    }
-
-    case "set-ach-exit-style": {
-      const allowed = ["auto", "collapse", "glide", "fold", "laser", "implode", "zoom"];
-      const exitStyle = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "auto";
-      const next = { ...S.achievementNotificationOptions, exitStyle };
-      S.achievementNotificationOptions = next;
-      stageReplaySeq++;
-      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
-      render();
-      runStagePreviewChoreography("exit");
-      return true;
-    }
-
-    case "set-ach-layout": {
-      const layout = el.dataset.val === "compact" ? "compact" : "standard";
-      const next = { ...S.achievementNotificationOptions, layout };
-      S.achievementNotificationOptions = next;
-      stageReplaySeq++;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();
       runStagePreviewChoreography("entry");
@@ -1621,25 +1053,12 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       return true;
     }
 
-    case "set-ach-glow": {
-      const allowed = ["none", "subtle", "vibrant"];
-      const glow = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "vibrant";
-      const next = { ...S.achievementNotificationOptions, glow };
-      S.achievementNotificationOptions = next;
-      stageReplaySeq++;
-      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
-      render();
-      runStagePreviewChoreography("entry");
-      return true;
-    }
-
     case "toggle-ach-show-progress": {
       const next = {
         ...S.achievementNotificationOptions,
         showProgress: (el as HTMLInputElement).checked,
       };
       S.achievementNotificationOptions = next;
-      stageReplaySeq++;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();
       runStagePreviewChoreography("entry");
@@ -1652,7 +1071,6 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
         hideTag: (el as HTMLInputElement).checked,
       };
       S.achievementNotificationOptions = next;
-      stageReplaySeq++;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();
       runStagePreviewChoreography("entry");
@@ -1665,7 +1083,6 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
         hideDesc: (el as HTMLInputElement).checked,
       };
       S.achievementNotificationOptions = next;
-      stageReplaySeq++;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();
       runStagePreviewChoreography("entry");
@@ -1675,7 +1092,6 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     case "set-ach-preview-tier": {
       const tier = Math.max(0, Math.min(4, Number(el.dataset.val ?? 2)));
       previewRarityTier = Number.isNaN(tier) ? 2 : tier;
-      stageReplaySeq++;
       render();
       runStagePreviewChoreography("entry");
       if (S.achievementNotificationOptions.sound) {
@@ -1685,7 +1101,6 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     }
 
     case "ach-replay-stage": {
-      stageReplaySeq++;
       render();
       runStagePreviewChoreography("cycle");
       if (S.achievementNotificationOptions.sound) {
@@ -1699,7 +1114,6 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       const size = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "normal";
       const next = { ...S.achievementNotificationOptions, size };
       S.achievementNotificationOptions = next;
-      stageReplaySeq++;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();
       runStagePreviewChoreography("entry");
@@ -1711,7 +1125,6 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       const position = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "top-right";
       const next = { ...S.achievementNotificationOptions, position };
       S.achievementNotificationOptions = next;
-      stageReplaySeq++;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();
       runStagePreviewChoreography("entry");

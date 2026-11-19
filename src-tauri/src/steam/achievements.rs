@@ -2440,10 +2440,11 @@ pub struct AchievementNotificationOptions {
     pub overlay: bool,
     pub volume: u8,
     pub duration_ms: u64,
-    /// top-right, top-left, bottom-right, or bottom-left.
+    /// top-left, center-top, top-right, bottom-left, center-bottom or
+    /// bottom-right.
     #[serde(default = "default_notification_position")]
     pub position: String,
-    /// compact, normal, large, or huge.
+    /// small, normal or large.
     #[serde(default = "default_notification_size")]
     pub size: String,
     /// True when a user-picked sound exists; the watcher then plays it
@@ -2455,12 +2456,6 @@ pub struct AchievementNotificationOptions {
     /// "gold", "launcher", "rarity", "cyber", "emerald", "crimson", or "amethyst".
     #[serde(default = "default_card_theme")]
     pub card_theme: String,
-    /// "prism", "cyber", "shatter", "jackpot", "xbox", "playstation", or "epic".
-    #[serde(default = "default_anim_style")]
-    pub anim_style: String,
-    /// "auto", "collapse", "glide", "fold", "laser", "implode", or "zoom".
-    #[serde(default = "default_exit_style")]
-    pub exit_style: String,
     /// Muted store keys ("steam", "epic", "gog", "ubisoft", "ea", "xbox", "custom").
     #[serde(default)]
     pub disabled_stores: Vec<String>,
@@ -2483,29 +2478,12 @@ pub struct AchievementNotificationOptions {
     pub hide_tag: bool,
     #[serde(default)]
     pub hide_desc: bool,
-    #[serde(default = "default_layout")]
-    pub layout: String,
-    #[serde(default = "default_glow")]
-    pub glow: String,
     #[serde(default)]
     pub show_progress: bool,
     #[serde(default)]
     pub rare_custom_sound: bool,
     #[serde(default)]
     pub rare_custom_sound_name: Option<String>,
-}
-
-fn default_glow() -> String {
-    "vibrant".to_string()
-}
-
-fn normalize_glow(value: Option<&str>) -> String {
-    match value {
-        Some("none") => "none",
-        Some("subtle") => "subtle",
-        _ => "vibrant",
-    }
-    .to_string()
 }
 
 fn default_opacity() -> u8 {
@@ -2522,18 +2500,6 @@ fn default_offset() -> u32 {
 
 fn normalize_offset(value: Option<u32>) -> u32 {
     value.unwrap_or(18).clamp(0, 100)
-}
-
-fn default_layout() -> String {
-    "standard".to_string()
-}
-
-fn normalize_layout(value: Option<&str>) -> String {
-    match value {
-        Some("compact") => "compact",
-        _ => "standard",
-    }
-    .to_string()
 }
 
 fn normalize_custom_accent(value: Option<&str>) -> Option<String> {
@@ -2553,8 +2519,6 @@ impl Default for AchievementNotificationOptions {
             custom_sound: false,
             custom_sound_name: None,
             card_theme: default_card_theme(),
-            anim_style: default_anim_style(),
-            exit_style: default_exit_style(),
             disabled_stores: Vec::new(),
             min_rarity_percent: 0,
             unlock_screenshots: false,
@@ -2563,8 +2527,6 @@ impl Default for AchievementNotificationOptions {
             offset: default_offset(),
             hide_tag: false,
             hide_desc: false,
-            layout: default_layout(),
-            glow: default_glow(),
             show_progress: false,
             rare_custom_sound: false,
             rare_custom_sound_name: None,
@@ -2587,44 +2549,6 @@ fn normalize_card_theme(value: Option<&str>) -> String {
         Some("amethyst") => "amethyst",
         Some("custom") => "custom",
         _ => "rarity",
-    }
-    .to_string()
-}
-
-fn default_anim_style() -> String {
-    "prism".to_string()
-}
-
-fn normalize_anim_style(value: Option<&str>) -> String {
-    match value {
-        Some("steam") => "steam",
-        Some("xbox") => "xbox",
-        Some("playstation") => "playstation",
-        Some("retro") => "retro",
-        Some("cyber") => "cyber",
-        Some("minimal") => "minimal",
-        Some("fantasy") => "fantasy",
-        Some("shatter") => "shatter",
-        Some("jackpot") => "jackpot",
-        Some("epic") => "epic",
-        _ => "prism",
-    }
-    .to_string()
-}
-
-fn default_exit_style() -> String {
-    "auto".to_string()
-}
-
-fn normalize_exit_style(value: Option<&str>) -> String {
-    match value {
-        Some("collapse") => "collapse",
-        Some("glide") => "glide",
-        Some("fold") => "fold",
-        Some("laser") => "laser",
-        Some("implode") => "implode",
-        Some("zoom") => "zoom",
-        _ => "auto",
     }
     .to_string()
 }
@@ -2771,12 +2695,6 @@ pub fn achievement_notification_options(app: &tauri::AppHandle) -> AchievementNo
         card_theme: normalize_card_theme(
             settings.achievement_notifications_card_theme.as_deref(),
         ),
-        anim_style: normalize_anim_style(
-            settings.achievement_notifications_anim_style.as_deref(),
-        ),
-        exit_style: normalize_exit_style(
-            settings.achievement_notifications_exit_style.as_deref(),
-        ),
         disabled_stores: normalize_disabled_stores(
             &settings.achievement_notifications_disabled_stores,
         ),
@@ -2789,8 +2707,6 @@ pub fn achievement_notification_options(app: &tauri::AppHandle) -> AchievementNo
         offset: normalize_offset(settings.achievement_notifications_offset),
         hide_tag: settings.achievement_notifications_hide_tag.unwrap_or(false),
         hide_desc: settings.achievement_notifications_hide_desc.unwrap_or(false),
-        layout: normalize_layout(settings.achievement_notifications_layout.as_deref()),
-        glow: normalize_glow(settings.achievement_notifications_glow.as_deref()),
         show_progress: settings.achievement_notifications_show_progress.unwrap_or(false),
         rare_custom_sound,
         rare_custom_sound_name: if rare_custom_sound {
@@ -2833,12 +2749,6 @@ pub fn achievement_set_notification_options(
     settings.achievement_notifications_card_theme = Some(normalize_card_theme(Some(
         options.card_theme.as_str(),
     )));
-    settings.achievement_notifications_anim_style = Some(normalize_anim_style(Some(
-        options.anim_style.as_str(),
-    )));
-    settings.achievement_notifications_exit_style = Some(normalize_exit_style(Some(
-        options.exit_style.as_str(),
-    )));
     settings.achievement_notifications_disabled_stores =
         normalize_disabled_stores(&options.disabled_stores);
     settings.achievement_notifications_min_rarity = Some(normalize_min_rarity(Some(
@@ -2850,8 +2760,6 @@ pub fn achievement_set_notification_options(
     settings.achievement_notifications_offset = Some(normalize_offset(Some(options.offset)));
     settings.achievement_notifications_hide_tag = Some(options.hide_tag);
     settings.achievement_notifications_hide_desc = Some(options.hide_desc);
-    settings.achievement_notifications_layout = Some(normalize_layout(Some(options.layout.as_str())));
-    settings.achievement_notifications_glow = Some(normalize_glow(Some(options.glow.as_str())));
     settings.achievement_notifications_show_progress = Some(options.show_progress);
     crate::save_settings(&app, &settings);
     // The overlay panel can change the same switches; the main window's copy
@@ -3242,8 +3150,6 @@ fn toast_payload(
         theme: options.card_theme.clone(),
         size: options.size.clone(),
         position: options.position.clone(),
-        style: options.anim_style.clone(),
-        exit_style: options.exit_style.clone(),
         hold_ms: options.duration_ms.clamp(2_000, 15_000),
         palette: launcher_palette(),
         tagless: false,
@@ -3258,8 +3164,6 @@ fn toast_payload(
         offset: options.offset,
         hide_tag: options.hide_tag,
         hide_desc: options.hide_desc,
-        layout: options.layout.clone(),
-        glow: options.glow.clone(),
         show_progress: options.show_progress,
     }
 }
@@ -3565,7 +3469,7 @@ fn prepare_burst(
     }
 }
 
-/// The rarest tier in the burst drives the card glow and the chime.
+/// The rarest tier in the burst drives the chime and the rarity line.
 fn burst_tier(burst: &Burst, newly: &[AnnounceItem], unlocked: u32, total: u32) -> u8 {
     burst
         .announced
@@ -4164,7 +4068,7 @@ fn steam_achievements_summary_for(
 mod tests {
     use super::*;
 
-    use super::sound::synthesize_dopamine_chime_wav;
+    use super::sound::synthesize_notification_chime_wav;
 
     use crate::legendary::models::{AchievementItem, GameAchievementsResponse};
     use super::super::runtime::steam_install_path;
@@ -4640,31 +4544,12 @@ mod tests {
     }
 
     #[test]
-    fn anim_style_and_rarity_tier_normalize_cleanly() {
+    fn card_theme_and_rarity_tier_normalize_cleanly() {
         assert_eq!(normalize_card_theme(Some("rarity")), "rarity");
         assert_eq!(normalize_card_theme(Some("cyber")), "cyber");
         assert_eq!(normalize_card_theme(Some("emerald")), "emerald");
         assert_eq!(normalize_card_theme(Some("crimson")), "crimson");
         assert_eq!(normalize_card_theme(Some("amethyst")), "amethyst");
-        assert_eq!(normalize_anim_style(None), "prism");
-        assert_eq!(normalize_anim_style(Some("steam")), "steam");
-        assert_eq!(normalize_anim_style(Some("xbox")), "xbox");
-        assert_eq!(normalize_anim_style(Some("playstation")), "playstation");
-        assert_eq!(normalize_anim_style(Some("retro")), "retro");
-        assert_eq!(normalize_anim_style(Some("cyber")), "cyber");
-        assert_eq!(normalize_anim_style(Some("minimal")), "minimal");
-        assert_eq!(normalize_anim_style(Some("fantasy")), "fantasy");
-        assert_eq!(normalize_anim_style(Some("shatter")), "shatter");
-        assert_eq!(normalize_anim_style(Some("jackpot")), "jackpot");
-        assert_eq!(normalize_anim_style(Some("epic")), "epic");
-        assert_eq!(normalize_anim_style(Some("unknown")), "prism");
-        assert_eq!(normalize_exit_style(None), "auto");
-        assert_eq!(normalize_exit_style(Some("collapse")), "collapse");
-        assert_eq!(normalize_exit_style(Some("glide")), "glide");
-        assert_eq!(normalize_exit_style(Some("fold")), "fold");
-        assert_eq!(normalize_exit_style(Some("laser")), "laser");
-        assert_eq!(normalize_exit_style(Some("implode")), "implode");
-        assert_eq!(normalize_exit_style(Some("zoom")), "zoom");
         assert_eq!(
             normalize_disabled_stores(&[
                 "Steam".into(),
@@ -4686,8 +4571,8 @@ mod tests {
     }
 
     #[test]
-    fn synthesized_dopamine_chime_produces_valid_riff_wav() {
-        let wav = synthesize_dopamine_chime_wav("prism", 3);
+    fn synthesized_notification_chime_produces_valid_riff_wav() {
+        let wav = synthesize_notification_chime_wav(3);
         assert!(wav.len() > 44);
         assert_eq!(&wav[0..4], b"RIFF");
         assert_eq!(&wav[8..12], b"WAVE");

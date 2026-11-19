@@ -61,8 +61,6 @@ pub struct ToastPayload {
     pub theme: String,
     pub size: String,
     pub position: String,
-    pub style: String,
-    pub exit_style: String,
     pub hold_ms: u64,
     pub palette: ToastPalette,
     /// System hints ("Shift+Tab opens the overlay") have no rarity line.
@@ -99,10 +97,6 @@ pub struct ToastPayload {
     pub hide_tag: bool,
     #[serde(default)]
     pub hide_desc: bool,
-    #[serde(default = "default_layout")]
-    pub layout: String,
-    #[serde(default = "default_glow")]
-    pub glow: String,
     #[serde(default)]
     pub show_progress: bool,
 }
@@ -113,14 +107,6 @@ fn default_opacity() -> u8 {
 
 fn default_offset() -> u32 {
     18
-}
-
-fn default_layout() -> String {
-    "standard".to_string()
-}
-
-fn default_glow() -> String {
-    "vibrant".to_string()
 }
 
 #[derive(Serialize, Clone)]
@@ -734,8 +720,6 @@ mod tests {
             theme: "rarity".into(),
             size: "normal".into(),
             position: "top-right".into(),
-            style: "prism".into(),
-            exit_style: "auto".into(),
             hold_ms: 5_000,
             palette: ToastPalette {
                 background: "#000000".into(),
@@ -757,8 +741,6 @@ mod tests {
             offset: 18,
             hide_tag: false,
             hide_desc: false,
-            layout: "standard".into(),
-            glow: "vibrant".into(),
             show_progress: false,
         }
     }

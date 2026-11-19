@@ -48,29 +48,3 @@ body.ach-toast-page {
   justify-content: flex-end;
   align-items: flex-end;
 }
-
-.ach-hud-ach-icon {
-  position: absolute;
-  inset: 3px;
-  width: calc(100% - 6px);
-  height: calc(100% - 6px);
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.ach-hud-toast.style-steam .ach-hud-ach-icon {
-  border-radius: 4px !important;
-}
-.ach-hud-toast.style-retro .ach-hud-ach-icon {
-  border-radius: 0 !important;
-  image-rendering: pixelated;
-}
-.ach-hud-toast.style-cyber .ach-hud-ach-icon {
-  border-radius: 2px !important;
-}
-.ach-hud-toast.style-minimal .ach-hud-ach-icon {
-  border-radius: 2px !important;
-}
-.ach-hud-toast.style-playstation .ach-hud-ach-icon {
-  border-radius: 10px !important;
-}

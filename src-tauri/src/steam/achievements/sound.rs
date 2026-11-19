@@ -1,5 +1,5 @@
-//! Achievement unlock sound: a synthesized chime for the active animation
-//! style and rarity tier, or the custom file picked in Settings.
+//! Achievement unlock sound: a synthesized chime for the rarity tier, or the
+//! custom file picked in Settings.
 //!
 //! One worker owns the default output stream and reuses it for every chime, so
 //! a notification does not pay the audio-device open cost each time. A newer
@@ -25,16 +25,18 @@ fn smooth_attack(dt: f32, attack_s: f32) -> f32 {
     }
 }
 
-/// Synthesizes a stereo 44.1 kHz 16-bit PCM WAV chime tailored to the active
-/// animation style ("prism", "cyber", "shatter", "jackpot") and rarity tier
-/// (0 = bronze, 1 = silver, 2 = gold, 3 = ultra-rare diamond, 4 = platinum).
-pub(super) fn synthesize_dopamine_chime_wav(style: &str, tier: u8) -> Vec<u8> {
+/// Synthesizes the stereo 44.1 kHz 16-bit PCM WAV unlock chime: two soft bell
+/// notes (A5, E6) that gain a third an octave up on rarer unlocks. No sub-bass
+/// thump, arpeggio flourish or shimmer choir: the card is quiet, the sound is
+/// the same, and a long game session does not turn every unlock into a fanfare.
+pub(super) fn synthesize_notification_chime_wav(tier: u8) -> Vec<u8> {
     const SAMPLE_RATE: u32 = 44_100;
+    let tier = tier.min(4);
     let duration_secs: f32 = match tier {
-        0 | 1 => 1.55,
-        2 => 1.90,
-        3 => 2.25,
-        _ => 2.65,
+        0 | 1 => 1.25,
+        2 => 1.45,
+        3 => 1.65,
+        _ => 1.85,
     };
     let num_samples = (SAMPLE_RATE as f32 * duration_secs) as usize;
     let data_bytes = (num_samples * 4) as u32;
@@ -55,280 +57,29 @@ pub(super) fn synthesize_dopamine_chime_wav(style: &str, tier: u8) -> Vec<u8> {
     wav.extend_from_slice(&data_bytes.to_le_bytes());
 
     let tau = std::f32::consts::TAU;
-    let note_count: usize = match tier {
-        0 => 3,
-        1 => 4,
-        2 => 5,
-        _ => 6,
-    };
+    let notes: [f32; 3] = [880.00, 1318.51, 1760.00];
+    let note_count = if tier >= 2 { 3 } else { 2 };
+    // Rarer unlocks ring slightly longer instead of getting louder.
+    let decay = 2.9 - tier as f32 * 0.18;
 
     for i in 0..num_samples {
         let t = i as f32 / SAMPLE_RATE as f32;
         let mut left = 0.0f32;
         let mut right = 0.0f32;
 
-        // 1. Analytic phase-integrated warm sub-bass thump (0.00s..0.24s)
-        // Instantaneous frequency f(t) = 42 + 56 * exp(-8*t), integrated phase = 42*t + (56/8)*(1 - exp(-8*t))
-        if t < 0.24 {
-            let env = smooth_attack(t, 0.012) * (1.0 - t / 0.24).powi(2);
-            let sub_phase = tau * (42.0 * t + (56.0 / 8.0) * (1.0 - (-8.0 * t).exp()));
-            let sub = sub_phase.sin() * env * 0.20;
-            left += sub;
-            right += sub;
-        }
-
-        match style {
-            "cyber" => {
-                // Cyber Overload: warm analog synth fifths & octave arpeggio (A3, E4, A4, B4, C#5, E5)
-                let notes: [f32; 6] = [220.00, 329.63, 440.00, 493.88, 554.37, 659.25];
-                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
-                    let onset = idx as f32 * 0.068;
-                    if t >= onset {
-                        let dt = t - onset;
-                        let attack = smooth_attack(dt, 0.016);
-                        let decay = (-dt * (2.1 - (tier.min(4) as f32) * 0.18)).exp();
-                        let fund_l = (dt * freq * 0.9985 * tau).sin();
-                        let fund_r = (dt * freq * 1.0015 * tau).sin();
-                        let harm2 = (dt * freq * 2.0 * tau).sin() * (-dt * 3.4).exp() * 0.32;
-                        let harm3 = (dt * freq * 3.0 * tau).sin() * (-dt * 5.2).exp() * 0.12;
-                        let amp = attack * decay * 0.14;
-                        left += (fund_l + harm2 + harm3) * amp;
-                        right += (fund_r + harm2 - harm3) * amp;
-                    }
-                }
+        for (idx, &freq) in notes.iter().take(note_count).enumerate() {
+            let onset = idx as f32 * 0.105;
+            if t < onset {
+                continue;
             }
-            "shatter" => {
-                // Crystal Shatter: pure Lydian celesta / vibraphone harmonics (F5, G5, A5, C6, E6, G6)
-                let notes: [f32; 6] = [698.46, 783.99, 880.00, 1046.50, 1318.51, 1567.98];
-                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
-                    let onset = idx as f32 * 0.065;
-                    if t >= onset {
-                        let dt = t - onset;
-                        let attack = smooth_attack(dt, 0.010);
-                        let decay = (-dt * 2.2).exp();
-                        let p1_l = (dt * freq * 0.998 * tau).sin();
-                        let p1_r = (dt * freq * 1.002 * tau).sin();
-                        let p2 = (dt * freq * 2.0 * tau).sin() * (-dt * 4.5).exp() * 0.28;
-                        let p3 = (dt * freq * 3.0 * tau).sin() * (-dt * 7.5).exp() * 0.10;
-                        let amp = attack * decay * 0.145;
-                        left += (p1_l + p2 + p3) * amp;
-                        right += (p1_r + p2 - p3) * amp;
-                    }
-                }
-            }
-            "jackpot" => {
-                // Arcade Jackpot: crisp 3-note grace flourish into a lush Major-9th triumph chord
-                let grace: [f32; 3] = [523.25, 659.25, 783.99];
-                for (c, &f_grace) in grace.iter().enumerate() {
-                    let onset = c as f32 * 0.062;
-                    if t >= onset && t < onset + 0.36 {
-                        let dt = t - onset;
-                        let env = smooth_attack(dt, 0.010) * (-dt * 6.5).exp();
-                        let pan = 0.35 + (c as f32) * 0.15;
-                        let wave = ((dt * f_grace * tau).sin()
-                            + 0.25 * (dt * f_grace * 2.0 * tau).sin())
-                            * env
-                            * 0.15;
-                        left += wave * (1.0 - pan * 0.3);
-                        right += wave * (0.7 + pan * 0.3);
-                    }
-                }
-                let chord_onset = 0.18;
-                if t >= chord_onset {
-                    let dt = t - chord_onset;
-                    let chord: [f32; 6] = [261.63, 523.25, 659.25, 783.99, 987.77, 1174.66];
-                    let attack = smooth_attack(dt, 0.024);
-                    let decay = (-dt * (1.65 - (tier.min(4) as f32) * 0.12)).exp();
-                    for &freq in chord.iter().take(note_count) {
-                        let l = (dt * freq * 0.9985 * tau).sin()
-                            + 0.26 * (dt * freq * 2.0 * tau).sin() * (-dt * 3.2).exp();
-                        let r = (dt * freq * 1.0015 * tau).sin()
-                            + 0.26 * (dt * freq * 2.0 * tau).sin() * (-dt * 3.2).exp();
-                        left += l * attack * decay * 0.105;
-                        right += r * attack * decay * 0.105;
-                    }
-                }
-            }
-            "xbox" => {
-                // Xbox Series Capsule: signature warm two-tone sonar chime (A4 -> E5) + rare diamond bell tail
-                let notes: [f32; 6] = [440.00, 659.25, 880.00, 1108.73, 1318.51, 1760.00];
-                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
-                    let onset = if idx == 0 {
-                        0.0
-                    } else if idx == 1 {
-                        0.135
-                    } else {
-                        0.26 + (idx - 2) as f32 * 0.068
-                    };
-                    if t >= onset {
-                        let dt = t - onset;
-                        let attack = smooth_attack(dt, 0.015);
-                        let decay = (-dt * (1.85 - (tier.min(4) as f32) * 0.15)).exp();
-                        let fund_l = (dt * freq * 0.9988 * tau).sin();
-                        let fund_r = (dt * freq * 1.0012 * tau).sin();
-                        let over2 = (dt * freq * 2.0 * tau).sin() * (-dt * 3.6).exp() * 0.24;
-                        let amp = attack * decay * (if idx <= 1 { 0.175 } else { 0.125 });
-                        left += (fund_l + over2) * amp;
-                        right += (fund_r + over2) * amp;
-                    }
-                }
-            }
-            "playstation" => {
-                // Airy celestial synth pad + bright metallic trophy ping (G5 -> D6 -> F#6)
-                let pad_env = smooth_attack(t, 0.05) * (-t * 1.35).exp() * 0.11;
-                left += ((t * 196.00 * tau).sin() + 0.55 * (t * 293.66 * tau).sin()) * pad_env;
-                right += ((t * 196.30 * tau).sin() + 0.55 * (t * 293.35 * tau).sin()) * pad_env;
-
-                let notes: [f32; 6] = [783.99, 1174.66, 1479.98, 1567.98, 1975.53, 2349.32];
-                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
-                    let onset = 0.04 + idx as f32 * 0.058;
-                    if t >= onset {
-                        let dt = t - onset;
-                        let attack = smooth_attack(dt, 0.010);
-                        let decay = (-dt * 2.15).exp();
-                        let fund_l = (dt * freq * 0.9985 * tau).sin();
-                        let fund_r = (dt * freq * 1.0015 * tau).sin();
-                        let bell = (dt * freq * 2.41 * tau).sin() * (-dt * 5.8).exp() * 0.20;
-                        let amp = attack * decay * 0.135;
-                        left += (fund_l + bell) * amp;
-                        right += (fund_r - bell) * amp;
-                    }
-                }
-            }
-            "epic" => {
-                // Epic Games EOS Portal: modern crisp ascending triad + warm sub-octave resonance (C4, G4, D5, E5, G5, B5)
-                let notes: [f32; 6] = [261.63, 392.00, 587.33, 659.25, 783.99, 987.77];
-                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
-                    let onset = idx as f32 * 0.062;
-                    if t >= onset {
-                        let dt = t - onset;
-                        let attack = smooth_attack(dt, 0.012);
-                        let decay = (-dt * 1.95).exp();
-                        let fund_l = (dt * freq * 0.9985 * tau).sin();
-                        let fund_r = (dt * freq * 1.0015 * tau).sin();
-                        let over2 = (dt * freq * 2.0 * tau).sin() * (-dt * 3.5).exp() * 0.30;
-                        let amp = attack * decay * 0.145;
-                        left += (fund_l + over2) * amp;
-                        right += (fund_r + over2) * amp;
-                    }
-                }
-            }
-            "steam" => {
-                // Modern Steam deck / client chime: warm two-tone wooden mallet bell (F4 -> C5)
-                let notes: [f32; 6] = [349.23, 523.25, 698.46, 880.00, 1046.50, 1396.91];
-                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
-                    let onset = if idx == 0 {
-                        0.0
-                    } else if idx == 1 {
-                        0.11
-                    } else {
-                        0.22 + (idx - 2) as f32 * 0.072
-                    };
-                    if t >= onset {
-                        let dt = t - onset;
-                        let attack = smooth_attack(dt, 0.008);
-                        let decay = (-dt * (2.4 - (tier.min(4) as f32) * 0.16)).exp();
-                        let fund_l = (dt * freq * 0.999 * tau).sin();
-                        let fund_r = (dt * freq * 1.001 * tau).sin();
-                        let mallet = (dt * freq * 2.76 * tau).sin() * (-dt * 6.8).exp() * 0.22;
-                        let amp = attack * decay * 0.155;
-                        left += (fund_l + mallet) * amp;
-                        right += (fund_r - mallet) * amp;
-                    }
-                }
-            }
-            "retro" => {
-                // Retro 8-Bit Arcade: authentic stepped square-wave victory arpeggio
-                let notes: [f32; 6] = [659.25, 830.61, 987.77, 1318.51, 1661.22, 1975.53];
-                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
-                    let onset = idx as f32 * 0.052;
-                    if t >= onset && t < onset + 0.55 {
-                        let dt = t - onset;
-                        let attack = smooth_attack(dt, 0.004);
-                        let decay = (-dt * 3.8).exp();
-                        // 50% square wave synthesized additively (odd harmonics)
-                        let sq = (dt * freq * tau).sin().signum() * 0.7
-                            + (dt * freq * 3.0 * tau).sin().signum() * 0.2;
-                        let amp = attack * decay * 0.115;
-                        left += sq * amp * 0.92;
-                        right += sq * amp * 1.08;
-                    }
-                }
-            }
-            "minimal" => {
-                // Minimalist Stealth: discrete, pure high-frequency acoustic micro-ping
-                let freq = 1046.50; // High C6
-                let attack = smooth_attack(t, 0.005);
-                let decay = (-t * 3.2).exp();
-                let fund = (t * freq * tau).sin();
-                let soft_over = (t * freq * 2.0 * tau).sin() * (-t * 7.0).exp() * 0.15;
-                let amp = attack * decay * 0.16;
-                left += (fund + soft_over) * amp;
-                right += (fund + soft_over) * amp;
-            }
-            "fantasy" => {
-                // Fantasy RPG Mühür: regal brass fifths & resonant antique cathedral bell chime
-                let brass_env = smooth_attack(t, 0.06) * (-t * 1.6).exp() * 0.13;
-                left += ((t * 146.83 * tau).sin() + 0.65 * (t * 220.00 * tau).sin()) * brass_env;
-                right += ((t * 147.20 * tau).sin() + 0.65 * (t * 219.60 * tau).sin()) * brass_env;
-
-                let notes: [f32; 6] = [293.66, 440.00, 587.33, 739.99, 880.00, 1174.66];
-                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
-                    let onset = 0.06 + idx as f32 * 0.078;
-                    if t >= onset {
-                        let dt = t - onset;
-                        let attack = smooth_attack(dt, 0.016);
-                        let decay = (-dt * (1.75 - (tier.min(4) as f32) * 0.12)).exp();
-                        let bell_l = (dt * freq * 0.9985 * tau).sin();
-                        let bell_r = (dt * freq * 1.0015 * tau).sin();
-                        let over = (dt * freq * 2.0 * tau).sin() * (-dt * 3.2).exp() * 0.32;
-                        let shimmer = (dt * freq * 3.8 * tau).sin() * (-dt * 5.4).exp() * 0.14;
-                        let amp = attack * decay * 0.14;
-                        left += (bell_l + over + shimmer) * amp;
-                        right += (bell_r + over - shimmer) * amp;
-                    }
-                }
-            }
-            _ => {
-                // Prism Unfurl (default): warm D-Maj9 crystal pad + chime arpeggio
-                let pad_env = smooth_attack(t, 0.045) * (-t * 1.45).exp() * 0.09;
-                left += ((t * 146.83 * tau).sin() + 0.6 * (t * 220.00 * tau).sin()) * pad_env;
-                right += ((t * 147.10 * tau).sin() + 0.6 * (t * 219.75 * tau).sin()) * pad_env;
-
-                let notes: [f32; 6] = [587.33, 739.99, 880.00, 1108.73, 1318.51, 1760.00];
-                for (idx, &freq) in notes.iter().take(note_count).enumerate() {
-                    let onset = idx as f32 * 0.075;
-                    if t >= onset {
-                        let dt = t - onset;
-                        let attack = smooth_attack(dt, 0.014);
-                        let decay = (-dt * (2.05 - (tier.min(4) as f32) * 0.18)).exp();
-                        let fund_l = (dt * freq * 0.9985 * tau).sin();
-                        let fund_r = (dt * freq * 1.0015 * tau).sin();
-                        let over2 = (dt * freq * 2.0 * tau).sin() * (-dt * 3.8).exp() * 0.26;
-                        let over3 = (dt * freq * 3.0 * tau).sin() * (-dt * 6.2).exp() * 0.09;
-                        let amp = attack * decay * 0.145;
-                        left += (fund_l + over2 + over3) * amp;
-                        right += (fund_r + over2 - over3) * amp;
-                    }
-                }
-            }
-        }
-
-        // High-tier diamond/platinum warm choir shimmer tail (tiers 3 and 4)
-        if tier >= 3 && t >= 0.30 {
-            let dt = t - 0.30;
-            let shimmer_env = smooth_attack(dt, 0.09) * (-dt * 1.55).exp();
-            let vibrato = (dt * 6.5 * tau).sin() * 0.25 + 0.75;
-            let s1 = (dt * 1174.66 * tau).sin();
-            let s2 = (dt * 1479.98 * tau).sin();
-            let s3 = if tier >= 4 {
-                (dt * 1760.00 * tau).sin() * 0.7
-            } else {
-                0.0
-            };
-            let sparkle = (s1 + s2 + s3) * shimmer_env * 0.055 * vibrato;
-            left += sparkle;
-            right += sparkle * 0.94;
+            let dt = t - onset;
+            let env = smooth_attack(dt, 0.008) * (-dt * decay).exp();
+            let fund_l = (dt * freq * 0.9985 * tau).sin();
+            let fund_r = (dt * freq * 1.0015 * tau).sin();
+            let octave = (dt * freq * 2.0 * tau).sin() * (-dt * 5.2).exp() * 0.22;
+            let amp = env * 0.13;
+            left += (fund_l + octave) * amp;
+            right += (fund_r + octave) * amp;
         }
 
         // Gentle fade-out over the final 80ms so the buffer end is 100% silent
@@ -470,7 +221,7 @@ fn play_achievement_sound(
             }
         }
     }
-    let wav_bytes = synthesize_dopamine_chime_wav(&options.anim_style, tier);
+    let wav_bytes = synthesize_notification_chime_wav(tier);
     const DEFAULT_CHIME: &[u8] = include_bytes!("../../../assets/achievement-chime.wav");
     let bytes = if wav_bytes.is_empty() {
         DEFAULT_CHIME.to_vec()

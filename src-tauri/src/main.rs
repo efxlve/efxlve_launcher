@@ -441,19 +441,14 @@ pub struct EpicSettings {
     /// How long the in-game notification card stays visible.
     #[serde(default)]
     pub achievement_notifications_duration_ms: Option<u64>,
-    /// top-right, top-left, bottom-right, or bottom-left.
+    /// top-left, center-top, top-right, bottom-left, center-bottom or
+    /// bottom-right.
     #[serde(default)]
     pub achievement_notifications_position: Option<String>,
     pub achievement_notifications_size: Option<String>,
     /// "rarity" colours the card by trophy tier; "gold" keeps the classic card;
     /// "launcher" follows the active theme.
     pub achievement_notifications_card_theme: Option<String>,
-    /// "prism", "cyber", "shatter", "jackpot", "xbox", "playstation", or "epic".
-    #[serde(default)]
-    pub achievement_notifications_anim_style: Option<String>,
-    /// "auto", "collapse", "glide", "fold", "laser", "implode", or "zoom".
-    #[serde(default)]
-    pub achievement_notifications_exit_style: Option<String>,
     /// Store keys ("steam", "epic", "gog", "ubisoft", "ea", "xbox", "custom")
     /// whose achievement notifications are muted.
     #[serde(default)]
@@ -481,17 +476,11 @@ pub struct EpicSettings {
     /// When true, hides the achievement description text (spoiler/minimalist).
     #[serde(default)]
     pub achievement_notifications_hide_desc: Option<bool>,
-    /// Card layout style: "standard" or "compact".
-    #[serde(default)]
-    pub achievement_notifications_layout: Option<String>,
     /// Optional separate sound path for Rare (Tier 3) / Platinum (Tier 4) unlocks.
     #[serde(default)]
     pub achievement_notifications_rare_sound_path: Option<String>,
     #[serde(default)]
     pub achievement_notifications_rare_sound_name: Option<String>,
-    /// Glow intensity level: "none", "subtle", or "vibrant" (default).
-    #[serde(default)]
-    pub achievement_notifications_glow: Option<String>,
     /// When true, renders an animated set progress bar across the bottom of the card.
     #[serde(default)]
     pub achievement_notifications_show_progress: Option<bool>,

@@ -976,7 +976,7 @@
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: all 150ms ease;
+  transition: color 150ms ease, background 150ms ease, border-color 150ms ease;
 }
 
 .ach-tier-pill:hover {
@@ -988,7 +988,6 @@
   color: var(--text);
   background: var(--surface-1);
   border-color: var(--line-strong);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
 .ach-tier-dot {
@@ -998,1475 +997,228 @@
   flex-shrink: 0;
 }
 
+/* The preview screen is only a frame: the card has to read here exactly as it
+   reads over a game, so the plate stays flat and the corner anchors match. */
 .ach-stage-screen {
   position: relative;
   width: 100%;
-  min-height: 270px;
+  min-height: 216px;
   border-radius: var(--r-md);
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line);
   overflow: hidden;
-  background: radial-gradient(circle at 50% 35%, #161f2e 0%, #07090e 72%);
+  background: #050506;
   display: flex;
-  box-shadow: inset 0 2px 20px rgba(0, 0, 0, 0.82);
 }
 
-.ach-stage-backdrop {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
-  background-size: 22px 22px;
-  pointer-events: none;
-}
-
-.ach-stage-aura {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    circle at 50% 50%,
-    color-mix(in srgb, var(--ach-accent, #f59e0b) 22%, transparent) 0%,
-    transparent 65%
-  );
-  opacity: 0.85;
-  pointer-events: none;
-  animation: ach-aura-breathe 3.2s ease-in-out infinite alternate;
-}
-
-@keyframes ach-aura-breathe {
-  0% { opacity: 0.55; transform: scale(0.94); }
-  100% { opacity: 0.95; transform: scale(1.06); }
-}
-
-.ach-stage-screen.pos-top-left { justify-content: flex-start; align-items: flex-start; padding: 18px; }
-.ach-stage-screen.pos-center-top { justify-content: center; align-items: flex-start; padding: 18px; }
-.ach-stage-screen.pos-top-right { justify-content: flex-end; align-items: flex-start; padding: 18px; }
-.ach-stage-screen.pos-bottom-left { justify-content: flex-start; align-items: flex-end; padding: 18px; }
-.ach-stage-screen.pos-center-bottom { justify-content: center; align-items: flex-end; padding: 18px; }
-.ach-stage-screen.pos-bottom-right { justify-content: flex-end; align-items: flex-end; padding: 18px; }
+.ach-stage-screen.pos-top-left { justify-content: flex-start; align-items: flex-start; }
+.ach-stage-screen.pos-center-top { justify-content: center; align-items: flex-start; }
+.ach-stage-screen.pos-top-right { justify-content: flex-end; align-items: flex-start; }
+.ach-stage-screen.pos-bottom-left { justify-content: flex-start; align-items: flex-end; }
+.ach-stage-screen.pos-center-bottom { justify-content: center; align-items: flex-end; }
+.ach-stage-screen.pos-bottom-right { justify-content: flex-end; align-items: flex-end; }
 
 /* ==========================================================================
-   Dopamine Choreography Toast Capsule & Multi-Layer FX
+   The achievement card
    ========================================================================== */
 
 .ach-hud-toast {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 16px;
-  width: fit-content;
-  min-width: 360px;
-  max-width: min(520px, 95%);
-  padding: 14px 22px 16px 20px;
-  opacity: var(--ach-opacity, 1);
-  background:
-    radial-gradient(
-      circle at 14% 50%,
-      color-mix(in srgb, var(--ach-accent, #f59e0b) 24%, transparent) 0%,
-      transparent 58%
-    ),
-    var(--ach-bg, #0d0f14);
-  border: 1px solid color-mix(in srgb, var(--ach-accent, #f59e0b) 52%, var(--ach-border, #785018));
-  border-radius: 16px;
-  box-shadow:
-    0 18px 42px rgba(0, 0, 0, 0.86),
-    0 0 28px color-mix(in srgb, var(--ach-accent, #f59e0b) 28%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  overflow: hidden;
-  z-index: 2;
-  transform-origin: center center;
-}
-
-.ach-hud-toast.layout-compact {
-  padding: 10px 18px 11px 16px;
   gap: 12px;
-  min-width: 300px;
-  max-width: min(460px, 95%);
-}
-
-.ach-hud-toast.tier-3,
-.ach-hud-toast.tier-4 {
-  box-shadow:
-    0 20px 48px rgba(0, 0, 0, 0.9),
-    0 0 38px color-mix(in srgb, var(--ach-accent, #f59e0b) 45%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
-}
-
-/* Tier-graded outer glow: lower tiers are calmer */
-.ach-hud-toast.tier-0 {
-  box-shadow:
-    0 14px 32px rgba(0, 0, 0, 0.82),
-    0 0 14px color-mix(in srgb, var(--ach-accent, #cd7f32) 18%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-.ach-hud-toast.tier-1 {
-  box-shadow:
-    0 16px 36px rgba(0, 0, 0, 0.84),
-    0 0 20px color-mix(in srgb, var(--ach-accent, #94a3b8) 22%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-/* Base FX elements hidden by default */
-.ach-fx-scanlines,
-.ach-fx-tech-brackets {
-  display: none;
-}
-
-/* Scaled glow & bloom support via --ach-glow */
-.ach-hud-toast .ach-fx-godrays {
-  opacity: calc(0.55 * var(--ach-glow, 1));
-}
-.ach-hud-toast.tier-3 .ach-fx-godrays,
-.ach-hud-toast.tier-4 .ach-fx-godrays {
-  opacity: calc(0.92 * var(--ach-glow, 1));
-}
-.ach-hud-toast .ach-fx-border-beam {
-  opacity: var(--ach-glow, 1);
-}
-.ach-hud-toast .ach-fx-shockwave {
-  opacity: var(--ach-glow, 1);
-}
-
-/* Progress Track & Fill */
-.ach-hud-progress-track {
-  position: relative;
-  width: 100%;
-  height: 3.5px;
-  margin-top: 6px;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  overflow: hidden;
-}
-.ach-hud-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--ach-accent, #f59e0b), var(--ach-icon, #fbbf24));
-  border-radius: 999px;
-  box-shadow: 0 0 8px var(--ach-accent, #f59e0b);
-  transition: width 0.4s ease-out;
-}
-.ach-hud-toast.layout-compact .ach-hud-progress-track {
-  margin-top: 3px;
-  height: 2px;
-}
-
-/* ==========================================================================
-   Visual Card Design Archetypes
-   ========================================================================== */
-
-/* 1. Steam Deck / Modern Steam Card */
-.ach-hud-toast.style-steam {
-  border-radius: 6px !important;
-  background: linear-gradient(135deg, #1b2838 0%, #171d25 100%) !important;
-  border: 1px solid rgba(102, 192, 244, 0.45) !important;
-  box-shadow:
-    0 14px 34px rgba(0, 0, 0, 0.88),
-    0 0 20px rgba(102, 192, 244, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
-}
-.ach-hud-toast.style-steam .ach-hud-gold-bar {
-  display: block !important;
-  position: absolute !important;
-  left: 0 !important;
-  top: 0 !important;
-  bottom: 0 !important;
-  width: 4px !important;
-  height: 100% !important;
-  background: linear-gradient(180deg, #66c0f4 0%, #1999e3 100%) !important;
-  box-shadow: 0 0 10px rgba(102, 192, 244, 0.6) !important;
-  border-top-left-radius: 6px;
-  border-bottom-left-radius: 6px;
-  opacity: 0.95 !important;
-}
-.ach-hud-toast.style-steam .ach-hud-medallion {
-  border-radius: 6px !important;
-  background: #101822 !important;
-  border: 1.5px solid rgba(102, 192, 244, 0.5) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 0 8px rgba(102, 192, 244, 0.25) !important;
-  color: #66c0f4 !important;
-}
-.ach-hud-toast.style-steam .ach-medallion-ring {
-  border-radius: 4px !important;
-  border-color: rgba(102, 192, 244, 0.35) !important;
-}
-.ach-hud-toast.style-steam .ach-hud-tag {
-  color: #66c0f4 !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.08em !important;
-}
-.ach-hud-toast.style-steam .ach-hud-title {
-  color: #ffffff !important;
-  font-weight: 700 !important;
-}
-.ach-hud-toast.style-steam .ach-hud-desc {
-  color: #8f98a0 !important;
-}
-.ach-hud-toast.style-steam .ach-fx-border-beam rect {
-  rx: 5px;
-  ry: 5px;
-  stroke: #66c0f4 !important;
-}
-
-/* 2. Classic Xbox 360 Capsule */
-.ach-hud-toast.style-xbox {
-  border-radius: 999px !important;
-  padding: 13px 26px 14px 16px !important;
-  background:
-    radial-gradient(circle at 14% 50%, rgba(16, 124, 16, 0.38) 0%, transparent 62%),
-    #0c0f12 !important;
-  border: 1.5px solid rgba(16, 124, 16, 0.7) !important;
-  box-shadow:
-    0 16px 38px rgba(0, 0, 0, 0.92),
-    0 0 24px rgba(16, 124, 16, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
-}
-.ach-hud-toast.style-xbox .ach-hud-gold-bar {
-  display: none !important;
-}
-.ach-hud-toast.style-xbox .ach-hud-medallion {
-  border-radius: 50% !important;
-  background: radial-gradient(circle at 35% 35%, #52b043 0%, #107c10 70%, #063506 100%) !important;
-  border: 2px solid #52b043 !important;
-  box-shadow: 0 0 16px rgba(16, 124, 16, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.5) !important;
-  color: #ffffff !important;
-}
-.ach-hud-toast.style-xbox .ach-hud-trophy-ico {
-  color: #ffffff !important;
-}
-.ach-hud-toast.style-xbox .ach-hud-tag {
-  color: #52b043 !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.08em !important;
-}
-.ach-hud-toast.style-xbox .ach-hud-title {
-  color: #ffffff !important;
-  font-weight: 700 !important;
-}
-.ach-hud-toast.style-xbox .ach-hud-desc {
-  color: #a0aab4 !important;
-}
-.ach-hud-toast.style-xbox .ach-fx-border-beam rect {
-  rx: 999px;
-  ry: 999px;
-  stroke: #52b043 !important;
-}
-
-/* 3. PlayStation 5 Luxury Glass */
-.ach-hud-toast.style-playstation {
-  border-radius: 18px !important;
-  padding: 14px 22px 14px 18px !important;
-  backdrop-filter: blur(24px) saturate(180%) !important;
-  background: linear-gradient(135deg, rgba(28, 32, 44, 0.92) 0%, rgba(12, 14, 20, 0.96) 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  box-shadow:
-    0 20px 48px rgba(0, 0, 0, 0.78),
-    inset 0 1px 1px rgba(255, 255, 255, 0.32),
-    0 0 28px rgba(160, 195, 255, 0.16) !important;
-}
-.ach-hud-toast.style-playstation .ach-hud-gold-bar {
-  display: none !important;
-}
-.ach-hud-toast.style-playstation .ach-hud-medallion {
-  border-radius: 13px !important;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04)) !important;
-  border: 1px solid rgba(255, 255, 255, 0.24) !important;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
-  color: #ffffff !important;
-}
-.ach-hud-toast.style-playstation .ach-hud-tag {
-  letter-spacing: 0.12em !important;
-  font-weight: 600 !important;
-  font-size: 11px !important;
-  color: rgba(255, 255, 255, 0.85) !important;
-}
-.ach-hud-toast.style-playstation .ach-hud-title {
-  color: #ffffff !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.02em !important;
-}
-.ach-hud-toast.style-playstation .ach-hud-desc {
-  color: #cbd5e1 !important;
-}
-.ach-hud-toast.style-playstation .ach-fx-border-beam rect {
-  rx: 17px;
-  ry: 17px;
-  stroke: rgba(255, 255, 255, 0.6) !important;
-}
-
-/* 4. Retro 8-Bit Arcade */
-.ach-hud-toast.style-retro {
-  border-radius: 0 !important;
-  background: #0d0c16 !important;
-  border: 2px solid #facc15 !important;
-  outline: 2px solid #000000 !important;
-  box-shadow:
-    0 0 0 2px #facc15,
-    0 0 22px rgba(250, 204, 21, 0.45),
-    0 16px 36px rgba(0, 0, 0, 0.95) !important;
-}
-.ach-hud-toast.style-retro .ach-fx-scanlines {
-  display: block;
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.3) 0px,
-    rgba(0, 0, 0, 0.3) 2px,
-    transparent 2px,
-    transparent 4px
-  );
-  z-index: 5;
-  opacity: 0.28;
-}
-.ach-hud-toast.style-retro .ach-hud-gold-bar {
-  display: none !important;
-}
-.ach-hud-toast.style-retro .ach-hud-medallion {
-  border-radius: 0 !important;
-  border: 2px dashed #facc15 !important;
-  background: #1b162c !important;
-  box-shadow: 0 0 12px rgba(250, 204, 21, 0.6) !important;
-  color: #facc15 !important;
-}
-.ach-hud-toast.style-retro .ach-medallion-ring {
-  display: none !important;
-}
-.ach-hud-toast.style-retro .ach-hud-title {
-  font-family: monospace, "Courier New", sans-serif !important;
-  letter-spacing: 0.05em !important;
-  font-weight: 700 !important;
-  color: #ffffff !important;
-}
-.ach-hud-toast.style-retro .ach-hud-tag {
-  font-family: monospace, "Courier New", sans-serif !important;
-  color: #facc15 !important;
-  text-shadow: 0 0 6px #facc15;
-}
-.ach-hud-toast.style-retro .ach-hud-desc {
-  font-family: monospace, "Courier New", sans-serif !important;
-  color: #fef08a !important;
-  font-size: 12px !important;
-}
-.ach-hud-toast.style-retro .ach-fx-border-beam {
-  display: none !important;
-}
-
-/* 5. Cyberpunk / Tactical Sci-Fi HUD */
-.ach-hud-toast.style-cyber {
-  border-radius: 6px !important;
-  background: linear-gradient(135deg, rgba(8, 14, 26, 0.96) 0%, rgba(3, 7, 14, 0.98) 100%) !important;
-  border: 1.5px solid #00f0ff !important;
-  box-shadow:
-    0 0 24px rgba(0, 240, 255, 0.38),
-    inset 0 0 14px rgba(0, 240, 255, 0.12),
-    0 18px 42px rgba(0, 0, 0, 0.92) !important;
-}
-.ach-hud-toast.style-cyber .ach-fx-tech-brackets {
-  display: block;
-  position: absolute;
-  inset: 3px;
-  pointer-events: none;
-  border: 1px dashed rgba(0, 240, 255, 0.35);
-  border-radius: 4px;
-}
-.ach-hud-toast.style-cyber .ach-fx-scanlines {
-  display: block;
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    transparent 42%,
-    rgba(0, 240, 255, 0.18) 50%,
-    transparent 58%
-  );
-  background-size: 100% 200%;
-  animation: ach-cyber-scanner 2.4s linear infinite;
-  z-index: 5;
-  opacity: 0.3;
-}
-.ach-hud-toast.style-cyber .ach-hud-gold-bar {
-  display: none !important;
-}
-.ach-hud-toast.style-cyber .ach-hud-medallion {
-  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%) !important;
-  border-radius: 0 !important;
-  background: rgba(0, 240, 255, 0.2) !important;
-  border: none !important;
-  box-shadow: 0 0 14px rgba(0, 240, 255, 0.6) !important;
-  color: #00f0ff !important;
-}
-.ach-hud-toast.style-cyber .ach-medallion-ring {
-  display: none !important;
-}
-.ach-hud-toast.style-cyber .ach-hud-tag {
-  font-family: monospace, "Consolas", monospace !important;
-  color: #00f0ff !important;
-  letter-spacing: 0.14em !important;
-}
-.ach-hud-toast.style-cyber .ach-hud-title {
-  color: #ffffff !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.04em !important;
-}
-.ach-hud-toast.style-cyber .ach-hud-desc {
-  font-family: monospace, "Consolas", monospace !important;
-  color: #94a3b8 !important;
-  font-size: 12px !important;
-}
-.ach-hud-toast.style-cyber .ach-fx-border-beam {
-  display: none !important;
-}
-
-/* 6. Minimalist Stealth Monolith */
-.ach-hud-toast.style-minimal {
-  border-radius: 4px !important;
-  padding: 12px 18px !important;
-  background: #0d0f14 !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.88) !important;
-}
-.ach-hud-toast.style-minimal .ach-fx-godrays,
-.ach-hud-toast.style-minimal .ach-fx-particles,
-.ach-hud-toast.style-minimal .ach-fx-shockwave,
-.ach-hud-toast.style-minimal .ach-fx-border-beam,
-.ach-hud-toast.style-minimal .ach-hud-gold-bar {
-  display: none !important;
-}
-.ach-hud-toast.style-minimal .ach-hud-medallion {
-  border-radius: 4px !important;
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: none !important;
-  color: #ffffff !important;
-}
-.ach-hud-toast.style-minimal .ach-medallion-ring {
-  display: none !important;
-}
-.ach-hud-toast.style-minimal .ach-hud-tag {
-  font-size: 10px !important;
-  letter-spacing: 0.07em !important;
-  color: rgba(255, 255, 255, 0.6) !important;
-}
-.ach-hud-toast.style-minimal .ach-hud-title {
-  font-weight: 600 !important;
-  color: #ffffff !important;
-  font-size: 14.5px !important;
-}
-.ach-hud-toast.style-minimal .ach-hud-desc {
-  color: rgba(255, 255, 255, 0.52) !important;
-  font-size: 12px !important;
-}
-
-/* 7. Fantasy / RPG Mühür */
-.ach-hud-toast.style-fantasy {
-  border-radius: 8px !important;
-  padding: 14px 22px 15px 18px !important;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(95, 50, 15, 0.42) 0%, #140e0c 75%) !important;
-  border: 2px solid #c89b3c !important;
-  box-shadow:
-    0 0 28px rgba(200, 155, 60, 0.4),
-    inset 0 0 20px rgba(200, 155, 60, 0.16),
-    0 22px 48px rgba(0, 0, 0, 0.92) !important;
-}
-.ach-hud-toast.style-fantasy .ach-fx-tech-brackets {
-  display: block;
-  position: absolute;
-  inset: 3px;
-  pointer-events: none;
-  border: 1px solid rgba(200, 155, 60, 0.38);
-  border-radius: 6px;
-}
-.ach-hud-toast.style-fantasy .ach-hud-gold-bar {
-  display: none !important;
-}
-.ach-hud-toast.style-fantasy .ach-hud-medallion {
-  border-radius: 50% !important;
-  background: radial-gradient(circle at 35% 35%, #b91c1c 0%, #7f1d1d 70%, #450a0a 100%) !important;
-  border: 2px solid #eab308 !important;
-  box-shadow: 0 0 18px rgba(234, 179, 8, 0.55), inset 0 0 10px rgba(0, 0, 0, 0.6) !important;
-  color: #fef08a !important;
-}
-.ach-hud-toast.style-fantasy .ach-hud-trophy-ico {
-  color: #fef08a !important;
-}
-.ach-hud-toast.style-fantasy .ach-hud-tag {
-  color: #fef08a !important;
-  font-family: Georgia, serif !important;
-  letter-spacing: 0.1em !important;
-  font-style: italic !important;
-  font-size: 11.5px !important;
-}
-.ach-hud-toast.style-fantasy .ach-hud-title {
-  font-family: Georgia, serif !important;
-  color: #fffbeb !important;
-  font-size: 16.5px !important;
-  letter-spacing: 0.03em !important;
-  font-weight: 700 !important;
-}
-.ach-hud-toast.style-fantasy .ach-hud-desc {
-  font-family: Georgia, serif !important;
-  color: #fde68a !important;
-  opacity: 0.88 !important;
-  font-size: 12.5px !important;
-}
-.ach-hud-toast.style-fantasy .ach-fx-border-beam rect {
-  rx: 7px;
-  ry: 7px;
-  stroke: #c89b3c !important;
-}
-
-/* 8. Epic Games EOS Portal */
-.ach-hud-toast.style-epic {
-  border-radius: 10px !important;
-  background: linear-gradient(135deg, #18181c 0%, #101014 100%) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.28) !important;
-  box-shadow:
-    0 16px 38px rgba(0, 0, 0, 0.9),
-    0 0 20px rgba(255, 255, 255, 0.12) !important;
-}
-.ach-hud-toast.style-epic .ach-hud-gold-bar {
-  display: block !important;
-  position: absolute !important;
-  left: 0 !important;
-  top: 0 !important;
-  bottom: 0 !important;
-  width: 4px !important;
-  height: 100% !important;
-  background: linear-gradient(180deg, #ffffff 0%, #94a3b8 100%) !important;
-  border-top-left-radius: 10px;
-  border-bottom-left-radius: 10px;
-}
-.ach-hud-toast.style-epic .ach-hud-medallion {
-  border-radius: 8px !important;
-  background: #26262b !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.3) !important;
-  color: #ffffff !important;
-}
-.ach-hud-toast.style-epic .ach-hud-tag {
-  color: #e2e8f0 !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.08em !important;
-}
-.ach-hud-toast.style-epic .ach-hud-title {
-  color: #ffffff !important;
-  font-weight: 700 !important;
-}
-.ach-hud-toast.style-epic .ach-hud-desc {
-  color: #94a3b8 !important;
-}
-.ach-hud-toast.style-epic .ach-fx-border-beam rect {
-  rx: 9px;
-  ry: 9px;
-  stroke: rgba(255, 255, 255, 0.6) !important;
-}
-
-/* 9. Crystal Shatter */
-.ach-hud-toast.style-shatter {
-  border-radius: 12px !important;
-  background: linear-gradient(135deg, rgba(14, 26, 42, 0.96) 0%, rgba(6, 12, 22, 0.98) 100%) !important;
-  border: 1.5px solid rgba(147, 197, 253, 0.6) !important;
-  box-shadow:
-    0 0 26px rgba(59, 130, 246, 0.38),
-    0 16px 38px rgba(0, 0, 0, 0.9) !important;
-}
-.ach-hud-toast.style-shatter .ach-hud-gold-bar {
-  display: block !important;
-  position: absolute !important;
-  left: 0 !important;
-  top: 0 !important;
-  bottom: 0 !important;
-  width: 4px !important;
-  height: 100% !important;
-  background: linear-gradient(180deg, #93c5fd 0%, #3b82f6 100%) !important;
-  box-shadow: 0 0 10px #38bdf8 !important;
-  border-top-left-radius: 12px;
-  border-bottom-left-radius: 12px;
-}
-.ach-hud-toast.style-shatter .ach-hud-medallion {
-  border-radius: 12px !important;
-  background: radial-gradient(circle at 30% 30%, #38bdf8 0%, #1e40af 80%) !important;
-  border: 1.5px solid #93c5fd !important;
-  box-shadow: 0 0 16px rgba(56, 189, 248, 0.7) !important;
-  color: #ffffff !important;
-}
-.ach-hud-toast.style-shatter .ach-hud-tag {
-  color: #93c5fd !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.08em !important;
-}
-.ach-hud-toast.style-shatter .ach-hud-title {
-  color: #ffffff !important;
-  font-weight: 700 !important;
-  text-shadow: 0 0 10px rgba(147, 197, 253, 0.5) !important;
-}
-.ach-hud-toast.style-shatter .ach-hud-desc {
-  color: #bfdbfe !important;
-}
-.ach-hud-toast.style-shatter .ach-fx-border-beam rect {
-  rx: 11px;
-  ry: 11px;
-  stroke: #38bdf8 !important;
-}
-
-/* 10. Arcade Jackpot */
-.ach-hud-toast.style-jackpot {
-  border-radius: 16px !important;
-  background: linear-gradient(135deg, #1c1504 0%, #0f0c02 100%) !important;
-  border: 2px solid #facc15 !important;
-  box-shadow:
-    0 0 32px rgba(250, 204, 21, 0.55),
-    0 20px 48px rgba(0, 0, 0, 0.92) !important;
-}
-.ach-hud-toast.style-jackpot .ach-hud-gold-bar {
-  display: block !important;
-  position: absolute !important;
-  left: 0 !important;
-  top: 0 !important;
-  bottom: 0 !important;
-  width: 4px !important;
-  height: 100% !important;
-  background: linear-gradient(180deg, #fef08a 0%, #eab308 50%, #f59e0b 100%) !important;
-  box-shadow: 0 0 14px #facc15 !important;
-  border-top-left-radius: 16px;
-  border-bottom-left-radius: 16px;
-}
-.ach-hud-toast.style-jackpot .ach-hud-medallion {
-  border-radius: 50% !important;
-  background: radial-gradient(circle at 35% 35%, #fef08a 0%, #eab308 60%, #854d0e 100%) !important;
-  border: 2px solid #ffffff !important;
-  box-shadow: 0 0 22px rgba(250, 204, 21, 0.9), inset 0 0 10px rgba(255, 255, 255, 0.8) !important;
-  color: #713f12 !important;
-}
-.ach-hud-toast.style-jackpot .ach-hud-trophy-ico {
-  color: #713f12 !important;
-}
-.ach-hud-toast.style-jackpot .ach-hud-tag {
-  color: #facc15 !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.1em !important;
-  text-shadow: 0 0 8px rgba(250, 204, 21, 0.6) !important;
-}
-.ach-hud-toast.style-jackpot .ach-hud-title {
-  color: #ffffff !important;
-  font-weight: 800 !important;
-  font-size: 19.5px !important;
-  text-shadow: 0 0 12px rgba(250, 204, 21, 0.5) !important;
-}
-.ach-hud-toast.style-jackpot .ach-hud-desc {
-  color: #fef9c3 !important;
-}
-.ach-hud-toast.style-jackpot .ach-fx-border-beam rect {
-  rx: 15px;
-  ry: 15px;
-  stroke: #facc15 !important;
-}
-
-/* 11. Prism (Default launcher dopamine) */
-.ach-hud-toast.style-prism {
-  border-radius: 16px !important;
-}
-.ach-hud-toast.style-prism .ach-fx-border-beam rect {
-  rx: 15px;
-  ry: 15px;
-}
-
-/* Border beam: instead of an annoying looping dash circling around the card,
-   the entire border silhouette illuminates cleanly with an elegant, unified accent
-   glow pulse on entrance (synchronized with the medallion impact), then peacefully dissolves. */
-.ach-fx-border-beam {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  pointer-events: none;
-  z-index: 4;
-}
-
-.ach-fx-border-beam rect {
-  x: 1px;
-  y: 1px;
-  width: calc(100% - 2px);
-  height: calc(100% - 2px);
-  rx: 15px;
-  ry: 15px;
-  fill: none;
-  stroke: color-mix(in srgb, #ffffff 65%, var(--ach-accent, #f59e0b));
-  stroke-width: 1.5;
-  filter: drop-shadow(0 0 6px var(--ach-accent, #f59e0b));
-  opacity: 0;
-}
-
-.ach-hud-toast.style-epic .ach-fx-border-beam rect {
-  rx: 9px;
-  ry: 9px;
-}
-
-.ach-hud-toast.seq-0 .ach-fx-border-beam rect {
-  animation: ach-beam-pulse-a 620ms cubic-bezier(0.16, 1, 0.3, 1) 100ms both;
-}
-.ach-hud-toast.seq-1 .ach-fx-border-beam rect {
-  animation: ach-beam-pulse-b 620ms cubic-bezier(0.16, 1, 0.3, 1) 100ms both;
-}
-
-@keyframes ach-beam-pulse-a {
-  0% {
-    opacity: 0;
-  }
-  25% {
-    opacity: 0.85;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-@keyframes ach-beam-pulse-b {
-  0% {
-    opacity: 0;
-  }
-  25% {
-    opacity: 0.85;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-/* Volumetric God-Rays behind Medallion */
-.ach-fx-godrays {
-  position: absolute;
-  left: -45px;
-  top: 50%;
-  width: 190px;
-  height: 190px;
-  margin-top: -95px;
-  background: repeating-conic-gradient(
-    from 0deg,
-    color-mix(in srgb, var(--ach-accent, #f59e0b) 26%, transparent) 0deg 11deg,
-    transparent 11deg 30deg
-  );
-  border-radius: 50%;
-  mask-image: radial-gradient(circle, rgba(0, 0, 0, 0.95) 0%, transparent 70%);
-  -webkit-mask-image: radial-gradient(circle, rgba(0, 0, 0, 0.95) 0%, transparent 70%);
-  pointer-events: none;
-  opacity: 0.55;
-  animation: ach-godrays-rotate 9s linear infinite;
-}
-
-.ach-hud-toast.tier-0 .ach-fx-godrays { opacity: 0.28; }
-.ach-hud-toast.tier-1 .ach-fx-godrays { opacity: 0.38; }
-.ach-hud-toast.tier-3 .ach-fx-godrays,
-.ach-hud-toast.tier-4 .ach-fx-godrays,
-.ach-hud-toast.style-jackpot .ach-fx-godrays {
-  opacity: 0.92;
-}
-
-@keyframes ach-godrays-rotate {
-  0% { transform: rotate(0deg) scale(0.96); }
-  50% { transform: rotate(180deg) scale(1.06); }
-  100% { transform: rotate(360deg) scale(0.96); }
-}
-
-/* Scalable Toast Sizes (3 Tiers: Küçük / Normal / Büyük) */
-.ach-hud-toast.size-small {
   width: fit-content;
-  min-width: 300px;
+  min-width: 320px;
   max-width: min(440px, 92%);
-  padding: 12px 18px 13px 16px;
-  gap: 14px;
+  padding: 12px 16px 12px 12px;
+  opacity: var(--ach-opacity, 1);
+  background: var(--ach-bg, #101216);
+  border: 1px solid color-mix(in srgb, var(--ach-accent, #f59e0b) 22%, rgba(255, 255, 255, 0.08));
   border-radius: 14px;
-}
-.ach-hud-toast.size-small .ach-hud-gold-bar {
-  width: 5px;
-}
-.ach-hud-toast.size-small .ach-hud-medallion {
-  width: 44px;
-  height: 44px;
-  border-width: 2px;
-}
-.ach-hud-toast.size-small .ach-hud-trophy-ico svg {
-  width: 20px;
-  height: 20px;
-}
-.ach-hud-toast.size-small .ach-hud-tag {
-  font-size: 10.5px;
-}
-.ach-hud-toast.size-small .ach-hud-title {
-  font-size: 15.5px;
-}
-.ach-hud-toast.size-small .ach-hud-desc {
-  font-size: 12px;
+  box-shadow:
+    0 18px 44px -16px rgba(0, 0, 0, 0.8),
+    0 2px 10px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  transform-origin: center;
 }
 
-.ach-hud-toast.size-normal {
-  width: fit-content;
-  min-width: 340px;
-  max-width: min(520px, 95%);
-  padding: 14px 22px 16px 20px;
-  gap: 16px;
-  border-radius: 16px;
-}
-.ach-hud-toast.size-normal .ach-hud-gold-bar {
-  width: 6px;
-}
-.ach-hud-toast.size-normal .ach-hud-medallion {
-  width: 54px;
-  height: 54px;
-  border-width: 2.5px;
-}
-.ach-hud-toast.size-normal .ach-hud-trophy-ico svg {
-  width: 24px;
-  height: 24px;
-}
-.ach-hud-toast.size-normal .ach-hud-tag {
-  font-size: 11.5px;
-  letter-spacing: 0.09em;
-}
-.ach-hud-toast.size-normal .ach-hud-title {
-  font-size: 18px;
-}
-.ach-hud-toast.size-normal .ach-hud-desc {
-  font-size: 13px;
-}
-
-.ach-hud-toast.size-large {
-  width: fit-content;
-  min-width: 400px;
-  max-width: min(600px, 97%);
-  padding: 18px 26px 20px 22px;
-  gap: 20px;
-  border-radius: 18px;
-}
-.ach-hud-toast.size-large .ach-hud-gold-bar {
-  width: 8px;
-}
-.ach-hud-toast.size-large .ach-hud-medallion {
-  width: 64px;
-  height: 64px;
-  border-width: 3px;
-}
-.ach-hud-toast.size-large .ach-hud-trophy-ico svg {
-  width: 30px;
-  height: 30px;
-}
-.ach-hud-toast.size-large .ach-hud-tag {
-  font-size: 13px;
-  letter-spacing: 0.11em;
-}
-.ach-hud-toast.size-large .ach-hud-title {
-  font-size: 21.5px;
-}
-.ach-hud-toast.size-large .ach-hud-desc {
-  font-size: 15px;
-}
-
-/* Compact Capsule Layout */
-.ach-hud-toast.layout-compact {
-  padding: 10px 18px 10px 16px !important;
-  gap: 12px !important;
-  width: auto !important;
-  max-width: min(480px, 92%) !important;
-  border-radius: 999px !important;
-}
-.ach-hud-toast.layout-compact .ach-hud-medallion {
-  width: 38px !important;
-  height: 38px !important;
-  border-width: 2px !important;
-}
-.ach-hud-toast.layout-compact .ach-hud-trophy-ico svg {
-  width: 18px !important;
-  height: 18px !important;
-}
-.ach-hud-toast.layout-compact .ach-hud-title {
-  font-size: 14.5px !important;
-  line-height: 1.25 !important;
-}
-.ach-hud-toast.layout-compact .ach-hud-desc {
-  font-size: 11.5px !important;
-  line-height: 1.2 !important;
-}
-.ach-hud-toast.layout-compact .ach-hud-gold-bar {
-  display: none !important;
-}
-
-.ach-hud-gold-bar {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 6px;
-  background: linear-gradient(
-    180deg,
-    #ffffff 0%,
-    var(--ach-icon, #fbbf24) 22%,
-    var(--ach-accent, #f59e0b) 75%,
-    var(--ach-border, #785018) 100%
-  );
-  box-shadow: 0 0 14px var(--ach-accent, #f59e0b);
-}
-
-.ach-hud-medallion-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-/* Dual Shockwave Rings on Entry */
-.ach-fx-shockwave {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 52px;
-  height: 52px;
-  margin-left: -26px;
-  margin-top: -26px;
-  border-radius: 50%;
-  border: 2px solid var(--ach-icon, #fbbf24);
-  box-shadow: 0 0 12px var(--ach-accent, #f59e0b);
-  pointer-events: none;
-  opacity: 0;
-}
-
-.ach-hud-toast.seq-0 .ach-fx-shockwave.ring-1 {
-  animation: ach-shockwave-a 850ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
-}
-.ach-hud-toast.seq-1 .ach-fx-shockwave.ring-1 {
-  animation: ach-shockwave-b 850ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
-}
-.ach-hud-toast.seq-0 .ach-fx-shockwave.ring-2 {
-  border-color: #ffffff;
-  animation: ach-shockwave-a 980ms cubic-bezier(0.16, 1, 0.3, 1) 210ms both;
-}
-.ach-hud-toast.seq-1 .ach-fx-shockwave.ring-2 {
-  border-color: #ffffff;
-  animation: ach-shockwave-b 980ms cubic-bezier(0.16, 1, 0.3, 1) 210ms both;
-}
-
-@keyframes ach-shockwave-a {
-  0% { transform: scale(0.35); opacity: 0.95; }
-  100% { transform: scale(2.45); opacity: 0; }
-}
-@keyframes ach-shockwave-b {
-  0% { transform: scale(0.35); opacity: 0.95; }
-  100% { transform: scale(2.45); opacity: 0; }
-}
-
-/* 14 Bursting Diamond & Spark Particles */
-.ach-fx-particles {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-  z-index: 3;
-}
-
-.ach-fx-particle {
-  position: absolute;
-  width: var(--sz, 6px);
-  height: var(--sz, 6px);
-  margin-left: calc(var(--sz, 6px) * -0.5);
-  margin-top: calc(var(--sz, 6px) * -0.5);
-  background: var(--ach-icon, #fbbf24);
-  box-shadow: 0 0 8px var(--ach-accent, #f59e0b), 0 0 3px #ffffff;
-  opacity: 0;
-}
-
-.ach-fx-particle.diamond {
-  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-  background: #ffffff;
-}
-
-.ach-fx-particle.spark {
-  border-radius: 50%;
-}
-
-.ach-hud-toast.seq-0 .ach-fx-particle {
-  animation: ach-particle-burst-a 920ms cubic-bezier(0.15, 0.9, 0.25, 1) var(--delay, 40ms) both;
-}
-.ach-hud-toast.seq-1 .ach-fx-particle {
-  animation: ach-particle-burst-b 920ms cubic-bezier(0.15, 0.9, 0.25, 1) var(--delay, 40ms) both;
-}
-
-@keyframes ach-particle-burst-a {
-  0% {
-    transform: translate(0, 0) scale(0.3) rotate(0deg);
-    opacity: 0;
-  }
-  18% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--dx, 40px), var(--dy, -40px)) scale(0) rotate(var(--rot, 120deg));
-    opacity: 0;
-  }
-}
-@keyframes ach-particle-burst-b {
-  0% {
-    transform: translate(0, 0) scale(0.3) rotate(0deg);
-    opacity: 0;
-  }
-  18% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--dx, 40px), var(--dy, -40px)) scale(0) rotate(var(--rot, 120deg));
-    opacity: 0;
-  }
-}
-
-/* One-shot diagonal light sweep across the card surface */
-.ach-hud-toast::after {
-  content: '';
-  position: absolute;
-  inset: -20% 0;
-  background: linear-gradient(
-    105deg,
-    transparent 40%,
-    rgba(255, 255, 255, 0.07) 45%,
-    rgba(255, 255, 255, 0.13) 50%,
-    rgba(255, 255, 255, 0.07) 55%,
-    transparent 60%
-  );
-  transform: translateX(-150%);
-  pointer-events: none;
-  z-index: 5;
-}
-
-.ach-hud-toast.tier-3::after,
-.ach-hud-toast.tier-4::after {
-  background: linear-gradient(
-    105deg,
-    transparent 36%,
-    rgba(255, 255, 255, 0.12) 42%,
-    rgba(255, 255, 255, 0.24) 50%,
-    rgba(255, 255, 255, 0.12) 58%,
-    transparent 64%
-  );
-}
-
-.ach-hud-toast.seq-0::after {
-  animation: ach-sweep-a 720ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both;
-}
-.ach-hud-toast.seq-1::after {
-  animation: ach-sweep-b 720ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both;
-}
-
-@keyframes ach-sweep-a {
-  0% { transform: translateX(-150%); }
-  100% { transform: translateX(150%); }
-}
-@keyframes ach-sweep-b {
-  0% { transform: translateX(-150%); }
-  100% { transform: translateX(150%); }
+/* System hints borrow the same card; only the tile and the hairline lean on
+   the accent, so a control tip never reads as an unlock. */
+.ach-hud-toast.is-hint {
+  border-color: color-mix(in srgb, var(--ach-accent, #38bdf8) 34%, rgba(255, 255, 255, 0.08));
 }
 
 .ach-hud-medallion {
   position: relative;
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at 32% 30%,
-    color-mix(in srgb, var(--ach-accent, #f59e0b) 35%, #181c26) 0%,
-    #090b10 100%
-  );
-  border: 2.5px solid var(--ach-accent, #f59e0b);
-  display: flex;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ach-accent, #f59e0b) 10%, rgba(255, 255, 255, 0.03));
+  border: 1px solid color-mix(in srgb, var(--ach-accent, #f59e0b) 20%, rgba(255, 255, 255, 0.06));
+  color: var(--ach-icon, #fbbf24);
+  overflow: hidden;
+}
+
+.ach-hud-toast.is-hint .ach-hud-medallion {
+  background: color-mix(in srgb, var(--ach-accent, #38bdf8) 16%, rgba(255, 255, 255, 0.03));
+}
+
+.ach-hud-ico {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  box-shadow:
-    0 0 18px color-mix(in srgb, var(--ach-accent, #f59e0b) 48%, transparent),
-    inset 0 2px 5px rgba(255, 255, 255, 0.22);
-  z-index: 2;
-}
-
-.ach-medallion-ring {
-  position: absolute;
-  inset: -5px;
-  border-radius: 50%;
-  border: 1.5px dashed color-mix(in srgb, var(--ach-icon, #fbbf24) 65%, transparent);
-  pointer-events: none;
-  animation: ach-ring-orbit 6s linear infinite;
-}
-
-@keyframes ach-ring-orbit {
-  to { transform: rotate(360deg); }
-}
-
-.ach-hud-trophy-ico {
-  color: var(--ach-icon, #fbbf24);
-  display: inline-flex;
-  filter: drop-shadow(0 0 8px var(--ach-accent, #f59e0b));
-  animation: ach-trophy-pulse 2.2s ease-in-out infinite alternate;
 }
 
 .ach-hud-ach-icon {
   position: absolute;
-  inset: 3px;
-  width: calc(100% - 6px);
-  height: calc(100% - 6px);
-  border-radius: 50%;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
 }
 
-.ach-hud-toast.style-steam .ach-hud-ach-icon {
-  border-radius: 4px !important;
-}
-.ach-hud-toast.style-retro .ach-hud-ach-icon {
-  border-radius: 0 !important;
-  image-rendering: pixelated;
-}
-.ach-hud-toast.style-cyber .ach-hud-ach-icon {
-  border-radius: 2px !important;
-}
-.ach-hud-toast.style-minimal .ach-hud-ach-icon {
-  border-radius: 2px !important;
-}
-.ach-hud-toast.style-playstation .ach-hud-ach-icon {
-  border-radius: 10px !important;
-}
-
-@keyframes ach-trophy-pulse {
-  0% { transform: scale(0.95); filter: drop-shadow(0 0 5px var(--ach-accent, #f59e0b)); }
-  100% { transform: scale(1.08); filter: drop-shadow(0 0 12px #ffffff); }
-}
-
-/* Reduced motion: disable looping FX, keep the card readable */
-@media (prefers-reduced-motion: reduce) {
-  .ach-hud-toast::after,
-  .ach-fx-particle,
-  .ach-fx-shockwave {
-    animation: none !important;
-  }
-  .ach-fx-godrays {
-    animation: none !important;
-    transform: none !important;
-  }
-  .ach-medallion-ring {
-    animation: none !important;
-  }
-  .ach-hud-trophy-ico {
-    animation: none !important;
-  }
-  .ach-fx-border-beam rect {
-    animation: none !important;
-    opacity: 0 !important;
-  }
-}
-
 .ach-hud-text-col {
-  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
   flex: 1;
-  z-index: 2;
-  justify-content: center;
 }
 
 .ach-hud-tag {
-  font-size: 11.5px;
-  font-weight: 800;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  font-size: 10.5px;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  line-height: 1.5;
+}
+
+.ach-hud-tag-tier {
+  flex: 0 0 auto;
   color: var(--ach-accent, #f59e0b);
-  text-shadow: 0 0 10px color-mix(in srgb, var(--ach-accent, #f59e0b) 45%, transparent);
-  white-space: nowrap;
+}
+
+.ach-hud-tag-sep {
+  flex: 0 0 auto;
+  color: rgba(255, 255, 255, 0.22);
+}
+
+.ach-hud-tag-meta {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.2;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--ach-body, #b0b8c4) 62%, transparent);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
 }
 
 .ach-hud-title {
-  font-size: 19px;
-  font-weight: 800;
+  font-size: 14.5px;
+  font-weight: 600;
   color: var(--ach-title, #ffffff);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;
+  line-height: 1.35;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.25;
 }
 
 .ach-hud-desc {
-  font-size: 13px;
-  color: var(--ach-body, #b0b8c4);
+  font-size: 12px;
+  color: color-mix(in srgb, var(--ach-body, #b0b8c4) 82%, transparent);
+  line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.2;
-}
-
-.ach-hud-progress-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 5px;
 }
 
 .ach-hud-progress-track {
-  position: relative;
-  flex: 1;
-  height: 5px;
+  width: 100%;
+  height: 2px;
+  margin-top: 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.1);
   overflow: hidden;
 }
 
 .ach-hud-progress-fill {
-  position: relative;
   height: 100%;
-  width: var(--ach-progress, 74%);
   border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    var(--ach-border, #785018) 0%,
-    var(--ach-accent, #f59e0b) 70%,
-    #ffffff 100%
-  );
-  box-shadow: 0 0 10px var(--ach-accent, #f59e0b);
+  background: var(--ach-accent, #f59e0b);
+  transition: width 0.4s ease-out;
 }
 
-.ach-hud-toast.seq-0 .ach-hud-progress-fill {
-  animation: ach-progress-sweep-a 780ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both;
+/* Sizes: the same three steps the Settings offers. */
+.ach-hud-toast.size-small {
+  min-width: 280px;
+  max-width: min(380px, 92%);
+  padding: 10px 14px 10px 10px;
+  gap: 10px;
+  border-radius: 12px;
 }
-.ach-hud-toast.seq-1 .ach-hud-progress-fill {
-  animation: ach-progress-sweep-b 780ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both;
-}
-
-@keyframes ach-progress-sweep-a {
-  0% { width: 0%; }
-  100% { width: var(--ach-progress, 74%); }
-}
-@keyframes ach-progress-sweep-b {
-  0% { width: 0%; }
-  100% { width: var(--ach-progress, 74%); }
-}
-
-.ach-hud-progress-tip {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  margin-top: -4px;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 0 8px #ffffff, 0 0 14px var(--ach-accent, #f59e0b);
-}
-
-.ach-hud-progress-meta {
-  font-size: 10.5px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--ach-icon, #fbbf24);
-  flex-shrink: 0;
-}
-
-/* ==========================================================================
-   Overlay / System Hint Notification (Distinct UI from Achievement Unlocks)
-   ========================================================================== */
-
-.ach-hud-toast.ach-hud-hint {
-  width: min(440px, 92%);
-  padding: 12px 18px 13px 14px;
-  gap: 13px;
-  background:
-    radial-gradient(
-      circle at 14% 50%,
-      color-mix(in srgb, var(--ach-accent, #38bdf8) 18%, transparent) 0%,
-      transparent 58%
-    ),
-    var(--ach-bg, #0d0f14);
-  border: 1px solid color-mix(in srgb, var(--ach-accent, #38bdf8) 45%, var(--ach-border, #334155));
-  border-radius: 14px;
-  box-shadow:
-    0 14px 36px rgba(0, 0, 0, 0.8),
-    0 0 18px color-mix(in srgb, var(--ach-accent, #38bdf8) 22%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-
-/* Suppress heavy achievement fanfare FX for system hints */
-.ach-hud-toast.ach-hud-hint .ach-hud-gold-bar,
-.ach-hud-toast.ach-hud-hint .ach-fx-godrays,
-.ach-hud-toast.ach-hud-hint .ach-fx-border-beam,
-.ach-hud-toast.ach-hud-hint::after {
-  display: none !important;
-}
-
-.ach-hint-badge {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 11px;
-  background: color-mix(in srgb, var(--ach-accent, #38bdf8) 16%, #12151f);
-  border: 1.5px solid color-mix(in srgb, var(--ach-accent, #38bdf8) 55%, transparent);
-  box-shadow:
-    0 0 14px color-mix(in srgb, var(--ach-accent, #38bdf8) 28%, transparent),
-    inset 0 1px 2px rgba(255, 255, 255, 0.18);
-  flex-shrink: 0;
-  color: var(--ach-icon, #38bdf8);
-}
-
-.ach-hint-ico {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ach-hint-app-icon {
-  width: calc(100% - 6px);
-  height: calc(100% - 6px);
-  border-radius: 8px;
-  object-fit: cover;
-}
-
-.ach-hint-text-col {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  flex: 1;
-  justify-content: center;
-}
-
-.ach-hint-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ach-title, #ffffff);
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.25;
-}
-
-.ach-hint-desc {
-  font-size: 12px;
-  color: var(--ach-body, #b0b8c4);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.2;
-}
-
-/* Sizing variations */
-.ach-hud-toast.ach-hud-hint.size-small {
-  width: min(380px, 90%);
-  padding: 10px 14px 11px 12px;
-  gap: 11px;
-}
-.ach-hud-toast.ach-hud-hint.size-small .ach-hint-badge {
+.ach-hud-toast.size-small .ach-hud-medallion {
   width: 36px;
   height: 36px;
   border-radius: 9px;
 }
-.ach-hud-toast.ach-hud-hint.size-small .ach-hint-badge svg {
+.ach-hud-toast.size-small .ach-hud-ico svg {
   width: 17px;
   height: 17px;
 }
-.ach-hud-toast.ach-hud-hint.size-small .ach-hint-title {
+.ach-hud-toast.size-small .ach-hud-tag {
+  font-size: 10px;
+}
+.ach-hud-toast.size-small .ach-hud-title {
   font-size: 13.5px;
 }
-.ach-hud-toast.ach-hud-hint.size-small .ach-hint-desc {
+.ach-hud-toast.size-small .ach-hud-desc {
   font-size: 11.5px;
 }
 
-.ach-hud-toast.ach-hud-hint.size-large {
-  width: min(500px, 95%);
-  padding: 14px 22px 15px 16px;
-  gap: 15px;
+.ach-hud-toast.size-normal {
+  min-width: 320px;
+  max-width: min(440px, 92%);
 }
-.ach-hud-toast.ach-hud-hint.size-large .ach-hint-badge {
-  width: 50px;
-  height: 50px;
-  border-radius: 13px;
+
+.ach-hud-toast.size-large {
+  min-width: 380px;
+  max-width: min(520px, 96%);
+  padding: 16px 20px 16px 16px;
+  gap: 14px;
+  border-radius: 16px;
 }
-.ach-hud-toast.ach-hud-hint.size-large .ach-hint-badge svg {
+.ach-hud-toast.size-large .ach-hud-medallion {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+}
+.ach-hud-toast.size-large .ach-hud-ico svg {
   width: 24px;
   height: 24px;
 }
-.ach-hud-toast.ach-hud-hint.size-large .ach-hint-title {
+.ach-hud-toast.size-large .ach-hud-tag {
+  font-size: 11.5px;
+}
+.ach-hud-toast.size-large .ach-hud-title {
   font-size: 17px;
 }
-.ach-hud-toast.ach-hud-hint.size-large .ach-hint-desc {
-  font-size: 13.5px;
+.ach-hud-toast.size-large .ach-hud-desc {
+  font-size: 13px;
 }
 
-/* Style presets integration */
-.ach-hud-toast.ach-hud-hint.style-xbox {
-  border-radius: 999px !important;
-  padding-left: 14px !important;
-  padding-right: 22px !important;
-}
-.ach-hud-toast.ach-hud-hint.style-cyber {
-  border-radius: 6px !important;
-  border-color: color-mix(in srgb, var(--ach-accent, #00f0ff) 70%, transparent) !important;
-}
-.ach-hud-toast.ach-hud-hint.style-cyber .ach-hint-badge {
-  border-radius: 5px;
-}
-.ach-hud-toast.ach-hud-hint.style-epic {
-  border-radius: 8px !important;
-}
-.ach-hud-toast.ach-hud-hint.style-playstation {
-  border-radius: 16px !important;
-}
-
-/* Style & Theme Chip Grids */
-.ach-style-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
-  gap: 8px;
-  width: 100%;
-}
-
-.ach-style-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 38px;
-  padding: 0 12px;
-  background: var(--surface-1);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  color: var(--text-2);
-  font-size: 12px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 150ms ease;
-}
-
-.ach-style-chip img {
-  flex-shrink: 0;
-  border-radius: 3px;
-}
-
-.ach-style-chip:hover {
-  background: var(--surface-2);
-  color: var(--text);
-  border-color: var(--line-strong);
-}
-
-.ach-style-chip.active {
-  background: var(--accent-tint);
-  border-color: var(--accent);
-  color: var(--text);
-  box-shadow: 0 0 12px var(--accent-tint);
+/* No decorative motion survives here: the choreography lives in the Web
+   Animations module and only a fade is left for reduced-motion players. */
+@media (prefers-reduced-motion: reduce) {
+  .ach-hud-progress-fill {
+    transition: none;
+  }
 }
 
 /* Per-store notification toggle grid */
