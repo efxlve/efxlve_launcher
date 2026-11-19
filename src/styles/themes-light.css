@@ -1,0 +1,535 @@
+/* ==========================================================================
+   Named theme exceptions. Token tables live in `core/theme/builtins.ts`; this
+   file keeps only the component touches a token table cannot express. Light
+   palettes share the `data-scheme="light"` block below.
+   ========================================================================== */
+
+/* ---------- Light palettes ---------- */
+
+
+:root[data-scheme="light"] body { background: var(--bg); }
+:root[data-scheme="light"] #winbar,
+:root[data-scheme="light"] #sidebar,
+:root[data-scheme="light"] #page-header { border-color: var(--line); }
+:root[data-scheme="light"] :is(.ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn) { color: #f8fafc; }
+:root[data-scheme="light"] :is(.ss-compressed-tag) { color: #cbd5e1; }
+:root[data-scheme="light"] :is(.gp-progress-fill) {
+  background: rgba(15, 23, 42, 0.55);
+}
+:root[data-scheme="light"] .seg > button.active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+:root[data-scheme="light"] .switch .track {
+  background: #d4d7dd;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.16);
+}
+:root[data-scheme="light"] .switch .track::before {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+:root[data-scheme="light"] .switch input:checked + .track {
+  background: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+:root[data-scheme="light"] .switch input:checked + .track::before {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+:root[data-scheme="light"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo, .pcard-store-logo, .col-store-logo-img, .bk-store-logo) {
+  filter: brightness(0);
+  opacity: 0.85;
+}
+:root[data-scheme="light"] .release-store-btn .release-store-logo {
+  filter: brightness(0);
+  opacity: 0.85;
+}
+:root[data-scheme="light"] .profile-hero-action-btn,
+:root[data-scheme="light"] .profile-refresh-btn {
+  background: #ffffff;
+  border-color: var(--line);
+  color: var(--text-2);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+:root[data-scheme="light"] .profile-hero-action-btn:hover,
+:root[data-scheme="light"] .profile-refresh-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+:root[data-scheme="light"] .profile-presence {
+  background: var(--surface-2);
+  border-color: var(--line);
+  color: var(--text-2);
+}
+:root[data-scheme="light"] .profile-banner-edit-btn {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+:root[data-scheme="light"] .profile-banner-edit-btn:hover {
+  background: rgba(15, 23, 42, 0.9);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.38);
+}
+:root[data-scheme="light"] .profile-hero-store-chip {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+:root[data-scheme="light"] .profile-hero-store-chip:hover {
+  background: var(--surface-2);
+}
+:root[data-scheme="light"] .profile-hero-store-chip.selected {
+  background: var(--accent-tint);
+}
+:root[data-scheme="light"] .profile-hero-banner::after {
+  background: linear-gradient(180deg, transparent 75%, rgba(0, 0, 0, 0.16) 100%);
+}
+:root[data-scheme="light"] .profile-stats {
+  background: var(--surface-1);
+  border-color: var(--line);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+:root[data-scheme="light"] :is(.search input, .notes-search input, .notes-search-input,
+  .calendar-search-input, .palette-input input,
+  .storage-search-input, .ss-studio-search, .install-path-input,
+  .ced .col-search-wrap .text-input) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0 !important;
+  outline: none !important;
+}
+:root[data-scheme="light"] .notes-title-input,
+:root[data-scheme="light"] .notes-title-input:focus {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  outline: none !important;
+}
+:root[data-scheme="light"] .notes-search {
+  background: #ffffff;
+  border-color: var(--line);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+:root[data-scheme="light"] .sb-toggle {
+  border-color: var(--line);
+  color: var(--text-2);
+}
+:root[data-scheme="light"] .sb-toggle:hover {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+:root[data-scheme="light"] .profile-ach-card {
+  background: #ffffff;
+  border-color: var(--line);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+:root[data-scheme="light"] .profile-ach-card:hover {
+  background: #ffffff;
+  border-color: var(--line-strong);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+}
+:root[data-scheme="light"] .profile-ach-card.is-plat {
+  border-color: rgba(37, 99, 235, 0.35);
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
+}
+:root[data-scheme="light"] .profile-ach-card.is-plat:hover {
+  border-color: var(--accent);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.18);
+}
+:root[data-scheme="light"] .profile-ach-pct {
+  color: var(--accent);
+}
+:root[data-scheme="light"] .profile-ach-card.is-plat .profile-ach-pct {
+  color: var(--accent);
+}
+:root[data-scheme="light"] .profile-ach-bar {
+  background: rgba(15, 23, 42, 0.08);
+}
+:root[data-scheme="light"] .profile-ach-bar > span {
+  background: var(--text);
+  box-shadow: none;
+}
+:root[data-scheme="light"] .profile-ach-card.is-plat .profile-ach-bar > span {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-tint);
+}
+:root[data-scheme="light"] .profile-ach-title {
+  color: var(--text);
+}
+:root[data-scheme="light"] .profile-ach-count {
+  color: var(--text-2);
+}
+:root[data-scheme="light"] .profile-ach-sub-meta {
+  color: var(--text-3);
+}
+:root[data-scheme="light"] .profile-game-row {
+  border-bottom-color: var(--line);
+}
+:root[data-scheme="light"] .profile-game-row:hover {
+  background: var(--surface-2);
+}
+:root[data-scheme="light"] .profile-game-row.is-plat {
+  background: rgba(37, 99, 235, 0.03);
+}
+:root[data-scheme="light"] .profile-table-header {
+  border-bottom-color: var(--line);
+  color: var(--text-3);
+}
+:root[data-scheme="light"] .notes-filter {
+  background: var(--surface-2);
+  border-color: var(--line);
+  border-radius: 8px;
+  padding: 2px;
+}
+:root[data-scheme="light"] .notes-row {
+  background: #ffffff;
+  border-color: var(--line);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+:root[data-scheme="light"] .notes-row:hover {
+  background: var(--surface-2);
+}
+:root[data-scheme="light"] .notes-row.is-active {
+  background: #ffffff;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+:root[data-scheme="light"] .notes-editor {
+  background: var(--surface-1);
+  border-color: var(--line);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+}
+:root[data-scheme="light"] .compat-note {
+  color: var(--text);
+}
+:root[data-scheme="light"] .profile-stat {
+  border-left-color: var(--line);
+}
+:root[data-scheme="light"] .settings-nav-scroll::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.2);
+}
+:root[data-scheme="light"] .settings-nav-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.35);
+}
+:root[data-scheme="light"] button.gp-source {
+  background: #ffffff;
+  border-color: var(--line);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+:root[data-scheme="light"] button.gp-source:hover,
+:root[data-scheme="light"] button.gp-source[aria-expanded="true"] {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+:root[data-scheme="light"] button.gp-source svg {
+  color: var(--text-2);
+}
+:root[data-scheme="light"] .lib-sort-btn {
+  background: var(--surface-1);
+  border-color: var(--line-strong);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+:root[data-scheme="light"] .lib-sort-btn:hover,
+:root[data-scheme="light"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+:root[data-scheme="light"] .overlay::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.05);
+  border-left: 1px solid rgba(15, 23, 42, 0.08);
+}
+:root[data-scheme="light"] .store-tabs {
+  background: var(--surface-2);
+  border-color: var(--line);
+}
+:root[data-scheme="light"] .store-tabs .tab:not(.active) .store-tab-logo {
+  filter: brightness(0);
+  opacity: 0.65;
+}
+:root[data-scheme="light"] .store-tabs .tab:hover .store-tab-logo {
+  opacity: 0.95;
+}
+:root[data-scheme="light"] .store-tabs .tab.active {
+  background: var(--surface-1);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+:root[data-scheme="light"] .store-tabs .tab.active .store-tab-logo {
+  filter: brightness(0);
+  opacity: 0.95;
+}
+:root[data-scheme="light"] .gp-store-menu,
+:root[data-scheme="light"] .gp-version-menu,
+:root[data-scheme="light"] .gp-more-menu,
+:root[data-scheme="light"] .col-dropdown-menu,
+:root[data-scheme="light"] .sort-dropdown-menu,
+:root[data-scheme="light"] .store-dropdown-menu {
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
+}
+
+:root[data-scheme="light"] .gp-bar-meta-icon {
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+:root[data-scheme="light"] .gp-bar-meta-icon.is-synced {
+  color: #059669;
+  background: rgba(5, 150, 105, 0.12);
+}
+:root[data-scheme="light"] .gp-bar-meta-item.is-clickable:hover {
+  background: var(--surface-2);
+}
+:root[data-scheme="light"] .gp-bar-meta-sep {
+  background: var(--line);
+}
+
+/* White Mode: Card elevation & depth */
+:root[data-scheme="light"] :is(.card, .list, .lib-list, .settings-group, .cs-hero, .cs-dest, .cs-provider, .bk-section, .cs-config-box, .gp-ac-notice, .gp-about-card, .hub-card, .gp-side-card, .ach-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card, .news-card, .storage-overview-card, .storage-stat-pill, .notes-card, .info-box, .screenshots-empty-panel, .notes-empty-panel, .drawer-notes, .ach-empty-panel, .dlc-empty-panel, .ach-search-empty-wrap) {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/* White Mode: Title bar chip & library cards */
+:root[data-scheme="light"] .winbar-beta-chip {
+  background: var(--text);
+  color: var(--bg);
+}
+:root[data-scheme="light"] .pgrid > .pcard:not(.pcard-hovering, :focus-visible, .is-case) .pcard-art {
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+:root[data-scheme="light"] .pgrid > .pcard:is(.pcard-hovering, :focus-visible) .pcard-art {
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(15, 23, 42, 0.1);
+}
+:root[data-scheme="light"] .pcard-play-btn {
+  border-color: rgba(15, 23, 42, 0.16);
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--text-2);
+}
+:root[data-scheme="light"] .pcard:hover .pcard-play-btn {
+  border-color: rgba(15, 23, 42, 0.28);
+  background: rgba(15, 23, 42, 0.12);
+  color: var(--text);
+}
+:root[data-scheme="light"] .pcard-play-btn:hover {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+
+/* White Mode: Inputs & focus rings */
+:root[data-scheme="light"] :is(input:not([type="range"], [type="checkbox"], [type="radio"]), select, textarea, .input, .text-input, .search, .page-search, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input) {
+  background: #ffffff;
+  border-color: var(--line-strong);
+}
+:root[data-scheme="light"] .calendar-search {
+  border-color: var(--line-strong);
+}
+:root[data-scheme="light"] :is(input, select, textarea, .input, .text-input, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input):focus,
+:root[data-scheme="light"] .search:focus-within,
+:root[data-scheme="light"] .calendar-search:focus-within,
+:root[data-scheme="light"] .install-path-input-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(17, 19, 24, 0.08);
+}
+
+/* White Mode: Dialogs, overlays & backdrops */
+:root[data-scheme="light"] :is(.selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card, .ss-share-card, .modal-box, .manage-dialog, .storage-dialog, .hide-list-dialog, .changelog-dialog, .custom-game-modal) {
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18), 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+:root[data-scheme="light"] :is(.selective-overlay, .playtime-overlay, .cover-overlay, .col-modal-backdrop, .col-gallery-backdrop, .move-modal-backdrop, .ss-share-backdrop, .modal-backdrop, .manage-overlay, .changelog-backdrop, .palette-backdrop, .lib-filter-backdrop, .custom-game-backdrop) {
+  background: rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* White Mode: Customize Images Dialog */
+:root[data-scheme="light"] :is(.cover-inspector-card, .cover-url-card, .cover-dropzone) {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.1);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+:root[data-scheme="light"] .cover-target-segment {
+  background: #f1f5f9;
+  border-color: rgba(15, 23, 42, 0.1);
+}
+:root[data-scheme="light"] .target-segment-pill.active {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.16);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+:root[data-scheme="light"] .cover-anchor-btn {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.14);
+}
+:root[data-scheme="light"] .cover-anchor-btn.active {
+  background: var(--accent);
+  color: #ffffff;
+}
+:root[data-scheme="light"] :is(.cover-preview-card.logo, .sgdb-grid-logo .sgdb-card) {
+  background-color: #f1f5f9;
+  background-image:
+    linear-gradient(45deg, rgba(0, 0, 0, 0.05) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, 0.05) 75%),
+    linear-gradient(45deg, rgba(0, 0, 0, 0.05) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, 0.05) 75%);
+}
+
+/* White Mode: Storage manager & music & context menu */
+:root[data-scheme="light"] .storage-stat-dot.dot-games {
+  background: var(--accent);
+  box-shadow: none;
+}
+:root[data-scheme="light"] .storage-meter-seg.seg-games {
+  background: var(--accent);
+}
+:root[data-scheme="light"] .storage-drive-tab-badge {
+  background: rgba(15, 23, 42, 0.07);
+}
+:root[data-scheme="light"] .storage-drive-tab.active .storage-drive-tab-badge {
+  background: rgba(15, 23, 42, 0.14);
+}
+:root[data-scheme="light"] :is(.music-art, .music-track img, .music-track-art) {
+  background: var(--surface-3);
+}
+:root[data-scheme="light"] .panel-context-item.is-current {
+  background: var(--surface-2);
+}
+:root[data-scheme="light"] .sb-resize:hover,
+:root[data-scheme="light"] body.sb-resizing .sb-resize {
+  background: rgba(15, 23, 42, 0.08);
+}
+:root[data-scheme="light"] .notif-panel {
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
+}
+:root[data-scheme="light"] .notif-item.unread {
+  background: rgba(17, 19, 24, 0.04);
+}
+:root[data-scheme="light"] .lib-filter-panel {
+  box-shadow: -12px 0 32px rgba(15, 23, 42, 0.12);
+}
+:root[data-scheme="light"] .col-modal-card:not(.ced) .col-game-item:hover {
+  background: var(--surface-2);
+}
+:root[data-scheme="light"] .col-modal-card:not(.ced) .col-game-item.selected {
+  background: var(--surface-3);
+}
+:root[data-scheme="light"] .col-modal-card:not(.ced) .col-custom-cb {
+  border-color: var(--line-strong);
+}
+:root[data-scheme="light"] .col-modal-card:not(.ced) .col-custom-cb.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+:root[data-scheme="light"] .lrow-plat-cup::before {
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, rgba(14, 165, 233, 0) 70%);
+}
+
+/* White Theme: System Specs Tab */
+:root[data-scheme="light"] .hub-feature-row {
+  background: var(--surface-2);
+  border-color: var(--line);
+}
+:root[data-scheme="light"] .hub-feature-icon {
+  background: var(--surface-1);
+  color: var(--text-2);
+  border: 1px solid var(--line);
+}
+:root[data-scheme="light"] .sys-lang-chip {
+  background: var(--surface-1);
+  border-color: var(--line);
+  color: var(--text);
+}
+:root[data-scheme="light"] .sys-lang-chip.is-user-lang {
+  background: rgba(5, 150, 105, 0.12);
+  border-color: rgba(5, 150, 105, 0.35);
+  color: #059669;
+}
+:root[data-scheme="light"] .ctrl-badge.is-full {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(4, 120, 87, 0.35);
+  color: #047857;
+}
+:root[data-scheme="light"] .ctrl-badge.is-partial {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(180, 83, 9, 0.35);
+  color: #b45309;
+}
+:root[data-scheme="light"] :is(.deck-pill.verified, .awacy-pill.supported) {
+  color: #047857;
+  border-color: rgba(4, 120, 87, 0.35);
+  background: rgba(16, 185, 129, 0.12);
+}
+:root[data-scheme="light"] :is(.deck-pill.playable, .protondb-pill.gold, .awacy-pill.running) {
+  color: #b45309;
+  border-color: rgba(180, 83, 9, 0.35);
+  background: rgba(245, 158, 11, 0.12);
+}
+:root[data-scheme="light"] :is(.deck-pill.unsupported, .protondb-pill.borked, .awacy-pill.broken, .awacy-pill.denied) {
+  color: #b91c1c;
+  border-color: rgba(185, 28, 28, 0.35);
+  background: rgba(239, 68, 68, 0.12);
+}
+:root[data-scheme="light"] .protondb-pill.platinum {
+  color: #0369a1;
+  border-color: rgba(3, 105, 161, 0.35);
+  background: rgba(14, 165, 233, 0.12);
+}
+:root[data-scheme="light"] .protondb-pill.silver {
+  color: #475569;
+  border-color: rgba(71, 85, 105, 0.35);
+  background: rgba(100, 116, 139, 0.12);
+}
+:root[data-scheme="light"] .protondb-pill.bronze {
+  color: #92400e;
+  border-color: rgba(146, 64, 14, 0.35);
+  background: rgba(217, 119, 6, 0.12);
+}
+:root[data-scheme="light"] .awacy-pill.planned {
+  color: #6d28d9;
+  border-color: rgba(109, 40, 217, 0.35);
+  background: rgba(139, 92, 246, 0.12);
+}
+:root[data-scheme="light"] :is(.deck-pill, .protondb-pill, .awacy-pill):is(.pending, .unknown) {
+  color: var(--text-2);
+  border-color: var(--line);
+  background: var(--surface-1);
+}
+:root[data-scheme="light"] :is(.protondb-pill, .deck-pill, .awacy-pill):hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* Dark media overlays and popovers deliberately keep their own dark surface.
+   Their text must not inherit the light theme's dark --text token. */
+:root[data-scheme="light"] :is(.gp-hero-tool, .ach-locked-badge, .ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn, .ss-game-chip, .cover-preview-badge, .profile-ach-badge.pct, .profile-ach-badge.store, .profile-banner-item-name, .profile-banner-edit-btn, .account-switch-name),
+:root[data-surface="gloss"] :is(.gp-hero-tool, .ach-locked-badge, .ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn, .ss-game-chip, .cover-preview-badge, .profile-ach-badge.pct, .profile-ach-badge.store, .profile-banner-item-name, .profile-banner-edit-btn, .account-switch-name) {
+  color: #f8fafc;
+}
+
+:root[data-scheme="light"] .store-shot-name,
+:root[data-surface="gloss"] .store-shot-name {
+  color: rgba(248, 250, 252, 0.72);
+}
+
+/* The collection editor follows the active theme; its fields use the same
+   surface and line tokens as the rest of Settings. */
+
+:root[data-scheme="light"] .profile-banner-store-pill,
+:root[data-surface="gloss"] .profile-banner-store-pill {
+  color: rgba(248, 250, 252, 0.72);
+}
+
+:root[data-scheme="light"] :is(.ss-compressed-tag, .sgdb-style-tag, .sgdb-score-tag, .sgdb-card-footer),
+:root[data-surface="gloss"] :is(.ss-compressed-tag, .sgdb-style-tag, .sgdb-score-tag, .sgdb-card-footer) {
+  color: rgba(248, 250, 252, 0.72);
+}

@@ -1,0 +1,817 @@
+
+/* ---------- Synthetic Soul ----------
+   Android architecture: sleek CyberLife minimalist backdrop (src/assets/sentience-scene.svg),
+   temple LED halo corona, probability telemetry brackets, and holographic cyan interface. */
+
+
+:root[data-surface="sentience"] body {
+  background: #05080e url("../assets/sentience-scene.svg") 0 0 / 100vw 100vh no-repeat;
+}
+:root[data-surface="sentience"] #main-col,
+:root[data-surface="sentience"] #view { background: transparent; }
+:root[data-surface="sentience"] .overlay { background: var(--scene-bg); }
+
+/* Synthetic Soul: Custom Visible Holographic Scrollbars */
+:root[data-surface="sentience"] ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+  box-shadow: 0 0 6px rgba(0, 162, 255, 0.25);
+}
+:root[data-surface="sentience"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.7);
+}
+:root[data-surface="sentience"] .overlay::-webkit-scrollbar-track {
+  background: rgba(5, 8, 14, 0.75);
+  border-left: 1px solid rgba(0, 162, 255, 0.16);
+}
+:root[data-surface="sentience"] .overlay::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+  border: 1px solid rgba(0, 162, 255, 0.35);
+  box-shadow: 0 0 8px rgba(0, 162, 255, 0.35);
+}
+:root[data-surface="sentience"] .overlay::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.8);
+}
+
+/* Synthetic Soul: Window Bar */
+:root[data-surface="sentience"] #winbar {
+  background: #070b13;
+  border-bottom: 1px solid rgba(0, 162, 255, 0.22);
+}
+:root[data-surface="sentience"] .winbar-beta-chip {
+  background: #00a2ff;
+  color: #03101d;
+  font-weight: 800;
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(0, 162, 255, 0.5);
+  letter-spacing: 0.5px;
+}
+:root[data-surface="sentience"] .winbar-btn:hover {
+  background: rgba(0, 162, 255, 0.12);
+  color: #38bdf8;
+}
+:root[data-surface="sentience"] .win-btn.win-close:hover {
+  background: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.7);
+}
+
+/* Synthetic Soul: Sidebar Navigation */
+:root[data-surface="sentience"] #sidebar {
+  background: rgba(8, 13, 22, 0.96);
+  border-right: 1px solid rgba(0, 162, 255, 0.2);
+  backdrop-filter: blur(8px);
+}
+:root[data-surface="sentience"] #page-header {
+  background: rgba(9, 14, 24, 0.88);
+  border-bottom: 1px solid rgba(0, 162, 255, 0.2);
+  backdrop-filter: blur(6px);
+}
+:root[data-surface="sentience"] .sb-item {
+  border-radius: 3px;
+  transition: all var(--ease);
+}
+:root[data-surface="sentience"] .sb-item:hover:not(.active) {
+  color: #7dd3fc;
+  background: rgba(0, 162, 255, 0.08);
+}
+:root[data-surface="sentience"] .sb-item.active {
+  background: linear-gradient(90deg, rgba(0, 162, 255, 0.22) 0%, rgba(0, 162, 255, 0.04) 100%);
+  color: #7dd3fc;
+  font-weight: 700;
+  border-left: 3px solid #00a2ff;
+  border-radius: 0 3px 3px 0;
+  box-shadow: inset 2px 0 10px rgba(0, 162, 255, 0.3);
+}
+:root[data-surface="sentience"] .sb-item.active::before {
+  display: none;
+}
+
+/* Synthetic Soul: Primary Action Buttons (Android LED Status Blue) */
+:root[data-surface="sentience"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
+  background: linear-gradient(180deg, #38bdf8 0%, #0088e0 100%);
+  color: #03101d;
+  font-weight: 800;
+  border: 1px solid #7dd3fc;
+  border-radius: 3px;
+  letter-spacing: 0.02em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 162, 255, 0.45);
+  transition: all var(--ease);
+}
+:root[data-surface="sentience"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #03101d;
+  box-shadow: inset 0 1px 0 #ffffff, 0 0 22px rgba(56, 189, 248, 0.8), 0 0 6px #ffffff;
+  transform: translateY(-1px);
+}
+:root[data-surface="sentience"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
+  background: #0284c7;
+  border-color: #0284c7;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+  transform: translateY(0);
+}
+
+/* Synthetic Soul: Secondary Action Buttons */
+:root[data-surface="sentience"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
+  background: rgba(14, 21, 33, 0.88);
+  border: 1px solid rgba(0, 162, 255, 0.24);
+  color: var(--text);
+  border-radius: 3px;
+}
+:root[data-surface="sentience"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
+:root[data-surface="sentience"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
+  border-color: #38bdf8;
+  color: #7dd3fc;
+  background: rgba(0, 162, 255, 0.12);
+  box-shadow: 0 0 10px rgba(0, 162, 255, 0.28);
+}
+
+/* Synthetic Soul: Danger / Deviant Alert Buttons */
+:root[data-surface="sentience"] .btn.danger {
+  background: #dc2626;
+  border: 1px solid #ef4444;
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 3px;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+}
+:root[data-surface="sentience"] .btn.danger:hover {
+  background: #ef4444;
+  border-color: #f87171;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.7);
+}
+
+/* Synthetic Soul: Headings & Titles */
+:root[data-surface="sentience"] :is(
+  .page-header-title, .section-title, .hub-card-title, .hltb-title,
+  .gp-section-title, .notif-title, .modal-box h2, .col-modal-title h2
+) {
+  color: #38bdf8;
+  letter-spacing: 0.03em;
+  font-weight: 700;
+  text-shadow: 0 0 12px rgba(0, 162, 255, 0.4);
+}
+
+/* Synthetic Soul: Cards, Panels & Holographic Terminals */
+:root[data-surface="sentience"] :is(
+  .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item, .cs-hero, .cs-dest, .cs-provider, .bk-section, .cs-config-box,
+  .gp-ac-notice, .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card,
+  .gp-side-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
+  .news-card, .storage-overview-card, .storage-stat-pill, .notes-card,
+  .selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card,
+  .ss-share-card, .modal-box, .manage-dialog, .storage-dialog, .hide-list-dialog,
+  .changelog-dialog, .lib-filter-panel, .custom-game-modal
+) {
+  background: rgba(11, 17, 28, 0.92);
+  border: 1px solid rgba(0, 162, 255, 0.22);
+  border-radius: 4px;
+  box-shadow: inset 0 1px 0 rgba(0, 162, 255, 0.15), 0 8px 24px rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+}
+
+/* Synthetic Soul: Library Game Cards */
+:root[data-surface="sentience"] .pgrid > .pcard:not(.pcard-hovering, :focus-visible, .is-case) .pcard-art {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(0, 162, 255, 0.2);
+  border-radius: 4px;
+}
+:root[data-surface="sentience"] .pgrid > .pcard:is(.pcard-hovering, :focus-visible) .pcard-art {
+  box-shadow:
+    0 0 0 2px #00a2ff,
+    0 0 22px rgba(0, 162, 255, 0.5),
+    0 12px 30px rgba(0, 0, 0, 0.9);
+  transform: translateY(-2px);
+}
+:root[data-surface="sentience"] .pcard-play-btn {
+  background: rgba(9, 14, 24, 0.9);
+  border: 1px solid rgba(0, 162, 255, 0.45);
+  color: #38bdf8;
+  border-radius: 3px;
+}
+:root[data-surface="sentience"] .pcard-play-btn:hover {
+  background: #00a2ff;
+  color: #03101d;
+  border-color: #7dd3fc;
+  box-shadow: 0 0 14px rgba(0, 162, 255, 0.75);
+}
+
+/* Synthetic Soul: Inputs, Search & Fields */
+:root[data-surface="sentience"] :is(
+  input:not([type="range"], [type="checkbox"], [type="radio"]),
+  select, textarea, .input, .text-input, .search, .page-search,
+  .settings-search, .music-input, .music-select, .storage-search-input,
+  .move-path-input, .install-path-input
+) {
+  background: #060910;
+  border: 1px solid rgba(0, 162, 255, 0.24);
+  color: #f0f6fc;
+  border-radius: 3px;
+}
+:root[data-surface="sentience"] :is(
+  input, select, textarea, .input, .text-input, .settings-search,
+  .music-input, .music-select, .storage-search-input, .move-path-input,
+  .install-path-input
+):focus,
+:root[data-surface="sentience"] .search:focus-within,
+:root[data-surface="sentience"] .install-path-input-wrap:focus-within {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(0, 162, 255, 0.35);
+  outline: none;
+}
+
+/* Synthetic Soul: Progress Bar (Android Probability Meter) */
+:root[data-surface="sentience"] .progress {
+  background: rgba(6, 9, 15, 0.92);
+  border: 1px solid rgba(0, 162, 255, 0.25);
+  border-radius: 3px;
+  overflow: hidden;
+}
+:root[data-surface="sentience"] .progress > span,
+:root[data-surface="sentience"] :is(.gp-progress-fill) {
+  background: linear-gradient(90deg, #0284c7 0%, #00a2ff 60%, #38bdf8 100%);
+  box-shadow: 0 0 10px rgba(0, 162, 255, 0.55);
+}
+
+/* Synthetic Soul: Switches */
+:root[data-surface="sentience"] .switch input:checked + .track {
+  background: #0284c7;
+  border-color: #38bdf8;
+}
+:root[data-surface="sentience"] .switch input:checked + .track::before {
+  background: #ffffff;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+}
+
+/* Synthetic Soul: Store Tabs Active Indicator */
+:root[data-surface="sentience"] .store-tabs .tab.active,
+:root[data-surface="sentience"] .tab.active {
+  color: #7dd3fc;
+}
+:root[data-surface="sentience"] .store-tabs .tab.active::after,
+:root[data-surface="sentience"] .tab.active::after {
+  background: #00a2ff;
+  box-shadow: 0 0 8px rgba(0, 162, 255, 0.7);
+}
+
+/* ---------- Ashen Sanctum ----------
+   Dark fantasy epic: majestic glowing Erdtree & Site of Grace backdrop (src/assets/sanctum-scene.svg),
+   weathered ash stone & obsidian sanctuary slabs, ancient golden rune action buttons,
+   and guiding grace particle aura. */
+
+
+:root[data-surface="sanctum"] body {
+  background: #090807 url("../assets/sanctum-scene.svg") 0 0 / 100vw 100vh no-repeat;
+}
+:root[data-surface="sanctum"] #main-col,
+:root[data-surface="sanctum"] #view { background: transparent; }
+:root[data-surface="sanctum"] .overlay { background: var(--scene-bg); }
+
+/* Ashen Sanctum: Custom Visible Antique Gold Scrollbars */
+:root[data-surface="sanctum"] ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+  box-shadow: 0 0 6px rgba(229, 169, 60, 0.25);
+}
+:root[data-surface="sanctum"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 12px rgba(245, 190, 87, 0.7);
+}
+:root[data-surface="sanctum"] .overlay::-webkit-scrollbar-track {
+  background: rgba(9, 8, 7, 0.75);
+  border-left: 1px solid rgba(229, 169, 60, 0.18);
+}
+:root[data-surface="sanctum"] .overlay::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+  border: 1px solid rgba(229, 169, 60, 0.35);
+  box-shadow: 0 0 8px rgba(229, 169, 60, 0.35);
+}
+:root[data-surface="sanctum"] .overlay::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 14px rgba(245, 190, 87, 0.8);
+}
+
+/* Ashen Sanctum: Window Bar */
+:root[data-surface="sanctum"] #winbar {
+  background: #0d0b09;
+  border-bottom: 1px solid rgba(229, 169, 60, 0.25);
+}
+:root[data-surface="sanctum"] .winbar-beta-chip {
+  background: #e5a93c;
+  color: #120d04;
+  font-weight: 800;
+  border-radius: 3px;
+  box-shadow: 0 0 10px rgba(229, 169, 60, 0.5);
+  letter-spacing: 0.5px;
+}
+:root[data-surface="sanctum"] .winbar-btn:hover {
+  background: rgba(229, 169, 60, 0.14);
+  color: #fde047;
+}
+:root[data-surface="sanctum"] .win-btn.win-close:hover {
+  background: #991b1b;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(220, 38, 38, 0.75);
+}
+
+/* Ashen Sanctum: Sidebar Navigation */
+:root[data-surface="sanctum"] #sidebar {
+  background: rgba(13, 11, 9, 0.96);
+  border-right: 1px solid rgba(229, 169, 60, 0.22);
+  backdrop-filter: blur(8px);
+}
+:root[data-surface="sanctum"] #page-header {
+  background: rgba(14, 12, 9, 0.88);
+  border-bottom: 1px solid rgba(229, 169, 60, 0.22);
+  backdrop-filter: blur(6px);
+}
+:root[data-surface="sanctum"] .sb-item {
+  border-radius: 4px;
+  transition: all var(--ease);
+}
+:root[data-surface="sanctum"] .sb-item:hover:not(.active) {
+  color: #fef08a;
+  background: rgba(229, 169, 60, 0.1);
+}
+:root[data-surface="sanctum"] .sb-item.active {
+  background: linear-gradient(90deg, rgba(229, 169, 60, 0.22) 0%, rgba(229, 169, 60, 0.04) 100%);
+  color: #fef08a;
+  font-weight: 700;
+  border-left: 3px solid #e5a93c;
+  border-radius: 0 4px 4px 0;
+  box-shadow: inset 2px 0 10px rgba(229, 169, 60, 0.3);
+}
+:root[data-surface="sanctum"] .sb-item.active::before {
+  display: none;
+}
+:root[data-surface="sanctum"] .sb-badge,
+:root[data-surface="sanctum"] .nav-badge {
+  background: #e5a93c;
+  color: #120d04;
+  font-weight: 800;
+  box-shadow: 0 0 8px rgba(229, 169, 60, 0.6);
+  border: 1px solid rgba(254, 240, 138, 0.5);
+}
+
+/* Ashen Sanctum: Primary Action Buttons (Golden Grace Seal) */
+:root[data-surface="sanctum"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
+  background: linear-gradient(180deg, #f5be57 0%, #b47818 100%);
+  color: #120d04;
+  font-family: "Cinzel", "Georgia", "Cambria", serif;
+  font-weight: 800;
+  border: 1px solid #ffea8a;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 8px rgba(0, 0, 0, 0.7), 0 0 14px rgba(229, 169, 60, 0.45);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: all var(--ease);
+}
+:root[data-surface="sanctum"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
+  background: linear-gradient(180deg, #fff0aa 0%, #d4901a 100%);
+  border-color: #ffffff;
+  color: #000000;
+  box-shadow: inset 0 1px 0 #ffffff, 0 0 22px rgba(245, 190, 87, 0.8), 0 0 8px #ffffff;
+  transform: translateY(-1px);
+}
+:root[data-surface="sanctum"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
+  background: #9a6712;
+  border-color: #9a6712;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+  transform: translateY(0);
+}
+
+/* Ashen Sanctum: Secondary Action Buttons (Carved Ash Stone & Antique Gold) */
+:root[data-surface="sanctum"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
+  background: rgba(26, 22, 17, 0.92);
+  border: 1px solid rgba(229, 169, 60, 0.32);
+  color: #f9f6ed;
+  border-radius: 4px;
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+:root[data-surface="sanctum"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
+:root[data-surface="sanctum"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
+  border-color: #f5be57;
+  color: #fff9db;
+  background: rgba(229, 169, 60, 0.2);
+  box-shadow: 0 0 12px rgba(229, 169, 60, 0.4);
+}
+
+/* Ashen Sanctum: Danger Buttons (Dark Crimson Blood-Rune) */
+:root[data-surface="sanctum"] .btn.danger {
+  background: #5f1515;
+  border: 1px solid #991b1b;
+  color: #fecdd3;
+  font-weight: 700;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(95, 21, 21, 0.5);
+}
+:root[data-surface="sanctum"] .btn.danger:hover {
+  background: #7f1d1d;
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(220, 38, 38, 0.7);
+}
+
+/* Ashen Sanctum: Regal Dark Fantasy Serif Headings & Group Titles */
+:root[data-surface="sanctum"] :is(
+  .page-header-title, .section-title, .hub-card-title, .hltb-title,
+  .gp-section-title, .notif-title, .modal-box h2, .col-modal-title h2,
+  .dl-group-title, .settings-group-title, .dl-sec-title
+) {
+  font-family: "Cinzel", "Georgia", "Cambria", "Times New Roman", serif;
+  color: #f5be57;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 12px rgba(229, 169, 60, 0.4);
+}
+
+/* Ashen Sanctum: Cards, Panels, Ash Stone Slabs & Sanctuary Boards */
+:root[data-surface="sanctum"] :is(
+  .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item, .cs-hero, .cs-dest, .cs-provider, .bk-section, .cs-config-box,
+  .gp-ac-notice, .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card,
+  .gp-side-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
+  .news-card, .storage-overview-card, .storage-stat-pill, .notes-card,
+  .selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card,
+  .ss-share-card, .modal-box, .manage-dialog, .storage-dialog, .hide-list-dialog,
+  .changelog-dialog, .lib-filter-panel, .custom-game-modal
+) {
+  background: linear-gradient(180deg, rgba(27, 23, 18, 0.94) 0%, rgba(16, 13, 10, 0.92) 100%);
+  border: 1px solid rgba(229, 169, 60, 0.35);
+  border-radius: 5px;
+  box-shadow: inset 0 1px 0 rgba(255, 234, 138, 0.16), inset 0 0 0 1px rgba(0, 0, 0, 0.6), 0 8px 26px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+}
+:root[data-surface="sanctum"] .lrow:hover {
+  border-color: #f5be57;
+  box-shadow: inset 0 1px 0 rgba(255, 234, 138, 0.25), 0 0 16px rgba(229, 169, 60, 0.35);
+  background: linear-gradient(180deg, rgba(35, 29, 23, 0.96) 0%, rgba(22, 18, 14, 0.94) 100%);
+}
+
+/* Ashen Sanctum: Library Game Cards */
+:root[data-surface="sanctum"] .pgrid > .pcard:not(.pcard-hovering, :focus-visible, .is-case) .pcard-art {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(229, 169, 60, 0.22);
+  border-radius: 4px;
+}
+:root[data-surface="sanctum"] .pgrid > .pcard:is(.pcard-hovering, :focus-visible) .pcard-art {
+  box-shadow:
+    0 0 0 2px #e5a93c,
+    0 0 22px rgba(229, 169, 60, 0.5),
+    0 12px 30px rgba(0, 0, 0, 0.9);
+  transform: translateY(-2px);
+}
+:root[data-surface="sanctum"] .pcard-play-btn {
+  background: rgba(18, 15, 11, 0.9);
+  border: 1px solid rgba(229, 169, 60, 0.45);
+  color: #fef08a;
+  border-radius: 3px;
+}
+:root[data-surface="sanctum"] .pcard-play-btn:hover {
+  background: #e5a93c;
+  color: #120d04;
+  border-color: #ffea8a;
+  box-shadow: 0 0 14px rgba(229, 169, 60, 0.75);
+}
+
+/* Ashen Sanctum: Inputs, Search & Fields */
+:root[data-surface="sanctum"] :is(
+  input:not([type="range"], [type="checkbox"], [type="radio"]),
+  select, textarea, .input, .text-input, .search, .page-search,
+  .settings-search, .music-input, .music-select, .storage-search-input,
+  .move-path-input, .install-path-input
+) {
+  background: #080706;
+  border: 1px solid rgba(229, 169, 60, 0.26);
+  color: #f9f6ed;
+  border-radius: 4px;
+}
+:root[data-surface="sanctum"] :is(
+  input, select, textarea, .input, .text-input, .settings-search,
+  .music-input, .music-select, .storage-search-input, .move-path-input,
+  .install-path-input
+):focus,
+:root[data-surface="sanctum"] .search:focus-within,
+:root[data-surface="sanctum"] .install-path-input-wrap:focus-within {
+  border-color: #f5be57;
+  box-shadow: 0 0 0 2px rgba(229, 169, 60, 0.35);
+  outline: none;
+}
+
+/* Ashen Sanctum: Progress Bar (Great Rune Arc / Molten Gold Meter) */
+:root[data-surface="sanctum"] .progress {
+  background: rgba(12, 10, 8, 0.92);
+  border: 1px solid rgba(229, 169, 60, 0.25);
+  border-radius: 4px;
+  overflow: hidden;
+}
+:root[data-surface="sanctum"] .progress > span,
+:root[data-surface="sanctum"] :is(.gp-progress-fill) {
+  background: linear-gradient(90deg, #b47818 0%, #e5a93c 50%, #fef08a 100%);
+  box-shadow: 0 0 10px rgba(229, 169, 60, 0.5);
+}
+
+/* Ashen Sanctum: Switches */
+:root[data-surface="sanctum"] .switch input:checked + .track {
+  background: #9a6712;
+  border-color: #e5a93c;
+}
+:root[data-surface="sanctum"] .switch input:checked + .track::before {
+  background: #ffffff;
+  box-shadow: 0 0 8px rgba(229, 169, 60, 0.7);
+}
+
+/* Ashen Sanctum: Store Tabs Active Indicator */
+:root[data-surface="sanctum"] .store-tabs .tab.active,
+:root[data-surface="sanctum"] .tab.active {
+  color: #fef08a;
+}
+:root[data-surface="sanctum"] .store-tabs .tab.active::after,
+:root[data-surface="sanctum"] .tab.active::after {
+  background: #e5a93c;
+  box-shadow: 0 0 8px rgba(229, 169, 60, 0.6);
+}
+
+/* ---------- Resonance Core ----------
+   Black Mesa facility: high-energy spectrometer chamber & Lambda reactor backdrop (src/assets/resonance-scene.svg),
+   reinforced titanium lab consoles, high-visibility HEV hazard orange action buttons,
+   and radiation telemetry aura. */
+
+
+:root[data-surface="resonance"] body {
+  background: #080a0d url("../assets/resonance-scene.svg") 0 0 / 100vw 100vh no-repeat;
+}
+:root[data-surface="resonance"] #main-col,
+:root[data-surface="resonance"] #view { background: transparent; }
+:root[data-surface="resonance"] .overlay { background: var(--scene-bg); }
+
+/* Resonance Core: Custom Visible Tactical High-Vis Scrollbars */
+:root[data-surface="resonance"] ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+  box-shadow: 0 0 6px rgba(249, 115, 22, 0.25);
+}
+:root[data-surface="resonance"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 12px rgba(251, 146, 60, 0.7);
+}
+:root[data-surface="resonance"] .overlay::-webkit-scrollbar-track {
+  background: rgba(8, 10, 13, 0.75);
+  border-left: 1px solid rgba(249, 115, 22, 0.18);
+}
+:root[data-surface="resonance"] .overlay::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.35);
+}
+:root[data-surface="resonance"] .overlay::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 14px rgba(251, 146, 60, 0.8);
+}
+
+/* Resonance Core: Window Bar */
+:root[data-surface="resonance"] #winbar {
+  background: #0b0e13;
+  border-bottom: 1px solid rgba(249, 115, 22, 0.25);
+}
+:root[data-surface="resonance"] .winbar-beta-chip {
+  background: #f97316;
+  color: #080a0d;
+  font-weight: 800;
+  border-radius: 3px;
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+  letter-spacing: 0.5px;
+}
+:root[data-surface="resonance"] .winbar-btn:hover {
+  background: rgba(249, 115, 22, 0.14);
+  color: #fed7aa;
+}
+:root[data-surface="resonance"] .win-btn.win-close:hover {
+  background: #991b1b;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(220, 38, 38, 0.75);
+}
+
+/* Resonance Core: Sidebar Navigation */
+:root[data-surface="resonance"] #sidebar {
+  background: rgba(11, 14, 19, 0.96);
+  border-right: 1px solid rgba(249, 115, 22, 0.22);
+  backdrop-filter: blur(8px);
+}
+:root[data-surface="resonance"] #page-header {
+  background: rgba(12, 16, 22, 0.88);
+  border-bottom: 1px solid rgba(249, 115, 22, 0.22);
+  backdrop-filter: blur(6px);
+}
+:root[data-surface="resonance"] .sb-item {
+  border-radius: 4px;
+  transition: all var(--ease);
+}
+:root[data-surface="resonance"] .sb-item:hover:not(.active) {
+  color: #fed7aa;
+  background: rgba(249, 115, 22, 0.1);
+}
+:root[data-surface="resonance"] .sb-item.active {
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.22) 0%, rgba(249, 115, 22, 0.04) 100%);
+  color: #fed7aa;
+  font-weight: 700;
+  border-left: 3px solid #f97316;
+  border-radius: 0 4px 4px 0;
+  box-shadow: inset 2px 0 10px rgba(249, 115, 22, 0.3);
+}
+:root[data-surface="resonance"] .sb-item.active::before {
+  display: none;
+}
+:root[data-surface="resonance"] .sb-badge,
+:root[data-surface="resonance"] .nav-badge {
+  background: #f97316;
+  color: #080a0d;
+  font-weight: 800;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.6);
+  border: 1px solid rgba(254, 215, 170, 0.5);
+}
+
+/* Resonance Core: Primary Action Buttons (HEV Suit Power Core) */
+:root[data-surface="resonance"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary) {
+  background: linear-gradient(180deg, #fb923c 0%, #c2410c 100%);
+  color: #ffffff;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-weight: 800;
+  border: 1px solid #fdba74;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 8px rgba(0, 0, 0, 0.7), 0 0 14px rgba(249, 115, 22, 0.45);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
+  transition: all var(--ease);
+}
+:root[data-surface="resonance"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):hover {
+  background: linear-gradient(180deg, #fed7aa 0%, #ea580c 100%);
+  border-color: #ffffff;
+  color: #080a0d;
+  box-shadow: inset 0 1px 0 #ffffff, 0 0 22px rgba(249, 115, 22, 0.8), 0 0 8px #fde047;
+  transform: translateY(-1px);
+}
+:root[data-surface="resonance"] :is(.btn.primary, .btn.install, .btn.play, .btn.update, .apple-pill-btn.primary):active {
+  background: #9a3412;
+  border-color: #9a3412;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+  transform: translateY(0);
+}
+
+/* Resonance Core: Secondary Action Buttons (Industrial Titanium Plates) */
+:root[data-surface="resonance"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn) {
+  background: rgba(22, 28, 38, 0.92);
+  border: 1px solid rgba(249, 115, 22, 0.32);
+  color: #f8fafc;
+  border-radius: 4px;
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+:root[data-surface="resonance"] .btn:not(.primary, .install, .play, .update, .danger, .win-btn, .winbar-btn):hover,
+:root[data-surface="resonance"] :is(.store-dropdown-container:has(> .store-dropdown-menu.show), .sort-dropdown-container:has(> .sort-dropdown-menu.show)) > .lib-sort-btn {
+  border-color: #fb923c;
+  color: #ffffff;
+  background: rgba(249, 115, 22, 0.2);
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.4);
+}
+
+/* Resonance Core: Danger Buttons (Radiation Containment Override) */
+:root[data-surface="resonance"] .btn.danger {
+  background: #7f1d1d;
+  border: 1px solid #b91c1c;
+  color: #fecdd3;
+  font-weight: 700;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(127, 29, 29, 0.5);
+}
+:root[data-surface="resonance"] .btn.danger:hover {
+  background: #991b1b;
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(220, 38, 38, 0.7);
+}
+
+/* Resonance Core: Tactical Technical Headings & Group Titles */
+:root[data-surface="resonance"] :is(
+  .page-header-title, .section-title, .hub-card-title, .hltb-title,
+  .gp-section-title, .notif-title, .modal-box h2, .col-modal-title h2,
+  .dl-group-title, .settings-group-title, .dl-sec-title
+) {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: #fb923c;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 10px rgba(249, 115, 22, 0.35);
+}
+
+/* Resonance Core: Cards, Panels, Lab Consoles & Facility Boards */
+:root[data-surface="resonance"] :is(
+  .card, .settings-group, .info-box, .lib-list, .lrow, .notif-panel, .modal, .notif-item, .cs-hero, .cs-dest, .cs-provider, .bk-section, .cs-config-box,
+  .gp-ac-notice, .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card,
+  .gp-side-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
+  .news-card, .storage-overview-card, .storage-stat-pill, .notes-card,
+  .selective-dialog, .playtime-dialog, .cover-dialog, .col-modal-card, .move-modal-card,
+  .ss-share-card, .modal-box, .manage-dialog, .storage-dialog, .hide-list-dialog,
+  .changelog-dialog, .lib-filter-panel, .custom-game-modal
+) {
+  background: linear-gradient(180deg, rgba(23, 30, 41, 0.94) 0%, rgba(13, 17, 24, 0.92) 100%);
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  border-radius: 5px;
+  box-shadow: inset 0 1px 0 rgba(253, 186, 116, 0.16), inset 0 0 0 1px rgba(0, 0, 0, 0.6), 0 8px 26px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+}
+:root[data-surface="resonance"] .lrow:hover {
+  border-color: #f97316;
+  box-shadow: inset 0 1px 0 rgba(253, 186, 116, 0.25), 0 0 16px rgba(249, 115, 22, 0.35);
+  background: linear-gradient(180deg, rgba(30, 39, 53, 0.96) 0%, rgba(18, 23, 33, 0.94) 100%);
+}
+
+/* Resonance Core: Library Game Cards */
+:root[data-surface="resonance"] .pgrid > .pcard:not(.pcard-hovering, :focus-visible, .is-case) .pcard-art {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(249, 115, 22, 0.22);
+  border-radius: 4px;
+}
+:root[data-surface="resonance"] .pgrid > .pcard:is(.pcard-hovering, :focus-visible) .pcard-art {
+  box-shadow:
+    0 0 0 2px #f97316,
+    0 0 22px rgba(249, 115, 22, 0.5),
+    0 12px 30px rgba(0, 0, 0, 0.9);
+  transform: translateY(-2px);
+}
+:root[data-surface="resonance"] .pcard-play-btn {
+  background: rgba(14, 18, 25, 0.9);
+  border: 1px solid rgba(249, 115, 22, 0.45);
+  color: #fed7aa;
+  border-radius: 3px;
+}
+:root[data-surface="resonance"] .pcard-play-btn:hover {
+  background: #f97316;
+  color: #080a0d;
+  border-color: #fdba74;
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.75);
+}
+
+/* Resonance Core: Inputs, Search & Fields */
+:root[data-surface="resonance"] :is(
+  input:not([type="range"], [type="checkbox"], [type="radio"]),
+  select, textarea, .input, .text-input, .search, .page-search,
+  .settings-search, .music-input, .music-select, .storage-search-input,
+  .move-path-input, .install-path-input
+) {
+  background: #080b0f;
+  border: 1px solid rgba(249, 115, 22, 0.28);
+  color: #f8fafc;
+  border-radius: 4px;
+}
+:root[data-surface="resonance"] :is(
+  input, select, textarea, .input, .text-input, .settings-search,
+  .music-input, .music-select, .storage-search-input, .move-path-input,
+  .install-path-input
+):focus,
+:root[data-surface="resonance"] .search:focus-within,
+:root[data-surface="resonance"] .install-path-input-wrap:focus-within {
+  border-color: #fb923c;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.35);
+  outline: none;
+}
+
+/* Resonance Core: Progress Bar (HEV Suit Aux Power / Health Meter) */
+:root[data-surface="resonance"] .progress {
+  background: rgba(10, 13, 18, 0.92);
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  border-radius: 4px;
+  overflow: hidden;
+}
+:root[data-surface="resonance"] .progress > span,
+:root[data-surface="resonance"] :is(.gp-progress-fill) {
+  background: linear-gradient(90deg, #ea580c 0%, #f97316 60%, #fde047 100%);
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+}
+
+/* Resonance Core: Switches */
+:root[data-surface="resonance"] .switch input:checked + .track {
+  background: #c2410c;
+  border-color: #f97316;
+}
+:root[data-surface="resonance"] .switch input:checked + .track::before {
+  background: #ffffff;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.7);
+}
+
+/* Resonance Core: Store Tabs Active Indicator */
+:root[data-surface="resonance"] .store-tabs .tab.active,
+:root[data-surface="resonance"] .tab.active {
+  color: #fed7aa;
+}
+:root[data-surface="resonance"] .store-tabs .tab.active::after,
+:root[data-surface="resonance"] .tab.active::after {
+  background: #f97316;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.6);
+}

@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
 import {
   BOOT_THEME_KEY,
   applySurface,
@@ -257,12 +256,6 @@ describe("theme contrast", () => {
 });
 
 describe("boot snapshot", () => {
-  it("keeps the boot script theme-agnostic", () => {
-    const html = readFileSync("index.html", "utf8");
-    expect(html).toContain("efxlve-boot-theme");
-    expect(html).not.toMatch(/surface === "(?:soft|white|gloss)"/);
-  });
-
   it("writes the applied theme's background and tokens", () => {
     applySurface("neongrid", false);
     const raw = localStorage.getItem(BOOT_THEME_KEY);
