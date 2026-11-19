@@ -20,11 +20,16 @@ import {
   rarityMultiplier,
 } from "../../core/achievements";
 import { icon, type IconName } from "../../core/icons";
+import { steamLanguage } from "../../core/steam-language";
 import { toast } from "../../core/toast";
 import { esc, fmtAchDate, fmtDecimal1, stripEmoji } from "../../core/utils";
+import { epicEosLogUnlocks, epicListInstalled } from "../../epic";
 import { currentLanguage, t } from "../../i18n";
 import {
+  steamAchievementProbe,
+  steamFindStoreApp,
   steamGetAchievementCommunity,
+  steamGetEmulatorAchievements,
   type SteamAchievementCommunity,
 } from "../../steam";
 
@@ -45,6 +50,10 @@ export interface AchievementItem {
   rarity?: { percent?: number | null } | null;
   /** Launcher-only state edit folded in by `applyAchievementEdits`. */
   user_state?: "unlocked" | "locked";
+  /** Launcher-only: the store's own answer the edit is folded over. */
+  store_unlocked?: boolean;
+  store_progress?: number;
+  store_unlock_date?: string | null;
 }
 
 export interface AchievementsData {
@@ -554,6 +563,75 @@ export function renderAchView(): void {
   D().renderHome();
 }
 
+/**
+ * Epic titles whose achievements live only in Epic Online Services publish no
+ * store set, so legendary answers with an empty list. Their own log names the
+ * unlocks and the public Steam schema names the achievements; the game page
+ * already pairs the two, and the panel shows the same list instead of an empty
+ * tab. The definitions are resolved once per session: later reads only fold in
+ * the new log lines.
+ */
+let eosSource: { appName: string; data: AchievementsData } | null = null;
+
+function applyEosLogUnlocks(
+  data: AchievementsData,
+  unlocks: Record<string, number>,
+): void {
+  for (const item of data.achievements) {
+    const at = unlocks[item.name];
+    if (at == null || item.unlocked) continue;
+    const date = new Date(at * 1000);
+    const iso = Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
+    item.unlocked = true;
+    item.progress = 1;
+    item.unlock_date = iso || item.unlock_date;
+    // An edit already folded the old store facts in; move them with the unlock
+    // so re-applying the edit keeps the truth instead of clearing it again.
+    if (item.store_unlocked !== undefined) {
+      item.store_unlocked = true;
+      item.store_progress = 1;
+      item.store_unlock_date = iso || null;
+    }
+  }
+  data.user_unlocked = data.achievements.filter(isAchievementUnlocked).length;
+  data.is_platinum =
+    data.total_achievements > 0 && data.user_unlocked >= data.total_achievements;
+}
+
+async function loadEosAchievements(
+  appName: string,
+  title: string,
+): Promise<AchievementsData | null> {
+  if (eosSource?.appName === appName) {
+    const log = await epicEosLogUnlocks(appName, title).catch(() => null);
+    if (log) applyEosLogUnlocks(eosSource.data, log.unlocks);
+    return eosSource.data;
+  }
+  const installed = await epicListInstalled().catch(() => []);
+  const entry = installed.find((game) => game.app_name === appName);
+  if (!entry?.install_path) return null;
+  const probe = await steamAchievementProbe("", entry.install_path).catch(() => null);
+  if (!probe?.eos || probe.steamworks) return null;
+  const log = await epicEosLogUnlocks(appName, title).catch(() => null);
+  if (!log || (!log.logPath && Object.keys(log.unlocks).length === 0)) return null;
+  const gameTitle = title || entry.title;
+  const steamAppId =
+    probe.appId ||
+    (await steamFindStoreApp(gameTitle, steamLanguage(currentLanguage())).catch(() => null))?.appId ||
+    "";
+  if (!steamAppId) return null;
+  const definitions = await steamGetEmulatorAchievements(
+    steamAppId,
+    false,
+    entry.install_path,
+    currentLanguage(),
+  ).catch(() => null);
+  if (!definitions || definitions.achievements.length === 0) return null;
+  applyEosLogUnlocks(definitions, log.unlocks);
+  eosSource = { appName, data: definitions };
+  return definitions;
+}
+
 export async function loadAchievements(force = false): Promise<void> {
   const el = D().viewEl("ach");
   if (!el) return;
@@ -573,7 +651,14 @@ export async function loadAchievements(force = false): Promise<void> {
       } else if (store === "gog") {
         next = await invoke<AchievementsData>("gog_get_achievements", { gameId: id });
       } else if (store === "epic") {
-        next = await invoke<AchievementsData>("epic_get_achievements", { appName: D().context().appName, forceRefresh: false });
+        next = await invoke<AchievementsData>("epic_get_achievements", {
+          appName: id,
+          forceRefresh: false,
+        }).catch(() => null);
+        // EOS-only titles have no store set; their game log is the source.
+        if (!next || next.achievements.length === 0) {
+          next = await loadEosAchievements(id, D().context().title);
+        }
       } else {
         next = await invoke<AchievementsData>("companion_achievements", {
           store,
@@ -601,6 +686,7 @@ export async function loadAchievements(force = false): Promise<void> {
 export function resetAchievementsSession(): void {
   stopTrackerPolling();
   cachedAchievements = null;
+  eosSource = null;
   achLoading = false;
   achLoadGeneration += 1;
   achDetail = null;
