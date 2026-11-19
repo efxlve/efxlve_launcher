@@ -53,19 +53,20 @@ Direction: **Hydra / Heroic desktop layout** - fixed left sidebar, quiet cover g
 | `--warn` | `#e0a32e` | update available, offline, paused |
 | `--err` | `#e5484d` | errors, destructive |
 
-- Themes come from the registry in `src/core/themes.ts`; built-in data lives in
-  `src/core/theme/builtins.ts`, designer presets in `src/core/theme/presets.ts`
-  and shared shapes in `src/core/theme/types.ts`. A colour-only theme is one
-  entry with `tokens` (written to `:root[data-surface="<id>"]` at runtime)
-  and needs no CSS; `midnight` is the reference. A theme that changes shapes,
-  backgrounds or glass adds a `[data-surface="<id>"]` block in `themes.css`;
-  `white`, `blades` and `gloss` do. The Settings picker, the stored choice, the
-  boot snapshot written by `applySurface` and the child-webview palette all
-  follow the registry, so a new theme leaves no switch half-wired. Components
-  read tokens, never literal colours: a literal is what makes one theme look
-  broken in another.
+- Themes come from the registry in `src/core/themes.ts`; boot-critical themes
+  live in `src/core/theme/core.ts`, the extended catalog in
+  `src/core/theme/catalog.ts` (loaded when the Themes page opens), designer
+  presets in `src/core/theme/presets.ts` and shared shapes in
+  `src/core/theme/types.ts`. A colour-only theme is one entry with `tokens`
+  (written to `:root[data-surface="<id>"]` at runtime) and needs no CSS;
+  `midnight` is the reference. A theme that changes shapes, backgrounds or glass
+  adds a `[data-surface="<id>"]` block in `themes.css`; `white`, `blades` and
+  `gloss` do. The Settings picker, the stored choice, the boot snapshot written
+  by `applySurface` and the child-webview palette all follow the registry, so a
+  new theme leaves no switch half-wired. Components read tokens, never literal
+  colours: a literal is what makes one theme look broken in another.
 - `data-surface="soft"` lives in `tokens.css`; `white`, `gloss` and `blades`
-  keep their token tables in `builtins.ts` and add only component touches in
+  keep their token tables in `core.ts` and add only component touches in
   `themes.css`. Rules that apply to every light palette use
   `:root[data-scheme="light"]`; theme-specific exceptions stay on
   `[data-surface="<id>"]`.

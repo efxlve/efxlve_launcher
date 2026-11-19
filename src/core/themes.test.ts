@@ -15,6 +15,9 @@ import {
   sanitizeThemeTokens,
   contrastRatio,
   defineTheme,
+  ensureThemeCatalog,
+  isThemeCatalogLoaded,
+  normalizeSurface,
   PRESET_WALLPAPERS,
   themeById,
   themes,
@@ -47,6 +50,44 @@ beforeEach(() => {
     delete: async (id) => {
       store.delete(id);
     },
+  });
+});
+
+describe("lazy catalog", () => {
+  it("paints the active extended theme from the boot snapshot", () => {
+    localStorage.setItem(
+      "efxlve-boot-theme",
+      JSON.stringify({
+        id: "neongrid",
+        scheme: "dark",
+        bg: "#07080a",
+        labelKey: "settings.surfaceNeonGrid",
+        tokens: {
+          "--bg": "#07080a",
+          "--surface-1": "#0c0e12",
+          "--accent": "#fcee0a",
+          "--text": "#fefefe",
+          "--scene-bg": '#07080a url("../assets/neon-grid-scene.svg") 0 0 / 100vw 100vh no-repeat fixed',
+        },
+      }),
+    );
+
+    expect(normalizeSurface("neongrid")).toBe("neongrid");
+    expect(themeById("neongrid").tokens?.["--accent"]).toBe("#fcee0a");
+    expect(themeById("neongrid").tokens?.["--scene-bg"]).toContain("neon-grid-scene.svg");
+    applySurface("neongrid", false);
+    const snapshot = JSON.parse(localStorage.getItem("efxlve-boot-theme")!) as { id: string };
+    expect(snapshot.id).toBe("neongrid");
+  });
+
+  it("keeps extended themes out until the Themes page asks", async () => {
+    expect(isThemeCatalogLoaded()).toBe(false);
+    expect(themes().some((theme) => theme.id === "neongrid")).toBe(false);
+
+    await ensureThemeCatalog();
+
+    expect(isThemeCatalogLoaded()).toBe(true);
+    expect(themes().some((theme) => theme.id === "neongrid")).toBe(true);
   });
 });
 
@@ -190,7 +231,8 @@ describe("custom theme transfer", () => {
     expect(input?.tokens).toEqual({ "--ok": "#00ff00" });
   });
 
-  it("keeps a cloned built-in's tokens when the theme is renamed", () => {
+  it("keeps a cloned built-in's tokens when the theme is renamed", async () => {
+    await ensureThemeCatalog();
     const id = duplicateTheme("neongrid");
     const cloned = getCustomThemeInput(id);
     expect(cloned?.tokens?.["--accent"]).toBe("#fcee0a");
@@ -215,14 +257,16 @@ describe("custom theme transfer", () => {
     expect(edited?.tokens).toBeUndefined();
   });
 
-  it("exports built-in token overrides", () => {
+  it("exports built-in token overrides", async () => {
+    await ensureThemeCatalog();
     const exported = JSON.parse(exportThemeJson("neongrid")) as {
       tokens?: Record<string, string>;
     };
     expect(exported.tokens?.["--accent"]).toBe("#fcee0a");
   });
 
-  it("materializes scene-theme tokens for clone and export", () => {
+  it("materializes scene-theme tokens for clone and export", async () => {
+    await ensureThemeCatalog();
     for (const id of ["white", "blades", "gloss", "neongrid"]) {
       const theme = themes().find((item) => item.id === id);
       expect(theme?.tokens?.["--bg"], id).toBeTruthy();
@@ -260,7 +304,8 @@ describe("custom theme transfer", () => {
     themes();
     themes();
     themeById("neongrid");
-    expect(getItem).not.toHaveBeenCalled();
+    const customReads = getItem.mock.calls.filter(([key]) => key === "efxlve-custom-themes");
+    expect(customReads).toHaveLength(0);
     getItem.mockRestore();
   });
 });
@@ -378,7 +423,8 @@ describe("theme contrast", () => {
 });
 
 describe("boot snapshot", () => {
-  it("writes the applied theme's background and tokens", () => {
+  it("writes the applied theme's background and tokens", async () => {
+    await ensureThemeCatalog();
     applySurface("neongrid", false);
     const raw = localStorage.getItem(BOOT_THEME_KEY);
     expect(raw).not.toBeNull();

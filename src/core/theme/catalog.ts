@@ -1,13 +1,6 @@
-/** Built-in theme definitions and legacy id aliases. */
-
+/** Extended built-ins, loaded only when the Themes page opens. */
 import type { ThemeDef } from "./types";
 
-export const DEFAULT_THEME = "black";
-
-/**
- * Neon Grid: acid yellow (#FCEE0A) on dark tech concrete, with a red warning
- * tone (#FF003C) and a cyan signal tone (#00F0FF).
- */
 const NEON_GRID: ThemeDef = {
   id: "neongrid",
   labelKey: "settings.surfaceNeonGrid",
@@ -559,23 +552,8 @@ const HOMESTEAD: ThemeDef = {
 };
 
 /** Built-in themes. User themes are appended by [`themes`]. */
-const BUILTIN_THEME_DEFS: readonly ThemeDef[] = [
-  {
-    id: "black",
-    labelKey: "settings.surfaceBlack",
-    bg: "#000000",
-    surface: "#141414",
-    accent: "#ffffff",
-    scheme: "dark",
-  },
-  {
-    id: "soft",
-    labelKey: "settings.surfaceSoft",
-    bg: "#18181c",
-    surface: "#242429",
-    accent: "#ffffff",
-    scheme: "dark",
-  },
+
+const CATALOG_DEFS: readonly ThemeDef[] = [
   NEON_GRID,
   TOKYO_NIGHT,
   DRACULA,
@@ -590,125 +568,15 @@ const BUILTIN_THEME_DEFS: readonly ThemeDef[] = [
   SYNTHWAVE,
   ROSE_PINE,
   OLED_CYAN,
-  QUARANTINE, HOMESTEAD, SENTIENCE, SANCTUM, RESONANCE,
-  {
-    id: "white",
-    labelKey: "settings.surfaceWhite",
-    bg: "#f3f4f6",
-    surface: "#ffffff",
-    accent: "#111318",
-    scheme: "light",
-  },
-  {
-    id: "blades",
-    labelKey: "settings.surfaceBlades",
-    bg: "linear-gradient(160deg, #06190b 0%, #1f5c18 45%, #76be2b 75%, #a8ea48 100%)",
-    surface: "#122a16",
-    accent: "#9bd44a",
-    scheme: "dark",
-  },
-  {
-    id: "gloss",
-    labelKey: "settings.surfaceGloss",
-    bg: "linear-gradient(180deg, #1678cc 0%, #8fd6fa 58%, #d9f2ff 100%)",
-    surface: "#ffffff",
-    accent: "#2b8fef",
-    scheme: "light",
-  },
+  QUARANTINE,
+  SENTIENCE,
+  SANCTUM,
+  RESONANCE,
+  HOMESTEAD,
 ];
 
-/** Exact token contract for the themes whose CSS blocks carry extra vars. */
-const CSS_TOKENS: Record<string, Record<string, string>> = {
-  "white": {
-    "--bg": "#f3f4f6",
-    "--surface-1": "#ffffff",
-    "--surface-2": "#eef0f4",
-    "--surface-3": "#e4e7ec",
-    "--line": "rgba(15, 23, 42, 0.08)",
-    "--line-strong": "rgba(15, 23, 42, 0.16)",
-    "--text": "#111318",
-    "--text-2": "#4b5563",
-    "--text-3": "#7b8492",
-    "--accent": "#111318",
-    "--accent-hover": "#000000",
-    "--accent-tint": "rgba(17, 19, 24, 0.07)",
-    "--on-accent": "#ffffff",
-    "--ok": "#15803d",
-    "--ok-hover": "#166534",
-    "--ok-tint": "rgba(21, 128, 61, 0.12)",
-    "--warn": "#a16207",
-    "--warn-tint": "rgba(161, 98, 7, 0.12)",
-    "--err": "#b91c1c",
-    "--err-tint": "rgba(185, 28, 28, 0.1)",
-    "--shadow-pop": "0 12px 32px rgba(15, 23, 42, 0.14)",
-    "--scrollbar-thumb": "rgba(15, 23, 42, 0.32)",
-    "--scrollbar-thumb-hover": "rgba(15, 23, 42, 0.55)",
-  },
-  "gloss": {
-    "--bg": "#cdeefc",
-    "--surface-1": "rgba(255, 255, 255, 0.9)",
-    "--surface-2": "rgba(255, 255, 255, 0.62)",
-    "--surface-3": "rgba(255, 255, 255, 0.44)",
-    "--line": "rgba(16, 78, 130, 0.14)",
-    "--line-strong": "rgba(16, 78, 130, 0.26)",
-    "--text": "#07223b",
-    "--text-2": "#164267",
-    "--text-3": "#326084",
-    "--accent": "#0a78c8",
-    "--accent-hover": "#0866ab",
-    "--accent-tint": "rgba(10, 120, 200, 0.12)",
-    "--on-accent": "#ffffff",
-    "--ok": "#24912e",
-    "--ok-hover": "#1e7a27",
-    "--ok-tint": "rgba(36, 145, 46, 0.14)",
-    "--warn": "#b86e00",
-    "--warn-tint": "rgba(184, 110, 0, 0.15)",
-    "--err": "#cc2f35",
-    "--err-tint": "rgba(204, 47, 53, 0.13)",
-    "--r-sm": "7px",
-    "--r-md": "12px",
-    "--shadow-pop": "0 18px 44px rgba(8, 60, 110, 0.28)",
-    "--aero-heading": "#062a50",
-    "--aero-glass-edge": "0 0 0 1px rgba(16, 78, 130, 0.14)",
-    "--aero-gloss-blue": "linear-gradient(180deg, #a8e2ff 0%, #5cbdf3 48%, #1d91e0 50%, #1479c9 100%)",
-    "--aero-gloss-blue-hover": "linear-gradient(180deg, #c4ecff 0%, #74caf7 48%, #2ba0ec 50%, #1a88d8 100%)",
-    "--aero-gloss-white": "linear-gradient(180deg, #ffffff 0%, #f4f9fd 48%, #e2eef8 50%, #eef6fc 100%)",
-    "--aero-gloss-hover": "linear-gradient(180deg, #f6fcff 0%, #e2f4fe 48%, #c8e9fc 50%, #e1f4fe 100%)",
-    "--scene-bg": "#8fd6fa url(\"../assets/gloss-scene.svg\") 0 0 / 100vw 100vh no-repeat fixed",
-    "--scrollbar-thumb": "rgba(13, 47, 79, 0.38)",
-    "--scrollbar-thumb-hover": "rgba(13, 47, 79, 0.65)",
-  },
-  "blades": {
-    "--bg": "#07180d",
-    "--surface-1": "rgba(16, 38, 22, 0.88)",
-    "--surface-2": "rgba(26, 56, 32, 0.76)",
-    "--surface-3": "rgba(38, 76, 44, 0.65)",
-    "--line": "rgba(170, 226, 118, 0.16)",
-    "--line-strong": "rgba(170, 226, 118, 0.3)",
-    "--text": "#f3ffe9",
-    "--text-2": "#b8d5a8",
-    "--text-3": "#7d9a75",
-    "--accent": "#9bd44a",
-    "--accent-hover": "#b0e566",
-    "--accent-tint": "rgba(155, 212, 74, 0.18)",
-    "--on-accent": "#0a1a06",
-    "--ok": "#6fbf2b",
-    "--ok-hover": "#7fd13a",
-    "--ok-tint": "rgba(111, 191, 43, 0.16)",
-    "--warn": "#e0a32e",
-    "--warn-tint": "rgba(224, 163, 46, 0.14)",
-    "--err": "#e5484d",
-    "--err-tint": "rgba(229, 72, 77, 0.14)",
-    "--r-sm": "5px",
-    "--r-md": "9px",
-    "--shadow-pop": "0 18px 44px rgba(0, 12, 4, 0.6)",
-    "--scene-bg": "#07180d url(\"../assets/blades-scene.svg\") 0 0 / 100vw 100vh no-repeat fixed",
-    "--scrollbar-thumb": "rgba(155, 212, 74, 0.45)",
-    "--scrollbar-thumb-hover": "rgba(155, 212, 74, 0.85)",
-    "--x360-gloss": "linear-gradient(180deg, #d8f7a0 0%, #a6dc52 46%, #7fbd2e 50%, #6ca726 100%)",
-    "--x360-gloss-hover": "linear-gradient(180deg, #e6ffb8 0%, #b7ea63 46%, #8ecb37 50%, #79b52b 100%)",
-    "--x360-glass-edge": "inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-  },
+/** Exact token contract for the extended CSS-only themes. */
+const TOKENS: Record<string, Record<string, string>> = {
   "neongrid": {
     "--bg": "#07080a",
     "--surface-1": "#0c0e12",
@@ -891,10 +759,7 @@ const CSS_TOKENS: Record<string, Record<string, string>> = {
   },
 };
 
-/** Discovery tags for the gallery search; brand names stay in `labelKey`. */
-const BUILTIN_TAGS: Record<string, readonly string[]> = {
-  black: ["minimal", "oled", "dark"],
-  soft: ["minimal", "dark"],
+const TAGS: Record<string, readonly string[]> = {
   neongrid: ["cyberpunk", "neon", "high-contrast"],
   tokyonight: ["developer", "blue", "dark"],
   dracula: ["developer", "pastel", "purple"],
@@ -910,38 +775,17 @@ const BUILTIN_TAGS: Record<string, readonly string[]> = {
   rosepine: ["pastel", "rose", "developer"],
   oledcyan: ["oled", "cyberpunk", "cyan"],
   quarantine: ["game", "cyberpunk", "red"],
-  homestead: ["game", "cozy", "green"],
   sentience: ["game", "sci-fi", "blue"],
   sanctum: ["game", "fantasy", "gold"],
   resonance: ["game", "industrial", "orange"],
-  white: ["light", "minimal"],
-  blades: ["light", "game", "xbox"],
-  gloss: ["light", "glass", "aero"],
+  homestead: ["game", "cozy", "green"],
 };
 
-export const BUILTIN_THEMES: readonly ThemeDef[] = BUILTIN_THEME_DEFS.map((theme) => {
-  const tokens = { ...theme.tokens, ...(CSS_TOKENS[theme.id] ?? {}) };
+export const CATALOG_THEMES: readonly ThemeDef[] = CATALOG_DEFS.map((theme) => {
+  const tokens = { ...theme.tokens, ...(TOKENS[theme.id] ?? {}) };
   return {
     ...theme,
-    tags: theme.tags ?? BUILTIN_TAGS[theme.id] ?? [],
+    tags: theme.tags ?? TAGS[theme.id] ?? [],
     tokens: Object.keys(tokens).length > 0 ? tokens : undefined,
   };
 });
-
-/** A stored id that no longer exists falls back to the default theme. */
-export const LEGACY_SURFACE_IDS: Record<string, string> = {
-  cyberpunk: "neongrid",
-  xbox360: "blades",
-  epic: "violet",
-  discord: "blurple",
-  aero: "gloss",
-  // Game theme legacy aliases
-  harvest: "homestead",
-  biohazard: "quarantine",
-  cyberlife: "sentience",
-  redemption: "sunset",
-  frontier: "sunset",
-  tarnished: "sanctum",
-  hazard: "resonance",
-};
-

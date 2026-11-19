@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "check:theme-catalog": "node scripts/check-theme-catalog.mjs",
     "locales": "node scripts/check-locales.mjs",
     "test": "vitest run",
     "preview": "vite preview",

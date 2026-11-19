@@ -1,10 +1,11 @@
 /**
  * Theme registry and engine.
  *
- * Built-in definitions live in `core/theme/builtins.ts`, the designer presets
- * in `core/theme/presets.ts` and the shared data shapes in
- * `core/theme/types.ts`. This file owns storage, validation, transfer and the
- * DOM painter, and re-exports the registry API the rest of the app imports.
+ * Built-in definitions live in `core/theme/core.ts`; the extended catalog is
+ * dynamically imported from `core/theme/catalog.ts`. Designer presets live in
+ * `core/theme/presets.ts` and shared shapes in `core/theme/types.ts`. This file
+ * owns storage, validation, transfer and the DOM painter, and re-exports the
+ * registry API the rest of the app imports.
  */
 
 import { invoke } from "@tauri-apps/api/core";
@@ -12,7 +13,7 @@ import { SURFACE_KEY, isTauri } from "./constants";
 import { t } from "../i18n";
 import type { CustomThemeInput, ThemeDef, ThemePreset, PresetWallpaper } from "./theme/types";
 import { PRESET_WALLPAPERS, THEME_PRESETS } from "./theme/presets";
-import { BUILTIN_THEMES, DEFAULT_THEME, LEGACY_SURFACE_IDS } from "./theme/builtins";
+import { CORE_THEMES, DEFAULT_THEME, LEGACY_SURFACE_IDS } from "./theme/core";
 import {
   deleteCachedThemeScene,
   deleteThemeScene,
@@ -28,7 +29,7 @@ export { defineTheme } from "./theme/recipe";
 export type { ThemeRecipe } from "./theme/recipe";
 export type { CustomThemeInput, ThemeDef, ThemePreset, PresetWallpaper };
 export { PRESET_WALLPAPERS, THEME_PRESETS };
-export { BUILTIN_THEMES, DEFAULT_THEME, LEGACY_SURFACE_IDS };
+export { CORE_THEMES, DEFAULT_THEME, LEGACY_SURFACE_IDS };
 
 const CUSTOM_KEY = "efxlve-custom-themes";
 const CUSTOM_PREFIX = "custom-";
@@ -37,6 +38,35 @@ const TOKEN_STYLE_ID = "efxlve-theme-tokens";
 let customCache: CustomThemeInput[] | null = null;
 /** Expanded user theme registry entries; rebuilt after the raw list changes. */
 let customThemeCache: ThemeDef[] | null = null;
+/** Extended built-ins arrive only when the Themes page asks for them. */
+let catalogThemes: readonly ThemeDef[] | null = null;
+let catalogPromise: Promise<void> | null = null;
+
+function allBuiltinThemes(): readonly ThemeDef[] {
+  return catalogThemes ? [...CORE_THEMES, ...catalogThemes] : CORE_THEMES;
+}
+
+/** True once the extended catalog is in memory (or its load has settled). */
+export function isThemeCatalogLoaded(): boolean {
+  return catalogThemes !== null;
+}
+
+/** Loads the extended built-ins on first use; a failure leaves core themes. */
+export function ensureThemeCatalog(): Promise<void> {
+  if (catalogThemes) return Promise.resolve();
+  catalogPromise ??= import("./theme/catalog")
+    .then((module) => {
+      catalogThemes = module.CATALOG_THEMES;
+      clearThemeCache();
+      const active = readSurface();
+      if (active !== DEFAULT_THEME) applySurface(active, false);
+    })
+    .catch((error) => {
+      catalogThemes = [];
+      console.warn("Theme catalog could not be loaded", error);
+    });
+  return catalogPromise;
+}
 
 if (typeof window !== "undefined") {
   window.addEventListener("storage", (event) => {
@@ -49,6 +79,7 @@ const UNSAFE_TOKEN_VALUE = /[;{}<>\\]|\/\*|\*\/|url\s*\(|@import|expression\s*\(
 const RASTER_SCENE = /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=]+$/i;
 const SVG_SCENE = /^data:image\/svg\+xml,/i;
 const UNSAFE_SCENE_TEXT = /["\\\u0000-\u001f]/;
+const BUILTIN_SCENE_BG = /^#[0-9a-f]{6} url\("\.\.\/assets\/[a-z0-9-]+\.(?:svg|png)"\) 0 0 \/ 100vw 100vh no-repeat fixed$/i;
 
 /** Written on every applied theme and read by the boot script in index.html. */
 export const BOOT_THEME_KEY = "efxlve-boot-theme";
@@ -99,6 +130,19 @@ export function sanitizeSceneUrl(value: unknown): string | undefined {
   if (RASTER_SCENE.test(value)) return value;
   if (SVG_SCENE.test(value) && !UNSAFE_SCENE_TEXT.test(value)) return value;
   return undefined;
+}
+
+/** Boot snapshots may carry the bundled `--scene-bg` token, never a remote URL. */
+function sanitizeSnapshotTokens(value: unknown): Record<string, string> | undefined {
+  const clean = sanitizeThemeTokens(value) ?? {};
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const sceneBg = (value as Record<string, unknown>)["--scene-bg"];
+    if (typeof sceneBg === "string") {
+      const token = sceneBg.trim();
+      if (BUILTIN_SCENE_BG.test(token)) clean["--scene-bg"] = token;
+    }
+  }
+  return Object.keys(clean).length > 0 ? clean : undefined;
 }
 
 function sceneRules(id: string, input: CustomThemeInput): string {
@@ -166,7 +210,7 @@ function readCustomInputs(): CustomThemeInput[] {
         // A theme cloned after the token fix carries its source id, so missing
         // tokens can be recovered without looking at a translated name.
         if (!tokens && sourceId && item.tokensDecided !== true) {
-          const source = BUILTIN_THEMES.find((theme) => theme.id === sourceId);
+          const source = allBuiltinThemes().find((theme) => theme.id === sourceId);
           if (source?.tokens) {
             tokens = { ...source.tokens };
             migrated = true;
@@ -177,7 +221,7 @@ function readCustomInputs(): CustomThemeInput[] {
         // write the tokens back, so a later language change cannot lose them.
         if (!tokens && item.tokensDecided !== true && typeof item.name === "string" && item.name.endsWith(" Copy")) {
           const baseName = item.name.replace(/\s+Copy$/, "").trim().toLowerCase();
-          const matched = BUILTIN_THEMES.find((theme) => {
+          const matched = allBuiltinThemes().find((theme) => {
             const name = (theme.name ?? (theme.labelKey ? t(theme.labelKey) : theme.id)).toLowerCase();
             return name === baseName || theme.id.toLowerCase() === baseName;
           });
@@ -278,8 +322,72 @@ export function customThemes(): ThemeDef[] {
 }
 
 /** Every theme the picker shows: built-ins first, then the user's own. */
+/** Rebuilds the active theme from the boot snapshot until the catalog loads. */
+let bootSnapshotRaw: string | null = null;
+let bootSnapshotCache: ThemeDef | null = null;
+
+function bootSnapshotTheme(): ThemeDef | null {
+  try {
+    const raw = localStorage.getItem(BOOT_THEME_KEY) ?? "";
+    if (raw === bootSnapshotRaw) return bootSnapshotCache;
+    bootSnapshotRaw = raw;
+    bootSnapshotCache = null;
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const id = parsed.id;
+    if (!isSafeThemeId(id)) return null;
+
+    const tokens = sanitizeSnapshotTokens(parsed.tokens);
+    const accent =
+      typeof parsed.accent === "string" && HEX.test(parsed.accent)
+        ? parsed.accent
+        : tokens?.["--accent"] && HEX.test(tokens["--accent"])
+          ? tokens["--accent"]
+          : "#ffffff";
+    const bg =
+      typeof parsed.bg === "string" && HEX.test(parsed.bg)
+        ? parsed.bg
+        : tokens?.["--bg"] && HEX.test(tokens["--bg"])
+          ? tokens["--bg"]
+          : "#000000";
+    const surface =
+      typeof parsed.surface === "string" && HEX.test(parsed.surface)
+        ? parsed.surface
+        : tokens?.["--surface-1"];
+
+    bootSnapshotCache = {
+      id,
+      labelKey: typeof parsed.labelKey === "string" ? parsed.labelKey : "",
+      name: typeof parsed.name === "string" ? parsed.name : undefined,
+      bg,
+      surface,
+      accent,
+      scheme: parsed.scheme === "light" ? "light" : "dark",
+      tokens,
+      tags: Array.isArray(parsed.tags)
+        ? parsed.tags.filter((tag): tag is string => typeof tag === "string")
+        : undefined,
+    };
+    return bootSnapshotCache;
+  } catch {
+    return null;
+  }
+}
+
+/** Every theme the picker shows: core, the loaded catalog, then user themes. */
 export function themes(): ThemeDef[] {
-  return [...BUILTIN_THEMES, ...customThemes()];
+  const custom = customThemes();
+  const list = [...allBuiltinThemes()];
+  const snapshot = bootSnapshotTheme();
+  if (
+    snapshot &&
+    !list.some((theme) => theme.id === snapshot.id) &&
+    !custom.some((theme) => theme.id === snapshot.id)
+  ) {
+    list.push(snapshot);
+  }
+  return [...list, ...custom];
 }
 
 /** Fallback when IndexedDB rejects a write: keep the image in metadata. */
@@ -654,10 +762,23 @@ export const SURFACE_APPLIED_EVENT = "efxlve:surface-applied";
  */
 function writeBootSnapshot(theme: ThemeDef): void {
   try {
-    const tokens = sanitizeThemeTokens(theme.tokens);
+    const tokens = theme.custom ? sanitizeThemeTokens(theme.tokens) : theme.tokens;
     const tokenBg = tokens?.["--bg"];
     const bg = tokenBg ?? BOOT_BG[theme.id] ?? (HEX.test(theme.bg) ? theme.bg : theme.scheme === "light" ? "#f3f4f6" : "#000000");
-    localStorage.setItem(BOOT_THEME_KEY, JSON.stringify({ id: theme.id, scheme: theme.scheme, bg, tokens }));
+    const snapshot = {
+      id: theme.id,
+      scheme: theme.scheme,
+      bg,
+      tokens,
+      labelKey: theme.labelKey,
+      name: theme.name,
+      accent: theme.accent,
+      surface: theme.surface,
+      tags: theme.tags,
+    };
+    localStorage.setItem(BOOT_THEME_KEY, JSON.stringify(snapshot));
+    bootSnapshotRaw = null;
+    bootSnapshotCache = null;
     if (isTauri && HEX.test(bg)) {
       void invoke("app_set_background_color", { color: bg }).catch(() => undefined);
     }

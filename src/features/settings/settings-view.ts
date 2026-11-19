@@ -17,6 +17,7 @@ import { emptyState, icon, type IconName } from "../../core/icons";
 import { discordPageVisible, hotkeyLabel, isValidHotkey, DEFAULT_OVERLAY_HOTKEY, miniPlayerVisible, notesSidebarVisible, overlayBlockedGames, overlayEnabled, overlayHotkey, screenshotsSidebarVisible, spotifyPageVisible } from "../../core/page-visibility";
 import { appGetAutostart } from "../../core/window";
 import { render } from "../../core/render";
+import { ensureThemeCatalog, isThemeCatalogLoaded } from "../../core/themes";
 import { collectionGameCount, collectionGames } from "../../core/game-collections";
 import { canonicalGameTitle, rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -1558,10 +1559,22 @@ function drawerOrderRow(): string {
   );
 }
 
+let themesCatalogRequested = false;
+
 function renderThemes(): string {
   const theme = themePanel.get();
   if (!theme) {
     themePanel.ensure();
+    return panelLoadingState();
+  }
+  if (!isThemeCatalogLoaded()) {
+    if (!themesCatalogRequested) {
+      themesCatalogRequested = true;
+      void ensureThemeCatalog().then(() => {
+        themesCatalogRequested = false;
+        if (S.view === "settings" && S.settingsSection === "themes") render();
+      });
+    }
     return panelLoadingState();
   }
   return theme.renderThemeSection() + group(renderCustomCssRow());
