@@ -4397,5 +4397,20 @@
   "settings.achRareSoundDesc": "Optional separate audio chime for Ultra-Rare (<5%) and Platinum achievement unlocks.",
   "settings.achRareSoundSame": "Same as default sound",
   "settings.achShowProgressTitle": "प्रगति बार दिखाएं",
-  "settings.achShowProgressDesc": "कार्ड पर एनिमेटेड प्रगति बार प्रदर्शित करें।"
+  "settings.achShowProgressDesc": "कार्ड पर एनिमेटेड प्रगति बार प्रदर्शित करें।",
+  "drawer.matchMetadata": "मेटाडेटा ठीक करें",
+  "match.title": "गेम का मेटाडेटा ठीक करें",
+  "match.hint": "इस गेम के लिए IGDB प्रविष्टि और HowLongToBeat प्रविष्टि चुनें। गेम पेज और लाइब्रेरी आपकी पसंद का पालन करेंगे।",
+  "match.current": "मौजूदा",
+  "match.none": "कोई मिलान नहीं",
+  "match.manual": "मैन्युअल",
+  "match.automatic": "स्वचालित",
+  "match.searching": "खोज जारी है…",
+  "match.savedIgdb": "IGDB मिलान सहेजा गया",
+  "match.savedHltb": "HowLongToBeat मिलान सहेजा गया",
+  "match.autoRestored": "स्वचालित मिलान बहाल किया गया",
+  "match.searchFailed": "खोज पूरी नहीं हो सकी",
+  "match.invalid": "यह प्रविष्टि उपयोग नहीं की जा सकती",
+  "match.dlc": "DLC",
+  "match.game": "गेम"
 }

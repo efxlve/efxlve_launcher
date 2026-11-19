@@ -24,7 +24,7 @@ pub use cdn::*;
 #[allow(unused_imports)]
 pub use game_local::*;
 
-// metadata.rs: generate_slug_candidates, epic_get_hltb, epic_cached_hltb_times, epic_get_critic, epic_cached_critic_scores, epic_get_system_requirements, epic_detect_egl_games, epic_sync_egl_installed
+// metadata.rs: generate_slug_candidates, epic_get_hltb, epic_cached_hltb_times, epic_search_hltb, epic_set_hltb_match, epic_clear_hltb_match, epic_get_critic, epic_cached_critic_scores, epic_get_system_requirements, epic_detect_egl_games, epic_sync_egl_installed
 #[allow(unused_imports)]
 pub use metadata::*;
 

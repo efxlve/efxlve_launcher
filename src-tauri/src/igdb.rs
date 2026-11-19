@@ -18,7 +18,7 @@
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
@@ -359,33 +359,38 @@ fn name_like_query(title: &str, limit: usize) -> String {
 const MATCH_FIELDS: &str = "fields name, first_release_date, cover.image_id, rating, \
      aggregated_rating, rating_count, version_parent, parent_game, game_type;";
 
+/// Every field the game page maps; the by-id and batch queries share them.
+const FULL_GAME_FIELDS: &str = "fields name, summary, url, first_release_date, rating, rating_count, aggregated_rating, \
+     genres.name, themes.name, game_modes.name, player_perspectives.name, \
+     involved_companies.company.name, involved_companies.developer, involved_companies.publisher, \
+     franchises.name, collection.name, cover.image_id, screenshots.image_id, \
+     similar_games.name, similar_games.first_release_date, similar_games.cover.image_id, \
+     similar_games.slug, \
+     dlcs.name, dlcs.first_release_date, dlcs.cover.image_id, dlcs.slug, \
+     expansions.name, expansions.first_release_date, expansions.cover.image_id, expansions.slug, \
+     websites.category, websites.url, age_ratings.organization, age_ratings.rating_category, \
+     release_dates.platform, release_dates.date;";
+
 fn game_query(id: i64) -> String {
-    format!(
-        "fields name, summary, url, first_release_date, rating, rating_count, aggregated_rating, \
-         genres.name, themes.name, game_modes.name, player_perspectives.name, \
-         involved_companies.company.name, involved_companies.developer, involved_companies.publisher, \
-         franchises.name, collection.name, cover.image_id, screenshots.image_id, \
-         similar_games.name, similar_games.first_release_date, similar_games.cover.image_id, \
-         similar_games.slug, \
-         dlcs.name, dlcs.first_release_date, dlcs.cover.image_id, dlcs.slug, \
-         expansions.name, expansions.first_release_date, expansions.cover.image_id, expansions.slug, \
-         websites.category, websites.url, age_ratings.organization, age_ratings.rating_category, \
-         release_dates.platform, release_dates.date; \
-         where id = {id};"
-    )
+    format!("{FULL_GAME_FIELDS} where id = {id};")
 }
 
 /// External ids (Steam/GOG/Amazon) turn a fuzzy title match into an exact one.
+///
+/// IGDB keeps them on their own endpoint and names the source field
+/// `external_game_source`; the old `external_games.category` filter is a nested
+/// field on `games`, which the API does not filter on and now answers with an
+/// empty list. The `game` field is the IGDB id the caller wants.
 fn external_query(category: i64, uid: &str) -> String {
     format!(
-        "fields id; where external_games.category = {category} & external_games.uid = \"{}\"; limit 1;",
+        "fields game, uid; where external_game_source = {category} & uid = \"{}\"; limit 1;",
         sanitize_query_text(uid)
     )
 }
 
-/// Batch external-id query (up to 25 store IDs per request) so large libraries
-/// can hydrate full IGDB entries, genres, themes, ratings and franchises within
-/// the 4 requests/second budget while warming the per-game disk cache.
+/// Batch external-id query (up to 25 store IDs per request). The answer only
+/// maps each store id to an IGDB id; the games themselves are fetched by id so
+/// a library row lands with its genres, rating and franchises.
 fn external_batch_query(category: i64, uids: &[String]) -> String {
     let quoted = uids
         .iter()
@@ -393,20 +398,36 @@ fn external_batch_query(category: i64, uids: &[String]) -> String {
         .collect::<Vec<_>>()
         .join(",");
     format!(
-        "fields name, summary, url, first_release_date, rating, rating_count, aggregated_rating, \
-         genres.name, themes.name, game_modes.name, player_perspectives.name, \
-         involved_companies.company.name, involved_companies.developer, involved_companies.publisher, \
-         franchises.name, collection.name, cover.image_id, screenshots.image_id, \
-         similar_games.name, similar_games.first_release_date, similar_games.cover.image_id, \
-         similar_games.slug, \
-         dlcs.name, dlcs.first_release_date, dlcs.cover.image_id, dlcs.slug, \
-         expansions.name, expansions.first_release_date, expansions.cover.image_id, expansions.slug, \
-         websites.category, websites.url, age_ratings.organization, age_ratings.rating_category, \
-         release_dates.platform, release_dates.date, \
-         external_games.category, external_games.uid; \
-         where external_games.category = {category} & external_games.uid = ({quoted}); \
-         limit 40;"
+        "fields game, uid; where external_game_source = {category} & uid = ({quoted}); limit {};",
+        uids.len().max(1)
     )
+}
+
+/// The games behind a batch of resolved ids, in the shared field shape.
+fn games_by_ids_query(ids: &[i64]) -> String {
+    let list = ids
+        .iter()
+        .map(i64::to_string)
+        .collect::<Vec<_>>()
+        .join(",");
+    format!("{FULL_GAME_FIELDS} where id = ({list}); limit {};", ids.len().max(1))
+}
+
+/// Store id → IGDB game id from an `external_games` answer.
+fn external_uid_map(value: &serde_json::Value) -> Vec<(String, i64)> {
+    value
+        .as_array()
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| {
+                    let uid = item.get("uid")?.as_str()?.trim();
+                    let game = item.get("game")?.as_i64()?;
+                    (!uid.is_empty() && game > 0).then(|| (uid.to_string(), game))
+                })
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 /// The cover picker's search: covers and key art in one request.
@@ -880,6 +901,17 @@ fn normalize_title(title: &str) -> String {
         .collect()
 }
 
+/// True when a stored title match still fits the year the store knows. A
+/// same-name entry from another year ("Portal" 1986 under Valve's 2007 game)
+/// used to be served forever, because the lookup answered before any search.
+/// One year of slack covers a store date and IGDB's straddling New Year.
+fn lookup_year_fits(cached_year: Option<i64>, wanted_year: Option<i64>) -> bool {
+    match (cached_year, wanted_year) {
+        (Some(cached), Some(wanted)) => (cached - wanted).abs() <= 1,
+        _ => true,
+    }
+}
+
 /// The best search hit for a title: the exact name wins, then the year the
 /// caller knows, then the first hit that looks like a game (no version parent).
 fn pick_best_match(hits: &[serde_json::Value], title: &str, year: Option<i64>) -> Option<i64> {
@@ -954,7 +986,10 @@ fn match_has_data(hits: &[serde_json::Value], id: Option<i64>) -> bool {
 /* ---------- Disk cache ---------- */
 
 fn lookup_path(app: &AppHandle) -> Option<PathBuf> {
-    igdb_dir(app).map(|dir| dir.join("lookup.json"))
+    // `-v2`: version 1 held title matches, and a wrong same-name entry (Portal
+    // 1986 next to Valve's 2007 game) was served forever because a stored id
+    // beat the search. The new list is rebuilt by the wider, year-aware search.
+    igdb_dir(app).map(|dir| dir.join("lookup-v2.json"))
 }
 
 fn game_cache_path(app: &AppHandle, id: i64) -> Option<PathBuf> {
@@ -971,7 +1006,7 @@ fn write_lookup(app: &AppHandle, lookup: &serde_json::Map<String, serde_json::Va
 
 /// Title lookups IGDB had no match for, with the epoch second of the miss.
 fn misses_path(app: &AppHandle) -> Option<PathBuf> {
-    igdb_dir(app).map(|dir| dir.join("misses.json"))
+    igdb_dir(app).map(|dir| dir.join("misses-v2.json"))
 }
 
 fn read_misses(app: &AppHandle) -> serde_json::Map<String, serde_json::Value> {
@@ -1074,7 +1109,10 @@ struct CachedGame {
 }
 
 fn read_cached_game(app: &AppHandle, id: i64) -> Option<IgdbGame> {
-    let path = game_cache_path(app, id)?;
+    read_cached_game_file(&game_cache_path(app, id)?)
+}
+
+fn read_cached_game_file(path: &Path) -> Option<IgdbGame> {
     let data = std::fs::read_to_string(path).ok()?;
     let cached: CachedGame = serde_json::from_str(&data).ok()?;
     (cached.schema == CACHE_SCHEMA).then_some(cached.game)
@@ -1753,9 +1791,10 @@ pub async fn igdb_upcoming_releases(
     Ok(out)
 }
 
-/// The game page's entry point: an exact external id when the library knows
-/// one (Steam/GOG/Amazon), then the cached title lookup, then a title search
-/// with the year as a tiebreaker. `None` when nothing convincing matched.
+/// The game page's entry point: the player's own choice, then an exact external
+/// id when the library knows one (Steam/GOG/Amazon), then the cached title
+/// lookup, then a title search with the year as a tiebreaker. `None` when
+/// nothing convincing matched.
 #[tauri::command]
 pub async fn igdb_enrich(
     app: AppHandle,
@@ -1763,6 +1802,7 @@ pub async fn igdb_enrich(
     year: Option<i64>,
     external_category: Option<i64>,
     external_uid: Option<String>,
+    app_name: Option<String>,
 ) -> Result<Option<IgdbGame>, String> {
     // The shared proxy needs no credentials on this machine, so the guard asks
     // the transport, not the credential store: proxy mode used to bail out here
@@ -1775,46 +1815,65 @@ pub async fn igdb_enrich(
         return Ok(None);
     }
 
-    let mut id: Option<i64> = None;
+    // A hand-picked entry is the page's game. It must not be written into the
+    // shared title lookup: the choice belongs to this game, not to every copy
+    // of a same-named title.
+    let mut chosen = app_name
+        .as_deref()
+        .and_then(crate::game_match::igdb_id);
+    let from_choice = chosen.is_some();
+    let mut id: Option<i64> = chosen.take();
 
     // An external id is exact: it beats every fuzzy match. The resolved id is
     // kept on disk, so the exact-id request runs once per game, not per open.
-    if let (Some(category), Some(uid)) = (
-        external_category,
-        external_uid
-            .as_deref()
-            .map(str::trim)
-            .filter(|uid| !uid.is_empty()),
-    ) {
-        let external_key = format!("{category}:{uid}");
-        let mut external = read_external(&app);
-        id = external
-            .get(&external_key)
-            .and_then(serde_json::Value::as_i64)
-            .filter(|id| *id > 0);
-        if id.is_none() {
-            // A failed exact-id request must not lose an answer that is already
-            // on disk: the title lookup below still gets its turn.
-            if let Ok(value) = api_post(&app, "games", &external_query(category, uid)).await {
-                let found = value
-                    .as_array()
-                    .and_then(|items| items.first())
-                    .and_then(|item| item.get("id").and_then(serde_json::Value::as_i64));
-                if let Some(found) = found {
-                    external.insert(external_key, serde_json::Value::from(found));
-                    write_external(&app, &external);
+    if !from_choice {
+        if let (Some(category), Some(uid)) = (
+            external_category,
+            external_uid
+                .as_deref()
+                .map(str::trim)
+                .filter(|uid| !uid.is_empty()),
+        ) {
+            let external_key = format!("{category}:{uid}");
+            let mut external = read_external(&app);
+            id = external
+                .get(&external_key)
+                .and_then(serde_json::Value::as_i64)
+                .filter(|id| *id > 0);
+            if id.is_none() {
+                // A failed exact-id request must not lose an answer that is
+                // already on disk: the title lookup below still gets its turn.
+                if let Ok(value) =
+                    api_post(&app, "external_games", &external_query(category, uid)).await
+                {
+                    let found = external_uid_map(&value).first().map(|(_, game)| *game);
+                    if let Some(found) = found {
+                        external.insert(external_key, serde_json::Value::from(found));
+                        write_external(&app, &external);
+                    }
+                    id = found;
                 }
-                id = found;
             }
         }
     }
 
     let mut lookup = read_lookup(&app);
     if id.is_none() {
-        id = lookup
+        let stored = lookup
             .get(&key)
             .and_then(serde_json::Value::as_i64)
             .filter(|id| *id > 0);
+        if let Some(stored) = stored {
+            // A stored id is trusted only while the game behind it still fits
+            // the known year; otherwise the search below gets to correct it.
+            let fits = match read_cached_game(&app, stored) {
+                Some(game) => lookup_year_fits(game.pc_release_year.or(game.release_year), year),
+                None => true,
+            };
+            if fits {
+                id = Some(stored);
+            }
+        }
     }
 
     // A title that had no match is not searched again for a month: the page
@@ -1830,7 +1889,10 @@ pub async fn igdb_enrich(
     }
 
     if id.is_none() {
-        let value = api_post(&app, "games", &search_query(&title, 8)).await?;
+        // A same-name game from another year can sit behind the first eight
+        // ranked hits ("Portal" 2007 is ninth for "Portal"): the list is wide
+        // enough that the year and the rating can pick the right one.
+        let value = api_post(&app, "games", &search_query(&title, 20)).await?;
         let mut hits = value.as_array().cloned().unwrap_or_default();
         id = pick_best_match(&hits, &title, year);
         // A bare duplicate (an exact name with no ratings) usually means the real
@@ -1846,6 +1908,14 @@ pub async fn igdb_enrich(
     }
 
     if let Some(found) = id {
+        if from_choice {
+            // The shared title lookup keeps its automatic answer; the choice is
+            // stored with the game, not with the title.
+            return Ok(Some(match read_cached_game(&app, found) {
+                Some(cached) => cached,
+                None => fetch_game(&app, found).await?,
+            }));
+        }
         if lookup.get(&key).and_then(serde_json::Value::as_i64) != Some(found) {
             lookup.insert(key.clone(), serde_json::Value::from(found));
             write_lookup(&app, &lookup);
@@ -1863,6 +1933,32 @@ pub async fn igdb_enrich(
         return Ok(Some(cached));
     }
     Ok(Some(fetch_game(&app, id).await?))
+}
+
+/// Stores the IGDB entry the player picked for one game and answers with its
+/// full record. The cached file is written here, so the page and the library
+/// see the choice on the next open without a request.
+#[tauri::command]
+pub async fn igdb_choose_match(
+    app: AppHandle,
+    app_name: String,
+    id: i64,
+) -> Result<IgdbGame, String> {
+    if id <= 0 {
+        return Err("@t:match.invalid".to_string());
+    }
+    let game = match read_cached_game(&app, id) {
+        Some(cached) => cached,
+        None => fetch_game(&app, id).await?,
+    };
+    crate::game_match::set_igdb(&app_name, id)?;
+    Ok(game)
+}
+
+/// Returns one game to the automatic IGDB match.
+#[tauri::command]
+pub async fn igdb_clear_match(app_name: String) -> Result<(), String> {
+    crate::game_match::clear_igdb(&app_name)
 }
 
 /// Slim summary of an already-cached IGDB entry on disk, used to hydrate
@@ -1883,6 +1979,11 @@ pub struct IgdbCachedSummary {
     #[serde(default)]
     pub themes: Vec<String>,
     pub franchises: Vec<String>,
+    /// Library keys the player matched by hand. The frontend stores what the
+    /// summary carries under these keys directly, so a chosen entry wins over a
+    /// same-named title's automatic one.
+    #[serde(default)]
+    pub app_keys: Vec<String>,
 }
 
 fn summary_from_game(
@@ -1908,6 +2009,7 @@ fn summary_from_game(
         genres: game.genres,
         themes: game.themes,
         franchises: game.franchises,
+        app_keys: Vec::new(),
     }
 }
 
@@ -1918,7 +2020,7 @@ fn read_cached_library_dir(dir: &Path) -> Vec<IgdbCachedSummary> {
         return Vec::new();
     };
     let mut lookups: HashMap<i64, Vec<String>> = HashMap::new();
-    for (k, v) in read_map(Some(dir.join("lookup.json"))) {
+    for (k, v) in read_map(Some(dir.join("lookup-v2.json"))) {
         if let Some(id) = v.as_i64().filter(|id| *id > 0) {
             lookups.entry(id).or_default().push(k);
         }
@@ -1967,9 +2069,26 @@ pub async fn igdb_cached_library(app: AppHandle) -> Vec<IgdbCachedSummary> {
     let Some(dir) = igdb_dir(&app) else {
         return Vec::new();
     };
-    tokio::task::spawn_blocking(move || read_cached_library_dir(&dir))
-        .await
-        .unwrap_or_default()
+    tokio::task::spawn_blocking(move || {
+        let mut rows = read_cached_library_dir(&dir);
+        // Hand-picked entries join the same list, keyed by the game's own
+        // library key. The boot index then has the right developer, year and
+        // genre for a game whose automatic title match pointed elsewhere.
+        for (app_name, choice) in crate::game_match::all() {
+            let Some(id) = choice.igdb_id.filter(|id| *id > 0) else {
+                continue;
+            };
+            let Some(game) = read_cached_game_file(&dir.join(format!("game-{id}.json"))) else {
+                continue;
+            };
+            let mut summary = summary_from_game(game, Vec::new(), Vec::new());
+            summary.app_keys = vec![app_name];
+            rows.push(summary);
+        }
+        rows
+    })
+    .await
+    .unwrap_or_default()
 }
 
 /// Enriches up to 25 external store IDs (`1` Steam, `5` GOG, `20` Amazon) in a
@@ -2038,7 +2157,22 @@ pub async fn igdb_enrich_external_batch(
     }
     pending.sort();
 
-    let value = api_post(&app, "games", &external_batch_query(category, &pending)).await?;
+    // Store ids answer on `external_games`; the games behind them come from a
+    // second request so a hydrated row carries every field the page shows.
+    let links = api_post(&app, "external_games", &external_batch_query(category, &pending)).await?;
+    let mut links_by_game: HashMap<i64, Vec<String>> = HashMap::new();
+    for (uid, game_id) in external_uid_map(&links) {
+        if let Some(orig) = pending.iter().find(|p| p.eq_ignore_ascii_case(&uid)) {
+            links_by_game.entry(game_id).or_default().push(orig.clone());
+        }
+    }
+    let mut ids: Vec<i64> = links_by_game.keys().copied().collect();
+    ids.sort_unstable();
+    let value = if ids.is_empty() {
+        serde_json::Value::Array(Vec::new())
+    } else {
+        api_post(&app, "games", &games_by_ids_query(&ids)).await?
+    };
     let tables = if has_age_ratings(&value) {
         ensure_age_tables(&app).await
     } else {
@@ -2059,29 +2193,18 @@ pub async fn igdb_enrich_external_batch(
             write_cached_game(&app, &game);
 
             let mut ext_keys = Vec::new();
-            if let Some(exts) = item.get("external_games").and_then(serde_json::Value::as_array) {
-                for ext in exts {
-                    let ext_cat = ext.get("category").and_then(serde_json::Value::as_i64);
-                    let Some(ext_uid) = ext.get("uid").and_then(serde_json::Value::as_str) else {
-                        continue;
-                    };
-                    if ext_cat != Some(category) {
-                        continue;
-                    }
-                    if let Some(orig) = pending.iter().find(|p| p.eq_ignore_ascii_case(ext_uid)) {
-                        matched_lower.insert(orig.to_ascii_lowercase());
-                        let key = format!("{category}:{orig}");
-                        if external.get(&key).and_then(serde_json::Value::as_i64) != Some(game.id) {
-                            external.insert(key.clone(), serde_json::Value::from(game.id));
-                            external_dirty = true;
-                        }
-                        let miss_key = format!("ext:{category}:{}", orig.to_ascii_lowercase());
-                        if misses.remove(&miss_key).is_some() {
-                            misses_dirty = true;
-                        }
-                        ext_keys.push(key);
-                    }
+            for orig in links_by_game.get(&game.id).cloned().unwrap_or_default() {
+                matched_lower.insert(orig.to_ascii_lowercase());
+                let key = format!("{category}:{orig}");
+                if external.get(&key).and_then(serde_json::Value::as_i64) != Some(game.id) {
+                    external.insert(key.clone(), serde_json::Value::from(game.id));
+                    external_dirty = true;
                 }
+                let miss_key = format!("ext:{category}:{}", orig.to_ascii_lowercase());
+                if misses.remove(&miss_key).is_some() {
+                    misses_dirty = true;
+                }
+                ext_keys.push(key);
             }
 
             let norm = normalize_title(&game.name);
@@ -2352,12 +2475,86 @@ mod tests {
 
     #[test]
     fn external_and_cover_queries_are_well_formed() {
-        assert!(external_query(1, "570").contains("external_games.category = 1 & external_games.uid = \"570\""));
+        // IGDB renamed the source field and keeps store ids on their own
+        // endpoint: filtering `games` by `external_games.category` now returns
+        // an empty list, which used to fall back to a fuzzy title match.
+        let query = external_query(1, "570");
+        assert!(query.contains("external_game_source = 1"));
+        assert!(query.contains("uid = \"570\""));
+        assert!(!query.contains("category"));
         assert!(external_query(5, "1234").contains("limit 1;"));
         let covers = covers_query("Halo", 6);
         assert!(covers.contains("cover.image_id"));
         assert!(covers.contains("artworks.image_id"));
         assert!(covers.contains("limit 6;"));
+    }
+
+    #[test]
+    fn external_answers_map_store_ids_to_games() {
+        let answer = serde_json::json!([
+            { "game": 71, "uid": "400" },
+            { "game": 0, "uid": "bad" },
+            { "uid": "missing-game" },
+            { "game": 26401, "uid": "C0GWTPD0S8S1" }
+        ]);
+        let pairs = external_uid_map(&answer);
+        assert_eq!(
+            pairs,
+            vec![
+                ("400".to_string(), 71),
+                ("C0GWTPD0S8S1".to_string(), 26401)
+            ]
+        );
+
+        let batch = external_batch_query(1, &["730".to_string(), "1091500".to_string()]);
+        assert!(batch.contains("external_game_source = 1"));
+        assert!(batch.contains("uid = (\"730\",\"1091500\")"));
+        let games = games_by_ids_query(&[71, 26401]);
+        assert!(games.contains("where id = (71,26401);"));
+        assert!(games.contains("involved_companies"));
+    }
+
+    #[test]
+    #[ignore = "talks to the shared IGDB proxy"]
+    fn live_portal_lookup_probe() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let fetch = |endpoint: &str, query: String| -> serde_json::Value {
+            let mut url = url::Url::parse("https://efxlve.com/api/igdb").expect("proxy url");
+            url.query_pairs_mut()
+                .append_pair("endpoint", endpoint)
+                .append_pair("q", &query);
+            runtime.block_on(async {
+                let response = reqwest::get(url).await.expect("proxy request");
+                assert!(response.status().is_success(), "proxy status");
+                response.json().await.expect("proxy json")
+            })
+        };
+
+        // The store id path: Steam 400 is Valve's Portal (IGDB 71), not 1986.
+        let externals = fetch("external_games", external_query(1, "400"));
+        let picked = external_uid_map(&externals);
+        assert_eq!(picked.first().map(|(_, game)| *game), Some(71));
+
+        // The title path: the wider list must put Valve's game ahead of the
+        // 1986 entry that used to sit in the first eight hits.
+        let hits = fetch("games", search_query("Portal", 20));
+        let hits = hits.as_array().cloned().unwrap_or_default();
+        assert_eq!(pick_best_match(&hits, "Portal", Some(2007)), Some(71));
+    }
+
+    #[test]
+    fn a_cached_match_from_another_year_is_dropped() {
+        assert!(lookup_year_fits(Some(2007), Some(2007)));
+        // A store date and IGDB's can straddle New Year.
+        assert!(lookup_year_fits(Some(2006), Some(2007)));
+        // "Portal" 1986 must not answer for the 2007 game.
+        assert!(!lookup_year_fits(Some(1986), Some(2007)));
+        // With no year to check against, the name match stays usable.
+        assert!(lookup_year_fits(None, Some(2007)));
+        assert!(lookup_year_fits(Some(1986), None));
     }
 
     #[test]
@@ -2623,7 +2820,7 @@ mod tests {
 
         let mut lookup = serde_json::Map::new();
         lookup.insert("cyberpunk2077".into(), serde_json::Value::from(1877));
-        write_map(Some(dir.join("lookup.json")), &lookup);
+        write_map(Some(dir.join("lookup-v2.json")), &lookup);
 
         let mut external = serde_json::Map::new();
         external.insert("1:1091500".into(), serde_json::Value::from(1877));
@@ -2659,8 +2856,8 @@ mod tests {
         assert_eq!(items[0].franchises, vec!["Cyberpunk"]);
         assert_eq!(items[0].developer, "CD Projekt RED");
         let batch_q = external_batch_query(1, &["730".to_string(), "1091500".to_string()]);
-        assert!(batch_q.contains("external_games.category = 1"));
-        assert!(batch_q.contains("external_games.uid = (\"730\",\"1091500\")"));
+        assert!(batch_q.contains("external_game_source = 1"));
+        assert!(batch_q.contains("uid = (\"730\",\"1091500\")"));
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

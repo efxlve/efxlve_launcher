@@ -474,7 +474,7 @@ function mergeSteamCritic(data: CriticData, appName: string): CriticData {
 }
 
 /** Release year for the lookups: the summary's, or the Steam store date. */
-function gameReleaseYear(s: EpicSummary): number | null {
+export function gameReleaseYear(s: EpicSummary): number | null {
   if (s.releaseYear) return s.releaseYear;
   const match = /(19|20)\d{2}/.exec(S.steamDetails.get(s.appName)?.releaseDate ?? "");
   return match ? Number(match[0]) : null;
@@ -693,6 +693,7 @@ function moreMenuHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): s
         <button type="button" class="ctx-item" role="menuitem" data-act="epic-store-page" data-id="${esc(s.appName)}">${icon("external", 15)} <span>${storeTitle}</span></button>
         ${clientItem}
         <div class="gp-more-sep"></div>
+        <button type="button" class="ctx-item" role="menuitem" data-act="open-match-modal" data-id="${esc(s.appName)}">${icon("search", 15)} <span>${t("drawer.matchMetadata")}</span></button>
         <button type="button" class="ctx-item" role="menuitem" data-act="open-custom-cover" data-target="cover" data-id="${esc(s.appName)}">${icon("image", 15)} <span>${t("manage.coverChange")}</span></button>
       </div>
     </div>`;

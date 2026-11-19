@@ -899,6 +899,27 @@ export const epicGetHltb = (
 /** Every HLTB hit already stored on disk. No network call. */
 export const epicCachedHltbTimes = () => invoke<HltbData[]>("epic_cached_hltb_times");
 
+/** One row of the match picker's HowLongToBeat search. */
+export interface HltbSearchHit {
+  id: number;
+  name: string;
+  year?: number | null;
+  dlc: boolean;
+  main_story?: number | null;
+  main_extra?: number | null;
+  completionist?: number | null;
+}
+
+export const epicSearchHltb = (title: string) =>
+  invoke<HltbSearchHit[]>("epic_search_hltb", { title });
+
+/** Stores a hand-picked entry and answers with the lengths the page paints. */
+export const epicSetHltbMatch = (appName: string, title: string, pick: HltbSearchHit) =>
+  invoke<HltbData>("epic_set_hltb_match", { appName, title, pick });
+
+export const epicClearHltbMatch = (appName: string) =>
+  invoke<void>("epic_clear_hltb_match", { appName });
+
 /* ---------- Critic scores (OpenCritic / Metacritic) ---------- */
 
 export interface CriticData {

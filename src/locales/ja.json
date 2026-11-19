@@ -4397,5 +4397,20 @@
   "settings.achRareSoundDesc": "Optional separate audio chime for Ultra-Rare (<5%) and Platinum achievement unlocks.",
   "settings.achRareSoundSame": "Same as default sound",
   "settings.achShowProgressTitle": "進行状況バーを表示",
-  "settings.achShowProgressDesc": "カード上にアニメーション付きの達成度プログレスバーを表示します。"
+  "settings.achShowProgressDesc": "カード上にアニメーション付きの達成度プログレスバーを表示します。",
+  "drawer.matchMetadata": "メタデータを修正",
+  "match.title": "ゲームのメタデータを修正",
+  "match.hint": "このゲームに使う IGDB と HowLongToBeat の項目を選んでください。ゲームページとライブラリはこの選択に従います。",
+  "match.current": "現在",
+  "match.none": "一致なし",
+  "match.manual": "手動",
+  "match.automatic": "自動",
+  "match.searching": "検索中…",
+  "match.savedIgdb": "IGDB の一致を保存しました",
+  "match.savedHltb": "HowLongToBeat の一致を保存しました",
+  "match.autoRestored": "自動一致に戻しました",
+  "match.searchFailed": "検索を完了できませんでした",
+  "match.invalid": "この項目は使用できません",
+  "match.dlc": "DLC",
+  "match.game": "ゲーム"
 }

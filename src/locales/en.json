@@ -4397,5 +4397,20 @@
   "settings.achRareSoundDesc": "Optional separate audio chime for Ultra-Rare (<5%) and Platinum achievement unlocks.",
   "settings.achRareSoundSame": "Same as default sound",
   "settings.achShowProgressTitle": "Show Progress Bar",
-  "settings.achShowProgressDesc": "Display an animated completion progress bar across the card."
+  "settings.achShowProgressDesc": "Display an animated completion progress bar across the card.",
+  "drawer.matchMetadata": "Fix metadata",
+  "match.title": "Fix game metadata",
+  "match.hint": "Choose the IGDB entry and the HowLongToBeat entry this game should use. The game page and the library follow your choice.",
+  "match.current": "Current",
+  "match.none": "No match",
+  "match.manual": "Manual",
+  "match.automatic": "Automatic",
+  "match.searching": "Searching…",
+  "match.savedIgdb": "IGDB match saved",
+  "match.savedHltb": "HowLongToBeat match saved",
+  "match.autoRestored": "Automatic matching restored",
+  "match.searchFailed": "The search could not be completed",
+  "match.invalid": "That entry cannot be used",
+  "match.dlc": "DLC",
+  "match.game": "Game"
 }

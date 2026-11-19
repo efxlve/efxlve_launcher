@@ -4397,5 +4397,20 @@
   "settings.achRareSoundDesc": "Optional separate audio chime for Ultra-Rare (<5%) and Platinum achievement unlocks.",
   "settings.achRareSoundSame": "Same as default sound",
   "settings.achShowProgressTitle": "진행률 바 표시",
-  "settings.achShowProgressDesc": "카드에 애니메이션 진행률 바를 표시합니다."
+  "settings.achShowProgressDesc": "카드에 애니메이션 진행률 바를 표시합니다.",
+  "drawer.matchMetadata": "메타데이터 수정",
+  "match.title": "게임 메타데이터 수정",
+  "match.hint": "이 게임에 사용할 IGDB 항목과 HowLongToBeat 항목을 선택하세요. 게임 페이지와 라이브러리가 선택을 따릅니다.",
+  "match.current": "현재",
+  "match.none": "일치 없음",
+  "match.manual": "수동",
+  "match.automatic": "자동",
+  "match.searching": "검색 중…",
+  "match.savedIgdb": "IGDB 일치 저장됨",
+  "match.savedHltb": "HowLongToBeat 일치 저장됨",
+  "match.autoRestored": "자동 일치 복원됨",
+  "match.searchFailed": "검색을 완료할 수 없습니다",
+  "match.invalid": "이 항목은 사용할 수 없습니다",
+  "match.dlc": "DLC",
+  "match.game": "게임"
 }

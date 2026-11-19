@@ -4397,5 +4397,20 @@
   "settings.achRareSoundDesc": "Optional separate audio chime for Ultra-Rare (<5%) and Platinum achievement unlocks.",
   "settings.achRareSoundSame": "Same as default sound",
   "settings.achShowProgressTitle": "إظهار شريط التقدم",
-  "settings.achShowProgressDesc": "عرض شريط تقدم متحرك على بطاقة الإنجاز."
+  "settings.achShowProgressDesc": "عرض شريط تقدم متحرك على بطاقة الإنجاز.",
+  "drawer.matchMetadata": "تصحيح البيانات الوصفية",
+  "match.title": "تصحيح بيانات اللعبة الوصفية",
+  "match.hint": "اختر إدخال IGDB وإدخال HowLongToBeat لهذه اللعبة. تتبع صفحة اللعبة والمكتبة اختيارك.",
+  "match.current": "الحالي",
+  "match.none": "لا توجد مطابقة",
+  "match.manual": "يدوي",
+  "match.automatic": "تلقائي",
+  "match.searching": "جارٍ البحث…",
+  "match.savedIgdb": "تم حفظ مطابقة IGDB",
+  "match.savedHltb": "تم حفظ مطابقة HowLongToBeat",
+  "match.autoRestored": "تمت استعادة المطابقة التلقائية",
+  "match.searchFailed": "تعذر إكمال البحث",
+  "match.invalid": "لا يمكن استخدام هذا الإدخال",
+  "match.dlc": "DLC",
+  "match.game": "لعبة"
 }

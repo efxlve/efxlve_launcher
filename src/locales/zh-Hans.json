@@ -4397,5 +4397,20 @@
   "settings.achRareSoundDesc": "Optional separate audio chime for Ultra-Rare (<5%) and Platinum achievement unlocks.",
   "settings.achRareSoundSame": "Same as default sound",
   "settings.achShowProgressTitle": "显示进度条",
-  "settings.achShowProgressDesc": "在卡片上显示动态成就完成进度条。"
+  "settings.achShowProgressDesc": "在卡片上显示动态成就完成进度条。",
+  "drawer.matchMetadata": "修正元数据",
+  "match.title": "修正游戏元数据",
+  "match.hint": "选择这款游戏应使用的 IGDB 条目和 HowLongToBeat 条目。游戏页面和库会遵循你的选择。",
+  "match.current": "当前",
+  "match.none": "没有匹配",
+  "match.manual": "手动",
+  "match.automatic": "自动",
+  "match.searching": "正在搜索…",
+  "match.savedIgdb": "IGDB 匹配已保存",
+  "match.savedHltb": "HowLongToBeat 匹配已保存",
+  "match.autoRestored": "已恢复自动匹配",
+  "match.searchFailed": "无法完成搜索",
+  "match.invalid": "无法使用该条目",
+  "match.dlc": "DLC",
+  "match.game": "游戏"
 }

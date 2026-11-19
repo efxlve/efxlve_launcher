@@ -4397,5 +4397,20 @@
   "settings.achRareSoundDesc": "Optional separate audio chime for Ultra-Rare (<5%) and Platinum achievement unlocks.",
   "settings.achRareSoundSame": "Same as default sound",
   "settings.achShowProgressTitle": "แสดงแถบความคืบหน้า",
-  "settings.achShowProgressDesc": "แสดงแถบความคืบหน้าแบบเคลื่อนไหวบนการ์ด"
+  "settings.achShowProgressDesc": "แสดงแถบความคืบหน้าแบบเคลื่อนไหวบนการ์ด",
+  "drawer.matchMetadata": "แก้ไขข้อมูลเมตา",
+  "match.title": "แก้ไขข้อมูลเมตาของเกม",
+  "match.hint": "เลือกข้อมูล IGDB และข้อมูล HowLongToBeat สำหรับเกมนี้ หน้าเกมและคลังเกมจะทำตามที่คุณเลือก",
+  "match.current": "ปัจจุบัน",
+  "match.none": "ไม่พบการจับคู่",
+  "match.manual": "กำหนดเอง",
+  "match.automatic": "อัตโนมัติ",
+  "match.searching": "กำลังค้นหา…",
+  "match.savedIgdb": "บันทึกการจับคู่ IGDB แล้ว",
+  "match.savedHltb": "บันทึกการจับคู่ HowLongToBeat แล้ว",
+  "match.autoRestored": "คืนค่าการจับคู่อัตโนมัติแล้ว",
+  "match.searchFailed": "ไม่สามารถค้นหาให้เสร็จได้",
+  "match.invalid": "ไม่สามารถใช้ข้อมูลนี้ได้",
+  "match.dlc": "DLC",
+  "match.game": "เกม"
 }

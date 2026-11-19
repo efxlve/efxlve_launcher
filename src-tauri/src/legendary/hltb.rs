@@ -12,6 +12,66 @@ pub struct HltbData {
     pub completionist: Option<f64>,
 }
 
+/// One HowLongToBeat entry the player picked for a game. The durations are a
+/// snapshot: a hit in the normal cache never expires either, and clearing the
+/// choice runs the automatic search again.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct HltbPick {
+    pub id: i64,
+    pub name: String,
+    #[serde(default)]
+    pub year: Option<u32>,
+    #[serde(default)]
+    pub main_story: Option<f64>,
+    #[serde(default)]
+    pub main_extra: Option<f64>,
+    #[serde(default)]
+    pub completionist: Option<f64>,
+}
+
+impl HltbPick {
+    pub fn to_data(&self, app_name: &str, title: &str) -> HltbData {
+        HltbData {
+            app_name: app_name.to_string(),
+            title: title.to_string(),
+            supported: self.main_story.is_some()
+                || self.main_extra.is_some()
+                || self.completionist.is_some(),
+            main_story: self.main_story,
+            main_extra: self.main_extra,
+            completionist: self.completionist,
+        }
+    }
+}
+
+/// One row of the match picker's search: the site's own name, year and type.
+#[derive(Debug, Clone, Serialize)]
+pub struct HltbSearchHit {
+    pub id: i64,
+    pub name: String,
+    pub year: Option<u32>,
+    pub dlc: bool,
+    pub main_story: Option<f64>,
+    pub main_extra: Option<f64>,
+    pub completionist: Option<f64>,
+}
+
+impl HltbSearchHit {
+    /// Used by the picker test; the frontend sends the same fields back and
+    /// serde ignores the extra `dlc` flag.
+    #[cfg(test)]
+    pub fn pick(&self) -> HltbPick {
+        HltbPick {
+            id: self.id,
+            name: self.name.clone(),
+            year: self.year,
+            main_story: self.main_story,
+            main_extra: self.main_extra,
+            completionist: self.completionist,
+        }
+    }
+}
+
 /// Optimizes the search term for HLTB (strips edition and publisher suffixes).
 pub fn clean_hltb_search_term(title: &str) -> String {
     let mut s = title
@@ -63,12 +123,14 @@ pub fn clean_hltb_search_term(title: &str) -> String {
 }
 
 fn hltb_cache_dir() -> PathBuf {
-    // The `-v4` marks the untouched-prefix search terms: older files hold results
-    // from the stripped-title logic and must not be served again.
+    // `-v5` marks the answers written before the picker preferred the base game
+    // over its DLC chapters and before a renamed game had to be searched again.
+    // Older files can hold a chapter's times under a base game's title, so they
+    // must not be served again.
     if let Some(config_dir) = dirs_config_dir() {
-        config_dir.join("legendary").join("hltb-v4")
+        config_dir.join("legendary").join("hltb-v5")
     } else {
-        PathBuf::from("hltb_cache_v4")
+        PathBuf::from("hltb_cache_v5")
     }
 }
 
@@ -124,6 +186,13 @@ pub fn cached_times() -> Vec<HltbData> {
         }
     }
     let mut rows: Vec<HltbData> = by_app.into_values().map(|(data, _)| data).collect();
+    // A hand-picked entry is the answer the page shows, so the sort uses it too.
+    for (app_name, choice) in crate::game_match::all() {
+        if let Some(pick) = choice.hltb {
+            rows.retain(|row| row.app_name != app_name);
+            rows.push(pick.to_data(&app_name, &pick.name));
+        }
+    }
     rows.sort_by(|a, b| a.app_name.cmp(&b.app_name));
     rows
 }
@@ -134,6 +203,11 @@ pub async fn get_hltb_data(
     force_refresh: bool,
     year: Option<u32>,
 ) -> HltbData {
+    // A game the player matched by hand reads that entry until the choice is
+    // cleared; it beats the automatic answer and its cache.
+    if let Some(pick) = crate::game_match::hltb_pick(app_name) {
+        return pick.to_data(app_name, title);
+    }
     let clean_app = app_name.replace([':', '/', '\\', '*', '?', '"', '<', '>', '|'], "_");
     // The release year is part of the cache key too: a name-only hit can be an
     // older game with the same title ("Spider-Man 2" vs "Marvel's Spider-Man 2").
@@ -142,7 +216,11 @@ pub async fn get_hltb_data(
     if !force_refresh {
         if let Ok(content) = tokio::fs::read_to_string(&cache_file).await {
             if let Ok(data) = serde_json::from_str::<HltbData>(&content) {
-                if data.supported {
+                // A file written for an earlier title of this game (a renamed
+                // custom game, a DLC row that later became the base game) must
+                // not answer for the title the page shows now.
+                let same_title = hltb_norm(&data.title) == hltb_norm(title);
+                if data.supported && same_title {
                     return data;
                 }
                 // A stored "not on HowLongToBeat" answer is trusted for a month:
@@ -155,7 +233,7 @@ pub async fn get_hltb_data(
                     .and_then(|at| at.elapsed().ok())
                     .map(|elapsed| elapsed.as_secs())
                     .unwrap_or(u64::MAX);
-                if age < crate::lookup_cache::MISS_TTL_SECS {
+                if !data.supported && same_title && age < crate::lookup_cache::MISS_TTL_SECS {
                     return data;
                 }
             }
@@ -175,7 +253,6 @@ pub async fn get_hltb_data(
         };
     }
 
-    let ua = HLTB_UA;
     let client = match reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(8))
         .build()
@@ -196,47 +273,8 @@ pub async fn get_hltb_data(
     // 1. Search endpoint, discovered once per app run (see `detect_search_endpoint`).
     let search_endpoint = detect_search_endpoint(&client).await;
 
-    // 2. Auth token & dynamic key/val al
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis();
-    let init_url = format!(
-        "https://howlongtobeat.com{}/init?t={}",
-        search_endpoint, now
-    );
-
-    let mut auth_token = String::new();
-    let mut auth_key = String::new();
-    let mut auth_val = String::new();
-
-    if let Ok(init_resp) = client
-        .get(&init_url)
-        .header("User-Agent", ua)
-        .header("Referer", "https://howlongtobeat.com/")
-        .send()
-        .await
-    {
-        if let Ok(init_json) = init_resp.json::<serde_json::Value>().await {
-            if let Some(t) = init_json.get("token").and_then(|x| x.as_str()) {
-                auth_token = t.to_string();
-            }
-            if let Some(obj) = init_json.as_object() {
-                for (k, v) in obj {
-                    let lower = k.to_lowercase();
-                    if lower.contains("key") {
-                        if let Some(s) = v.as_str() {
-                            auth_key = s.to_string();
-                        }
-                    } else if lower.contains("val") {
-                        if let Some(s) = v.as_str() {
-                            auth_val = s.to_string();
-                        }
-                    }
-                }
-            }
-        }
-    }
+    // 2. Auth token and the session's dynamic key/value pair.
+    let auth = hltb_auth(&client, &search_endpoint).await;
 
     // 3. Search, then retry with the store's version tag removed when nothing
     // matched ("Grand Theft Auto V Enhanced" / "... Legacy" live in HLTB as
@@ -246,7 +284,7 @@ pub async fn get_hltb_data(
         &client,
         &search_endpoint,
         &terms,
-        (&auth_token, &auth_key, &auth_val),
+        (&auth.token, &auth.key, &auth.val),
         app_name,
         title,
         year,
@@ -264,7 +302,7 @@ pub async fn get_hltb_data(
                 &client,
                 &search_endpoint,
                 &loose_terms,
-                (&auth_token, &auth_key, &auth_val),
+                (&auth.token, &auth.key, &auth.val),
                 app_name,
                 title,
                 year,
@@ -381,20 +419,71 @@ fn empty_hltb(app_name: &str, title: &str) -> HltbData {
     }
 }
 
-/// One HLTB search: the payload, the session's dynamic auth headers, and the
-/// best-matching result parsed into durations (plus whether it was an exact
-/// name match and whether the site actually answered).
-async fn search_hltb(
+/// The session headers HowLongToBeat's search needs. The key and value are
+/// dynamic (`x-hp-key` / `x-hp-val`) and change with the site's build, so they
+/// are read for every session instead of being hardcoded.
+struct HltbAuth {
+    token: String,
+    key: String,
+    val: String,
+}
+
+async fn hltb_auth(client: &reqwest::Client, endpoint: &str) -> HltbAuth {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+    let init_url = format!(
+        "https://howlongtobeat.com{}/init?t={}",
+        endpoint, now
+    );
+    let mut auth = HltbAuth {
+        token: String::new(),
+        key: String::new(),
+        val: String::new(),
+    };
+    let Ok(init_resp) = client
+        .get(&init_url)
+        .header("User-Agent", HLTB_UA)
+        .header("Referer", "https://howlongtobeat.com/")
+        .send()
+        .await
+    else {
+        return auth;
+    };
+    let Ok(init_json) = init_resp.json::<serde_json::Value>().await else {
+        return auth;
+    };
+    if let Some(token) = init_json.get("token").and_then(|x| x.as_str()) {
+        auth.token = token.to_string();
+    }
+    if let Some(obj) = init_json.as_object() {
+        for (key, value) in obj {
+            let lower = key.to_lowercase();
+            if lower.contains("key") {
+                if let Some(text) = value.as_str() {
+                    auth.key = text.to_string();
+                }
+            } else if lower.contains("val") {
+                if let Some(text) = value.as_str() {
+                    auth.val = text.to_string();
+                }
+            }
+        }
+    }
+    auth
+}
+
+/// One search request. `None` means the site did not answer with JSON, which is
+/// also the cue to forget a search endpoint the site no longer serves.
+async fn hltb_search_value(
     client: &reqwest::Client,
     endpoint: &str,
     terms: &[&str],
     auth: (&str, &str, &str),
-    app_name: &str,
-    title: &str,
-    year: Option<u32>,
-) -> (HltbData, bool, bool) {
+) -> Option<serde_json::Value> {
     if terms.is_empty() {
-        return (empty_hltb(app_name, title), false, false);
+        return None;
     }
     let mut payload = serde_json::json!({
         "searchType": "games",
@@ -422,12 +511,12 @@ async fn search_hltb(
     });
 
     if !auth.1.is_empty() && !auth.2.is_empty() {
-        if let Some(m) = payload.as_object_mut() {
-            m.insert(auth.1.to_string(), serde_json::Value::String(auth.2.to_string()));
+        if let Some(map) = payload.as_object_mut() {
+            map.insert(auth.1.to_string(), serde_json::Value::String(auth.2.to_string()));
         }
     }
 
-    let mut req = client
+    let mut request = client
         .post(format!("https://howlongtobeat.com{}", endpoint))
         .header("User-Agent", HLTB_UA)
         .header("Referer", "https://howlongtobeat.com/")
@@ -436,28 +525,109 @@ async fn search_hltb(
         .header("Accept", "*/*");
 
     if !auth.0.is_empty() {
-        req = req.header("x-auth-token", auth.0);
+        request = request.header("x-auth-token", auth.0);
     }
     if !auth.1.is_empty() {
-        req = req.header("x-hp-key", auth.1);
+        request = request.header("x-hp-key", auth.1);
     }
     if !auth.2.is_empty() {
-        req = req.header("x-hp-val", auth.2);
+        request = request.header("x-hp-val", auth.2);
     }
 
-    match req.json(&payload).send().await {
-        Ok(resp) if resp.status().is_success() => match resp.text().await {
-            Ok(text) => match serde_json::from_str::<serde_json::Value>(&text) {
-                Ok(val) => {
-                    let (data, exact) = parse_hltb_response(app_name, title, terms, &val, year);
-                    (data, exact, true)
-                }
-                Err(_) => (empty_hltb(app_name, title), false, false),
-            },
-            Err(_) => (empty_hltb(app_name, title), false, false),
-        },
-        _ => (empty_hltb(app_name, title), false, false),
+    let response = request.json(&payload).send().await.ok()?;
+    if !response.status().is_success() {
+        return None;
     }
+    let text = response.text().await.ok()?;
+    serde_json::from_str::<serde_json::Value>(&text).ok()
+}
+
+/// One HLTB search: the session's dynamic auth headers and the best-matching
+/// result parsed into durations (plus whether it was an exact name match and
+/// whether the site actually answered).
+async fn search_hltb(
+    client: &reqwest::Client,
+    endpoint: &str,
+    terms: &[&str],
+    auth: (&str, &str, &str),
+    app_name: &str,
+    title: &str,
+    year: Option<u32>,
+) -> (HltbData, bool, bool) {
+    match hltb_search_value(client, endpoint, terms, auth).await {
+        Some(value) => {
+            let (data, exact) = parse_hltb_response(app_name, title, terms, &value, year);
+            (data, exact, true)
+        }
+        None => (empty_hltb(app_name, title), false, false),
+    }
+}
+
+/// The match picker's search: every row the site returned, in its own order,
+/// with the release year, the type and the three lengths. No automatic pick:
+/// the player chooses the entry.
+pub async fn search_hltb_entries(title: &str) -> Result<Vec<HltbSearchHit>, String> {
+    let search_term = clean_hltb_search_term(title);
+    let terms: Vec<&str> = search_term.split_whitespace().collect();
+    if terms.is_empty() {
+        return Ok(Vec::new());
+    }
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(8))
+        .build()
+        .map_err(|_| "@t:match.searchFailed".to_string())?;
+    let endpoint = detect_search_endpoint(&client).await;
+    let auth = hltb_auth(&client, &endpoint).await;
+    let Some(value) = hltb_search_value(
+        &client,
+        &endpoint,
+        &terms,
+        (&auth.token, &auth.key, &auth.val),
+    )
+    .await
+    else {
+        forget_search_endpoint().await;
+        return Err("@t:match.searchFailed".to_string());
+    };
+    Ok(value
+        .get("data")
+        .and_then(serde_json::Value::as_array)
+        .map(|items| items.iter().filter_map(hltb_search_hit).collect())
+        .unwrap_or_default())
+}
+
+fn hltb_search_hit(item: &serde_json::Value) -> Option<HltbSearchHit> {
+    let id = item.get("game_id").and_then(serde_json::Value::as_i64)?;
+    let name = item
+        .get("game_name")
+        .and_then(serde_json::Value::as_str)?
+        .trim()
+        .to_string();
+    if id <= 0 || name.is_empty() {
+        return None;
+    }
+    let game_type = item
+        .get("game_type")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    Some(HltbSearchHit {
+        id,
+        name,
+        year: hltb_entry_year(item),
+        dlc: game_type == "dlc",
+        main_story: seconds_to_hours(item.get("comp_main")),
+        main_extra: seconds_to_hours(item.get("comp_plus")),
+        completionist: seconds_to_hours(item.get("comp_100")),
+    })
+}
+
+fn seconds_to_hours(value: Option<&serde_json::Value>) -> Option<f64> {
+    let seconds = value?.as_f64()?;
+    if seconds <= 0.0 {
+        return None;
+    }
+    Some(((seconds / 3600.0) * 10.0).round() / 10.0)
 }
 
 /// Second attempt for store version tags that HLTB's own names do not carry:
@@ -544,6 +714,17 @@ pub fn pick_hltb_item<'a>(
         };
         if score == 0 {
             continue;
+        }
+        // The site keeps a game's DLC chapters under the game's own name. A
+        // base-game entry wins the tie, so "Far Cry 6" is the game and not its
+        // "Lost Between Worlds" chapter; a DLC page still matches its exact
+        // name and keeps its own lengths.
+        let game_type = item
+            .get("game_type")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("");
+        if game_type.is_empty() || game_type.eq_ignore_ascii_case("game") {
+            score += 60;
         }
         match (hltb_entry_year(item), year) {
             (Some(entry_year), Some(want_year)) => {
@@ -634,6 +815,61 @@ mod pick_tests {
         assert!(pick_hltb_item(&items, "Marvel's Spider-Man 2", Some(2023)).is_none());
     }
 
+    /// The reported "wrong HowLongToBeat time" was a DLC chapter: the site
+    /// returns the base game and its add-ons for one search, and the base game
+    /// must win when the search names it exactly.
+    #[test]
+    fn the_base_game_beats_its_dlc_chapters() {
+        let items = vec![
+            json!({
+                "game_id": 117861,
+                "game_name": "Far Cry 6 - Lost Between Worlds",
+                "release_world": 2022,
+                "game_type": "dlc",
+                "comp_main": 14799
+            }),
+            json!({
+                "game_id": 80870,
+                "game_name": "Far Cry 6",
+                "release_world": 2021,
+                "game_type": "game",
+                "comp_main": 90398
+            }),
+        ];
+        let picked = pick_hltb_item(&items, "Far Cry 6", Some(2021)).unwrap();
+        assert_eq!(picked["game_id"], 80870);
+
+        // A page for the chapter still gets the chapter's own entry.
+        let picked =
+            pick_hltb_item(&items, "Far Cry 6 - Lost Between Worlds", Some(2022)).unwrap();
+        assert_eq!(picked["game_id"], 117861);
+    }
+
+    /// Live probe: what does the match picker's search return? Run it with
+    /// `--ignored --nocapture` when a reported game needs the wrong entry
+    /// untangled by hand.
+    #[test]
+    #[ignore = "talks to howlongtobeat.com"]
+    fn hltb_picker_live_probe() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            for title in ["Far Cry 6", "Alan Wake 2", "Portal"] {
+                match super::search_hltb_entries(title).await {
+                    Ok(rows) => {
+                        println!("{title}: {} rows", rows.len());
+                        for row in rows.iter().take(6) {
+                            println!(
+                                "  {} · {:?} · dlc={} · {:?} h",
+                                row.name, row.year, row.dlc, row.main_story
+                            );
+                        }
+                    }
+                    Err(error) => println!("{title}: {error}"),
+                }
+            }
+        });
+    }
+
     /// Live probe: what does HowLongToBeat actually answer? Run it when a game
     /// page shows no lengths, with `--nocapture` to read the lines.
     #[test]
@@ -674,18 +910,9 @@ fn parse_hltb_response(
         if let Some(first) = pick_hltb_item(items, &term, year) {
             let exact = hltb_norm(first.get("game_name").and_then(|v| v.as_str()).unwrap_or(""))
                 == hltb_norm(&term);
-            let sec_to_hours = |k: &str| -> Option<f64> {
-                let s = first.get(k)?.as_f64()?;
-                if s <= 0.0 {
-                    None
-                } else {
-                    Some(((s / 3600.0) * 10.0).round() / 10.0)
-                }
-            };
-
-            let main_story = sec_to_hours("comp_main");
-            let main_extra = sec_to_hours("comp_plus");
-            let completionist = sec_to_hours("comp_100");
+            let main_story = seconds_to_hours(first.get("comp_main"));
+            let main_extra = seconds_to_hours(first.get("comp_plus"));
+            let completionist = seconds_to_hours(first.get("comp_100"));
 
             let supported = main_story.is_some() || main_extra.is_some() || completionist.is_some();
 
@@ -770,5 +997,31 @@ mod tests {
         assert_eq!(data.main_story, Some(25.0));
         assert_eq!(data.main_extra, Some(60.0));
         assert_eq!(data.completionist, Some(100.0));
+    }
+
+    #[test]
+    fn a_search_row_carries_the_type_and_every_length() {
+        let item = serde_json::json!({
+            "game_id": 151820,
+            "game_name": "Alan Wake II: Night Springs",
+            "game_type": "dlc",
+            "release_world": 2024,
+            "comp_main": 8704,
+            "comp_plus": 0,
+            "comp_100": 10507
+        });
+        let hit = hltb_search_hit(&item).expect("a row with an id and a name");
+        assert_eq!(hit.id, 151820);
+        assert!(hit.dlc);
+        assert_eq!(hit.year, Some(2024));
+        assert_eq!(hit.main_story, Some(2.4));
+        assert_eq!(hit.main_extra, None);
+        assert_eq!(hit.completionist, Some(2.9));
+
+        // The pick keeps the page's own title, not the site's.
+        let data = hit.pick().to_data("custom::alan", "Alan Wake 2");
+        assert!(data.supported);
+        assert_eq!(data.title, "Alan Wake 2");
+        assert_eq!(data.main_story, Some(2.4));
     }
 }

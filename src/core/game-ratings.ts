@@ -256,6 +256,7 @@ function applyIgdbSummaries(rows: IgdbCachedSummary[]): boolean {
       const appName = externalKeyToAppName(ext);
       if (appName) keys.push(appName);
     }
+    for (const key of row.appKeys ?? []) if (key) keys.push(key);
 
     if (typeof row.rating === "number" && row.rating > 0) {
       for (const k of keys) putScore(k, row.rating);
@@ -403,7 +404,7 @@ export async function syncUncachedLibraryIgdb(initialDelayMs = 3500): Promise<vo
       }
       attemptedTitleApps.add(cand.appName);
       try {
-        const game = await igdbEnrich(cand.title, cand.year, null);
+        const game = await igdbEnrich(cand.title, cand.year, null, cand.appName);
         if (game) {
           recordLiveIgdbGame(cand.appName, cand.title, game);
           unrenderedChanges = true;

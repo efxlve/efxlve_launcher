@@ -178,6 +178,34 @@ pub async fn epic_cached_hltb_times() -> Vec<crate::legendary::hltb::HltbData> {
         .unwrap_or_default()
 }
 
+/// The match picker's HowLongToBeat search: every row the site returned, with
+/// its year, type and lengths. The player picks the entry, so nothing here is
+/// filtered to a "best" answer.
+#[tauri::command]
+pub async fn epic_search_hltb(
+    title: String,
+) -> Result<Vec<crate::legendary::hltb::HltbSearchHit>, String> {
+    crate::legendary::hltb::search_hltb_entries(&title).await
+}
+
+/// Stores a hand-picked HowLongToBeat entry for one game and answers with the
+/// lengths the page paints.
+#[tauri::command]
+pub async fn epic_set_hltb_match(
+    app_name: String,
+    title: String,
+    pick: crate::legendary::hltb::HltbPick,
+) -> Result<crate::legendary::hltb::HltbData, String> {
+    crate::game_match::set_hltb(&app_name, pick.clone())?;
+    Ok(pick.to_data(&app_name, &title))
+}
+
+/// Returns one game to the automatic HowLongToBeat match.
+#[tauri::command]
+pub async fn epic_clear_hltb_match(app_name: String) -> Result<(), String> {
+    crate::game_match::clear_hltb(&app_name)
+}
+
 /// Fetches and returns critic and review data (OpenCritic, Metacritic, IGDB).
 #[tauri::command]
 pub async fn epic_get_critic(

@@ -44,6 +44,7 @@ mod restore_cli;
 mod portable;
 mod task_manager;
 mod game_running;
+mod game_match;
 mod presence;
 mod retroachievements;
 mod shared_library;
@@ -2254,6 +2255,9 @@ fn main() {
             legendary::commands::epic_get_system_requirements,
             legendary::commands::epic_get_hltb,
             legendary::commands::epic_cached_hltb_times,
+            legendary::commands::epic_search_hltb,
+            legendary::commands::epic_set_hltb_match,
+            legendary::commands::epic_clear_hltb_match,
             legendary::commands::epic_get_critic,
             legendary::commands::epic_cached_critic_scores,
             legendary::wiki::epic_get_wiki_about,
@@ -2790,6 +2794,9 @@ fn main() {
             igdb::igdb_game,
             igdb::igdb_covers,
             igdb::igdb_enrich,
+            igdb::igdb_choose_match,
+            igdb::igdb_clear_match,
+            game_match::game_match_get,
             igdb::igdb_cached_library,
             igdb::igdb_enrich_external_batch,
         ])

@@ -32,7 +32,7 @@ const loading = new Set<string>();
 export function ensureIgdbOverview(target: IgdbTarget, year: number | null, onArrive?: () => void): void {
   if (!S.igdbConfigured || S.offlineMode || cache.has(target.appName) || loading.has(target.appName)) return;
   loading.add(target.appName);
-  void igdbEnrich(target.title, year, igdbExternalId(target.appName))
+  void igdbEnrich(target.title, year, igdbExternalId(target.appName), target.appName)
     .then((game) => {
       cache.set(target.appName, game ?? null);
       if (game) recordLiveIgdbGame(target.appName, target.title, game);
@@ -61,6 +61,18 @@ export function ensureIgdbOverview(target: IgdbTarget, year: number | null, onAr
  */
 export function igdbGameFor(appName: string): IgdbGame | null | undefined {
   return cache.get(appName);
+}
+
+/** Records the player's own IGDB choice, so the page paints it at once. */
+export function setIgdbGameFor(appName: string, game: IgdbGame): void {
+  cache.set(appName, game);
+  errors.delete(appName);
+}
+
+/** Forgets the page's IGDB answer so the next ensure runs the lookup again. */
+export function forgetIgdbGame(appName: string): void {
+  cache.delete(appName);
+  errors.delete(appName);
 }
 
 /**

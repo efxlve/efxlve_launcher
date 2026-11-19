@@ -198,6 +198,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_cancel_move_game` | `epicCancelMoveGame({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_check_updates` | `epicCheckUpdates({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_cleanup_cache` | `epicCleanupCache({ ... })` | `src-tauri/src/legendary/commands/cdn.rs` |
+| `epic_clear_hltb_match` | `epicClearHltbMatch({ ... })` | `src-tauri/src/legendary/commands/metadata.rs` |
 | `epic_create_desktop_shortcut` | `epicCreateDesktopShortcut({ ... })` | `src-tauri/src/legendary/commands/game_local.rs` |
 | `epic_default_install_dir` | `epicDefaultInstallDir({ ... })` | `src-tauri/src/legendary/transfers/paths.rs` |
 | `epic_delete_backup` | `epicDeleteBackup({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
@@ -278,6 +279,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_save_edited_screenshot` | `epicSaveEditedScreenshot({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
 | `epic_save_game_settings` | `epicSaveGameSettings({ ... })` | `src-tauri/src/legendary/commands/game_local.rs` |
 | `epic_save_screenshot_preview` | `epicSaveScreenshotPreview({ ... })` | `src-tauri/src/legendary/screenshots.rs` |
+| `epic_search_hltb` | `epicSearchHltb({ ... })` | `src-tauri/src/legendary/commands/metadata.rs` |
 | `epic_search_steamgrid` | `epicSearchSteamgrid({ ... })` | `src-tauri/src/legendary/steamgrid.rs` |
 | `epic_select_folder_dialog` | `epicSelectFolderDialog({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_set_auto_desktop_shortcut` | `epicSetAutoDesktopShortcut({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
@@ -286,6 +288,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_set_download_limit` | `epicSetDownloadLimit({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_set_game_collections` | `epicSetGameCollections({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_set_gog_comet` | `epicSetGogComet({ ... })` | `src-tauri/src/comet/mod.rs` |
+| `epic_set_hltb_match` | `epicSetHltbMatch({ ... })` | `src-tauri/src/legendary/commands/metadata.rs` |
 | `epic_set_install_dir` | `epicSetInstallDir({ ... })` | `src-tauri/src/legendary/transfers/paths.rs` |
 | `epic_set_local_backup_dir` | `epicSetLocalBackupDir({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
 | `epic_set_network_profile` | `epicSetNetworkProfile({ ... })` | `src-tauri/src/legendary/commands/ops.rs` |
@@ -312,6 +315,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `feedback_create_report` | `feedbackCreateReport({ ... })` | `src-tauri/src/feedback.rs` |
 | `feedback_has_crash` | `feedbackHasCrash({ ... })` | `src-tauri/src/feedback.rs` |
 | `feedback_recovery_pending` | `feedbackRecoveryPending({ ... })` | `src-tauri/src/feedback.rs` |
+| `game_match_get` | `gameMatchGet({ ... })` | `src-tauri/src/game_match.rs` |
 | `game_watch_installed` | `gameWatchInstalled({ ... })` | `src-tauri/src/game_running.rs` |
 | `get_store_extensions_state` | `getStoreExtensionsState({ ... })` | `src-tauri/src/store_host.rs` |
 | `gog_auth_code` | `gogAuthCode({ ... })` | `src-tauri/src/gogdl/commands.rs` |
@@ -347,7 +351,9 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `hide_notif_overlay` | `hideNotifOverlay({ ... })` | `src-tauri/src/notif_overlay.rs` |
 | `hide_store_view` | `hideStoreView({ ... })` | `src-tauri/src/store_host.rs` |
 | `igdb_cached_library` | `igdbCachedLibrary({ ... })` | `src-tauri/src/igdb.rs` |
+| `igdb_choose_match` | `igdbChooseMatch({ ... })` | `src-tauri/src/igdb.rs` |
 | `igdb_clear_credentials` | `igdbClearCredentials({ ... })` | `src-tauri/src/igdb.rs` |
+| `igdb_clear_match` | `igdbClearMatch({ ... })` | `src-tauri/src/igdb.rs` |
 | `igdb_covers` | `igdbCovers({ ... })` | `src-tauri/src/igdb.rs` |
 | `igdb_enrich` | `igdbEnrich({ ... })` | `src-tauri/src/igdb.rs` |
 | `igdb_enrich_external_batch` | `igdbEnrichExternalBatch({ ... })` | `src-tauri/src/igdb.rs` |

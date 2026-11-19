@@ -86,6 +86,8 @@ export interface IgdbCachedSummary {
   normalizedTitle: string;
   lookupKeys: string[];
   externalKeys: string[];
+  /** Library keys the player matched by hand. */
+  appKeys?: string[];
   rating: number | null;
   releaseYear: number | null;
   developer: string;
@@ -122,13 +124,39 @@ export const igdbEnrich = (
   title: string,
   year?: number | null,
   external?: { category: number; uid: string } | null,
+  appName?: string | null,
 ) =>
   invoke<IgdbGame | null>("igdb_enrich", {
     title,
     year: year ?? null,
     externalCategory: external?.category ?? null,
     externalUid: external?.uid ?? null,
+    appName: appName ?? null,
   });
+
+/** Stores the IGDB entry the player picked for one game. */
+export const igdbChooseMatch = (appName: string, id: number) =>
+  invoke<IgdbGame>("igdb_choose_match", { appName, id });
+
+/** Returns one game to the automatic IGDB match. */
+export const igdbClearMatch = (appName: string) =>
+  invoke<void>("igdb_clear_match", { appName });
+
+/** What the player chose by hand; absent fields mean automatic. */
+export interface GameMatchChoice {
+  igdbId?: number | null;
+  hltb?: {
+    id: number;
+    name: string;
+    year?: number | null;
+    main_story?: number | null;
+    main_extra?: number | null;
+    completionist?: number | null;
+  } | null;
+}
+
+export const gameMatchGet = (appName: string) =>
+  invoke<GameMatchChoice>("game_match_get", { appName });
 
 export const igdbCachedLibrary = () =>
   invoke<IgdbCachedSummary[]>("igdb_cached_library");

@@ -4397,5 +4397,20 @@
   "settings.achRareSoundDesc": "Optional separate audio chime for Ultra-Rare (<5%) and Platinum achievement unlocks.",
   "settings.achRareSoundSame": "Same as default sound",
   "settings.achShowProgressTitle": "Mostrar barra de progreso",
-  "settings.achShowProgressDesc": "Muestra una barra de progreso animada en la tarjeta."
+  "settings.achShowProgressDesc": "Muestra una barra de progreso animada en la tarjeta.",
+  "drawer.matchMetadata": "Corregir metadatos",
+  "match.title": "Corregir los metadatos del juego",
+  "match.hint": "Elige la entrada de IGDB y la de HowLongToBeat para este juego. La página del juego y la biblioteca siguen tu elección.",
+  "match.current": "Actual",
+  "match.none": "Sin coincidencia",
+  "match.manual": "Manual",
+  "match.automatic": "Automática",
+  "match.searching": "Buscando…",
+  "match.savedIgdb": "Coincidencia de IGDB guardada",
+  "match.savedHltb": "Coincidencia de HowLongToBeat guardada",
+  "match.autoRestored": "Coincidencia automática restaurada",
+  "match.searchFailed": "No se pudo completar la búsqueda",
+  "match.invalid": "Esa entrada no se puede usar",
+  "match.dlc": "DLC",
+  "match.game": "Juego"
 }

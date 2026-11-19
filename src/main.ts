@@ -25,6 +25,7 @@ import type { View } from "./core/types";
 import { closeCollectionModal } from "./features/collections/collections-view";
 import { closeChangelogModal } from "./features/changelog/changelog-view";
 import { closeCustomCoverModal } from "./features/cover/cover-view";
+import { closeMatchModal } from "./features/drawer/match-view";
 import { compactCustomArtStorage } from "./features/cover/cover-storage";
 import { destroyDiscordPage, hydrateDiscordPage, keepDiscordOpen, renderDiscordPage } from "./features/discord/discord-view";
 import { closeInstallDialog } from "./features/install/install-dialog";
@@ -244,6 +245,7 @@ function closeAllModals(): void {
   closeScreenshotMoveConfirm();
   closeShareModal();
   closeCustomCoverModal();
+  closeMatchModal();
   closeCollectionModal();
   closeHideGamesModal();
   closeHideAchievementsModal();

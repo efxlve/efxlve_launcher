@@ -181,6 +181,7 @@ import { handleBackupsAction } from "../backups/backups-handlers";
 import { handleArchiveAction, openArchiveForGame } from "../archive/archive-actions";
 import { handleCollectionAction } from "./handlers/collection-handlers";
 import { handleCoverAction } from "./handlers/cover-handlers";
+import { handleMatchAction } from "./handlers/match-handlers";
 import { handleEglRemovalAction } from "./handlers/egl-removal-handlers";
 import { handleDownloadsAction } from "./handlers/downloads-handlers";
 import { handleDrawerAction } from "./handlers/drawer-handlers";
@@ -446,6 +447,7 @@ document.addEventListener("click", (e) => {
   if (handleBackupsAction(act, t, id)) return;
   if (handleArchiveAction(act, id, t)) return;
   if (handleCoverAction(act, t, id, targetEl)) return;
+  if (handleMatchAction(act, t, id, targetEl)) return;
   if (handleEglRemovalAction(act, t, id, targetEl)) return;
   if (handleCollectionAction(act, t, id, targetEl)) return;
   if (handleDownloadsAction(act, t, id, targetEl)) return;

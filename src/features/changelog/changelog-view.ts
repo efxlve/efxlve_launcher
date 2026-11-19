@@ -30,6 +30,26 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.61",
+    date: "2026-11-19",
+    added: [
+      {
+        en: "A game page's More menu can fix its metadata: search IGDB and HowLongToBeat, pick the right entry, or return to automatic matching. The page, the library sort and later launches all use the choice.",
+        tr: "Oyun sayfasının Diğer menüsü artık üst veriyi düzeltebiliyor: IGDB ve HowLongToBeat'te arayın, doğru kaydı seçin ya da otomatik eşleştirmeye dönün. Sayfa, kütüphane sıralaması ve sonraki açılışlar bu seçimi kullanır.",
+      },
+    ],
+    fixed: [
+      {
+        en: "IGDB finds a game by its Steam, GOG or Amazon id again, and a stored match that points at a same-named game from another year is looked up again. Portal is no longer the 1986 game.",
+        tr: "IGDB bir oyunu artık Steam, GOG veya Amazon kimliğinden buluyor; başka yıla ait aynı adlı bir oyunu gösteren kayıt yeniden aranıyor. Portal artık 1986'daki oyun değil.",
+      },
+      {
+        en: "HowLongToBeat keeps the base game ahead of its DLC chapters and refreshes the lengths stored by earlier versions, so a chapter's time no longer stands in for the whole game.",
+        tr: "HowLongToBeat, ana oyunu DLC bölümlerinin önünde tutuyor ve eski sürümlerin sakladığı süreleri yeniliyor; artık bir bölümün süresi oyunun tamamı yerine geçmiyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.60",
     date: "2026-11-18",
     added: [

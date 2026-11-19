@@ -4397,5 +4397,20 @@
   "settings.achRareSoundDesc": "Ultra Nadir (<%5) ve Platin başarımlar için çalınacak isteğe bağlı özel zafer sesi.",
   "settings.achRareSoundSame": "Varsayılan ses ile aynı",
   "settings.achShowProgressTitle": "İlerleme Çubuğunu Göster",
-  "settings.achShowProgressDesc": "Kart üzerinde oyunun başarım tamamlama ilerlemesini gösteren çubuk çizer."
+  "settings.achShowProgressDesc": "Kart üzerinde oyunun başarım tamamlama ilerlemesini gösteren çubuk çizer.",
+  "drawer.matchMetadata": "Üst veriyi düzelt",
+  "match.title": "Oyun üst verisini düzelt",
+  "match.hint": "Bu oyunun kullanacağı IGDB ve HowLongToBeat kayıtlarını seç. Oyun sayfası ve kütüphane seçimini izler.",
+  "match.current": "Geçerli",
+  "match.none": "Eşleşme yok",
+  "match.manual": "Elle seçildi",
+  "match.automatic": "Otomatik",
+  "match.searching": "Aranıyor…",
+  "match.savedIgdb": "IGDB eşleşmesi kaydedildi",
+  "match.savedHltb": "HowLongToBeat eşleşmesi kaydedildi",
+  "match.autoRestored": "Otomatik eşleştirme geri açıldı",
+  "match.searchFailed": "Arama tamamlanamadı",
+  "match.invalid": "Bu kayıt kullanılamıyor",
+  "match.dlc": "DLC",
+  "match.game": "Oyun"
 }
