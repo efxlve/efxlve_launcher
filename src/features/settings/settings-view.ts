@@ -143,6 +143,7 @@ const SECTIONS: { id: SettingsSection; labelKey: string; icon: IconName }[] = [
   { id: "cases", labelKey: "settings.secCases", icon: "layers" },
   { id: "archive", labelKey: "settings.secArchive", icon: "package" },
   { id: "controller", labelKey: "settings.secController", icon: "gamepad-2" },
+  { id: "themes", labelKey: "settings.secThemes", icon: "palette" },
   { id: "appearance", labelKey: "settings.secAppearance", icon: "sparkles" },
   { id: "screenshots", labelKey: "settings.secScreenshots", icon: "camera" },
   { id: "achievements", labelKey: "settings.secAchievements", icon: "trophy" },
@@ -168,7 +169,7 @@ const NAV_GROUPS: { labelKey: string; sections: SettingsSection[] }[] = [
   },
   {
     labelKey: "settings.navApp",
-    sections: ["compat", "controller", "appearance", "screenshots", "achievements", "notes", "system", "tasks", "about"],
+    sections: ["compat", "controller", "themes", "appearance", "screenshots", "achievements", "notes", "system", "tasks", "about"],
   },
 ];
 
@@ -1557,19 +1558,22 @@ function drawerOrderRow(): string {
   );
 }
 
-function renderAppearance(): string {
+function renderThemes(): string {
   const theme = themePanel.get();
   if (!theme) {
     themePanel.ensure();
     return panelLoadingState();
   }
+  return theme.renderThemeSection();
+}
+
+function renderAppearance(): string {
   const languages = LANGUAGES.map((l) => `
     <button class="lang-option-btn ${S.appLanguage === l.code ? "active" : ""}" data-act="set-app-language" data-lang="${esc(l.code)}">
       <span class="lang-flag">${esc(l.code.toUpperCase())}</span>
       <span class="lang-name">${esc(l.label)}</span>
     </button>`).join("");
   return (
-    theme.renderThemeSection() +
     group(
       renderCustomCssRow() +
       row(t("settings.gameSceneTitle"), t("settings.gameSceneDesc"), toggle("toggle-game-scene", S.gameScene)) +
@@ -2165,6 +2169,7 @@ function renderSection(section: SettingsSection): string {
     case "cases": return renderCasesSection();
     case "archive": return renderArchiveSection();
     case "controller": return renderController();
+    case "themes": return renderThemes();
     case "appearance": return renderAppearance();
     case "screenshots": return renderScreenshots();
     case "achievements": return renderAchievementsSettings();
@@ -2365,17 +2370,6 @@ function applySettingsSearch(query: string): void {
   // A heading goes with its content: walk the following siblings until the next
   // heading and keep the heading only when something readable is left.
   panel.querySelectorAll<HTMLElement>(".section-title").forEach((title) => {
-    // The theme gallery's title lives inside its own header, not next to the
-    // cards. Its section already carries every theme name in `data-search`, so
-    // the heading follows the section instead of looking for a sibling unit.
-    if (title.closest(".theme-section-titles")) {
-      const section = title.closest<HTMLElement>(".theme-section");
-      title.classList.toggle(
-        SEARCH_HIDE_CLASS,
-        searching && Boolean(section?.classList.contains(SEARCH_HIDE_CLASS)),
-      );
-      return;
-    }
     const head = title.closest<HTMLElement>(".settings-section-head, .settings-hidden-head") ?? title;
     let sibling = head.nextElementSibling;
     let anyVisible = false;

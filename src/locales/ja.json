@@ -116,6 +116,7 @@
   "settings.coverArtTitle": "カバーアート",
   "settings.secController": "コントローラー",
   "settings.secAppearance": "外観と言語",
+  "settings.secThemes": "テーマ",
   "settings.surfaceTitle": "背景",
   "settings.surfaceDesc": "カーボンダークは長時間のセッション向けにコントラストを調整し、OLED ブラックは深みのある漆黒のパネルを提供します。",
   "settings.surfaceBlack": "OLED ブラック",

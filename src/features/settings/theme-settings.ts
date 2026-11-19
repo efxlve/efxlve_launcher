@@ -97,10 +97,9 @@ export function renderThemeSection(): string {
         : "";
 
   return `
-    <div class="theme-section" data-search="${esc(`${t("settings.themeTitle")} ${t("settings.themeDesc")} theme surface appearance palette ${themeNames}`)}">
+    <div class="theme-section" data-search="${esc(`${t("settings.secThemes")} ${t("settings.themeTitle")} ${t("settings.themeDesc")} theme surface appearance palette ${themeNames}`)}">
       <div class="theme-section-header">
         <div class="theme-section-titles">
-          <h3 class="section-title">${esc(t("settings.themeTitle"))}</h3>
           <p class="page-sub">${esc(t("settings.themeDesc"))}</p>
         </div>
         <div class="theme-section-actions">
@@ -163,7 +162,7 @@ function renderThemeCard(theme: ThemeDef): string {
   const cardArtGradient = `linear-gradient(135deg, ${accent}33 0%, ${surface2} 100%)`;
 
   return `
-    <div class="theme-card ${isActive ? "active" : ""}" data-act="set-surface" data-surface="${esc(theme.id)}" role="button" tabindex="0" aria-pressed="${isActive ? "true" : "false"}" aria-label="${esc(displayName)}">
+    <div class="theme-card ${isActive ? "active" : ""}" data-act="set-surface" data-surface="${esc(theme.id)}" data-search="${esc(`${displayName} ${theme.scheme}${theme.custom ? " custom" : ""}`)}" role="button" tabindex="0" aria-pressed="${isActive ? "true" : "false"}" aria-label="${esc(displayName)}">
       <div class="theme-card-preview" style="background: ${esc(previewBg)};">
         ${hasScene ? `<div class="theme-card-preview-scene" style="background-image: url('${esc(theme.scene!)}'); filter: blur(${sceneBlur}px);"></div>` : ""}
         <div class="theme-card-preview-scrim" style="background: ${scrimColor};"></div>
