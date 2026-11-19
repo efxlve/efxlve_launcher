@@ -567,6 +567,7 @@
   "ach.showDefinitions": "Afficher les définitions Steam",
   "ach.eosTitle": "Epic Online Services détecté",
   "ach.eosDesc": "{store} n'affiche pas les succès de ce jeu ; le jeu utilise Epic Online Services. Le launcher ne peut pas lire la progression EOS et aucune liste de définitions Steam correspondante n'a été trouvée.",
+  "ach.eosLogNote": "Ce jeu utilise Epic Online Services (EOS) et n'a pas de succès sur l'Epic Games Store. Le launcher importe les succès débloqués depuis le journal du jeu. Ce journal est réinitialisé à chaque lancement : seules cette session et les suivantes apparaissent automatiquement. La superposition Epic en jeu (Shift+F3) affiche tout l'état EOS ; les anciens succès peuvent être cochés dans l'éditeur d'état.",
   "ach.definitionsSourceNote": "Cette liste suit les définitions Steam du jeu et démarre entièrement verrouillée. Le launcher ne peut pas lire la progression de la boutique ; marquez ce que vous avez débloqué dans l'éditeur d'état des succès.",
   "ach.platinumComplete": "Trophée platine terminé !",
   "ach.platinumEarned": "Trophée platine obtenu !",

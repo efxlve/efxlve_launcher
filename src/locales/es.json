@@ -567,6 +567,7 @@
   "ach.showDefinitions": "Mostrar definiciones de Steam",
   "ach.eosTitle": "Epic Online Services detectado",
   "ach.eosDesc": "{store} no muestra los logros de este juego; el juego usa Epic Online Services. El launcher no puede leer el progreso de EOS y no se encontró una lista de definiciones de Steam que coincida.",
+  "ach.eosLogNote": "Este juego usa Epic Online Services (EOS) y no tiene un conjunto de logros en Epic Games Store. El launcher importa los logros desbloqueados desde el registro del propio juego. El registro se reinicia en cada inicio, así que solo esta sesión y las siguientes aparecen automáticamente; la superposición de Epic en el juego (Shift+F3) muestra todo el estado de EOS, y los logros antiguos se pueden marcar en el editor de estado.",
   "ach.definitionsSourceNote": "Esta lista sigue las definiciones de Steam del juego y empieza totalmente bloqueada. El launcher no puede leer el progreso de la tienda; marca lo que desbloqueaste en el editor de estado de logros.",
   "ach.platinumComplete": "Trofeo de platino completado!",
   "ach.platinumEarned": "¡Trofeo de platino conseguido!",

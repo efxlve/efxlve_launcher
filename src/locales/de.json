@@ -567,6 +567,7 @@
   "ach.showDefinitions": "Steam-Definitionen anzeigen",
   "ach.eosTitle": "Epic Online Services erkannt",
   "ach.eosDesc": "{store} zeigt die Erfolge dieses Spiels nicht an; das Spiel verwendet Epic Online Services. Der Launcher kann den EOS-Fortschritt nicht lesen, und es wurde keine passende Steam-Definitionsliste gefunden.",
+  "ach.eosLogNote": "Dieses Spiel nutzt Epic Online Services (EOS) und hat kein Achievement-Set im Epic Games Store. Der Launcher liest freigeschaltete Erfolge aus dem Spiellog. Das Log wird bei jedem Start zurückgesetzt, daher erscheinen nur diese und spätere Sitzungen automatisch; das Epic-Overlay im Spiel (Shift+F3) zeigt den vollständigen EOS-Stand, ältere Erfolge lassen sich im Status-Editor manuell markieren.",
   "ach.definitionsSourceNote": "Diese Liste folgt den Steam-Definitionen des Spiels und startet komplett gesperrt. Der Launcher kann den Fortschritt des Stores nicht lesen; markiere Freigeschaltetes im Erfolgsstatus-Editor.",
   "ach.platinumComplete": "Platin-Trophäe abgeschlossen!",
   "ach.platinumEarned": "Platin-Trophäe erhalten!",

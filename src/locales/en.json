@@ -597,6 +597,7 @@
   "ach.showDefinitions": "Show Steam definitions",
   "ach.eosTitle": "Epic Online Services detected",
   "ach.eosDesc": "{store} does not show this game's achievements; the game uses Epic Online Services. The launcher cannot read EOS progress, and no matching Steam definition list was found.",
+  "ach.eosLogNote": "This game uses Epic Online Services (EOS) and has no Epic Games Store achievement set. The launcher imports unlocks from the game's own log. The log is reset on every launch, so only this and later sessions appear automatically; the in-game Epic overlay (Shift+F3) shows the full EOS state, and older unlocks can be marked with the state editor.",
   "ach.definitionsSourceNote": "This list follows the game's Steam definitions and starts fully locked. The launcher cannot read the store's own progress; use the achievement state editor to mark what you unlocked.",
   "ach.platinumComplete": "Platinum Trophy Complete!",
   "ach.platinumEarned": "Platinum trophy earned!",

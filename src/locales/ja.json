@@ -567,6 +567,7 @@
   "ach.showDefinitions": "Steam の定義を表示",
   "ach.eosTitle": "Epic Online Services を検出",
   "ach.eosDesc": "{store} はこのゲームの実績を表示していません。ゲームは Epic Online Services を使用しています。ランチャーは EOS の進行状況を読み取れず、一致する Steam の定義リストも見つかりませんでした。",
+  "ach.eosLogNote": "このゲームは Epic Online Services（EOS）を使用しており、Epic Games Store の実績セットはありません。ランチャーはゲーム自身のログから解除済みの実績を読み取ります。ログは起動するたびにリセットされるため、自動で表示されるのは今回以降のセッションだけです。ゲーム内の Epic オーバーレイ（Shift+F3）で EOS の完全な状態を確認でき、以前の実績は状態エディターで手動でマークできます。",
   "ach.definitionsSourceNote": "この一覧はゲームの Steam 定義に基づき、最初はすべてロックされています。ランチャーはストア側の進行状況を読み取れません。解除した実績は実績状態エディターでマークしてください。",
   "ach.platinumComplete": "プラチナトロフィー完了！",
   "ach.platinumEarned": "プラチナトロフィー獲得！",

@@ -3224,8 +3224,10 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     ? `<div class="ach-source-note">${icon("info", 13)}<span>${t("ach.ubiEpicDesc")}</span></div>`
     : eaAchSource.has(s.appName)
       ? `<div class="ach-source-note">${icon("info", 13)}<span>${t("ach.eaEpicDesc")}</span></div>`
-      : data.data_source === "definitions" && !eosLogSource.has(s.appName)
-        ? `<div class="ach-source-note">${icon("list", 13)}<span>${esc(t("ach.definitionsSourceNote"))}</span></div>`
+      : data.data_source === "definitions"
+        ? eosLogSource.has(s.appName)
+          ? `<div class="ach-source-note">${icon("info", 13)}<span>${esc(t("ach.eosLogNote"))}</span></div>`
+          : `<div class="ach-source-note">${icon("list", 13)}<span>${esc(t("ach.definitionsSourceNote"))}</span></div>`
         : "";
 
   // Platinum celebration: glow, ring, sparkles, particle burst and a one-shot

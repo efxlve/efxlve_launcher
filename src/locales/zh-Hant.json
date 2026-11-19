@@ -567,6 +567,7 @@
   "ach.showDefinitions": "顯示 Steam 成就定義",
   "ach.eosTitle": "偵測到 Epic Online Services",
   "ach.eosDesc": "{store} 不顯示此遊戲的成就；遊戲使用 Epic Online Services。啟動器無法讀取 EOS 進度，也沒有找到相符的 Steam 成就定義清單。",
+  "ach.eosLogNote": "此遊戲使用 Epic Online Services (EOS)，沒有 Epic Games Store 成就集。啟動器會從遊戲自身的日誌中匯入已解鎖成就。日誌每次啟動都會重置，因此只有本次及之後的工作階段會自動顯示；遊戲內 Epic 覆蓋層 (Shift+F3) 會顯示完整的 EOS 狀態，較早的成就可以在狀態編輯器中手動標記。",
   "ach.definitionsSourceNote": "此清單依據遊戲的 Steam 成就定義，初始全部鎖定。啟動器無法讀取商店自身的進度；請在成就狀態編輯器中標記已解鎖的成就。",
   "ach.platinumComplete": "白金獎盃完成！",
   "ach.platinumEarned": "獲得白金獎盃！",
