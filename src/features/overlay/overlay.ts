@@ -1335,6 +1335,8 @@ async function onOpen(payload: OpenPayload): Promise<void> {
   }
   applyOpacity(savedOpacity());
 
+  // The overlay is a separate webview over the game; keep its neutral soft
+  // surface instead of inheriting a bright or wallpaper-heavy launcher theme.
   document.documentElement.dataset.surface = "soft";
   hideLightbox();
 

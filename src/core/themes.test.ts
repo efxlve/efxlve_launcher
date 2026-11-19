@@ -13,6 +13,7 @@ import {
   sanitizeSceneUrl,
   sanitizeThemeTokens,
   contrastRatio,
+  defineTheme,
   PRESET_WALLPAPERS,
   themeById,
   themes,
@@ -69,6 +70,21 @@ describe("theme tokens", () => {
 });
 
 describe("theme registry", () => {
+  it("defines a colour theme from a compact recipe", () => {
+    const theme = defineTheme({
+      id: "recipe-test",
+      name: "Recipe Test",
+      bg: "#101014",
+      accent: "#f97316",
+      light: false,
+      radius: "round",
+    });
+    expect(theme.scheme).toBe("dark");
+    expect(theme.tokens?.["--bg"]).toBe("#101014");
+    expect(theme.tokens?.["--r-lg"]).toBe("20px");
+    expect(theme.tags).toBeUndefined();
+  });
+
   it("has unique ids and complete core tokens", () => {
     const list = themes();
     const ids = list.map((theme) => theme.id);
