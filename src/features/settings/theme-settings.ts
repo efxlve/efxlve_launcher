@@ -74,6 +74,8 @@ let harmonizeSurfaces = true;
 let previewSubTab: "library" | "hero" | "settings" = "library";
 /** Palette fields at open time; untouched fields keep recovered token tables. */
 let designerBaseline = "";
+/** Whether the opening draft had a wallpaper, so a clear can be explicit. */
+let designerHadScene = false;
 
 function paletteSignature(input: CustomThemeInput): string {
   return JSON.stringify({
@@ -429,6 +431,7 @@ export function openThemeDesigner(themeId?: string): void {
   }
 
   designerBaseline = paletteSignature(designerDraft);
+  designerHadScene = Boolean(designerDraft.scene);
   designerOpen = true;
   renderDesignerModal();
 }
@@ -1117,6 +1120,7 @@ function saveThemeFromDesigner(): void {
     sceneBlur: designerDraft.sceneBlur,
     sceneOpacity: designerDraft.sceneOpacity,
     radius: designerDraft.radius,
+    removeScene: designerHadScene && !designerDraft.scene,
     tokens: keepTokens ? designerDraft.tokens : undefined,
     createdAt: designerDraft.createdAt,
   });

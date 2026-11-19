@@ -58,6 +58,8 @@ export interface CustomThemeInput {
   scene?: string;
   /** True when the image lives in IndexedDB and only metadata is stored. */
   sceneStored?: boolean;
+  /** UI-only: the designer explicitly cleared the wallpaper. */
+  removeScene?: boolean;
   sceneBlur?: number;
   sceneOpacity?: number;
   radius?: "sharp" | "default" | "round";

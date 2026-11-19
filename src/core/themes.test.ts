@@ -319,13 +319,24 @@ describe("theme wallpapers", () => {
   it("removes the stored wallpaper when the designer clears it", async () => {
     const id = saveCustomTheme({ ...BASE, scene: SCENE });
     const input = getCustomThemeInput(id)!;
-    saveCustomTheme({ ...input, scene: undefined });
+    saveCustomTheme({ ...input, scene: undefined, removeScene: true });
     await Promise.resolve();
 
     expect(sceneStore.has(id)).toBe(false);
     expect(getCustomThemeInput(id)?.scene).toBeUndefined();
     const raw = JSON.parse(localStorage.getItem("efxlve-custom-themes")!) as Array<Record<string, unknown>>;
     expect(raw[0].sceneStored).toBe(false);
+  });
+
+  it("keeps a wallpaper when a metadata-only save omits the scene", async () => {
+    const id = saveCustomTheme({ ...BASE, scene: SCENE });
+    const input = getCustomThemeInput(id)!;
+    saveCustomTheme({ ...input, name: "Renamed", scene: undefined });
+    await Promise.resolve();
+
+    expect(sceneStore.has(id)).toBe(true);
+    expect(getCustomThemeInput(id)?.scene).toBe(SCENE);
+    expect(getCustomThemeInput(id)?.name).toBe("Renamed");
   });
 
   it("keeps the image in metadata when the store rejects the write", async () => {

@@ -299,6 +299,9 @@ export function saveCustomTheme(input: CustomThemeInput): string {
   const existingIdx = list.findIndex((item, idx) => item.id === targetId || `${CUSTOM_PREFIX}${idx}` === targetId);
   const existing = existingIdx !== -1 ? list[existingIdx] : undefined;
   const scene = sanitizeSceneUrl(input.scene);
+  const clearScene = input.removeScene === true;
+  const preservedScene = !scene && !clearScene ? existing?.scene ?? getCachedThemeScene(targetId) : undefined;
+  const storedScene = scene ?? preservedScene;
   const sceneReady = isThemeSceneStoreReady();
   if (scene) {
     setCachedThemeScene(targetId, scene);
@@ -307,9 +310,16 @@ export function saveCustomTheme(input: CustomThemeInput): string {
         if (!stored) restoreSceneMetadata(targetId, scene);
       });
     }
-  } else {
+  } else if (clearScene) {
     deleteCachedThemeScene(targetId);
     if (sceneReady) void deleteThemeScene(targetId);
+  } else if (preservedScene && !getCachedThemeScene(targetId)) {
+    setCachedThemeScene(targetId, preservedScene);
+    if (sceneReady) {
+      void putThemeScene(targetId, preservedScene).then((stored) => {
+        if (!stored) restoreSceneMetadata(targetId, preservedScene);
+      });
+    }
   }
 
   const clean: CustomThemeInput = {
@@ -326,8 +336,8 @@ export function saveCustomTheme(input: CustomThemeInput): string {
     cardGlass: Boolean(input.cardGlass),
     borderStyle: input.borderStyle === "contrast" || input.borderStyle === "accent" ? input.borderStyle : "subtle",
     light: Boolean(input.light),
-    scene: sceneReady ? undefined : scene,
-    sceneStored: sceneReady ? Boolean(scene) : false,
+    scene: sceneReady ? undefined : storedScene,
+    sceneStored: sceneReady ? Boolean(storedScene) : false,
     sceneBlur: typeof input.sceneBlur === "number" ? Math.max(0, Math.min(30, input.sceneBlur)) : 0,
     sceneOpacity: typeof input.sceneOpacity === "number" ? Math.max(0.05, Math.min(0.95, input.sceneOpacity)) : undefined,
     radius: input.radius === "sharp" || input.radius === "round" ? input.radius : "default",
