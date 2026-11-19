@@ -56,6 +56,8 @@ export interface CustomThemeInput {
   light: boolean;
   /** Optional backdrop image as a `data:image/...` URL. */
   scene?: string;
+  /** True when the image lives in IndexedDB and only metadata is stored. */
+  sceneStored?: boolean;
   sceneBlur?: number;
   sceneOpacity?: number;
   radius?: "sharp" | "default" | "round";

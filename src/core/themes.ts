@@ -12,6 +12,15 @@ import { t } from "../i18n";
 import type { CustomThemeInput, ThemeDef, ThemePreset, PresetWallpaper } from "./theme/types";
 import { PRESET_WALLPAPERS, THEME_PRESETS } from "./theme/presets";
 import { BUILTIN_THEMES, DEFAULT_THEME, LEGACY_SURFACE_IDS } from "./theme/builtins";
+import {
+  deleteCachedThemeScene,
+  deleteThemeScene,
+  getCachedThemeScene,
+  isThemeSceneStoreReady,
+  loadThemeScenes,
+  putThemeScene,
+  setCachedThemeScene,
+} from "./theme/scenes";
 import { customTokens, contrastRatio, HEX } from "./theme/tokens";
 export { customTokens, contrastRatio } from "./theme/tokens";
 export { defineTheme } from "./theme/recipe";
@@ -203,6 +212,7 @@ function readCustomInputs(): CustomThemeInput[] {
           borderStyle,
           light: item.light === true,
           scene: sanitizeSceneUrl(item.scene),
+          sceneStored: item.sceneStored === true,
           sceneBlur: typeof item.sceneBlur === "number" ? Math.max(0, Math.min(30, item.sceneBlur)) : 0,
           sceneOpacity: typeof item.sceneOpacity === "number" ? Math.max(0.05, Math.min(0.95, item.sceneOpacity)) : undefined,
           radius,
@@ -244,6 +254,7 @@ export function customThemes(): ThemeDef[] {
     const id = input.id || `${CUSTOM_PREFIX}${index}`;
     const generated = customTokens(input);
     const tokens = input.tokens ? { ...generated, ...input.tokens } : generated;
+    const scene = input.scene ?? getCachedThemeScene(id);
     return {
       id,
       labelKey: "",
@@ -255,11 +266,11 @@ export function customThemes(): ThemeDef[] {
       tokens,
       custom: true,
       tags: ["custom"],
-      scene: input.scene,
+      scene,
       sceneBlur: input.sceneBlur,
       sceneOpacity: input.sceneOpacity,
       radius: input.radius,
-      customInput: input,
+      customInput: { ...input, scene },
     };
   });
   return customThemeCache;
@@ -277,6 +288,15 @@ export function saveCustomTheme(input: CustomThemeInput): string {
     isSafeThemeId(input.id) && input.id.startsWith(CUSTOM_PREFIX) ? input.id : `${CUSTOM_PREFIX}${Date.now()}`;
   const existingIdx = list.findIndex((item, idx) => item.id === targetId || `${CUSTOM_PREFIX}${idx}` === targetId);
   const existing = existingIdx !== -1 ? list[existingIdx] : undefined;
+  const scene = sanitizeSceneUrl(input.scene);
+  const sceneReady = isThemeSceneStoreReady();
+  if (scene) {
+    setCachedThemeScene(targetId, scene);
+    if (sceneReady) void putThemeScene(targetId, scene);
+  } else {
+    deleteCachedThemeScene(targetId);
+    if (sceneReady) void deleteThemeScene(targetId);
+  }
 
   const clean: CustomThemeInput = {
     id: targetId,
@@ -292,7 +312,8 @@ export function saveCustomTheme(input: CustomThemeInput): string {
     cardGlass: Boolean(input.cardGlass),
     borderStyle: input.borderStyle === "contrast" || input.borderStyle === "accent" ? input.borderStyle : "subtle",
     light: Boolean(input.light),
-    scene: sanitizeSceneUrl(input.scene),
+    scene: sceneReady ? undefined : scene,
+    sceneStored: sceneReady ? Boolean(scene) : false,
     sceneBlur: typeof input.sceneBlur === "number" ? Math.max(0, Math.min(30, input.sceneBlur)) : 0,
     sceneOpacity: typeof input.sceneOpacity === "number" ? Math.max(0.05, Math.min(0.95, input.sceneOpacity)) : undefined,
     radius: input.radius === "sharp" || input.radius === "round" ? input.radius : "default",
@@ -313,7 +334,10 @@ export function saveCustomTheme(input: CustomThemeInput): string {
 /** Retrieves custom theme input by id. */
 export function getCustomThemeInput(id: string): CustomThemeInput | null {
   const list = readCustomInputs();
-  return list.find((item, idx) => item.id === id || `${CUSTOM_PREFIX}${idx}` === id) ?? null;
+  const item = list.find((entry, idx) => entry.id === id || `${CUSTOM_PREFIX}${idx}` === id);
+  if (!item) return null;
+  const resolvedId = item.id ?? `${CUSTOM_PREFIX}0`;
+  return { ...item, scene: item.scene ?? getCachedThemeScene(resolvedId) };
 }
 
 /** Removes a user theme by id. */
@@ -322,7 +346,38 @@ export function deleteCustomTheme(id: string): void {
   const index = list.findIndex((item, idx) => item.id === id || `${CUSTOM_PREFIX}${idx}` === id);
   if (index === -1) return;
   list.splice(index, 1);
+  void deleteThemeScene(id);
   writeCustomInputs(list);
+}
+
+/**
+ * Opens the wallpaper store and moves legacy base64 scenes out of the theme
+ * metadata. Safe to call once at startup; false means this environment has no
+ * IndexedDB and the legacy records stay untouched.
+ */
+export async function hydrateThemeScenes(): Promise<boolean> {
+  const scenes = await loadThemeScenes();
+  if (!scenes) return false;
+
+  const list = readCustomInputs();
+  let changed = false;
+  for (const item of list) {
+    const id = item.id;
+    if (!id) continue;
+    if (item.scene) {
+      const stored = await putThemeScene(id, item.scene);
+      if (!stored) continue;
+      item.scene = undefined;
+      item.sceneStored = true;
+      changed = true;
+    } else if (item.sceneStored && !scenes.has(id) && !getCachedThemeScene(id)) {
+      item.sceneStored = false;
+      changed = true;
+    }
+  }
+  if (changed) writeCustomInputs(list);
+  customThemeCache = null;
+  return true;
 }
 
 /** First `#rrggbb` in a value, for gradients that cannot be stored as-is. */

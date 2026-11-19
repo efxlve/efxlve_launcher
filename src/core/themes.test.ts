@@ -9,6 +9,7 @@ import {
   exportThemeJson,
   getCustomThemeInput,
   importThemeJson,
+  hydrateThemeScenes,
   saveCustomTheme,
   sanitizeSceneUrl,
   sanitizeThemeTokens,
@@ -19,6 +20,9 @@ import {
   themes,
   type CustomThemeInput,
 } from "./themes";
+import { clearThemeSceneCache, setThemeSceneStore } from "./theme/scenes";
+
+let sceneStore: Map<string, string>;
 
 const BASE: CustomThemeInput = {
   name: "Test Theme",
@@ -26,10 +30,24 @@ const BASE: CustomThemeInput = {
   accent: "#f97316",
   light: false,
 };
+const SCENE = "data:image/png;base64,AAAA";
 
 beforeEach(() => {
   localStorage.clear();
   clearThemeCache();
+  clearThemeSceneCache();
+  const store = new Map<string, string>();
+  sceneStore = store;
+  setThemeSceneStore({
+    getAll: async () => new Map(store),
+    put: async (id, data) => {
+      store.set(id, data);
+      return true;
+    },
+    delete: async (id) => {
+      store.delete(id);
+    },
+  });
 });
 
 describe("theme tokens", () => {
@@ -231,6 +249,70 @@ describe("custom theme transfer", () => {
     themeById("neongrid");
     expect(getItem).not.toHaveBeenCalled();
     getItem.mockRestore();
+  });
+});
+
+describe("theme wallpapers", () => {
+  it("stores the scene in IndexedDB and leaves metadata in localStorage", () => {
+    const id = saveCustomTheme({ ...BASE, scene: SCENE });
+    const raw = JSON.parse(localStorage.getItem("efxlve-custom-themes")!) as Array<Record<string, unknown>>;
+
+    expect(raw[0].scene).toBeUndefined();
+    expect(raw[0].sceneStored).toBe(true);
+    expect(sceneStore.get(id)).toBe(SCENE);
+    expect(getCustomThemeInput(id)?.scene).toBe(SCENE);
+    expect((JSON.parse(exportThemeJson(id)) as { scene?: string }).scene).toBe(SCENE);
+  });
+
+  it("moves a legacy base64 scene out of localStorage", async () => {
+    localStorage.setItem(
+      "efxlve-custom-themes",
+      JSON.stringify([
+        {
+          id: "custom-1",
+          name: "Legacy",
+          bg: "#101014",
+          accent: "#f97316",
+          light: false,
+          scene: SCENE,
+        },
+      ]),
+    );
+    clearThemeCache();
+    clearThemeSceneCache();
+
+    await hydrateThemeScenes();
+
+    const raw = JSON.parse(localStorage.getItem("efxlve-custom-themes")!) as Array<Record<string, unknown>>;
+    expect(raw[0].scene).toBeUndefined();
+    expect(raw[0].sceneStored).toBe(true);
+    expect(sceneStore.get("custom-1")).toBe(SCENE);
+    expect(getCustomThemeInput("custom-1")?.scene).toBe(SCENE);
+  });
+
+  it("reloads the wallpaper from the store after a cache reset", async () => {
+    const id = saveCustomTheme({ ...BASE, scene: SCENE });
+    clearThemeCache();
+    clearThemeSceneCache();
+
+    await hydrateThemeScenes();
+
+    expect(getCustomThemeInput(id)?.scene).toBe(SCENE);
+    applySurface(id, false);
+    const css = document.getElementById("efxlve-theme-tokens")?.textContent ?? "";
+    expect(css).toContain(SCENE);
+  });
+
+  it("removes the stored wallpaper when the designer clears it", async () => {
+    const id = saveCustomTheme({ ...BASE, scene: SCENE });
+    const input = getCustomThemeInput(id)!;
+    saveCustomTheme({ ...input, scene: undefined });
+    await Promise.resolve();
+
+    expect(sceneStore.has(id)).toBe(false);
+    expect(getCustomThemeInput(id)?.scene).toBeUndefined();
+    const raw = JSON.parse(localStorage.getItem("efxlve-custom-themes")!) as Array<Record<string, unknown>>;
+    expect(raw[0].sceneStored).toBe(false);
   });
 });
 

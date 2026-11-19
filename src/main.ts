@@ -13,7 +13,7 @@ import { initSidebarLayout } from "./core/sidebar-layout";
 import { applySidebarPageVisibility, discordPageVisible, overlayEnabled } from "./core/page-visibility";
 import { perfMark } from "./core/perf";
 import { applyCustomCss } from "./core/custom-css";
-import { applySurface } from "./core/themes";
+import { applySurface, hydrateThemeScenes } from "./core/themes";
 import { syncAchievementCardTheme } from "./core/achievement-card-theme";
 import { achievementGetNotificationOptions } from "./steam";
 import { applyReduceEffects } from "./core/effects";
@@ -66,6 +66,13 @@ import { applyGameScene, initGameSceneHover } from "./core/game-scene";
 import { isSteamDeckDevice } from "./core/constants";
 
 applySurface(S.surface, false);
+// Wallpapers live in IndexedDB. Repaint once they are in the synchronous cache,
+// and let an open Settings page show the recovered scene.
+void hydrateThemeScenes().then((ready) => {
+  if (!ready) return;
+  applySurface(S.surface, false);
+  scheduleRender();
+});
 applyGameScene();
 initGameSceneHover();
 // The native achievement card follows the saved theme mode. The palette needs
