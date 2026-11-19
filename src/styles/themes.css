@@ -1,9 +1,10 @@
 /* ==========================================================================
-   Named themes. Black and soft live in tokens.css; these two replace the same
-   token set and add only the component touches the flat palette cannot express.
+   Named theme exceptions. Token tables live in `core/theme/builtins.ts`; this
+   file keeps only the component touches a token table cannot express. Light
+   palettes share the `data-scheme="light"` block below.
    ========================================================================== */
 
-/* ---------- White Mode ---------- */
+/* ---------- Light palettes ---------- */
 
 
 :root[data-scheme="light"] body { background: var(--bg); }
