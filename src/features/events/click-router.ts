@@ -1507,7 +1507,6 @@ document.addEventListener("click", (e) => {
     void loadSettingsView();
   } else if (act === "set-surface") {
     S.surface = applySurface(t.dataset.surface ?? "black");
-    render();
   } else if (act === "custom-css-save") {
     const input = document.getElementById("custom-css-input") as HTMLTextAreaElement | null;
     if (!saveCustomCss(input?.value ?? "")) {

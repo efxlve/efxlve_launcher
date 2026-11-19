@@ -130,6 +130,13 @@ function luminance(color: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
+/** WCAG relative contrast between two `#rrggbb` colours. */
+export function contrastRatio(first: string, second: string): number {
+  const a = luminance(first);
+  const b = luminance(second);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
 /**
  * Turns colours into the full token set.
  * If surface is explicitly provided, it derives elevation from it;
@@ -413,6 +420,7 @@ export function customThemes(): ThemeDef[] {
       scheme: input.light ? "light" : "dark",
       tokens,
       custom: true,
+      tags: ["custom"],
       scene: input.scene,
       sceneBlur: input.sceneBlur,
       sceneOpacity: input.sceneOpacity,

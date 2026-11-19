@@ -26,6 +26,7 @@ import {
   sanitizeSceneUrl,
   themeById,
   themes,
+  SURFACE_APPLIED_EVENT,
   THEME_PRESETS,
   PRESET_WALLPAPERS,
   type CustomThemeInput,
@@ -197,7 +198,35 @@ export function renderThemeSection(): string {
   `;
 
   wireThemeSearch();
+  wireThemeSelection();
   queueMicrotask(() => applyThemeSearch(themeQuery));
+}
+
+/** Toggles the active card without rebuilding the page or losing its scroll. */
+function patchThemeSelection(id: string): void {
+  document.querySelectorAll<HTMLElement>(".theme-card").forEach((card) => {
+    const active = card.dataset.surface === id;
+    card.classList.toggle("active", active);
+    card.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+  const label = document.querySelector<HTMLElement>(".theme-active-indicator strong");
+  const card = [...document.querySelectorAll<HTMLElement>(".theme-card")].find(
+    (item) => item.dataset.surface === id,
+  );
+  if (label) {
+    const theme = themeById(id);
+    label.textContent = card?.dataset.themeName ?? theme.name ?? (theme.labelKey ? t(theme.labelKey) : theme.id);
+  }
+}
+
+let themeSelectionWired = false;
+function wireThemeSelection(): void {
+  if (themeSelectionWired) return;
+  themeSelectionWired = true;
+  window.addEventListener(SURFACE_APPLIED_EVENT, (event) => {
+    const id = (event as CustomEvent<string>).detail;
+    if (typeof id === "string") patchThemeSelection(id);
+  });
 }
 
 /** Renders a single rich theme preview card with realistic UI elements. */
@@ -221,7 +250,7 @@ function renderThemeCard(theme: ThemeDef): string {
   const cardArtGradient = `linear-gradient(135deg, ${accent}33 0%, ${surface2} 100%)`;
 
   return `
-    <div class="theme-card ${isActive ? "active" : ""}" data-act="set-surface" data-surface="${esc(theme.id)}" data-search="${esc(`${displayName} ${theme.scheme}${theme.custom ? " custom" : ""}`)}" role="button" tabindex="0" aria-pressed="${isActive ? "true" : "false"}" aria-label="${esc(displayName)}">
+    <div class="theme-card ${isActive ? "active" : ""}" data-act="set-surface" data-surface="${esc(theme.id)}" data-theme-name="${esc(displayName)}" data-search="${esc(`${displayName} ${theme.scheme} ${theme.tags?.join(" ") ?? ""}${theme.custom ? " custom" : ""}`)}" role="button" tabindex="0" aria-pressed="${isActive ? "true" : "false"}" aria-label="${esc(displayName)}">
       <div class="theme-card-preview" style="background: ${esc(previewBg)};">
         ${hasScene ? `<div class="theme-card-preview-scene" style="background-image: url('${esc(theme.scene!)}'); filter: blur(${sceneBlur}px);"></div>` : ""}
         <div class="theme-card-preview-scrim" style="background: ${scrimColor};"></div>
@@ -252,7 +281,7 @@ function renderThemeCard(theme: ThemeDef): string {
             </div>
           </div>
         </div>
-        ${isActive ? `<div class="theme-card-badge-active" title="${esc(t("settings.themeActive"))}">${icon("check", 13)}</div>` : ""}
+        <div class="theme-card-badge-active" title="${esc(t("settings.themeActive"))}">${icon("check", 13)}</div>
       </div>
 
       <div class="theme-card-info">
@@ -1003,7 +1032,7 @@ function downscaleImage(file: File): Promise<string | null> {
     const url = URL.createObjectURL(file);
     const image = new Image();
     image.onload = () => {
-      const max = 1920;
+      const max = 1600;
       const scale = Math.min(1, max / Math.max(image.width, image.height));
       const canvas = document.createElement("canvas");
       canvas.width = Math.max(1, Math.round(image.width * scale));
@@ -1016,9 +1045,9 @@ function downscaleImage(file: File): Promise<string | null> {
       }
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
       URL.revokeObjectURL(url);
-      let data = canvas.toDataURL("image/jpeg", 0.82);
-      if (data.length > 1_400_000) data = canvas.toDataURL("image/jpeg", 0.65);
-      resolve(data.length < 1_900_000 ? data : null);
+      let data = canvas.toDataURL("image/jpeg", 0.78);
+      if (data.length > 900_000) data = canvas.toDataURL("image/jpeg", 0.6);
+      resolve(data.length < 1_200_000 ? data : null);
     };
     image.onerror = () => {
       URL.revokeObjectURL(url);

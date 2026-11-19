@@ -19,6 +19,8 @@ export interface ThemeDef {
   tokens?: Record<string, string>;
   /** True for a theme the user saved from Settings. */
   custom?: boolean;
+  /** Free-form discovery tags used by the gallery search. */
+  tags?: readonly string[];
   /** Backdrop image for a user theme, already a `data:` URL. */
   scene?: string;
   sceneBlur?: number;

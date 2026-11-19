@@ -12,6 +12,7 @@ import {
   saveCustomTheme,
   sanitizeSceneUrl,
   sanitizeThemeTokens,
+  contrastRatio,
   PRESET_WALLPAPERS,
   themeById,
   themes,
@@ -31,7 +32,7 @@ beforeEach(() => {
 });
 
 describe("theme tokens", () => {
-  it("derives the full radius scale", () => {
+  it("keeps the full radius scale", () => {
     const sharp = customTokens({ ...BASE, radius: "sharp" });
     expect(sharp["--r-xs"]).toBe("0px");
     expect(sharp["--r-sm"]).toBe("0px");
@@ -63,6 +64,39 @@ describe("theme tokens", () => {
     expect(sanitizeSceneUrl("data:image/png;base64,AAAA")).toBe("data:image/png;base64,AAAA");
     for (const wallpaper of PRESET_WALLPAPERS) {
       expect(sanitizeSceneUrl(wallpaper.dataUrl)).toBe(wallpaper.dataUrl);
+    }
+  });
+});
+
+describe("theme registry", () => {
+  it("has unique ids and complete core tokens", () => {
+    const list = themes();
+    const ids = list.map((theme) => theme.id);
+    expect(new Set(ids).size).toBe(ids.length);
+
+    const core = [
+      "--bg",
+      "--surface-1",
+      "--surface-2",
+      "--surface-3",
+      "--line",
+      "--line-strong",
+      "--text",
+      "--text-2",
+      "--text-3",
+      "--accent",
+      "--accent-hover",
+      "--accent-tint",
+      "--on-accent",
+      "--ok",
+      "--warn",
+      "--err",
+    ];
+    for (const theme of list) {
+      if (!theme.tokens) continue;
+      for (const key of core) {
+        expect(theme.tokens[key], `${theme.id} ${key}`).toBeTruthy();
+      }
     }
   });
 });
@@ -181,6 +215,27 @@ describe("custom theme transfer", () => {
     themeById("neongrid");
     expect(getItem).not.toHaveBeenCalled();
     getItem.mockRestore();
+  });
+});
+
+describe("theme contrast", () => {
+  it("keeps primary text readable on every built-in theme", () => {
+    const failures: string[] = [];
+    for (const theme of themes()) {
+      const tokens = theme.tokens;
+      if (!tokens) continue;
+      const text = tokens["--text"];
+      const bg = tokens["--bg"];
+      const accent = tokens["--accent"];
+      const on = tokens["--on-accent"];
+      if (text && bg && contrastRatio(text, bg) < 4.5) {
+        failures.push(`${theme.id} text/bg ${contrastRatio(text, bg).toFixed(2)}`);
+      }
+      if (accent && on && contrastRatio(accent, on) < 4.5) {
+        failures.push(`${theme.id} on/accent ${contrastRatio(accent, on).toFixed(2)}`);
+      }
+    }
+    expect(failures).toEqual([]);
   });
 });
 

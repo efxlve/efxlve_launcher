@@ -1041,10 +1041,42 @@ const CSS_TOKENS: Record<string, Record<string, string>> = {
   },
 };
 
-export const BUILTIN_THEMES: readonly ThemeDef[] = BUILTIN_THEME_DEFS.map((theme) => ({
-  ...theme,
-  tokens: { ...theme.tokens, ...(CSS_TOKENS[theme.id] ?? {}) },
-}));
+/** Discovery tags for the gallery search; brand names stay in `labelKey`. */
+const BUILTIN_TAGS: Record<string, readonly string[]> = {
+  black: ["minimal", "oled", "dark"],
+  soft: ["minimal", "dark"],
+  neongrid: ["cyberpunk", "neon", "high-contrast"],
+  tokyonight: ["developer", "blue", "dark"],
+  dracula: ["developer", "pastel", "purple"],
+  catppuccin: ["pastel", "developer", "dark"],
+  cyberemerald: ["developer", "green", "dark"],
+  crimson: ["red", "minimal", "dark"],
+  nord: ["minimal", "cool", "developer"],
+  sunset: ["warm", "retro", "dark"],
+  midnight: ["blue", "minimal", "dark"],
+  violet: ["purple", "minimal", "dark"],
+  blurple: ["discord", "blue", "dark"],
+  synthwave: ["retro", "neon", "synthwave"],
+  rosepine: ["pastel", "rose", "developer"],
+  oledcyan: ["oled", "cyberpunk", "cyan"],
+  quarantine: ["game", "cyberpunk", "red"],
+  homestead: ["game", "cozy", "green"],
+  sentience: ["game", "sci-fi", "blue"],
+  sanctum: ["game", "fantasy", "gold"],
+  resonance: ["game", "industrial", "orange"],
+  white: ["light", "minimal"],
+  blades: ["light", "game", "xbox"],
+  gloss: ["light", "glass", "aero"],
+};
+
+export const BUILTIN_THEMES: readonly ThemeDef[] = BUILTIN_THEME_DEFS.map((theme) => {
+  const tokens = { ...theme.tokens, ...(CSS_TOKENS[theme.id] ?? {}) };
+  return {
+    ...theme,
+    tags: theme.tags ?? BUILTIN_TAGS[theme.id] ?? [],
+    tokens: Object.keys(tokens).length > 0 ? tokens : undefined,
+  };
+});
 
 /** A stored id that no longer exists falls back to the default theme. */
 export const LEGACY_SURFACE_IDS: Record<string, string> = {
