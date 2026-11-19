@@ -9,7 +9,11 @@ import { isTauri } from "../../core/constants";
 import { achievementCardPalette } from "../../core/achievement-card-theme";
 import { initialLanguage, setLanguage, t } from "../../i18n";
 import { achCardHtml, achTagParts, type AchCardPalette } from "../achievement-card/ach-card";
-import { playAchCardEntry, playAchCardExit } from "../achievement-card/ach-card-motion";
+import {
+  achMotionDirection,
+  playAchCardEntry,
+  playAchCardExit,
+} from "../achievement-card/ach-card-motion";
 import "../../styles/tokens.css";
 import "../../styles/theme-system.css";
 import "./toast.css";
@@ -25,6 +29,8 @@ interface ToastPayload {
   theme: string;
   size: string;
   position: string;
+  /** One animation for the whole card (opening + closing). */
+  style?: string;
   holdMs: number;
   palette: AchCardPalette;
   tagless?: boolean;
@@ -124,11 +130,12 @@ function renderToast(payload: ToastPayload): void {
   root
     .querySelectorAll<HTMLImageElement>(".ach-hud-ach-icon")
     .forEach((img) => img.addEventListener("error", () => img.remove(), { once: true }));
-  playAchCardEntry(card);
+  const direction = achMotionDirection(position);
+  playAchCardEntry(card, payload.style, direction);
 
   clearExitTimer();
   exitTimer = window.setTimeout(() => {
-    playAchCardExit(card, () => {
+    playAchCardExit(card, payload.style, direction, () => {
       void invoke("toast_done", { generation: payload.generation }).catch(() => {});
     });
   }, Math.max(1200, payload.holdMs));
@@ -155,6 +162,7 @@ function renderDemo(): void {
   const palette = achievementCardPalette(theme, tier);
   const size = params.get("size") || "normal";
   const position = safePosition(params.get("position") || "top-right");
+  const style = params.get("style") || "minimal";
   const tag = isHint ? { label: "", meta: "" } : achTagParts(3, 31, 34, 1.8);
   const root = document.getElementById("ach-toast-root");
   if (!root) return;
@@ -171,7 +179,7 @@ function renderDemo(): void {
     hint: isHint,
   })}</div>`;
   const card = root.querySelector<HTMLElement>(".ach-hud-toast");
-  if (card) playAchCardEntry(card);
+  if (card) playAchCardEntry(card, style, achMotionDirection(position));
 }
 
 async function boot(): Promise<void> {

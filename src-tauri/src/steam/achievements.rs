@@ -2456,6 +2456,9 @@ pub struct AchievementNotificationOptions {
     /// "gold", "launcher", "rarity", "cyber", "emerald", "crimson", or "amethyst".
     #[serde(default = "default_card_theme")]
     pub card_theme: String,
+    /// "minimal", "slide", "soft" or "pop"; one choice drives opening and closing.
+    #[serde(default = "default_anim_style")]
+    pub anim_style: String,
     /// Muted store keys ("steam", "epic", "gog", "ubisoft", "ea", "xbox", "custom").
     #[serde(default)]
     pub disabled_stores: Vec<String>,
@@ -2519,6 +2522,7 @@ impl Default for AchievementNotificationOptions {
             custom_sound: false,
             custom_sound_name: None,
             card_theme: default_card_theme(),
+            anim_style: default_anim_style(),
             disabled_stores: Vec::new(),
             min_rarity_percent: 0,
             unlock_screenshots: false,
@@ -2549,6 +2553,22 @@ fn normalize_card_theme(value: Option<&str>) -> String {
         Some("amethyst") => "amethyst",
         Some("custom") => "custom",
         _ => "rarity",
+    }
+    .to_string()
+}
+
+fn default_anim_style() -> String {
+    "minimal".to_string()
+}
+
+/// One animation for the whole card. An unknown or retired value (the old
+/// eleven styles) falls back to the quiet default.
+fn normalize_anim_style(value: Option<&str>) -> String {
+    match value {
+        Some("slide") => "slide",
+        Some("soft") => "soft",
+        Some("pop") => "pop",
+        _ => "minimal",
     }
     .to_string()
 }
@@ -2695,6 +2715,9 @@ pub fn achievement_notification_options(app: &tauri::AppHandle) -> AchievementNo
         card_theme: normalize_card_theme(
             settings.achievement_notifications_card_theme.as_deref(),
         ),
+        anim_style: normalize_anim_style(
+            settings.achievement_notifications_anim_style.as_deref(),
+        ),
         disabled_stores: normalize_disabled_stores(
             &settings.achievement_notifications_disabled_stores,
         ),
@@ -2748,6 +2771,9 @@ pub fn achievement_set_notification_options(
         Some(normalize_notification_size(Some(options.size.as_str())));
     settings.achievement_notifications_card_theme = Some(normalize_card_theme(Some(
         options.card_theme.as_str(),
+    )));
+    settings.achievement_notifications_anim_style = Some(normalize_anim_style(Some(
+        options.anim_style.as_str(),
     )));
     settings.achievement_notifications_disabled_stores =
         normalize_disabled_stores(&options.disabled_stores);
@@ -3148,6 +3174,7 @@ fn toast_payload(
         total,
         rarity_percent,
         theme: options.card_theme.clone(),
+        style: options.anim_style.clone(),
         size: options.size.clone(),
         position: options.position.clone(),
         hold_ms: options.duration_ms.clamp(2_000, 15_000),
@@ -4544,12 +4571,20 @@ mod tests {
     }
 
     #[test]
-    fn card_theme_and_rarity_tier_normalize_cleanly() {
+    fn card_theme_and_animation_normalize_cleanly() {
         assert_eq!(normalize_card_theme(Some("rarity")), "rarity");
         assert_eq!(normalize_card_theme(Some("cyber")), "cyber");
         assert_eq!(normalize_card_theme(Some("emerald")), "emerald");
         assert_eq!(normalize_card_theme(Some("crimson")), "crimson");
         assert_eq!(normalize_card_theme(Some("amethyst")), "amethyst");
+        // One animation for the whole card; retired styles fall back to it.
+        assert_eq!(normalize_anim_style(None), "minimal");
+        assert_eq!(normalize_anim_style(Some("minimal")), "minimal");
+        assert_eq!(normalize_anim_style(Some("slide")), "slide");
+        assert_eq!(normalize_anim_style(Some("soft")), "soft");
+        assert_eq!(normalize_anim_style(Some("pop")), "pop");
+        assert_eq!(normalize_anim_style(Some("prism")), "minimal");
+        assert_eq!(normalize_anim_style(Some("unknown")), "minimal");
         assert_eq!(
             normalize_disabled_stores(&[
                 "Steam".into(),

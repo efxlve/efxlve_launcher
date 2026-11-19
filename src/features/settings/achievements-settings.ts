@@ -27,7 +27,11 @@ import { getGeneralNotifPrefs, setGeneralNotifPrefs } from "../notifications/not
 import { storeLogo } from "../store/store-logos";
 import { t } from "../../i18n";
 import { achCardHtml, achCardVars, achTagParts } from "../achievement-card/ach-card";
-import { playAchCardEntry, playAchCardExit } from "../achievement-card/ach-card-motion";
+import {
+  achMotionDirection,
+  playAchCardEntry,
+  playAchCardExit,
+} from "../achievement-card/ach-card-motion";
 import { sortedAchievementHistory } from "../../core/achievement-history";
 import {
   clearAchievementEdits,
@@ -172,14 +176,17 @@ export function runStagePreviewChoreography(mode: "entry" | "exit" | "cycle" = "
   window.requestAnimationFrame(() => {
     const card = document.querySelector<HTMLElement>(".ach-stage-screen .ach-hud-toast");
     if (!card) return;
+    const options = S.achievementNotificationOptions;
+    const style = options.animStyle;
+    const direction = achMotionDirection(options.position);
 
     const playEntry = () => {
       if (!card.isConnected) return;
-      playAchCardEntry(card);
+      playAchCardEntry(card, style, direction);
     };
 
     const playExitThenRestore = () => {
-      playAchCardExit(card, () => {
+      playAchCardExit(card, style, direction, () => {
         stagePreviewTimer = window.setTimeout(playEntry, 240);
       });
     };
@@ -240,6 +247,10 @@ export function renderAchievementsSettingsView(): string {
   const allowedThemes = ["gold", "rarity", "launcher", "cyber", "emerald", "crimson", "amethyst", "custom"];
   const cardTheme = allowedThemes.includes(options.cardTheme) ? options.cardTheme : "rarity";
   const customAccent = options.customAccent || "#00f0ff";
+
+  // One choice covers the whole card: opening and closing are the same motion.
+  const allowedMotions = ["minimal", "slide", "soft", "pop"];
+  const animStyle = allowedMotions.includes(options.animStyle) ? options.animStyle : "minimal";
 
   const opacity = typeof options.opacity === "number" ? Math.max(50, Math.min(100, options.opacity)) : 100;
   const offset = typeof options.offset === "number" ? Math.max(0, Math.min(80, options.offset)) : 18;
@@ -373,6 +384,24 @@ export function renderAchievementsSettingsView(): string {
       (val) => `
         <button type="button" class="${opacity === val ? "active" : ""}" data-act="set-ach-opacity" data-val="${val}">
           %${val}
+        </button>
+      `,
+    )
+    .join("");
+
+  const animStyleOptions: Array<{ id: string; label: string; ico: IconName }> = [
+    { id: "minimal", label: t("settings.achAnimMinimal"), ico: "square" },
+    { id: "slide", label: t("settings.achAnimSlide"), ico: "arrow-right" },
+    { id: "soft", label: t("settings.achAnimSoft"), ico: "circle" },
+    { id: "pop", label: t("settings.achAnimPop"), ico: "sparkles" },
+  ];
+
+  const animStyleButtons = animStyleOptions
+    .map(
+      (opt) => `
+        <button type="button" class="ach-style-chip ${animStyle === opt.id ? "active" : ""}" data-act="set-ach-anim" data-val="${opt.id}">
+          ${icon(opt.ico, 13)}
+          <span>${esc(opt.label)}</span>
         </button>
       `,
     )
@@ -655,6 +684,17 @@ export function renderAchievementsSettingsView(): string {
 
       <!-- Controls Group -->
       <div class="list settings-group" style="margin-top: 18px;">
+        <!-- One animation for the whole card -->
+        <div class="row settings-row stacked">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achAnimTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achAnimDesc"))}</div>
+          </div>
+          <div class="settings-row-control" style="width: 100%;">
+            <div class="ach-style-grid" role="group">${animStyleButtons}</div>
+          </div>
+        </div>
+
         <!-- Per-store Achievement Notification Toggles -->
         <div class="row settings-row stacked">
           <div class="row-main">
@@ -1034,8 +1074,18 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
       return true;
     }
 
-    case "set-ach-card-theme": {
-      const allowed = ["gold", "rarity", "launcher", "cyber", "emerald", "crimson", "amethyst", "custom"];
+    case "set-ach-anim": {
+      const allowed = ["minimal", "slide", "soft", "pop"];
+      const animStyle = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "minimal";
+      const next = { ...S.achievementNotificationOptions, animStyle };
+      S.achievementNotificationOptions = next;
+      void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
+      render();
+      runStagePreviewChoreography("cycle");
+      return true;
+    }
+
+    case "set-ach-card-theme": {      const allowed = ["gold", "rarity", "launcher", "cyber", "emerald", "crimson", "amethyst", "custom"];
       const cardTheme = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "rarity";
       const next = { ...S.achievementNotificationOptions, cardTheme };
       S.achievementNotificationOptions = next;

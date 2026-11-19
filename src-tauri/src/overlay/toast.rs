@@ -59,6 +59,9 @@ pub struct ToastPayload {
     pub total: u32,
     pub rarity_percent: Option<f64>,
     pub theme: String,
+    /// "minimal", "slide", "soft" or "pop"; one animation for entry and exit.
+    #[serde(default = "default_anim_style")]
+    pub style: String,
     pub size: String,
     pub position: String,
     pub hold_ms: u64,
@@ -99,6 +102,10 @@ pub struct ToastPayload {
     pub hide_desc: bool,
     #[serde(default)]
     pub show_progress: bool,
+}
+
+fn default_anim_style() -> String {
+    "minimal".to_string()
 }
 
 fn default_opacity() -> u8 {
@@ -718,6 +725,7 @@ mod tests {
             total: 0,
             rarity_percent: None,
             theme: "rarity".into(),
+            style: "minimal".into(),
             size: "normal".into(),
             position: "top-right".into(),
             hold_ms: 5_000,

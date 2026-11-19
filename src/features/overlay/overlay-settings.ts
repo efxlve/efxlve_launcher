@@ -101,6 +101,7 @@ let overlayNotificationOptions: AchievementNotificationOptions = {
   customSound: false,
   customSoundName: null,
   cardTheme: "rarity",
+  animStyle: "minimal",
   disabledStores: [],
   minRarityPercent: 0,
   unlockScreenshots: false,

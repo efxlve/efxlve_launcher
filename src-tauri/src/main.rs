@@ -449,6 +449,9 @@ pub struct EpicSettings {
     /// "rarity" colours the card by trophy tier; "gold" keeps the classic card;
     /// "launcher" follows the active theme.
     pub achievement_notifications_card_theme: Option<String>,
+    /// One animation for the whole card: "minimal", "slide", "soft" or "pop".
+    #[serde(default)]
+    pub achievement_notifications_anim_style: Option<String>,
     /// Store keys ("steam", "epic", "gog", "ubisoft", "ea", "xbox", "custom")
     /// whose achievement notifications are muted.
     #[serde(default)]

@@ -331,6 +331,8 @@ export interface AchievementNotificationOptions {
   customSoundName: string | null;
   /** "gold", "launcher", "rarity", "cyber", "emerald", "crimson", or "amethyst". */
   cardTheme: string;
+  /** One animation for the whole card: "minimal", "slide", "soft" or "pop". */
+  animStyle: string;
   /** Store keys whose achievement notifications are disabled ("steam", "epic", "gog", "ubisoft", "ea", "xbox", "custom"). */
   disabledStores?: string[];
   /**
@@ -382,6 +384,7 @@ export const achievementGetNotificationOptions = () =>
         customSound: false,
         customSoundName: null,
         cardTheme: "rarity",
+        animStyle: "minimal",
         customAccent: "#00f0ff",
         opacity: 100,
         showProgress: true,

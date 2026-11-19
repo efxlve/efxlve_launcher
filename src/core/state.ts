@@ -423,6 +423,7 @@ export const S = {
     customSound: false,
     customSoundName: null,
     cardTheme: "rarity",
+    animStyle: "minimal",
     disabledStores: [],
     opacity: 100,
     customAccent: "#00f0ff",
