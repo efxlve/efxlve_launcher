@@ -281,6 +281,15 @@ export function themes(): ThemeDef[] {
   return [...BUILTIN_THEMES, ...customThemes()];
 }
 
+/** Fallback when IndexedDB rejects a write: keep the image in metadata. */
+function restoreSceneMetadata(id: string, scene: string): void {
+  const list = readCustomInputs().slice();
+  const index = list.findIndex((item) => item.id === id);
+  if (index === -1) return;
+  list[index] = { ...list[index], scene, sceneStored: false };
+  writeCustomInputs(list);
+}
+
 /** Saves or updates a user theme and returns its id, or "" when it could not be stored. */
 export function saveCustomTheme(input: CustomThemeInput): string {
   const list = readCustomInputs().slice();
@@ -292,7 +301,11 @@ export function saveCustomTheme(input: CustomThemeInput): string {
   const sceneReady = isThemeSceneStoreReady();
   if (scene) {
     setCachedThemeScene(targetId, scene);
-    if (sceneReady) void putThemeScene(targetId, scene);
+    if (sceneReady) {
+      void putThemeScene(targetId, scene).then((stored) => {
+        if (!stored) restoreSceneMetadata(targetId, scene);
+      });
+    }
   } else {
     deleteCachedThemeScene(targetId);
     if (sceneReady) void deleteThemeScene(targetId);

@@ -66,6 +66,7 @@ function openDb(): Promise<IDBDatabase | null> {
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => resolve(null);
+    request.onblocked = () => resolve(null);
   });
   return dbPromise;
 }
@@ -91,7 +92,7 @@ export async function loadThemeScenes(): Promise<Map<string, string> | null> {
   const db = await openDb();
   if (!db) return null;
 
-  const scenes = await new Promise<Map<string, string>>((resolve) => {
+  const scenes = await new Promise<Map<string, string> | null>((resolve) => {
     try {
       const request = db.transaction(STORE, "readonly").objectStore(STORE).getAll();
       request.onsuccess = () => {
@@ -101,12 +102,13 @@ export async function loadThemeScenes(): Promise<Map<string, string> | null> {
         }
         resolve(map);
       };
-      request.onerror = () => resolve(new Map());
+      request.onerror = () => resolve(null);
     } catch {
-      resolve(new Map());
+      resolve(null);
     }
   });
 
+  if (!scenes) return null;
   replaceCache(scenes);
   ready = true;
   return scenes;

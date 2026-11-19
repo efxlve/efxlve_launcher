@@ -314,6 +314,22 @@ describe("theme wallpapers", () => {
     const raw = JSON.parse(localStorage.getItem("efxlve-custom-themes")!) as Array<Record<string, unknown>>;
     expect(raw[0].sceneStored).toBe(false);
   });
+
+  it("keeps the image in metadata when the store rejects the write", async () => {
+    setThemeSceneStore({
+      getAll: async () => new Map(),
+      put: async () => false,
+      delete: async () => undefined,
+    });
+
+    const id = saveCustomTheme({ ...BASE, scene: SCENE });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const raw = JSON.parse(localStorage.getItem("efxlve-custom-themes")!) as Array<Record<string, unknown>>;
+    expect(raw[0].scene).toBe(SCENE);
+    expect(raw[0].sceneStored).toBe(false);
+    expect(getCustomThemeInput(id)?.scene).toBe(SCENE);
+  });
 });
 
 describe("theme contrast", () => {
