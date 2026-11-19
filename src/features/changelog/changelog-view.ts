@@ -37,6 +37,20 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "A game page's More menu can fix its metadata: search IGDB and HowLongToBeat, pick the right entry, or return to automatic matching. The page, the library sort and later launches all use the choice.",
         tr: "Oyun sayfasının Diğer menüsü artık üst veriyi düzeltebiliyor: IGDB ve HowLongToBeat'te arayın, doğru kaydı seçin ya da otomatik eşleştirmeye dönün. Sayfa, kütüphane sıralaması ve sonraki açılışlar bu seçimi kullanır.",
       },
+      {
+        en: "Epic games whose achievements live only in Epic Online Services now show their unlocks: the launcher reads them from the game's own log, keeps what earlier sessions wrote, and the achievements tab explains where the list comes from.",
+        tr: "Başarımları yalnızca Epic Online Services'te tutulan Epic oyunları artık açtıklarını gösteriyor: launcher bunları oyunun kendi günlüğünden okuyor, önceki oturumların yazdıklarını saklıyor ve başarımlar sekmesi listenin nereden geldiğini açıklıyor.",
+      },
+    ],
+    improved: [
+      {
+        en: "Achievement cards can be tuned further: a custom accent colour, card opacity, a screen-edge margin, a completion progress bar, a spoiler-safe description, and a separate chime for ultra-rare and platinum unlocks.",
+        tr: "Başarım kartları daha da ayarlanabiliyor: özel vurgu rengi, kart saydamlığı, ekran kenarı boşluğu, tamamlama ilerleme çubuğu, spoiler korumalı açıklama ve ultra nadir ile platin başarımlar için ayrı bir ses.",
+      },
+      {
+        en: "One animation choice now drives the whole card (minimal, slide, soft or pop), and the live preview in Settings plays the real card with its picture.",
+        tr: "Tek bir animasyon seçimi artık tüm kartı yönetiyor (sade, kaydırma, yumuşak veya belirme) ve Ayarlar'daki canlı önizleme gerçek kartı görseliyle oynatıyor.",
+      },
     ],
     fixed: [
       {
@@ -46,6 +60,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
       {
         en: "HowLongToBeat keeps the base game ahead of its DLC chapters and refreshes the lengths stored by earlier versions, so a chapter's time no longer stands in for the whole game.",
         tr: "HowLongToBeat, ana oyunu DLC bölümlerinin önünde tutuyor ve eski sürümlerin sakladığı süreleri yeniliyor; artık bir bölümün süresi oyunun tamamı yerine geçmiyor.",
+      },
+      {
+        en: "Achievement settings, archive and overlay text that stayed in English now follow the selected language.",
+        tr: "İngilizce kalan başarım ayarları, arşiv ve arayüz üstü metinleri artık seçilen dili izliyor.",
       },
     ],
   },
