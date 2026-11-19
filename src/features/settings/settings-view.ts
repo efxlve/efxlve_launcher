@@ -1573,52 +1573,66 @@ function renderAppearance(): string {
       <span class="lang-flag">${esc(l.code.toUpperCase())}</span>
       <span class="lang-name">${esc(l.label)}</span>
     </button>`).join("");
-  return (
-    group(
-      row(t("settings.gameSceneTitle"), t("settings.gameSceneDesc"), toggle("toggle-game-scene", S.gameScene)) +
-      row(t("settings.appIconTitle"), t("settings.appIconDesc"), renderAppIconPicker()) +
-      row(t("settings.uiScaleTitle"), t("settings.uiScaleDesc"), uiScaleSelect()) +
-      row(t("settings.reduceEffectsTitle"), t("settings.reduceEffectsDesc"), toggle("toggle-reduce-effects", S.reduceEffects)) +
-      row(t("settings.coverStatsTitle"), t("settings.coverStatsDesc"), toggle("toggle-cover-stats", S.showCoverStats)) +
-      row(t("settings.coverTitlesTitle"), t("settings.coverTitlesDesc"), toggle("toggle-cover-titles", S.showCoverTitles)) +
-      row(t("lib.coverSize"), t("settings.coverSizeDesc"), coverSizeSelectHtml()) +
-      row(t("lib.listDensity"), t("settings.listDensityDesc"), listDensitySelectHtml()) +
-      row(t("settings.storeBadgeTitle"), t("settings.storeBadgeDesc"), toggle("toggle-store-badge", S.showStoreBadge)) +
-      row(t("settings.storeIconsTitle"), t("settings.storeIconsDesc"), toggle("toggle-store-icons", S.showStoreIcons)) +
-      row(
-        t("settings.caseCoversTitle"),
-        `${t("settings.caseCoversDesc")}${S.showCaseCovers ? `<div style="margin-top:6px;"><button type="button" class="btn ghost small" data-act="settings-section" data-section="cases" style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:3px 10px;height:26px;">${icon("sliders", 12)} <span>${t("settings.caseCustomizeBtn")}</span> →</button></div>` : ""}`,
-        toggle("toggle-case-covers", S.showCaseCovers),
-      ) +
-      row(t("settings.separateCopiesTitle"), t("settings.separateCopiesDesc"), toggle("toggle-separate-copies", S.separateCopies)) +
-      row(t("settings.installedIconTitle"), t("settings.installedIconDesc"), toggle("toggle-installed-icon", S.showInstalledIcon)) +
-      row(t("settings.highlightInstalledTitle"), t("settings.highlightInstalledDesc"), toggle("toggle-highlight-installed", S.highlightInstalled)) +
-      row(t("settings.sharedLibraryTitle"), t("settings.sharedLibraryDesc"), toggle("toggle-shared-library", S.showSharedLibrary)) +
-      row(t("settings.startupTabTitle"), t("settings.startupTabDesc"), startupTabSelect()) +
-      drawerOrderRow() +
-      (S.fullscreenModeEnabled
-        ? row(t("fullscreen.mode"), t("controller.fullscreenModeDesc"), `<button class="btn ghost small" data-act="toggle-fullscreen-mode">${icon("maximize-2", 14)} ${t("fullscreen.toggle")}</button>`)
-        : "") +
-      row(
-        t("overlay.overlayLabel"),
-        t("settings.overlayToggleDesc"),
-        `<div class="settings-inline-control"><button type="button" class="btn ghost small" data-act="open-overlay">${icon("layers", 14)} ${t("overlay.overlayLabel")}</button>${toggle("toggle-overlay", overlayEnabled())}</div>`,
-      ) +
-      (overlayEnabled()
-        ? IS_WINDOWS
-          ? row(t("settings.overlayHotkeyTitle"), t("settings.overlayHotkeyDesc"), renderOverlayHotkeyPicker())
-          : infoBox("settings.overlayLauncherNote")
-        : "") +
-      (overlayBlockedGames().length > 0
-        ? row(
-            `${t("overlay.disabledListTitle")} (${overlayBlockedGames().length})`,
-            t("overlay.disabledListDesc"),
-            `<button class="btn ghost small" data-act="overlay-restore-disabled">${icon("refresh", 13)} ${t("overlay.restoreAll")}</button>`,
-          )
-        : "") +
-      row(t("settings.libPaginationTitle"), t("settings.libPaginationDesc"), toggle("toggle-lib-pagination", S.libPagination)) +
-      (S.libPagination ? row(t("settings.libPageSizeTitle"), t("settings.libPageSizeDesc"), pageSizeSelect()) : ""),
+
+  const interfaceRows =
+    row(t("settings.gameSceneTitle"), t("settings.gameSceneDesc"), toggle("toggle-game-scene", S.gameScene)) +
+    row(t("settings.appIconTitle"), t("settings.appIconDesc"), renderAppIconPicker()) +
+    row(t("settings.uiScaleTitle"), t("settings.uiScaleDesc"), uiScaleSelect()) +
+    row(t("settings.reduceEffectsTitle"), t("settings.reduceEffectsDesc"), toggle("toggle-reduce-effects", S.reduceEffects));
+
+  const coverRows =
+    row(t("settings.coverStatsTitle"), t("settings.coverStatsDesc"), toggle("toggle-cover-stats", S.showCoverStats)) +
+    row(t("settings.coverTitlesTitle"), t("settings.coverTitlesDesc"), toggle("toggle-cover-titles", S.showCoverTitles)) +
+    row(t("settings.storeBadgeTitle"), t("settings.storeBadgeDesc"), toggle("toggle-store-badge", S.showStoreBadge)) +
+    row(t("settings.storeIconsTitle"), t("settings.storeIconsDesc"), toggle("toggle-store-icons", S.showStoreIcons)) +
+    row(
+      t("settings.caseCoversTitle"),
+      `${t("settings.caseCoversDesc")}${S.showCaseCovers ? `<div style="margin-top:6px;"><button type="button" class="btn ghost small" data-act="settings-section" data-section="cases" style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:3px 10px;height:26px;">${icon("sliders", 12)} <span>${t("settings.caseCustomizeBtn")}</span> →</button></div>` : ""}`,
+      toggle("toggle-case-covers", S.showCaseCovers),
     ) +
+    row(t("settings.highlightInstalledTitle"), t("settings.highlightInstalledDesc"), toggle("toggle-highlight-installed", S.highlightInstalled));
+
+  const layoutRows =
+    row(t("lib.coverSize"), t("settings.coverSizeDesc"), coverSizeSelectHtml()) +
+    row(t("lib.listDensity"), t("settings.listDensityDesc"), listDensitySelectHtml()) +
+    row(t("settings.separateCopiesTitle"), t("settings.separateCopiesDesc"), toggle("toggle-separate-copies", S.separateCopies)) +
+    row(t("settings.libPaginationTitle"), t("settings.libPaginationDesc"), toggle("toggle-lib-pagination", S.libPagination)) +
+    (S.libPagination ? row(t("settings.libPageSizeTitle"), t("settings.libPageSizeDesc"), pageSizeSelect()) : "");
+
+  const behaviorRows =
+    row(t("settings.installedIconTitle"), t("settings.installedIconDesc"), toggle("toggle-installed-icon", S.showInstalledIcon)) +
+    row(t("settings.sharedLibraryTitle"), t("settings.sharedLibraryDesc"), toggle("toggle-shared-library", S.showSharedLibrary)) +
+    row(t("settings.startupTabTitle"), t("settings.startupTabDesc"), startupTabSelect()) +
+    drawerOrderRow();
+
+  const overlayRows =
+    (S.fullscreenModeEnabled
+      ? row(t("fullscreen.mode"), t("controller.fullscreenModeDesc"), `<button class="btn ghost small" data-act="toggle-fullscreen-mode">${icon("maximize-2", 14)} ${t("fullscreen.toggle")}</button>`)
+      : "") +
+    row(
+      t("overlay.overlayLabel"),
+      t("settings.overlayToggleDesc"),
+      `<div class="settings-inline-control"><button type="button" class="btn ghost small" data-act="open-overlay">${icon("layers", 14)} ${t("overlay.overlayLabel")}</button>${toggle("toggle-overlay", overlayEnabled())}</div>`,
+    ) +
+    (overlayEnabled()
+      ? IS_WINDOWS
+        ? row(t("settings.overlayHotkeyTitle"), t("settings.overlayHotkeyDesc"), renderOverlayHotkeyPicker())
+        : infoBox("settings.overlayLauncherNote")
+      : "") +
+    (overlayBlockedGames().length > 0
+      ? row(
+          `${t("overlay.disabledListTitle")} (${overlayBlockedGames().length})`,
+          t("overlay.disabledListDesc"),
+          `<button class="btn ghost small" data-act="overlay-restore-disabled">${icon("refresh", 13)} ${t("overlay.restoreAll")}</button>`,
+        )
+      : "");
+
+  return (
+    group(interfaceRows, t("settings.appearanceInterface")) +
+    group(coverRows, t("settings.appearanceLibraryCovers")) +
+    group(layoutRows, t("settings.appearanceLibraryLayout")) +
+    group(behaviorRows, t("settings.appearanceLibraryBehavior")) +
+    group(overlayRows, t("settings.appearanceOverlay")) +
     group(
       row(t("settings.showSpotifyTitle"), t("settings.showSpotifyDesc"), toggle("toggle-spotify-page", spotifyPageVisible())) +
       row(t("settings.showMiniPlayerTitle"), t("settings.showMiniPlayerDesc"), toggle("toggle-mini-player", miniPlayerVisible())) +
@@ -1626,7 +1640,6 @@ function renderAppearance(): string {
       t("settings.secPages"),
       infoBox("settings.pagesNote"),
     ) +
-    
     `<h3 class="section-title">${t("settings.language")}</h3><p class="page-sub settings-lang-desc">${t("settings.languageDesc")}</p><div class="lang-selection-group" data-search="${esc(LANGUAGES.map((l) => l.label).join(" "))}">${languages}</div>`
   );
 }
