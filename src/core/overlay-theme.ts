@@ -10,6 +10,7 @@ const TOKENS = [
   "--bg",
   "--surface-1",
   "--surface-2",
+  "--surface-3",
   "--text",
   "--text-2",
   "--text-3",
@@ -21,8 +22,12 @@ const TOKENS = [
   "--ok",
   "--warn",
   "--err",
+  "--shadow-pop",
+  "--r-xs",
   "--r-sm",
   "--r-md",
+  "--r-lg",
+  "--r-pill",
 ];
 
 export function overlayThemeStyle(): string {

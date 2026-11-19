@@ -57,20 +57,21 @@ Direction: **Hydra / Heroic desktop layout** - fixed left sidebar, quiet cover g
   one entry with `tokens` (written to `:root[data-surface="<id>"]` at runtime)
   and needs no CSS; `midnight` is the reference. A theme that changes shapes,
   backgrounds or glass adds a `[data-surface="<id>"]` block in `themes.css`;
-  `white`, `blades` and `gloss` do. The Settings picker, the stored choice, the boot script
-  and the child-webview palette all read the registry, so a new theme leaves no
-  switch half-wired. Components read tokens, never literal colours: a literal is
-  what makes one theme look broken in another.
+  `white`, `blades` and `gloss` do. The Settings picker, the stored choice, the
+  boot snapshot written by `applySurface` and the child-webview palette all
+  follow the registry, so a new theme leaves no switch half-wired. Components
+  read tokens, never literal colours: a literal is what makes one theme look
+  broken in another.
 - `data-surface="soft"` lives in `tokens.css`; `white` and `gloss` replace the
   same token set in `themes.css`. White Mode is a light palette with a dark
   accent. Gloss adds a sky/water background, glossy glass cards and a
   blue accent; its gradients, glow and blur are intentional theme exceptions to
   §10 and must not leak into the flat themes.
-- Custom CSS (Settings > Appearance) is the user's own stylesheet: stored as
+- Custom CSS (Settings > Themes) is the user's own stylesheet: stored as
   `efxlve-custom-css`, injected as `#efxlve-custom-css` before the first paint,
   capped at 20000 characters. It layers over any built-in theme, so the curated
   palettes stay untouched.
-- Radius: `--r-sm: 6px` (buttons, inputs, chips) and `--r-md: 10px` (cards, modals, covers). Nothing else. No `999px` pills except 50% avatars and status dots. Full Screen Mode keeps the same quiet radius scale; it does not invent a pill language.
+- Radius: `--r-xs: 3px` (badges, keycaps), `--r-sm: 6px` (buttons, inputs, chips), `--r-md: 10px` (cards, modals, covers), `--r-lg: 14px` (large dialogs) and `--r-pill: 999px` (pills). A theme may sharpen or round this scale; avatars and status dots stay at `50%`.
 - Spacing: multiples of 4px.
 - Type: system UI font (`Segoe UI Variable`, `Segoe UI`, system-ui). Sizes: 12 / 13 / 14 / 18 / 26. Weights: 400, 500, 600 (700 only for the game title).
 - Numbers that change (speed, percent, playtime, counters) always use `font-variant-numeric: tabular-nums`.

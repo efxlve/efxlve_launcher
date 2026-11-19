@@ -15,19 +15,53 @@
     </style>
     <script>
       (function () {
-        document.documentElement.classList.add("sb-no-anim");
+        var root = document.documentElement;
+        root.classList.add("sb-no-anim");
         try {
-          var surface = localStorage.getItem("efxlve-surface") || "";
-          if (surface === "soft" || surface === "white" || surface === "gloss") {
-            document.documentElement.dataset.surface = surface;
+          var boot = null;
+          var raw = localStorage.getItem("efxlve-boot-theme");
+          if (raw) {
+            try { boot = JSON.parse(raw); } catch (e) { boot = null; }
+          }
+          var saved = localStorage.getItem("efxlve-surface") || "";
+          var id = boot && typeof boot.id === "string" ? boot.id : saved;
+          var scheme = boot && (boot.scheme === "light" || boot.scheme === "dark") ? boot.scheme : "";
+          var bg = boot && typeof boot.bg === "string" && /^#[0-9a-f]{6}$/i.test(boot.bg) ? boot.bg : "";
+          var safeId = /^[a-z0-9][a-z0-9_-]{0,63}$/.test(id);
+
+          if (safeId && id !== "black") root.dataset.surface = id;
+          if (scheme) {
+            root.dataset.scheme = scheme;
+            root.style.colorScheme = scheme;
+          }
+          if (bg) {
+            var bgStyle = document.createElement("style");
+            bgStyle.textContent = "html,body{background-color:" + bg + ";" + (scheme ? "color-scheme:" + scheme + ";" : "") + "}";
+            document.head.appendChild(bgStyle);
+          }
+          if (boot && safeId && boot.tokens && typeof boot.tokens === "object") {
+            var css = "";
+            for (var key in boot.tokens) {
+              if (!Object.prototype.hasOwnProperty.call(boot.tokens, key)) continue;
+              if (!/^--[a-z0-9-]+$/.test(key)) continue;
+              var value = String(boot.tokens[key]);
+              if (/[;{}<>\\]|\/\*|\*\/|url\s*\(|@import|expression\s*\(/i.test(value)) continue;
+              css += key + ":" + value + ";";
+            }
+            if (css) {
+              var tokenStyle = document.createElement("style");
+              tokenStyle.id = "efxlve-theme-tokens";
+              tokenStyle.textContent = ':root[data-surface="' + id + '"]{' + css + "}";
+              document.head.appendChild(tokenStyle);
+            }
           }
           if (localStorage.getItem("efxlve-game-scene") === "true") {
-            document.documentElement.dataset.gameScene = "on";
+            root.dataset.gameScene = "on";
           }
           var w = parseInt(localStorage.getItem("efxlve-sidebar-w") || "", 10);
           if (w >= 72 && w <= 400) {
-            document.documentElement.style.setProperty("--sidebar-w", w + "px");
-            if (w < 160) document.documentElement.classList.add("sb-narrow");
+            root.style.setProperty("--sidebar-w", w + "px");
+            if (w < 160) root.classList.add("sb-narrow");
           }
         } catch (e) {}
       })();

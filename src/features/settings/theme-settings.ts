@@ -23,6 +23,7 @@ import {
   importThemeJson,
   previewCustomTheme,
   saveCustomTheme,
+  sanitizeSceneUrl,
   themeById,
   themes,
   THEME_PRESETS,
@@ -40,6 +41,24 @@ let designerOpen = false;
 let designerSourceId: string | null = null;
 let harmonizeSurfaces = true;
 let previewSubTab: "library" | "hero" | "settings" = "library";
+/** Palette fields at open time; untouched fields keep recovered token tables. */
+let designerBaseline = "";
+
+function paletteSignature(input: CustomThemeInput): string {
+  return JSON.stringify({
+    bg: input.bg,
+    surface: input.surface,
+    accent: input.accent,
+    accentHover: input.accentHover,
+    accent2: input.accent2,
+    glow: input.glow,
+    cardGlass: Boolean(input.cardGlass),
+    borderStyle: input.borderStyle,
+    light: input.light,
+    radius: input.radius,
+    scene: Boolean(input.scene),
+  });
+}
 
 let designerDraft: CustomThemeInput = {
   name: "",
@@ -253,6 +272,7 @@ export function openThemeDesigner(themeId?: string): void {
     if (custom) {
       designerDraft = {
         id: custom.id,
+        sourceId: custom.sourceId,
         name: custom.name,
         bg: custom.bg,
         surface: custom.surface ?? "#181822",
@@ -267,11 +287,13 @@ export function openThemeDesigner(themeId?: string): void {
         sceneBlur: custom.sceneBlur ?? 0,
         sceneOpacity: custom.sceneOpacity ?? 0.5,
         radius: custom.radius ?? "default",
+        tokens: custom.tokens ? { ...custom.tokens } : undefined,
+        createdAt: custom.createdAt,
       };
     } else {
       const def = themeById(themeId);
       designerDraft = {
-        name: `${def.name ?? t(def.labelKey)} (Özel)`,
+        name: `${def.name ?? t(def.labelKey)} (${t("settings.themeCustomBadge")})`,
         bg: HEX_TEST.test(def.bg) ? def.bg : "#141418",
         surface: def.surface && HEX_TEST.test(def.surface) ? def.surface : (def.scheme === "light" ? "#ffffff" : "#1f1f28"),
         accent: HEX_TEST.test(def.accent) ? def.accent : "#7c3aed",
@@ -285,6 +307,7 @@ export function openThemeDesigner(themeId?: string): void {
         sceneBlur: 0,
         sceneOpacity: 0.5,
         radius: "default",
+        tokens: def.tokens ? { ...def.tokens } : undefined,
       };
       designerSourceId = null;
     }
@@ -305,9 +328,11 @@ export function openThemeDesigner(themeId?: string): void {
       sceneBlur: 0,
       sceneOpacity: 0.5,
       radius: "default",
+      tokens: active.tokens ? { ...active.tokens } : undefined,
     };
   }
 
+  designerBaseline = paletteSignature(designerDraft);
   designerOpen = true;
   renderDesignerModal();
 }
@@ -623,7 +648,8 @@ function updateDesignerLivePreview(): void {
   const text2 = tokens["--text-2"] ?? textColor;
   const lineColor = tokens["--line"] ?? "rgba(255,255,255,0.08)";
   const accentTint = tokens["--accent-tint"] ?? `${accent}22`;
-  const hasScene = Boolean(designerDraft.scene);
+  const scene = sanitizeSceneUrl(designerDraft.scene);
+  const hasScene = Boolean(scene);
   const blur = designerDraft.sceneBlur ?? 0;
   const opacity = designerDraft.sceneOpacity ?? (designerDraft.light ? 0.38 : 0.52);
   const scrimColor = designerDraft.light ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`;
@@ -647,8 +673,8 @@ function updateDesignerLivePreview(): void {
   container.style.setProperty("--preview-accent", accent);
   container.style.setProperty("--preview-accent-tint", accentTint);
   container.style.setProperty("--preview-on-accent", onAccentColor);
-  if (hasScene && designerDraft.scene) {
-    container.style.backgroundImage = `url("${designerDraft.scene}")`;
+  if (scene) {
+    container.style.backgroundImage = `url("${scene}")`;
   } else {
     container.style.backgroundImage = "none";
   }
@@ -975,8 +1001,12 @@ async function applyThemeSceneFile(file: File): Promise<void> {
 /** Saves theme from designer and applies it. */
 function saveThemeFromDesigner(): void {
   const name = designerDraft.name.trim() || t("settings.themeNamePlaceholder");
+  // A cloned theme's exact token table survives a rename. Touching the palette
+  // intentionally regenerates it from the new colours.
+  const keepTokens = Boolean(designerDraft.tokens) && paletteSignature(designerDraft) === designerBaseline;
   const id = saveCustomTheme({
     id: designerSourceId ?? undefined,
+    sourceId: keepTokens ? designerDraft.sourceId : undefined,
     name,
     bg: designerDraft.bg,
     surface: designerDraft.surface,
@@ -991,6 +1021,8 @@ function saveThemeFromDesigner(): void {
     sceneBlur: designerDraft.sceneBlur,
     sceneOpacity: designerDraft.sceneOpacity,
     radius: designerDraft.radius,
+    tokens: keepTokens ? designerDraft.tokens : undefined,
+    createdAt: designerDraft.createdAt,
   });
 
   if (!id) {
@@ -1042,7 +1074,7 @@ export function openThemeImporter(): void {
           <label for="theme-import-file" class="theme-file-dropzone">
             <span style="font-size:24px;opacity:0.8;">${icon("upload", 28)}</span>
             <span style="font-size:12px;font-weight:600;color:var(--text);">${esc(t("settings.themeImportDrop"))}</span>
-            <span style="font-size:11px;color:var(--text-3);">.efxtheme veya .json</span>
+            <span style="font-size:11px;color:var(--text-3);">.efxtheme · .json</span>
             <input type="file" id="theme-import-file" accept=".efxtheme,.json,application/json" hidden />
           </label>
 

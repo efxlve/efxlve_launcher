@@ -58,8 +58,11 @@
   --err-tint: rgba(229, 72, 77, 0.14);
 
   /* Geometry */
+  --r-xs: 3px;
   --r-sm: 6px;
   --r-md: 10px;
+  --r-lg: 14px;
+  --r-pill: 999px;
   --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.5);
   --ease: 140ms ease-out;
   --ease-in: 180ms ease-out;
