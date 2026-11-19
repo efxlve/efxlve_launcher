@@ -703,6 +703,55 @@ fn app_is_maximized(app: AppHandle) -> Result<bool, String> {
     window.is_maximized().map_err(|e| e.to_string())
 }
 
+/// Parses the theme's `--bg` value. Invalid input is ignored rather than
+/// failing a theme switch: the webview already painted the right surface.
+fn parse_hex_color(value: &str) -> Option<tauri::window::Color> {
+    let hex = value.trim().trim_start_matches('#');
+    if hex.len() != 6 || !hex.chars().all(|c| c.is_ascii_hexdigit()) {
+        return None;
+    }
+    let channel = |range: std::ops::Range<usize>| u8::from_str_radix(&hex[range], 16).ok();
+    Some(tauri::window::Color(
+        channel(0..2)?,
+        channel(2..4)?,
+        channel(4..6)?,
+        255,
+    ))
+}
+
+/// Keeps the native window surface in step with light, OLED and custom themes
+/// so resizing never reveals the startup colour around the webview.
+#[tauri::command]
+fn app_set_background_color(app: AppHandle, color: String) -> Result<(), String> {
+    if let Some(color) = parse_hex_color(&color) {
+        let window = app
+            .get_webview_window("main")
+            .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
+        window
+            .set_background_color(Some(color))
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod background_color_tests {
+    use super::parse_hex_color;
+
+    #[test]
+    fn parses_theme_hex_colours() {
+        let color = parse_hex_color("#0a141e").expect("valid colour");
+        assert_eq!((color.0, color.1, color.2, color.3), (10, 20, 30, 255));
+    }
+
+    #[test]
+    fn ignores_malformed_colours() {
+        assert!(parse_hex_color("").is_none());
+        assert!(parse_hex_color("#12345").is_none());
+        assert!(parse_hex_color("#gggggg").is_none());
+    }
+}
+
 /// Windows 11 draws a 1 px border on borderless windows. Painting it black
 /// only hid it on a pure-black edge; over full-screen cover art it became a
 /// visible black line along the top of the screen. Ask DWM to remove the border.
@@ -2232,6 +2281,7 @@ fn main() {
             launchers::launchers_status,
             app_toggle_maximize,
             app_is_maximized,
+            app_set_background_color,
             app_set_fullscreen,
             app_close,
             app_set_decorations,

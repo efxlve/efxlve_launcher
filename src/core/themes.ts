@@ -7,7 +7,8 @@
  * DOM painter, and re-exports the registry API the rest of the app imports.
  */
 
-import { SURFACE_KEY } from "./constants";
+import { invoke } from "@tauri-apps/api/core";
+import { SURFACE_KEY, isTauri } from "./constants";
 import { t } from "../i18n";
 import type { CustomThemeInput, ThemeDef, ThemePreset, PresetWallpaper } from "./theme/types";
 import { PRESET_WALLPAPERS, THEME_PRESETS } from "./theme/presets";
@@ -638,6 +639,9 @@ function writeBootSnapshot(theme: ThemeDef): void {
     const tokenBg = tokens?.["--bg"];
     const bg = tokenBg ?? BOOT_BG[theme.id] ?? (HEX.test(theme.bg) ? theme.bg : theme.scheme === "light" ? "#f3f4f6" : "#000000");
     localStorage.setItem(BOOT_THEME_KEY, JSON.stringify({ id: theme.id, scheme: theme.scheme, bg, tokens }));
+    if (isTauri && HEX.test(bg)) {
+      void invoke("app_set_background_color", { color: bg }).catch(() => undefined);
+    }
   } catch {
     /* private mode: the boot script falls back to black */
   }
