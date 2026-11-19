@@ -53,8 +53,10 @@ Direction: **Hydra / Heroic desktop layout** - fixed left sidebar, quiet cover g
 | `--warn` | `#e0a32e` | update available, offline, paused |
 | `--err` | `#e5484d` | errors, destructive |
 
-- Themes come from the registry in `src/core/themes.ts`. A colour-only theme is
-  one entry with `tokens` (written to `:root[data-surface="<id>"]` at runtime)
+- Themes come from the registry in `src/core/themes.ts`; built-in data lives in
+  `src/core/theme/builtins.ts`, designer presets in `src/core/theme/presets.ts`
+  and shared shapes in `src/core/theme/types.ts`. A colour-only theme is one
+  entry with `tokens` (written to `:root[data-surface="<id>"]` at runtime)
   and needs no CSS; `midnight` is the reference. A theme that changes shapes,
   backgrounds or glass adds a `[data-surface="<id>"]` block in `themes.css`;
   `white`, `blades` and `gloss` do. The Settings picker, the stored choice, the
@@ -62,11 +64,11 @@ Direction: **Hydra / Heroic desktop layout** - fixed left sidebar, quiet cover g
   follow the registry, so a new theme leaves no switch half-wired. Components
   read tokens, never literal colours: a literal is what makes one theme look
   broken in another.
-- `data-surface="soft"` lives in `tokens.css`; `white` and `gloss` replace the
-  same token set in `themes.css`. White Mode is a light palette with a dark
-  accent. Gloss adds a sky/water background, glossy glass cards and a
-  blue accent; its gradients, glow and blur are intentional theme exceptions to
-  §10 and must not leak into the flat themes.
+- `data-surface="soft"` lives in `tokens.css`; `white`, `gloss` and `blades`
+  keep their token tables in `builtins.ts` and add only component touches in
+  `themes.css`. Rules that apply to every light palette use
+  `:root[data-scheme="light"]`; theme-specific exceptions stay on
+  `[data-surface="<id>"]`.
 - Custom CSS (Settings > Themes) is the user's own stylesheet: stored as
   `efxlve-custom-css`, injected as `#efxlve-custom-css` before the first paint,
   capped at 20000 characters. It layers over any built-in theme, so the curated
