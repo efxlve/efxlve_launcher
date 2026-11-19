@@ -1564,7 +1564,7 @@ function renderThemes(): string {
     themePanel.ensure();
     return panelLoadingState();
   }
-  return theme.renderThemeSection();
+  return theme.renderThemeSection() + group(renderCustomCssRow());
 }
 
 function renderAppearance(): string {
@@ -1575,7 +1575,6 @@ function renderAppearance(): string {
     </button>`).join("");
   return (
     group(
-      renderCustomCssRow() +
       row(t("settings.gameSceneTitle"), t("settings.gameSceneDesc"), toggle("toggle-game-scene", S.gameScene)) +
       row(t("settings.appIconTitle"), t("settings.appIconDesc"), renderAppIconPicker()) +
       row(t("settings.uiScaleTitle"), t("settings.uiScaleDesc"), uiScaleSelect()) +
