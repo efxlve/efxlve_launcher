@@ -89,6 +89,7 @@ import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, he
 import { renderRequirementPanel, renderSystemTab, repaintSystemRequirements } from "./system-tab";
 import { installDriveLabel } from "./system-check";
 import { achievementProgress, achievementStats, estimateRemainingHours, isAchievementUnlocked, nextAchievements } from "../../core/achievements";
+import { storeAchievementAnswer } from "../../core/achievement-answer";
 import { applyAchievementEdits } from "../../core/achievement-edits";
 import { recordAchievementUnlocks, attachAchievementScreenshot } from "../../core/achievement-history";
 import { raGameFor } from "../../core/ra-games";
@@ -2894,6 +2895,7 @@ async function refreshEosLogUnlocks(appName: string, title: string): Promise<voi
   const added = applyEosLogUnlocks(data, log.unlocks);
   if (added === 0) return;
   applyAchievementEdits(appName, data);
+  storeAchievementAnswer(appName, data);
   recordAchievementUnlocks(appName, data, {
     game: summaryOf(appName)?.title || appName,
     store: sourceOfKey(appName),
@@ -3579,7 +3581,16 @@ export function startStoreAchievementSession(appName: string): void {
     // RetroAchievements keeps its state on the server: poll the mapped game
     // while it runs. The page fetch caches the answer for a minute, so this
     // loop does not hit the API per tick.
-    if (!S.raConfigured || !raGameFor(appName)) return;
+    if (!S.raConfigured || !raGameFor(appName)) {
+      // The emulator definitions are not part of the native watcher's answer;
+      // resolve them once so the panel has a list even if the page never opens.
+      if (!S.loadedAchievements.has(appName)) {
+        void fetchAndRenderAchievements(appName, false, true).then(() => {
+          checkAndEmitNewStoreUnlocks(appName);
+        });
+      }
+      return;
+    }
   } else if (source === "battlenet" || source === "riot") {
     return;
   }
@@ -3590,8 +3601,16 @@ export function startStoreAchievementSession(appName: string): void {
     void startStoreEmulatorWatch(appName);
   }
   // Amazon publishes no achievement API: the local watcher above is the whole
-  // live path, so there is nothing to poll.
-  if (source === "amazon") return;
+  // live path, so there is nothing to poll. The definitions still come from the
+  // emulator fallback, and the panel needs them without opening the page.
+  if (source === "amazon") {
+    if (!S.loadedAchievements.has(appName)) {
+      void fetchAndRenderAchievements(appName, false, true).then(() => {
+        checkAndEmitNewStoreUnlocks(appName);
+      });
+    }
+    return;
+  }
 
   const existing = S.loadedAchievements.get(appName);
   if (existing && existing.achievements.length > 0 && !sessionUnlockedBaseline.has(appName)) {
@@ -3858,6 +3877,9 @@ export async function fetchAndRenderAchievements(
     // The store answer is on the page now; fold in the launcher's own edits
     // before anything counts, sorts or paints from it.
     applyAchievementEdits(appName, data);
+    // Hand the same resolved list to the overlay; it cannot repeat the source
+    // selection (partner client, local emulator, EOS log) on its own.
+    storeAchievementAnswer(appName, data);
     // Opening a page also backfills the unlock history for this game.
     recordAchievementUnlocks(appName, data, {
       game: summaryOf(appName)?.title || appName,

@@ -59,6 +59,7 @@ import { initAppUpdater } from "../updates/update-manager";
 import { CONTROLLER_BRIDGE_KEY, AUTOSTART_INIT_KEY, OVERLAY_ENABLED_KEY, OVERLAY_HINT_SEEN_KEY, OVERLAY_HUD_KEY, OVERLAY_DISABLED_KEY, isTauri } from "../../core/constants";
 import { overlayAntiCheatOverride, overlayEnabled, overlayHotkey, overlayHotkeyLabel } from "../../core/page-visibility";
 import { achGameNotificationsEnabled } from "../../core/ach-game-prefs";
+import { storeAchievementAnswer } from "../../core/achievement-answer";
 import { appMinimize, appSetAutostart } from "../../core/window";
 import { modalRoot } from "../../core/dom";
 
@@ -1359,6 +1360,8 @@ export async function initApp(hooks: {
           });
           if (screenshot) attachAchievementScreenshot(key, name, screenshot);
         }
+        // The panel may open after this event: keep the shared answer current.
+        if (list && entry && !wasUnlocked) storeAchievementAnswer(key, list);
       }
       const summary = S.epicAchSummaries[key];
       if (summary && !wasUnlocked) {

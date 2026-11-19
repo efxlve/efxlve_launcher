@@ -8,6 +8,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { loadAchievementAnswer } from "../../core/achievement-answer";
 import { applyAchievementEdits } from "../../core/achievement-edits";
 import {
   achievementGuideLinks,
@@ -640,12 +641,22 @@ export async function loadAchievements(force = false): Promise<void> {
     const generation = ++achLoadGeneration;
     achLoading = true;
     el.innerHTML = `<div class="ov-empty">${esc(t("ach.checking"))}</div>`;
-    const { store, id } = D().splitKey(D().context().appName);
+    const appName = D().context().appName;
+    const { store, id } = D().splitKey(appName);
+    // The game page owns the source selection (partner client, local emulator,
+    // EOS log, RetroAchievements). Its resolved answer is shared through
+    // localStorage, so the panel shows the same list when it exists. Steam is
+    // excluded: the launcher does not poll it, so its slot would outlive the
+    // session; the panel reads the client directly instead.
+    const useShared = store !== "game" && store !== "steam";
+    const shared = useShared ? loadAchievementAnswer(appName) : null;
     try {
-      let next: AchievementsData | null = null;
+      let next: AchievementsData | null = shared;
       if (store === "game") {
         // A title the launcher did not install: no store to ask.
         next = null;
+      } else if (next) {
+        // The shared answer is already the game page's choice.
       } else if (store === "steam") {
         next = await invoke<AchievementsData>("steam_get_achievements", { appId: id, force: false });
       } else if (store === "gog") {
@@ -667,11 +678,17 @@ export async function loadAchievements(force = false): Promise<void> {
           language: currentLanguage(),
         });
       }
+      // The launcher can resolve a partner/emulator answer while the panel is
+      // asking the store; that answer wins over an empty direct reply.
+      if (useShared && (!next || next.achievements.length === 0)) {
+        const late = loadAchievementAnswer(appName);
+        if (late) next = late;
+      }
       // The panel can open for another game while the store is answering.
       if (generation !== achLoadGeneration) return;
       // The launcher's own edits are folded in here too: marking an
       // achievement on the game page must not leave the overlay behind.
-      if (next) applyAchievementEdits(D().context().appName, next);
+      if (next) applyAchievementEdits(appName, next);
       cachedAchievements = next;
     } catch {
       if (generation === achLoadGeneration) cachedAchievements = null;
