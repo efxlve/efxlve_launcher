@@ -7,8 +7,10 @@ import {
   customTokens,
   duplicateTheme,
   exportThemeJson,
+  exportThemePack,
   getCustomThemeInput,
   importThemeJson,
+  importThemePack,
   hydrateThemeScenes,
   saveCustomTheme,
   sanitizeSceneUrl,
@@ -398,6 +400,82 @@ describe("theme wallpapers", () => {
     expect(raw[0].scene).toBe(SCENE);
     expect(raw[0].sceneStored).toBe(false);
     expect(getCustomThemeInput(id)?.scene).toBe(SCENE);
+  });
+});
+
+describe("theme packs", () => {
+  it("round-trips custom themes and a shared scene asset", () => {
+    saveCustomTheme({ ...BASE, name: "Pack A", scene: SCENE });
+    saveCustomTheme({ ...BASE, name: "Pack B", accent: "#22c55e", scene: SCENE });
+
+    const pack = exportThemePack();
+    expect(pack?.count).toBe(2);
+    const parsed = JSON.parse(pack!.json) as {
+      efxlve_pack: number;
+      themes: { scene?: string }[];
+      assets: Record<string, string>;
+    };
+    expect(parsed.efxlve_pack).toBe(1);
+    expect(parsed.themes).toHaveLength(2);
+    expect(Object.keys(parsed.assets)).toHaveLength(1);
+    expect(parsed.themes.every((theme) => theme.scene?.startsWith("asset:"))).toBe(true);
+
+    localStorage.clear();
+    clearThemeCache();
+    clearThemeSceneCache();
+    sceneStore.clear();
+
+    const result = importThemePack(pack!.json);
+    expect(result).toEqual({ imported: 2, failed: 0, names: ["Pack A", "Pack B"] });
+    expect(customThemes().map((theme) => theme.name).sort()).toEqual(["Pack A", "Pack B"]);
+    const imported = customThemes().find((theme) => theme.name === "Pack A");
+    expect(imported?.scene).toBe(SCENE);
+  });
+
+  it("rejects a future pack schema", () => {
+    saveCustomTheme({ ...BASE, name: "Pack A" });
+    const parsed = JSON.parse(exportThemePack()!.json) as Record<string, unknown>;
+    parsed.efxlve_pack = 2;
+    expect(importThemePack(JSON.stringify(parsed))).toBeNull();
+  });
+
+  it("imports valid entries and counts invalid ones", () => {
+    const result = importThemePack(
+      JSON.stringify({
+        efxlve_pack: 1,
+        themes: [
+          { efxlve_theme: 3, name: "Good", bg: "#101014", accent: "#f97316" },
+          { nope: true },
+        ],
+        assets: {},
+      }),
+    );
+    expect(result).toEqual({ imported: 1, failed: 1, names: ["Good"] });
+  });
+
+  it("drops a missing scene asset but imports the theme", () => {
+    const result = importThemePack(
+      JSON.stringify({
+        efxlve_pack: 1,
+        themes: [
+          {
+            efxlve_theme: 3,
+            name: "No Scene",
+            bg: "#101014",
+            accent: "#f97316",
+            scene: "asset:missing",
+          },
+        ],
+        assets: {},
+      }),
+    );
+    expect(result?.imported).toBe(1);
+    expect(getCustomThemeInput(customThemes()[0].id!)?.scene).toBeUndefined();
+  });
+
+  it("rejects an empty package and exports nothing when there are no custom themes", () => {
+    expect(exportThemePack()).toBeNull();
+    expect(importThemePack(JSON.stringify({ efxlve_pack: 1, themes: [] }))).toBeNull();
   });
 });
 

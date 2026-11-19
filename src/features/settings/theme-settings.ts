@@ -3,7 +3,7 @@
  *
  * Provides a responsive theme gallery with live miniature launcher mockups,
  * real-time customizable theme creator with frosted glass, wallpaper gallery,
- * dual-tone accent gradients, glow intensity, and .efxtheme import/export.
+ * dual-tone accent gradients, glow intensity, and .efxtheme/.efxpack import/export.
  */
 
 import { themeModalRoot } from "../../core/dom";
@@ -19,8 +19,10 @@ import {
   deleteCustomTheme,
   duplicateTheme,
   exportThemeJson,
+  exportThemePack,
   getCustomThemeInput,
   importThemeJson,
+  importThemePack,
   previewCustomTheme,
   saveCustomTheme,
   sanitizeSceneUrl,
@@ -165,6 +167,9 @@ export function renderThemeSection(): string {
         <div class="theme-section-actions">
           <button type="button" class="btn ghost small" data-act="theme-import-open" title="${esc(t("settings.themeImport"))}">
             ${icon("download", 13)} <span>${esc(t("settings.themeImport"))}</span>
+          </button>
+          <button type="button" class="btn ghost small" data-act="theme-export-pack" title="${esc(t("settings.themeExportPack"))}">
+            ${icon("package", 13)} <span>${esc(t("settings.themeExportPack"))}</span>
           </button>
           <button type="button" class="btn primary small" data-act="theme-add">
             ${icon("plus", 13)} <span>${esc(t("settings.themeAdd"))}</span>
@@ -1150,6 +1155,23 @@ function downloadThemeFile(themeId: string, name: string): void {
   toast(t("settings.themeExportSuccess", { name }), "ok");
 }
 
+/** Downloads every custom theme as a versioned `.efxpack` with shared scenes. */
+function downloadThemePack(): void {
+  const pack = exportThemePack();
+  if (!pack) {
+    toast(t("settings.themePackEmpty"), "err");
+    return;
+  }
+  const blob = new Blob([pack.json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "efxlve-themes.efxpack";
+  a.click();
+  URL.revokeObjectURL(url);
+  toast(t("settings.themePackExported", { count: String(pack.count) }), "ok");
+}
+
 /* ==========================================================================
    Theme Importer Modal
    ========================================================================== */
@@ -1174,8 +1196,8 @@ export function openThemeImporter(): void {
           <label for="theme-import-file" class="theme-file-dropzone">
             <span style="font-size:24px;opacity:0.8;">${icon("upload", 28)}</span>
             <span style="font-size:12px;font-weight:600;color:var(--text);">${esc(t("settings.themeImportDrop"))}</span>
-            <span style="font-size:11px;color:var(--text-3);">.efxtheme · .json</span>
-            <input type="file" id="theme-import-file" accept=".efxtheme,.json,application/json" hidden />
+            <span style="font-size:11px;color:var(--text-3);">.efxtheme · .json · .efxpack</span>
+            <input type="file" id="theme-import-file" accept=".efxtheme,.efxpack,.json,application/json" hidden />
           </label>
 
           <textarea id="theme-import-text" class="theme-import-textarea" placeholder='{\n  "name": "My Cyberpunk",\n  "bg": "#07080a",\n  "accent": "#fcee0a"\n}'></textarea>
@@ -1217,6 +1239,26 @@ function submitThemeImport(): void {
   const textarea = document.getElementById("theme-import-text") as HTMLTextAreaElement | null;
   const jsonStr = textarea?.value.trim() ?? "";
   if (!jsonStr) return;
+
+  const pack = importThemePack(jsonStr);
+  if (pack) {
+    closeThemeImporter();
+    render();
+    if (pack.imported === 0) {
+      toast(t("settings.themePackInvalid"), "err");
+    } else if (pack.failed > 0) {
+      toast(
+        t("settings.themePackPartial", {
+          imported: String(pack.imported),
+          failed: String(pack.failed),
+        }),
+        "err",
+      );
+    } else {
+      toast(t("settings.themePackImported", { count: String(pack.imported) }), "ok");
+    }
+    return;
+  }
 
   const result = importThemeJson(jsonStr);
   if (!result) {
@@ -1315,6 +1357,11 @@ export function handleThemeSettingsAction(act: string | undefined, el: HTMLEleme
         render();
         toast(t("settings.themeDeleted"), "ok");
       }
+      return true;
+    }
+
+    case "theme-export-pack": {
+      downloadThemePack();
       return true;
     }
 

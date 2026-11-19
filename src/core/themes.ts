@@ -34,6 +34,13 @@ export { CORE_THEMES, DEFAULT_THEME, LEGACY_SURFACE_IDS };
 const CUSTOM_KEY = "efxlve-custom-themes";
 const CUSTOM_PREFIX = "custom-";
 const TOKEN_STYLE_ID = "efxlve-theme-tokens";
+let customIdCounter = 0;
+
+/** Timestamp ids collide when two themes are saved in the same millisecond. */
+function newCustomThemeId(): string {
+  customIdCounter = (customIdCounter + 1) % 1_000_000;
+  return `${CUSTOM_PREFIX}${Date.now()}-${customIdCounter}`;
+}
 /** Parsed user themes; invalidated on save/delete or a cross-window storage event. */
 let customCache: CustomThemeInput[] | null = null;
 /** Expanded user theme registry entries; rebuilt after the raw list changes. */
@@ -403,7 +410,7 @@ function restoreSceneMetadata(id: string, scene: string): void {
 export function saveCustomTheme(input: CustomThemeInput): string {
   const list = readCustomInputs().slice();
   const targetId =
-    isSafeThemeId(input.id) && input.id.startsWith(CUSTOM_PREFIX) ? input.id : `${CUSTOM_PREFIX}${Date.now()}`;
+    isSafeThemeId(input.id) && input.id.startsWith(CUSTOM_PREFIX) ? input.id : newCustomThemeId();
   const existingIdx = list.findIndex((item, idx) => item.id === targetId || `${CUSTOM_PREFIX}${idx}` === targetId);
   const existing = existingIdx !== -1 ? list[existingIdx] : undefined;
   const scene = sanitizeSceneUrl(input.scene);
@@ -556,6 +563,10 @@ export function duplicateTheme(sourceId: string, copySuffix = " Copy"): string {
 
 /** Current `.efxtheme` schema. Import still accepts v2 files from old builds. */
 const THEME_SCHEMA = 3;
+/** `.efxpack` package schema. A future version is rejected, not guessed. */
+const THEME_PACK_SCHEMA = 1;
+const MAX_PACK_THEMES = 100;
+const MAX_PACK_BYTES = 30_000_000;
 
 /** Exports a theme definition as a JSON string. */
 export function exportThemeJson(id: string): string {
@@ -668,6 +679,114 @@ export function importThemeJson(jsonStr: string): { id: string; name: string } |
 export function normalizeSurface(id: string | null | undefined): string {
   const wanted = id ? (LEGACY_SURFACE_IDS[id] ?? id) : id;
   return themes().some((theme) => theme.id === wanted) ? (wanted as string) : DEFAULT_THEME;
+}
+
+export interface ThemePackExport {
+  json: string;
+  count: number;
+}
+
+export interface ThemePackImport {
+  imported: number;
+  failed: number;
+  names: string[];
+}
+
+/**
+ * Packages every custom theme. Scenes live in a package-level `assets` map and
+ * each manifest points at one with `asset:<id>`, so the same wallpaper is
+ * stored once even when several themes share it.
+ */
+export function exportThemePack(): ThemePackExport | null {
+  const list = customThemes();
+  if (list.length === 0) return null;
+
+  const assets: Record<string, string> = {};
+  const assetIds = new Map<string, string>();
+  let nextAsset = 1;
+  const manifests = list.map((theme) => {
+    const manifest = JSON.parse(exportThemeJson(theme.id)) as Record<string, unknown>;
+    const scene = typeof manifest.scene === "string" ? sanitizeSceneUrl(manifest.scene) : undefined;
+    if (scene) {
+      let assetId = assetIds.get(scene);
+      if (!assetId) {
+        assetId = `scene-${nextAsset}`;
+        nextAsset += 1;
+        assetIds.set(scene, assetId);
+        assets[assetId] = scene;
+      }
+      manifest.scene = `asset:${assetId}`;
+    } else {
+      delete manifest.scene;
+    }
+    return manifest;
+  });
+
+  return {
+    json: JSON.stringify(
+      {
+        efxlve_pack: THEME_PACK_SCHEMA,
+        name: "Efxlve theme pack",
+        exportedAt: Date.now(),
+        themes: manifests,
+        assets,
+      },
+      null,
+      2,
+    ),
+    count: manifests.length,
+  };
+}
+
+/** Imports a `.efxpack`, continuing past invalid entries and resolving assets. */
+export function importThemePack(jsonStr: string): ThemePackImport | null {
+  if (typeof jsonStr !== "string" || jsonStr.length > MAX_PACK_BYTES) return null;
+  try {
+    const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    if (Number(parsed.efxlve_pack) !== THEME_PACK_SCHEMA) return null;
+
+    const themes = parsed.themes;
+    if (!Array.isArray(themes) || themes.length === 0 || themes.length > MAX_PACK_THEMES) return null;
+
+    const rawAssets =
+      parsed.assets && typeof parsed.assets === "object" && !Array.isArray(parsed.assets)
+        ? (parsed.assets as Record<string, unknown>)
+        : {};
+    if (Object.keys(rawAssets).length > MAX_PACK_THEMES * 2) return null;
+
+    const assets = new Map<string, string>();
+    for (const [key, value] of Object.entries(rawAssets)) {
+      if (typeof value === "string" && value.length < 2_000_000) assets.set(key, value);
+    }
+
+    let imported = 0;
+    let failed = 0;
+    const names: string[] = [];
+    for (const item of themes) {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        failed += 1;
+        continue;
+      }
+      const manifest = { ...(item as Record<string, unknown>) };
+      if (typeof manifest.scene === "string" && manifest.scene.startsWith("asset:")) {
+        const assetId = manifest.scene.slice("asset:".length);
+        const data = assets.get(assetId);
+        if (data) manifest.scene = data;
+        else delete manifest.scene;
+      }
+      const saved = importThemeJson(JSON.stringify(manifest));
+      if (saved) {
+        imported += 1;
+        names.push(saved.name);
+      } else {
+        failed += 1;
+      }
+    }
+    return { imported, failed, names };
+  } catch {
+    return null;
+  }
 }
 
 export function themeById(id: string): ThemeDef {
