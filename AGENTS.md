@@ -161,6 +161,7 @@ Rules for these files:
 | `TODO.md` | Open work only |
 | `docs/DESIGN_SYSTEM.md` | Design tokens and layout contracts |
 | `docs/IPC_INDEX.md` | Generated Tauri command index |
+| `docs/MOD_SUPPORT.md` | Mod manager model, supported games and open work |
 | `docs/OVERLAY_ROADMAP.md` | Overlay architecture and open work |
 | `docs/CLOUD_SAVES.md` | Cloud saves overview, architecture and open work |
 | `docs/CLOUD_FOLDER_GUIDE.md` | Beginner guide for the folder provider |

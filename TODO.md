@@ -295,3 +295,16 @@ stays on the client. Open work:
   inside the game folder are all refused.
 - Multi-note tabs: open three notes for one game, switch between them while the
   700 ms save is pending, and confirm no note is duplicated or overwritten.
+
+## Mod support
+
+Model, phases and acceptance criteria live in `docs/MOD_SUPPORT.md`.
+
+- The first game is not chosen. The Witcher 3 is the cheapest target: mods are
+  folders named `mod*` under `mods/`, no loader is needed, and `mods.settings`
+  in `Documents\The Witcher 3` sets order. Cyberpunk 2077 follows; its REDmod
+  archives need REDlauncher deployment, so only `archive/pc/mod` drops in.
+- Phase 1 is unstarted: no `src-tauri/src/mods/` engine and no Mods panel.
+- A deployed mod has to survive a store verify. The Manage check/verify and the
+  update path rewrite modified files today, so `undeploy` and `deploy` must wrap
+  them before the first mod ships.
