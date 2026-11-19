@@ -300,11 +300,10 @@ stays on the client. Open work:
 
 Model, phases and acceptance criteria live in `docs/MOD_SUPPORT.md`.
 
-- The first game is not chosen. The Witcher 3 is the cheapest target: mods are
-  folders named `mod*` under `mods/`, no loader is needed, and `mods.settings`
-  in `Documents\The Witcher 3` sets order. Cyberpunk 2077 follows; its REDmod
-  archives need REDlauncher deployment, so only `archive/pc/mod` drops in.
-- Phase 1 is unstarted: no `src-tauri/src/mods/` engine and no Mods panel.
-- A deployed mod has to survive a store verify. The Manage check/verify and the
-  update path rewrite modified files today, so `undeploy` and `deploy` must wrap
-  them before the first mod ships.
+- Phase 1 is unstarted: `src/core/mod-sources.ts` does not exist, and the game
+  page's link card still hardcodes three search URLs in
+  `src/features/drawer/drawer-view.ts` (`renderGameLinks`).
+- The source table has no rows yet. Steam Workshop is the only source that
+  resolves exactly without one, because the app id is already in the summary.
+- The card is Epic-only today; the Steam game page and custom games have no
+  equivalent, which is phase 2.
