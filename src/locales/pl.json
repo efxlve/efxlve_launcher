@@ -48,6 +48,7 @@
   "palette.open": "Szukaj gier i poleceń (Ctrl+K)",
   "palette.placeholder": "Szukaj gier, stron i akcji",
   "palette.games": "Gry",
+  "palette.installedGames": "Zainstalowane gry",
   "palette.recentSearches": "Ostatnie wyszukiwania",
   "palette.commands": "Polecenia",
   "palette.empty": "Brak wyników",

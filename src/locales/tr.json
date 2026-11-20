@@ -48,6 +48,7 @@
   "palette.open": "Oyun ve komut ara (Ctrl+K)",
   "palette.placeholder": "Oyun, sayfa veya eylem ara",
   "palette.games": "Oyunlar",
+  "palette.installedGames": "Yüklü oyunlar",
   "palette.recentSearches": "Son aramalar",
   "palette.commands": "Komutlar",
   "palette.empty": "Sonuç yok",

@@ -48,6 +48,7 @@
   "palette.open": "गेम और कमांड खोजें (Ctrl+K)",
   "palette.placeholder": "गेम, पेज और क्रियाएं खोजें",
   "palette.games": "गेम",
+  "palette.installedGames": "इंस्टॉल किए गए गेम",
   "palette.recentSearches": "हाल की खोजें",
   "palette.commands": "कमांड",
   "palette.empty": "कोई परिणाम नहीं",

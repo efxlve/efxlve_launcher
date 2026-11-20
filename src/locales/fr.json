@@ -48,6 +48,7 @@
   "palette.open": "Rechercher des jeux et des commandes (Ctrl+K)",
   "palette.placeholder": "Rechercher des jeux, des pages et des actions",
   "palette.games": "Jeux",
+  "palette.installedGames": "Jeux installés",
   "palette.recentSearches": "Recherches récentes",
   "palette.commands": "Commandes",
   "palette.empty": "Aucun résultat",

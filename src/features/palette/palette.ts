@@ -215,7 +215,7 @@ function renderResults(query: string): void {
 
   list.innerHTML =
     (history.length ? `<div class="palette-group">${t("palette.recentSearches")}</div>${history.join("")}` : "") +
-    (games.length ? `<div class="palette-group">${t("palette.games")}</div>${games.join("")}` : "") +
+    (games.length ? `<div class="palette-group">${q ? t("palette.games") : t("palette.installedGames")}</div>${games.join("")}` : "") +
     (releases.length ? `<div class="palette-group">${t("calendar.title")}</div>${releases.join("")}` : "") +
     (cmds.length ? `<div class="palette-group">${t("palette.commands")}</div>${cmds.join("")}` : "") +
     (!history.length && !games.length && !releases.length && !cmds.length ? emptyState("search", t("palette.empty")) : "");

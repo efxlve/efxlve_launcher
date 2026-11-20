@@ -48,6 +48,7 @@
   "palette.open": "ゲームとコマンドを検索 (Ctrl+K)",
   "palette.placeholder": "ゲーム、ページ、操作を検索",
   "palette.games": "ゲーム",
+  "palette.installedGames": "インストール済みゲーム",
   "palette.recentSearches": "最近の検索",
   "palette.commands": "コマンド",
   "palette.empty": "結果なし",

@@ -48,6 +48,7 @@
   "palette.open": "Поиск игр и команд (Ctrl+K)",
   "palette.placeholder": "Поиск игр, страниц и действий",
   "palette.games": "Игры",
+  "palette.installedGames": "Установленные игры",
   "palette.recentSearches": "Недавние запросы",
   "palette.commands": "Команды",
   "palette.empty": "Ничего не найдено",
