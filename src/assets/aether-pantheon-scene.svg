@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+  <!-- Aether Pantheon: mythological archetype light backdrop with warm alabaster
+       marble wash, celestial bronze solar astrolabe and classical arch geometry. -->
+  <defs>
+    <linearGradient id="apMarble" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbf8f1"/>
+      <stop offset="50%" stop-color="#f7f3eb"/>
+      <stop offset="100%" stop-color="#efe8da"/>
+    </linearGradient>
+
+    <radialGradient id="apSunAura" cx="74%" cy="28%" r="48%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.22"/>
+      <stop offset="40%" stop-color="#d97706" stop-opacity="0.09"/>
+      <stop offset="75%" stop-color="#9a3412" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#f7f3eb" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="apTerracottaWash" cx="18%" cy="82%" r="45%">
+      <stop offset="0%" stop-color="#9a3412" stop-opacity="0.12"/>
+      <stop offset="55%" stop-color="#b45309" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#f7f3eb" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="apBronzeGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#b45309" stop-opacity="0.42"/>
+      <stop offset="50%" stop-color="#9a3412" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#78350f" stop-opacity="0.1"/>
+    </linearGradient>
+
+    <pattern id="apMosaic" width="56" height="56" patternUnits="userSpaceOnUse">
+      <path d="M 56 0 L 0 0 0 56" fill="none" stroke="#9a3412" stroke-width="0.6" stroke-opacity="0.05"/>
+    </pattern>
+  </defs>
+
+  <!-- Alabaster Travertine Base -->
+  <rect width="1920" height="1080" fill="url(#apMarble)"/>
+  <rect width="1920" height="1080" fill="url(#apMosaic)"/>
+  <rect width="1920" height="1080" fill="url(#apSunAura)"/>
+  <rect width="1920" height="1080" fill="url(#apTerracottaWash)"/>
+
+  <!-- Celestial Sun Astrolabe & Sacred Geometry (Top Right) -->
+  <g transform="translate(1420, 310)" fill="none" stroke="url(#apBronzeGold)">
+    <circle cx="0" cy="0" r="305" stroke-width="0.9" stroke-dasharray="4 10"/>
+    <circle cx="0" cy="0" r="250" stroke-width="1.2" stroke-dasharray="10 8"/>
+    <circle cx="0" cy="0" r="195" stroke-width="1.8"/>
+    <circle cx="0" cy="0" r="165" stroke-width="0.8" stroke-dasharray="6 6"/>
+    <circle cx="0" cy="0" r="135" stroke-width="1.2" stroke-dasharray="28 12"/>
+    <circle cx="0" cy="0" r="82" fill="#f59e0b" fill-opacity="0.12" stroke="#b45309" stroke-width="1.5" stroke-opacity="0.35"/>
+    <circle cx="0" cy="0" r="38" stroke="#9a3412" stroke-width="1.2" stroke-opacity="0.3"/>
+    <!-- Intersecting Celestial Orbits -->
+    <circle cx="-85" cy="-45" r="145" stroke-width="0.9"/>
+    <circle cx="85" cy="45" r="145" stroke-width="0.9"/>
+    <!-- Diamond Star Compass -->
+    <polygon points="0,-240 24,-24 240,0 24,24 0,240 -24,24 -240,0 -24,-24" stroke-width="1.1"/>
+    <polygon points="-155,-155 0,-32 155,-155 32,0 155,155 0,32 -155,155 -32,0" stroke-width="0.8" opacity="0.7"/>
+    <line x1="-340" y1="0" x2="340" y2="0" stroke-width="0.8"/>
+    <line x1="0" y1="-340" x2="0" y2="340" stroke-width="0.8"/>
+  </g>
+
+  <!-- Western Rotunda Rosette (Mid Left) -->
+  <g transform="translate(320, 460)" fill="none" stroke="url(#apBronzeGold)" opacity="0.75">
+    <circle cx="0" cy="0" r="150" stroke-width="1.2" stroke-dasharray="14 8"/>
+    <circle cx="0" cy="0" r="110" stroke-width="1"/>
+    <circle cx="0" cy="0" r="65" stroke-width="0.9" stroke-dasharray="4 6"/>
+    <polygon points="0,-110 95,55 -95,55" stroke-width="0.9"/>
+    <polygon points="0,110 95,-55 -95,-55" stroke-width="0.9"/>
+    <line x1="-175" y1="0" x2="175" y2="0" stroke-width="0.7"/>
+    <line x1="0" y1="-175" x2="0" y2="175" stroke-width="0.7"/>
+  </g>
+
+  <!-- Sweeping Meridian Ribbons -->
+  <g fill="none" stroke="url(#apBronzeGold)">
+    <path d="M-40,690 C380,530 790,750 1240,580 C1540,465 1760,520 1960,460" stroke-width="2"/>
+    <path d="M-40,740 C410,585 830,795 1280,630 C1580,520 1780,570 1960,515" stroke-width="1" stroke-dasharray="12 8"/>
+  </g>
+
+  <!-- Classical Colonnade & Sanctuary Arch Silhouettes (Bottom Horizon) -->
+  <g fill="#ebe3d3" stroke="rgba(154, 52, 18, 0.16)" stroke-width="1.2">
+    <path d="M0,885 L1920,885 L1920,1080 L0,1080 Z"/>
+    <!-- Fluted Sanctuary Archway Group -->
+    <path d="M1080,885 L1080,670 Q1145,595 1210,670 L1210,885 L1188,885 L1188,682 Q1145,630 1102,682 L1102,885 Z"/>
+    <path d="M1240,885 L1240,695 Q1295,630 1350,695 L1350,885 L1330,885 L1330,706 Q1295,660 1260,706 L1260,885 Z"/>
+    <!-- Classical Pediment Triangle -->
+    <polygon points="1055,650 1215,565 1375,650 1350,650 1215,582 1080,650"/>
+  </g>
+
+  <!-- Warm Travertine Horizon Steps -->
+  <path d="M0,935 C340,905 680,955 1040,925 C1400,895 1680,940 1920,920 L1920,1080 L0,1080 Z" fill="#e4dac6" opacity="0.85"/>
+</svg>

@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+  <!-- Ashen Citadel: dark fantasy archetype backdrop with an eclipsed solar ring,
+       monolithic citadel spires, iron astrolabe filigree and drifting ember ash. -->
+  <defs>
+    <linearGradient id="acSky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#060506"/>
+      <stop offset="50%" stop-color="#0b090a"/>
+      <stop offset="82%" stop-color="#171110"/>
+      <stop offset="100%" stop-color="#090708"/>
+    </linearGradient>
+
+    <radialGradient id="acEclipseGlow" cx="72%" cy="32%" r="42%">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.34"/>
+      <stop offset="28%" stop-color="#f59e0b" stop-opacity="0.16"/>
+      <stop offset="60%" stop-color="#b45309" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#0b090a" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="acHearthGlow" cx="22%" cy="82%" r="38%">
+      <stop offset="0%" stop-color="#f97316" stop-opacity="0.22"/>
+      <stop offset="45%" stop-color="#d97706" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#0b090a" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="acGoldStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde68a" stop-opacity="0.65"/>
+      <stop offset="50%" stop-color="#f59e0b" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#78350f" stop-opacity="0.08"/>
+    </linearGradient>
+
+    <linearGradient id="acAshFog" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1c1512" stop-opacity="0"/>
+      <stop offset="60%" stop-color="#291d16" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#080607" stop-opacity="0.95"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Base Obsidian Sky -->
+  <rect width="1920" height="1080" fill="url(#acSky)"/>
+  <rect width="1920" height="1080" fill="url(#acEclipseGlow)"/>
+  <rect width="1920" height="1080" fill="url(#acHearthGlow)"/>
+
+  <!-- Eclipsed Solar Crown & Sacred Geometry -->
+  <g transform="translate(1380, 345)">
+    <circle cx="0" cy="0" r="285" fill="none" stroke="url(#acGoldStroke)" stroke-width="0.8" stroke-dasharray="16 10" opacity="0.35"/>
+    <circle cx="0" cy="0" r="240" fill="none" stroke="url(#acGoldStroke)" stroke-width="1" stroke-dasharray="4 10" opacity="0.45"/>
+    <circle cx="0" cy="0" r="175" fill="none" stroke="url(#acGoldStroke)" stroke-width="1.5" opacity="0.55"/>
+    <circle cx="0" cy="0" r="122" fill="none" stroke="#fde68a" stroke-width="3.5" opacity="0.75"/>
+    <circle cx="0" cy="0" r="118" fill="#080607"/>
+    <!-- Intersecting Astrolabe Arcs -->
+    <circle cx="-70" cy="-40" r="150" fill="none" stroke="url(#acGoldStroke)" stroke-width="1" opacity="0.35"/>
+    <circle cx="70" cy="40" r="150" fill="none" stroke="url(#acGoldStroke)" stroke-width="1" opacity="0.35"/>
+    <polygon points="0,-210 18,-18 210,0 18,18 0,210 -18,18 -210,0 -18,-18" fill="none" stroke="url(#acGoldStroke)" stroke-width="0.9" opacity="0.4"/>
+    <!-- Corona Rays -->
+    <line x1="-320" y1="0" x2="-130" y2="0" stroke="url(#acGoldStroke)" stroke-width="1.5"/>
+    <line x1="130" y1="0" x2="320" y2="0" stroke="url(#acGoldStroke)" stroke-width="1.5"/>
+    <line x1="0" y1="-320" x2="0" y2="-130" stroke="url(#acGoldStroke)" stroke-width="1.5"/>
+    <line x1="0" y1="130" x2="0" y2="320" stroke="url(#acGoldStroke)" stroke-width="1.5"/>
+    <line x1="-210" y1="-210" x2="-95" y2="-95" stroke="url(#acGoldStroke)" stroke-width="1"/>
+    <line x1="95" y1="95" x2="210" y2="210" stroke="url(#acGoldStroke)" stroke-width="1"/>
+    <line x1="210" y1="-210" x2="95" y2="-95" stroke="url(#acGoldStroke)" stroke-width="1"/>
+    <line x1="-95" y1="95" x2="-210" y2="210" stroke="url(#acGoldStroke)" stroke-width="1"/>
+  </g>
+
+  <!-- Western Sanctuary Ruin Filigree (Left Midground) -->
+  <g transform="translate(310, 480)" opacity="0.2" fill="none" stroke="url(#acGoldStroke)">
+    <circle cx="0" cy="0" r="145" stroke-width="1.2" stroke-dasharray="10 8"/>
+    <circle cx="0" cy="0" r="98" stroke-width="0.9"/>
+    <path d="M-98,0 Q0,-140 98,0 Q0,140 -98,0 Z" stroke-width="1"/>
+    <line x1="-170" y1="0" x2="170" y2="0" stroke-width="0.8"/>
+    <line x1="0" y1="-170" x2="0" y2="170" stroke-width="0.8"/>
+  </g>
+
+  <!-- Distant Jagged Crags -->
+  <path d="M0,760 L140,680 L290,740 L480,620 L670,730 L890,640 L1110,745 L1340,610 L1560,725 L1750,650 L1920,710 L1920,1080 L0,1080 Z" fill="#110d0e" opacity="0.9"/>
+
+  <!-- Monolithic Citadel Silhouette -->
+  <g fill="#0c090a" stroke="rgba(245, 158, 11, 0.14)" stroke-width="1">
+    <!-- Central Keep Spire -->
+    <polygon points="1290,740 1335,380 1380,230 1425,380 1470,740"/>
+    <!-- Flanking Buttress Towers -->
+    <polygon points="1180,750 1210,470 1235,390 1260,470 1285,750"/>
+    <polygon points="1475,750 1500,450 1525,370 1550,450 1580,750"/>
+    <!-- Viaduct Bridge Arches -->
+    <path d="M780,740 L1190,740 L1190,820 L1140,820 L1140,775 Q1090,745 1040,775 L1040,820 L990,820 L990,775 Q940,745 890,775 L890,820 L780,820 Z"/>
+    <!-- Tall Lancet Windows (Glowing Amber) -->
+    <rect x="1374" y="420" width="12" height="65" rx="6" fill="#f59e0b" opacity="0.55"/>
+    <rect x="1229" y="510" width="8" height="45" rx="4" fill="#f59e0b" opacity="0.4"/>
+    <rect x="1521" y="495" width="8" height="45" rx="4" fill="#f59e0b" opacity="0.4"/>
+  </g>
+
+  <!-- Foreground Ruined Rampart -->
+  <path d="M0,840 C190,825 360,855 560,835 C780,815 1020,865 1290,840 C1540,815 1740,845 1920,830 L1920,1080 L0,1080 Z" fill="#090708"/>
+
+  <!-- Drifting Cinder & Ash Particles -->
+  <g fill="#fbbf24">
+    <circle cx="180" cy="890" r="2.2" opacity="0.7"/>
+    <circle cx="260" cy="810" r="1.6" opacity="0.55"/>
+    <circle cx="340" cy="730" r="2.5" opacity="0.65"/>
+    <circle cx="430" cy="850" r="1.4" opacity="0.5"/>
+    <circle cx="520" cy="690" r="1.9" opacity="0.6"/>
+    <circle cx="680" cy="780" r="1.5" opacity="0.45"/>
+    <circle cx="840" cy="640" r="2.1" opacity="0.55"/>
+    <circle cx="1010" cy="710" r="1.7" opacity="0.5"/>
+    <circle cx="1160" cy="590" r="2.3" opacity="0.65"/>
+    <circle cx="1440" cy="540" r="1.8" opacity="0.6"/>
+    <circle cx="1630" cy="670" r="2.1" opacity="0.5"/>
+    <circle cx="1790" cy="580" r="1.5" opacity="0.45"/>
+  </g>
+
+  <!-- Ground Ash Fog -->
+  <rect x="0" y="760" width="1920" height="320" fill="url(#acAshFog)"/>
+</svg>

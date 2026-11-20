@@ -178,6 +178,13 @@ describe("theme registry", () => {
       }
     }
   });
+
+  it("ships fifty built-in themes after the catalog loads", async () => {
+    await ensureThemeCatalog();
+    const builtins = themes().filter((theme) => !theme.custom);
+    expect(builtins).toHaveLength(50);
+    expect(new Set(builtins.map((theme) => theme.id)).size).toBe(50);
+  });
 });
 
 describe("custom theme transfer", () => {
@@ -482,7 +489,8 @@ describe("theme packs", () => {
 });
 
 describe("theme contrast", () => {
-  it("keeps primary text readable on every built-in theme", () => {
+  it("keeps primary text readable on every built-in theme", async () => {
+    await ensureThemeCatalog();
     const failures: string[] = [];
     for (const theme of themes()) {
       const tokens = theme.tokens;

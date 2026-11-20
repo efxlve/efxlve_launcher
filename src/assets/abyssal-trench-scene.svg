@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+  <!-- Abyssal Trench: underwater research laboratory backdrop with bathysphere
+       sonar rings, caustic light shafts, deep trench ridges and bioluminescence. -->
+  <defs>
+    <linearGradient id="atDepth" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#051822"/>
+      <stop offset="45%" stop-color="#041016"/>
+      <stop offset="85%" stop-color="#030b10"/>
+      <stop offset="100%" stop-color="#02070a"/>
+    </linearGradient>
+
+    <radialGradient id="atBioGlow" cx="62%" cy="48%" r="52%">
+      <stop offset="0%" stop-color="#2dd4bf" stop-opacity="0.22"/>
+      <stop offset="38%" stop-color="#0d9488" stop-opacity="0.09"/>
+      <stop offset="72%" stop-color="#0284c7" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#041016" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="atCaustic" x1="30%" y1="0%" x2="70%" y2="100%">
+      <stop offset="0%" stop-color="#5eead4" stop-opacity="0.16"/>
+      <stop offset="45%" stop-color="#2dd4bf" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#041016" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="atCurrent" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#2dd4bf" stop-opacity="0"/>
+      <stop offset="35%" stop-color="#2dd4bf" stop-opacity="0.28"/>
+      <stop offset="68%" stop-color="#38bdf8" stop-opacity="0.24"/>
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+    </linearGradient>
+
+    <pattern id="atSonarGrid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <circle cx="24" cy="24" r="1" fill="#2dd4bf" fill-opacity="0.08"/>
+    </pattern>
+  </defs>
+
+  <!-- Hadal Water Column Base -->
+  <rect width="1920" height="1080" fill="url(#atDepth)"/>
+  <rect width="1920" height="1080" fill="url(#atSonarGrid)"/>
+  <rect width="1920" height="1080" fill="url(#atBioGlow)"/>
+
+  <!-- Descending Caustic Light Rays -->
+  <g opacity="0.75">
+    <polygon points="240,0 420,0 680,780 390,780" fill="url(#atCaustic)"/>
+    <polygon points="620,0 850,0 1160,860 830,860" fill="url(#atCaustic)"/>
+    <polygon points="1120,0 1320,0 1620,760 1340,760" fill="url(#atCaustic)"/>
+  </g>
+
+  <!-- Bathysphere Acoustic Sonar Rings -->
+  <g transform="translate(1390, 440)" fill="none" stroke="#2dd4bf" opacity="0.22">
+    <circle cx="0" cy="0" r="320" stroke-width="0.8" stroke-dasharray="4 10"/>
+    <circle cx="0" cy="0" r="260" stroke-width="1" stroke-dasharray="8 12"/>
+    <circle cx="0" cy="0" r="190" stroke-width="1.2" stroke-dasharray="32 14"/>
+    <circle cx="0" cy="0" r="120" stroke-width="1"/>
+    <circle cx="0" cy="0" r="85" stroke="#38bdf8" stroke-width="0.9" stroke-dasharray="14 8"/>
+    <circle cx="0" cy="0" r="55" stroke="#5eead4" stroke-width="1.5" stroke-dasharray="6 6"/>
+    <circle cx="0" cy="0" r="24" stroke="#5eead4" stroke-width="1"/>
+    <circle cx="0" cy="0" r="6" fill="#5eead4"/>
+    <line x1="-340" y1="0" x2="340" y2="0" stroke-width="0.7" opacity="0.5"/>
+    <line x1="0" y1="-340" x2="0" y2="340" stroke-width="0.7" opacity="0.5"/>
+    <line x1="-220" y1="-220" x2="220" y2="220" stroke-width="0.5" opacity="0.35"/>
+    <line x1="220" y1="-220" x2="-220" y2="220" stroke-width="0.5" opacity="0.35"/>
+  </g>
+
+  <!-- Bathymetric Depth Gauge & Pressure Scale (Left Edge) -->
+  <g transform="translate(110, 220)" fill="none" stroke="#2dd4bf" opacity="0.2">
+    <line x1="0" y1="0" x2="0" y2="520" stroke-width="1.5"/>
+    <line x1="0" y1="0" x2="28" y2="0" stroke-width="1.5"/>
+    <line x1="0" y1="65" x2="16" y2="65" stroke-width="1"/>
+    <line x1="0" y1="130" x2="28" y2="130" stroke-width="1.5"/>
+    <line x1="0" y1="195" x2="16" y2="195" stroke-width="1"/>
+    <line x1="0" y1="260" x2="28" y2="260" stroke-width="1.5"/>
+    <line x1="0" y1="325" x2="16" y2="325" stroke-width="1"/>
+    <line x1="0" y1="390" x2="28" y2="390" stroke-width="1.5"/>
+    <line x1="0" y1="455" x2="16" y2="455" stroke-width="1"/>
+    <line x1="0" y1="520" x2="28" y2="520" stroke-width="1.5"/>
+    <circle cx="85" cy="260" r="42" stroke="#38bdf8" stroke-width="1" stroke-dasharray="8 6"/>
+    <circle cx="85" cy="260" r="18" stroke="#5eead4" stroke-width="1"/>
+  </g>
+
+  <!-- Bioluminescent Deep-Sea Current Streams -->
+  <g fill="none" stroke="url(#atCurrent)" stroke-linecap="round">
+    <path d="M-40,560 C310,470 640,650 1020,540 C1400,430 1660,570 1960,490" stroke-width="2.5"/>
+    <path d="M-40,640 C360,540 710,720 1110,610 C1490,505 1710,630 1960,565" stroke-width="1.5" stroke-dasharray="10 8"/>
+    <path d="M80,460 C440,380 790,520 1180,420 C1520,335 1760,440 1960,385" stroke-width="1.2" opacity="0.7"/>
+  </g>
+
+  <!-- Subterranean Trench Seamounts & Hydrothermal Vents -->
+  <path d="M0,785 L190,715 L380,775 L610,660 L840,765 L1110,685 L1360,770 L1610,650 L1810,735 L1920,695 L1920,1080 L0,1080 Z" fill="#06161f" opacity="0.92"/>
+  <path d="M0,860 C230,825 470,885 740,845 C1010,805 1280,875 1560,835 C1720,812 1835,840 1920,825 L1920,1080 L0,1080 Z" fill="#030d13"/>
+
+  <!-- Floating Bioluminescent Plankton Spores -->
+  <g fill="#5eead4">
+    <circle cx="210" cy="610" r="2.2" opacity="0.65"/>
+    <circle cx="340" cy="520" r="1.5" opacity="0.5"/>
+    <circle cx="495" cy="680" r="2.8" opacity="0.7"/>
+    <circle cx="670" cy="490" r="1.8" opacity="0.55"/>
+    <circle cx="845" cy="585" r="2.4" opacity="0.65"/>
+    <circle cx="1040" cy="470" r="1.6" opacity="0.5"/>
+    <circle cx="1215" cy="630" r="2.6" opacity="0.7"/>
+    <circle cx="1510" cy="590" r="2" opacity="0.6"/>
+    <circle cx="1690" cy="480" r="1.7" opacity="0.5"/>
+  </g>
+</svg>
