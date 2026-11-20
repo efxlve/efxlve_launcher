@@ -51,4 +51,12 @@ describe("command palette title matching", () => {
     expect(scores("Tom Clancy's Rainbow Six Siege", "tell me why")).toBe(0);
     expect(scores("Tell Me Why", "tell me why")).toBe(6000);
   });
+
+  it("handles titles that collide with object prototype names", () => {
+    expect(() => scores("Constructor", "grand theft")).not.toThrow();
+    expect(scores("Constructor", "constructor")).toBe(6000);
+    expect(scores("Constructor Plus", "constructor")).toBe(5000);
+    expect(() => scores("toString", "to string")).not.toThrow();
+    expect(scores("toString", "to string")).toBeGreaterThan(0);
+  });
 });

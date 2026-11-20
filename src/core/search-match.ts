@@ -59,6 +59,11 @@ const ALIASES: Record<string, string> = {
 const ALIAS_KEYS = Object.keys(ALIASES).sort((a, b) => b.length - a.length);
 const NUMERIC = /^\d+$/;
 
+/** Own-property lookup: "constructor", "toString" and "__proto__" are titles too. */
+function romanValue(word: string): string | undefined {
+  return Object.hasOwn(ROMAN, word) ? ROMAN[word] : undefined;
+}
+
 function expandSearchWords(raw: string[]): string[] {
   if (raw.length === 0) return raw;
   const first = raw[0];
@@ -66,7 +71,7 @@ function expandSearchWords(raw: string[]): string[] {
     if (!first.startsWith(alias)) continue;
     const rest = first.slice(alias.length);
     // "gta6", "rdr2", "gtav" expand; "code" and "account" do not.
-    if (first !== alias && !NUMERIC.test(rest) && !(rest in ROMAN)) continue;
+    if (first !== alias && !NUMERIC.test(rest) && !Object.hasOwn(ROMAN, rest)) continue;
     return [...ALIASES[alias].split(" "), ...(rest ? [rest] : []), ...raw.slice(1)];
   }
   return raw;
@@ -87,14 +92,14 @@ function words(value: string): string[] {
 
 export function prepareSearchText(value: string): SearchText {
   const raw = expandSearchWords(words(value));
-  const digits = raw.map((word) => ROMAN[word] ?? word);
+  const digits = raw.map((word) => romanValue(word) ?? word);
   return {
     raw,
     digits,
     rawNorm: raw.join(" "),
     digitNorm: digits.join(" "),
     initial: raw.map((word) => word[0]).join(""),
-    numeric: raw.map((word) => ROMAN[word] ?? word[0]).join(""),
+    numeric: raw.map((word) => romanValue(word) ?? word[0]).join(""),
   };
 }
 
@@ -127,11 +132,11 @@ export function scorePreparedSearch(title: SearchText, query: SearchText): numbe
     const titleFirst = title.raw[0] ?? "";
     const rest = titleFirst.slice(queryInitial.length);
     const exact = titleFirst === queryInitial;
-    const numbered = rest.length > 0 && (NUMERIC.test(rest) || rest in ROMAN);
+    const numbered = rest.length > 0 && (NUMERIC.test(rest) || Object.hasOwn(ROMAN, rest));
     if (exact || (queryInitial.length >= 3 && numbered)) return 3200;
     if (title.initial.startsWith(queryInitial)) {
       const initialRest = title.initial.slice(queryInitial.length);
-      if (!initialRest || NUMERIC.test(initialRest) || initialRest in ROMAN) return 3100;
+      if (!initialRest || NUMERIC.test(initialRest) || Object.hasOwn(ROMAN, initialRest)) return 3100;
     }
   }
 
