@@ -7,7 +7,7 @@
  * after MAX_GAMES hits, which stays well under a millisecond for 500+ games.
  */
 
-import { allStoreSummaries, canonicalGameTitle, rawOf, sharedOwnerOf, summaryOf } from "../../core/selectors";
+import { allStoreSummaries, canonicalGameTitle, isCompanionKey, rawOf, sharedOwnerOf, summaryOf } from "../../core/selectors";
 import { LIBRARY_DATA_EVENT } from "../../core/constants";
 import { S } from "../../core/state";
 import { readPaletteHistory, rememberPaletteSearch } from "../../core/palette-history";
@@ -118,15 +118,30 @@ function gameItem(appName: string, title: string, installed: boolean, idx: numbe
   const shared = sharedOwnerOf(appName);
   const steam = appName.startsWith("steam::");
   const cover = S.customCovers[appName] || (raw ? epicPortrait(raw) : null) || shared?.cover || summaryOf(appName)?.cover || null;
-  const action = shared
-    ? `<button class="btn ghost small" data-act="shared-switch" data-id="${esc(shared.ownerKey)}" tabindex="-1" title="${t("shared.detailNote", { name: esc(shared.ownerName) })}">${t("shared.switch")}</button>`
-    : steam
-      ? installed
-        ? `<button class="btn play small" data-act="steam-action" data-id="${esc(appName.slice(7))}" data-mode="launch" tabindex="-1">${t("palette.play")}</button>`
-        : `<button class="btn install small" data-act="steam-action" data-id="${esc(appName.slice(7))}" data-mode="install" tabindex="-1">${t("common.install")}</button>`
-      : installed
-        ? `<button class="btn play small" data-act="epic-play" data-id="${esc(appName)}" tabindex="-1">${t("palette.play")}</button>`
-        : "";
+  let action = "";
+  if (shared) {
+    action = `<button class="btn ghost small" data-act="shared-switch" data-id="${esc(shared.ownerKey)}" tabindex="-1" title="${t("shared.detailNote", { name: esc(shared.ownerName) })}">${t("shared.switch")}</button>`;
+  } else if (steam) {
+    action = installed
+      ? `<button class="btn play small" data-act="steam-action" data-id="${esc(appName.slice(7))}" data-mode="launch" tabindex="-1">${t("palette.play")}</button>`
+      : `<button class="btn install small" data-act="steam-action" data-id="${esc(appName.slice(7))}" data-mode="install" tabindex="-1">${t("common.install")}</button>`;
+  } else if (installed) {
+    action = `<button class="btn play small" data-act="epic-play" data-id="${esc(appName)}" tabindex="-1">${t("palette.play")}</button>`;
+  } else if (appName.startsWith("amazon::")) {
+    action = `<button class="btn install small" data-act="amazon-install" data-id="${esc(appName.slice(8))}" tabindex="-1">${t("common.install")}</button>`;
+  } else if (appName.startsWith("custom::")) {
+    // A custom game has no store installer; the game page owns setting its exe.
+    action = "";
+  } else if (isCompanionKey(appName)) {
+    const store = appName.slice(0, appName.indexOf("::"));
+    action =
+      store === "ubisoft"
+        ? `<button class="btn install small" data-act="epic-install" data-id="${esc(appName)}" tabindex="-1">${t("common.install")}</button>`
+        : `<button class="btn install small" data-act="companion-install" data-id="${esc(appName)}" data-store="${esc(store)}" tabindex="-1">${t("common.install")}</button>`;
+  } else {
+    // Epic, GOG and other direct stores all open the standard install dialog.
+    action = `<button class="btn install small" data-act="epic-install" data-id="${esc(appName)}" tabindex="-1">${t("common.install")}</button>`;
+  }
   return `
     <div class="palette-item" data-idx="${idx}" data-act="epic-detail" data-id="${esc(appName)}" data-palette-game="${esc(appName)}" data-palette-title="${esc(title)}" data-palette-installed="${installed ? "1" : "0"}" role="option">
       ${cover ? `<img class="palette-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="palette-thumb"></span>`}
