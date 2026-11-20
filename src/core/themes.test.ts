@@ -139,10 +139,12 @@ describe("theme registry", () => {
       accent: "#f97316",
       light: false,
       radius: "round",
+      tokens: { "--accent-hover": "#111111" },
     });
     expect(theme.scheme).toBe("dark");
     expect(theme.tokens?.["--bg"]).toBe("#101014");
     expect(theme.tokens?.["--r-lg"]).toBe("20px");
+    expect(theme.tokens?.["--accent-hover"]).toBe("#111111");
     expect(theme.tags).toBeUndefined();
   });
 

@@ -26,7 +26,10 @@ export function defineTheme(recipe: ThemeRecipe): ThemeDef {
     surface: input.surface,
     accent: input.accent,
     scheme: input.light ? "light" : "dark",
-    tokens: customTokens({ ...input, name: name ?? id }),
+    tokens: {
+      ...customTokens({ ...input, name: name ?? id }),
+      ...(input.tokens ?? {}),
+    },
     scene: input.scene,
     sceneBlur: input.sceneBlur,
     sceneOpacity: input.sceneOpacity,
