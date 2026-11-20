@@ -3099,6 +3099,8 @@
   "settings.themeAdd": "Yeni tema",
   "settings.themeDesc": "Bir palet seç ya da arka plan ve vurgu renginden kendininkini oluştur.",
   "settings.themeSearchPlaceholder": "Tema ara",
+  "settings.themeFavorite": "Favorilere ekle",
+  "settings.themeUnfavorite": "Favorilerden çıkar",
   "settings.themeCategoryCyberpunk": "Cyberpunk",
   "settings.themeCategoryGame": "Oyunlar",
   "settings.themeCategoryPastel": "Pastel",

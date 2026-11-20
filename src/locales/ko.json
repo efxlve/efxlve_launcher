@@ -3099,6 +3099,8 @@
   "settings.themeAdd": "새 테마",
   "settings.themeDesc": "팔레트를 선택하거나 배경 및 강조 색상으로 직접 만드세요.",
   "settings.themeSearchPlaceholder": "테마 검색",
+  "settings.themeFavorite": "즐겨찾기에 추가",
+  "settings.themeUnfavorite": "즐겨찾기에서 제거",
   "settings.themeCategoryCyberpunk": "사이버펑크",
   "settings.themeCategoryGame": "게임",
   "settings.themeCategoryPastel": "파스텔",

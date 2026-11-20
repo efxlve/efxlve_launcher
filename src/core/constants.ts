@@ -172,6 +172,8 @@ export function normalizeCaseGloss(raw: string | null | undefined): CaseGloss {
 export const CASE_COLOR_MODE_KEY = "efxlve-case-color-mode";
 /** Case Covers: Custom store colors mapping JSON string. */
 export const CASE_STORE_COLORS_KEY = "efxlve-case-store-colors";
+/** Theme gallery: saved star/favourite ids. */
+export const THEME_FAVORITES_KEY = "efxlve-theme-favorites";
 export type CaseColorMode = "store" | "monochrome" | "accent";
 export function normalizeCaseColorMode(raw: string | null | undefined): CaseColorMode {
   return raw === "monochrome" || raw === "accent" ? raw : "store";

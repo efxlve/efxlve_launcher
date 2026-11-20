@@ -3099,6 +3099,8 @@
   "settings.themeAdd": "Новая тема",
   "settings.themeDesc": "Выберите готовую палитру или создайте свою, настроив цвет фона и акцента.",
   "settings.themeSearchPlaceholder": "Поиск тем",
+  "settings.themeFavorite": "Добавить в избранное",
+  "settings.themeUnfavorite": "Убрать из избранного",
   "settings.themeCategoryCyberpunk": "Киберпанк",
   "settings.themeCategoryGame": "Игры",
   "settings.themeCategoryPastel": "Пастель",

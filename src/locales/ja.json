@@ -3099,6 +3099,8 @@
   "settings.themeAdd": "新規テーマ",
   "settings.themeDesc": "パレットを選択するか、背景とアクセントカラーから独自に作成します。",
   "settings.themeSearchPlaceholder": "テーマを検索",
+  "settings.themeFavorite": "お気に入りに追加",
+  "settings.themeUnfavorite": "お気に入りから削除",
   "settings.themeCategoryCyberpunk": "サイバーパンク",
   "settings.themeCategoryGame": "ゲーム",
   "settings.themeCategoryPastel": "パステル",

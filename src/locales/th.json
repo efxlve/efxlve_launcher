@@ -3099,6 +3099,8 @@
   "settings.themeAdd": "ธีมใหม่",
   "settings.themeDesc": "เลือกชุดสี หรือสร้างชุดสีของคุณเองจากพื้นหลังและสีเด่น",
   "settings.themeSearchPlaceholder": "ค้นหาธีม",
+  "settings.themeFavorite": "เพิ่มในรายการโปรด",
+  "settings.themeUnfavorite": "นำออกจากรายการโปรด",
   "settings.themeCategoryCyberpunk": "ไซเบอร์พังก์",
   "settings.themeCategoryGame": "เกม",
   "settings.themeCategoryPastel": "พาสเทล",

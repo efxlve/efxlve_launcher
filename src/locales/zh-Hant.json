@@ -3099,6 +3099,8 @@
   "settings.themeAdd": "建立新主題",
   "settings.themeDesc": "挑選調色盤，或自選背景色與強調色打造專屬主題。",
   "settings.themeSearchPlaceholder": "搜尋主題",
+  "settings.themeFavorite": "加入收藏",
+  "settings.themeUnfavorite": "從收藏移除",
   "settings.themeCategoryCyberpunk": "賽博龐克",
   "settings.themeCategoryGame": "遊戲",
   "settings.themeCategoryPastel": "粉彩",

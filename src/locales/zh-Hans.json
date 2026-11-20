@@ -3099,6 +3099,8 @@
   "settings.themeAdd": "新建主题",
   "settings.themeDesc": "挑选调色板，或通过背景色与强调色打造专属主题。",
   "settings.themeSearchPlaceholder": "搜索主题",
+  "settings.themeFavorite": "添加到收藏",
+  "settings.themeUnfavorite": "从收藏中移除",
   "settings.themeCategoryCyberpunk": "赛博朋克",
   "settings.themeCategoryGame": "游戏",
   "settings.themeCategoryPastel": "柔和",

@@ -3099,6 +3099,8 @@
   "settings.themeAdd": "New theme",
   "settings.themeDesc": "Pick a palette, or build your own from a background and an accent.",
   "settings.themeSearchPlaceholder": "Search themes",
+  "settings.themeFavorite": "Add to favorites",
+  "settings.themeUnfavorite": "Remove from favorites",
   "settings.themeCategoryCyberpunk": "Cyberpunk",
   "settings.themeCategoryGame": "Games",
   "settings.themeCategoryPastel": "Pastel",

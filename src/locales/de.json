@@ -3099,6 +3099,8 @@
   "settings.themeAdd": "Neues Design",
   "settings.themeDesc": "Wähle eine Farbpalette oder erstelle deine eigene aus Hintergrund und Akzent.",
   "settings.themeSearchPlaceholder": "Designs durchsuchen",
+  "settings.themeFavorite": "Zu Favoriten hinzufügen",
+  "settings.themeUnfavorite": "Aus Favoriten entfernen",
   "settings.themeCategoryCyberpunk": "Cyberpunk",
   "settings.themeCategoryGame": "Spiele",
   "settings.themeCategoryPastel": "Pastell",

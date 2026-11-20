@@ -35,11 +35,70 @@ import {
   type ThemeDef,
 } from "../../core/themes";
 import { t } from "../../i18n";
+import { THEME_FAVORITES_KEY } from "../../core/constants";
 
 type ThemeFilter = "all" | "dark" | "light" | "custom";
 let currentFilter: ThemeFilter = "all";
 let themeQuery = "";
 let themeSearchWired = false;
+
+let favoriteCache: Set<string> | null = null;
+
+function themeFavorites(): Set<string> {
+  if (favoriteCache) return favoriteCache;
+  favoriteCache = new Set();
+  try {
+    const parsed = JSON.parse(localStorage.getItem(THEME_FAVORITES_KEY) ?? "[]") as unknown;
+    if (Array.isArray(parsed)) {
+      for (const id of parsed) {
+        if (typeof id === "string" && id.length > 0) favoriteCache.add(id);
+      }
+    }
+  } catch {
+    /* private mode or a corrupt list: start without favourites */
+  }
+  return favoriteCache;
+}
+
+function persistThemeFavorites(favorites: Set<string>): void {
+  favoriteCache = favorites;
+  try {
+    localStorage.setItem(THEME_FAVORITES_KEY, JSON.stringify([...favorites]));
+  } catch {
+    /* private mode: the session still reorders the cards */
+  }
+}
+
+function toggleThemeFavorite(id: string): void {
+  if (!id) return;
+  const favorites = themeFavorites();
+  if (favorites.has(id)) favorites.delete(id);
+  else favorites.add(id);
+  persistThemeFavorites(favorites);
+
+  const card = [...document.querySelectorAll<HTMLElement>(".theme-card")].find(
+    (item) => item.dataset.surface === id,
+  );
+  const button = card?.querySelector<HTMLButtonElement>(".theme-favorite-btn") ?? null;
+  const active = favorites.has(id);
+  if (button) {
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+    const label = active ? t("settings.themeUnfavorite") : t("settings.themeFavorite");
+    button.title = label;
+    button.setAttribute("aria-label", label);
+  }
+
+  const grid = card?.parentElement;
+  if (!grid) return;
+  const cards = [...grid.querySelectorAll<HTMLElement>(".theme-card")];
+  cards.sort(
+    (a, b) =>
+      Number(favorites.has(b.dataset.surface ?? "")) -
+      Number(favorites.has(a.dataset.surface ?? "")),
+  );
+  cards.forEach((item) => grid.appendChild(item));
+}
 
 /** Filters the rendered cards in place, so typing never rebuilds the gallery. */
 function applyThemeSearch(query: string): void {
@@ -122,6 +181,11 @@ export function renderThemeSection(): string {
   } else if (currentFilter === "custom") {
     filtered = allThemes.filter((th) => Boolean(th.custom));
   }
+
+  const favorites = themeFavorites();
+  filtered = [...filtered].sort(
+    (a, b) => Number(favorites.has(b.id)) - Number(favorites.has(a.id)),
+  );
 
   const themeNames = allThemes
     .map((theme) => theme.name ?? (theme.labelKey ? t(theme.labelKey) : theme.id))
@@ -227,7 +291,9 @@ function wireThemeSelection(): void {
 /** Renders a single rich theme preview card with realistic UI elements. */
 function renderThemeCard(theme: ThemeDef): string {
   const isActive = S.surface === theme.id;
+  const isFavorite = themeFavorites().has(theme.id);
   const displayName = theme.name ?? (theme.labelKey ? t(theme.labelKey) : theme.id);
+  const favoriteLabel = isFavorite ? t("settings.themeUnfavorite") : t("settings.themeFavorite");
 
   const previewBg = theme.bg;
   const surface1 = theme.tokens?.["--surface-1"] ?? theme.surface ?? (theme.scheme === "light" ? "#ffffff" : "#181820");
@@ -301,6 +367,9 @@ function renderThemeCard(theme: ThemeDef): string {
           </div>
 
           <div class="theme-card-actions">
+            <button type="button" class="theme-action-btn theme-favorite-btn ${isFavorite ? "active" : ""}" data-act="theme-favorite" data-theme-id="${esc(theme.id)}" title="${esc(favoriteLabel)}" aria-label="${esc(favoriteLabel)}" aria-pressed="${isFavorite}">
+              ${icon("star", 12)}
+            </button>
             ${theme.custom ? `
               <button type="button" class="theme-action-btn" data-act="theme-edit" data-theme-id="${esc(theme.id)}" title="${esc(t("settings.themeEdit"))}">
                 ${icon("edit", 12)}
@@ -1255,6 +1324,12 @@ export function handleThemeSettingsAction(act: string | undefined, el: HTMLEleme
         currentFilter = filter;
         render();
       }
+      return true;
+    }
+
+    case "theme-favorite": {
+      const id = el.dataset.themeId;
+      if (id) toggleThemeFavorite(id);
       return true;
     }
 

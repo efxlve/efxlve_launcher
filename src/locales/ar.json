@@ -3099,6 +3099,8 @@
   "settings.themeAdd": "سمة جديدة",
   "settings.themeDesc": "اختر لوحة ألوان، أو أنشئ لوحتك الخاصة من خلفية ولون تمييز.",
   "settings.themeSearchPlaceholder": "بحث في السمات",
+  "settings.themeFavorite": "إضافة إلى المفضلة",
+  "settings.themeUnfavorite": "إزالة من المفضلة",
   "settings.themeCategoryCyberpunk": "سايبربانك",
   "settings.themeCategoryGame": "ألعاب",
   "settings.themeCategoryPastel": "باستيل",

@@ -111,6 +111,25 @@
 }
 .theme-search-input::placeholder { color: var(--text-3); }
 
+/* Theme input skins style every input. The gallery search is a boxed control,
+   so its inner field must stay flat inside that box in every theme. */
+.theme-search-box .theme-search-input {
+  width: 100%;
+  height: 100% !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--text) !important;
+  -webkit-text-fill-color: var(--text);
+}
+.theme-search-box .theme-search-input::placeholder {
+  color: var(--text-3) !important;
+  -webkit-text-fill-color: var(--text-3);
+}
+
 /* --- Theme Grid --- */
 .theme-grid,
 .theme-card-grid {
@@ -420,6 +439,13 @@
 .theme-action-btn.danger:hover {
   color: var(--err);
   background: var(--err-tint);
+}
+
+.theme-favorite-btn.active {
+  color: #f5c542;
+}
+.theme-favorite-btn.active svg {
+  fill: currentColor;
 }
 
 /* Empty custom state */
