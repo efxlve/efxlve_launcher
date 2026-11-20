@@ -1189,6 +1189,10 @@ function renderCasesSection(): string {
     { id: "leather", titleKey: "settings.caseStyleLeather", descKey: "settings.caseStyleLeatherDesc", badge: "Collector's Leather" },
     { id: "vhs", titleKey: "settings.caseStyleVhs", descKey: "settings.caseStyleVhsDesc", badge: "VHS / Cassette" },
     { id: "eco", titleKey: "settings.caseStyleEco", descKey: "settings.caseStyleEcoDesc", badge: "Recycled Paper" },
+    { id: "digipak", titleKey: "settings.caseStyleDigipak", descKey: "settings.caseStyleDigipakDesc", badge: "Digipak Gatefold" },
+    { id: "laserdisc", titleKey: "settings.caseStyleLaserdisc", descKey: "settings.caseStyleLaserdiscDesc", badge: "LaserDisc Sleeve" },
+    { id: "arcade", titleKey: "settings.caseStyleArcade", descKey: "settings.caseStyleArcadeDesc", badge: "Arcade Marquee" },
+    { id: "bubble", titleKey: "settings.caseStyleBubble", descKey: "settings.caseStyleBubbleDesc", badge: "Y2K Jelly" },
   ];
 
   const styleCards = styles.map((st) => {

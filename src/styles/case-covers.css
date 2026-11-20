@@ -1324,6 +1324,145 @@
   opacity: 0.4;
 }
 
+/* --- Style 17: Digipak Gatefold --- */
+.pcard.is-case[data-case-style="digipak"] .pcard-art {
+  padding: 27px 6px 8px 9px;
+  border-radius: 3px 6px 6px 3px;
+  outline-color: color-mix(in srgb, var(--case-border) 38%, #8f7755);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.24) 0 2px, rgba(0, 0, 0, 0.34) 3.5px, rgba(255, 248, 232, 0.16) 5px, rgba(0, 0, 0, 0.22) 7px, transparent 9px),
+    repeating-linear-gradient(90deg, rgba(255, 248, 230, 0.028) 0 1px, transparent 1px 3px),
+    linear-gradient(155deg, color-mix(in srgb, var(--case-shell-top) 28%, #c8b393) 0%, color-mix(in srgb, var(--case-shell-mid) 32%, #9a8363) 52%, color-mix(in srgb, var(--case-shell-bot) 38%, #5e4c36) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 248, 232, 0.42),
+    inset -2px -2px 0 rgba(20, 16, 12, 0.45),
+    -2px 2px 0 color-mix(in srgb, var(--case-shell-bot) 40%, #4d3d2b),
+    0 9px 16px -4px rgba(0, 0, 0, 0.72);
+}
+.pcard.is-case[data-case-style="digipak"] .pcard-case-head {
+  top: 3px;
+  left: 8px;
+  right: 6px;
+  height: 24px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--case-shell-top) 48%, #4a3a28) 0%, color-mix(in srgb, var(--case-shell-bot) 58%, #241b12) 100%);
+  color: #f7f1e5;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--case-rule) 62%, #d8c3a2);
+}
+.pcard.is-case[data-case-style="digipak"] .pcard-case-fx {
+  inset: 27px 6px 8px 9px;
+  background: linear-gradient(115deg, rgba(255, 248, 230, 0.14) 0%, transparent 42%, rgba(0, 0, 0, 0.18) 100%);
+  opacity: 0.45;
+}
+
+/* --- Style 18: LaserDisc Sleeve --- */
+.pcard.is-case[data-case-style="laserdisc"] .pcard-art {
+  padding: 29px 5px 7px 10px;
+  border-radius: 2px 5px 5px 2px;
+  outline-color: color-mix(in srgb, var(--case-border) 50%, #c8d2de);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.55) 0 2.5px, color-mix(in srgb, var(--case-rule) 55%, #96a4b5) 2.5px 6px, rgba(0, 0, 0, 0.5) 7.5px, transparent 10px),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 4px),
+    linear-gradient(150deg, color-mix(in srgb, var(--case-shell-top) 55%, #303642) 0%, color-mix(in srgb, var(--case-shell-mid) 65%, #181c24) 52%, color-mix(in srgb, var(--case-shell-bot) 75%, #0b0d12) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    -3px 2px 0 color-mix(in srgb, var(--case-shell-bot) 65%, #1e232c),
+    0 10px 18px -4px rgba(0, 0, 0, 0.78);
+}
+.pcard.is-case[data-case-style="laserdisc"] .pcard-case-head {
+  top: 3px;
+  left: 9px;
+  right: 5px;
+  height: 26px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--case-rule) 32%, #eef3f8) 0%, #c6d0dc 38%, color-mix(in srgb, var(--case-shell-top) 36%, #e5ebf2) 72%, #9aa6b5 100%);
+  color: #131820;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--case-rule) 75%, #ffffff);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+.pcard.is-case[data-case-style="laserdisc"] .pcard-case-name,
+.pcard.is-case[data-case-style="laserdisc"] .pcard-case-os {
+  color: #131820;
+}
+.pcard.is-case[data-case-style="laserdisc"] .pcard-case-logo {
+  filter: brightness(0);
+  opacity: 0.84;
+}
+.pcard.is-case[data-case-style="laserdisc"] .pcard-case-fx {
+  inset: 29px 5px 7px 10px;
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.28) 0%, rgba(160, 220, 255, 0.12) 32%, transparent 56%, rgba(0, 0, 0, 0.22) 100%);
+}
+
+/* --- Style 19: Arcade Marquee --- */
+.pcard.is-case[data-case-style="arcade"] .pcard-art {
+  padding: 30px 6px 8px 8px;
+  border-radius: 4px 7px 7px 4px;
+  outline-color: color-mix(in srgb, var(--case-rule) 78%, #ff2e93);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--case-rule) 85%, #ffffff) 0 2.5px, rgba(0, 0, 0, 0.75) 4px, rgba(255, 255, 255, 0.12) 6px, transparent 8px),
+    linear-gradient(160deg, color-mix(in srgb, var(--case-shell-top) 30%, #1c1e26) 0%, #0d0f14 55%, #06070a 100%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--case-rule) 55%, rgba(255, 255, 255, 0.35)),
+    inset 0 0 0 1.5px rgba(0, 0, 0, 0.85),
+    -2px 2px 0 #050608,
+    0 10px 18px -4px rgba(0, 0, 0, 0.85),
+    0 0 16px -5px var(--case-tint);
+}
+.pcard.is-case[data-case-style="arcade"] .pcard-case-head {
+  top: 4px;
+  left: 8px;
+  right: 6px;
+  height: 26px;
+  background:
+    radial-gradient(90% 140% at 50% 0%, color-mix(in srgb, var(--case-rule) 48%, rgba(255, 255, 255, 0.22)) 0%, transparent 72%),
+    var(--case-head-bg);
+  color: #ffffff;
+  border-bottom: 2px solid var(--case-rule);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), 0 2px 8px var(--case-tint);
+}
+.pcard.is-case[data-case-style="arcade"] .pcard-case-fx {
+  inset: 30px 6px 8px 8px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 3px),
+    radial-gradient(150px circle at var(--mx, 35%) var(--my, 22%), color-mix(in srgb, var(--case-rule) 26%, rgba(255, 255, 255, 0.18)), transparent 70%);
+  opacity: 0.65;
+}
+
+/* --- Style 20: Y2K Jelly --- */
+.pcard.is-case[data-case-style="bubble"] .pcard-art {
+  padding: 29px 6px 8px 9px;
+  border-radius: 8px 14px 14px 8px;
+  outline-color: color-mix(in srgb, var(--case-border) 75%, #ffffff);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.62) 0 3px, color-mix(in srgb, var(--case-rule) 55%, transparent) 5px, rgba(255, 255, 255, 0.22) 7.5px, transparent 10px),
+    radial-gradient(120% 70% at 22% 6%, rgba(255, 255, 255, 0.38) 0%, transparent 55%),
+    linear-gradient(150deg, color-mix(in srgb, var(--case-shell-top) 78%, #ffffff) 0%, color-mix(in srgb, var(--case-shell-mid) 82%, #7ce8ff) 52%, color-mix(in srgb, var(--case-shell-bot) 86%, #101828) 100%);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.65),
+    inset 0 -3px 6px var(--case-tint),
+    -2px 2px 0 color-mix(in srgb, var(--case-shell-bot) 75%, #ffffff),
+    0 10px 18px -4px rgba(0, 0, 0, 0.65),
+    0 0 18px -5px var(--case-tint);
+}
+.pcard.is-case[data-case-style="bubble"] .pcard-case-head {
+  top: 4px;
+  left: 9px;
+  right: 6px;
+  height: 25px;
+  border-radius: 5px 10px 0 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.06) 48%, transparent 100%),
+    linear-gradient(90deg, color-mix(in srgb, var(--case-shell-top) 82%, #0b1324) 0%, color-mix(in srgb, var(--case-shell-bot) 88%, #070b14) 100%);
+  color: #ffffff;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--case-rule) 70%, #ffffff);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+.pcard.is-case[data-case-style="bubble"] .pcard-case-fx {
+  inset: 29px 6px 8px 9px;
+  border-radius: 0 0 10px 4px;
+  background:
+    radial-gradient(140px circle at var(--mx, 30%) var(--my, 22%), rgba(255, 255, 255, 0.34) 0%, transparent 62%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.24) 0%, transparent 45%, var(--case-tint) 100%);
+}
+
 /* --- Case Cover Customization Modifiers --- */
 .pcard.is-case[data-case-color="monochrome"] {
   --case-shell-top: #363a45 !important;
