@@ -162,7 +162,9 @@ fn friends_json(state: &SdkState) -> serde_json::Value {
 /// flow reads from one place.
 fn sdk_log(line: &str) {
     use std::io::Write;
-    eprintln!("[discord-sdk] {line}");
+    // Best effort: a launcher started from a closed terminal has no stderr
+    // pipe, and `eprintln!` panics on the failed write (os error 232).
+    let _ = writeln!(std::io::stderr(), "[discord-sdk] {line}");
     let Some(app) = APP_HANDLE.get() else {
         return;
     };
