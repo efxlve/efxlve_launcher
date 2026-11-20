@@ -167,21 +167,6 @@ export function renderThemeSection(): string {
       </div>
 
       <div class="theme-filter-bar">
-        <label class="theme-search-box">
-          ${icon("search", 13)}
-          <input
-            id="theme-search"
-            class="theme-search-input"
-            type="search"
-            value="${esc(themeQuery)}"
-            placeholder="${esc(t("settings.themeSearchPlaceholder"))}"
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="off"
-            spellcheck="false"
-          />
-        </label>
-
         <div class="seg theme-filter-seg">
           <button type="button" class="${currentFilter === "all" ? "active" : ""}" data-act="theme-filter" data-filter="all">
             ${esc(t("settings.themeFilterAll"))} (${allThemes.length})
@@ -196,6 +181,21 @@ export function renderThemeSection(): string {
             ${esc(t("settings.themeFilterCustom"))} (${customList.length})
           </button>
         </div>
+
+        <label class="theme-search-box">
+          ${icon("search", 13)}
+          <input
+            id="theme-search"
+            class="theme-search-input"
+            type="search"
+            value="${esc(themeQuery)}"
+            placeholder="${esc(t("settings.themeSearchPlaceholder"))}"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+          />
+        </label>
       </div>
 
       <div class="theme-card-grid theme-grid">
