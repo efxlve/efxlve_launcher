@@ -30,6 +30,44 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.62",
+    date: "2026-11-20",
+    added: [
+      {
+        en: "The command palette remembers the last five games you opened, searches by acronym or number (`gta`, `rdr2`, `gta 5`), includes custom games, and offers Install for Epic, GOG, Amazon and companion stores.",
+        tr: "Komut paleti son açtığın beş oyunu hatırlıyor; `gta`, `rdr2` veya `gta 5` gibi kısaltma ve sayılarla arıyor, özel oyunları dahil ediyor ve Epic, GOG, Amazon ile companion mağazalarında Yükle sunuyor.",
+      },
+      {
+        en: "The theme gallery gains favorites and a favorites filter; cloned themes keep the source backdrop, gallery gradient, glass panels and structural style.",
+        tr: "Tema galerisine favoriler ve favori filtresi geldi; klonlanan temalar kaynak arka planı, galeri gradyanını, cam panelleri ve yapısal görünümü koruyor.",
+      },
+      {
+        en: "The built-in catalog grows to 250 themes, with 28 physical case styles and `.efxpack` packs that carry several themes and their shared wallpapers.",
+        tr: "Yerleşik tema kataloğu 250 temaya çıktı; 28 fiziksel kutu stili ve birkaç temayı ortak duvar kağıtlarıyla taşıyan `.efxpack` paketleri eklendi.",
+      },
+    ],
+    improved: [
+      {
+        en: "Theme wallpapers now live in IndexedDB and survive metadata-only saves; theme search and switching no longer rebuild the whole page.",
+        tr: "Tema duvar kağıtları artık IndexedDB'de tutuluyor ve yalnızca üst veri kaydedildiğinde kaybolmuyor; tema arama ve değiştirme tüm sayfayı yeniden kurmuyor.",
+      },
+      {
+        en: "Locked achievement art stays grey until it is earned, the earned picture swaps in, and profile pins refresh after an unlock.",
+        tr: "Kilitli başarım görseli kazanılana kadar gri kalıyor, kazanılınca görsel değişiyor ve başarım açıldıktan sonra profildeki sabitlenmiş kartlar yenileniyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Search no longer freezes on the first character when a library title contains a prototype name such as Bridge Constructor; GTA VI and other custom games now appear by full or short name.",
+        tr: "Kütüphanede Bridge Constructor gibi prototip adı taşıyan bir oyun varken arama ilk harfte donmuyor; GTA VI ve diğer özel oyunlar tam veya kısa adlarıyla görünüyor.",
+      },
+      {
+        en: "The command palette input no longer draws a second neon border in Neon Grid, and a cloned theme no longer loses its source look, wallpapers or preview gradient.",
+        tr: "Komut paletinin giriş alanı Neon Grid'de ikinci bir neon çerçeve çizmiyor; klonlanan tema kaynak görünümünü, duvar kağıtlarını veya önizleme gradyanını kaybetmiyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.61",
     date: "2026-11-19",
     added: [
