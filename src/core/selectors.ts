@@ -6,6 +6,7 @@
  * `S`, and `summaryOf` / `rawOf` read them in constant time.
  */
 
+import { LIBRARY_DATA_EVENT } from "./constants";
 import { clearCoverCaches, type EpicGame, type EpicSummary } from "../epic";
 import { t } from "../i18n";
 import { cachedSteamCover, cachedSteamHero, isFlatSteamArt } from "./steam-art-cache";
@@ -14,6 +15,11 @@ import type { GameSource, LibraryItem } from "./types";
 
 /** Wide-art URL cache (key art lookup was repeated for every card render). */
 const wideArtCache = new Map<string, string | null>();
+
+/** Lets the command palette and other live views refresh after a library load. */
+function notifyLibraryChanged(): void {
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(LIBRARY_DATA_EVENT));
+}
 
 /** Drops cached wide art so a later resolution (companion catalog, cover
  * resolver) is picked up by the next render. One key, or every key. */
@@ -264,6 +270,7 @@ export function rebuildAllGamesMap(): void {
   canonStoresMap = storesMap;
   canonKeysMap = keySets;
   reconcileEaBackedCopies();
+  notifyLibraryChanged();
 }
 
 /**

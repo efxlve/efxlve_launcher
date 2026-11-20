@@ -8,6 +8,7 @@
  */
 
 import { allStoreSummaries, canonicalGameTitle, rawOf, sharedOwnerOf, summaryOf } from "../../core/selectors";
+import { LIBRARY_DATA_EVENT } from "../../core/constants";
 import { S } from "../../core/state";
 import { readPaletteHistory, rememberPaletteSearch } from "../../core/palette-history";
 import { prepareSearchText, scorePreparedSearch, type SearchText } from "../../core/search-match";
@@ -213,7 +214,7 @@ function renderResults(query: string, force = false): void {
       });
       const seen = new Set<string>();
       for (const row of ranked) {
-        const key = S.separateCopies ? row.summary.appName : row.canon || row.summary.appName;
+        const key = row.canon || row.summary.appName;
         if (seen.has(key)) continue;
         seen.add(key);
         games.push(gameItem(row.summary.appName, row.summary.title, row.summary.installed, idx++));
@@ -230,7 +231,7 @@ function renderResults(query: string, force = false): void {
         if (S.hiddenGames.has(s.appName)) continue;
         if (typeof s.title !== "string" || !s.title.toLowerCase().includes(q)) continue;
         const canon = canonicalGameTitle(s.title);
-        const key = S.separateCopies ? s.appName : canon || s.appName;
+        const key = canon || s.appName;
         if (seen.has(key)) continue;
         seen.add(key);
         games.push(gameItem(s.appName, s.title, s.installed, idx++));
@@ -245,7 +246,7 @@ function renderResults(query: string, force = false): void {
       if (S.hiddenGames.has(entry.id)) continue;
       const summary = summaryOf(entry.id) ?? pool.find((s) => s.appName === entry.id);
       if (!summary) continue;
-      const key = S.separateCopies ? summary.appName : canonicalGameTitle(summary.title) || summary.appName;
+      const key = canonicalGameTitle(summary.title) || summary.appName;
       if (seen.has(key)) continue;
       seen.add(key);
       history.push(gameItem(summary.appName, summary.title, summary.installed, idx++));
@@ -253,7 +254,7 @@ function renderResults(query: string, force = false): void {
     for (const id of S.epicRecent.slice(0, 5)) {
       const s = summaryOf(id);
       if (!s || S.hiddenGames.has(s.appName)) continue;
-      const key = S.separateCopies ? s.appName : canonicalGameTitle(s.title) || s.appName;
+      const key = canonicalGameTitle(s.title) || s.appName;
       if (seen.has(key)) continue;
       seen.add(key);
       games.push(gameItem(s.appName, s.title, s.installed, idx++));
@@ -410,6 +411,15 @@ document.addEventListener("paste", (e) => {
     const input = document.getElementById("palette-input") as HTMLInputElement | null;
     if (input) renderResults(input.value);
   }, 0);
+});
+
+// Custom games and the other stores load asynchronously. If the palette is
+// already open, refresh the same query so a late custom game (for example a
+// hand-added GTA 6) joins the results without retyping.
+window.addEventListener(LIBRARY_DATA_EVENT, () => {
+  if (!isPaletteOpen()) return;
+  const input = document.getElementById("palette-input") as HTMLInputElement | null;
+  if (input) renderResults(input.value, true);
 });
 
 // Clicks inside the palette: the document-level router handles the item's
