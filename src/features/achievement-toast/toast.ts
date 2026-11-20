@@ -16,6 +16,7 @@ import {
 } from "../achievement-card/ach-card-motion";
 import "../../styles/tokens.css";
 import "../../styles/theme-system.css";
+import "../../styles/ach-card.css";
 import "./toast.css";
 
 interface ToastPayload {
