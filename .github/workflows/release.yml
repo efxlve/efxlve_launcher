@@ -25,8 +25,41 @@ on:
       - "v*"
   workflow_dispatch:
 
+# Never let two release runs create a draft for the same tag at once.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  create-release:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      id: ${{ steps.release.outputs.id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # One job creates the draft; the platform matrix only uploads to it. This
+      # prevents two release objects with the same tag when the matrix jobs race.
+      - name: Create the draft release
+        id: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if ! gh release view "v$version" >/dev/null 2>&1; then
+            gh release create "v$version" --draft \
+              --title "Efxlve Launcher v$version" \
+              --notes "Installers and updater packages are attached below."
+          fi
+          id=$(gh release view "v$version" --json databaseId --jq .databaseId)
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
   publish-tauri:
+    needs: create-release
     permissions:
       contents: write
     timeout-minutes: 60
@@ -122,11 +155,9 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
+          releaseId: ${{ needs.create-release.outputs.id }}
           tagName: v__VERSION__
-          releaseName: "Efxlve Launcher v__VERSION__"
-          releaseBody: "Installers and updater packages are attached below."
           releaseDraft: true
-          prerelease: false
           updaterJsonPreferNsis: true
           args: ${{ matrix.args }}
 
