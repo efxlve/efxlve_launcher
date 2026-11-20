@@ -1,6 +1,10 @@
 /** Extended built-ins, loaded only when the Themes page opens. */
 import type { ThemeDef } from "./types";
 import { defineTheme } from "./recipe";
+import { CATALOG_ATELIER_THEMES } from "./catalog-atelier";
+import { CATALOG_CYBER_THEMES } from "./catalog-cyber";
+import { CATALOG_ELEMENTS_THEMES } from "./catalog-elements";
+import { CATALOG_REALMS_THEMES } from "./catalog-realms";
 import abyssalTrenchScene from "../../assets/abyssal-trench-scene.svg";
 import aetherPantheonScene from "../../assets/aether-pantheon-scene.svg";
 import ashenCitadelScene from "../../assets/ashen-citadel-scene.svg";
@@ -1135,6 +1139,10 @@ const CATALOG_DEFS: readonly ThemeDef[] = [
   RESONANCE,
   HOMESTEAD,
   ...CURATED_THEMES,
+  ...CATALOG_REALMS_THEMES,
+  ...CATALOG_CYBER_THEMES,
+  ...CATALOG_ATELIER_THEMES,
+  ...CATALOG_ELEMENTS_THEMES,
 ];
 
 /** Exact token contract for the extended CSS-only themes. */

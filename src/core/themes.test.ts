@@ -179,11 +179,12 @@ describe("theme registry", () => {
     }
   });
 
-  it("ships fifty built-in themes after the catalog loads", async () => {
+  it("ships 250 built-in themes after the catalog loads", async () => {
     await ensureThemeCatalog();
     const builtins = themes().filter((theme) => !theme.custom);
-    expect(builtins).toHaveLength(50);
-    expect(new Set(builtins.map((theme) => theme.id)).size).toBe(50);
+    expect(builtins).toHaveLength(250);
+    expect(new Set(builtins.map((theme) => theme.id)).size).toBe(250);
+    expect(new Set(builtins.map((theme) => theme.name ?? theme.labelKey)).size).toBe(250);
   });
 });
 

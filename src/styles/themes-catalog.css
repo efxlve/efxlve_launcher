@@ -560,3 +560,217 @@
 :root[data-surface="aurora-veil"] .progress > span {
   background: var(--accent-gradient);
 }
+
+/* ==========================================================================
+   Extended 200-Theme Structural Engine & Archetype Signatures (#51–#250)
+   Binds `--shell-bg`, `--winbar-bg`, `--sidebar-bg`, `--accent-gradient` and
+   `--accent-glow` for recipe themes while leaving core and SVG-scene themes
+   on their dedicated rules above.
+   ========================================================================== */
+
+:root[data-surface]:not(
+  [data-surface="soft"],
+  [data-surface="white"],
+  [data-surface="gloss"],
+  [data-surface="blades"],
+  [data-surface="neongrid"],
+  [data-surface="quarantine"],
+  [data-surface="sentience"],
+  [data-surface="sanctum"],
+  [data-surface="resonance"],
+  [data-surface="homestead"],
+  [data-surface="ashen-citadel"],
+  [data-surface="orbital-relay"],
+  [data-surface="rust-horizon"],
+  [data-surface="abyssal-trench"],
+  [data-surface="aether-pantheon"],
+  [data-surface="ember-district"],
+  [data-surface="verdant-hearth"],
+  [data-surface="aurora-veil"]
+) body {
+  background: var(--shell-bg, var(--bg));
+}
+
+:root[data-surface]:not(
+  [data-surface="soft"],
+  [data-surface="white"],
+  [data-surface="gloss"],
+  [data-surface="blades"],
+  [data-surface="neongrid"],
+  [data-surface="quarantine"],
+  [data-surface="sentience"],
+  [data-surface="sanctum"],
+  [data-surface="resonance"],
+  [data-surface="homestead"]
+) #winbar {
+  background: var(--winbar-bg, var(--bg));
+  border-bottom: 1px solid var(--line-strong, var(--line));
+}
+
+:root[data-surface]:not(
+  [data-surface="soft"],
+  [data-surface="white"],
+  [data-surface="gloss"],
+  [data-surface="blades"],
+  [data-surface="neongrid"],
+  [data-surface="quarantine"],
+  [data-surface="sentience"],
+  [data-surface="sanctum"],
+  [data-surface="resonance"],
+  [data-surface="homestead"]
+) #sidebar {
+  background: var(--sidebar-bg, var(--surface-1));
+  border-right: 1px solid var(--line);
+}
+
+:root[data-surface]:not(
+  [data-surface="soft"],
+  [data-surface="white"],
+  [data-surface="gloss"],
+  [data-surface="blades"],
+  [data-surface="neongrid"],
+  [data-surface="quarantine"],
+  [data-surface="sentience"],
+  [data-surface="sanctum"],
+  [data-surface="resonance"],
+  [data-surface="homestead"]
+) :is(.btn.primary, .btn.play) {
+  background: var(--accent-gradient, var(--accent));
+  box-shadow: var(--accent-glow, none);
+}
+
+:root[data-surface]:not(
+  [data-surface="soft"],
+  [data-surface="white"],
+  [data-surface="gloss"],
+  [data-surface="blades"],
+  [data-surface="neongrid"],
+  [data-surface="quarantine"],
+  [data-surface="sentience"],
+  [data-surface="sanctum"],
+  [data-surface="resonance"],
+  [data-surface="homestead"]
+) :is(.progress > span, .gp-progress-fill) {
+  background: var(--accent-gradient, var(--accent));
+}
+
+/* --- Archetype A: Technical Blueprint & Oscilloscope Grids --- */
+:root:is(
+  [data-surface="blueprint-draft"],
+  [data-surface="cathode-teal"],
+  [data-surface="amber-oscilloscope"]
+) body {
+  background-size: 32px 32px, 32px 32px, 100% 100%;
+}
+:root:is(
+  [data-surface="blueprint-draft"],
+  [data-surface="cathode-teal"],
+  [data-surface="amber-oscilloscope"]
+) :is(.card, .settings-group, .info-box, .lib-list) {
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+/* --- Archetype B: Pure OLED Zero-Shadow Monoliths --- */
+:root:is(
+  [data-surface="oled-ember"],
+  [data-surface="oled-jade"],
+  [data-surface="oled-amethyst"],
+  [data-surface="oled-crimson"],
+  [data-surface="oled-gold"],
+  [data-surface="oled-cobalt"]
+) :is(.card, .settings-group, .info-box, .lib-list) {
+  box-shadow: none;
+  border-color: var(--line-strong);
+}
+
+/* --- Archetype C: Editorial, Bauhaus & Brutalist Offset Frames --- */
+:root:is(
+  [data-surface="bauhaus-grid"],
+  [data-surface="swiss-typo"],
+  [data-surface="concrete-brutalist"],
+  [data-surface="ink-wash"],
+  [data-surface="museum-archive"],
+  [data-surface="architect-vellum"]
+) :is(.card, .settings-group, .info-box, .lib-list) {
+  box-shadow: 2px 2px 0 var(--line-strong);
+}
+
+/* --- Archetype D: Molded Vintage Consoles & Tactile Keycaps --- */
+:root:is(
+  [data-surface="gameboy-olive"],
+  [data-surface="beige-workstation"],
+  [data-surface="transistor-radio"],
+  [data-surface="polaroid-summer"],
+  [data-surface="floppy-disk"],
+  [data-surface="atari-woodgrain"],
+  [data-surface="boombox-chrome"]
+) :is(.card, .settings-group, .info-box, .lib-list) {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 2px 0 var(--line-strong);
+}
+:root:is(
+  [data-surface="gameboy-olive"],
+  [data-surface="beige-workstation"],
+  [data-surface="transistor-radio"]
+) :is(.btn:not(.ghost)) {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 2px 0 rgba(0, 0, 0, 0.22);
+}
+
+/* --- Archetype E: Heavy Industrial & Wasteland Bulkheads --- */
+:root:is(
+  [data-surface="cinder-keep"],
+  [data-surface="dune-outpost"],
+  [data-surface="clockwork-foundry"],
+  [data-surface="scrap-bastion"],
+  [data-surface="slag-refinery"],
+  [data-surface="fallout-bunker"],
+  [data-surface="steam-locomotive"],
+  [data-surface="ironclad-dreadnought"],
+  [data-surface="lunar-excavation"],
+  [data-surface="ashfall-trench"],
+  [data-surface="mecha-hangar"],
+  [data-surface="pewter-workshop"]
+) :is(.card, .settings-group, .info-box, .lib-list) {
+  border-left: 2px solid var(--accent);
+}
+
+/* --- Archetype F: Neon, Hologram & Sci-Fi Telemetry Rim --- */
+:root:is(
+  [data-surface="nebula-armada"],
+  [data-surface="crimson-cathedral"],
+  [data-surface="starlight-convoy"],
+  [data-surface="exoplanet-dome"],
+  [data-surface="void-cruiser"],
+  [data-surface="subzero-reactor"],
+  [data-surface="biolum-cavern"],
+  [data-surface="gravity-well"],
+  [data-surface="neural-uplink"],
+  [data-surface="kabuki-neon"],
+  [data-surface="holo-shrine"],
+  [data-surface="monowire-pulse"],
+  [data-surface="acid-rain"],
+  [data-surface="neon-bazaar"],
+  [data-surface="plasma-conduit"],
+  [data-surface="amber-terminal"],
+  [data-surface="synth-alley"],
+  [data-surface="voltage-grid"],
+  [data-surface="vapor-skyline"],
+  [data-surface="neon-pagoda"],
+  [data-surface="binary-sunset"],
+  [data-surface="blackwall-ice"],
+  [data-surface="laser-lotus"],
+  [data-surface="holo-billboard"],
+  [data-surface="overclock-core"],
+  [data-surface="magenta-overdrive"],
+  [data-surface="neon-drenched"],
+  [data-surface="shibuya-crossing"],
+  [data-surface="bioware-vat"],
+  [data-surface="outrun-highway"],
+  [data-surface="pinball-wizard"],
+  [data-surface="nixie-tube"],
+  [data-surface="neon-rollerdisco"],
+  [data-surface="synth-palm"],
+  [data-surface="arcade-carpet"],
+  [data-surface="starlit-tundra"]
+) :is(.card, .settings-group, .info-box, .lib-list) {
+  box-shadow: inset 0 1px 0 var(--line-strong), 0 8px 24px rgba(0, 0, 0, 0.65);
+}
