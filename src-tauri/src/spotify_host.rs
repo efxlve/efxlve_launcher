@@ -16,6 +16,7 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
+use std::time::Duration;
 use tauri::{
     AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, Position, Size, WebviewBuilder,
     WebviewUrl,
@@ -239,12 +240,37 @@ pub fn spotify_player_back(app: AppHandle) {
 }
 
 /// True when the embedded page already has a signed-in Spotify session.
-pub(crate) fn has_spotify_session(app: &AppHandle) -> bool {
+///
+/// The cookie query is answered by the event loop and Tauri unwraps that
+/// reply, so a call queued from a worker thread panics with `RecvError` once
+/// the webview it names is gone (the sidebar's ten-second session poll used
+/// to fill `crash.log` that way). Ask from the main thread, where Tauri
+/// handles the query inline, and ask the main webview: it shares the
+/// profile's cookie store with the player page and is alive whenever the page
+/// that calls this is.
+pub(crate) async fn has_spotify_session(app: &AppHandle) -> bool {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    let handle = app.clone();
+    if app
+        .run_on_main_thread(move || {
+            let _ = tx.send(session_in_profile(&handle));
+        })
+        .is_err()
+    {
+        return false;
+    }
+    match tokio::time::timeout(Duration::from_secs(2), rx).await {
+        Ok(Ok(signed_in)) => signed_in,
+        _ => false,
+    }
+}
+
+/// Runs on the main thread only; see [`has_spotify_session`].
+fn session_in_profile(app: &AppHandle) -> bool {
     let Ok(url) = HOME_URL.parse::<url::Url>() else {
         return false;
     };
-    let webview = player(app).or_else(|| app.get_webview("main"));
-    let Some(webview) = webview else {
+    let Some(webview) = app.get_webview("main") else {
         return false;
     };
     webview
@@ -275,9 +301,7 @@ fn spotify_web_url(url: &str) -> String {
 /// player's visibility).
 #[tauri::command]
 pub async fn spotify_signed_in(app: AppHandle) -> bool {
-    tauri::async_runtime::spawn_blocking(move || has_spotify_session(&app))
-        .await
-        .unwrap_or(false)
+    has_spotify_session(&app).await
 }
 
 /// Opens a Spotify link in the launcher's embedded player and brings the
@@ -285,7 +309,7 @@ pub async fn spotify_signed_in(app: AppHandle) -> bool {
 /// session yet, so the caller can fall back to the browser.
 #[tauri::command]
 pub async fn spotify_open_in_launcher(app: AppHandle, url: String) -> Result<bool, String> {
-    if !has_spotify_session(&app) {
+    if !has_spotify_session(&app).await {
         return Ok(false);
     }
     let target = spotify_web_url(&url);
