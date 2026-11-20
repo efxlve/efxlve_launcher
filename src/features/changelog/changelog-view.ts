@@ -30,6 +30,30 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.63",
+    date: "2026-11-21",
+    improved: [
+      {
+        en: "After a hard close from Task Manager, an installer or an anti-cheat, the next start records when the previous session was last alive and how long it ran, so a silent exit can be dated.",
+        tr: "Görev Yöneticisi, bir kurulum veya bir anti-cheat tarafından zorla kapatıldığında, sonraki açılış önceki oturumun en son ne zaman çalıştığını ve ne kadar sürdüğünü kaydediyor; sessiz bir kapanışın zamanı böylece bilinebiliyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "The in-game achievement notification keeps its card layout, artwork and tier colour.",
+        tr: "Oyun içi başarım bildirimi kart düzenini, görselini ve seviye rengini koruyor.",
+      },
+      {
+        en: "Discord Rich Presence keeps running when the launcher was started without a console window.",
+        tr: "Launcher konsol penceresi olmadan başlatıldığında Discord Rich Presence çalışmaya devam ediyor.",
+      },
+      {
+        en: "The Spotify sidebar's session check no longer writes an error into the crash log every ten seconds.",
+        tr: "Spotify kenar çubuğunun oturum kontrolü artık her on saniyede çökme günlüğüne hata yazmıyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.62",
     date: "2026-11-20",
     added: [
