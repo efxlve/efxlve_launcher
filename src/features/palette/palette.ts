@@ -32,8 +32,11 @@ import { sharedSummaries } from "../library/shared-library";
 import { openReleaseCalendarSearch, releaseDateLabel } from "../library/release-calendar";
 import { closeControllerKeyboard, isControllerKeyboardOpen } from "../gamepad/on-screen-keyboard";
 
-const MAX_GAMES = 8;
+const MAX_GAMES = 10;
 const MAX_UPCOMING = 4;
+
+/** The query behind the current result list; keyup and input can both fire. */
+let lastRenderedQuery: string | null = null;
 
 /** Library titles are stable; prepare each one once instead of per keystroke. */
 const searchTextCache = new Map<string, SearchText>();
@@ -141,7 +144,7 @@ function ensureUpcomingReleases(): void {
       upcomingReleases = list;
       if (!isPaletteOpen()) return;
       const input = document.getElementById("palette-input") as HTMLInputElement | null;
-      renderResults(input?.value ?? "");
+      renderResults(input?.value ?? "", true);
     })
     .catch(() => {
       upcomingFailed = true;
@@ -161,9 +164,10 @@ function upcomingItem(release: UpcomingRelease, idx: number): string {
     </div>`;
 }
 
-function renderResults(query: string): void {
+function renderResults(query: string, force = false): void {
   const list = document.getElementById("palette-results");
   if (!list) return;
+  if (!force && query === lastRenderedQuery) return;
   const q = query.trim().toLowerCase();
   if (q.length >= 2) ensureUpcomingReleases();
   // The first upcoming-release lookup is network-bound. Keep the palette from
@@ -257,6 +261,7 @@ function renderResults(query: string): void {
       : "");
   activeIndex = 0;
   highlight();
+  lastRenderedQuery = query;
 }
 
 function items(): HTMLElement[] {
@@ -315,7 +320,7 @@ export function openPalette(): void {
         <div class="palette-hint">${t("palette.hint")}</div>
       </div>
     </div>`;
-  renderResults("");
+  renderResults("", true);
   const focusInput = () => (document.getElementById("palette-input") as HTMLInputElement | null)?.focus();
   focusInput();
   // Focus again once the child webview is parked; it can steal focus until hide() lands.
@@ -362,6 +367,28 @@ document.addEventListener("keydown", onKey, { capture: true });
 document.addEventListener("input", (e) => {
   const target = e.target as HTMLElement;
   if (target.id === "palette-input") renderResults((target as HTMLInputElement).value);
+});
+
+// Some webviews can drop the final `input` event while the result list is
+// repainting. Keyup and compositionend repeat the read from the live field, so
+// the list always catches up with what the player sees in the box.
+document.addEventListener("keyup", (e) => {
+  const target = e.target as HTMLElement;
+  if (target.id === "palette-input") renderResults((target as HTMLInputElement).value);
+});
+
+document.addEventListener("compositionend", (e) => {
+  const target = e.target as HTMLElement;
+  if (target.id === "palette-input") renderResults((target as HTMLInputElement).value);
+});
+
+document.addEventListener("paste", (e) => {
+  const target = e.target as HTMLElement;
+  if (target.id !== "palette-input") return;
+  window.setTimeout(() => {
+    const input = document.getElementById("palette-input") as HTMLInputElement | null;
+    if (input) renderResults(input.value);
+  }, 0);
 });
 
 // Clicks inside the palette: the document-level router handles the item's

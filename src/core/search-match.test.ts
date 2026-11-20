@@ -20,6 +20,15 @@ describe("command palette title matching", () => {
     expect(scores("Need for Speed Heat", "nfs")).toBeGreaterThan(0);
   });
 
+  it("matches a short custom title against the full name", () => {
+    expect(scores("GTA 6", "grand theft auto")).toBeGreaterThan(0);
+    expect(scores("GTA 6", "grand theft auto vi")).toBeGreaterThan(0);
+    expect(scores("GTA 6", "gta 6")).toBe(6000);
+    expect(scores("RDR2", "red dead redemption")).toBeGreaterThan(0);
+    expect(scores("AC Valhalla", "assassin's creed")).toBeGreaterThan(0);
+    expect(scores("SWAT 4", "star wars")).toBe(0);
+  });
+
   it("treats Roman numerals and digits as the same", () => {
     expect(scores("Grand Theft Auto V", "gta 5")).toBeGreaterThan(0);
     expect(scores("Grand Theft Auto VI", "gta 6")).toBeGreaterThan(0);

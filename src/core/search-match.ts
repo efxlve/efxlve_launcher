@@ -47,6 +47,7 @@ function words(value: string): string[] {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
+    .replace(/['’]/g, "")
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim()
@@ -86,6 +87,17 @@ export function scorePreparedSearch(title: SearchText, query: SearchText): numbe
     if (digitCompact !== compact && (title.initial.startsWith(digitCompact) || title.numeric.startsWith(digitCompact))) {
       return 3400;
     }
+  }
+
+  // The reverse form: a short title ("GTA 6", "RDR2", "AC Valhalla") against
+  // the full name. Numerals are left out of the acronym so "grand theft auto
+  // vi" still meets "GTA 6" after the Roman numeral is folded into a digit.
+  const queryInitial = query.digits.filter((word) => !/^\d+$/.test(word)).map((word) => word[0]).join("");
+  if (queryInitial.length >= 2) {
+    const titleFirst = title.raw[0] ?? "";
+    if (titleFirst === queryInitial) return 3200;
+    if (queryInitial.length >= 3 && titleFirst.startsWith(queryInitial)) return 3200;
+    if (title.initial.startsWith(queryInitial)) return 3100;
   }
 
   let cursor = 0;
