@@ -16,7 +16,6 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
-use std::time::Duration;
 use tauri::{
     AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, Position, Size, WebviewBuilder,
     WebviewUrl,
@@ -241,31 +240,20 @@ pub fn spotify_player_back(app: AppHandle) {
 
 /// True when the embedded page already has a signed-in Spotify session.
 ///
-/// The cookie query is answered by the event loop and Tauri unwraps that
-/// reply, so a call queued from a worker thread panics with `RecvError` once
-/// the webview it names is gone (the sidebar's ten-second session poll used
-/// to fill `crash.log` that way). Ask from the main thread, where Tauri
-/// handles the query inline, and ask the main webview: it shares the
-/// profile's cookie store with the player page and is alive whenever the page
-/// that calls this is.
+/// The WebView2 cookie query pumps the window's message queue while it waits,
+/// so it must not run on the main thread: Tauri documents the call as a
+/// deadlock in synchronous commands and event handlers on Windows. Run it on
+/// a blocking worker instead, and ask the main webview: it shares the
+/// profile's cookie store with the player page and outlives it, while asking a
+/// destroyed player page made Tauri's reply channel panic into `crash.log`.
 pub(crate) async fn has_spotify_session(app: &AppHandle) -> bool {
-    let (tx, rx) = tokio::sync::oneshot::channel();
     let handle = app.clone();
-    if app
-        .run_on_main_thread(move || {
-            let _ = tx.send(session_in_profile(&handle));
-        })
-        .is_err()
-    {
-        return false;
-    }
-    match tokio::time::timeout(Duration::from_secs(2), rx).await {
-        Ok(Ok(signed_in)) => signed_in,
-        _ => false,
-    }
+    tauri::async_runtime::spawn_blocking(move || session_in_profile(&handle))
+        .await
+        .unwrap_or(false)
 }
 
-/// Runs on the main thread only; see [`has_spotify_session`].
+/// Worker-thread only; see [`has_spotify_session`].
 fn session_in_profile(app: &AppHandle) -> bool {
     let Ok(url) = HOME_URL.parse::<url::Url>() else {
         return false;
