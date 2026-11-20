@@ -52,6 +52,7 @@
   "palette.recentSearches": "عمليات البحث الأخيرة",
   "palette.commands": "الأوامر",
   "palette.empty": "لا توجد نتائج",
+  "palette.searching": "جارٍ البحث…",
   "palette.hint": "Enter للفتح، الأسهم للتنقل، Esc للإغلاق",
   "palette.play": "تشغيل",
   "palette.cmdProfile": "الملف الشخصي",

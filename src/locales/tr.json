@@ -52,6 +52,7 @@
   "palette.recentSearches": "Son aramalar",
   "palette.commands": "Komutlar",
   "palette.empty": "Sonuç yok",
+  "palette.searching": "Aranıyor…",
   "palette.hint": "Açmak için Enter, gezinmek için oklar, kapatmak için Esc",
   "palette.play": "Oyna",
   "palette.cmdProfile": "Profil",

@@ -52,6 +52,7 @@
   "palette.recentSearches": "最近の検索",
   "palette.commands": "コマンド",
   "palette.empty": "結果なし",
+  "palette.searching": "検索中…",
   "palette.hint": "Enter で開く、矢印で移動、Esc で閉じる",
   "palette.play": "プレイ",
   "palette.cmdProfile": "プロフィール",

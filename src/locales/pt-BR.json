@@ -52,6 +52,7 @@
   "palette.recentSearches": "Pesquisas recentes",
   "palette.commands": "Comandos",
   "palette.empty": "Nenhum resultado",
+  "palette.searching": "Pesquisando…",
   "palette.hint": "Enter abre, setas movem, Esc fecha",
   "palette.play": "Jogar",
   "palette.cmdProfile": "Perfil",

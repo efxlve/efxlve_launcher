@@ -52,6 +52,7 @@
   "palette.recentSearches": "हाल की खोजें",
   "palette.commands": "कमांड",
   "palette.empty": "कोई परिणाम नहीं",
+  "palette.searching": "खोजा जा रहा है…",
   "palette.hint": "खोलने के लिए Enter, जाने के लिए एरो कीज़, बंद करने के लिए Esc दबाएं",
   "palette.play": "खेलें",
   "palette.cmdProfile": "प्रोफ़ाइल",

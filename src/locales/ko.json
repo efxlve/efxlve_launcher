@@ -52,6 +52,7 @@
   "palette.recentSearches": "최근 검색",
   "palette.commands": "명령",
   "palette.empty": "결과 없음",
+  "palette.searching": "검색 중…",
   "palette.hint": "Enter로 열기, 화살표로 이동, Esc로 닫기",
   "palette.play": "플레이",
   "palette.cmdProfile": "프로필",

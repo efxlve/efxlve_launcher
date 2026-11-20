@@ -52,6 +52,7 @@
   "palette.recentSearches": "最近搜索",
   "palette.commands": "命令",
   "palette.empty": "无结果",
+  "palette.searching": "正在搜索…",
   "palette.hint": "Enter 打开，方向键移动，Esc 关闭",
   "palette.play": "开始游戏",
   "palette.cmdProfile": "个人资料",

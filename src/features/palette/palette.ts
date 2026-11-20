@@ -7,9 +7,10 @@
  * after MAX_GAMES hits, which stays well under a millisecond for 500+ games.
  */
 
-import { allStoreSummaries, rawOf, sharedOwnerOf, summaryOf } from "../../core/selectors";
+import { allStoreSummaries, canonicalGameTitle, rawOf, sharedOwnerOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { readPaletteHistory, rememberPaletteSearch } from "../../core/palette-history";
+import { prepareSearchText, scorePreparedSearch, type SearchText } from "../../core/search-match";
 import { emptyState, icon, type IconName } from "../../core/icons";
 import {
   discordPageVisible,
@@ -33,6 +34,18 @@ import { closeControllerKeyboard, isControllerKeyboardOpen } from "../gamepad/on
 
 const MAX_GAMES = 8;
 const MAX_UPCOMING = 4;
+
+/** Library titles are stable; prepare each one once instead of per keystroke. */
+const searchTextCache = new Map<string, SearchText>();
+
+function searchTextOf(title: string): SearchText {
+  let prepared = searchTextCache.get(title);
+  if (!prepared) {
+    prepared = prepareSearchText(title);
+    searchTextCache.set(title, prepared);
+  }
+  return prepared;
+}
 
 interface Command {
   label: string;
@@ -153,6 +166,9 @@ function renderResults(query: string): void {
   if (!list) return;
   const q = query.trim().toLowerCase();
   if (q.length >= 2) ensureUpcomingReleases();
+  // The first upcoming-release lookup is network-bound. Keep the palette from
+  // flashing "no results" while that request is still running.
+  const waiting = q.length >= 2 && upcomingLoading && !upcomingReleases;
 
   // The palette searches the same union the library shows — Epic, GOG and the
   // whole owned Steam library — plus games from other saved accounts when the
@@ -165,39 +181,57 @@ function renderResults(query: string): void {
   const history: string[] = [];
   let idx = 0;
   if (q) {
-    // Installed matches first, then the rest, capped at MAX_GAMES.
-    const matched: EpicSummary[] = [];
+    // Rank by title quality, then installed/preferred copy, then length so a
+    // base title sits above its long edition labels. Copies of the same game
+    // collapse unless the player asked to keep store copies separate.
+    const queryText = prepareSearchText(q);
+    const ranked: { summary: EpicSummary; score: number; canon: string; preferred: boolean }[] = [];
     for (const s of pool) {
       if (S.hiddenGames.has(s.appName)) continue;
-      if (s.installed && s.title.toLowerCase().includes(q)) matched.push(s);
-      if (matched.length >= MAX_GAMES) break;
+      const score = scorePreparedSearch(searchTextOf(s.title), queryText);
+      if (score === 0) continue;
+      const canon = canonicalGameTitle(s.title);
+      ranked.push({
+        summary: s,
+        score,
+        canon,
+        preferred: S.preferredVersions[canon] === s.appName,
+      });
     }
-    if (matched.length < MAX_GAMES) {
-      for (const s of pool) {
-        if (S.hiddenGames.has(s.appName)) continue;
-        if (!s.installed && s.title.toLowerCase().includes(q)) matched.push(s);
-        if (matched.length >= MAX_GAMES) break;
-      }
+    ranked.sort((a, b) => {
+      if (a.score !== b.score) return b.score - a.score;
+      if (a.summary.installed !== b.summary.installed) return a.summary.installed ? -1 : 1;
+      if (a.preferred !== b.preferred) return a.preferred ? -1 : 1;
+      return a.summary.title.length - b.summary.title.length || a.summary.title.localeCompare(b.summary.title);
+    });
+    const seen = new Set<string>();
+    for (const row of ranked) {
+      const key = S.separateCopies ? row.summary.appName : row.canon || row.summary.appName;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      games.push(gameItem(row.summary.appName, row.summary.title, row.summary.installed, idx++));
+      if (games.length >= MAX_GAMES) break;
     }
-    for (const s of matched) games.push(gameItem(s.appName, s.title, s.installed, idx++));
   } else {
     // Recent palette selections sit above recently played games. The same game
     // is not listed twice, so the history always owns the top row.
     const seen = new Set<string>();
     for (const entry of readPaletteHistory()) {
-      if (S.hiddenGames.has(entry.id) || seen.has(entry.id)) continue;
+      if (S.hiddenGames.has(entry.id)) continue;
       const summary = summaryOf(entry.id) ?? pool.find((s) => s.appName === entry.id);
       if (!summary) continue;
-      seen.add(entry.id);
+      const key = S.separateCopies ? summary.appName : canonicalGameTitle(summary.title) || summary.appName;
+      if (seen.has(key)) continue;
+      seen.add(key);
       history.push(gameItem(summary.appName, summary.title, summary.installed, idx++));
     }
     for (const id of S.epicRecent.slice(0, 5)) {
-      if (seen.has(id)) continue;
       const s = summaryOf(id);
-      if (s && !S.hiddenGames.has(s.appName)) {
-        seen.add(id);
-        games.push(gameItem(s.appName, s.title, s.installed, idx++));
-      }
+      if (!s || S.hiddenGames.has(s.appName)) continue;
+      const key = S.separateCopies ? s.appName : canonicalGameTitle(s.title) || s.appName;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      games.push(gameItem(s.appName, s.title, s.installed, idx++));
     }
   }
 
@@ -218,7 +252,9 @@ function renderResults(query: string): void {
     (games.length ? `<div class="palette-group">${q ? t("palette.games") : t("palette.installedGames")}</div>${games.join("")}` : "") +
     (releases.length ? `<div class="palette-group">${t("calendar.title")}</div>${releases.join("")}` : "") +
     (cmds.length ? `<div class="palette-group">${t("palette.commands")}</div>${cmds.join("")}` : "") +
-    (!history.length && !games.length && !releases.length && !cmds.length ? emptyState("search", t("palette.empty")) : "");
+    (!history.length && !games.length && !releases.length && !cmds.length
+      ? emptyState("search", waiting ? t("palette.searching") : t("palette.empty"))
+      : "");
   activeIndex = 0;
   highlight();
 }
