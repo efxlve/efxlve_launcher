@@ -188,33 +188,54 @@ function renderResults(query: string, force = false): void {
     // Rank by title quality, then installed/preferred copy, then length so a
     // base title sits above its long edition labels. Copies of the same game
     // collapse unless the player asked to keep store copies separate.
-    const queryText = prepareSearchText(q);
-    const ranked: { summary: EpicSummary; score: number; canon: string; preferred: boolean }[] = [];
-    for (const s of pool) {
-      if (S.hiddenGames.has(s.appName)) continue;
-      const score = scorePreparedSearch(searchTextOf(s.title), queryText);
-      if (score === 0) continue;
-      const canon = canonicalGameTitle(s.title);
-      ranked.push({
-        summary: s,
-        score,
-        canon,
-        preferred: S.preferredVersions[canon] === s.appName,
+    try {
+      const queryText = prepareSearchText(q);
+      const preferredVersions = S.preferredVersions ?? {};
+      const ranked: { summary: EpicSummary; score: number; canon: string; preferred: boolean }[] = [];
+      for (const s of pool) {
+        if (S.hiddenGames.has(s.appName)) continue;
+        if (typeof s.title !== "string" || !s.title) continue;
+        const score = scorePreparedSearch(searchTextOf(s.title), queryText);
+        if (score === 0) continue;
+        const canon = canonicalGameTitle(s.title);
+        ranked.push({
+          summary: s,
+          score,
+          canon,
+          preferred: preferredVersions[canon] === s.appName,
+        });
+      }
+      ranked.sort((a, b) => {
+        if (a.score !== b.score) return b.score - a.score;
+        if (a.summary.installed !== b.summary.installed) return a.summary.installed ? -1 : 1;
+        if (a.preferred !== b.preferred) return a.preferred ? -1 : 1;
+        return a.summary.title.length - b.summary.title.length || a.summary.title.localeCompare(b.summary.title);
       });
-    }
-    ranked.sort((a, b) => {
-      if (a.score !== b.score) return b.score - a.score;
-      if (a.summary.installed !== b.summary.installed) return a.summary.installed ? -1 : 1;
-      if (a.preferred !== b.preferred) return a.preferred ? -1 : 1;
-      return a.summary.title.length - b.summary.title.length || a.summary.title.localeCompare(b.summary.title);
-    });
-    const seen = new Set<string>();
-    for (const row of ranked) {
-      const key = S.separateCopies ? row.summary.appName : row.canon || row.summary.appName;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      games.push(gameItem(row.summary.appName, row.summary.title, row.summary.installed, idx++));
-      if (games.length >= MAX_GAMES) break;
+      const seen = new Set<string>();
+      for (const row of ranked) {
+        const key = S.separateCopies ? row.summary.appName : row.canon || row.summary.appName;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        games.push(gameItem(row.summary.appName, row.summary.title, row.summary.installed, idx++));
+        if (games.length >= MAX_GAMES) break;
+      }
+    } catch (error) {
+      // One malformed library row must not freeze the whole search. Keep the
+      // palette useful with the old simple substring match instead.
+      console.warn("Palette search fell back to a simple match", error);
+      games.length = 0;
+      idx = 0;
+      const seen = new Set<string>();
+      for (const s of pool) {
+        if (S.hiddenGames.has(s.appName)) continue;
+        if (typeof s.title !== "string" || !s.title.toLowerCase().includes(q)) continue;
+        const canon = canonicalGameTitle(s.title);
+        const key = S.separateCopies ? s.appName : canon || s.appName;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        games.push(gameItem(s.appName, s.title, s.installed, idx++));
+        if (games.length >= MAX_GAMES) break;
+      }
     }
   } else {
     // Recent palette selections sit above recently played games. The same game
