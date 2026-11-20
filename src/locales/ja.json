@@ -3085,6 +3085,8 @@
   "settings.themeSceneTooBig": "その画像は保存できませんでした。より小さい画像をお試しください。",
   "settings.themeSceneHint": "縮小されてこの PC に保存されます。パネルはその上でガラス調になります。",
   "settings.themeSceneClear": "削除",
+  "settings.themeSourceScene": "このテーマは元テーマの背景画像を保持しています。",
+  "settings.themeSourceSceneClear": "元の背景を削除",
   "settings.themeScenePick": "画像を選択",
   "settings.themeScene": "背景画像",
   "settings.themeDeleted": "テーマを削除しました",

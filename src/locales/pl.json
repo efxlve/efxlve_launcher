@@ -3085,6 +3085,8 @@
   "settings.themeSceneTooBig": "Nie można zapisać tego obrazu. Spróbuj mniejszego pliku.",
   "settings.themeSceneHint": "Przeskalowane i zapisane na tym komputerze. Panele zyskują efekt szkła na jej tle.",
   "settings.themeSceneClear": "Usuń",
+  "settings.themeSourceScene": "Ten motyw zachowuje tło motywu źródłowego.",
+  "settings.themeSourceSceneClear": "Usuń tło źródłowe",
   "settings.themeScenePick": "Wybierz obraz",
   "settings.themeScene": "Obraz tła",
   "settings.themeDeleted": "Motyw usunięty",

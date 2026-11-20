@@ -3085,6 +3085,8 @@
   "settings.themeSceneTooBig": "उस छवि को संग्रहीत नहीं किया जा सका। एक छोटी छवि आज़माएं।",
   "settings.themeSceneHint": "आकार घटाकर इस पीसी पर संग्रहीत किया जाता है। पैनल इसके ऊपर कांच में बदल जाते हैं।",
   "settings.themeSceneClear": "हटाएं",
+  "settings.themeSourceScene": "यह थीम स्रोत थीम की पृष्ठभूमि रखती है।",
+  "settings.themeSourceSceneClear": "स्रोत पृष्ठभूमि हटाएँ",
   "settings.themeScenePick": "छवि चुनें",
   "settings.themeScene": "पृष्ठभूमि छवि",
   "settings.themeDeleted": "थीम हटा दी गई",

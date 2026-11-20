@@ -56,6 +56,10 @@ export interface CustomThemeInput {
   light: boolean;
   /** Optional backdrop image as a `data:image/...` URL. */
   scene?: string;
+  /** Bundled source scene background (`#hex url("/assets/...svg") …`). */
+  sceneBg?: string;
+  /** Optional picker background (a gradient) for a cloned theme. */
+  previewBg?: string;
   /** True when the image lives in IndexedDB and only metadata is stored. */
   sceneStored?: boolean;
   /** UI-only: the designer explicitly cleared the wallpaper. */

@@ -14,6 +14,7 @@ import { toast } from "../../core/toast";
 import { esc } from "../../core/utils";
 import {
   applySurface,
+  builtinThemeInput,
   customThemes,
   customTokens,
   deleteCustomTheme,
@@ -305,7 +306,7 @@ function renderThemeCard(theme: ThemeDef): string {
   const displayName = theme.name ?? (theme.labelKey ? t(theme.labelKey) : theme.id);
   const favoriteLabel = isFavorite ? t("settings.themeUnfavorite") : t("settings.themeFavorite");
 
-  const previewBg = theme.bg;
+  const previewBg = theme.customInput?.previewBg ?? theme.bg;
   const surface1 = theme.tokens?.["--surface-1"] ?? theme.surface ?? (theme.scheme === "light" ? "#ffffff" : "#181820");
   const surface2 = theme.tokens?.["--surface-2"] ?? (theme.scheme === "light" ? "#f3f4f6" : "#242530");
   const accent = theme.accent;
@@ -313,7 +314,8 @@ function renderThemeCard(theme: ThemeDef): string {
   const dotColor = theme.tokens?.["--line-strong"] ?? lineColor;
   const winbarColor = theme.scheme === "light" ? "rgba(15, 23, 42, 0.06)" : "rgba(0, 0, 0, 0.4)";
 
-  const hasScene = Boolean(theme.scene);
+  const scene = theme.scene;
+  const hasScene = Boolean(scene || theme.customInput?.sceneBg);
   const sceneBlur = theme.sceneBlur ?? 0;
   const opacity = theme.sceneOpacity ?? (theme.scheme === "light" ? 0.38 : 0.52);
   const scrimColor = hasScene
@@ -327,7 +329,7 @@ function renderThemeCard(theme: ThemeDef): string {
   return `
     <div class="theme-card ${isActive ? "active" : ""}" data-act="set-surface" data-surface="${esc(theme.id)}" data-theme-name="${esc(displayName)}" data-search="${esc(`${displayName} ${theme.scheme} ${theme.tags?.join(" ") ?? ""}${theme.custom ? " custom" : ""}`)}" role="button" tabindex="0" aria-pressed="${isActive ? "true" : "false"}" aria-label="${esc(displayName)}">
       <div class="theme-card-preview" style="background: ${esc(previewBg)};">
-        ${hasScene ? `<div class="theme-card-preview-scene" style="background-image: url('${esc(theme.scene!)}'); filter: blur(${sceneBlur}px);"></div>` : ""}
+        ${scene ? `<div class="theme-card-preview-scene" style="background-image: url('${esc(scene)}'); filter: blur(${sceneBlur}px);"></div>` : ""}
         <div class="theme-card-preview-scrim" style="background: ${scrimColor};"></div>
         <div class="theme-card-mockup" style="border-color: ${esc(lineColor)};">
           <div class="theme-mock-winbar" style="background: ${winbarColor};">
@@ -431,6 +433,8 @@ export function openThemeDesigner(themeId?: string): void {
         borderStyle: custom.borderStyle ?? "subtle",
         light: custom.light,
         scene: custom.scene,
+        sceneBg: custom.sceneBg,
+        previewBg: custom.previewBg,
         sceneBlur: custom.sceneBlur ?? 0,
         sceneOpacity: custom.sceneOpacity ?? 0.5,
         radius: custom.radius ?? "default",
@@ -438,23 +442,10 @@ export function openThemeDesigner(themeId?: string): void {
         createdAt: custom.createdAt,
       };
     } else {
-      const def = themeById(themeId);
+      const source = builtinThemeInput(themeId);
       designerDraft = {
-        name: `${def.name ?? t(def.labelKey)} (${t("settings.themeCustomBadge")})`,
-        bg: HEX_TEST.test(def.bg) ? def.bg : "#141418",
-        surface: def.surface && HEX_TEST.test(def.surface) ? def.surface : (def.scheme === "light" ? "#ffffff" : "#1f1f28"),
-        accent: HEX_TEST.test(def.accent) ? def.accent : "#7c3aed",
-        accentHover: def.accent,
-        accent2: undefined,
-        glow: "none",
-        cardGlass: false,
-        borderStyle: "subtle",
-        light: def.scheme === "light",
-        scene: undefined,
-        sceneBlur: 0,
-        sceneOpacity: 0.5,
-        radius: "default",
-        tokens: def.tokens ? { ...def.tokens } : undefined,
+        ...source,
+        name: `${source.name} (${t("settings.themeCustomBadge")})`,
       };
       designerSourceId = null;
     }
@@ -525,6 +516,7 @@ function renderDesignerModal(): void {
   const hasAccent2 = Boolean(designerDraft.accent2);
   const secAccentColor = designerDraft.accent2 ?? designerDraft.accentHover ?? designerDraft.accent;
   const gradPreview = `linear-gradient(135deg, ${designerDraft.accent} 0%, ${secAccentColor} 100%)`;
+  const sourceSceneUrl = designerDraft.sceneBg?.match(/url\("([^"]+)"\)/)?.[1];
 
   themeModalRoot.innerHTML = `
     <div class="modal-backdrop theme-designer-backdrop" data-act="td-cancel">
@@ -684,6 +676,18 @@ function renderDesignerModal(): void {
                 ${wallpaperChips}
               </div>
 
+              ${designerDraft.sceneBg && !designerDraft.scene ? `
+                <div class="theme-source-scene">
+                  <span class="theme-source-scene-label">
+                    ${sourceSceneUrl ? `<img class="theme-scene-thumb-preview" src="${esc(sourceSceneUrl)}" alt="" />` : icon("image", 12)}
+                    <span>${esc(t("settings.themeSourceScene"))}</span>
+                  </span>
+                  <button type="button" class="btn ghost small" data-act="td-clear-source-scene" style="color:var(--err);padding:2px 8px;font-size:11px;">
+                    ${icon("trash", 12)} ${esc(t("settings.themeSourceSceneClear"))}
+                  </button>
+                </div>
+              ` : ""}
+
               ${designerDraft.scene ? `
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
                   <div style="display:flex;align-items:center;gap:8px;">
@@ -797,6 +801,9 @@ function updateDesignerLivePreview(): void {
   const lineColor = tokens["--line"] ?? "rgba(255,255,255,0.08)";
   const accentTint = tokens["--accent-tint"] ?? `${accent}22`;
   const scene = sanitizeSceneUrl(designerDraft.scene);
+  const sourceScene = designerDraft.scene && !scene
+    ? undefined
+    : designerDraft.sceneBg?.match(/url\("([^"]+)"\)/)?.[1];
   const hasScene = Boolean(scene);
   const blur = designerDraft.sceneBlur ?? 0;
   const opacity = designerDraft.sceneOpacity ?? (designerDraft.light ? 0.38 : 0.52);
@@ -823,6 +830,8 @@ function updateDesignerLivePreview(): void {
   container.style.setProperty("--preview-on-accent", onAccentColor);
   if (scene) {
     container.style.backgroundImage = `url("${scene}")`;
+  } else if (sourceScene) {
+    container.style.backgroundImage = `url("${sourceScene}")`;
   } else {
     container.style.backgroundImage = "none";
   }
@@ -1143,6 +1152,7 @@ async function applyThemeSceneFile(file: File): Promise<void> {
     return;
   }
   designerDraft.scene = data;
+  designerDraft.sceneBg = undefined;
   renderDesignerModal();
 }
 
@@ -1166,6 +1176,8 @@ function saveThemeFromDesigner(): void {
     borderStyle: designerDraft.borderStyle,
     light: designerDraft.light,
     scene: designerDraft.scene,
+    sceneBg: designerDraft.sceneBg,
+    previewBg: keepTokens ? designerDraft.previewBg : undefined,
     sceneBlur: designerDraft.sceneBlur,
     sceneOpacity: designerDraft.sceneOpacity,
     radius: designerDraft.radius,
@@ -1435,10 +1447,12 @@ export function handleThemeSettingsAction(act: string | undefined, el: HTMLEleme
 
     case "td-download-file": {
       const name = designerDraft.name.trim() || "custom-theme";
+      const keepTokens = Boolean(designerDraft.tokens) && paletteSignature(designerDraft) === designerBaseline;
       const jsonStr = JSON.stringify({
-        efxlve_theme: 2,
+        efxlve_theme: 3,
         name,
         author: "User",
+        sourceId: keepTokens ? designerDraft.sourceId : undefined,
         bg: designerDraft.bg,
         surface: designerDraft.surface,
         accent: designerDraft.accent,
@@ -1449,9 +1463,12 @@ export function handleThemeSettingsAction(act: string | undefined, el: HTMLEleme
         borderStyle: designerDraft.borderStyle ?? "subtle",
         light: designerDraft.light,
         scene: designerDraft.scene,
+        sceneBg: designerDraft.sceneBg,
+        previewBg: designerDraft.previewBg,
         sceneBlur: designerDraft.sceneBlur,
         sceneOpacity: designerDraft.sceneOpacity,
         radius: designerDraft.radius,
+        tokens: keepTokens ? designerDraft.tokens : undefined,
         exportedAt: Date.now(),
       }, null, 2);
 
@@ -1501,6 +1518,7 @@ export function handleThemeSettingsAction(act: string | undefined, el: HTMLEleme
       const wp = PRESET_WALLPAPERS.find((w) => w.id === wpId);
       if (wp) {
         designerDraft.scene = wp.dataUrl;
+        designerDraft.sceneBg = undefined;
         renderDesignerModal();
       }
       return true;
@@ -1541,6 +1559,12 @@ export function handleThemeSettingsAction(act: string | undefined, el: HTMLEleme
 
     case "td-clear-scene": {
       designerDraft.scene = undefined;
+      renderDesignerModal();
+      return true;
+    }
+
+    case "td-clear-source-scene": {
+      designerDraft.sceneBg = undefined;
       renderDesignerModal();
       return true;
     }

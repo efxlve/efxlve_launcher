@@ -3085,6 +3085,8 @@
   "settings.themeSceneTooBig": "Cette image n'a pas pu être enregistrée. Essayez-en une plus petite.",
   "settings.themeSceneHint": "Redimensionnée et enregistrée sur ce PC. Les panneaux deviennent transparents par-dessus.",
   "settings.themeSceneClear": "Supprimer",
+  "settings.themeSourceScene": "Ce thème conserve l'arrière-plan du thème d'origine.",
+  "settings.themeSourceSceneClear": "Retirer l'arrière-plan d'origine",
   "settings.themeScenePick": "Choisir une image",
   "settings.themeScene": "Image d'arrière-plan",
   "settings.themeDeleted": "Thème supprimé",

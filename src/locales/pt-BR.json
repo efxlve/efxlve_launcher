@@ -3085,6 +3085,8 @@
   "settings.themeSceneTooBig": "Não foi possível armazenar essa imagem. Tente uma imagem menor.",
   "settings.themeSceneHint": "Redimensionada e salva neste PC. Os painéis ganham efeito de vidro sobre ela.",
   "settings.themeSceneClear": "Remover",
+  "settings.themeSourceScene": "Este tema mantém o plano de fundo do tema de origem.",
+  "settings.themeSourceSceneClear": "Remover fundo de origem",
   "settings.themeScenePick": "Escolher imagem",
   "settings.themeScene": "Imagem de fundo",
   "settings.themeDeleted": "Tema excluído",

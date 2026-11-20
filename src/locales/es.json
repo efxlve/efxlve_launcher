@@ -3085,6 +3085,8 @@
   "settings.themeSceneTooBig": "Esa imagen no se pudo almacenar. Prueba con una más pequeña.",
   "settings.themeSceneHint": "Reducida y guardada en este PC. Los paneles adquieren un efecto de cristal sobre ella.",
   "settings.themeSceneClear": "Eliminar",
+  "settings.themeSourceScene": "Este tema conserva el fondo del tema original.",
+  "settings.themeSourceSceneClear": "Quitar fondo original",
   "settings.themeScenePick": "Elegir imagen",
   "settings.themeScene": "Imagen de fondo",
   "settings.themeDeleted": "Tema eliminado",

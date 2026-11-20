@@ -3085,6 +3085,8 @@
   "settings.themeSceneTooBig": "해당 이미지를 저장할 수 없습니다. 더 작은 이미지를 시도해 보세요.",
   "settings.themeSceneHint": "축소되어 이 PC에 저장됩니다. 패널이 이미지 위에서 반투명 유리 효과로 바뀝니다.",
   "settings.themeSceneClear": "제거",
+  "settings.themeSourceScene": "이 테마는 원본 테마의 배경 이미지를 유지합니다.",
+  "settings.themeSourceSceneClear": "원본 배경 제거",
   "settings.themeScenePick": "이미지 선택",
   "settings.themeScene": "배경 이미지",
   "settings.themeDeleted": "테마가 삭제되었습니다",

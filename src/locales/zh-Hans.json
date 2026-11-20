@@ -3085,6 +3085,8 @@
   "settings.themeSceneTooBig": "无法保存该图片。请尝试使用较小的图片。",
   "settings.themeSceneHint": "缩小尺寸并保存在此电脑上。其上的面板将呈现毛玻璃透光质感。",
   "settings.themeSceneClear": "移除",
+  "settings.themeSourceScene": "此主题保留源主题的背景图。",
+  "settings.themeSourceSceneClear": "移除源背景",
   "settings.themeScenePick": "选择图片",
   "settings.themeScene": "背景图片",
   "settings.themeDeleted": "主题已删除",

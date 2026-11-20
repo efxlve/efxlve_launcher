@@ -3085,6 +3085,8 @@
   "settings.themeSceneTooBig": "Impossibile memorizzare l'immagine. Prova con una più piccola.",
   "settings.themeSceneHint": "Ridimensionata e salvata su questo PC. I pannelli diventano semitrasparenti su di essa.",
   "settings.themeSceneClear": "Rimuovi",
+  "settings.themeSourceScene": "Questo tema mantiene lo sfondo del tema di origine.",
+  "settings.themeSourceSceneClear": "Rimuovi sfondo originale",
   "settings.themeScenePick": "Scegli immagine",
   "settings.themeScene": "Immagine di sfondo",
   "settings.themeDeleted": "Tema eliminato",

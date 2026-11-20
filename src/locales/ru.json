@@ -3085,6 +3085,8 @@
   "settings.themeSceneTooBig": "Не удалось сохранить изображение. Попробуйте файл меньшего размера.",
   "settings.themeSceneHint": "Масштабируется и сохраняется на этом ПК. Панели поверх него становятся полупрозрачными.",
   "settings.themeSceneClear": "Удалить",
+  "settings.themeSourceScene": "Эта тема сохраняет фон исходной темы.",
+  "settings.themeSourceSceneClear": "Удалить исходный фон",
   "settings.themeScenePick": "Выбрать изображение",
   "settings.themeScene": "Фоновое изображение",
   "settings.themeDeleted": "Тема удалена",

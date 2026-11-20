@@ -3085,6 +3085,8 @@
   "settings.themeSceneTooBig": "تعذر تخزين تلك الصورة. جرب صورة أصغر حجمًا.",
   "settings.themeSceneHint": "يتم تصغيرها وتخزينها على هذا الكمبيوتر. وتتحول الألواح إلى زجاج فوقها.",
   "settings.themeSceneClear": "إزالة",
+  "settings.themeSourceScene": "يحتفظ هذا السمة بخلفية السمة المصدر.",
+  "settings.themeSourceSceneClear": "إزالة خلفية المصدر",
   "settings.themeScenePick": "اختيار صورة",
   "settings.themeScene": "صورة الخلفية",
   "settings.themeDeleted": "تم حذف السمة",

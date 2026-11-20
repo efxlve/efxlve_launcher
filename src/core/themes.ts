@@ -87,6 +87,7 @@ const RASTER_SCENE = /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=]+$/i;
 const SVG_SCENE = /^data:image\/svg\+xml,/i;
 const UNSAFE_SCENE_TEXT = /["\\\u0000-\u001f]/;
 const BUILTIN_SCENE_BG = /^#[0-9a-f]{6} url\("(?:\/assets\/|\/src\/assets\/|\.\.\/assets\/)[A-Za-z0-9_.-]+\.svg"\) 0 0 \/ 100vw 100vh no-repeat fixed$/i;
+const PREVIEW_GRADIENT = /^linear-gradient\([#0-9a-z%.,\s-]+\)$/i;
 
 /** Written on every applied theme and read by the boot script in index.html. */
 export const BOOT_THEME_KEY = "efxlve-boot-theme";
@@ -139,6 +140,26 @@ export function sanitizeSceneUrl(value: unknown): string | undefined {
   return undefined;
 }
 
+/**
+ * A cloned built-in keeps its bundled scene. The token contains `url(`, so it
+ * cannot travel through `sanitizeThemeTokens`; only the exact shipped shape is
+ * accepted, and only from the app's own asset folders.
+ */
+export function sanitizeSceneBackground(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const token = value.trim();
+  if (token.length >= 500 || !BUILTIN_SCENE_BG.test(token)) return undefined;
+  return token;
+}
+
+/** Gallery preview gradients are colours only; quotes and `url()` stay out. */
+export function sanitizePreviewBg(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const bg = value.trim();
+  if (bg.length > 400 || !PREVIEW_GRADIENT.test(bg)) return undefined;
+  return bg;
+}
+
 /** Boot snapshots may carry the bundled `--scene-bg` token, never a remote URL. */
 function sanitizeSnapshotTokens(value: unknown): Record<string, string> | undefined {
   const clean = sanitizeThemeTokens(value) ?? {};
@@ -156,7 +177,9 @@ function sceneRules(id: string, input: CustomThemeInput): string {
   const selector = `:root[data-surface="${cssEscape(id)}"]`;
   const rules: string[] = [];
   const scene = sanitizeSceneUrl(input.scene);
+  const sceneBg = scene ? undefined : sanitizeSceneBackground(input.sceneBg);
   const bg = HEX.test(input.bg) ? input.bg : "#000000";
+  const glassRule = `${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item, .cs-hero, .cs-dest, .cs-provider, .bk-section, .cs-config-box) { backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }`;
 
   if (scene) {
     const opacity = typeof input.sceneOpacity === "number" ? Math.max(0.05, Math.min(0.95, input.sceneOpacity)) : input.light ? 0.38 : 0.52;
@@ -175,9 +198,17 @@ function sceneRules(id: string, input: CustomThemeInput): string {
     // by the same scrim, so the library cannot bleed through and the theme still
     // reaches the page the user spends the most time on.
     rules.push(`${selector} .overlay { background: linear-gradient(${scrim}, ${scrim}), ${bg} url("${scene}") center / cover no-repeat fixed !important; }`);
-    rules.push(`${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item, .cs-hero, .cs-dest, .cs-provider, .bk-section, .cs-config-box) { backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }`);
+    rules.push(glassRule);
+  } else if (sceneBg) {
+    // A cloned built-in scene is already a complete background shorthand
+    // (colour, artwork, sizing); the source theme's own CSS cannot follow it,
+    // so the same shorthand is painted on the shell and the game page here.
+    rules.push(`${selector} body { background: ${sceneBg} !important; }`);
+    rules.push(`${selector} #main-col, ${selector} #view { background: transparent !important; }`);
+    rules.push(`${selector} .overlay { background: ${sceneBg} !important; }`);
+    if (input.cardGlass) rules.push(glassRule);
   } else if (input.cardGlass) {
-    rules.push(`${selector} :is(.card, .settings-group, .info-box, .lib-list, .pcard, .sb-item, .cs-hero, .cs-dest, .cs-provider, .bk-section, .cs-config-box) { backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); }`);
+    rules.push(glassRule);
   }
 
   if (input.glow && input.glow !== "none") {
@@ -213,6 +244,9 @@ function readCustomInputs(): CustomThemeInput[] {
         const sourceId = isSafeThemeId(item.sourceId) ? item.sourceId : undefined;
         let tokens = sanitizeThemeTokens(item.tokens);
         let recoveredSource = sourceId;
+        let recoveredSceneBg: string | undefined;
+        let recoveredPreviewBg: string | undefined;
+        let recoveredGlass = false;
 
         // A theme cloned after the token fix carries its source id, so missing
         // tokens can be recovered without looking at a translated name.
@@ -220,6 +254,10 @@ function readCustomInputs(): CustomThemeInput[] {
           const source = allBuiltinThemes().find((theme) => theme.id === sourceId);
           if (source?.tokens) {
             tokens = { ...source.tokens };
+            recoveredSceneBg = sanitizeSceneBackground(tokens["--scene-bg"]);
+            delete tokens["--scene-bg"];
+            recoveredPreviewBg = sanitizePreviewBg(source.bg);
+            recoveredGlass = hasTranslucentSurfaces(source.tokens);
             migrated = true;
           }
         }
@@ -235,6 +273,10 @@ function readCustomInputs(): CustomThemeInput[] {
           if (matched?.tokens) {
             tokens = { ...matched.tokens };
             recoveredSource = matched.id;
+            recoveredSceneBg = sanitizeSceneBackground(tokens["--scene-bg"]);
+            delete tokens["--scene-bg"];
+            recoveredPreviewBg = sanitizePreviewBg(matched.bg);
+            recoveredGlass = hasTranslucentSurfaces(matched.tokens);
             migrated = true;
           }
         }
@@ -260,10 +302,12 @@ function readCustomInputs(): CustomThemeInput[] {
           accentHover,
           accent2,
           glow,
-          cardGlass: item.cardGlass === true,
+          cardGlass: item.cardGlass === true || recoveredGlass,
           borderStyle,
           light: item.light === true,
           scene: sanitizeSceneUrl(item.scene),
+          sceneBg: sanitizeSceneBackground(item.sceneBg) ?? recoveredSceneBg,
+          previewBg: sanitizePreviewBg(item.previewBg) ?? recoveredPreviewBg,
           sceneStored: item.sceneStored === true,
           sceneBlur: typeof item.sceneBlur === "number" ? Math.max(0, Math.min(30, item.sceneBlur)) : 0,
           sceneOpacity: typeof item.sceneOpacity === "number" ? Math.max(0.05, Math.min(0.95, item.sceneOpacity)) : undefined,
@@ -452,6 +496,8 @@ export function saveCustomTheme(input: CustomThemeInput): string {
     borderStyle: input.borderStyle === "contrast" || input.borderStyle === "accent" ? input.borderStyle : "subtle",
     light: Boolean(input.light),
     scene: sceneReady ? undefined : storedScene,
+    sceneBg: sanitizeSceneBackground(input.sceneBg),
+    previewBg: sanitizePreviewBg(input.previewBg),
     sceneStored: sceneReady ? Boolean(storedScene) : false,
     sceneBlur: typeof input.sceneBlur === "number" ? Math.max(0, Math.min(30, input.sceneBlur)) : 0,
     sceneOpacity: typeof input.sceneOpacity === "number" ? Math.max(0.05, Math.min(0.95, input.sceneOpacity)) : undefined,
@@ -525,6 +571,55 @@ function firstHex(value: string): string | null {
   return match ? match[0] : null;
 }
 
+/** `--surface-1` may be translucent; the editor still wants a solid swatch. */
+function surfaceHint(tokens: Record<string, string> | undefined): string | undefined {
+  const value = tokens?.["--surface-1"];
+  if (!value) return undefined;
+  if (HEX.test(value)) return value;
+  const match = value.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i);
+  if (!match) return undefined;
+  const parts = [match[1], match[2], match[3]].map((part) => Math.max(0, Math.min(255, Number(part))));
+  return `#${parts.map((part) => part.toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** True when a built-in paints its panels with a translucent surface colour. */
+function hasTranslucentSurfaces(tokens: Record<string, string> | undefined): boolean {
+  if (!tokens) return false;
+  return ["--surface-1", "--surface-2", "--surface-3"].some((key) => {
+    const match = /^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*(0?\.\d+|1(?:\.0+)?)\s*\)$/i.exec(tokens[key] ?? "");
+    return Boolean(match) && Number(match?.[1]) < 1;
+  });
+}
+
+/**
+ * Everything a built-in can hand to the designer or a clone. Token copying
+ * alone drops the structural data (`--scene-bg`, the gallery gradient, the
+ * glass flag) because it lives outside or inside sanitised token values.
+ */
+export function builtinThemeInput(sourceId: string): CustomThemeInput {
+  const def = themeById(sourceId);
+  const tokens = def.tokens;
+  const hasAccentLine = Boolean(tokens?.["--line"] && !tokens["--line"].includes("255, 255, 255") && !tokens["--line"].includes("15, 23, 42"));
+  return {
+    sourceId,
+    name: def.name ?? (def.labelKey ? t(def.labelKey) : def.id),
+    bg: HEX.test(def.bg) ? def.bg : firstHex(def.bg) ?? "#141418",
+    surface: surfaceHint(tokens) ?? (def.surface && HEX.test(def.surface) ? def.surface : undefined),
+    accent: HEX.test(def.accent) ? def.accent : firstHex(def.accent) ?? "#7c3aed",
+    accentHover: tokens?.["--accent-hover"],
+    accent2: tokens?.["--accent-2"],
+    glow: tokens?.["--accent-glow"] && tokens["--accent-glow"] !== "none" ? "radiant" : "none",
+    cardGlass: hasTranslucentSurfaces(tokens),
+    borderStyle: hasAccentLine ? "accent" : "subtle",
+    light: def.scheme === "light",
+    sceneBg: sanitizeSceneBackground(tokens?.["--scene-bg"]),
+    previewBg: sanitizePreviewBg(def.bg),
+    radius: tokens?.["--r-sm"] === "0px" ? "sharp" : tokens?.["--r-sm"] === "10px" ? "round" : "default",
+    tokens: tokens ? { ...tokens } : undefined,
+    createdAt: Date.now(),
+  };
+}
+
 /** Duplicates any theme (built-in or custom) as a new custom theme. */
 export function duplicateTheme(sourceId: string, copySuffix = " Copy"): string {
   const custom = getCustomThemeInput(sourceId);
@@ -539,25 +634,11 @@ export function duplicateTheme(sourceId: string, copySuffix = " Copy"): string {
     });
   }
 
-  const def = themeById(sourceId);
-  const bg = HEX.test(def.bg) ? def.bg : firstHex(def.bg) ?? "#141418";
-  const accent = HEX.test(def.accent) ? def.accent : firstHex(def.accent) ?? "#7c3aed";
-  const surface = def.tokens?.["--surface-1"] ?? (def.surface && HEX.test(def.surface) ? def.surface : undefined);
-  const hasAccentLine = Boolean(def.tokens?.["--line"] && !def.tokens["--line"].includes("255, 255, 255") && !def.tokens["--line"].includes("15, 23, 42"));
-
+  const source = builtinThemeInput(sourceId);
   return saveCustomTheme({
-    sourceId,
-    name: `${def.name ?? (def.labelKey ? t(def.labelKey) : def.id)}${copySuffix}`,
-    bg,
-    surface,
-    accent,
-    accentHover: def.tokens?.["--accent-hover"],
-    accent2: def.tokens?.["--accent-2"],
-    borderStyle: hasAccentLine ? "accent" : "subtle",
-    glow: def.tokens?.["--accent-glow"] && def.tokens["--accent-glow"] !== "none" ? "radiant" : "none",
-    tokens: def.tokens ? { ...def.tokens } : undefined,
-    light: def.scheme === "light",
-    radius: def.tokens?.["--r-sm"] === "0px" ? "sharp" : def.tokens?.["--r-sm"] === "10px" ? "round" : "default",
+    ...source,
+    name: `${source.name}${copySuffix}`,
+    createdAt: Date.now(),
   });
 }
 
@@ -589,6 +670,8 @@ export function exportThemeJson(id: string): string {
         borderStyle: custom.borderStyle ?? "subtle",
         light: custom.light,
         scene: sanitizeSceneUrl(custom.scene),
+        sceneBg: sanitizeSceneBackground(custom.sceneBg),
+        previewBg: sanitizePreviewBg(custom.previewBg),
         sceneBlur: custom.sceneBlur,
         sceneOpacity: custom.sceneOpacity,
         radius: custom.radius,
@@ -601,17 +684,25 @@ export function exportThemeJson(id: string): string {
   }
 
   const def = themeById(id);
+  const source = builtinThemeInput(id);
   return JSON.stringify(
     {
       efxlve_theme: THEME_SCHEMA,
-      name: def.name ?? (def.labelKey ? t(def.labelKey) : def.id),
+      name: source.name,
       tags: def.tags ?? [],
-      bg: HEX.test(def.bg) ? def.bg : firstHex(def.bg) ?? "#141418",
-      surface: def.surface,
-      accent: HEX.test(def.accent) ? def.accent : firstHex(def.accent) ?? "#7c3aed",
-      light: def.scheme === "light",
-      radius: "default",
-      tokens: sanitizeThemeTokens(def.tokens),
+      bg: source.bg,
+      surface: source.surface,
+      accent: source.accent,
+      accentHover: source.accentHover,
+      accent2: source.accent2,
+      glow: source.glow ?? "none",
+      cardGlass: Boolean(source.cardGlass),
+      borderStyle: source.borderStyle ?? "subtle",
+      light: source.light,
+      sceneBg: source.sceneBg,
+      previewBg: source.previewBg,
+      radius: source.radius,
+      tokens: sanitizeThemeTokens(source.tokens),
       exportedAt: Date.now(),
     },
     null,
@@ -646,6 +737,8 @@ export function importThemeJson(jsonStr: string): { id: string; name: string } |
         : "subtle";
     const light = parsed.light === true;
     const scene = sanitizeSceneUrl(parsed.scene);
+    const sceneBg = sanitizeSceneBackground(parsed.sceneBg);
+    const previewBg = sanitizePreviewBg(parsed.previewBg);
     const sceneBlur = typeof parsed.sceneBlur === "number" ? Math.max(0, Math.min(30, parsed.sceneBlur)) : 0;
     const sceneOpacity = typeof parsed.sceneOpacity === "number" ? Math.max(0.05, Math.min(0.95, parsed.sceneOpacity)) : undefined;
     const radius = parsed.radius === "sharp" || parsed.radius === "round" ? parsed.radius : "default";
@@ -663,6 +756,8 @@ export function importThemeJson(jsonStr: string): { id: string; name: string } |
       borderStyle,
       light,
       scene,
+      sceneBg,
+      previewBg,
       sceneBlur,
       sceneOpacity,
       radius,

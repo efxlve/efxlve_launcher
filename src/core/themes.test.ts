@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   BOOT_THEME_KEY,
   applySurface,
+  builtinThemeInput,
   clearThemeCache,
   customThemes,
   customTokens,
@@ -13,6 +14,8 @@ import {
   importThemePack,
   hydrateThemeScenes,
   saveCustomTheme,
+  sanitizePreviewBg,
+  sanitizeSceneBackground,
   sanitizeSceneUrl,
   sanitizeThemeTokens,
   contrastRatio,
@@ -319,6 +322,77 @@ describe("custom theme transfer", () => {
     const customReads = getItem.mock.calls.filter(([key]) => key === "efxlve-custom-themes");
     expect(customReads).toHaveLength(0);
     getItem.mockRestore();
+  });
+});
+
+describe("theme cloning", () => {
+  it("keeps a scene theme's backdrop, gradient preview and glass flag", async () => {
+    await ensureThemeCatalog();
+    const id = duplicateTheme("neongrid");
+    const cloned = getCustomThemeInput(id)!;
+    const source = themeById("neongrid");
+
+    expect(cloned.sceneBg).toContain("neon-grid-scene.svg");
+    expect(cloned.previewBg).toBe(source.bg);
+    expect(cloned.cardGlass).toBe(false);
+
+    applySurface(id, false);
+    const css = document.getElementById("efxlve-theme-tokens")?.textContent ?? "";
+    expect(css).toContain("neon-grid-scene.svg");
+    expect(css).toContain('body { background: #07080a url(');
+  });
+
+  it("detects translucent panels and keeps a solid surface hint", () => {
+    const blades = builtinThemeInput("blades");
+    expect(blades.sceneBg).toContain("blades-scene.svg");
+    expect(blades.previewBg).toContain("linear-gradient");
+    expect(blades.cardGlass).toBe(true);
+    expect(blades.surface).toMatch(/^#[0-9a-f]{6}$/i);
+  });
+
+  it("round-trips the extra clone fields through export and import", () => {
+    const cloneId = duplicateTheme("blades");
+    const imported = importThemeJson(exportThemeJson(cloneId));
+    expect(imported).not.toBeNull();
+
+    const input = getCustomThemeInput(imported!.id)!;
+    expect(input.sceneBg).toContain("blades-scene.svg");
+    expect(input.previewBg).toContain("linear-gradient");
+    expect(input.cardGlass).toBe(true);
+    expect(input.surface).toMatch(/^#[0-9a-f]{6}$/i);
+  });
+
+  it("recovers the source backdrop for clones saved by older builds", async () => {
+    await ensureThemeCatalog();
+    localStorage.setItem(
+      "efxlve-custom-themes",
+      JSON.stringify([
+        {
+          id: "custom-old",
+          sourceId: "neongrid",
+          name: "Old Neon",
+          bg: "#07080a",
+          accent: "#fcee0a",
+          light: false,
+        },
+      ]),
+    );
+
+    const input = getCustomThemeInput("custom-old");
+    expect(input?.sceneBg).toContain("neon-grid-scene.svg");
+    expect(input?.previewBg).toContain("linear-gradient");
+    expect(input?.tokens?.["--scene-bg"]).toBeUndefined();
+  });
+
+  it("rejects a foreign scene background and an unsafe preview gradient", () => {
+    expect(sanitizeSceneBackground('url("https://example.com/scene.svg")')).toBeUndefined();
+    expect(
+      sanitizeSceneBackground('#07080a url("https://example.com/scene.svg") 0 0 / 100vw 100vh no-repeat fixed'),
+    ).toBeUndefined();
+    expect(sanitizePreviewBg("linear-gradient(135deg, #000 0%, #fff 100%); } body { display:none")).toBeUndefined();
+    expect(sanitizePreviewBg("linear-gradient(135deg, #000 0%, #fff 100%)")).toBe(
+      "linear-gradient(135deg, #000 0%, #fff 100%)",
+    );
   });
 });
 

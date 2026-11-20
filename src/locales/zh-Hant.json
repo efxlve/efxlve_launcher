@@ -3085,6 +3085,8 @@
   "settings.themeSceneTooBig": "無法儲存該圖片。請嘗試使用較小的圖片。",
   "settings.themeSceneHint": "縮小尺寸並儲存在此電腦上。上方的面板會呈現玻璃半透明效果。",
   "settings.themeSceneClear": "移除",
+  "settings.themeSourceScene": "此主題保留來源主題的背景圖。",
+  "settings.themeSourceSceneClear": "移除來源背景",
   "settings.themeScenePick": "選擇圖片",
   "settings.themeScene": "背景圖片",
   "settings.themeDeleted": "主題已刪除",

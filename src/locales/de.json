@@ -3085,6 +3085,8 @@
   "settings.themeSceneTooBig": "Dieses Bild konnte nicht gespeichert werden. Versuche ein kleineres.",
   "settings.themeSceneHint": "Skaliert und auf diesem PC gespeichert. Panels legen sich wie Glas darüber.",
   "settings.themeSceneClear": "Entfernen",
+  "settings.themeSourceScene": "Dieses Design behält den Hintergrund des Ursprungsthemas.",
+  "settings.themeSourceSceneClear": "Ursprungshintergrund entfernen",
   "settings.themeScenePick": "Bild auswählen",
   "settings.themeScene": "Hintergrundbild",
   "settings.themeDeleted": "Design gelöscht",

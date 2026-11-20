@@ -3085,6 +3085,8 @@
   "settings.themeSceneTooBig": "That image could not be stored. Try a smaller one.",
   "settings.themeSceneHint": "Scaled down and stored on this PC. Panels turn into glass over it.",
   "settings.themeSceneClear": "Remove",
+  "settings.themeSourceScene": "This theme keeps the source theme's backdrop.",
+  "settings.themeSourceSceneClear": "Remove source backdrop",
   "settings.themeScenePick": "Choose image",
   "settings.themeScene": "Background image",
   "settings.themeDeleted": "Theme deleted",

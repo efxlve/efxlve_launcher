@@ -3085,6 +3085,8 @@
   "settings.themeSceneTooBig": "ไม่สามารถบันทึกรูปภาพนั้นได้ ลองใช้รูปที่มีขนาดเล็กลง",
   "settings.themeSceneHint": "ย่อขนาดและจัดเก็บบนพีซีนี้ แผงจะเปลี่ยนเป็นกระจกฝ้าทับบนรูปภาพ",
   "settings.themeSceneClear": "ลบออก",
+  "settings.themeSourceScene": "ธีมนี้ใช้ภาพพื้นหลังจากธีมต้นฉบับ",
+  "settings.themeSourceSceneClear": "ลบภาพพื้นหลังต้นฉบับ",
   "settings.themeScenePick": "เลือกรูปภาพ",
   "settings.themeScene": "รูปภาพพื้นหลัง",
   "settings.themeDeleted": "ลบธีมแล้ว",
