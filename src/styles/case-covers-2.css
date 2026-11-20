@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Extended physical collectible case styles (Styles 21–30) and modifiers.
+   Extended physical collectible case styles (Styles 21–28) and modifiers.
    Imported immediately after case-covers.css.
    ========================================================================== */
 
@@ -120,39 +120,7 @@
   opacity: 0.5;
 }
 
-/* --- Style 24: Mini-Disc / UMD Caddy --- */
-.pcard.is-case[data-case-style="umd"] .pcard-art {
-  padding: 29px 6px 8px 9px;
-  border-radius: 6px 12px 12px 6px;
-  outline-color: color-mix(in srgb, var(--case-border) 55%, rgba(235, 245, 255, 0.78));
-  background:
-    radial-gradient(circle at 54% 56%, transparent 48%, rgba(255, 255, 255, 0.24) 49% 51%, rgba(0, 0, 0, 0.35) 52%, transparent 54%),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.65) 0 2.5px, rgba(180, 210, 240, 0.25) 5px, rgba(0, 0, 0, 0.3) 7.5px, transparent 10px),
-    linear-gradient(155deg, color-mix(in srgb, var(--case-shell-top) 40%, #dde6f2) 0%, color-mix(in srgb, var(--case-shell-mid) 52%, #7f90a6) 50%, color-mix(in srgb, var(--case-shell-bot) 68%, #1e2633) 100%);
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.75),
-    inset 0 0 0 1.5px rgba(255, 255, 255, 0.22),
-    -2px 2px 0 color-mix(in srgb, var(--case-shell-bot) 60%, #4b586b),
-    0 10px 18px -4px rgba(0, 0, 0, 0.72);
-}
-.pcard.is-case[data-case-style="umd"] .pcard-case-head {
-  top: 4px;
-  left: 9px;
-  right: 6px;
-  height: 25px;
-  border-radius: 3px 8px 0 0;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--case-shell-top) 70%, #1c2430) 0%, color-mix(in srgb, var(--case-shell-bot) 82%, #0c1017) 100%);
-  color: #f2f7ff;
-  border-bottom: 1.5px solid color-mix(in srgb, var(--case-rule) 72%, #ffffff);
-}
-.pcard.is-case[data-case-style="umd"] .pcard-case-fx {
-  inset: 29px 6px 8px 9px;
-  background:
-    radial-gradient(circle at 54% 56%, transparent 45%, rgba(255, 255, 255, 0.16) 48% 51%, transparent 54%),
-    linear-gradient(125deg, rgba(255, 255, 255, 0.26) 0%, transparent 46%, rgba(0, 0, 0, 0.18) 100%);
-}
-
-/* --- Style 25: Embossed Tin Box --- */
+/* --- Style 24: Embossed Tin Box --- */
 .pcard.is-case[data-case-style="tinbox"] .pcard-art {
   padding: 29px 6px 8px 9px;
   border-radius: 7px 10px 10px 7px;
@@ -185,39 +153,7 @@
   background: linear-gradient(115deg, rgba(255, 255, 255, 0.24) 0%, transparent 38%, rgba(255, 255, 255, 0.08) 54%, rgba(0, 0, 0, 0.22) 100%);
 }
 
-/* --- Style 26: Blister Card Pack --- */
-.pcard.is-case[data-case-style="blister"] .pcard-art {
-  padding: 31px 7px 9px 9px;
-  border-radius: 5px 8px 8px 5px;
-  outline-color: color-mix(in srgb, var(--case-border) 62%, rgba(255, 255, 255, 0.75));
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0 2px, rgba(0, 0, 0, 0.3) 4px, rgba(255, 255, 255, 0.22) 6.5px, transparent 9px),
-    linear-gradient(155deg, color-mix(in srgb, var(--case-shell-top) 72%, #3a4659) 0%, color-mix(in srgb, var(--case-shell-mid) 76%, #1f2733) 55%, color-mix(in srgb, var(--case-shell-bot) 82%, #0e131a) 100%);
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.38),
-    inset 0 0 0 5px rgba(255, 255, 255, 0.1),
-    -2px 2px 0 color-mix(in srgb, var(--case-shell-bot) 70%, #1c2430),
-    0 10px 18px -4px rgba(0, 0, 0, 0.76);
-}
-.pcard.is-case[data-case-style="blister"] .pcard-case-head {
-  top: 4px;
-  left: 8px;
-  right: 7px;
-  height: 27px;
-  border-radius: 3px 5px 0 0;
-  background:
-    radial-gradient(14px 5px at 50% 4px, rgba(0, 0, 0, 0.55) 0 65%, rgba(255, 255, 255, 0.25) 70% 85%, transparent 100%),
-    var(--case-head-bg);
-  color: #ffffff;
-  border-bottom: 1.5px solid color-mix(in srgb, var(--case-rule) 75%, rgba(255, 255, 255, 0.6));
-}
-.pcard.is-case[data-case-style="blister"] .pcard-case-fx {
-  inset: 31px 7px 9px 9px;
-  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.45), inset 0 -2px 4px rgba(0, 0, 0, 0.35);
-  background: linear-gradient(128deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.06) 32%, transparent 55%, rgba(0, 0, 0, 0.18) 100%);
-}
-
-/* --- Style 27: Sealed Foil Pouch --- */
+/* --- Style 25: Sealed Foil Pouch --- */
 .pcard.is-case[data-case-style="foilpack"] .pcard-art {
   padding: 30px 6px 10px 9px;
   border-radius: 2px 4px 4px 2px;
@@ -248,7 +184,7 @@
   background: linear-gradient(115deg, rgba(255, 255, 255, 0.3) 0%, transparent 32%, rgba(255, 255, 255, 0.14) 52%, transparent 72%, rgba(0, 0, 0, 0.24) 100%);
 }
 
-/* --- Style 28: Armored Data Case --- */
+/* --- Style 26: Armored Data Case --- */
 .pcard.is-case[data-case-style="cyberdeck"] .pcard-art {
   padding: 30px 6px 8px 9px;
   border-radius: 3px 6px 6px 3px;
@@ -281,7 +217,7 @@
   opacity: 0.55;
 }
 
-/* --- Style 29: Walnut & Brass --- */
+/* --- Style 27: Walnut & Brass --- */
 .pcard.is-case[data-case-style="walnut"] .pcard-art {
   padding: 29px 6px 8px 9px;
   border-radius: 4px 7px 7px 4px;
@@ -312,7 +248,7 @@
   opacity: 0.55;
 }
 
-/* --- Style 30: Glow-in-the-Dark Vinyl --- */
+/* --- Style 28: Glow-in-the-Dark Vinyl --- */
 .pcard.is-case[data-case-style="phosphor"] .pcard-art {
   padding: 29px 6px 8px 9px;
   border-radius: 5px 10px 10px 5px;
