@@ -219,9 +219,23 @@
 }
 :root[data-surface="neongrid"] :is(input, select, textarea, .input, .text-input, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input):focus,
 :root[data-surface="neongrid"] .search:focus-within,
+:root[data-surface="neongrid"] .page-search:hover,
 :root[data-surface="neongrid"] .install-path-input-wrap:focus-within {
   border-color: #fcee0a;
   box-shadow: 0 0 0 2px rgba(252, 238, 10, 0.3);
+}
+/* The header search is a button, not an input. Keep its label readable instead
+   of inheriting the muted placeholder colour from the shell rule. */
+:root[data-surface="neongrid"] .page-search,
+:root[data-surface="neongrid"] .page-search > span:not(.kbd) {
+  color: #fefefe;
+}
+:root[data-surface="neongrid"] .page-search:hover {
+  color: #fcee0a;
+}
+:root[data-surface="neongrid"] .page-search .kbd {
+  color: #a6acb8;
+  border-color: rgba(252, 238, 10, 0.22);
 }
 
 /* Neon Grid: Progress Bars */
