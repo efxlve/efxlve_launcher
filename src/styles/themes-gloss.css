@@ -190,24 +190,7 @@
   border-color: #0a78c8;
   box-shadow: 0 0 0 2px #0a78c8, 0 10px 26px rgba(10, 120, 200, 0.24), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="gloss"] .theme-tag-btn {
-  background: var(--aero-gloss-white);
-  border-color: rgba(16, 78, 130, 0.24);
-  color: var(--text-2);
-  box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(8, 60, 110, 0.08);
-}
-:root[data-surface="gloss"] .theme-tag-btn:hover:not(.active) {
-  background: var(--aero-gloss-hover);
-  border-color: #4aa6e6;
-  color: var(--aero-heading);
-}
-:root[data-surface="gloss"] .theme-tag-btn.active {
-  background: var(--aero-gloss-blue);
-  border-color: #0b5fa5;
-  color: #ffffff;
-  text-shadow: 0 1px 1px rgba(0, 45, 95, 0.4);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 1px 4px rgba(10, 90, 160, 0.3);
-}
+
 
 /* Modal Backdrops & Overlays */
 :root[data-surface="gloss"] :is(
@@ -237,11 +220,6 @@
 
 :root[data-surface="gloss"] :is(.theme-section-titles .page-sub, .page-sub, .settings-row-desc) {
   color: #143d63;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-}
-
-:root[data-surface="gloss"] .theme-active-indicator {
-  color: #0e375e;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
