@@ -1018,6 +1018,82 @@
 
 
 /* Physical Case Style Visual Picker in Settings */
+.case-preview-stage {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 18px 4px;
+}
+.case-preview-card {
+  flex: 0 0 132px;
+  width: 132px;
+  cursor: default;
+  pointer-events: none;
+}
+.case-preview-card .pcard-art {
+  aspect-ratio: 3 / 4.34;
+}
+.case-preview-cover {
+  position: absolute;
+  inset: 32px 6px 9px 8px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 0 0 4px 2px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 30%, #17202b), #0a0d12 70%);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.case-preview-cover::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 45%;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.55));
+  pointer-events: none;
+}
+.case-preview-cover img {
+  position: relative;
+  z-index: 1;
+  width: 54%;
+  height: auto;
+  border-radius: 14%;
+  opacity: 0.9;
+}
+.case-preview-card.case-no-head .case-preview-cover { top: 8px; }
+.case-preview-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-width: 520px;
+  min-width: 0;
+}
+.case-preview-kicker {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.case-preview-caption strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.case-preview-caption > span:last-child {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+@media (max-width: 700px) {
+  .case-preview-stage {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .case-preview-card {
+    flex-basis: 116px;
+    width: 116px;
+  }
+}
 .case-styles-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));

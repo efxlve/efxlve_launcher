@@ -142,8 +142,8 @@ export const STORE_ICONS_KEY = "efxlve-store-icons";
 export const CASE_COVERS_KEY = "efxlve-case-covers";
 /** Selected physical case frame design ("retail" | "clear" | "steelbook" | "jewel" | "holo"). */
 export const CASE_COVER_STYLE_KEY = "efxlve-case-cover-style";
-export type CaseCoverStyle = "retail" | "clear" | "steelbook" | "jewel" | "holo" | "gold" | "retro" | "neon" | "acrylic" | "aero";
-export const CASE_COVER_STYLES: readonly CaseCoverStyle[] = ["retail", "clear", "steelbook", "jewel", "holo", "gold", "retro", "neon", "acrylic", "aero"];
+export type CaseCoverStyle = "retail" | "clear" | "steelbook" | "jewel" | "holo" | "gold" | "retro" | "neon" | "acrylic" | "aero" | "slipcase" | "titanium" | "carbon" | "leather" | "vhs" | "eco";
+export const CASE_COVER_STYLES: readonly CaseCoverStyle[] = ["retail", "clear", "steelbook", "jewel", "holo", "gold", "retro", "neon", "acrylic", "aero", "slipcase", "titanium", "carbon", "leather", "vhs", "eco"];
 export function normalizeCaseCoverStyle(raw: string | null | undefined): CaseCoverStyle {
   return (CASE_COVER_STYLES as readonly string[]).includes(raw ?? "") ? (raw as CaseCoverStyle) : "retail";
 }
@@ -153,6 +153,8 @@ export const CASE_SHOW_LOGO_KEY = "efxlve-case-show-logo";
 export const CASE_SHOW_NAME_KEY = "efxlve-case-show-name";
 /** Case Covers: Show OS badge in header (default true). */
 export const CASE_SHOW_OS_KEY = "efxlve-case-show-os";
+/** Case Covers: Show the whole header strip (default true). */
+export const CASE_SHOW_HEADER_KEY = "efxlve-case-show-header";
 /** Case Covers: Interactive cursor light & glare reflections (default true). */
 export const CASE_GLARE_KEY = "efxlve-case-glare";
 /** Case Covers: 3D perspective tilt on hover (default true). */
@@ -166,13 +168,13 @@ export const CASE_GLOSS_LEVELS: readonly CaseGloss[] = ["high", "satin", "matte"
 export function normalizeCaseGloss(raw: string | null | undefined): CaseGloss {
   return (CASE_GLOSS_LEVELS as readonly string[]).includes(raw ?? "") ? (raw as CaseGloss) : "high";
 }
-/** Case Covers: Store header color mode ("store" | "monochrome", default "store"). */
+/** Case Covers: Store header color mode ("store" | "monochrome" | "accent", default "store"). */
 export const CASE_COLOR_MODE_KEY = "efxlve-case-color-mode";
 /** Case Covers: Custom store colors mapping JSON string. */
 export const CASE_STORE_COLORS_KEY = "efxlve-case-store-colors";
-export type CaseColorMode = "store" | "monochrome";
+export type CaseColorMode = "store" | "monochrome" | "accent";
 export function normalizeCaseColorMode(raw: string | null | undefined): CaseColorMode {
-  return raw === "monochrome" ? "monochrome" : "store";
+  return raw === "monochrome" || raw === "accent" ? raw : "store";
 }
 /** Show every store copy of a multi-store game as its own card. Off = one combined card. */
 export const SEPARATE_COPIES_KEY = "efxlve-separate-copies";

@@ -32,6 +32,7 @@ import {
   CASE_SHOW_LOGO_KEY,
   CASE_SHOW_NAME_KEY,
   CASE_SHOW_OS_KEY,
+  CASE_SHOW_HEADER_KEY,
   CASE_GLARE_KEY,
   CASE_TILT_KEY,
   CASE_SHELF_SHADOW_KEY,
@@ -1182,6 +1183,12 @@ function renderCasesSection(): string {
     { id: "neon", titleKey: "settings.caseStyleNeon", descKey: "settings.caseStyleNeonDesc", badge: "Cyber Acrylic" },
     { id: "acrylic", titleKey: "settings.caseStyleAcrylic", descKey: "settings.caseStyleAcrylicDesc", badge: "Crystal Glass" },
     { id: "aero", titleKey: "settings.caseStyleAero", descKey: "settings.caseStyleAeroDesc", badge: "Aqua Glass" },
+    { id: "slipcase", titleKey: "settings.caseStyleSlipcase", descKey: "settings.caseStyleSlipcaseDesc", badge: "Kraft Sleeve" },
+    { id: "titanium", titleKey: "settings.caseStyleTitanium", descKey: "settings.caseStyleTitaniumDesc", badge: "Brushed Metal" },
+    { id: "carbon", titleKey: "settings.caseStyleCarbon", descKey: "settings.caseStyleCarbonDesc", badge: "Carbon Fiber" },
+    { id: "leather", titleKey: "settings.caseStyleLeather", descKey: "settings.caseStyleLeatherDesc", badge: "Collector's Leather" },
+    { id: "vhs", titleKey: "settings.caseStyleVhs", descKey: "settings.caseStyleVhsDesc", badge: "VHS / Cassette" },
+    { id: "eco", titleKey: "settings.caseStyleEco", descKey: "settings.caseStyleEcoDesc", badge: "Recycled Paper" },
   ];
 
   const styleCards = styles.map((st) => {
@@ -1198,6 +1205,31 @@ function renderCasesSection(): string {
     `;
   }).join("");
 
+  const activeStyle = styles.find((style) => style.id === S.caseCoverStyle) ?? styles[0];
+  const previewHead = S.caseShowHeader
+    ? `<div class="pcard-case-head" aria-hidden="true">
+        <span class="pcard-case-slot is-left"></span>
+        <span class="pcard-case-brand">${S.caseShowLogo ? storeLogo("epic", 13, "pcard-case-logo") : ""}${S.caseShowName ? `<span class="pcard-case-name">Epic Games</span>` : ""}</span>
+        <span class="pcard-case-slot is-right">${S.caseShowOs ? `<span class="pcard-case-os" data-os="windows">${icon("monitor", 8)}<span>Windows</span></span>` : ""}</span>
+      </div>`
+    : "";
+  const preview = `
+    <div class="case-preview-stage">
+      <div class="pcard is-case case-preview-card${previewHead ? "" : " case-no-head"}" data-case-style="${S.caseCoverStyle}" data-case-gloss="${S.caseGloss}" data-case-color="${S.caseColorMode}" data-source="epic" aria-hidden="true">
+        <div class="pcard-art">
+          ${previewHead}
+          <div class="case-preview-cover"><img src="${launcherIcon}" alt="" /></div>
+          <span class="pcard-case-fx"></span>
+        </div>
+      </div>
+      <div class="case-preview-caption">
+        <span class="case-preview-kicker">${t("settings.casePreviewLabel")}</span>
+        <strong>${t(activeStyle.titleKey)}</strong>
+        <span>${t(activeStyle.descKey)}</span>
+      </div>
+    </div>
+  `;
+
   const mainGroup = group(
     row(t("settings.caseCoversTitle"), t("settings.caseCoversDesc"), toggle("toggle-case-covers", S.showCaseCovers)),
     t("settings.secCases"),
@@ -1211,7 +1243,7 @@ function renderCasesSection(): string {
   ` : "";
 
   const galleryGroup = group(
-    `<div class="case-styles-gallery">${styleCards}</div>`,
+    preview + `<div class="case-styles-gallery">${styleCards}</div>`,
     t("settings.caseStyleTitle"),
   );
 
@@ -1222,8 +1254,10 @@ function renderCasesSection(): string {
       `<div class="seg" role="radiogroup">
         <button type="button" class="${S.caseColorMode === "store" ? "active" : ""}" data-act="set-case-color-mode" data-mode="store">${t("settings.caseColorStore")}</button>
         <button type="button" class="${S.caseColorMode === "monochrome" ? "active" : ""}" data-act="set-case-color-mode" data-mode="monochrome">${t("settings.caseColorMonochrome")}</button>
+        <button type="button" class="${S.caseColorMode === "accent" ? "active" : ""}" data-act="set-case-color-mode" data-mode="accent">${t("settings.caseColorAccent")}</button>
       </div>`
     ) +
+    row(t("settings.caseShowHeader"), t("settings.caseShowHeaderDesc"), toggle("toggle-case-show-header", S.caseShowHeader)) +
     row(t("settings.caseShowLogo"), t("settings.caseShowLogoDesc"), toggle("toggle-case-show-logo", S.caseShowLogo)) +
     row(t("settings.caseShowName"), t("settings.caseShowNameDesc"), toggle("toggle-case-show-name", S.caseShowName)) +
     row(t("settings.caseShowOs"), t("settings.caseShowOsDesc"), toggle("toggle-case-show-os", S.caseShowOs)),
@@ -3218,6 +3252,13 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
       const isInput = _el instanceof HTMLInputElement;
       S.caseShowLogo = isInput ? _el.checked : !S.caseShowLogo;
       localStorage.setItem(CASE_SHOW_LOGO_KEY, String(S.caseShowLogo));
+      if (!refreshLibraryResultsInPlace()) render();
+      return true;
+    }
+    case "toggle-case-show-header": {
+      const isInput = _el instanceof HTMLInputElement;
+      S.caseShowHeader = isInput ? _el.checked : !S.caseShowHeader;
+      localStorage.setItem(CASE_SHOW_HEADER_KEY, String(S.caseShowHeader));
       if (!refreshLibraryResultsInPlace()) render();
       return true;
     }

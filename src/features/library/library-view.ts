@@ -495,11 +495,10 @@ function caseOsBadgeHtml(os: CaseOsKind): string {
 
 /** Physical retail box header strip (store logo + brand name + OS badge). */
 function caseCoverHeader(s: EpicSummary, source: GameSource): string {
-  const brand = CASE_BRAND_LABELS[source] || source.toUpperCase();
-  const os = resolveCaseOs(s);
   const logoHtml = S.caseShowLogo ? storeLogo(source, 13, "pcard-case-logo") : "";
-  const nameHtml = S.caseShowName ? `<span class="pcard-case-name">${esc(brand)}</span>` : "";
-  const osHtml = S.caseShowOs ? caseOsBadgeHtml(os) : "";
+  const nameHtml = S.caseShowName ? `<span class="pcard-case-name">${esc(CASE_BRAND_LABELS[source] || source.toUpperCase())}</span>` : "";
+  const osHtml = S.caseShowOs ? caseOsBadgeHtml(resolveCaseOs(s)) : "";
+  if (!S.caseShowHeader || (!logoHtml && !nameHtml && !osHtml)) return "";
   return `<div class="pcard-case-head" aria-hidden="true">
     <span class="pcard-case-slot is-left" aria-hidden="true"></span>
     <span class="pcard-case-brand">${logoHtml}${nameHtml}</span>
@@ -563,13 +562,14 @@ export function epicCardPortrait(s: EpicSummary): string {
   const isCase = S.showCaseCovers;
   const caseStyleAttr = isCase ? ` data-case-style="${S.caseCoverStyle}" data-case-gloss="${S.caseGloss}" data-case-color="${S.caseColorMode}"` : "";
   const caseHead = isCase ? caseCoverHeader(s, source) : "";
+  const caseNoHead = isCase && !caseHead ? " case-no-head" : "";
   const caseFx = isCase ? `<span class="pcard-case-fx" aria-hidden="true"></span>` : "";
   // Optional: the storefront mark on the cover (bottom-right, clear of the
   // stats chips on the left and the running badge on the top-right). Omitted
   // when the physical case header already carries the store brand.
   const storeIcon = S.showStoreIcons && !isCase ? `<span class="cover-store">${storeLogo(source, 14, "cover-store-logo")}</span>` : "";
   return `
-    <div class="pcard${s.installed ? "" : " not-installed"}${isCase ? " is-case" : ""}" role="button" tabindex="0" aria-label="${title}" data-act="epic-detail" data-id="${s.appName}" data-source="${source}"${caseStyleAttr} data-lib-item="${s.appName}">
+    <div class="pcard${s.installed ? "" : " not-installed"}${isCase ? " is-case" : ""}${caseNoHead}" role="button" tabindex="0" aria-label="${title}" data-act="epic-detail" data-id="${s.appName}" data-source="${source}"${caseStyleAttr} data-lib-item="${s.appName}">
       <div class="pcard-art" data-card-art data-badge-host>
         ${caseHead}
         ${epicArt(s)}
@@ -1083,7 +1083,12 @@ function wireCardSettle(): void {
   document.addEventListener(
     "pointerover",
     (e) => {
-      if (e.pointerType === "touch" || S.view !== "library") return;
+      if (
+        e.pointerType === "touch" ||
+        S.view !== "library" ||
+        S.reduceEffects ||
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ) return;
       const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(".pgrid > .pcard");
       if (!card) return;
       const existing = cardSettleTimers.get(card);
