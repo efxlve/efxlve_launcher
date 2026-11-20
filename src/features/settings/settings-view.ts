@@ -1206,7 +1206,7 @@ function renderCasesSection(): string {
   }).join("");
 
   const activeStyle = styles.find((style) => style.id === S.caseCoverStyle) ?? styles[0];
-  const previewHead = S.caseShowHeader
+  const previewHead = S.caseShowHeader && (S.caseShowLogo || S.caseShowName || S.caseShowOs)
     ? `<div class="pcard-case-head" aria-hidden="true">
         <span class="pcard-case-slot is-left"></span>
         <span class="pcard-case-brand">${S.caseShowLogo ? storeLogo("epic", 13, "pcard-case-logo") : ""}${S.caseShowName ? `<span class="pcard-case-name">Epic Games</span>` : ""}</span>
