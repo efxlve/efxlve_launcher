@@ -23,6 +23,7 @@ mod epic_shim;
 mod feedback;
 mod gogdl;
 mod guides;
+mod heartbeat;
 mod launchers;
 mod legendary;
 mod lookup_cache;
@@ -2020,7 +2021,8 @@ fn main() {
             // Boot timing: capture the log path before anything slow runs, so
             // every module can write a line without an AppHandle.
             if let Ok(dir) = app.path().app_data_dir() {
-                perf::init(dir);
+                perf::init(dir.clone());
+                heartbeat::init(dir);
                 perf::start_session();
             }
             // Bind the download cap listener once; it stays idle at 0 Mbit/s.
@@ -2041,6 +2043,12 @@ fn main() {
                 .and_then(|path| std::fs::read_to_string(path).ok())
                 .map(|text| parse_run_marker(&text))
                 .unwrap_or_default();
+            // Must read the old beat before `start` overwrites it. This is the
+            // only timestamp a process the OS killed from outside leaves.
+            if let Some(line) = heartbeat::previous_line(previous.started) {
+                perf::write_line_global(&line);
+            }
+            heartbeat::start();
             let now = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .map(|elapsed| elapsed.as_secs())
@@ -2870,6 +2878,8 @@ fn main() {
             // The last line of a run. Without it a log cannot tell a clean quit
             // from a process that died between two boots.
             perf::write_line_global("boot: exit");
+            // A clean exit means the next boot finds no beat and logs nothing.
+            heartbeat::stop();
             // A clean exit means the next boot should not show the recovery
             // feedback prompt.
             if let Some(marker) = app_handle.try_state::<RunMarker>() {
