@@ -3405,6 +3405,8 @@
   "settings.themeFilterDark": "Karanlık",
   "settings.themeFilterLight": "Aydınlık",
   "settings.themeFilterCustom": "Özel",
+  "settings.themeFilterFavorites": "Favoriler",
+  "settings.themeEmptyFavorites": "Henüz favori tema yok. Bir temayı yıldızlayarak buraya sabitle.",
   "settings.themeActive": "Aktif",
   "settings.themeEdit": "Temayı düzenle",
   "settings.themeClone": "Temayı çoğalt",

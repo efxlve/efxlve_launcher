@@ -3405,6 +3405,8 @@
   "settings.themeFilterDark": "Sombres",
   "settings.themeFilterLight": "Clairs",
   "settings.themeFilterCustom": "Personnalisés",
+  "settings.themeFilterFavorites": "Favoris",
+  "settings.themeEmptyFavorites": "Aucun thème favori. Ajoutez une étoile à un thème.",
   "settings.themeActive": "Actif",
   "settings.themeEdit": "Modifier le thème",
   "settings.themeClone": "Dupliquer le thème",

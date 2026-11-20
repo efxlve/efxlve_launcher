@@ -3405,6 +3405,8 @@
   "settings.themeFilterDark": "داكن",
   "settings.themeFilterLight": "فاتح",
   "settings.themeFilterCustom": "مخصص",
+  "settings.themeFilterFavorites": "المفضلة",
+  "settings.themeEmptyFavorites": "لا توجد سمات مفضلة بعد. أضف نجمة إلى سمة.",
   "settings.themeActive": "نشط",
   "settings.themeEdit": "تعديل السمة",
   "settings.themeClone": "تكرار السمة",

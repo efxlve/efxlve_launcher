@@ -3405,6 +3405,8 @@
   "settings.themeFilterDark": "Dunkel",
   "settings.themeFilterLight": "Hell",
   "settings.themeFilterCustom": "Benutzerdefiniert",
+  "settings.themeFilterFavorites": "Favoriten",
+  "settings.themeEmptyFavorites": "Noch keine Favoriten. Markiere ein Design mit dem Stern.",
   "settings.themeActive": "Aktiv",
   "settings.themeEdit": "Design bearbeiten",
   "settings.themeClone": "Design duplizieren",

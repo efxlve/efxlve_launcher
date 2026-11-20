@@ -3405,6 +3405,8 @@
   "settings.themeFilterDark": "深色",
   "settings.themeFilterLight": "淺色",
   "settings.themeFilterCustom": "自訂",
+  "settings.themeFilterFavorites": "收藏",
+  "settings.themeEmptyFavorites": "還沒有收藏主題。替主題加星即可固定在這裡。",
   "settings.themeActive": "使用中",
   "settings.themeEdit": "編輯主題",
   "settings.themeClone": "複製主題",

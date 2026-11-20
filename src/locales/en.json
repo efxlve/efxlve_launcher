@@ -3405,6 +3405,8 @@
   "settings.themeFilterDark": "Dark",
   "settings.themeFilterLight": "Light",
   "settings.themeFilterCustom": "Custom",
+  "settings.themeFilterFavorites": "Favorites",
+  "settings.themeEmptyFavorites": "No favorite themes yet. Star a theme to pin it here.",
   "settings.themeActive": "Active",
   "settings.themeEdit": "Edit theme",
   "settings.themeClone": "Duplicate theme",

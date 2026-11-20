@@ -3405,6 +3405,8 @@
   "settings.themeFilterDark": "มืด",
   "settings.themeFilterLight": "สว่าง",
   "settings.themeFilterCustom": "กำหนดเอง",
+  "settings.themeFilterFavorites": "รายการโปรด",
+  "settings.themeEmptyFavorites": "ยังไม่มีธีมโปรด กดดาวที่ธีมเพื่อเพิ่ม",
   "settings.themeActive": "ใช้งานอยู่",
   "settings.themeEdit": "แก้ไขธีม",
   "settings.themeClone": "ทำซ้ำธีม",

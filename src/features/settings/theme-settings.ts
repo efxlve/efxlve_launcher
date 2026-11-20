@@ -37,7 +37,7 @@ import {
 import { t } from "../../i18n";
 import { THEME_FAVORITES_KEY } from "../../core/constants";
 
-type ThemeFilter = "all" | "dark" | "light" | "custom";
+type ThemeFilter = "all" | "favorites" | "dark" | "light" | "custom";
 let currentFilter: ThemeFilter = "all";
 let themeQuery = "";
 let themeSearchWired = false;
@@ -172,9 +172,12 @@ const HEX_TEST = /^#[0-9a-f]{6}$/i;
 export function renderThemeSection(): string {
   const allThemes = themes();
   const customList = customThemes();
+  const favorites = themeFavorites();
 
   let filtered = allThemes;
-  if (currentFilter === "dark") {
+  if (currentFilter === "favorites") {
+    filtered = allThemes.filter((th) => favorites.has(th.id));
+  } else if (currentFilter === "dark") {
     filtered = allThemes.filter((th) => th.scheme === "dark");
   } else if (currentFilter === "light") {
     filtered = allThemes.filter((th) => th.scheme === "light");
@@ -182,7 +185,6 @@ export function renderThemeSection(): string {
     filtered = allThemes.filter((th) => Boolean(th.custom));
   }
 
-  const favorites = themeFavorites();
   filtered = [...filtered].sort(
     (a, b) => Number(favorites.has(b.id)) - Number(favorites.has(a.id)),
   );
@@ -202,10 +204,15 @@ export function renderThemeSection(): string {
               ${icon("plus", 13)} ${t("settings.themeAdd")}
             </button>
           </div>`
-        : `<div class="theme-empty-custom">
-            <span style="font-size: 24px; opacity: 0.8;">${icon("search", 28)}</span>
-            <span>${esc(t("settings.searchEmpty"))}</span>
-          </div>`;
+        : currentFilter === "favorites"
+          ? `<div class="theme-empty-custom">
+              <span style="font-size: 24px; opacity: 0.8;">${icon("star", 28)}</span>
+              <span>${esc(t("settings.themeEmptyFavorites"))}</span>
+            </div>`
+          : `<div class="theme-empty-custom">
+              <span style="font-size: 24px; opacity: 0.8;">${icon("search", 28)}</span>
+              <span>${esc(t("settings.searchEmpty"))}</span>
+            </div>`;
 
   wireThemeSearch();
   wireThemeSelection();
@@ -234,6 +241,9 @@ export function renderThemeSection(): string {
         <div class="seg theme-filter-seg">
           <button type="button" class="${currentFilter === "all" ? "active" : ""}" data-act="theme-filter" data-filter="all">
             ${esc(t("settings.themeFilterAll"))} (${allThemes.length})
+          </button>
+          <button type="button" class="${currentFilter === "favorites" ? "active" : ""}" data-act="theme-filter" data-filter="favorites">
+            ${esc(t("settings.themeFilterFavorites"))} (${favorites.size})
           </button>
           <button type="button" class="${currentFilter === "dark" ? "active" : ""}" data-act="theme-filter" data-filter="dark">
             ${esc(t("settings.themeFilterDark"))}
@@ -1320,7 +1330,7 @@ export function handleThemeSettingsAction(act: string | undefined, el: HTMLEleme
   switch (act) {
     case "theme-filter": {
       const filter = el.dataset.filter as ThemeFilter;
-      if (filter && ["all", "dark", "light", "custom"].includes(filter)) {
+      if (filter && ["all", "favorites", "dark", "light", "custom"].includes(filter)) {
         currentFilter = filter;
         render();
       }

@@ -3405,6 +3405,8 @@
   "settings.themeFilterDark": "深色",
   "settings.themeFilterLight": "浅色",
   "settings.themeFilterCustom": "自定义",
+  "settings.themeFilterFavorites": "收藏",
+  "settings.themeEmptyFavorites": "还没有收藏主题。给主题加星即可固定在这里。",
   "settings.themeActive": "当前激活",
   "settings.themeEdit": "编辑主题",
   "settings.themeClone": "复制主题",

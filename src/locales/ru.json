@@ -3405,6 +3405,8 @@
   "settings.themeFilterDark": "Тёмные",
   "settings.themeFilterLight": "Светлые",
   "settings.themeFilterCustom": "Пользовательские",
+  "settings.themeFilterFavorites": "Избранное",
+  "settings.themeEmptyFavorites": "Пока нет избранных тем. Отметьте тему звездой.",
   "settings.themeActive": "Активна",
   "settings.themeEdit": "Редактировать тему",
   "settings.themeClone": "Дублировать тему",

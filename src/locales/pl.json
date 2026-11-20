@@ -3405,6 +3405,8 @@
   "settings.themeFilterDark": "Ciemne",
   "settings.themeFilterLight": "Jasne",
   "settings.themeFilterCustom": "Niestandardowe",
+  "settings.themeFilterFavorites": "Ulubione",
+  "settings.themeEmptyFavorites": "Brak ulubionych motywów. Oznacz motyw gwiazdką.",
   "settings.themeActive": "Aktywny",
   "settings.themeEdit": "Edytuj motyw",
   "settings.themeClone": "Duplikuj motyw",

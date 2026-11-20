@@ -3405,6 +3405,8 @@
   "settings.themeFilterDark": "Scuro",
   "settings.themeFilterLight": "Chiaro",
   "settings.themeFilterCustom": "Personalizzato",
+  "settings.themeFilterFavorites": "Preferiti",
+  "settings.themeEmptyFavorites": "Nessun tema preferito. Aggiungi una stella a un tema.",
   "settings.themeActive": "Attivo",
   "settings.themeEdit": "Modifica tema",
   "settings.themeClone": "Duplica tema",

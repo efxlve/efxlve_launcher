@@ -3405,6 +3405,8 @@
   "settings.themeFilterDark": "डार्क",
   "settings.themeFilterLight": "लाइट",
   "settings.themeFilterCustom": "कस्टम",
+  "settings.themeFilterFavorites": "पसंदीदा",
+  "settings.themeEmptyFavorites": "अभी कोई पसंदीदा थीम नहीं है। किसी थीम पर स्टार लगाएँ।",
   "settings.themeActive": "सक्रिय",
   "settings.themeEdit": "थीम संपादित करें",
   "settings.themeClone": "थीम की प्रतिलिपि बनाएँ",
