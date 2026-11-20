@@ -1,5 +1,11 @@
 /** Extended built-ins, loaded only when the Themes page opens. */
 import type { ThemeDef } from "./types";
+import homesteadScene from "../../assets/homestead-scene.svg";
+import neonGridScene from "../../assets/neon-grid-scene.svg";
+import quarantineScene from "../../assets/quarantine-scene.svg";
+import resonanceScene from "../../assets/resonance-scene.svg";
+import sanctumScene from "../../assets/sanctum-scene.svg";
+import sentienceScene from "../../assets/sentience-scene.svg";
 
 const NEON_GRID: ThemeDef = {
   id: "neongrid",
@@ -603,7 +609,7 @@ const TOKENS: Record<string, Record<string, string>> = {
     "--r-md": "3px",
     "--r-lg": "4px",
     "--shadow-pop": "0 18px 44px rgba(0, 0, 0, 0.85)",
-    "--scene-bg": "#07080a url(\"../assets/neon-grid-scene.svg\") 0 0 / 100vw 100vh no-repeat fixed",
+    "--scene-bg": `#07080a url("${neonGridScene}") 0 0 / 100vw 100vh no-repeat fixed`,
     "--scrollbar-thumb": "rgba(252, 238, 10, 0.55)",
     "--scrollbar-thumb-hover": "#fcee0a",
   },
@@ -633,7 +639,7 @@ const TOKENS: Record<string, Record<string, string>> = {
     "--r-md": "4px",
     "--r-lg": "6px",
     "--shadow-pop": "0 18px 44px rgba(0, 0, 0, 0.88)",
-    "--scene-bg": "#05070a url(\"../assets/quarantine-scene.svg\") 0 0 / 100vw 100vh no-repeat fixed",
+    "--scene-bg": `#05070a url("${quarantineScene}") 0 0 / 100vw 100vh no-repeat fixed`,
     "--scrollbar-thumb": "rgba(220, 38, 38, 0.5)",
     "--scrollbar-thumb-hover": "#ef4444",
   },
@@ -663,7 +669,7 @@ const TOKENS: Record<string, Record<string, string>> = {
     "--r-md": "4px",
     "--r-lg": "6px",
     "--shadow-pop": "0 18px 44px rgba(0, 0, 0, 0.85)",
-    "--scene-bg": "#05080e url(\"../assets/sentience-scene.svg\") 0 0 / 100vw 100vh no-repeat fixed",
+    "--scene-bg": `#05080e url("${sentienceScene}") 0 0 / 100vw 100vh no-repeat fixed`,
     "--scrollbar-thumb": "rgba(0, 162, 255, 0.48)",
     "--scrollbar-thumb-hover": "#38bdf8",
   },
@@ -693,7 +699,7 @@ const TOKENS: Record<string, Record<string, string>> = {
     "--r-md": "5px",
     "--r-lg": "7px",
     "--shadow-pop": "0 16px 40px rgba(0, 0, 0, 0.9)",
-    "--scene-bg": "#090807 url(\"../assets/sanctum-scene.svg\") 0 0 / 100vw 100vh no-repeat fixed",
+    "--scene-bg": `#090807 url("${sanctumScene}") 0 0 / 100vw 100vh no-repeat fixed`,
     "--scrollbar-thumb": "rgba(229, 169, 60, 0.48)",
     "--scrollbar-thumb-hover": "#f5be57",
   },
@@ -723,7 +729,7 @@ const TOKENS: Record<string, Record<string, string>> = {
     "--r-md": "5px",
     "--r-lg": "7px",
     "--shadow-pop": "0 16px 40px rgba(0, 0, 0, 0.9)",
-    "--scene-bg": "#080a0d url(\"../assets/resonance-scene.svg\") 0 0 / 100vw 100vh no-repeat fixed",
+    "--scene-bg": `#080a0d url("${resonanceScene}") 0 0 / 100vw 100vh no-repeat fixed`,
     "--scrollbar-thumb": "rgba(249, 115, 22, 0.48)",
     "--scrollbar-thumb-hover": "#fb923c",
   },
@@ -753,7 +759,7 @@ const TOKENS: Record<string, Record<string, string>> = {
     "--r-md": "6px",
     "--r-lg": "8px",
     "--shadow-pop": "0 16px 40px rgba(0, 0, 0, 0.82)",
-    "--scene-bg": "#08100a url(\"../assets/homestead-scene.svg\") 0 0 / 100vw 100vh no-repeat fixed",
+    "--scene-bg": `#08100a url("${homesteadScene}") 0 0 / 100vw 100vh no-repeat fixed`,
     "--scrollbar-thumb": "rgba(234, 179, 8, 0.48)",
     "--scrollbar-thumb-hover": "#facc15",
   },

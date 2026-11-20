@@ -86,7 +86,7 @@ const UNSAFE_TOKEN_VALUE = /[;{}<>\\]|\/\*|\*\/|url\s*\(|@import|expression\s*\(
 const RASTER_SCENE = /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=]+$/i;
 const SVG_SCENE = /^data:image\/svg\+xml,/i;
 const UNSAFE_SCENE_TEXT = /["\\\u0000-\u001f]/;
-const BUILTIN_SCENE_BG = /^#[0-9a-f]{6} url\("\.\.\/assets\/[a-z0-9-]+\.(?:svg|png)"\) 0 0 \/ 100vw 100vh no-repeat fixed$/i;
+const BUILTIN_SCENE_BG = /^#[0-9a-f]{6} url\("(?:\/assets\/|\/src\/assets\/|\.\.\/assets\/)[A-Za-z0-9_.-]+\.svg"\) 0 0 \/ 100vw 100vh no-repeat fixed$/i;
 
 /** Written on every applied theme and read by the boot script in index.html. */
 export const BOOT_THEME_KEY = "efxlve-boot-theme";

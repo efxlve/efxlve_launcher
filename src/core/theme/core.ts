@@ -1,5 +1,7 @@
 /** Themes that must paint before the lazy catalog loads. */
 import type { ThemeDef } from "./types";
+import bladesScene from "../../assets/blades-scene.svg";
+import glossScene from "../../assets/gloss-scene.svg";
 
 export const DEFAULT_THEME = "black";
 
@@ -54,7 +56,7 @@ const TOKENS: Record<string, Record<string, string>> = {
     "--r-sm": "5px",
     "--r-md": "9px",
     "--shadow-pop": "0 18px 44px rgba(0, 12, 4, 0.6)",
-    "--scene-bg": "#07180d url(\"../assets/blades-scene.svg\") 0 0 / 100vw 100vh no-repeat fixed",
+    "--scene-bg": `#07180d url("${bladesScene}") 0 0 / 100vw 100vh no-repeat fixed`,
     "--scrollbar-thumb": "rgba(155, 212, 74, 0.45)",
     "--scrollbar-thumb-hover": "rgba(155, 212, 74, 0.85)",
     "--x360-gloss": "linear-gradient(180deg, #d8f7a0 0%, #a6dc52 46%, #7fbd2e 50%, #6ca726 100%)",
@@ -91,7 +93,7 @@ const TOKENS: Record<string, Record<string, string>> = {
     "--aero-gloss-blue-hover": "linear-gradient(180deg, #c4ecff 0%, #74caf7 48%, #2ba0ec 50%, #1a88d8 100%)",
     "--aero-gloss-white": "linear-gradient(180deg, #ffffff 0%, #f4f9fd 48%, #e2eef8 50%, #eef6fc 100%)",
     "--aero-gloss-hover": "linear-gradient(180deg, #f6fcff 0%, #e2f4fe 48%, #c8e9fc 50%, #e1f4fe 100%)",
-    "--scene-bg": "#8fd6fa url(\"../assets/gloss-scene.svg\") 0 0 / 100vw 100vh no-repeat fixed",
+    "--scene-bg": `#8fd6fa url("${glossScene}") 0 0 / 100vw 100vh no-repeat fixed`,
     "--scrollbar-thumb": "rgba(13, 47, 79, 0.38)",
     "--scrollbar-thumb-hover": "rgba(13, 47, 79, 0.65)",
   },
