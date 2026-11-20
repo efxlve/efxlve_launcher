@@ -377,6 +377,9 @@
 .pgrid.no-case-glare .pcard.is-case:focus-visible .pcard-case-fx {
   background: none !important;
 }
+.pgrid.no-case-glare .pcard.is-case[data-case-style="bubble"] .pcard-case-fx::before {
+  opacity: 0 !important;
+}
 .pgrid.no-shelf-shadow .pcard.is-case {
   filter: none !important;
 }

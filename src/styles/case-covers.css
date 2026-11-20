@@ -1459,7 +1459,29 @@
   inset: 29px 6px 8px 9px;
   border-radius: 0 0 10px 4px;
   background:
-    radial-gradient(140px circle at var(--mx, 30%) var(--my, 22%), rgba(255, 255, 255, 0.34) 0%, transparent 62%),
     linear-gradient(135deg, rgba(255, 255, 255, 0.24) 0%, transparent 45%, var(--case-tint) 100%);
+}
+/* The cursor highlight lives on its own layer. It fades out instead of
+   falling back to a different gradient origin when the pointer leaves. */
+.pcard.is-case[data-case-style="bubble"] .pcard-case-fx::before {
+  inset: 0;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: auto;
+  height: auto;
+  border-radius: inherit;
+  background: radial-gradient(
+    150px circle at var(--mx, 30%) var(--my, 22%),
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.12) 38%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 170ms ease-out;
+}
+.pcard.is-case[data-case-style="bubble"]:hover .pcard-case-fx::before,
+.pcard.is-case[data-case-style="bubble"]:focus-visible .pcard-case-fx::before {
+  opacity: 1;
 }
 
