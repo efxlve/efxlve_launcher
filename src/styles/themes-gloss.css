@@ -25,8 +25,8 @@
 
 /* Window bar: Aero caption glass with the sheen line across its middle. */
 :root[data-surface="gloss"] #winbar {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.52) 50%, rgba(222, 243, 255, 0.36) 50%, rgba(222, 243, 255, 0.58) 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(242, 250, 255, 0.8) 50%, rgba(226, 244, 255, 0.75) 50%, rgba(238, 249, 255, 0.86) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.88);
   box-shadow: 0 1px 0 rgba(16, 78, 130, 0.16);
 }
 :root[data-surface="gloss"] :is(.win-btn, .winbar-btn):hover {
@@ -56,11 +56,24 @@
 
 /* Sidebar and header: clear glass, so the sky reads through the chrome. */
 :root[data-surface="gloss"] #sidebar {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.46) 100%);
-  border-right: 1px solid rgba(255, 255, 255, 0.78);
+  background: linear-gradient(180deg, rgba(250, 253, 255, 0.88) 0%, rgba(236, 247, 255, 0.82) 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.86);
   box-shadow: 1px 0 0 rgba(16, 78, 130, 0.14);
 }
-:root[data-surface="gloss"] :is(.sb-profile, .sb-divider) { border-color: var(--line); }
+:root[data-surface="gloss"] :is(.sb-profile, .sb-divider, .sb-games) { border-color: var(--line); }
+:root[data-surface="gloss"] :is(.sb-account:hover, .sb-account.active, .sb-notif:hover) {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(226, 244, 254, 0.78));
+  box-shadow: inset 0 0 0 1px rgba(120, 190, 240, 0.55), inset 0 1px 0 #ffffff;
+}
+:root[data-surface="gloss"] .sb-game:hover {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.82) 0%, rgba(226, 244, 254, 0.65) 100%);
+  color: var(--aero-heading);
+}
+:root[data-surface="gloss"] .sb-game.active {
+  background: linear-gradient(90deg, #e8f6fe 0%, rgba(217, 240, 253, 0.75) 100%);
+  color: var(--aero-heading);
+  box-shadow: inset 3px 0 0 #0a78c8;
+}
 :root[data-surface="gloss"] .sb-item::before {
   content: "";
   position: absolute;
@@ -82,9 +95,27 @@
 }
 /* The badge sits on the theme's blue accent; black text disappeared into it. */
 :root[data-surface="gloss"] #page-header {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(228, 245, 255, 0.8) 100%);
-  border-bottom: 1px solid rgba(16, 78, 130, 0.22);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(232, 246, 255, 0.84) 100%);
+  border-bottom: 1px solid rgba(16, 78, 130, 0.2);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 6px rgba(8, 62, 110, 0.08);
+}
+:root[data-surface="gloss"] :is(.page-calendar-btn, .page-icon-btn, .page-filter-btn) {
+  background: var(--aero-gloss-white);
+  border-color: rgba(16, 78, 130, 0.26);
+  color: var(--text-2);
+  box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(8, 60, 110, 0.08);
+}
+:root[data-surface="gloss"] :is(.page-calendar-btn, .page-icon-btn, .page-filter-btn):hover,
+:root[data-surface="gloss"] .page-filter-btn.is-open {
+  background: var(--aero-gloss-hover);
+  border-color: #4aa6e6;
+  color: var(--aero-heading);
+}
+:root[data-surface="gloss"] .page-filter-btn.active {
+  background: var(--aero-gloss-blue);
+  border-color: #0b5fa5;
+  color: #ffffff;
+  text-shadow: 0 1px 1px rgba(0, 45, 95, 0.4);
 }
 /* Windows 7 page titles: crisp semi-bold, deep Aero blue with glass glow. */
 :root[data-surface="gloss"] .page-header-title {
@@ -95,15 +126,23 @@
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.95), 0 0 12px rgba(255, 255, 255, 0.6);
 }
 
-/* Settings masthead: frosted glass banner to ensure crystal-clear title contrast */
-:root[data-surface="gloss"] .settings-panel-head {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 249, 255, 0.82) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.95);
-  border-bottom: 1px solid rgba(16, 78, 130, 0.2);
-  box-shadow: var(--aero-glass-edge), 0 4px 16px rgba(8, 62, 110, 0.08), inset 0 1px 0 #ffffff;
+/* Settings content pane: unified frosted Aero sheet so subtitles, tag bars and
+   section headers never sit bare over the sky/hill scene. */
+:root[data-surface="gloss"] .settings-panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(242, 250, 255, 0.8) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.94);
+  box-shadow: var(--aero-glass-edge), 0 8px 24px rgba(8, 62, 110, 0.12), inset 0 1px 0 #ffffff;
   border-radius: var(--r-md);
-  padding: 14px 18px;
-  margin-bottom: 22px;
+  padding: 20px 24px 32px;
+}
+:root[data-surface="gloss"] .settings-panel-head {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(16, 78, 130, 0.16);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+  border-radius: 0;
+  padding: 0 2px 14px;
+  margin-bottom: 20px;
 }
 :root[data-surface="gloss"] .settings-panel-crumb {
   color: #0b457a;
@@ -126,7 +165,10 @@
 
 /* Panels: frosted white with a bright top edge and a thin blue outer rim. */
 :root[data-surface="gloss"] :is(
-  .card, .list, .lib-list, .modal, .toast, .gp-side-card, .settings-group, .info-box, .cs-hero, .cs-dest, .cs-provider, .bk-section, .cs-config-box,
+  .card, .list, .lib-list, .modal, .toast, .gp-side-card, .settings-group, .settings-nav,
+  .theme-filter-bar, .theme-card, .sb-mini, .drawer-order, .lang-option-btn,
+  .tm-stat, .tm-game-card, .tm-job, .tm-drawer, .col-import-card, .col-settings-card,
+  .info-box, .cs-hero, .cs-dest, .cs-provider, .bk-section, .cs-config-box,
   .gp-ac-notice, .gp-about-card, .gp-features-card, .hub-card, .drawer-hltb-card,
   .ach-card, .game-compat-card, .gp-last-session-card, .gp-overview-note-card,
   .news-card, .storage-overview-card, .storage-stat-pill, .notes-card,
@@ -135,9 +177,36 @@
   .changelog-dialog, .notif-panel, .lib-filter-panel, .custom-game-modal,
   .screenshots-empty-panel, .notes-empty-panel, .drawer-notes, .ach-empty-panel, .dlc-empty-panel, .ach-search-empty-wrap
 ) {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0, rgba(255, 255, 255, 0.86) 44px, rgba(244, 251, 255, 0.82) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0, rgba(255, 255, 255, 0.89) 44px, rgba(244, 251, 255, 0.86) 100%);
   border-color: rgba(255, 255, 255, 0.95);
   box-shadow: var(--aero-glass-edge), 0 8px 24px rgba(8, 62, 110, 0.14), inset 0 1px 0 #ffffff;
+}
+:root[data-surface="gloss"] .theme-card:hover {
+  background: linear-gradient(180deg, #ffffff 0%, #eaf6ff 100%);
+  border-color: #4aa6e6;
+  box-shadow: 0 0 0 1px rgba(74, 166, 230, 0.45), 0 10px 26px rgba(8, 62, 110, 0.18), inset 0 1px 0 #ffffff;
+}
+:root[data-surface="gloss"] .theme-card.active {
+  border-color: #0a78c8;
+  box-shadow: 0 0 0 2px #0a78c8, 0 10px 26px rgba(10, 120, 200, 0.24), inset 0 1px 0 #ffffff;
+}
+:root[data-surface="gloss"] .theme-tag-btn {
+  background: var(--aero-gloss-white);
+  border-color: rgba(16, 78, 130, 0.24);
+  color: var(--text-2);
+  box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(8, 60, 110, 0.08);
+}
+:root[data-surface="gloss"] .theme-tag-btn:hover:not(.active) {
+  background: var(--aero-gloss-hover);
+  border-color: #4aa6e6;
+  color: var(--aero-heading);
+}
+:root[data-surface="gloss"] .theme-tag-btn.active {
+  background: var(--aero-gloss-blue);
+  border-color: #0b5fa5;
+  color: #ffffff;
+  text-shadow: 0 1px 1px rgba(0, 45, 95, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 1px 4px rgba(10, 90, 160, 0.3);
 }
 
 /* Modal Backdrops & Overlays */
@@ -194,12 +263,12 @@
 
 /* Fields: sunken white with the Windows 7 blue focus glow. */
 :root[data-surface="gloss"] :is(
-  input:not([type="range"], [type="checkbox"], [type="radio"]),
-  select, textarea, .input, .text-input, .search, .page-search,
+  input:not([type="range"], [type="checkbox"], [type="radio"], [type="color"], [type="file"]),
+  select, textarea, .input, .text-input, .search, .page-search, .theme-search-box,
   .settings-search, .music-input, .music-select, .storage-search-input,
   .move-path-input, .install-path-input
 ) {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.92);
   border-color: rgba(16, 78, 130, 0.24);
   box-shadow: inset 0 1px 2px rgba(8, 60, 110, 0.1);
 }
@@ -207,11 +276,13 @@
   border-color: var(--line-strong);
 }
 :root[data-surface="gloss"] :is(
-  input, select, textarea, .input, .text-input,
+  input:not([type="range"], [type="checkbox"], [type="radio"], [type="color"], [type="file"]),
+  select, textarea, .input, .text-input,
   .settings-search, .music-input, .music-select, .storage-search-input,
   .move-path-input, .install-path-input
 ):focus,
 :root[data-surface="gloss"] .search:focus-within,
+:root[data-surface="gloss"] .theme-search-box:focus-within,
 :root[data-surface="gloss"] .calendar-search:focus-within,
 :root[data-surface="gloss"] .install-path-input-wrap:focus-within {
   border-color: #3d9de4;
@@ -223,7 +294,7 @@
   box-shadow: none;
 }
 :root[data-surface="gloss"] .seg {
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(218, 238, 252, 0.72);
   border-color: rgba(16, 78, 130, 0.2);
   box-shadow: inset 0 1px 2px rgba(8, 60, 110, 0.08);
 }
@@ -383,7 +454,7 @@
   color: #0b4a8c;
 }
 :root[data-surface="gloss"] :is(.search input, .notes-search input, .notes-search-input,
-  .calendar-search-input, .palette-input input,
+  .calendar-search-input, .palette-input input, .theme-search-input,
   .storage-search-input, .ss-studio-search, .install-path-input,
   .ced .col-search-wrap .text-input) {
   background: transparent !important;
@@ -404,7 +475,7 @@
   outline: none !important;
 }
 :root[data-surface="gloss"] :is(.search input, .notes-search input, .notes-search-input,
-  .calendar-search-input, .palette-input input, .notes-title-input,
+  .calendar-search-input, .palette-input input, .theme-search-input, .notes-title-input,
   .storage-search-input, .ss-studio-search, .install-path-input,
   .ced .col-search-wrap .text-input):focus {
   background: transparent !important;
@@ -805,19 +876,42 @@
 }
 
 /* Menus & popovers: Aero glass dropdown with fine border and top highlight. */
-:root[data-surface="gloss"] :is(.gp-store-menu, .gp-version-menu, .gp-more-menu, .col-dropdown-menu, .sort-dropdown-menu, .store-dropdown-menu, .panel-context-menu, .custom-search-dropdown) {
+:root[data-surface="gloss"] :is(
+  .gp-store-menu, .gp-version-menu, .gp-more-menu, .col-dropdown-menu,
+  .sort-dropdown-menu, .store-dropdown-menu, .cover-size-menu,
+  .panel-context-menu, .custom-search-dropdown, .ctx-menu, .ctx-submenu
+) {
   background-color: #f7fbff;
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 251, 255, 0.92) 100%);
-  border: 1px solid rgba(16, 78, 130, 0.2);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 251, 255, 0.94) 100%);
+  border: 1px solid rgba(16, 78, 130, 0.22);
   box-shadow: 0 14px 34px rgba(8, 60, 110, 0.22), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="gloss"] :is(.panel-context-item, .gp-store-row):hover,
-:root[data-surface="gloss"] :is(.panel-context-item, .gp-store-row):focus-visible {
+:root[data-surface="gloss"] :is(
+  .panel-context-item, .gp-store-row, .sort-menu-item-btn,
+  .store-menu-item, .cover-size-option, .ctx-item
+):hover,
+:root[data-surface="gloss"] :is(
+  .panel-context-item, .gp-store-row, .sort-menu-item-btn,
+  .store-menu-item, .cover-size-option, .ctx-item
+):focus-visible {
   background: var(--aero-gloss-hover);
+  color: var(--aero-heading);
   box-shadow: inset 0 0 0 1px rgba(74, 166, 230, 0.45);
 }
-:root[data-surface="gloss"] .gp-store-row.selected {
-  background: var(--aero-gloss-hover);
+:root[data-surface="gloss"] :is(
+  .gp-store-row.selected, .sort-menu-item-btn.selected,
+  .cover-size-option.selected, .ctx-item.is-current, .ctx-item.active
+) {
+  background: linear-gradient(180deg, #f2fbff 0%, #d9f0fd 100%);
+  color: var(--aero-heading);
+  box-shadow: inset 0 0 0 1px rgba(60, 150, 220, 0.45);
+}
+:root[data-surface="gloss"] :is(.store-menu-sep, .col-dropdown-divider) {
+  background: rgba(16, 78, 130, 0.14);
+}
+:root[data-surface="gloss"] .col-item-count {
+  background: rgba(16, 78, 130, 0.1);
+  color: var(--text-2);
 }
 
 /* Settings sub-navigation: glass pills matching the main sidebar items. */

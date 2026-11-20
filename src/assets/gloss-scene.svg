@@ -4,11 +4,11 @@
        behind the app and must stay cheap on low-end machines. -->
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1678cc"/>
-      <stop offset="0.22" stop-color="#3fa6ea"/>
-      <stop offset="0.48" stop-color="#8fd6fa"/>
-      <stop offset="0.7" stop-color="#d9f4ff"/>
-      <stop offset="0.86" stop-color="#f4fcff"/>
+      <stop offset="0" stop-color="#4eaef0"/>
+      <stop offset="0.22" stop-color="#7ccbfa"/>
+      <stop offset="0.48" stop-color="#b5e6ff"/>
+      <stop offset="0.7" stop-color="#e4f7ff"/>
+      <stop offset="0.86" stop-color="#f6fdff"/>
     </linearGradient>
     <radialGradient id="sun" cx="1290" cy="40" r="620" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#fffdf0" stop-opacity="0.95"/>
@@ -28,13 +28,13 @@
       <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
     </linearGradient>
     <linearGradient id="hillBack" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#9fe07a"/>
-      <stop offset="1" stop-color="#4fae3c"/>
+      <stop offset="0" stop-color="#b0e98e"/>
+      <stop offset="1" stop-color="#6cc452"/>
     </linearGradient>
     <linearGradient id="hillFront" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#7fd23c"/>
-      <stop offset="0.55" stop-color="#4caf2a"/>
-      <stop offset="1" stop-color="#2e8a22"/>
+      <stop offset="0" stop-color="#96e065"/>
+      <stop offset="0.55" stop-color="#68c93e"/>
+      <stop offset="1" stop-color="#4eb02c"/>
     </linearGradient>
     <linearGradient id="haze" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#f4fcff" stop-opacity="0.75"/>

@@ -158,6 +158,10 @@ export function renderThemeSection(): string {
             <span>${esc(t("settings.searchEmpty"))}</span>
           </div>`;
 
+  wireThemeSearch();
+  wireThemeSelection();
+  queueMicrotask(() => applyThemeSearch(themeQuery));
+
   return `
     <div class="theme-section" data-search="${esc(`${t("settings.secThemes")} ${t("settings.themeTitle")} ${t("settings.themeDesc")} theme surface appearance palette ${themeNames} ${tagLabels}`)}">
       <div class="theme-section-header">
@@ -230,10 +234,6 @@ export function renderThemeSection(): string {
       </div>
     </div>
   `;
-
-  wireThemeSearch();
-  wireThemeSelection();
-  queueMicrotask(() => applyThemeSearch(themeQuery));
 }
 
 /** Toggles the active card without rebuilding the page or losing its scroll. */
@@ -279,7 +279,11 @@ function renderThemeCard(theme: ThemeDef): string {
   const hasScene = Boolean(theme.scene);
   const sceneBlur = theme.sceneBlur ?? 0;
   const opacity = theme.sceneOpacity ?? (theme.scheme === "light" ? 0.38 : 0.52);
-  const scrimColor = theme.scheme === "light" ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`;
+  const scrimColor = hasScene
+    ? theme.scheme === "light"
+      ? `rgba(255, 255, 255, ${opacity})`
+      : `rgba(0, 0, 0, ${opacity})`
+    : "transparent";
 
   const cardArtGradient = `linear-gradient(135deg, ${accent}33 0%, ${surface2} 100%)`;
 
@@ -332,7 +336,7 @@ function renderThemeCard(theme: ThemeDef): string {
           <div class="theme-swatch-cluster" title="${esc(`${theme.bg} · ${surface1} · ${accent}`)}">
             <span class="theme-dot" style="background: ${esc(theme.bg)};"></span>
             <span class="theme-dot" style="background: ${esc(surface1)};"></span>
-            <span class="theme-dot" style="background: ${esc(accent)}; border-color: ${esc(accent)};"></span>
+            <span class="theme-dot" style="background: ${esc(accent)};"></span>
           </div>
 
           <div class="theme-card-actions">

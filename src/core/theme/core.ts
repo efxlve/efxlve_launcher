@@ -65,9 +65,9 @@ const TOKENS: Record<string, Record<string, string>> = {
   },
   "gloss": {
     "--bg": "#cdeefc",
-    "--surface-1": "rgba(255, 255, 255, 0.9)",
-    "--surface-2": "rgba(255, 255, 255, 0.62)",
-    "--surface-3": "rgba(255, 255, 255, 0.44)",
+    "--surface-1": "rgba(255, 255, 255, 0.92)",
+    "--surface-2": "rgba(225, 241, 253, 0.9)",
+    "--surface-3": "rgba(202, 228, 249, 0.92)",
     "--line": "rgba(16, 78, 130, 0.14)",
     "--line-strong": "rgba(16, 78, 130, 0.26)",
     "--text": "#07223b",

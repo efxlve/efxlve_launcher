@@ -94,7 +94,7 @@
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 :root[data-scheme="light"] :is(.search input, .notes-search input, .notes-search-input,
-  .calendar-search-input, .palette-input input,
+  .calendar-search-input, .palette-input input, .theme-search-input,
   .storage-search-input, .ss-studio-search, .install-path-input,
   .ced .col-search-wrap .text-input) {
   background: transparent !important;
@@ -328,19 +328,35 @@
 }
 
 /* White Mode: Inputs & focus rings */
-:root[data-scheme="light"] :is(input:not([type="range"], [type="checkbox"], [type="radio"]), select, textarea, .input, .text-input, .search, .page-search, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input) {
+:root[data-scheme="light"] :is(input:not([type="range"], [type="checkbox"], [type="radio"], [type="color"], [type="file"]), select, textarea, .input, .text-input, .search, .page-search, .theme-search-box, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input) {
   background: #ffffff;
   border-color: var(--line-strong);
 }
 :root[data-scheme="light"] .calendar-search {
   border-color: var(--line-strong);
 }
-:root[data-scheme="light"] :is(input, select, textarea, .input, .text-input, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input):focus,
+:root[data-scheme="light"] :is(input:not([type="range"], [type="checkbox"], [type="radio"], [type="color"], [type="file"]), select, textarea, .input, .text-input, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input):focus,
 :root[data-scheme="light"] .search:focus-within,
+:root[data-scheme="light"] .theme-search-box:focus-within,
 :root[data-scheme="light"] .calendar-search:focus-within,
 :root[data-scheme="light"] .install-path-input-wrap:focus-within {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(17, 19, 24, 0.08);
+}
+:root[data-scheme="light"] :is(.sort-menu-item-btn:hover, .store-menu-item:hover, .cover-size-option:hover) {
+  background: var(--surface-2);
+  color: var(--text);
+}
+:root[data-scheme="light"] :is(.sort-menu-item-btn.selected, .cover-size-option.selected) {
+  background: var(--surface-3);
+  color: var(--text);
+}
+:root[data-scheme="light"] :is(.store-menu-sep, .col-dropdown-divider) {
+  background: var(--line);
+}
+:root[data-scheme="light"] .col-item-count {
+  background: var(--surface-2);
+  color: var(--text-2);
 }
 
 /* White Mode: Dialogs, overlays & backdrops */
