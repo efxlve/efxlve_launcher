@@ -256,7 +256,11 @@ function readCustomInputs(): CustomThemeInput[] {
             tokens = { ...source.tokens };
             recoveredSceneBg = sanitizeSceneBackground(tokens["--scene-bg"]);
             delete tokens["--scene-bg"];
-            recoveredPreviewBg = sanitizePreviewBg(source.bg);
+            const sourceBg = HEX.test(source.bg) ? source.bg : firstHex(source.bg);
+            recoveredPreviewBg =
+              sourceBg && sourceBg.toLowerCase() === String(item.bg).toLowerCase()
+                ? sanitizePreviewBg(source.bg)
+                : undefined;
             recoveredGlass = hasTranslucentSurfaces(source.tokens);
             migrated = true;
           }
@@ -275,7 +279,11 @@ function readCustomInputs(): CustomThemeInput[] {
             recoveredSource = matched.id;
             recoveredSceneBg = sanitizeSceneBackground(tokens["--scene-bg"]);
             delete tokens["--scene-bg"];
-            recoveredPreviewBg = sanitizePreviewBg(matched.bg);
+            const sourceBg = HEX.test(matched.bg) ? matched.bg : firstHex(matched.bg);
+            recoveredPreviewBg =
+              sourceBg && sourceBg.toLowerCase() === String(item.bg).toLowerCase()
+                ? sanitizePreviewBg(matched.bg)
+                : undefined;
             recoveredGlass = hasTranslucentSurfaces(matched.tokens);
             migrated = true;
           }
