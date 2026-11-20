@@ -971,6 +971,8 @@ pub(crate) fn achievements_response(items: Vec<EaAchievement>) -> GameAchievemen
             unlock_date: item.unlock_date,
             icon_id: String::new(),
             icon_link: String::new(),
+            icon_locked: String::new(),
+            icon_unlocked: String::new(),
             tier: None,
             rarity: None,
             hidden: item.hidden,

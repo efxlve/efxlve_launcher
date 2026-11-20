@@ -587,6 +587,9 @@ pub async fn fetch_gog_achievements(
                     .unwrap_or_default()
                     .to_string(),
                 icon_link,
+                // GOG ships one picture for both states.
+                icon_locked: String::new(),
+                icon_unlocked: String::new(),
                 tier: None,
                 rarity: rarity_val
                     .map(|p| crate::legendary::models::AchievementRarity { percent: Some(p) }),

@@ -221,6 +221,14 @@ pub struct AchievementItem {
     pub icon_id: String,
     #[serde(default, deserialize_with = "null_string")]
     pub icon_link: String,
+    /// The grey picture a locked achievement shows. Empty when the source
+    /// ships one picture for both states.
+    #[serde(default, deserialize_with = "null_string")]
+    pub icon_locked: String,
+    /// The coloured picture an earned achievement shows. Empty when the source
+    /// ships one picture for both states.
+    #[serde(default, deserialize_with = "null_string")]
+    pub icon_unlocked: String,
     pub tier: Option<AchievementTier>,
     pub rarity: Option<AchievementRarity>,
     #[serde(default)]

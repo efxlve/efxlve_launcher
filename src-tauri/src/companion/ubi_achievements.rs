@@ -988,6 +988,9 @@ pub(crate) fn achievements_for(app_id: &str, title: &str, language: &str) -> Gam
                 .filter(|date| !date.is_empty()),
             icon_id: row.id.clone(),
             icon_link,
+            // Ubisoft ships one picture for both states.
+            icon_locked: String::new(),
+            icon_unlocked: String::new(),
             tier: None,
             rarity: None,
             hidden: false,

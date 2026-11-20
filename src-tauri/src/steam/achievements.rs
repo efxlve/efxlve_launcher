@@ -1354,10 +1354,22 @@ fn build_emulator_achievements(
         let (unlocked, unlock_time, progress) = state.unwrap_or((false, 0, 0.0));
         let achieved_icon = achievement_icon_url(app_id, &entry.icon_achieved);
         let unachieved_icon = achievement_icon_url(app_id, &entry.icon_unachieved);
-        let icon = if unlocked {
-            &achieved_icon
+        // Keep both pictures: the list has to swap the grey art for the coloured
+        // one when a live unlock flips the state without refetching.
+        let locked_icon = if unachieved_icon.trim().is_empty() {
+            achieved_icon.clone()
         } else {
-            &unachieved_icon
+            unachieved_icon.clone()
+        };
+        let unlocked_icon = if achieved_icon.trim().is_empty() {
+            unachieved_icon.clone()
+        } else {
+            achieved_icon.clone()
+        };
+        let icon = if unlocked {
+            unlocked_icon.clone()
+        } else {
+            locked_icon.clone()
         };
         let item = AchievementItem {
             name: entry.api_name.clone(),
@@ -1370,11 +1382,9 @@ fn build_emulator_achievements(
             } else {
                 None
             },
-            icon_link: if icon.trim().is_empty() {
-                achieved_icon
-            } else {
-                icon.clone()
-            },
+            icon_link: icon,
+            icon_locked: locked_icon,
+            icon_unlocked: unlocked_icon,
             hidden: entry.hidden,
             is_base: entry.dlc_app_id.is_none(),
             set_name: entry.set_name.clone(),
@@ -1569,12 +1579,24 @@ pub fn read_local_achievements_with_app(
                 .and_then(|d| d.get("icon_gray"))
                 .and_then(Vdf::as_str)
                 .unwrap_or("");
-            let file = if unlocked && !icon.is_empty() {
-                icon
-            } else if !icon_gray.is_empty() {
-                icon_gray
+            // The client schema publishes both pictures; a missing one falls
+            // back to the other state.
+            let unlocked_icon = achievement_icon_url(app_id, icon);
+            let locked_icon = achievement_icon_url(app_id, icon_gray);
+            let locked_icon = if locked_icon.is_empty() {
+                unlocked_icon.clone()
             } else {
-                icon
+                locked_icon
+            };
+            let unlocked_icon = if unlocked_icon.is_empty() {
+                locked_icon.clone()
+            } else {
+                unlocked_icon
+            };
+            let file = if unlocked {
+                &unlocked_icon
+            } else {
+                &locked_icon
             };
             let item = AchievementItem {
                 name: api_name,
@@ -1587,7 +1609,9 @@ pub fn read_local_achievements_with_app(
                 } else {
                     None
                 },
-                icon_link: achievement_icon_url(app_id, file),
+                icon_link: file.clone(),
+                icon_locked: locked_icon,
+                icon_unlocked: unlocked_icon,
                 hidden,
                 is_base,
                 set_name,
@@ -2021,12 +2045,24 @@ pub async fn steam_get_achievements(
             .and_then(|v| v.as_f64());
         let icon = entry.get("icon").and_then(|v| v.as_str()).unwrap_or("");
         let icon_gray = entry.get("icongray").and_then(|v| v.as_str()).unwrap_or("");
-        let file = if achieved && !icon.is_empty() {
-            icon
-        } else if !icon_gray.is_empty() {
-            icon_gray
+        // The Web API publishes both pictures; a missing one falls back to the
+        // other state.
+        let unlocked_icon = achievement_icon_url(&app_id, icon);
+        let locked_icon = achievement_icon_url(&app_id, icon_gray);
+        let locked_icon = if locked_icon.is_empty() {
+            unlocked_icon.clone()
         } else {
-            icon
+            locked_icon
+        };
+        let unlocked_icon = if unlocked_icon.is_empty() {
+            locked_icon.clone()
+        } else {
+            unlocked_icon
+        };
+        let file = if achieved {
+            &unlocked_icon
+        } else {
+            &locked_icon
         };
         let hidden_flag = entry.get("hidden").and_then(|v| v.as_i64()).unwrap_or(0) == 1;
         let item = AchievementItem {
@@ -2048,7 +2084,9 @@ pub async fn steam_get_achievements(
             } else {
                 None
             },
-            icon_link: achievement_icon_url(&app_id, file),
+            icon_link: file.clone(),
+            icon_locked: locked_icon,
+            icon_unlocked: unlocked_icon,
             tier: percent.map(tier_for_percent),
             rarity: percent.map(|p| AchievementRarity { percent: Some(p) }),
             hidden: hidden_flag,
@@ -4431,6 +4469,33 @@ mod tests {
             .map(|ach| ach.name.as_str())
             .collect();
         assert_eq!(unlocked, ["1", "2", "31"]);
+    }
+
+    #[test]
+    fn emulator_build_keeps_both_pictures_for_a_live_swap() {
+        let schema = vec![CommunityAchievement {
+            api_name: "1".into(),
+            name: "1".into(),
+            description: String::new(),
+            hidden: false,
+            icon_achieved: "on.jpg".into(),
+            icon_unachieved: "off.jpg".into(),
+            ..Default::default()
+        }];
+        // A definition list built while locked starts on the grey picture but
+        // still carries the coloured one for the live unlock.
+        let locked = build_emulator_achievements("384190", &schema, &Default::default());
+        let item = &locked.achievements[0];
+        assert!(!item.unlocked);
+        assert_eq!(item.icon_link, item.icon_locked);
+        assert!(item.icon_locked.ends_with("/384190/off.jpg"));
+        assert!(item.icon_unlocked.ends_with("/384190/on.jpg"));
+
+        let emu = parse_achievements_ini("[1]\nAchieved=1\nUnlockTime=1700000000\n");
+        let unlocked = build_emulator_achievements("384190", &schema, &emu);
+        let item = &unlocked.achievements[0];
+        assert!(item.unlocked);
+        assert_eq!(item.icon_link, item.icon_unlocked);
     }
 
     #[test]

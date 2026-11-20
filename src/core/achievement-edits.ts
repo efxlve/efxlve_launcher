@@ -16,6 +16,7 @@
 import {
   achievementProgress,
   isAchievementUnlocked,
+  syncAchievementIcon,
 } from "./achievements";
 import type { AchievementUserState, EpicAchievementSummary } from "../epic-commands";
 
@@ -32,6 +33,8 @@ export interface AchievementStateItem {
   display_name?: string;
   description?: string;
   icon_link?: string;
+  icon_locked?: string;
+  icon_unlocked?: string;
   unlocked?: boolean;
   progress?: number;
   unlock_date?: string | null;
@@ -326,6 +329,7 @@ export function applyAchievementEdits(appName: string, data: AchievementStateSet
         item.unlock_date = null;
         item.user_state = "locked";
       }
+      syncAchievementIcon(item);
     }
   }
 

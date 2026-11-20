@@ -31,6 +31,10 @@ export interface AchievementLike {
   progress?: number;
   unlock_date?: string | null;
   icon_link?: string;
+  /** The picture shown while locked and the one shown once earned. Sources
+   *  that ship a single picture leave both empty. */
+  icon_locked?: string;
+  icon_unlocked?: string;
   tier?: AchievementTierLike | null;
   rarity?: AchievementRarityLike | null;
   hidden?: boolean;
@@ -48,6 +52,15 @@ export function achievementProgress(a: AchievementLike): number {
 /** An achievement is earned when the store says so or progress reached 100%. */
 export function isAchievementUnlocked(a: AchievementLike): boolean {
   return Boolean(a.unlocked) || achievementProgress(a) >= 1;
+}
+
+/**
+ * Puts the picture that matches the current state on `icon_link`. Stores that
+ * ship one picture leave both fields empty and keep their only image.
+ */
+export function syncAchievementIcon(a: AchievementLike): void {
+  const next = a.unlocked ? a.icon_unlocked : a.icon_locked;
+  if (typeof next === "string" && next.trim()) a.icon_link = next;
 }
 
 /** Global unlock percentage, clamped to a sane 0..100 range. */

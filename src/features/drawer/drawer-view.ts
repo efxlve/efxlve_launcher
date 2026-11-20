@@ -88,7 +88,7 @@ import { ageOrgOrder, ensureIgdbOverview, gameGenresFor, igdbAboutSettled, igdbG
 import { cleanStoreDescription, detectGameMode, getAchTier, getHardwareLabel, heroCloudStatus, rememberCloudSync, renderAchievementSections, renderControllerCard, renderCriticCard, renderGameFeatures, renderHltbCard, renderInstalledCopyFacts, renderLastSessionCompact, renderNextAchievements, renderSteamNews } from "./drawer-widgets";
 import { renderRequirementPanel, renderSystemTab, repaintSystemRequirements } from "./system-tab";
 import { installDriveLabel } from "./system-check";
-import { achievementProgress, achievementStats, estimateRemainingHours, isAchievementUnlocked, nextAchievements } from "../../core/achievements";
+import { achievementProgress, achievementStats, estimateRemainingHours, isAchievementUnlocked, nextAchievements, syncAchievementIcon } from "../../core/achievements";
 import { storeAchievementAnswer } from "../../core/achievement-answer";
 import { applyAchievementEdits } from "../../core/achievement-edits";
 import { recordAchievementUnlocks, attachAchievementScreenshot } from "../../core/achievement-history";
@@ -2739,6 +2739,9 @@ function applyEosLogUnlocks(
     item.unlocked = true;
     item.progress = 1;
     item.unlock_date = iso || item.unlock_date;
+    // The definition list was built while everything was locked, so the row
+    // still carries the grey art; put the coloured picture on it.
+    syncAchievementIcon(item);
     // An edit already folded the old store facts in; move them with the unlock
     // so re-applying the edit keeps the truth instead of clearing it again.
     if (item.store_unlocked !== undefined) {

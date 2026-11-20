@@ -1059,6 +1059,9 @@ pub(crate) fn achievements_from_json(value: &serde_json::Value) -> GameAchieveme
             unlock_date,
             icon_id: String::new(),
             icon_link: icon,
+            // Xbox ships one picture for both states.
+            icon_locked: String::new(),
+            icon_unlocked: String::new(),
             tier: None,
             // The v2 JSON does not guarantee a rarity block; when the service
             // includes it, the shared rarity model paints the same tier the

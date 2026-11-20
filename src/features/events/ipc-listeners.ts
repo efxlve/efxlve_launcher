@@ -60,6 +60,7 @@ import { CONTROLLER_BRIDGE_KEY, AUTOSTART_INIT_KEY, OVERLAY_ENABLED_KEY, OVERLAY
 import { overlayAntiCheatOverride, overlayEnabled, overlayHotkey, overlayHotkeyLabel } from "../../core/page-visibility";
 import { achGameNotificationsEnabled } from "../../core/ach-game-prefs";
 import { storeAchievementAnswer } from "../../core/achievement-answer";
+import { syncAchievementIcon } from "../../core/achievements";
 import { appMinimize, appSetAutostart } from "../../core/window";
 import { modalRoot } from "../../core/dom";
 
@@ -1352,6 +1353,7 @@ export async function initApp(hooks: {
         entry.unlocked = true;
         entry.progress = 1;
         entry.unlock_date = new Date().toISOString().slice(0, 10);
+        syncAchievementIcon(entry);
         // One history row per unlock, whichever store/path announced it.
         if (list) {
           recordAchievementUnlocks(key, list, {

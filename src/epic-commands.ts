@@ -270,6 +270,10 @@ export interface EpicAchievementItem {
   unlock_date: string | null;
   icon_id: string;
   icon_link: string;
+  /** The grey picture a locked achievement shows; empty when the store ships one. */
+  icon_locked?: string;
+  /** The coloured picture an earned achievement shows; empty when the store ships one. */
+  icon_unlocked?: string;
   tier?: EpicAchievementTier;
   rarity?: EpicAchievementRarity;
   hidden: boolean;

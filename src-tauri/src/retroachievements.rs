@@ -287,6 +287,9 @@ fn map_game_progress(payload: &serde_json::Value) -> GameAchievementsResponse {
             unlock_date: date,
             icon_id: String::new(),
             icon_link: badge_url(&text(entry, &["BadgeName", "badgeName"])),
+            // RetroAchievements ships one badge for both states.
+            icon_locked: String::new(),
+            icon_unlocked: String::new(),
             tier: None,
             rarity: rarity.map(|percent| AchievementRarity {
                 percent: Some(percent),

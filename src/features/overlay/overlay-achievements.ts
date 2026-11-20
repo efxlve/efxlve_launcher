@@ -19,6 +19,7 @@ import {
   isAchievementUnlocked,
   isSafeExternalUrl,
   rarityMultiplier,
+  syncAchievementIcon,
 } from "../../core/achievements";
 import { icon, type IconName } from "../../core/icons";
 import { steamLanguage } from "../../core/steam-language";
@@ -44,6 +45,8 @@ export interface AchievementItem {
   unlock_date?: string | null;
   hidden?: boolean;
   icon_link?: string;
+  icon_locked?: string;
+  icon_unlocked?: string;
   is_base?: boolean;
   set_name?: string;
   dlc_app_id?: number | null;
@@ -586,6 +589,7 @@ function applyEosLogUnlocks(
     item.unlocked = true;
     item.progress = 1;
     item.unlock_date = iso || item.unlock_date;
+    syncAchievementIcon(item);
     // An edit already folded the old store facts in; move them with the unlock
     // so re-applying the edit keeps the truth instead of clearing it again.
     if (item.store_unlocked !== undefined) {
@@ -726,6 +730,7 @@ export function applyLiveAchievementUnlock(name: string): void {
   item.unlocked = true;
   item.progress = 1;
   item.unlock_date = new Date().toISOString().slice(0, 10);
+  syncAchievementIcon(item);
   cachedAchievements.user_unlocked = Math.min(
     cachedAchievements.total_achievements,
     (cachedAchievements.user_unlocked || 0) + 1,
