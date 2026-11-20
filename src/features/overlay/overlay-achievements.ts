@@ -250,7 +250,7 @@ function renderAchDetail(item: AchievementItem): string {
     <div class="ov-ach-detail">
       <button type="button" class="btn ghost small ov-ach-back" data-ov="ach-back">${icon("arrow-left", 12)}<span>${esc(t("common.back"))}</span></button>
       <div class="ov-ach-detail-hero">
-        <div class="ov-ach-detail-art${masked ? " is-masked" : ""}">
+        <div class="ov-ach-detail-art${masked ? " is-masked" : unlocked ? "" : " is-locked"}">
           ${masked ? icon("lock", 22) : item.icon_link ? `<img src="${esc(item.icon_link)}" alt="" loading="lazy" />` : icon("trophy", 22)}
         </div>
         <div class="ov-ach-detail-main">

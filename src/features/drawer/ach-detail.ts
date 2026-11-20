@@ -315,7 +315,7 @@ export function renderAchievementDetail(input: AchievementDetailInput): string {
       ${detailBar}
 
       <section class="ach-detail-hero">
-        <div class="ach-detail-art ${masked ? "is-masked" : ""}">
+        <div class="ach-detail-art${masked ? " is-masked" : isUnlocked ? "" : " is-locked"}">
           ${
             masked
               ? `<div class="ach-mystery-box">${icon("lock", 28)}</div>`

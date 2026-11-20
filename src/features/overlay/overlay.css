@@ -2085,6 +2085,13 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
   color: var(--text-3);
 }
 
+/* Locked art stays grey here too, so an unlock visibly restores the picture. */
+.ov-ach-row:not(.unlocked) img.ov-ach-icon,
+.ov-ach-item:not(.unlocked) img.ov-ach-thumb {
+  opacity: 0.42;
+  filter: grayscale(1);
+}
+
 .ov-ach-icon-masked {
   border: 1px dashed var(--line-strong);
   background: transparent;
@@ -2244,6 +2251,7 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
 }
 
 .ov-ach-detail-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ov-ach-detail-art.is-locked img { opacity: 0.42; filter: grayscale(1); }
 .ov-ach-detail-main { flex: 1; min-width: 0; }
 .ov-ach-detail-game { color: var(--text-3); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
 .ov-ach-detail-name { color: var(--text); font-size: 14px; font-weight: 600; line-height: 1.35; }
