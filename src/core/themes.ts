@@ -173,8 +173,7 @@ function sanitizeSnapshotTokens(value: unknown): Record<string, string> | undefi
   return Object.keys(clean).length > 0 ? clean : undefined;
 }
 
-function sceneRules(id: string, input: CustomThemeInput): string {
-  const selector = `:root[data-surface="${cssEscape(id)}"]`;
+function sceneRules(selector: string, input: CustomThemeInput, borrowCss: boolean, allowGlass: boolean): string {
   const rules: string[] = [];
   const scene = sanitizeSceneUrl(input.scene);
   const sceneBg = scene ? undefined : sanitizeSceneBackground(input.sceneBg);
@@ -198,16 +197,27 @@ function sceneRules(id: string, input: CustomThemeInput): string {
     // by the same scrim, so the library cannot bleed through and the theme still
     // reaches the page the user spends the most time on.
     rules.push(`${selector} .overlay { background: linear-gradient(${scrim}, ${scrim}), ${bg} url("${scene}") center / cover no-repeat fixed !important; }`);
-    rules.push(glassRule);
+    if (allowGlass) rules.push(glassRule);
   } else if (sceneBg) {
-    // A cloned built-in scene is already a complete background shorthand
-    // (colour, artwork, sizing); the source theme's own CSS cannot follow it,
-    // so the same shorthand is painted on the shell and the game page here.
-    rules.push(`${selector} body { background: ${sceneBg} !important; }`);
-    rules.push(`${selector} #main-col, ${selector} #view { background: transparent !important; }`);
-    rules.push(`${selector} .overlay { background: ${sceneBg} !important; }`);
-    if (input.cardGlass) rules.push(glassRule);
-  } else if (input.cardGlass) {
+    // A source-identity clone already has the built-in's body rule and reads
+    // `--scene-bg` for the game page; only the variable needs to be supplied.
+    // A free-standing theme has no such CSS, so paint the shell here.
+    if (!borrowCss) {
+      rules.push(`${selector} body { background: ${sceneBg} !important; }`);
+      rules.push(`${selector} #main-col, ${selector} #view { background: transparent !important; }`);
+      rules.push(`${selector} .overlay { background: ${sceneBg} !important; }`);
+      if (input.cardGlass) rules.push(glassRule);
+    }
+  } else if (input.sourceSceneOff) {
+    // The clone borrows the source theme's CSS, including its body scene. Once
+    // the player removes that artwork, a flat palette background must replace
+    // the source rule instead of letting the scene reappear.
+    rules.push(`${selector} body { background: var(--bg) !important; }`);
+    rules.push(`${selector} .overlay { background: var(--bg) !important; }`);
+    if (allowGlass && input.cardGlass) rules.push(glassRule);
+  } else if (input.cardGlass && allowGlass) {
+    // The borrowed CSS already owns its glass panels; the generic blur is for
+    // themes that have no source stylesheet (or a source without glass).
     rules.push(glassRule);
   }
 
@@ -247,6 +257,7 @@ function readCustomInputs(): CustomThemeInput[] {
         let recoveredSceneBg: string | undefined;
         let recoveredPreviewBg: string | undefined;
         let recoveredGlass = false;
+        let structuralChecked = item.glassDecided === true;
 
         // A theme cloned after the token fix carries its source id, so missing
         // tokens can be recovered without looking at a translated name.
@@ -289,6 +300,29 @@ function readCustomInputs(): CustomThemeInput[] {
           }
         }
 
+        // Clones saved before the structural fields existed still know their
+        // source. Fill the backdrop, gallery gradient and glass flag without
+        // touching a deliberate removal or a palette the player has edited.
+        if (!structuralChecked && recoveredSource && item.sourceSceneOff !== true) {
+          const source = allBuiltinThemes().find((theme) => theme.id === recoveredSource);
+          if (source) {
+            structuralChecked = true;
+            migrated = true;
+            if (item.sceneBg === undefined) {
+              const sourceSceneBg = sanitizeSceneBackground(source.tokens?.["--scene-bg"]);
+              if (sourceSceneBg) recoveredSceneBg = sourceSceneBg;
+            }
+            if (item.previewBg === undefined) {
+              const sourceBg = HEX.test(source.bg) ? source.bg : firstHex(source.bg) ?? "#141418";
+              const sourceAccent = HEX.test(source.accent) ? source.accent : firstHex(source.accent) ?? "#7c3aed";
+              const paletteMatches = item.bg === sourceBg && item.accent === sourceAccent;
+              const previewBg = paletteMatches ? sanitizePreviewBg(source.bg) : undefined;
+              if (previewBg) recoveredPreviewBg = previewBg;
+            }
+            if (hasTranslucentSurfaces(source.tokens)) recoveredGlass = true;
+          }
+        }
+
         const borderStyle: "subtle" | "contrast" | "accent" =
           item.borderStyle === "contrast" || item.borderStyle === "accent" ? item.borderStyle : "subtle";
         const glow: "none" | "subtle" | "radiant" | "neon" =
@@ -316,6 +350,8 @@ function readCustomInputs(): CustomThemeInput[] {
           scene: sanitizeSceneUrl(item.scene),
           sceneBg: sanitizeSceneBackground(item.sceneBg) ?? recoveredSceneBg,
           previewBg: sanitizePreviewBg(item.previewBg) ?? recoveredPreviewBg,
+          sourceSceneOff: item.sourceSceneOff === true,
+          glassDecided: structuralChecked,
           sceneStored: item.sceneStored === true,
           sceneBlur: typeof item.sceneBlur === "number" ? Math.max(0, Math.min(30, item.sceneBlur)) : 0,
           sceneOpacity: typeof item.sceneOpacity === "number" ? Math.max(0.05, Math.min(0.95, item.sceneOpacity)) : undefined,
@@ -489,6 +525,10 @@ export function saveCustomTheme(input: CustomThemeInput): string {
     }
   }
 
+  const provided = sanitizeThemeTokens(input.tokens);
+  const extras = sourceExtraTokens(input);
+  const tokens = provided || extras ? { ...extras, ...provided } : undefined;
+
   const clean: CustomThemeInput = {
     id: targetId,
     sourceId: isSafeThemeId(input.sourceId) ? input.sourceId : undefined,
@@ -506,11 +546,13 @@ export function saveCustomTheme(input: CustomThemeInput): string {
     scene: sceneReady ? undefined : storedScene,
     sceneBg: sanitizeSceneBackground(input.sceneBg),
     previewBg: sanitizePreviewBg(input.previewBg),
+    sourceSceneOff: Boolean(input.sourceSceneOff),
+    glassDecided: true,
     sceneStored: sceneReady ? Boolean(storedScene) : false,
     sceneBlur: typeof input.sceneBlur === "number" ? Math.max(0, Math.min(30, input.sceneBlur)) : 0,
     sceneOpacity: typeof input.sceneOpacity === "number" ? Math.max(0.05, Math.min(0.95, input.sceneOpacity)) : undefined,
     radius: input.radius === "sharp" || input.radius === "round" ? input.radius : "default",
-    tokens: sanitizeThemeTokens(input.tokens),
+    tokens,
     createdAt: input.createdAt || existing?.createdAt || Date.now(),
   };
 
@@ -599,6 +641,32 @@ function hasTranslucentSurfaces(tokens: Record<string, string> | undefined): boo
   });
 }
 
+/** True when the source theme's own CSS already supplies glass panels. */
+function sourceHasGlass(input: CustomThemeInput): boolean {
+  if (!input.sourceId) return false;
+  const source = allBuiltinThemes().find((theme) => theme.id === input.sourceId);
+  return hasTranslucentSurfaces(source?.tokens);
+}
+
+/**
+ * Tokens that only the source theme knows (aero gloss, console chrome, ...).
+ * A palette edit regenerates every colour token, but these extras keep the
+ * source CSS working; without them a cloned theme loses part of its look.
+ */
+function sourceExtraTokens(input: CustomThemeInput): Record<string, string> | undefined {
+  if (!input.sourceId) return undefined;
+  const source = allBuiltinThemes().find((theme) => theme.id === input.sourceId);
+  if (!source?.tokens) return undefined;
+  const generated = customTokens(input);
+  const extras: Record<string, string> = {};
+  for (const [name, value] of Object.entries(source.tokens)) {
+    if (name === "--scene-bg" || name in generated) continue;
+    if (!TOKEN_NAME.test(name) || UNSAFE_TOKEN_VALUE.test(value)) continue;
+    extras[name] = value;
+  }
+  return Object.keys(extras).length > 0 ? extras : undefined;
+}
+
 /**
  * Everything a built-in can hand to the designer or a clone. Token copying
  * alone drops the structural data (`--scene-bg`, the gallery gradient, the
@@ -680,6 +748,7 @@ export function exportThemeJson(id: string): string {
         scene: sanitizeSceneUrl(custom.scene),
         sceneBg: sanitizeSceneBackground(custom.sceneBg),
         previewBg: sanitizePreviewBg(custom.previewBg),
+        sourceSceneOff: Boolean(custom.sourceSceneOff),
         sceneBlur: custom.sceneBlur,
         sceneOpacity: custom.sceneOpacity,
         radius: custom.radius,
@@ -697,6 +766,7 @@ export function exportThemeJson(id: string): string {
     {
       efxlve_theme: THEME_SCHEMA,
       name: source.name,
+      sourceId: source.sourceId,
       tags: def.tags ?? [],
       bg: source.bg,
       surface: source.surface,
@@ -744,9 +814,11 @@ export function importThemeJson(jsonStr: string): { id: string; name: string } |
         ? parsed.borderStyle
         : "subtle";
     const light = parsed.light === true;
+    const sourceId = isSafeThemeId(parsed.sourceId) ? parsed.sourceId : undefined;
     const scene = sanitizeSceneUrl(parsed.scene);
     const sceneBg = sanitizeSceneBackground(parsed.sceneBg);
     const previewBg = sanitizePreviewBg(parsed.previewBg);
+    const sourceSceneOff = parsed.sourceSceneOff === true;
     const sceneBlur = typeof parsed.sceneBlur === "number" ? Math.max(0, Math.min(30, parsed.sceneBlur)) : 0;
     const sceneOpacity = typeof parsed.sceneOpacity === "number" ? Math.max(0.05, Math.min(0.95, parsed.sceneOpacity)) : undefined;
     const radius = parsed.radius === "sharp" || parsed.radius === "round" ? parsed.radius : "default";
@@ -754,6 +826,7 @@ export function importThemeJson(jsonStr: string): { id: string; name: string } |
 
     const id = saveCustomTheme({
       name,
+      sourceId,
       bg,
       surface,
       accent,
@@ -766,6 +839,7 @@ export function importThemeJson(jsonStr: string): { id: string; name: string } |
       scene,
       sceneBg,
       previewBg,
+      sourceSceneOff,
       sceneBlur,
       sceneOpacity,
       radius,
@@ -915,26 +989,43 @@ function tokenStyle(): HTMLStyleElement {
 }
 
 /**
+ * A cloned theme borrows the built-in it came from, not just its tokens. The
+ * built-in's CSS block is addressed by `data-surface`, so painting the clone
+ * under the source id keeps its glow, frames, scrollbars and typography.
+ */
+function themeSurfaceId(theme: ThemeDef, custom: CustomThemeInput | null): string {
+  const source = custom?.sourceId;
+  if (source && source !== DEFAULT_THEME && !source.startsWith(CUSTOM_PREFIX) && isSafeThemeId(source)) return source;
+  return theme.id;
+}
+
+/**
  * Writes a theme to the document without storing it. The theme's tokens and
  * generated scene rules replace the previous rule set on every call.
  */
 function paintTheme(theme: ThemeDef): void {
   const root = document.documentElement;
-  // Black is the base palette in `tokens.css`: it needs no attribute.
-  if (theme.id === DEFAULT_THEME) delete root.dataset.surface;
-  else root.dataset.surface = theme.id;
-  root.dataset.scheme = theme.scheme;
-
-  const tokens = theme.custom || theme.customInput ? sanitizeThemeTokens(theme.tokens) : theme.tokens;
-  const body = Object.entries(tokens ?? {})
-    .map(([name, value]) => `${name}: ${value};`)
-    .join("");
-
   // A user theme can carry a backdrop image; its rules are generated with the
   // theme, so the CSS files stay free of per-user selectors.
   const custom = theme.customInput ?? getCustomThemeInput(theme.id);
-  const scene = custom ? sceneRules(theme.id, custom) : "";
-  const selector = `:root[data-surface="${cssEscape(theme.id)}"]`;
+  const surfaceId = themeSurfaceId(theme, custom);
+
+  // Black is the base palette in `tokens.css`: it needs no attribute.
+  if (surfaceId === DEFAULT_THEME) delete root.dataset.surface;
+  else root.dataset.surface = surfaceId;
+  root.dataset.scheme = theme.scheme;
+
+  const tokens = theme.custom || theme.customInput ? sanitizeThemeTokens(theme.tokens) : theme.tokens;
+  const tokenCss = Object.entries(tokens ?? {})
+    .map(([name, value]) => `${name}: ${value};`)
+    .join("");
+  const sceneBg = custom ? sanitizeSceneBackground(custom.sceneBg) : undefined;
+  const body = `${tokenCss}${sceneBg ? `--scene-bg: ${sceneBg};` : ""}`;
+
+  const selector = surfaceId === DEFAULT_THEME ? ":root" : `:root[data-surface="${cssEscape(surfaceId)}"]`;
+  const borrowCss = surfaceId !== theme.id;
+  const allowGlass = !borrowCss || !custom || !sourceHasGlass(custom);
+  const scene = custom ? sceneRules(selector, custom, borrowCss, allowGlass) : "";
 
   tokenStyle().textContent = body || scene
     ? `${body ? `${selector}{${body}}` : ""}${scene ? `\n${scene}` : ""}`
@@ -985,10 +1076,12 @@ export const SURFACE_APPLIED_EVENT = "efxlve:surface-applied";
 function writeBootSnapshot(theme: ThemeDef): void {
   try {
     const tokens = theme.custom ? sanitizeThemeTokens(theme.tokens) : theme.tokens;
+    const custom = theme.customInput ?? getCustomThemeInput(theme.id);
     const tokenBg = tokens?.["--bg"];
     const bg = tokenBg ?? BOOT_BG[theme.id] ?? (HEX.test(theme.bg) ? theme.bg : theme.scheme === "light" ? "#f3f4f6" : "#000000");
     const snapshot = {
       id: theme.id,
+      cssSurface: themeSurfaceId(theme, custom),
       scheme: theme.scheme,
       bg,
       tokens,

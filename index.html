@@ -28,8 +28,10 @@
           var scheme = boot && (boot.scheme === "light" || boot.scheme === "dark") ? boot.scheme : "";
           var bg = boot && typeof boot.bg === "string" && /^#[0-9a-f]{6}$/i.test(boot.bg) ? boot.bg : "";
           var safeId = /^[a-z0-9][a-z0-9_-]{0,63}$/.test(id);
+          var cssId = boot && typeof boot.cssSurface === "string" && /^[a-z0-9][a-z0-9_-]{0,63}$/.test(boot.cssSurface) ? boot.cssSurface : id;
+          var safeCss = /^[a-z0-9][a-z0-9_-]{0,63}$/.test(cssId);
 
-          if (safeId && id !== "black") root.dataset.surface = id;
+          if (safeCss && cssId !== "black") root.dataset.surface = cssId;
           if (scheme) {
             root.dataset.scheme = scheme;
             root.style.colorScheme = scheme;
@@ -51,7 +53,7 @@
             if (css) {
               var tokenStyle = document.createElement("style");
               tokenStyle.id = "efxlve-theme-tokens";
-              tokenStyle.textContent = ':root[data-surface="' + id + '"]{' + css + "}";
+              tokenStyle.textContent = (cssId === "black" ? ":root" : ':root[data-surface="' + cssId + '"]') + "{" + css + "}";
               document.head.appendChild(tokenStyle);
             }
           }

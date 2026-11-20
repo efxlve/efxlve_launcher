@@ -338,8 +338,55 @@ describe("theme cloning", () => {
 
     applySurface(id, false);
     const css = document.getElementById("efxlve-theme-tokens")?.textContent ?? "";
+    expect(css).toContain("--scene-bg");
     expect(css).toContain("neon-grid-scene.svg");
-    expect(css).toContain('body { background: #07080a url(');
+    // The source CSS paints the body; the token table only supplies its scene.
+    expect(css).not.toContain("body { background:");
+  });
+
+  it("paints a clone under its source theme's CSS identity", async () => {
+    await ensureThemeCatalog();
+    const id = duplicateTheme("neongrid");
+    applySurface(id, false);
+
+    expect(document.documentElement.dataset.surface).toBe("neongrid");
+    const css = document.getElementById("efxlve-theme-tokens")?.textContent ?? "";
+    expect(css).toContain(':root[data-surface="neongrid"]{');
+    expect(css).not.toContain(`:root[data-surface="${id}"]{`);
+
+    const snapshot = JSON.parse(localStorage.getItem(BOOT_THEME_KEY)!) as {
+      id: string;
+      cssSurface: string;
+    };
+    expect(snapshot.id).toBe(id);
+    expect(snapshot.cssSurface).toBe("neongrid");
+  });
+
+  it("keeps the source link when a clone's palette is edited", () => {
+    const id = duplicateTheme("blades");
+    const cloned = getCustomThemeInput(id)!;
+    saveCustomTheme({ ...cloned, accent: "#00ff00", tokens: undefined, tokensDecided: true });
+
+    const edited = getCustomThemeInput(id);
+    expect(edited?.accent).toBe("#00ff00");
+    expect(edited?.sourceId).toBe("blades");
+    expect(edited?.tokens?.["--accent"]).toBeUndefined();
+    expect(edited?.tokens?.["--x360-gloss"]).toContain("linear-gradient");
+  });
+
+  it("replaces a removed source scene with the flat palette", () => {
+    const id = saveCustomTheme({
+      ...BASE,
+      name: "No Scene",
+      sourceId: "neongrid",
+      sourceSceneOff: true,
+      tokens: { "--bg": "#07080a" },
+    });
+    applySurface(id, false);
+
+    const css = document.getElementById("efxlve-theme-tokens")?.textContent ?? "";
+    expect(document.documentElement.dataset.surface).toBe("neongrid");
+    expect(css).toContain("body { background: var(--bg) !important; }");
   });
 
   it("detects translucent panels and keeps a solid surface hint", () => {
@@ -356,6 +403,7 @@ describe("theme cloning", () => {
     expect(imported).not.toBeNull();
 
     const input = getCustomThemeInput(imported!.id)!;
+    expect(input.sourceId).toBe("blades");
     expect(input.sceneBg).toContain("blades-scene.svg");
     expect(input.previewBg).toContain("linear-gradient");
     expect(input.cardGlass).toBe(true);
@@ -382,6 +430,43 @@ describe("theme cloning", () => {
     expect(input?.sceneBg).toContain("neon-grid-scene.svg");
     expect(input?.previewBg).toContain("linear-gradient");
     expect(input?.tokens?.["--scene-bg"]).toBeUndefined();
+  });
+
+  it("fills structural fields when an older clone already has tokens", async () => {
+    await ensureThemeCatalog();
+    localStorage.setItem(
+      "efxlve-custom-themes",
+      JSON.stringify([
+        {
+          id: "custom-tokens",
+          sourceId: "neongrid",
+          name: "Old Neon",
+          bg: "#07080a",
+          accent: "#fcee0a",
+          light: false,
+          tokensDecided: true,
+          tokens: { "--bg": "#07080a", "--accent": "#fcee0a" },
+        },
+        {
+          id: "custom-glass",
+          sourceId: "blades",
+          name: "Old Blades",
+          bg: "#07180d",
+          accent: "#9bd44a",
+          light: false,
+          tokensDecided: true,
+          tokens: { "--bg": "#07180d", "--accent": "#9bd44a" },
+        },
+      ]),
+    );
+
+    const neon = getCustomThemeInput("custom-tokens");
+    expect(neon?.sceneBg).toContain("neon-grid-scene.svg");
+    expect(neon?.previewBg).toContain("linear-gradient");
+    expect(neon?.glassDecided).toBe(true);
+
+    const blades = getCustomThemeInput("custom-glass");
+    expect(blades?.cardGlass).toBe(true);
   });
 
   it("rejects a foreign scene background and an unsafe preview gradient", () => {

@@ -7,6 +7,42 @@ export const DEFAULT_THEME = "black";
 
 /** Exact token contract for the core CSS-only themes. */
 const TOKENS: Record<string, Record<string, string>> = {
+  "black": {
+    "--bg": "#000000",
+    "--surface-1": "#0a0a0a",
+    "--surface-2": "#141414",
+    "--surface-3": "#1e1e1e",
+    "--line": "rgba(255, 255, 255, 0.06)",
+    "--line-strong": "rgba(255, 255, 255, 0.12)",
+    "--scrollbar-thumb": "rgba(255, 255, 255, 0.28)",
+    "--scrollbar-thumb-hover": "rgba(255, 255, 255, 0.55)",
+    "--text": "#ffffff",
+    "--text-2": "#9a9a9a",
+    "--text-3": "#5c5c5c",
+    "--accent": "#ffffff",
+    "--accent-hover": "#ffffff",
+    "--accent-tint": "rgba(255, 255, 255, 0.08)",
+    "--on-accent": "#000000",
+    "--ok": "#2fb36d",
+    "--ok-hover": "#38c27a",
+    "--ok-tint": "rgba(47, 179, 109, 0.14)",
+    "--warn": "#e0a32e",
+    "--warn-tint": "rgba(224, 163, 46, 0.14)",
+    "--err": "#e5484d",
+    "--err-tint": "rgba(229, 72, 77, 0.14)",
+    "--r-xs": "3px",
+    "--r-sm": "6px",
+    "--r-md": "10px",
+    "--r-lg": "14px",
+    "--r-pill": "999px",
+    "--shadow-pop": "0 12px 32px rgba(0, 0, 0, 0.5)",
+  },
+  "soft": {
+    "--bg": "#101014",
+    "--surface-1": "#18181c",
+    "--surface-2": "#222228",
+    "--surface-3": "#2c2c32",
+  },
   "white": {
     "--bg": "#f3f4f6",
     "--surface-1": "#ffffff",
@@ -151,7 +187,8 @@ const CORE_THEME_DEFS: readonly ThemeDef[] = [
 ];
 
 export const CORE_THEMES: readonly ThemeDef[] = CORE_THEME_DEFS.map((theme) => {
-  const tokens = { ...theme.tokens, ...(TOKENS[theme.id] ?? {}) };
+  const base = TOKENS["black"] ?? {};
+  const tokens = { ...base, ...theme.tokens, ...(TOKENS[theme.id] ?? {}) };
   return {
     ...theme,
     tags: theme.tags ?? TAGS[theme.id] ?? [],

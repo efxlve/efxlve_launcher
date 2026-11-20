@@ -60,10 +60,14 @@ export interface CustomThemeInput {
   sceneBg?: string;
   /** Optional picker background (a gradient) for a cloned theme. */
   previewBg?: string;
+  /** True when the player removed the cloned theme's bundled scene. */
+  sourceSceneOff?: boolean;
   /** True when the image lives in IndexedDB and only metadata is stored. */
   sceneStored?: boolean;
   /** UI-only: the designer explicitly cleared the wallpaper. */
   removeScene?: boolean;
+  /** Written after the source glass flag was reviewed; stops re-detection. */
+  glassDecided?: boolean;
   sceneBlur?: number;
   sceneOpacity?: number;
   radius?: "sharp" | "default" | "round";

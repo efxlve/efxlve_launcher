@@ -323,7 +323,7 @@ function renderThemeCard(theme: ThemeDef): string {
   const winbarColor = theme.scheme === "light" ? "rgba(15, 23, 42, 0.06)" : "rgba(0, 0, 0, 0.4)";
 
   const scene = theme.scene;
-  const hasScene = Boolean(scene || theme.customInput?.sceneBg);
+  const hasScene = Boolean(scene);
   const sceneBlur = theme.sceneBlur ?? 0;
   const opacity = theme.sceneOpacity ?? (theme.scheme === "light" ? 0.38 : 0.52);
   const scrimColor = hasScene
@@ -380,8 +380,8 @@ function renderThemeCard(theme: ThemeDef): string {
         </div>
 
         <div class="theme-card-footer">
-          <div class="theme-swatch-cluster" title="${esc(`${theme.bg} · ${surface1} · ${accent}`)}">
-            <span class="theme-dot" style="background: ${esc(theme.bg)};"></span>
+          <div class="theme-swatch-cluster" title="${esc(`${previewBg} · ${surface1} · ${accent}`)}">
+            <span class="theme-dot" style="background: ${esc(previewBg)};"></span>
             <span class="theme-dot" style="background: ${esc(surface1)};"></span>
             <span class="theme-dot" style="background: ${esc(accent)};"></span>
           </div>
@@ -443,6 +443,7 @@ export function openThemeDesigner(themeId?: string): void {
         scene: custom.scene,
         sceneBg: custom.sceneBg,
         previewBg: custom.previewBg,
+        sourceSceneOff: custom.sourceSceneOff,
         sceneBlur: custom.sceneBlur ?? 0,
         sceneOpacity: custom.sceneOpacity ?? 0.5,
         radius: custom.radius ?? "default",
@@ -1160,7 +1161,7 @@ async function applyThemeSceneFile(file: File): Promise<void> {
     return;
   }
   designerDraft.scene = data;
-  designerDraft.sceneBg = undefined;
+  designerDraft.sourceSceneOff = false;
   renderDesignerModal();
 }
 
@@ -1168,11 +1169,12 @@ async function applyThemeSceneFile(file: File): Promise<void> {
 function saveThemeFromDesigner(): void {
   const name = designerDraft.name.trim() || t("settings.themeNamePlaceholder");
   // A cloned theme's exact token table survives a rename. Touching the palette
-  // intentionally regenerates it from the new colours.
+  // intentionally regenerates it from the new colours, but the source id stays
+  // so the clone keeps the built-in's structural CSS.
   const keepTokens = Boolean(designerDraft.tokens) && paletteSignature(designerDraft) === designerBaseline;
   const id = saveCustomTheme({
     id: designerSourceId ?? undefined,
-    sourceId: keepTokens ? designerDraft.sourceId : undefined,
+    sourceId: designerDraft.sourceId,
     name,
     bg: designerDraft.bg,
     surface: designerDraft.surface,
@@ -1186,6 +1188,7 @@ function saveThemeFromDesigner(): void {
     scene: designerDraft.scene,
     sceneBg: designerDraft.sceneBg,
     previewBg: keepTokens ? designerDraft.previewBg : undefined,
+    sourceSceneOff: designerDraft.sourceSceneOff,
     sceneBlur: designerDraft.sceneBlur,
     sceneOpacity: designerDraft.sceneOpacity,
     radius: designerDraft.radius,
@@ -1460,7 +1463,7 @@ export function handleThemeSettingsAction(act: string | undefined, el: HTMLEleme
         efxlve_theme: 3,
         name,
         author: "User",
-        sourceId: keepTokens ? designerDraft.sourceId : undefined,
+        sourceId: designerDraft.sourceId,
         bg: designerDraft.bg,
         surface: designerDraft.surface,
         accent: designerDraft.accent,
@@ -1472,7 +1475,8 @@ export function handleThemeSettingsAction(act: string | undefined, el: HTMLEleme
         light: designerDraft.light,
         scene: designerDraft.scene,
         sceneBg: designerDraft.sceneBg,
-        previewBg: designerDraft.previewBg,
+        previewBg: keepTokens ? designerDraft.previewBg : undefined,
+        sourceSceneOff: Boolean(designerDraft.sourceSceneOff),
         sceneBlur: designerDraft.sceneBlur,
         sceneOpacity: designerDraft.sceneOpacity,
         radius: designerDraft.radius,
@@ -1526,7 +1530,7 @@ export function handleThemeSettingsAction(act: string | undefined, el: HTMLEleme
       const wp = PRESET_WALLPAPERS.find((w) => w.id === wpId);
       if (wp) {
         designerDraft.scene = wp.dataUrl;
-        designerDraft.sceneBg = undefined;
+        designerDraft.sourceSceneOff = false;
         renderDesignerModal();
       }
       return true;
@@ -1573,6 +1577,7 @@ export function handleThemeSettingsAction(act: string | undefined, el: HTMLEleme
 
     case "td-clear-source-scene": {
       designerDraft.sceneBg = undefined;
+      designerDraft.sourceSceneOff = true;
       renderDesignerModal();
       return true;
     }
