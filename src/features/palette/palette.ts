@@ -196,8 +196,11 @@ function renderResults(query: string, force = false): void {
       for (const s of pool) {
         if (S.hiddenGames.has(s.appName)) continue;
         if (typeof s.title !== "string" || !s.title) continue;
-        const score = scorePreparedSearch(searchTextOf(s.title), queryText);
-        if (score === 0) continue;
+        const baseScore = scorePreparedSearch(searchTextOf(s.title), queryText);
+        if (baseScore === 0) continue;
+        // Hand-added games are easier to lose under a big store catalogue;
+        // lift their matching results so a custom GTA 6 stays visible.
+        const score = baseScore + (s.appName.startsWith("custom::") ? 300 : 0);
         const canon = canonicalGameTitle(s.title);
         ranked.push({
           summary: s,

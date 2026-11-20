@@ -42,6 +42,36 @@ export interface SearchText {
   numeric: string;
 }
 
+/**
+ * Common franchise clips. Expanding the title side means a hand-added
+ * "GTA 6" still answers a search for "grand theft auto".
+ */
+const ALIASES: Record<string, string> = {
+  gta: "grand theft auto",
+  rdr: "red dead redemption",
+  cod: "call of duty",
+  nfs: "need for speed",
+  ac: "assassins creed",
+  re: "resident evil",
+  ff: "final fantasy",
+};
+
+const ALIAS_KEYS = Object.keys(ALIASES).sort((a, b) => b.length - a.length);
+const NUMERIC = /^\d+$/;
+
+function expandSearchWords(raw: string[]): string[] {
+  if (raw.length === 0) return raw;
+  const first = raw[0];
+  for (const alias of ALIAS_KEYS) {
+    if (!first.startsWith(alias)) continue;
+    const rest = first.slice(alias.length);
+    // "gta6", "rdr2", "gtav" expand; "code" and "account" do not.
+    if (first !== alias && !NUMERIC.test(rest) && !(rest in ROMAN)) continue;
+    return [...ALIASES[alias].split(" "), ...(rest ? [rest] : []), ...raw.slice(1)];
+  }
+  return raw;
+}
+
 function words(value: string): string[] {
   return value
     .normalize("NFD")
@@ -56,7 +86,7 @@ function words(value: string): string[] {
 }
 
 export function prepareSearchText(value: string): SearchText {
-  const raw = words(value);
+  const raw = expandSearchWords(words(value));
   const digits = raw.map((word) => ROMAN[word] ?? word);
   return {
     raw,
@@ -90,14 +120,19 @@ export function scorePreparedSearch(title: SearchText, query: SearchText): numbe
   }
 
   // The reverse form: a short title ("GTA 6", "RDR2", "AC Valhalla") against
-  // the full name. Numerals are left out of the acronym so "grand theft auto
-  // vi" still meets "GTA 6" after the Roman numeral is folded into a digit.
+  // the full name. Alias-expanded titles usually hit the prefix band above;
+  // this keeps the short form working even without an alias entry.
   const queryInitial = query.digits.filter((word) => !/^\d+$/.test(word)).map((word) => word[0]).join("");
   if (queryInitial.length >= 2) {
     const titleFirst = title.raw[0] ?? "";
-    if (titleFirst === queryInitial) return 3200;
-    if (queryInitial.length >= 3 && titleFirst.startsWith(queryInitial)) return 3200;
-    if (title.initial.startsWith(queryInitial)) return 3100;
+    const rest = titleFirst.slice(queryInitial.length);
+    const exact = titleFirst === queryInitial;
+    const numbered = rest.length > 0 && (NUMERIC.test(rest) || rest in ROMAN);
+    if (exact || (queryInitial.length >= 3 && numbered)) return 3200;
+    if (title.initial.startsWith(queryInitial)) {
+      const initialRest = title.initial.slice(queryInitial.length);
+      if (!initialRest || NUMERIC.test(initialRest) || initialRest in ROMAN) return 3100;
+    }
   }
 
   let cursor = 0;
