@@ -48,6 +48,7 @@
   "palette.open": "البحث في الألعاب والأوامر (Ctrl+K)",
   "palette.placeholder": "ابحث في الألعاب والصفحات والإجراءات",
   "palette.games": "الألعاب",
+  "palette.recentSearches": "عمليات البحث الأخيرة",
   "palette.commands": "الأوامر",
   "palette.empty": "لا توجد نتائج",
   "palette.hint": "Enter للفتح، الأسهم للتنقل، Esc للإغلاق",

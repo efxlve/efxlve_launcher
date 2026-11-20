@@ -336,6 +336,8 @@ export const REVEALED_ACH_KEY = "efxlve-revealed-achievements";
 export const ACH_COLLAPSED_SETS_KEY = "efxlve-ach-collapsed-sets";
 /** Recently launched game ids. */
 export const RECENT_KEY = "efxlve-recent";
+/** Last games opened from the command palette (JSON array, newest first). */
+export const PALETTE_HISTORY_KEY = "efxlve-palette-history";
 /** Recently installed and updated game ids. */
 export const RECENT_INSTALLS_KEY = "efxlve-recent-installs";
 /** Initial number of library cards rendered before progressive chunking kicks in. */

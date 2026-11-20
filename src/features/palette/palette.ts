@@ -9,6 +9,7 @@
 
 import { allStoreSummaries, rawOf, sharedOwnerOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
+import { readPaletteHistory, rememberPaletteSearch } from "../../core/palette-history";
 import { emptyState, icon, type IconName } from "../../core/icons";
 import {
   discordPageVisible,
@@ -110,7 +111,7 @@ function gameItem(appName: string, title: string, installed: boolean, idx: numbe
         ? `<button class="btn play small" data-act="epic-play" data-id="${esc(appName)}" tabindex="-1">${t("palette.play")}</button>`
         : "";
   return `
-    <div class="palette-item" data-idx="${idx}" data-act="epic-detail" data-id="${esc(appName)}" role="option">
+    <div class="palette-item" data-idx="${idx}" data-act="epic-detail" data-id="${esc(appName)}" data-palette-game="${esc(appName)}" data-palette-title="${esc(title)}" data-palette-installed="${installed ? "1" : "0"}" role="option">
       ${cover ? `<img class="palette-thumb" src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="palette-thumb"></span>`}
       <span class="palette-label">${esc(title)}</span>
       ${installed ? `<span class="chip ok">${t("library.installed")}</span>` : ""}
@@ -161,6 +162,7 @@ function renderResults(query: string): void {
     : allStoreSummaries();
 
   const games: string[] = [];
+  const history: string[] = [];
   let idx = 0;
   if (q) {
     // Installed matches first, then the rest, capped at MAX_GAMES.
@@ -179,9 +181,23 @@ function renderResults(query: string): void {
     }
     for (const s of matched) games.push(gameItem(s.appName, s.title, s.installed, idx++));
   } else {
+    // Recent palette selections sit above recently played games. The same game
+    // is not listed twice, so the history always owns the top row.
+    const seen = new Set<string>();
+    for (const entry of readPaletteHistory()) {
+      if (S.hiddenGames.has(entry.id) || seen.has(entry.id)) continue;
+      const summary = summaryOf(entry.id) ?? pool.find((s) => s.appName === entry.id);
+      if (!summary) continue;
+      seen.add(entry.id);
+      history.push(gameItem(summary.appName, summary.title, summary.installed, idx++));
+    }
     for (const id of S.epicRecent.slice(0, 5)) {
+      if (seen.has(id)) continue;
       const s = summaryOf(id);
-      if (s && !S.hiddenGames.has(s.appName)) games.push(gameItem(s.appName, s.title, s.installed, idx++));
+      if (s && !S.hiddenGames.has(s.appName)) {
+        seen.add(id);
+        games.push(gameItem(s.appName, s.title, s.installed, idx++));
+      }
     }
   }
 
@@ -198,10 +214,11 @@ function renderResults(query: string): void {
     .map((c) => `<div class="palette-item" data-idx="${idx++}" ${c.attrs} role="option">${icon(c.iconName, 16)}<span class="palette-label">${esc(c.label)}</span></div>`);
 
   list.innerHTML =
+    (history.length ? `<div class="palette-group">${t("palette.recentSearches")}</div>${history.join("")}` : "") +
     (games.length ? `<div class="palette-group">${t("palette.games")}</div>${games.join("")}` : "") +
     (releases.length ? `<div class="palette-group">${t("calendar.title")}</div>${releases.join("")}` : "") +
     (cmds.length ? `<div class="palette-group">${t("palette.commands")}</div>${cmds.join("")}` : "") +
-    (!games.length && !releases.length && !cmds.length ? emptyState("search", t("palette.empty")) : "");
+    (!history.length && !games.length && !releases.length && !cmds.length ? emptyState("search", t("palette.empty")) : "");
   activeIndex = 0;
   highlight();
 }
@@ -227,8 +244,20 @@ export function closePalette(): void {
   releaseStoreForPalette();
 }
 
+/** Remember a game selected from the palette; commands and releases are not history. */
+function rememberFromItem(el: HTMLElement): void {
+  const item = el.closest<HTMLElement>(".palette-item[data-palette-game]");
+  if (!item) return;
+  rememberPaletteSearch(
+    item.dataset.paletteGame ?? "",
+    item.dataset.paletteTitle ?? "",
+    item.dataset.paletteInstalled === "1",
+  );
+}
+
 /** Run a palette entry through the global click router, then close. */
 function run(el: HTMLElement): void {
+  rememberFromItem(el);
   el.click();
   closePalette();
 }
@@ -306,6 +335,7 @@ document.addEventListener("click", (e) => {
   const r = root();
   if (!r || !r.contains(target)) return;
   if (target.closest(".palette-item, .palette-item button") || target.hasAttribute("data-palette-close")) {
+    rememberFromItem(target);
     window.setTimeout(closePalette, 0);
   }
 });

@@ -48,6 +48,7 @@
   "palette.open": "Szukaj gier i poleceń (Ctrl+K)",
   "palette.placeholder": "Szukaj gier, stron i akcji",
   "palette.games": "Gry",
+  "palette.recentSearches": "Ostatnie wyszukiwania",
   "palette.commands": "Polecenia",
   "palette.empty": "Brak wyników",
   "palette.hint": "Enter otwiera, strzałki przesuwają, Esc zamyka",

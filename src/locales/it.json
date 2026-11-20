@@ -48,6 +48,7 @@
   "palette.open": "Cerca giochi e comandi (Ctrl+K)",
   "palette.placeholder": "Cerca giochi, pagine e azioni",
   "palette.games": "Giochi",
+  "palette.recentSearches": "Ricerche recenti",
   "palette.commands": "Comandi",
   "palette.empty": "Nessun risultato",
   "palette.hint": "Invio per aprire, frecce per spostarti, Esc per chiudere",

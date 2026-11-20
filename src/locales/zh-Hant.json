@@ -48,6 +48,7 @@
   "palette.open": "搜尋遊戲和命令 (Ctrl+K)",
   "palette.placeholder": "搜尋遊戲、頁面和操作",
   "palette.games": "遊戲",
+  "palette.recentSearches": "最近搜尋",
   "palette.commands": "命令",
   "palette.empty": "無結果",
   "palette.hint": "Enter 開啟，方向鍵移動，Esc 關閉",

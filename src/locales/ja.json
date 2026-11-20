@@ -48,6 +48,7 @@
   "palette.open": "ゲームとコマンドを検索 (Ctrl+K)",
   "palette.placeholder": "ゲーム、ページ、操作を検索",
   "palette.games": "ゲーム",
+  "palette.recentSearches": "最近の検索",
   "palette.commands": "コマンド",
   "palette.empty": "結果なし",
   "palette.hint": "Enter で開く、矢印で移動、Esc で閉じる",

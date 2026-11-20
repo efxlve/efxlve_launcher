@@ -48,6 +48,7 @@
   "palette.open": "गेम और कमांड खोजें (Ctrl+K)",
   "palette.placeholder": "गेम, पेज और क्रियाएं खोजें",
   "palette.games": "गेम",
+  "palette.recentSearches": "हाल की खोजें",
   "palette.commands": "कमांड",
   "palette.empty": "कोई परिणाम नहीं",
   "palette.hint": "खोलने के लिए Enter, जाने के लिए एरो कीज़, बंद करने के लिए Esc दबाएं",
