@@ -46,5 +46,7 @@ describe("command palette title matching", () => {
   it("does not match unrelated titles", () => {
     expect(scores("Grand Theft Auto V", "witcher")).toBe(0);
     expect(scores("Cyberpunk 2077", "gta")).toBe(0);
+    expect(scores("Tom Clancy's Rainbow Six Siege", "tell me why")).toBe(0);
+    expect(scores("Tell Me Why", "tell me why")).toBe(6000);
   });
 });
