@@ -15,6 +15,7 @@
  */
 
 import { achievementRarity, isAchievementUnlocked } from "./achievements";
+import { refreshAchievementPin } from "./achievement-pins";
 import type { AchievementStateItem, AchievementStateSet } from "./achievement-edits";
 
 const STORAGE_KEY = "efxlve-ach-history";
@@ -187,6 +188,9 @@ export function recordAchievementUnlocks(
 
   for (const item of items) {
     if (!isAchievementUnlocked(item)) continue;
+    // A pin taken while the achievement was locked still carries the grey art;
+    // the unlock is the moment to put the earned picture on the profile card.
+    refreshAchievementPin(appName, item);
     const key = `${appName}:${item.name}`;
     const existing = byKey.get(key);
     const next = toEntry(appName, item, existing?.seenAt ?? now, meta);
@@ -202,8 +206,10 @@ export function recordAchievementUnlocks(
     const nextValue = historySortValue(next);
     const existingValue = historySortValue(existing);
     const gainedDate = !existing.date && Boolean(next.date);
+    const iconGained = Boolean(next.icon) && next.icon !== existing.icon;
     if (
       gainedDate ||
+      iconGained ||
       (next.date && next.date !== existing.date && nextValue >= existingValue) ||
       next.manual !== existing.manual
     ) {

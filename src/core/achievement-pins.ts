@@ -117,8 +117,41 @@ export function toggleAchievementPin(
   return true;
 }
 
-export function removeAchievementPin(key: string): void {
+/**
+ * Refreshes a pin with the achievement's current facts. A pin taken while the
+ * achievement was locked keeps the grey art otherwise, even after it is earned.
+ * The card still works offline: this only runs when the page has real data.
+ */
+export function refreshAchievementPin(appName: string, item: AchievementStateItem): void {
+  if (!appName || !item.name) return;
   const pins = achievementPins();
+  const key = `${appName}:${item.name}`;
+  const index = pins.findIndex((pin) => pin.key === key);
+  if (index < 0) return;
+  const pin = pins[index];
+  const next: AchievementPin = {
+    ...pin,
+    icon: item.icon_link || pin.icon,
+    rarity: achievementRarity(item),
+    tier: achievementTier(item) ?? "",
+    date: item.unlock_date || pin.date,
+    title: (item.display_name || "").trim() || pin.title,
+  };
+  if (
+    next.icon === pin.icon &&
+    next.rarity === pin.rarity &&
+    next.tier === pin.tier &&
+    next.date === pin.date &&
+    next.title === pin.title
+  ) {
+    return;
+  }
+  const updated = [...pins];
+  updated[index] = next;
+  persist(updated);
+}
+
+export function removeAchievementPin(key: string): void {  const pins = achievementPins();
   if (!pins.some((pin) => pin.key === key)) return;
   persist(pins.filter((pin) => pin.key !== key));
 }
