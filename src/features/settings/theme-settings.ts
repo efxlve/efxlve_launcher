@@ -77,6 +77,13 @@ function toggleThemeFavorite(id: string): void {
   else favorites.add(id);
   persistThemeFavorites(favorites);
 
+  // The favorites view only shows starred cards, so removing one has to drop
+  // the card and update the filter count. Other views reorder in place.
+  if (currentFilter === "favorites") {
+    render();
+    return;
+  }
+
   const card = [...document.querySelectorAll<HTMLElement>(".theme-card")].find(
     (item) => item.dataset.surface === id,
   );
@@ -174,10 +181,11 @@ export function renderThemeSection(): string {
   const allThemes = themes();
   const customList = customThemes();
   const favorites = themeFavorites();
+  const favoriteThemes = allThemes.filter((th) => favorites.has(th.id));
 
   let filtered = allThemes;
   if (currentFilter === "favorites") {
-    filtered = allThemes.filter((th) => favorites.has(th.id));
+    filtered = favoriteThemes;
   } else if (currentFilter === "dark") {
     filtered = allThemes.filter((th) => th.scheme === "dark");
   } else if (currentFilter === "light") {
@@ -244,7 +252,7 @@ export function renderThemeSection(): string {
             ${esc(t("settings.themeFilterAll"))} (${allThemes.length})
           </button>
           <button type="button" class="${currentFilter === "favorites" ? "active" : ""}" data-act="theme-filter" data-filter="favorites">
-            ${esc(t("settings.themeFilterFavorites"))} (${favorites.size})
+            ${esc(t("settings.themeFilterFavorites"))} (${favoriteThemes.length})
           </button>
           <button type="button" class="${currentFilter === "dark" ? "active" : ""}" data-act="theme-filter" data-filter="dark">
             ${esc(t("settings.themeFilterDark"))}
