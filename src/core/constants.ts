@@ -142,8 +142,8 @@ export const STORE_ICONS_KEY = "efxlve-store-icons";
 export const CASE_COVERS_KEY = "efxlve-case-covers";
 /** Selected physical case frame design ("retail" | "clear" | "steelbook" | "jewel" | "holo"). */
 export const CASE_COVER_STYLE_KEY = "efxlve-case-cover-style";
-export type CaseCoverStyle = "retail" | "clear" | "steelbook" | "jewel" | "holo" | "gold" | "retro" | "neon" | "acrylic" | "aero" | "slipcase" | "titanium" | "carbon" | "leather" | "vhs" | "eco" | "digipak" | "laserdisc" | "arcade" | "bubble";
-export const CASE_COVER_STYLES: readonly CaseCoverStyle[] = ["retail", "clear", "steelbook", "jewel", "holo", "gold", "retro", "neon", "acrylic", "aero", "slipcase", "titanium", "carbon", "leather", "vhs", "eco", "digipak", "laserdisc", "arcade", "bubble"];
+export type CaseCoverStyle = "retail" | "clear" | "steelbook" | "jewel" | "holo" | "gold" | "retro" | "neon" | "acrylic" | "aero" | "slipcase" | "titanium" | "carbon" | "leather" | "vhs" | "eco" | "digipak" | "laserdisc" | "arcade" | "bubble" | "cartridge" | "graded" | "floppy" | "umd" | "tinbox" | "blister" | "foilpack" | "cyberdeck" | "walnut" | "phosphor";
+export const CASE_COVER_STYLES: readonly CaseCoverStyle[] = ["retail", "clear", "steelbook", "jewel", "holo", "gold", "retro", "neon", "acrylic", "aero", "slipcase", "titanium", "carbon", "leather", "vhs", "eco", "digipak", "laserdisc", "arcade", "bubble", "cartridge", "graded", "floppy", "umd", "tinbox", "blister", "foilpack", "cyberdeck", "walnut", "phosphor"];
 export function normalizeCaseCoverStyle(raw: string | null | undefined): CaseCoverStyle {
   return (CASE_COVER_STYLES as readonly string[]).includes(raw ?? "") ? (raw as CaseCoverStyle) : "retail";
 }

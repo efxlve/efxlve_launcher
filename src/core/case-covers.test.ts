@@ -8,9 +8,14 @@ import {
 describe("physical case options", () => {
   it("keeps every style unique and normalizes the new ids", () => {
     expect(new Set(CASE_COVER_STYLES).size).toBe(CASE_COVER_STYLES.length);
-    expect(CASE_COVER_STYLES.length).toBe(20);
+    expect(CASE_COVER_STYLES.length).toBe(30);
 
-    for (const id of ["slipcase", "titanium", "carbon", "leather", "vhs", "eco", "digipak", "laserdisc", "arcade", "bubble"]) {
+    for (const id of [
+      "slipcase", "titanium", "carbon", "leather", "vhs", "eco",
+      "digipak", "laserdisc", "arcade", "bubble",
+      "cartridge", "graded", "floppy", "umd", "tinbox",
+      "blister", "foilpack", "cyberdeck", "walnut", "phosphor",
+    ]) {
       expect(normalizeCaseCoverStyle(id)).toBe(id);
     }
     expect(normalizeCaseCoverStyle("not-a-style")).toBe("retail");

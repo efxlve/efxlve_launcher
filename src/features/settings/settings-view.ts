@@ -1193,6 +1193,16 @@ function renderCasesSection(): string {
     { id: "laserdisc", titleKey: "settings.caseStyleLaserdisc", descKey: "settings.caseStyleLaserdiscDesc", badge: "LaserDisc Sleeve" },
     { id: "arcade", titleKey: "settings.caseStyleArcade", descKey: "settings.caseStyleArcadeDesc", badge: "Arcade Marquee" },
     { id: "bubble", titleKey: "settings.caseStyleBubble", descKey: "settings.caseStyleBubbleDesc", badge: "Y2K Jelly" },
+    { id: "cartridge", titleKey: "settings.caseStyleCartridge", descKey: "settings.caseStyleCartridgeDesc", badge: "ROM Cartridge" },
+    { id: "graded", titleKey: "settings.caseStyleGraded", descKey: "settings.caseStyleGradedDesc", badge: "Graded Slab" },
+    { id: "floppy", titleKey: "settings.caseStyleFloppy", descKey: "settings.caseStyleFloppyDesc", badge: "3.5\" Floppy" },
+    { id: "umd", titleKey: "settings.caseStyleUmd", descKey: "settings.caseStyleUmdDesc", badge: "Mini-Disc Caddy" },
+    { id: "tinbox", titleKey: "settings.caseStyleTinbox", descKey: "settings.caseStyleTinboxDesc", badge: "Embossed Tin" },
+    { id: "blister", titleKey: "settings.caseStyleBlister", descKey: "settings.caseStyleBlisterDesc", badge: "Blister Pack" },
+    { id: "foilpack", titleKey: "settings.caseStyleFoilpack", descKey: "settings.caseStyleFoilpackDesc", badge: "Sealed Foil" },
+    { id: "cyberdeck", titleKey: "settings.caseStyleCyberdeck", descKey: "settings.caseStyleCyberdeckDesc", badge: "Armored Case" },
+    { id: "walnut", titleKey: "settings.caseStyleWalnut", descKey: "settings.caseStyleWalnutDesc", badge: "Walnut & Brass" },
+    { id: "phosphor", titleKey: "settings.caseStylePhosphor", descKey: "settings.caseStylePhosphorDesc", badge: "Glow Vinyl" },
   ];
 
   const styleCards = styles.map((st) => {

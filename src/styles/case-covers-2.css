@@ -1,0 +1,396 @@
+/* ==========================================================================
+   Extended physical collectible case styles (Styles 21–30) and modifiers.
+   Imported immediately after case-covers.css.
+   ========================================================================== */
+
+/* --- Style 21: ROM Cartridge --- */
+.pcard.is-case[data-case-style="cartridge"] .pcard-art {
+  padding: 30px 7px 9px 10px;
+  border-radius: 3px 3px 6px 6px;
+  outline-color: color-mix(in srgb, var(--case-border) 42%, #5c6270);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.22) 0 2.5px, rgba(0, 0, 0, 0.5) 4.5px, rgba(255, 255, 255, 0.08) 7px, transparent 10px),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0 2px, rgba(0, 0, 0, 0.26) 2px 4px, transparent 4px 8px),
+    linear-gradient(160deg, color-mix(in srgb, var(--case-shell-top) 35%, #4a4f5c) 0%, color-mix(in srgb, var(--case-shell-mid) 38%, #2e323b) 55%, color-mix(in srgb, var(--case-shell-bot) 45%, #191c22) 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.55),
+    inset -2px 0 0 rgba(0, 0, 0, 0.4),
+    -2px 2px 0 color-mix(in srgb, var(--case-shell-bot) 50%, #14171c),
+    0 10px 18px -4px rgba(0, 0, 0, 0.78);
+}
+.pcard.is-case[data-case-style="cartridge"] .pcard-case-head {
+  top: 4px;
+  left: 9px;
+  right: 7px;
+  height: 25px;
+  border-radius: 2px 2px 0 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px),
+    var(--case-head-bg);
+  color: #f4f6fa;
+  border-bottom: 2px solid var(--case-rule);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.pcard.is-case[data-case-style="cartridge"] .pcard-case-fx {
+  inset: 30px 7px 9px 10px;
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.16) 0%, transparent 45%, rgba(0, 0, 0, 0.2) 100%);
+  opacity: 0.55;
+}
+
+/* --- Style 22: Graded Collector Slab --- */
+.pcard.is-case[data-case-style="graded"] .pcard-art {
+  padding: 32px 8px 10px 10px;
+  border-radius: 7px;
+  outline-color: color-mix(in srgb, var(--case-border) 55%, rgba(220, 238, 255, 0.85));
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.75) 0 2px, rgba(160, 215, 255, 0.28) 4px, rgba(0, 0, 0, 0.35) 7px, transparent 10px),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0%, rgba(200, 230, 255, 0.1) 35%, rgba(12, 18, 28, 0.65) 100%),
+    linear-gradient(160deg, color-mix(in srgb, var(--case-shell-top) 42%, #2b3545) 0%, color-mix(in srgb, var(--case-shell-bot) 55%, #0d121a) 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.42),
+    inset 0 0 0 4px rgba(10, 16, 24, 0.55),
+    -2px 2px 0 rgba(180, 215, 245, 0.45),
+    0 11px 20px -4px rgba(0, 0, 0, 0.78);
+}
+.pcard.is-case[data-case-style="graded"] .pcard-case-head {
+  top: 5px;
+  left: 9px;
+  right: 8px;
+  height: 25px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #fafcff 0%, #dfe7f2 100%);
+  color: #121824;
+  border: 1.5px solid color-mix(in srgb, var(--case-rule) 85%, #c81e32);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+.pcard.is-case[data-case-style="graded"] .pcard-case-name,
+.pcard.is-case[data-case-style="graded"] .pcard-case-os {
+  color: #121824;
+}
+.pcard.is-case[data-case-style="graded"] .pcard-case-logo {
+  filter: brightness(0);
+  opacity: 0.85;
+}
+.pcard.is-case[data-case-style="graded"] .pcard-case-fx {
+  inset: 32px 8px 10px 10px;
+  background: linear-gradient(118deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.08) 28%, transparent 52%, rgba(0, 0, 0, 0.16) 100%);
+}
+
+/* --- Style 23: 3.5" Floppy Disk --- */
+.pcard.is-case[data-case-style="floppy"] .pcard-art {
+  padding: 30px 6px 9px 9px;
+  border-radius: 3px 9px 3px 3px;
+  outline-color: color-mix(in srgb, var(--case-border) 55%, #475263);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.24) 0 2px, rgba(0, 0, 0, 0.45) 4px, transparent 8px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 2px),
+    linear-gradient(160deg, color-mix(in srgb, var(--case-shell-top) 62%, #273244) 0%, color-mix(in srgb, var(--case-shell-mid) 68%, #18202c) 55%, color-mix(in srgb, var(--case-shell-bot) 75%, #0d121a) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.55),
+    -2px 2px 0 color-mix(in srgb, var(--case-shell-bot) 70%, #090d12),
+    0 9px 17px -4px rgba(0, 0, 0, 0.78);
+}
+.pcard.is-case[data-case-style="floppy"] .pcard-case-head {
+  top: 3px;
+  left: 11px;
+  right: 9px;
+  height: 26px;
+  border-radius: 1px 1px 2px 2px;
+  background:
+    linear-gradient(90deg, transparent 0 74%, rgba(15, 20, 28, 0.32) 74% 86%, transparent 86% 100%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #e3e8ef 0%, #b5c0ce 52%, #8e9bab 100%);
+  color: #141a22;
+  border-bottom: 1.5px solid #5a6575;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+.pcard.is-case[data-case-style="floppy"] .pcard-case-name,
+.pcard.is-case[data-case-style="floppy"] .pcard-case-os {
+  color: #141a22;
+}
+.pcard.is-case[data-case-style="floppy"] .pcard-case-logo {
+  filter: brightness(0);
+  opacity: 0.84;
+}
+.pcard.is-case[data-case-style="floppy"] .pcard-case-fx {
+  inset: 30px 6px 9px 9px;
+  background: linear-gradient(130deg, rgba(255, 255, 255, 0.15) 0%, transparent 45%, rgba(0, 0, 0, 0.2) 100%);
+  opacity: 0.5;
+}
+
+/* --- Style 24: Mini-Disc / UMD Caddy --- */
+.pcard.is-case[data-case-style="umd"] .pcard-art {
+  padding: 29px 6px 8px 9px;
+  border-radius: 6px 12px 12px 6px;
+  outline-color: color-mix(in srgb, var(--case-border) 55%, rgba(235, 245, 255, 0.78));
+  background:
+    radial-gradient(circle at 54% 56%, transparent 48%, rgba(255, 255, 255, 0.24) 49% 51%, rgba(0, 0, 0, 0.35) 52%, transparent 54%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.65) 0 2.5px, rgba(180, 210, 240, 0.25) 5px, rgba(0, 0, 0, 0.3) 7.5px, transparent 10px),
+    linear-gradient(155deg, color-mix(in srgb, var(--case-shell-top) 40%, #dde6f2) 0%, color-mix(in srgb, var(--case-shell-mid) 52%, #7f90a6) 50%, color-mix(in srgb, var(--case-shell-bot) 68%, #1e2633) 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.75),
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.22),
+    -2px 2px 0 color-mix(in srgb, var(--case-shell-bot) 60%, #4b586b),
+    0 10px 18px -4px rgba(0, 0, 0, 0.72);
+}
+.pcard.is-case[data-case-style="umd"] .pcard-case-head {
+  top: 4px;
+  left: 9px;
+  right: 6px;
+  height: 25px;
+  border-radius: 3px 8px 0 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--case-shell-top) 70%, #1c2430) 0%, color-mix(in srgb, var(--case-shell-bot) 82%, #0c1017) 100%);
+  color: #f2f7ff;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--case-rule) 72%, #ffffff);
+}
+.pcard.is-case[data-case-style="umd"] .pcard-case-fx {
+  inset: 29px 6px 8px 9px;
+  background:
+    radial-gradient(circle at 54% 56%, transparent 45%, rgba(255, 255, 255, 0.16) 48% 51%, transparent 54%),
+    linear-gradient(125deg, rgba(255, 255, 255, 0.26) 0%, transparent 46%, rgba(0, 0, 0, 0.18) 100%);
+}
+
+/* --- Style 25: Embossed Tin Box --- */
+.pcard.is-case[data-case-style="tinbox"] .pcard-art {
+  padding: 29px 6px 8px 9px;
+  border-radius: 7px 10px 10px 7px;
+  outline-color: color-mix(in srgb, var(--case-border) 58%, #b8c2ce);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.55) 0 2px, rgba(0, 0, 0, 0.48) 3.5px, rgba(255, 255, 255, 0.25) 5.5px, rgba(0, 0, 0, 0.35) 7.5px, transparent 9.5px),
+    radial-gradient(130% 90% at 15% 10%, rgba(255, 255, 255, 0.26) 0%, transparent 55%),
+    linear-gradient(150deg, color-mix(in srgb, var(--case-shell-top) 56%, #7e8a99) 0%, color-mix(in srgb, var(--case-shell-mid) 64%, #414a56) 52%, color-mix(in srgb, var(--case-shell-bot) 72%, #1b2028) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    inset 0 0 0 2.5px rgba(255, 255, 255, 0.16),
+    inset 0 0 0 4px rgba(0, 0, 0, 0.45),
+    -2px 2px 0 color-mix(in srgb, var(--case-shell-bot) 68%, #28303b),
+    0 10px 18px -4px rgba(0, 0, 0, 0.78);
+}
+.pcard.is-case[data-case-style="tinbox"] .pcard-case-head {
+  top: 4px;
+  left: 9px;
+  right: 6px;
+  height: 25px;
+  border-radius: 4px 6px 0 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, transparent 55%),
+    var(--case-head-bg);
+  color: #f5f8fc;
+  border-bottom: 2px groove color-mix(in srgb, var(--case-rule) 75%, #dce4ee);
+}
+.pcard.is-case[data-case-style="tinbox"] .pcard-case-fx {
+  inset: 29px 6px 8px 9px;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.24) 0%, transparent 38%, rgba(255, 255, 255, 0.08) 54%, rgba(0, 0, 0, 0.22) 100%);
+}
+
+/* --- Style 26: Blister Card Pack --- */
+.pcard.is-case[data-case-style="blister"] .pcard-art {
+  padding: 31px 7px 9px 9px;
+  border-radius: 5px 8px 8px 5px;
+  outline-color: color-mix(in srgb, var(--case-border) 62%, rgba(255, 255, 255, 0.75));
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0 2px, rgba(0, 0, 0, 0.3) 4px, rgba(255, 255, 255, 0.22) 6.5px, transparent 9px),
+    linear-gradient(155deg, color-mix(in srgb, var(--case-shell-top) 72%, #3a4659) 0%, color-mix(in srgb, var(--case-shell-mid) 76%, #1f2733) 55%, color-mix(in srgb, var(--case-shell-bot) 82%, #0e131a) 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.38),
+    inset 0 0 0 5px rgba(255, 255, 255, 0.1),
+    -2px 2px 0 color-mix(in srgb, var(--case-shell-bot) 70%, #1c2430),
+    0 10px 18px -4px rgba(0, 0, 0, 0.76);
+}
+.pcard.is-case[data-case-style="blister"] .pcard-case-head {
+  top: 4px;
+  left: 8px;
+  right: 7px;
+  height: 27px;
+  border-radius: 3px 5px 0 0;
+  background:
+    radial-gradient(14px 5px at 50% 4px, rgba(0, 0, 0, 0.55) 0 65%, rgba(255, 255, 255, 0.25) 70% 85%, transparent 100%),
+    var(--case-head-bg);
+  color: #ffffff;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--case-rule) 75%, rgba(255, 255, 255, 0.6));
+}
+.pcard.is-case[data-case-style="blister"] .pcard-case-fx {
+  inset: 31px 7px 9px 9px;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.45), inset 0 -2px 4px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(128deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.06) 32%, transparent 55%, rgba(0, 0, 0, 0.18) 100%);
+}
+
+/* --- Style 27: Sealed Foil Pouch --- */
+.pcard.is-case[data-case-style="foilpack"] .pcard-art {
+  padding: 30px 6px 10px 9px;
+  border-radius: 2px 4px 4px 2px;
+  outline-color: color-mix(in srgb, var(--case-border) 60%, #d4dce8);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.6) 0 2px, rgba(0, 0, 0, 0.42) 4px, rgba(255, 255, 255, 0.28) 6px, transparent 9px),
+    linear-gradient(125deg, color-mix(in srgb, var(--case-shell-top) 60%, #cfd8e6) 0%, color-mix(in srgb, var(--case-shell-mid) 68%, #475263) 42%, color-mix(in srgb, var(--case-rule) 50%, #9aa8bc) 68%, color-mix(in srgb, var(--case-shell-bot) 78%, #141922) 100%);
+  box-shadow:
+    inset 0 2px 1px rgba(255, 255, 255, 0.65),
+    inset 0 -3px 1px rgba(255, 255, 255, 0.28),
+    -2px 2px 0 color-mix(in srgb, var(--case-shell-bot) 68%, #3b4454),
+    0 10px 18px -4px rgba(0, 0, 0, 0.78);
+}
+.pcard.is-case[data-case-style="foilpack"] .pcard-case-head {
+  top: 3px;
+  left: 8px;
+  right: 6px;
+  height: 27px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.14) 0 2px, rgba(0, 0, 0, 0.18) 2px 4px),
+    var(--case-head-bg);
+  color: #ffffff;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--case-rule) 78%, #ffffff);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.45);
+}
+.pcard.is-case[data-case-style="foilpack"] .pcard-case-fx {
+  inset: 30px 6px 10px 9px;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.3) 0%, transparent 32%, rgba(255, 255, 255, 0.14) 52%, transparent 72%, rgba(0, 0, 0, 0.24) 100%);
+}
+
+/* --- Style 28: Armored Data Case --- */
+.pcard.is-case[data-case-style="cyberdeck"] .pcard-art {
+  padding: 30px 6px 8px 9px;
+  border-radius: 3px 6px 6px 3px;
+  outline-color: color-mix(in srgb, var(--case-rule) 65%, #f59e0b);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--case-rule) 75%, #fbbf24) 0 2px, rgba(0, 0, 0, 0.75) 3.5px, rgba(255, 255, 255, 0.14) 5.5px, rgba(0, 0, 0, 0.65) 7.5px, transparent 9.5px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 6px),
+    linear-gradient(160deg, color-mix(in srgb, var(--case-shell-top) 35%, #232832) 0%, color-mix(in srgb, var(--case-shell-mid) 40%, #13171e) 55%, #07090d 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.75),
+    -2px 2px 0 #05070a,
+    0 10px 18px -4px rgba(0, 0, 0, 0.85);
+}
+.pcard.is-case[data-case-style="cyberdeck"] .pcard-case-head {
+  top: 4px;
+  left: 9px;
+  right: 6px;
+  height: 26px;
+  background:
+    linear-gradient(180deg, transparent 0 84%, rgba(0, 0, 0, 0.45) 84% 100%),
+    repeating-linear-gradient(-45deg, color-mix(in srgb, var(--case-rule) 32%, transparent) 0 4px, transparent 4px 8px),
+    var(--case-head-bg);
+  color: #f8fafc;
+  border-bottom: 2px solid color-mix(in srgb, var(--case-rule) 85%, #fbbf24);
+}
+.pcard.is-case[data-case-style="cyberdeck"] .pcard-case-fx {
+  inset: 30px 6px 8px 9px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, transparent 45%, rgba(0, 0, 0, 0.25) 100%);
+  opacity: 0.55;
+}
+
+/* --- Style 29: Walnut & Brass --- */
+.pcard.is-case[data-case-style="walnut"] .pcard-art {
+  padding: 29px 6px 8px 9px;
+  border-radius: 4px 7px 7px 4px;
+  outline-color: color-mix(in srgb, var(--case-border) 30%, #c89d54);
+  background:
+    linear-gradient(90deg, rgba(255, 226, 160, 0.55) 0 2px, rgba(50, 28, 12, 0.7) 4px, rgba(212, 165, 88, 0.35) 6px, transparent 9px),
+    repeating-linear-gradient(172deg, rgba(255, 215, 160, 0.035) 0 1px, rgba(0, 0, 0, 0.06) 1px 3px, transparent 3px 6px),
+    linear-gradient(155deg, color-mix(in srgb, var(--case-shell-top) 22%, #6e4726) 0%, color-mix(in srgb, var(--case-shell-mid) 25%, #472b15) 52%, color-mix(in srgb, var(--case-shell-bot) 30%, #241408) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 225, 165, 0.45),
+    inset 0 0 0 2px rgba(212, 168, 92, 0.25),
+    -2px 2px 0 #1f1107,
+    0 10px 18px -4px rgba(0, 0, 0, 0.8);
+}
+.pcard.is-case[data-case-style="walnut"] .pcard-case-head {
+  top: 4px;
+  left: 9px;
+  right: 6px;
+  height: 25px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--case-shell-top) 32%, #59381d) 0%, color-mix(in srgb, var(--case-shell-bot) 40%, #2a180a) 100%);
+  color: #faeed7;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--case-rule) 45%, #d6a85a);
+  box-shadow: inset 0 1px 0 rgba(255, 228, 170, 0.32);
+}
+.pcard.is-case[data-case-style="walnut"] .pcard-case-fx {
+  inset: 29px 6px 8px 9px;
+  background: linear-gradient(120deg, rgba(255, 232, 185, 0.16) 0%, transparent 44%, rgba(0, 0, 0, 0.22) 100%);
+  opacity: 0.55;
+}
+
+/* --- Style 30: Glow-in-the-Dark Vinyl --- */
+.pcard.is-case[data-case-style="phosphor"] .pcard-art {
+  padding: 29px 6px 8px 9px;
+  border-radius: 5px 10px 10px 5px;
+  outline-color: color-mix(in srgb, var(--case-rule) 45%, #7efcd2);
+  background:
+    linear-gradient(90deg, rgba(215, 255, 238, 0.72) 0 2.5px, rgba(94, 242, 194, 0.35) 5px, rgba(8, 28, 22, 0.45) 7.5px, transparent 10px),
+    radial-gradient(125% 85% at 25% 12%, rgba(165, 255, 220, 0.28) 0%, transparent 58%),
+    linear-gradient(155deg, color-mix(in srgb, var(--case-shell-top) 45%, #6ee7b7) 0%, color-mix(in srgb, var(--case-shell-mid) 55%, #155e54) 52%, color-mix(in srgb, var(--case-shell-bot) 68%, #071f1c) 100%);
+  box-shadow:
+    inset 0 1px 2px rgba(210, 255, 235, 0.65),
+    inset 0 -2px 6px rgba(74, 222, 172, 0.28),
+    -2px 2px 0 color-mix(in srgb, var(--case-shell-bot) 55%, #1f6b5c),
+    0 10px 18px -4px rgba(0, 0, 0, 0.72),
+    0 0 18px -5px color-mix(in srgb, var(--case-tint) 55%, rgba(74, 222, 172, 0.45));
+}
+.pcard.is-case[data-case-style="phosphor"] .pcard-case-head {
+  top: 4px;
+  left: 9px;
+  right: 6px;
+  height: 25px;
+  border-radius: 3px 7px 0 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--case-shell-top) 55%, #11423b) 0%, color-mix(in srgb, var(--case-shell-bot) 70%, #061c19) 100%);
+  color: #ecfdf5;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--case-rule) 50%, #6ee7b7);
+  box-shadow: inset 0 1px 0 rgba(209, 250, 229, 0.4);
+}
+.pcard.is-case[data-case-style="phosphor"] .pcard-case-fx {
+  inset: 29px 6px 8px 9px;
+  background:
+    radial-gradient(145px circle at var(--mx, 32%) var(--my, 24%), rgba(167, 243, 208, 0.28) 0%, transparent 66%),
+    linear-gradient(130deg, rgba(209, 250, 229, 0.2) 0%, transparent 46%, rgba(6, 40, 34, 0.24) 100%);
+}
+
+/* --- Case Cover Customization Modifiers --- */
+.pcard.is-case[data-case-color="monochrome"] {
+  --case-shell-top: #363a45 !important;
+  --case-shell-bot: #16181f !important;
+  --case-border: #5a6070 !important;
+  --case-head-bg: linear-gradient(90deg, #2b2e38 0%, #16181e 55%, #0e1014 100%) !important;
+  --case-rule: #687082 !important;
+  --case-tint: rgba(100, 110, 130, 0.25) !important;
+}
+.pcard.is-case[data-case-color="accent"] {
+  --case-shell-top: color-mix(in srgb, var(--accent) 82%, #ffffff 18%) !important;
+  --case-shell-mid: color-mix(in srgb, var(--accent) 72%, #000000 28%) !important;
+  --case-shell-bot: color-mix(in srgb, var(--accent) 62%, #000000 38%) !important;
+  --case-border: color-mix(in srgb, var(--accent) 72%, #ffffff 28%) !important;
+  --case-head-bg: linear-gradient(90deg,
+    color-mix(in srgb, var(--accent) 74%, #000000 26%) 0%,
+    color-mix(in srgb, var(--accent) 46%, #000000 54%) 55%,
+    color-mix(in srgb, var(--accent) 28%, #000000 72%) 100%) !important;
+  --case-rule: var(--accent) !important;
+  --case-tint: color-mix(in srgb, var(--accent) 34%, transparent) !important;
+}
+.pcard.is-case[data-case-gloss="matte"] .pcard-case-fx {
+  opacity: 0.25 !important;
+}
+.pcard.is-case[data-case-gloss="satin"] .pcard-case-fx {
+  opacity: 0.65 !important;
+}
+.pgrid.no-case-glare .pcard.is-case:hover .pcard-case-fx,
+.pgrid.no-case-glare .pcard.is-case:focus-visible .pcard-case-fx {
+  background: none !important;
+}
+.pgrid.no-shelf-shadow .pcard.is-case {
+  filter: none !important;
+}
+.pcard.is-case.case-no-head .pcard-art { padding-top: 8px; }
+.pcard.is-case.case-no-head .pcard-case-fx { top: 8px; }
+
+/* The case remains a static object when interface effects are reduced. */
+html.reduce-effects .pcard.is-case .pcard-art,
+html.reduce-effects .pcard.is-case .pcard-case-head,
+html.reduce-effects .pcard.is-case .pcard-case-fx {
+  transition: none !important;
+}
+html.reduce-effects .pcard.is-case .pcard-case-head::after,
+html.reduce-effects .pcard.is-case .pcard-case-fx::before,
+html.reduce-effects .pcard.is-case .pcard-case-fx::after {
+  display: none !important;
+}
