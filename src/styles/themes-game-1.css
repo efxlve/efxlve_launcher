@@ -248,9 +248,58 @@
 :root[data-surface="neongrid"] .page-search:hover {
   color: #fcee0a;
 }
-:root[data-surface="neongrid"] .page-search .kbd {
+:root[data-surface="neongrid"] .search:hover:not(:focus-within) {
+  border-color: rgba(252, 238, 10, 0.45);
+}
+:root[data-surface="neongrid"] .search input {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #fefefe;
+  padding: 0 !important;
+}
+:root[data-surface="neongrid"] .search input::placeholder {
+  color: rgba(254, 254, 254, 0.4);
+}
+:root[data-surface="neongrid"] .search > svg {
+  color: #a6acb8;
+  transition: color var(--ease);
+}
+:root[data-surface="neongrid"] .search:hover > svg,
+:root[data-surface="neongrid"] .search:focus-within > svg {
+  color: #fcee0a;
+}
+:root[data-surface="neongrid"] :is(.page-search, .search) .kbd {
   color: #a6acb8;
   border-color: rgba(252, 238, 10, 0.22);
+  background: #0d0f15;
+  border-radius: 2px;
+}
+:root[data-surface="neongrid"] .profile-search-clear-btn {
+  color: #a6acb8;
+  border-radius: 2px;
+}
+:root[data-surface="neongrid"] .profile-search-clear-btn:hover {
+  background: rgba(252, 238, 10, 0.15);
+  color: #fcee0a;
+}
+:root[data-surface="neongrid"] .seg {
+  background: #08090d;
+  border: 1px solid rgba(252, 238, 10, 0.22);
+  border-radius: 2px;
+}
+:root[data-surface="neongrid"] .seg > button {
+  border-radius: 2px;
+  color: #a6acb8;
+  transition: color var(--ease), background var(--ease);
+}
+:root[data-surface="neongrid"] .seg > button:hover {
+  color: #fcee0a;
+}
+:root[data-surface="neongrid"] .seg > button.active {
+  background: rgba(252, 238, 10, 0.18);
+  color: #fcee0a;
+  box-shadow: 0 0 6px rgba(252, 238, 10, 0.22);
 }
 
 /* Neon Grid: Progress Bars */

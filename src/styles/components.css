@@ -109,8 +109,10 @@
   color: var(--text-3);
 }
 .search:focus-within { border-color: var(--accent); color: var(--text-2); }
-.search input {
-  flex: 1; min-width: 0; height: 100%; border: none; background: none; outline: none;
+.search input,
+.search input:focus {
+  flex: 1; min-width: 0; height: 100%; border: none !important; background: transparent !important; outline: none !important;
+  box-shadow: none !important; padding: 0 !important;
   color: var(--text); font-size: 13px; font-family: inherit;
 }
 .search svg { width: 15px; height: 15px; flex-shrink: 0; }
