@@ -849,14 +849,14 @@ interface ProfileStat {
 
 function renderStat(stat: ProfileStat): string {
   const glyph = stat.icon === "plat"
-    ? (stat.celebrate ? platinumCup(18, true) : epicPlatinumIcon(16))
+    ? (stat.celebrate ? platinumCup(22, true) : epicPlatinumIcon(22))
     : stat.icon === "games"
-      ? icon("gamepad-2", 15)
+      ? icon("gamepad-2", 21)
       : stat.icon === "clock"
-        ? icon("clock", 15)
+        ? icon("clock", 21)
         : stat.icon === "xp"
-          ? icon("zap", 15)
-          : icon("trophy", 15);
+          ? icon("zap", 21)
+          : icon("trophy", 21);
   const sub = stat.sub ? `<span class="profile-stat-sub tabular-nums">${esc(stat.sub)}</span>` : "";
   return `<div class="profile-stat${stat.icon === "plat" ? " is-plat-stat" : ""}">
     <span class="profile-stat-icon" aria-hidden="true">${glyph}</span>
@@ -979,10 +979,10 @@ function renderProfileHero(
             ? `<button type="button" class="btn small profile-hero-tool" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>`
             : "<span></span>"}
           <div class="profile-hero-actions">
-            ${showData
-              ? `<button type="button" class="btn small profile-hero-tool profile-banner-edit-btn" data-act="profile-change-banner" data-scope="${esc(scopeKey)}" data-label="${esc(scopeLabel)}" title="${esc(t("profile.changeBannerTitle"))}">${icon("image", 13)}<span>${esc(t("profile.changeBanner"))}</span></button>`
-              : ""}
             <button type="button" class="btn small profile-hero-tool" data-view="accounts">${icon("settings", 13)}<span>${t("accounts.manageAccounts")}</span></button>
+            ${showData
+              ? `<button type="button" class="icon-btn profile-hero-tool profile-banner-edit-btn" data-act="profile-change-banner" data-scope="${esc(scopeKey)}" data-label="${esc(scopeLabel)}" title="${esc(t("profile.changeBannerTitle"))}" aria-label="${esc(t("profile.changeBannerTitle"))}">${icon("image", 14)}</button>`
+              : ""}
             <button type="button" class="icon-btn profile-hero-tool${S.presenceEnabled ? "" : " is-muted"}" data-act="toggle-presence" title="${esc(presenceLabel)}" aria-label="${esc(presenceLabel)}" aria-pressed="${S.presenceEnabled}">${icon(S.presenceEnabled ? "eye" : "eye-off", 14)}</button>
             <button type="button" class="icon-btn profile-hero-tool profile-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${esc(refreshTitle)}" aria-label="${esc(refreshTitle)}">${icon("refresh", 14)}</button>
           </div>
@@ -997,10 +997,6 @@ function renderProfileHero(
           <div class="profile-hero-identity">
             <div class="profile-name-row">
               ${nameHtml}
-              <div class="profile-presence">
-                <span class="profile-presence-dot ${isOnline ? "online" : "offline"}" aria-hidden="true"></span>
-                <span class="profile-presence-text">${isOnline ? t("nav.online") : t("profile.offlineMode")}</span>
-              </div>
             </div>
             ${scopeBarHtml}
           </div>
@@ -1289,10 +1285,6 @@ function renderDormantView(account: ProfileAccount, displayName: string, avatarK
             <div class="profile-hero-identity">
               <div class="profile-name-row">
                 <h1 class="profile-name">${esc(displayName)}</h1>
-                <div class="profile-presence">
-                  <span class="profile-presence-dot offline" aria-hidden="true"></span>
-                  <span class="profile-presence-text">${esc(t("profile.inactiveTitle"))}</span>
-                </div>
               </div>
               <div class="profile-scope-bar">${storesHtml}</div>
             </div>

@@ -317,7 +317,6 @@ export function renderPlayActivity(scope: "all" | GameSource): string {
       <div class="profile-row-head">
         <div class="profile-row-title-group">
           <h3 class="profile-row-title">${esc(t("profile.activityTitle"))}</h3>
-          <span class="profile-row-count tabular-nums">${esc(`${data.trackedGames} ${t("profile.games")}`)}</span>
         </div>
         ${rangeToggle}
       </div>
