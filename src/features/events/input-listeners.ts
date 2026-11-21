@@ -493,13 +493,24 @@ document.addEventListener("keydown", (e) => {
     if (
       !isTyping &&
       !e.shiftKey &&
+      (e.key === "Enter" || e.key === " ") &&
+      active &&
+      active.matches(".profile-ach-card, .profile-game-row")
+    ) {
+      e.preventDefault();
+      active.click();
+      return;
+    }
+    if (
+      !isTyping &&
+      !e.shiftKey &&
       (e.key === "ArrowRight" || e.key === "ArrowLeft" || e.key === "ArrowDown" || e.key === "ArrowUp") &&
       active
     ) {
-      const cardSelector = ".profile-ach-card, .profile-game-row, .profile-unlock-card, .profile-recent-card, .profile-goal-card, .profile-showcase-main, .play-top-row";
+      const cardSelector = ".profile-ach-card, .profile-game-row, .profile-unlock-card, .profile-recent-card, .profile-showcase-main, .play-top-row";
       const card = active.matches(cardSelector) ? active : active.closest<HTMLElement>(cardSelector);
       const container = card?.closest<HTMLElement>(
-        ".profile-ach-list, .profile-unlock-row, .profile-recent-row, .profile-goals-grid, .profile-showcase-row, .play-top",
+        ".profile-ach-list, .profile-unlock-row, .profile-recent-row, .profile-showcase-row, .play-top-list",
       );
       if (card && container) {
         const items = Array.from(container.querySelectorAll<HTMLElement>(cardSelector));

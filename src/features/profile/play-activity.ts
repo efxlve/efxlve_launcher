@@ -7,13 +7,10 @@
  * the numbers consistent with the "played" stat in the hero.
  */
 
-import { icon } from "../../core/icons";
-import { rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
+import { sourceOfKey, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
-import { cachedSteamCover, steamCdnPortrait } from "../../core/steam-art-cache";
 import type { GameSource } from "../../core/types";
 import { esc, fmtPlaytime } from "../../core/utils";
-import { epicPortrait } from "../../epic";
 import { t } from "../../i18n";
 
 export interface PlaySession {
@@ -33,7 +30,6 @@ export interface PlayTopEntry {
   appName: string;
   seconds: number;
   title: string;
-  cover: string;
 }
 
 export interface PlayActivityData {
@@ -69,28 +65,6 @@ function addDays(date: Date, days: number): Date {
   return next;
 }
 
-function topCoverOf(appName: string): string {
-  const custom = S.customCovers[appName];
-  if (custom) return custom;
-  if (appName.startsWith("steam::")) {
-    const appId = appName.slice(7);
-    if (/^\d+$/.test(appId)) {
-      return cachedSteamCover(appId) || steamCdnPortrait(appId);
-    }
-  }
-  const s = S.epicSummariesMap.get(appName) || summaryOf(appName);
-  const raw = rawOf(appName);
-  const gogItem = S.gogSummariesMap.get(appName) || S.allGamesMap.get(appName);
-  return (raw ? epicPortrait(raw) : null) || s?.cover || gogItem?.coverUrl || "";
-}
-
-function topSteamArtAttrs(appName: string): string {
-  if (S.customCovers[appName] || !appName.startsWith("steam::")) return "";
-  const appId = appName.slice(7);
-  if (!/^\d+$/.test(appId)) return "";
-  return ` data-steam-app="${appId}" data-art-step="${cachedSteamCover(appId) ? "resolved" : "0"}"`;
-}
-
 function buildTopList(map: Map<string, number>): PlayTopEntry[] {
   return [...map.entries()]
     .sort((left, right) => right[1] - left[1])
@@ -101,7 +75,6 @@ function buildTopList(map: Map<string, number>): PlayTopEntry[] {
         appName,
         seconds,
         title: summary?.title || appName,
-        cover: topCoverOf(appName),
       };
     });
 }
@@ -155,8 +128,6 @@ export function playActivityFor(scope: "all" | GameSource): PlayActivityData {
       if (seconds <= 0 || startedAt <= 0) continue;
       hasSessions = true;
       for (const [key, part] of splitSessionByLocalDay(startedAt, seconds)) {
-        // A session that started before the window can still contribute its
-        // post-midnight part, so every part is tested separately.
         if (!windowKeys.has(key)) continue;
         totals.set(key, (totals.get(key) ?? 0) + part);
         if (key >= weekStart) gameWeek.set(appName, (gameWeek.get(appName) ?? 0) + part);
@@ -188,18 +159,22 @@ export function playActivityFor(scope: "all" | GameSource): PlayActivityData {
   };
 }
 
-function stat(label: string, seconds: number, highlight = false): string {
+function stat(label: string, seconds: number, highlight = false, delta = ""): string {
   return `<div class="play-stat${highlight ? " is-active-range" : ""}">
-    <span class="play-stat-val tabular-nums">${esc(fmtPlaytime(seconds))}</span>
     <span class="play-stat-label">${esc(label)}</span>
+    <span class="play-stat-val-row">
+      <span class="play-stat-val tabular-nums">${esc(fmtPlaytime(seconds))}</span>
+      ${delta}
+    </span>
   </div>`;
 }
 
-function deltaText(data: PlayActivityData): string {
+function deltaHtml(data: PlayActivityData): string {
   const delta = data.last7 - data.prev7;
   if (delta === 0) return "";
   const sign = delta > 0 ? "+" : "−";
-  return t("profile.activityVsPrev", { delta: `${sign}${fmtPlaytime(Math.abs(delta))}` });
+  const text = t("profile.activityVsPrev", { delta: `${sign}${fmtPlaytime(Math.abs(delta))}` });
+  return `<span class="play-delta tabular-nums${delta > 0 ? " up" : ""}">${esc(text)}</span>`;
 }
 
 function fmtShortDay(key: string): string {
@@ -219,7 +194,7 @@ function renderChart(data: PlayActivityData, range: "7d" | "30d"): string {
     .map((day) => {
       const isToday = day.key === todayKey;
       const isActive = day.seconds > 0;
-      const height = isActive ? Math.max(8, Math.round((day.seconds / max) * 100)) : 4;
+      const height = isActive ? Math.max(10, Math.round((day.seconds / max) * 100)) : 4;
       const [year, month, date] = day.key.split("-");
       const label = isToday ? `${t("profile.activityToday")} (${date}.${month}.${year})` : `${date}.${month}.${year}`;
       const tip = `${label} · ${fmtPlaytime(day.seconds)}`;
@@ -254,24 +229,23 @@ function renderTop(data: PlayActivityData, range: "7d" | "30d"): string {
   const heading = useMonth ? t("profile.activityTopMonth") : t("profile.activityTopWeek");
   const max = Math.max(1, ...list.map((row) => row.seconds));
   const rows = list
-    .map((row) => {
-      const width = Math.max(3, Math.round((row.seconds / max) * 100));
-      const art = row.cover
-        ? `<img class="play-top-art"${topSteamArtAttrs(row.appName)} src="${esc(row.cover)}" alt="" loading="lazy" decoding="async" />`
-        : `<span class="play-top-art placeholder">${icon("gamepad-2", 14)}</span>`;
+    .map((row, idx) => {
+      const width = Math.max(4, Math.round((row.seconds / max) * 100));
       return `<button type="button" class="play-top-row" data-act="open-game-from-profile" data-id="${esc(row.appName)}" title="${esc(`${row.title} · ${fmtPlaytime(row.seconds)}`)}">
-        ${art}
+        <span class="play-top-rank tabular-nums">${idx + 1}</span>
         <span class="play-top-main">
-          <span class="play-top-name">${esc(row.title)}</span>
+          <span class="play-top-line">
+            <span class="play-top-name">${esc(row.title)}</span>
+            <span class="play-top-time tabular-nums">${esc(fmtPlaytime(row.seconds))}</span>
+          </span>
           <span class="play-top-track"><span style="width:${width}%"></span></span>
         </span>
-        <span class="play-top-time tabular-nums">${esc(fmtPlaytime(row.seconds))}</span>
       </button>`;
     })
     .join("");
   return `<div class="play-top">
     <div class="play-top-head">${esc(heading)}</div>
-    ${rows}
+    <div class="play-top-list">${rows}</div>
   </div>`;
 }
 
@@ -289,20 +263,20 @@ export function renderPlayActivity(scope: "all" | GameSource): string {
         <button type="button" class="${range === "30d" ? "active" : ""}" data-act="profile-activity-range" data-val="30d" aria-pressed="${range === "30d"}">${esc(t("profile.activityRange30d"))}</button>
       </div>`
     : "";
+  const topHtml = data.hasSessions ? renderTop(data, range) : "";
   const body = data.hasSessions
-    ? `<div class="play-activity-card">
-        <div class="play-summary">
-          ${stat(t("profile.activityToday"), data.today)}
-          <div class="play-stat-group">
-            ${stat(t("profile.activityWeek"), data.last7, range === "7d")}
-            ${deltaText(data) ? `<span class="play-delta tabular-nums${data.last7 >= data.prev7 ? " up" : ""}">${esc(deltaText(data))}</span>` : ""}
+    ? `<div class="play-activity-card${topHtml ? "" : " is-single"}">
+        <div class="play-activity-left">
+          <div class="play-summary">
+            ${stat(t("profile.activityToday"), data.today)}
+            ${stat(t("profile.activityWeek"), data.last7, range === "7d", deltaHtml(data))}
+            ${stat(t("profile.activityMonth"), data.last30, range === "30d")}
           </div>
-          ${stat(t("profile.activityMonth"), data.last30, range === "30d")}
+          <div class="play-chart-wrap">
+            ${renderChart(data, range)}
+          </div>
         </div>
-        <div class="play-chart-wrap">
-          ${renderChart(data, range)}
-        </div>
-        ${renderTop(data, range)}
+        ${topHtml}
       </div>`
     : `<div class="play-activity-card is-new">
         <p class="play-empty-copy">${esc(t("profile.activityNoSessions"))}</p>
@@ -312,7 +286,7 @@ export function renderPlayActivity(scope: "all" | GameSource): string {
       <div class="profile-row-head">
         <div class="profile-row-title-group">
           <h3 class="profile-row-title">${esc(t("profile.activityTitle"))}</h3>
-          <span class="profile-section-count tabular-nums">${esc(`${data.trackedGames} ${t("profile.games")}`)}</span>
+          <span class="profile-row-count tabular-nums">${esc(`${data.trackedGames} ${t("profile.games")}`)}</span>
         </div>
         ${rangeToggle}
       </div>

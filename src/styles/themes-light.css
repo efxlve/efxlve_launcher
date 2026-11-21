@@ -44,40 +44,28 @@
   filter: brightness(0);
   opacity: 0.85;
 }
-:root[data-scheme="light"] .profile-hero-action-btn,
-:root[data-scheme="light"] .profile-refresh-btn {
+:root[data-scheme="light"] .profile-hero-actions .icon-btn {
   background: #ffffff;
   border-color: var(--line);
   color: var(--text-2);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
-:root[data-scheme="light"] .profile-hero-action-btn:hover,
-:root[data-scheme="light"] .profile-refresh-btn:hover {
+:root[data-scheme="light"] .profile-hero-actions .icon-btn:hover {
   background: var(--surface-2);
   color: var(--text);
   border-color: var(--line-strong);
 }
-:root[data-scheme="light"] .profile-presence {
-  background: var(--surface-2);
-  border-color: var(--line);
-  color: var(--text-2);
-}
 :root[data-scheme="light"] .profile-banner-edit-btn {
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(15, 23, 42, 0.78);
   border: 1px solid rgba(255, 255, 255, 0.22);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 :root[data-scheme="light"] .profile-banner-edit-btn:hover {
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(15, 23, 42, 0.92);
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.38);
 }
 :root[data-scheme="light"] :is(.profile-hero-store-chip, .profile-hero-acc-chip) {
   background: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
 :root[data-scheme="light"] :is(.profile-hero-store-chip, .profile-hero-acc-chip):hover {
   background: var(--surface-2);
@@ -86,12 +74,11 @@
   background: var(--accent-tint);
 }
 :root[data-scheme="light"] .profile-hero-banner::after {
-  background: linear-gradient(180deg, transparent 75%, rgba(0, 0, 0, 0.16) 100%);
+  background: linear-gradient(180deg, transparent 60%, rgba(0, 0, 0, 0.22) 100%);
 }
 :root[data-scheme="light"] .profile-stats {
-  background: var(--surface-1);
-  border-color: var(--line);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  background: var(--surface-2);
+  border-top-color: var(--line);
 }
 :root[data-scheme="light"] :is(.search input, .notes-search input, .notes-search-input,
   .calendar-search-input, .palette-input input, .theme-search-input,
@@ -132,21 +119,17 @@
 :root[data-scheme="light"] .profile-ach-card {
   background: #ffffff;
   border-color: var(--line);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 }
 :root[data-scheme="light"] .profile-ach-card:hover {
   background: #ffffff;
   border-color: var(--line-strong);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
 }
 :root[data-scheme="light"] .profile-ach-card.is-plat {
   border-color: rgba(37, 99, 235, 0.35);
   background: #ffffff;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
 }
 :root[data-scheme="light"] .profile-ach-card.is-plat:hover {
   border-color: var(--accent);
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.18);
 }
 :root[data-scheme="light"] .profile-ach-bar {
   background: rgba(15, 23, 42, 0.08);
@@ -157,7 +140,6 @@
 }
 :root[data-scheme="light"] .profile-ach-card.is-plat .profile-ach-bar > span {
   background: var(--accent);
-  box-shadow: 0 0 6px var(--accent-tint);
 }
 :root[data-scheme="light"] .profile-ach-title {
   color: var(--text);
@@ -165,7 +147,7 @@
 :root[data-scheme="light"] .profile-ach-count {
   color: var(--text-2);
 }
-:root[data-scheme="light"] .profile-ach-sub-meta {
+:root[data-scheme="light"] .profile-ach-sub-right {
   color: var(--text-3);
 }
 :root[data-scheme="light"] .profile-game-row {

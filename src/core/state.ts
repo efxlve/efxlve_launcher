@@ -610,7 +610,7 @@ export const S = {
    * library (Xbox gamerscore today), keyed by `<store>::<id>`.
    */
   companionAchSummaries: ({}) as Record<string, EpicAchievementSummary>,
-  profileFilter: ("all") as "all" | "platinum" | "in_progress" | "not_started",
+  profileFilter: ("all") as "all" | "platinum" | "almost_done" | "in_progress" | "not_started",
   profileSort: ("progress") as "progress" | "xp" | "playtime" | "alpha",
   /** Hero chips: which store's achievements and totals the page is showing. */
   profileStore: ("all") as "all" | "epic" | "gog" | "steam" | "amazon" | "xbox" | "battlenet" | "ubisoft" | "ea" | "riot" | "custom",

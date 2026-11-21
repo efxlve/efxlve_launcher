@@ -168,7 +168,7 @@ import { openInstallDialog } from "../install/install-dialog";
 import { loadNotesView, handleNotesAction } from "../notes/notes-view";
 import { handleDrawerNotesAction } from "../notes/drawer-notes";
 import { handleIgdbAction } from "./handlers/igdb-handlers";
-import { ALL_PROFILE_STORES, enterProfile, PIN_TIP_DISMISSED_KEY, resetProfileCards, type StoreKind } from "../profile/profile-view";
+import { ALL_PROFILE_STORES, enterProfile, resetProfileCards, type StoreKind } from "../profile/profile-view";
 import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
 import { closeFeedback, createFeedbackReport, openFeedback, openFeedbackFolder, openFeedbackIssue } from "../feedback/feedback-view";
@@ -582,13 +582,6 @@ document.addEventListener("click", (e) => {
   } else if (act === "move-pin-ach" && t.dataset.key) {
     const dir = Number(t.dataset.dir) < 0 ? -1 : 1;
     if (moveAchievementPin(t.dataset.key, dir)) render();
-  } else if (act === "dismiss-pin-tip") {
-    try {
-      localStorage.setItem(PIN_TIP_DISMISSED_KEY, "1");
-    } catch {
-      /* ignore */
-    }
-    t.closest(".profile-pin-tip")?.remove();
   } else if (act === "open-pinned-achievement" && id) {
     const achievement = t.dataset.ach || "";
     openEpicModal(id, true);
@@ -598,9 +591,6 @@ document.addEventListener("click", (e) => {
       // detail was set first so the achievements tab opens on that card.
       document.querySelector<HTMLElement>('.drawer-tab[data-tab="achievements"]')?.click();
     }
-  } else if (act === "open-goal-game" && id) {
-    openEpicModal(id, true);
-    document.querySelector<HTMLElement>('.drawer-tab[data-tab="achievements"]')?.click();
   } else if (act === "profile-activity-range" && (t.dataset.val === "7d" || t.dataset.val === "30d")) {
     S.profileActivityRange = t.dataset.val;
     render();
@@ -648,8 +638,12 @@ document.addEventListener("click", (e) => {
     }
   } else if (act === "open-game-from-profile") {
     const appId = t.dataset.id || (t.closest("[data-id]") as HTMLElement)?.dataset.id;
+    const openTab = t.dataset.tab || (t.closest("[data-tab]") as HTMLElement)?.dataset.tab;
     if (appId) {
       openEpicModal(appId, true);
+      if (openTab === "achievements") {
+        document.querySelector<HTMLElement>('.drawer-tab[data-tab="achievements"]')?.click();
+      }
     }
   } else if (act === "profile-change-banner") {
     const scope = t.dataset.scope || (t.closest("[data-scope]") as HTMLElement)?.dataset.scope || "all";
