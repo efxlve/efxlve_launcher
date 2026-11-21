@@ -628,7 +628,8 @@
   padding: 0 2px;
 }
 
-/* --- 4b. Recent unlocks strip --- */
+/* --- 4b. Recent unlocks row --- */
+/* Shared muted caption used by the pins header, play activity and this row. */
 .profile-unlock-stats {
   color: var(--text-3);
   font-size: 11px;
@@ -642,10 +643,9 @@
 
 .profile-unlock-row {
   display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  scrollbar-width: thin;
   animation: profile-fade-slide 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 

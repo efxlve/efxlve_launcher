@@ -12,7 +12,7 @@
  */
 
 import { PROFILE_CARD_CHUNK } from "../../core/constants";
-import { achievementHistoryStats, clearAchievementHistory, sortedAchievementHistory } from "../../core/achievement-history";
+import { achievementHistoryStats, sortedAchievementHistory } from "../../core/achievement-history";
 import { achievementPins } from "../../core/achievement-pins";
 import { achSummaryOf } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
@@ -1050,9 +1050,10 @@ function renderShowcase(): string {
 }
 
 /**
- * Recent unlocks across every store, newest first. The strip is the one place
+ * Recent unlocks across every store, newest first. The list is the one place
  * the launcher's own history is visible: the bell forgets after a day and a
- * game page only knows one set.
+ * game page only knows one set. Cards wrap onto new rows, so a long history
+ * never hides behind a horizontal scrollbar.
  */
 function renderUnlockRow(scope: "all" | StoreKind): string {
   const entries = sortedAchievementHistory().filter((entry) => {

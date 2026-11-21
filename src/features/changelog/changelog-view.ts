@@ -37,6 +37,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "The theme gallery loads in batches as you scroll, so browsing 250 themes stays smooth on older PCs.",
         tr: "Tema galerisi kaydırdıkça parça parça yükleniyor; 250 temada gezinmek eski bilgisayarlarda da akıcı kalıyor.",
       },
+      {
+        en: "The profile's recent unlocks section is now Recent achievements, and the cards wrap onto new rows instead of hiding entries behind a horizontal scrollbar.",
+        tr: "Profildeki son açılanlar bölümü Son açılan başarımlar oldu; kartlar artık yatay kaydırma çubuğunun arkasında saklanmak yerine yeni satırlara sarıyor.",
+      },
     ],
     fixed: [
       {
