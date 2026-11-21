@@ -2639,6 +2639,8 @@ fn main() {
             legendary::screenshots::epic_delete_game_screenshot,
             legendary::screenshots::epic_save_edited_screenshot,
             profile_screenshot::capture_profile_screenshot,
+            profile_screenshot::get_profile_screenshots_dir,
+            profile_screenshot::open_profile_screenshots_folder,
             legendary::screenshots::screenshot_share_discord,
             legendary::screenshots::screenshot_webhook_info,
             legendary::screenshots::screenshot_scan_roots,

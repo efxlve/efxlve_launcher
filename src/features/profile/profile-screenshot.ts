@@ -1,6 +1,12 @@
-import { captureProfileScreenshot } from "../../epic-commands";
+import { captureProfileScreenshot, openProfileScreenshotsFolder } from "../../epic-commands";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
+import {
+  ssProfileClipboardOn,
+  ssProfileCustomDir,
+  ssProfileOpenFolderOn,
+  ssProfileSaveFileOn,
+} from "../screenshots/ss-settings";
 
 let isBusy = false;
 
@@ -24,6 +30,21 @@ export async function takeProfileScreenshot(): Promise<void> {
   document.body.classList.add("capturing-profile-screenshot");
 
   try {
+    // Eagerly load and decode any offscreen images inside the profile before taking the screenshot
+    const images = profileEl.querySelectorAll<HTMLImageElement>("img");
+    const pending: Promise<unknown>[] = [];
+    images.forEach((img) => {
+      if (img.loading === "lazy") {
+        img.loading = "eager";
+      }
+      if (!img.complete) {
+        pending.push(img.decode().catch(() => {}));
+      }
+    });
+    if (pending.length > 0) {
+      await Promise.race([Promise.all(pending), new Promise((r) => setTimeout(r, 1200))]);
+    }
+
     // Wait two animation frames for layout to settle cleanly without transition/animation artifacts
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
@@ -38,25 +59,37 @@ export async function takeProfileScreenshot(): Promise<void> {
       scale: window.devicePixelRatio || 1,
     };
 
-    const res = await captureProfileScreenshot(clip);
+    const copyToClipboard = ssProfileClipboardOn();
+    const saveToFile = ssProfileSaveFileOn();
+    const openFolder = ssProfileOpenFolderOn();
+    const customDir = ssProfileCustomDir() || null;
 
-    // Copy to clipboard for instant pasting (Discord, Twitter, Telegram, etc.)
+    const res = await captureProfileScreenshot(clip, customDir);
+
     let copied = false;
-    if (res.dataUrl && navigator.clipboard && typeof ClipboardItem !== "undefined") {
+    if (copyToClipboard && res.dataUrl && navigator.clipboard && typeof ClipboardItem !== "undefined") {
       try {
         const resp = await fetch(res.dataUrl);
         const blob = await resp.blob();
         await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
         copied = true;
       } catch {
-        // Clipboard write might fail if window lost focus or permission denied; file is still saved
+        // Clipboard write might fail if focus is elsewhere; file is still saved
       }
     }
 
-    if (copied) {
+    if (openFolder) {
+      void openProfileScreenshotsFolder(customDir).catch(() => {});
+    }
+
+    if (copied && saveToFile) {
       toast(t("profile.screenshotSavedClip", { file: res.fileName }), "ok");
-    } else {
+    } else if (copied && !saveToFile) {
+      toast(t("profile.screenshotCopiedOnly"), "ok");
+    } else if (saveToFile) {
       toast(t("profile.screenshotSaved", { file: res.fileName }), "ok");
+    } else {
+      toast(t("profile.screenshotDone"), "ok");
     }
   } catch (error) {
     console.error("Profile screenshot failed:", error);

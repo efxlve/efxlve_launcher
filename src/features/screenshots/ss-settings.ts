@@ -23,6 +23,10 @@ import {
   SS_SOUND_KEY,
   SS_WEBHOOK_KEY,
   SS_WEBHOOKS_KEY,
+  SS_PROFILE_CLIPBOARD_KEY,
+  SS_PROFILE_SAVE_FILE_KEY,
+  SS_PROFILE_DIR_KEY,
+  SS_PROFILE_OPEN_FOLDER_KEY,
   isTauri,
 } from "../../core/constants";
 import { clipSetHotkey, clipSetOptions } from "../../epic";
@@ -232,4 +236,28 @@ export function ssSortItems<T>(
       sorted.sort((a, b) => tsOf(b) - tsOf(a));
   }
   return sorted;
+}
+
+export function ssProfileClipboardOn(): boolean {
+  return localStorage.getItem(SS_PROFILE_CLIPBOARD_KEY) !== "false";
+}
+
+export function ssProfileSaveFileOn(): boolean {
+  return localStorage.getItem(SS_PROFILE_SAVE_FILE_KEY) !== "false";
+}
+
+export function ssProfileOpenFolderOn(): boolean {
+  return localStorage.getItem(SS_PROFILE_OPEN_FOLDER_KEY) === "true";
+}
+
+export function ssProfileCustomDir(): string {
+  return localStorage.getItem(SS_PROFILE_DIR_KEY) || "";
+}
+
+export function ssSetProfileCustomDir(dir: string | null): void {
+  if (dir && dir.trim()) {
+    localStorage.setItem(SS_PROFILE_DIR_KEY, dir.trim());
+  } else {
+    localStorage.removeItem(SS_PROFILE_DIR_KEY);
+  }
 }

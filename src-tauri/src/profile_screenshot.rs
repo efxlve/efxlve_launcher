@@ -1,6 +1,7 @@
 //! Captures a clean, pixel-perfect screenshot of the profile page via WebView2's CDP interface.
 
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -20,10 +21,19 @@ pub struct ProfileScreenshotResult {
     pub data_url: String,
 }
 
+pub fn resolve_profile_screenshots_dir(custom_dir: Option<String>) -> PathBuf {
+    if let Some(d) = custom_dir.filter(|s| !s.trim().is_empty()) {
+        PathBuf::from(d.trim())
+    } else {
+        crate::legendary::screenshots::game_screenshots_dir("Profile")
+    }
+}
+
 #[cfg(windows)]
 pub async fn capture_profile_screenshot_impl(
     app: tauri::AppHandle,
     clip: Option<ProfileClip>,
+    target_dir: Option<String>,
 ) -> Result<ProfileScreenshotResult, String> {
     use base64::Engine;
     use tauri::Manager;
@@ -117,15 +127,15 @@ pub async fn capture_profile_screenshot_impl(
         .decode(&parsed.data)
         .map_err(|e| format!("Base64 decode failed: {e}"))?;
 
-    let target_dir = crate::legendary::screenshots::game_screenshots_dir("Profile");
-    let _ = std::fs::create_dir_all(&target_dir);
+    let dest_dir = resolve_profile_screenshots_dir(target_dir);
+    let _ = std::fs::create_dir_all(&dest_dir);
 
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
         .as_millis();
     let file_name = format!("Profile_{timestamp}.png");
-    let file_path = target_dir.join(&file_name);
+    let file_path = dest_dir.join(&file_name);
     std::fs::write(&file_path, &png_bytes).map_err(|e| e.to_string())?;
 
     let data_url = format!("data:image/png;base64,{}", parsed.data);
@@ -141,6 +151,7 @@ pub async fn capture_profile_screenshot_impl(
 pub async fn capture_profile_screenshot_impl(
     _app: tauri::AppHandle,
     _clip: Option<ProfileClip>,
+    _target_dir: Option<String>,
 ) -> Result<ProfileScreenshotResult, String> {
     Err("Profile screenshots are currently only supported on Windows".to_string())
 }
@@ -149,6 +160,21 @@ pub async fn capture_profile_screenshot_impl(
 pub async fn capture_profile_screenshot(
     app: tauri::AppHandle,
     clip: Option<ProfileClip>,
+    target_dir: Option<String>,
 ) -> Result<ProfileScreenshotResult, String> {
-    capture_profile_screenshot_impl(app, clip).await
+    capture_profile_screenshot_impl(app, clip, target_dir).await
+}
+
+#[tauri::command]
+pub fn get_profile_screenshots_dir(custom_dir: Option<String>) -> String {
+    resolve_profile_screenshots_dir(custom_dir)
+        .to_string_lossy()
+        .to_string()
+}
+
+#[tauri::command]
+pub fn open_profile_screenshots_folder(custom_dir: Option<String>) -> Result<(), String> {
+    let dir = resolve_profile_screenshots_dir(custom_dir);
+    let _ = std::fs::create_dir_all(&dir);
+    crate::open_in_file_manager(&dir)
 }

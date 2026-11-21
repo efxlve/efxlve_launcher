@@ -1118,8 +1118,17 @@ export interface ProfileScreenshotResult {
 }
 
 /** Captures a clean screenshot of the profile page via WebView2's CDP interface. */
-export const captureProfileScreenshot = (clip?: ProfileClip | null) =>
-  invoke<ProfileScreenshotResult>("capture_profile_screenshot", { clip });
+export const captureProfileScreenshot = (
+  clip?: ProfileClip | null,
+  targetDir?: string | null,
+) =>
+  invoke<ProfileScreenshotResult>("capture_profile_screenshot", { clip, targetDir: targetDir || null });
+
+export const getProfileScreenshotsDir = (customDir?: string | null) =>
+  invoke<string>("get_profile_screenshots_dir", { customDir: customDir || null });
+
+export const openProfileScreenshotsFolder = (customDir?: string | null) =>
+  invoke<void>("open_profile_screenshots_folder", { customDir: customDir || null });
 
 /* ---------- Game clips (MJPEG AVI recorder) ---------- */
 

@@ -4490,5 +4490,19 @@
   "profile.screenshotTip": "Take profile screenshot",
   "profile.screenshotSaved": "Profile screenshot saved ({file})",
   "profile.screenshotSavedClip": "Profile screenshot copied to clipboard and saved ({file})",
-  "profile.screenshotFailed": "Failed to take profile screenshot"
+  "profile.screenshotFailed": "Failed to take profile screenshot",
+  "settings.ssProfileSectionTitle": "Profile Screenshot",
+  "settings.ssProfileInfoBox": "Clicking the camera icon on the profile page captures a full-length, high-resolution image of your entire profile without launcher chrome or window borders.",
+  "settings.ssProfileDirTitle": "Profile Screenshots Folder",
+  "settings.ssProfileDirDesc": "Where profile screenshots are saved:",
+  "settings.ssProfileDefaultDir": "Default (Pictures/Efxlve Screenshots/Profile)",
+  "settings.ssProfileDirPicker": "Select a folder for profile screenshots",
+  "settings.ssProfileClipboardTitle": "Copy to Clipboard",
+  "settings.ssProfileClipboardDesc": "Automatically copy the screenshot to the clipboard so you can paste it with Ctrl+V (Discord, web, etc.).",
+  "settings.ssProfileSaveFileTitle": "Save as PNG File",
+  "settings.ssProfileSaveFileDesc": "Automatically save a PNG file to the profile screenshots folder.",
+  "settings.ssProfileOpenFolderTitle": "Open Folder After Capture",
+  "settings.ssProfileOpenFolderDesc": "Automatically open the screenshots folder in File Explorer after taking a profile screenshot.",
+  "profile.screenshotCopiedOnly": "Profile screenshot copied to clipboard",
+  "profile.screenshotDone": "Profile screenshot captured"
 }

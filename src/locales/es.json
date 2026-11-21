@@ -4490,5 +4490,19 @@
   "profile.screenshotTip": "Tomar captura del perfil",
   "profile.screenshotSaved": "Captura del perfil guardada ({file})",
   "profile.screenshotSavedClip": "Captura del perfil copiada al portapapeles y guardada ({file})",
-  "profile.screenshotFailed": "Error al tomar la captura del perfil"
+  "profile.screenshotFailed": "Error al tomar la captura del perfil",
+  "settings.ssProfileSectionTitle": "Captura de perfil",
+  "settings.ssProfileInfoBox": "Al hacer clic en el icono de cámara en el perfil, se captura una imagen completa en alta resolución sin marcos de ventana.",
+  "settings.ssProfileDirTitle": "Carpeta de capturas de perfil",
+  "settings.ssProfileDirDesc": "Dónde se guardan las capturas de perfil:",
+  "settings.ssProfileDefaultDir": "Predeterminado (Imágenes/Efxlve Screenshots/Profile)",
+  "settings.ssProfileDirPicker": "Seleccionar carpeta para capturas de perfil",
+  "settings.ssProfileClipboardTitle": "Copiar al portapapeles",
+  "settings.ssProfileClipboardDesc": "Copia automáticamente la captura al portapapeles para pegar con Ctrl+V (Discord, web, etc.).",
+  "settings.ssProfileSaveFileTitle": "Guardar como archivo PNG",
+  "settings.ssProfileSaveFileDesc": "Guarda automáticamente un archivo PNG en la carpeta de capturas de perfil.",
+  "settings.ssProfileOpenFolderTitle": "Abrir carpeta tras capturar",
+  "settings.ssProfileOpenFolderDesc": "Abre automáticamente la carpeta en el Explorador tras tomar la captura.",
+  "profile.screenshotCopiedOnly": "Captura de perfil copiada al portapapeles",
+  "profile.screenshotDone": "Captura de perfil realizada"
 }

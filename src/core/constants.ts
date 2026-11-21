@@ -48,6 +48,14 @@ export const SS_CLEANUP_KEY = "efxlve-ss-cleanup";
 export const SS_WEBHOOK_KEY = "efxlve-ss-webhook";
 /** The webhook list (one or many); the single key above is migrated into it. */
 export const SS_WEBHOOKS_KEY = "efxlve-ss-webhooks";
+/** Profile screenshot: copy to clipboard on capture (default true). */
+export const SS_PROFILE_CLIPBOARD_KEY = "efxlve-ss-profile-clipboard";
+/** Profile screenshot: save to file on capture (default true). */
+export const SS_PROFILE_SAVE_FILE_KEY = "efxlve-ss-profile-save-file";
+/** Profile screenshot: custom directory (null = default Pictures\\Efxlve Screenshots\\Profile). */
+export const SS_PROFILE_DIR_KEY = "efxlve-ss-profile-dir";
+/** Profile screenshot: reveal folder in Explorer after capture (default false). */
+export const SS_PROFILE_OPEN_FOLDER_KEY = "efxlve-ss-profile-open-folder";
 /** Game clip recording: enable, hotkey, frame rate and the length cap. */
 export const CLIP_ENABLED_KEY = "efxlve-clip-enabled";
 export const CLIP_HOTKEY_KEY = "efxlve-clip-hotkey";

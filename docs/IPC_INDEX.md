@@ -319,6 +319,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `feedback_recovery_pending` | `feedbackRecoveryPending({ ... })` | `src-tauri/src/feedback.rs` |
 | `game_match_get` | `gameMatchGet({ ... })` | `src-tauri/src/game_match.rs` |
 | `game_watch_installed` | `gameWatchInstalled({ ... })` | `src-tauri/src/game_running.rs` |
+| `get_profile_screenshots_dir` | `getProfileScreenshotsDir({ ... })` | `src-tauri/src/profile_screenshot.rs` |
 | `get_store_extensions_state` | `getStoreExtensionsState({ ... })` | `src-tauri/src/store_host.rs` |
 | `gog_auth_code` | `gogAuthCode({ ... })` | `src-tauri/src/gogdl/commands.rs` |
 | `gog_auth_status` | `gogAuthStatus({ ... })` | `src-tauri/src/gogdl/commands.rs` |
@@ -399,6 +400,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `notes_store_image` | `notesStoreImage({ ... })` | `src-tauri/src/notes.rs` |
 | `notif_overlay_act` | `notifOverlayAct({ ... })` | `src-tauri/src/notif_overlay.rs` |
 | `open_folder` | `openFolder({ ... })` | `src-tauri/src/main.rs` |
+| `open_profile_screenshots_folder` | `openProfileScreenshotsFolder({ ... })` | `src-tauri/src/profile_screenshot.rs` |
 | `overlay_audio_set_device` | `overlayAudioSetDevice({ ... })` | `src-tauri/src/overlay/audio.rs` |
 | `overlay_audio_set_master` | `overlayAudioSetMaster({ ... })` | `src-tauri/src/overlay/audio.rs` |
 | `overlay_audio_set_master_mute` | `overlayAudioSetMasterMute({ ... })` | `src-tauri/src/overlay/audio.rs` |

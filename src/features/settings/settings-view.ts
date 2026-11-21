@@ -91,11 +91,11 @@ import { gogDefaultInstallDir, gogGetInstallDir } from "../../gog";
 import { amazonDefaultInstallDir, amazonGetInstallDir } from "../../nile";
 import { closeScreenshotMoveConfirm, openScreenshotMoveConfirm, takePendingScreenshotMove } from "../screenshots/screenshots-view";
 import { reloadScreenshotsPage } from "../screenshots/screenshots-page";
-import { ssClearFavorites, ssCleanupPolicy, ssDensity, ssFavorites, ssNotifyOn, ssSetCleanupPolicy, ssSort, ssSoundOn } from "../screenshots/ss-settings";
-import { CLIP_ENABLED_KEY, CLIP_FPS_KEY, CLIP_HEIGHT_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY } from "../../core/constants";
+import { ssClearFavorites, ssCleanupPolicy, ssDensity, ssFavorites, ssNotifyOn, ssProfileClipboardOn, ssProfileCustomDir, ssProfileOpenFolderOn, ssProfileSaveFileOn, ssSetCleanupPolicy, ssSetProfileCustomDir, ssSort, ssSoundOn } from "../screenshots/ss-settings";
+import { CLIP_ENABLED_KEY, CLIP_FPS_KEY, CLIP_HEIGHT_KEY, CLIP_HOTKEY_KEY, CLIP_HOTKEY_NAME_KEY, CLIP_MAX_MIN_KEY, SS_PROFILE_CLIPBOARD_KEY, SS_PROFILE_OPEN_FOLDER_KEY, SS_PROFILE_SAVE_FILE_KEY } from "../../core/constants";
 import { CLIP_FPS_SUPPORTED, clipFps as clipFpsSetting, clipHeight as clipHeightSetting, pushClipSettings } from "../screenshots/ss-settings";
 import { ssAddWebhook, ssRemoveWebhook, ssWebhooks } from "../screenshots/ss-settings";
-import { screenshotWebhookInfo } from "../../epic";
+import { openProfileScreenshotsFolder, screenshotWebhookInfo } from "../../epic";
 import { cachedNotes, exportNotes, importNotesText, LAUNCHER_SCOPE, loadNotes, notesFontSize, restoreLastNote, setNotesFontSize } from "../notes/notes-client";
 import {
   drawerCardOrder,
@@ -2033,6 +2033,46 @@ function renderScreenshots(): string {
       )
     : "";
 
+  /* Profile screenshot: clipboard, custom save folder, and auto-open options. */
+  const customProfileDir = ssProfileCustomDir();
+  const effectiveProfileDir = customProfileDir || (S.screenshotDir ? `${S.screenshotDir}\\Profile` : "Pictures\\Efxlve Screenshots\\Profile");
+  const profileDirLabel = customProfileDir
+    ? `<code>${esc(customProfileDir)}</code>`
+    : `<code>${esc(effectiveProfileDir)}</code> <span class="settings-hint">(${t("settings.defaultKey")})</span>`;
+
+  const profileFolderRow = row(
+    t("settings.ssProfileDirTitle"),
+    `${t("settings.ssProfileDirDesc")} ${profileDirLabel}`,
+    `<button type="button" class="btn ghost small" data-act="ss-profile-open-dir">${t("ss.openFolder")}</button>
+     <button type="button" class="btn ghost small" data-act="ss-profile-pick-dir">${t("common.browse")}</button>
+     ${customProfileDir ? `<button type="button" class="btn ghost small" data-act="ss-profile-reset-dir">${t("settings.ssDirReset")}</button>` : ""}`,
+    true,
+  );
+
+  const profileClipboardRow = row(
+    t("settings.ssProfileClipboardTitle"),
+    t("settings.ssProfileClipboardDesc"),
+    toggle("toggle-ss-profile-clipboard", ssProfileClipboardOn()),
+  );
+
+  const profileSaveFileRow = row(
+    t("settings.ssProfileSaveFileTitle"),
+    t("settings.ssProfileSaveFileDesc"),
+    toggle("toggle-ss-profile-save-file", ssProfileSaveFileOn()),
+  );
+
+  const profileOpenFolderRow = row(
+    t("settings.ssProfileOpenFolderTitle"),
+    t("settings.ssProfileOpenFolderDesc"),
+    toggle("toggle-ss-profile-open-folder", ssProfileOpenFolderOn()),
+  );
+
+  const profileSection = group(
+    profileFolderRow + profileClipboardRow + profileSaveFileRow + profileOpenFolderRow,
+    t("settings.ssProfileSectionTitle"),
+    infoBox("settings.ssProfileInfoBox"),
+  );
+
   return (
     (!HAS_NATIVE_CAPTURE ? infoBox("settings.ssPlatformNote") : "") +
     group(
@@ -2044,6 +2084,7 @@ function renderScreenshots(): string {
         sidebar,
       t("settings.screenshotsTitle"),
     ) +
+    profileSection +
     (HAS_NATIVE_CAPTURE ? group(compression + options, t("ss.compressionSection")) : "") +
     group(sortRow + densityRow, t("ss.gallerySection")) +
     (HAS_NATIVE_CAPTURE ? group(disabledRows, t("ss.disabledTitle"), infoBox("ss.disabledHint")) : "") +
@@ -3192,6 +3233,42 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
       return true;
     case "ss-reset-dir":
       void resetScreenshotsFolder();
+      return true;
+    case "ss-profile-open-dir":
+      void openProfileScreenshotsFolder(ssProfileCustomDir() || null);
+      return true;
+    case "ss-profile-pick-dir": {
+      void (async () => {
+        try {
+          const chosen = await epicSelectFolderDialog(
+            ssProfileCustomDir() || null,
+            t("settings.ssProfileDirPicker"),
+          );
+          if (chosen) {
+            ssSetProfileCustomDir(chosen);
+            render();
+          }
+        } catch (error) {
+          toast(String(error), "err");
+        }
+      })();
+      return true;
+    }
+    case "ss-profile-reset-dir":
+      ssSetProfileCustomDir(null);
+      render();
+      return true;
+    case "toggle-ss-profile-clipboard":
+      localStorage.setItem(SS_PROFILE_CLIPBOARD_KEY, String(!ssProfileClipboardOn()));
+      render();
+      return true;
+    case "toggle-ss-profile-save-file":
+      localStorage.setItem(SS_PROFILE_SAVE_FILE_KEY, String(!ssProfileSaveFileOn()));
+      render();
+      return true;
+    case "toggle-ss-profile-open-folder":
+      localStorage.setItem(SS_PROFILE_OPEN_FOLDER_KEY, String(!ssProfileOpenFolderOn()));
+      render();
       return true;
     case "ss-root-add": {
       void (async () => {

@@ -4490,5 +4490,19 @@
   "profile.screenshotTip": "Prendre une capture du profil",
   "profile.screenshotSaved": "Capture du profil enregistrée ({file})",
   "profile.screenshotSavedClip": "Capture du profil copiée dans le presse-papiers et enregistrée ({file})",
-  "profile.screenshotFailed": "Échec de la capture du profil"
+  "profile.screenshotFailed": "Échec de la capture du profil",
+  "settings.ssProfileSectionTitle": "Capture de profil",
+  "settings.ssProfileInfoBox": "Cliquer sur l'icône appareil photo sur la page de profil capture une image haute résolution complète sans bordures de fenêtre.",
+  "settings.ssProfileDirTitle": "Dossier des captures de profil",
+  "settings.ssProfileDirDesc": "Emplacement des captures de profil :",
+  "settings.ssProfileDefaultDir": "Défaut (Images/Efxlve Screenshots/Profile)",
+  "settings.ssProfileDirPicker": "Sélectionner un dossier pour les captures de profil",
+  "settings.ssProfileClipboardTitle": "Copier dans le presse-papiers",
+  "settings.ssProfileClipboardDesc": "Copie automatiquement la capture dans le presse-papiers pour coller avec Ctrl+V (Discord, web, etc.).",
+  "settings.ssProfileSaveFileTitle": "Enregistrer sous forme de fichier PNG",
+  "settings.ssProfileSaveFileDesc": "Enregistre automatiquement un fichier PNG dans le dossier des captures de profil.",
+  "settings.ssProfileOpenFolderTitle": "Ouvrir le dossier après la capture",
+  "settings.ssProfileOpenFolderDesc": "Ouvre automatiquement le dossier dans l'Explorateur après la capture.",
+  "profile.screenshotCopiedOnly": "Capture de profil copiée dans le presse-papiers",
+  "profile.screenshotDone": "Capture de profil effectuée"
 }

@@ -4490,5 +4490,19 @@
   "profile.screenshotTip": "Zrób zrzut ekranu profilu",
   "profile.screenshotSaved": "Zrzut ekranu profilu zapisany ({file})",
   "profile.screenshotSavedClip": "Zrzut ekranu profilu skopiowany do schowka i zapisany ({file})",
-  "profile.screenshotFailed": "Nie udało się zrobić zrzutu ekranu profilu"
+  "profile.screenshotFailed": "Nie udało się zrobić zrzutu ekranu profilu",
+  "settings.ssProfileSectionTitle": "Zrzut ekranu profilu",
+  "settings.ssProfileInfoBox": "Kliknięcie ikony aparatu na stronie profilu rejestruje pełnowymiarowy obraz profilu w wysokiej rozdzielczości bez ramek okna.",
+  "settings.ssProfileDirTitle": "Folder zrzutów ekranu profilu",
+  "settings.ssProfileDirDesc": "Miejsce zapisu zrzutów profilu:",
+  "settings.ssProfileDefaultDir": "Domyślny (Obrazy/Efxlve Screenshots/Profile)",
+  "settings.ssProfileDirPicker": "Wybierz folder na zrzuty ekranu profilu",
+  "settings.ssProfileClipboardTitle": "Kopiuj do schowka",
+  "settings.ssProfileClipboardDesc": "Automatycznie kopiuje zrzut do schowka, aby można go było wkleić za pomocą Ctrl+V (Discord, sieć itp.).",
+  "settings.ssProfileSaveFileTitle": "Zapisz jako plik PNG",
+  "settings.ssProfileSaveFileDesc": "Automatycznie zapisuje plik PNG w folderze zrzutów ekranu profilu.",
+  "settings.ssProfileOpenFolderTitle": "Otwórz folder po przechwyceniu",
+  "settings.ssProfileOpenFolderDesc": "Automatycznie otwiera folder w Eksploratorze plików po zrobieniu zrzutu profilu.",
+  "profile.screenshotCopiedOnly": "Zrzut ekranu profilu skopiowany do schowka",
+  "profile.screenshotDone": "Zrzut ekranu profilu wykonany"
 }

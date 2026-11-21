@@ -4490,5 +4490,19 @@
   "profile.screenshotTip": "截取個人資料螢幕",
   "profile.screenshotSaved": "個人資料截圖已儲存 ({file})",
   "profile.screenshotSavedClip": "個人資料截圖已複製到剪貼簿並儲存 ({file})",
-  "profile.screenshotFailed": "截取個人資料螢幕失敗"
+  "profile.screenshotFailed": "截取個人資料螢幕失敗",
+  "settings.ssProfileSectionTitle": "個人資料截圖",
+  "settings.ssProfileInfoBox": "點擊個人資料頁面上的相機圖示可擷取不含視窗邊框的完整高解析度長圖。",
+  "settings.ssProfileDirTitle": "個人資料截圖資料夾",
+  "settings.ssProfileDirDesc": "個人資料截圖儲存位置：",
+  "settings.ssProfileDefaultDir": "預設 (圖片/Efxlve Screenshots/Profile)",
+  "settings.ssProfileDirPicker": "選擇個人資料截圖資料夾",
+  "settings.ssProfileClipboardTitle": "複製到剪貼簿",
+  "settings.ssProfileClipboardDesc": "自動將截圖複製到剪貼簿，方便使用 Ctrl+V 貼上（Discord、網頁等）。",
+  "settings.ssProfileSaveFileTitle": "儲存為 PNG 檔案",
+  "settings.ssProfileSaveFileDesc": "自動在個人資料截圖資料夾中儲存 PNG 檔案。",
+  "settings.ssProfileOpenFolderTitle": "截圖後開啟資料夾",
+  "settings.ssProfileOpenFolderDesc": "擷取個人資料後自動在檔案總管中開啟資料夾。",
+  "profile.screenshotCopiedOnly": "個人資料截圖已複製到剪貼簿",
+  "profile.screenshotDone": "個人資料截圖已擷取"
 }

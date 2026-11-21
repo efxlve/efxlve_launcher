@@ -4490,5 +4490,19 @@
   "profile.screenshotTip": "Profil ekran görüntüsü al",
   "profile.screenshotSaved": "Profil ekran görüntüsü kaydedildi ({file})",
   "profile.screenshotSavedClip": "Profil ekran görüntüsü panoya kopyalandı ve kaydedildi ({file})",
-  "profile.screenshotFailed": "Profil ekran görüntüsü alınamadı"
+  "profile.screenshotFailed": "Profil ekran görüntüsü alınamadı",
+  "settings.ssProfileSectionTitle": "Profil Ekran Görüntüsü",
+  "settings.ssProfileInfoBox": "Profil sayfasındaki kamera simgesine tıklandığında tüm profil (afiş, istatistikler, oyunlar ve başarımlar) pencere çerçevesi olmadan tam uzunlukta kaydedilir.",
+  "settings.ssProfileDirTitle": "Profil Ekran Görüntüleri Klasörü",
+  "settings.ssProfileDirDesc": "Profil ekran görüntülerinin kaydedileceği yer:",
+  "settings.ssProfileDefaultDir": "Varsayılan (Resimler/Efxlve Screenshots/Profile)",
+  "settings.ssProfileDirPicker": "Profil ekran görüntüleri için bir klasör seçin",
+  "settings.ssProfileClipboardTitle": "Panoya Kopyala",
+  "settings.ssProfileClipboardDesc": "Ekran görüntüsü alındığında otomatik olarak panoya kopyalanır (Discord, web vb. yerlere Ctrl+V ile yapıştırılabilir).",
+  "settings.ssProfileSaveFileTitle": "PNG Dosyası Olarak Kaydet",
+  "settings.ssProfileSaveFileDesc": "Ekran görüntüsünü profil ekran görüntüleri klasörüne otomatik olarak PNG dosyası şeklinde kaydeder.",
+  "settings.ssProfileOpenFolderTitle": "Çekimden Sonra Klasörü Aç",
+  "settings.ssProfileOpenFolderDesc": "Profil ekran görüntüsü alındıktan sonra kaydedilen klasörü Dosya Gezgini'nde otomatik olarak açar.",
+  "profile.screenshotCopiedOnly": "Profil ekran görüntüsü panoya kopyalandı",
+  "profile.screenshotDone": "Profil ekran görüntüsü alındı"
 }

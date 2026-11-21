@@ -4490,5 +4490,19 @@
   "profile.screenshotTip": "प्रोफ़ाइल स्क्रीनशॉट लें",
   "profile.screenshotSaved": "प्रोफ़ाइल स्क्रीनशॉट सहेजा गया ({file})",
   "profile.screenshotSavedClip": "प्रोफ़ाइल स्क्रीनशॉट क्लिपबोर्ड पर कॉपी और सहेजा गया ({file})",
-  "profile.screenshotFailed": "प्रोफ़ाइल स्क्रीनशॉट लेने में विफल"
+  "profile.screenshotFailed": "प्रोफ़ाइल स्क्रीनशॉट लेने में विफल",
+  "settings.ssProfileSectionTitle": "प्रोफ़ाइल स्क्रीनशॉट",
+  "settings.ssProfileInfoBox": "प्रोफ़ाइल पृष्ठ पर कैमरा आइकन पर क्लिक करने से विंडो बॉर्डर के बिना आपकी पूरी प्रोफ़ाइल की एक पूर्ण उच्च-रिज़ॉल्यूशन छवि कैप्चर होती है।",
+  "settings.ssProfileDirTitle": "प्रोफ़ाइल स्क्रीनशॉट फ़ोल्डर",
+  "settings.ssProfileDirDesc": "प्रोफ़ाइल स्क्रीनशॉट कहाँ सहेजे जाते हैं:",
+  "settings.ssProfileDefaultDir": "डिफ़ॉल्ट (चित्र/Efxlve Screenshots/Profile)",
+  "settings.ssProfileDirPicker": "प्रोफ़ाइल स्क्रीनशॉट के लिए फ़ोल्डर चुनें",
+  "settings.ssProfileClipboardTitle": "क्लिपबोर्ड पर कॉपी करें",
+  "settings.ssProfileClipboardDesc": "स्क्रीनशॉट को स्वचालित रूप से क्लिपबोर्ड पर कॉपी करें ताकि आप Ctrl+V (Discord, वेब आदि) से पेस्ट कर सकें।",
+  "settings.ssProfileSaveFileTitle": "PNG फ़ाइल के रूप में सहेजें",
+  "settings.ssProfileSaveFileDesc": "प्रोफ़ाइल स्क्रीनशॉट फ़ोल्डर में स्वचालित रूप से एक PNG फ़ाइल सहेजें।",
+  "settings.ssProfileOpenFolderTitle": "कैप्चर के बाद फ़ोल्डर खोलें",
+  "settings.ssProfileOpenFolderDesc": "प्रोफ़ाइल स्क्रीनशॉट लेने के बाद स्वचालित रूप से फ़ाइल एक्सप्लोरर में फ़ोल्डर खोलें।",
+  "profile.screenshotCopiedOnly": "प्रोफ़ाइल स्क्रीनशॉट क्लिपबोर्ड पर कॉपी किया गया",
+  "profile.screenshotDone": "प्रोफ़ाइल स्क्रीनशॉट लिया गया"
 }

@@ -4490,5 +4490,19 @@
   "profile.screenshotTip": "ถ่ายภาพหน้าจอโปรไฟล์",
   "profile.screenshotSaved": "บันทึกภาพหน้าจอโปรไฟล์แล้ว ({file})",
   "profile.screenshotSavedClip": "คัดลอกภาพหน้าจอโปรไฟล์ไปยังคลิปบอร์ดและบันทึกแล้ว ({file})",
-  "profile.screenshotFailed": "ถ่ายภาพหน้าจอโปรไฟล์ไม่สำเร็จ"
+  "profile.screenshotFailed": "ถ่ายภาพหน้าจอโปรไฟล์ไม่สำเร็จ",
+  "settings.ssProfileSectionTitle": "ภาพหน้าจอโปรไฟล์",
+  "settings.ssProfileInfoBox": "การคลิกไอคอนกล้องบนหน้าโปรไฟล์จะจับภาพความละเอียดสูงแบบเต็มความยาวของโปรไฟล์ทั้งหมดโดยไม่มีขอบหน้าต่าง",
+  "settings.ssProfileDirTitle": "โฟลเดอร์ภาพหน้าจอโปรไฟล์",
+  "settings.ssProfileDirDesc": "ตำแหน่งที่บันทึกภาพหน้าจอโปรไฟล์:",
+  "settings.ssProfileDefaultDir": "ค่าเริ่มต้น (รูปภาพ/Efxlve Screenshots/Profile)",
+  "settings.ssProfileDirPicker": "เลือกโฟลเดอร์สำหรับภาพหน้าจอโปรไฟล์",
+  "settings.ssProfileClipboardTitle": "คัดลอกไปยังคลิปบอร์ด",
+  "settings.ssProfileClipboardDesc": "คัดลอกภาพหน้าจอไปยังคลิปบอร์ดโดยอัตโนมัติเพื่อให้คุณสามารถวางด้วย Ctrl+V (Discord, เว็บ ฯลฯ)",
+  "settings.ssProfileSaveFileTitle": "บันทึกเป็นไฟล์ PNG",
+  "settings.ssProfileSaveFileDesc": "บันทึกไฟล์ PNG ลงในโฟลเดอร์ภาพหน้าจอโปรไฟล์โดยอัตโนมัติ",
+  "settings.ssProfileOpenFolderTitle": "เปิดโฟลเดอร์หลังจากจับภาพ",
+  "settings.ssProfileOpenFolderDesc": "เปิดโฟลเดอร์ใน File Explorer โดยอัตโนมัติหลังจากจับภาพหน้าจอโปรไฟล์",
+  "profile.screenshotCopiedOnly": "คัดลอกภาพหน้าจอโปรไฟล์ไปยังคลิปบอร์ดแล้ว",
+  "profile.screenshotDone": "จับภาพหน้าจอโปรไฟล์แล้ว"
 }

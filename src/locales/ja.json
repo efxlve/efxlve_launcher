@@ -4490,5 +4490,19 @@
   "profile.screenshotTip": "プロフィールのスクリーンショットを撮る",
   "profile.screenshotSaved": "プロフィールのスクリーンショットを保存しました ({file})",
   "profile.screenshotSavedClip": "プロフィールのスクリーンショットをクリップボードにコピーして保存しました ({file})",
-  "profile.screenshotFailed": "プロフィールのスクリーンショットの撮影に失敗しました"
+  "profile.screenshotFailed": "プロフィールのスクリーンショットの撮影に失敗しました",
+  "settings.ssProfileSectionTitle": "プロフィールのスクリーンショット",
+  "settings.ssProfileInfoBox": "プロフィールページのカメラアイコンをクリックすると、ウィンドウ枠を含めずにプロフィール全体の高解像度画像をキャプチャします。",
+  "settings.ssProfileDirTitle": "プロフィールのスクリーンショットフォルダ",
+  "settings.ssProfileDirDesc": "プロフィールのスクリーンショットの保存先:",
+  "settings.ssProfileDefaultDir": "デフォルト (ピクチャ/Efxlve Screenshots/Profile)",
+  "settings.ssProfileDirPicker": "保存先フォルダを選択",
+  "settings.ssProfileClipboardTitle": "クリップボードにコピー",
+  "settings.ssProfileClipboardDesc": "Ctrl+Vで貼り付けられるよう、キャプチャ時に自動でクリップボードへコピーします (DiscordやWeb等)。",
+  "settings.ssProfileSaveFileTitle": "PNGファイルとして保存",
+  "settings.ssProfileSaveFileDesc": "フォルダへ自動的にPNGファイルを保存します。",
+  "settings.ssProfileOpenFolderTitle": "キャプチャ後にフォルダを開く",
+  "settings.ssProfileOpenFolderDesc": "撮影完了後、自動的にエクスプローラーで保存先フォルダを開きます。",
+  "profile.screenshotCopiedOnly": "プロフィールのスクリーンショットをクリップボードにコピーしました",
+  "profile.screenshotDone": "プロフィールのスクリーンショットを撮影しました"
 }

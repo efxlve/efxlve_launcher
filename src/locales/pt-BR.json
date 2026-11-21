@@ -4490,5 +4490,19 @@
   "profile.screenshotTip": "Capturar tela do perfil",
   "profile.screenshotSaved": "Captura do perfil salva ({file})",
   "profile.screenshotSavedClip": "Captura do perfil copiada para a área de transferência e salva ({file})",
-  "profile.screenshotFailed": "Falha ao capturar tela do perfil"
+  "profile.screenshotFailed": "Falha ao capturar tela do perfil",
+  "settings.ssProfileSectionTitle": "Captura de tela do perfil",
+  "settings.ssProfileInfoBox": "Clicar no ícone de câmera na página do perfil captura uma imagem completa em alta resolução sem bordas da janela.",
+  "settings.ssProfileDirTitle": "Pasta de capturas do perfil",
+  "settings.ssProfileDirDesc": "Onde as capturas de tela do perfil são salvas:",
+  "settings.ssProfileDefaultDir": "Padrão (Imagens/Efxlve Screenshots/Profile)",
+  "settings.ssProfileDirPicker": "Selecionar pasta para capturas do perfil",
+  "settings.ssProfileClipboardTitle": "Copiar para a área de transferência",
+  "settings.ssProfileClipboardDesc": "Copia automaticamente a captura para a área de transferência para colar com Ctrl+V (Discord, web, etc.).",
+  "settings.ssProfileSaveFileTitle": "Salvar como arquivo PNG",
+  "settings.ssProfileSaveFileDesc": "Salva automaticamente um arquivo PNG na pasta de capturas do perfil.",
+  "settings.ssProfileOpenFolderTitle": "Abrir pasta após a captura",
+  "settings.ssProfileOpenFolderDesc": "Abre automaticamente a pasta no Explorador de Arquivos após capturar o perfil.",
+  "profile.screenshotCopiedOnly": "Captura do perfil copiada para a área de transferência",
+  "profile.screenshotDone": "Captura do perfil realizada"
 }

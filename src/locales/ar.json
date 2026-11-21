@@ -4490,5 +4490,19 @@
   "profile.screenshotTip": "التقاط لقطة شاشة للملف الشخصي",
   "profile.screenshotSaved": "تم حفظ لقطة شاشة الملف الشخصي ({file})",
   "profile.screenshotSavedClip": "تم نسخ لقطة شاشة الملف الشخصي إلى الحافظة وحفظها ({file})",
-  "profile.screenshotFailed": "فشل التقاط لقطة شاشة الملف الشخصي"
+  "profile.screenshotFailed": "فشل التقاط لقطة شاشة الملف الشخصي",
+  "settings.ssProfileSectionTitle": "لقطة شاشة الملف الشخصي",
+  "settings.ssProfileInfoBox": "يؤدي النقر على أيقونة الكاميرا في صفحة الملف الشخصي إلى التقاط صورة كاملة عالية الدقة لملفك الشخصي بالكامل بدون إطار النافذة.",
+  "settings.ssProfileDirTitle": "مجلد لقطات شاشة الملف الشخصي",
+  "settings.ssProfileDirDesc": "مكان حفظ لقطات شاشة الملف الشخصي:",
+  "settings.ssProfileDefaultDir": "افتراضي (الصور/Efxlve Screenshots/Profile)",
+  "settings.ssProfileDirPicker": "حدد مجلداً للقطات شاشة الملف الشخصي",
+  "settings.ssProfileClipboardTitle": "نسخ إلى الحافظة",
+  "settings.ssProfileClipboardDesc": "نسخ لقطة الشاشة تلقائياً إلى الحافظة للصقها باستخدام Ctrl+V (Discord أو الويب وما إلى ذلك).",
+  "settings.ssProfileSaveFileTitle": "حفظ كملف PNG",
+  "settings.ssProfileSaveFileDesc": "حفظ ملف PNG تلقائياً في مجلد لقطات شاشة الملف الشخصي.",
+  "settings.ssProfileOpenFolderTitle": "فتح المجلد بعد الالتقاط",
+  "settings.ssProfileOpenFolderDesc": "فتح مجلد لقطات الشاشة تلقائياً في مستكشف الملفات بعد أخذ لقطة للملف الشخصي.",
+  "profile.screenshotCopiedOnly": "تم نسخ لقطة شاشة الملف الشخصي إلى الحافظة",
+  "profile.screenshotDone": "تم التقاط لقطة شاشة الملف الشخصي"
 }

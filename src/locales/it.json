@@ -4490,5 +4490,19 @@
   "profile.screenshotTip": "Cattura schermata del profilo",
   "profile.screenshotSaved": "Schermata del profilo salvata ({file})",
   "profile.screenshotSavedClip": "Schermata del profilo copiata negli appunti e salvata ({file})",
-  "profile.screenshotFailed": "Impossibile catturare la schermata del profilo"
+  "profile.screenshotFailed": "Impossibile catturare la schermata del profilo",
+  "settings.ssProfileSectionTitle": "Schermata profilo",
+  "settings.ssProfileInfoBox": "Cliccando sull'icona della fotocamera nel profilo si cattura un'immagine ad alta risoluzione dell'intero profilo senza bordi di finestra.",
+  "settings.ssProfileDirTitle": "Cartella schermate profilo",
+  "settings.ssProfileDirDesc": "Posizione in cui vengono salvate le schermate del profilo:",
+  "settings.ssProfileDefaultDir": "Predefinito (Immagini/Efxlve Screenshots/Profile)",
+  "settings.ssProfileDirPicker": "Seleziona cartella per schermate profilo",
+  "settings.ssProfileClipboardTitle": "Copia negli appunti",
+  "settings.ssProfileClipboardDesc": "Copia automaticamente la schermata negli appunti per incollarla con Ctrl+V (Discord, web, ecc.).",
+  "settings.ssProfileSaveFileTitle": "Salva come file PNG",
+  "settings.ssProfileSaveFileDesc": "Salva automaticamente un file PNG nella cartella delle schermate del profilo.",
+  "settings.ssProfileOpenFolderTitle": "Apri cartella dopo la cattura",
+  "settings.ssProfileOpenFolderDesc": "Apre automaticamente la cartella in Esplora file dopo aver catturato la schermata.",
+  "profile.screenshotCopiedOnly": "Schermata profilo copiata negli appunti",
+  "profile.screenshotDone": "Schermata profilo catturata"
 }

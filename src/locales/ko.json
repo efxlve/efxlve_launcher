@@ -4490,5 +4490,19 @@
   "profile.screenshotTip": "프로필 스크린샷 캡처",
   "profile.screenshotSaved": "프로필 스크린샷 저장됨 ({file})",
   "profile.screenshotSavedClip": "프로필 스크린샷이 클립보드에 복사되고 저장되었습니다 ({file})",
-  "profile.screenshotFailed": "프로필 스크린샷 캡처 실패"
+  "profile.screenshotFailed": "프로필 스크린샷 캡처 실패",
+  "settings.ssProfileSectionTitle": "프로필 스크린샷",
+  "settings.ssProfileInfoBox": "프로필 페이지의 카메라 아이콘을 클릭하면 창 테두리 없이 프로필 전체의 고해상도 이미지를 캡처합니다.",
+  "settings.ssProfileDirTitle": "프로필 스크린샷 폴더",
+  "settings.ssProfileDirDesc": "프로필 스크린샷이 저장되는 위치:",
+  "settings.ssProfileDefaultDir": "기본값 (사진/Efxlve Screenshots/Profile)",
+  "settings.ssProfileDirPicker": "프로필 스크린샷 폴더 선택",
+  "settings.ssProfileClipboardTitle": "클립보드에 복사",
+  "settings.ssProfileClipboardDesc": "Ctrl+V로 붙여넣을 수 있도록 캡처 시 클립보드에 자동 복사합니다 (디스코드, 웹 등).",
+  "settings.ssProfileSaveFileTitle": "PNG 파일로 저장",
+  "settings.ssProfileSaveFileDesc": "프로필 스크린샷 폴더에 자동으로 PNG 파일을 저장합니다.",
+  "settings.ssProfileOpenFolderTitle": "캡처 후 폴더 열기",
+  "settings.ssProfileOpenFolderDesc": "프로필 스크린샷을 찍은 후 파일 탐색기에서 저장 폴더를 자동으로 엽니다.",
+  "profile.screenshotCopiedOnly": "프로필 스크린샷이 클립보드에 복사되었습니다",
+  "profile.screenshotDone": "프로필 스크린샷 캡처 완료"
 }

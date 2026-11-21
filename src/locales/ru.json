@@ -4490,5 +4490,19 @@
   "profile.screenshotTip": "Сделать снимок профиля",
   "profile.screenshotSaved": "Снимок профиля сохранен ({file})",
   "profile.screenshotSavedClip": "Снимок профиля скопирован в буфер обмена и сохранен ({file})",
-  "profile.screenshotFailed": "Не удалось сделать снимок профиля"
+  "profile.screenshotFailed": "Не удалось сделать снимок профиля",
+  "settings.ssProfileSectionTitle": "Снимок профиля",
+  "settings.ssProfileInfoBox": "Нажатие на значок камеры на странице профиля создает полноразмерное изображение всего профиля без рамок окна.",
+  "settings.ssProfileDirTitle": "Папка снимков профиля",
+  "settings.ssProfileDirDesc": "Куда сохраняются снимки профиля:",
+  "settings.ssProfileDefaultDir": "По умолчанию (Изображения/Efxlve Screenshots/Profile)",
+  "settings.ssProfileDirPicker": "Выберите папку для снимков профиля",
+  "settings.ssProfileClipboardTitle": "Копировать в буфер обмена",
+  "settings.ssProfileClipboardDesc": "Автоматически копирует снимок в буфер обмена для вставки через Ctrl+V (Discord, браузер и т. д.).",
+  "settings.ssProfileSaveFileTitle": "Сохранять в файл PNG",
+  "settings.ssProfileSaveFileDesc": "Автоматически сохраняет файл PNG в папку снимков профиля.",
+  "settings.ssProfileOpenFolderTitle": "Открывать папку после снимка",
+  "settings.ssProfileOpenFolderDesc": "Автоматически открывает папку в проводнике после создания снимка профиля.",
+  "profile.screenshotCopiedOnly": "Снимок профиля скопирован в буфер обмена",
+  "profile.screenshotDone": "Снимок профиля создан"
 }
