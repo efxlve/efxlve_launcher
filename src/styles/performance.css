@@ -25,7 +25,8 @@ html.reduce-effects .spinning svg {
 html.reduce-effects .lib-card:hover,
 html.reduce-effects .lib-card:focus-visible,
 html.reduce-effects .store-card:hover,
-html.reduce-effects .profile-fav-card:hover,
+html.reduce-effects .profile-ach-card:hover,
+html.reduce-effects .profile-banner-item:hover,
 html.reduce-effects .case-card:hover {
   transform: none !important;
 }

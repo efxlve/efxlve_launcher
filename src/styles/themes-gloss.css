@@ -347,7 +347,7 @@
   background: linear-gradient(180deg, #ffffff 0%, #f4f9fd 48%, #e0eef8 50%, #eef6fc 100%);
   box-shadow: 0 1px 3px rgba(0, 35, 75, 0.4), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="gloss"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo, .pcard-store-logo, .col-store-logo-img, .bk-store-logo) {
+:root[data-surface="gloss"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo, .profile-unlock-store-logo, .pcard-store-logo, .col-store-logo-img, .bk-store-logo) {
   filter: brightness(0) saturate(100%) invert(18%) sepia(35%) saturate(1400%) hue-rotate(175deg);
   opacity: 0.88;
 }
@@ -390,19 +390,19 @@
   color: #ffffff;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 12px rgba(43, 143, 239, 0.4);
 }
-:root[data-surface="gloss"] .profile-hero-store-chip {
+:root[data-surface="gloss"] :is(.profile-hero-store-chip, .profile-hero-acc-chip) {
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(43, 143, 239, 0.28);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
-:root[data-surface="gloss"] .profile-hero-store-chip:hover {
+:root[data-surface="gloss"] :is(.profile-hero-store-chip, .profile-hero-acc-chip):hover {
   background: rgba(255, 255, 255, 0.95);
   border-color: rgba(43, 143, 239, 0.55);
   box-shadow: 0 3px 8px rgba(43, 143, 239, 0.18), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="gloss"] .profile-hero-store-chip.selected {
+:root[data-surface="gloss"] :is(.profile-hero-store-chip, .profile-hero-acc-chip).selected {
   background: var(--accent-tint);
   border-color: var(--accent);
   color: var(--text);
@@ -507,7 +507,6 @@
   background: rgba(255, 255, 255, 0.92);
   border-color: rgba(43, 143, 239, 0.65);
   box-shadow: 0 8px 24px rgba(43, 143, 239, 0.2), inset 0 1px 0 #ffffff;
-  transform: translateY(-4px);
 }
 :root[data-surface="gloss"] .profile-ach-card.is-plat {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(220, 240, 255, 0.85) 100%);
@@ -518,14 +517,6 @@
   background: linear-gradient(180deg, #ffffff 0%, rgba(200, 232, 255, 0.95) 100%);
   border-color: #2b8fef;
   box-shadow: 0 8px 24px rgba(43, 143, 239, 0.3), inset 0 1px 0 #ffffff;
-}
-:root[data-surface="gloss"] .profile-ach-pct {
-  color: #0b4a8c;
-  font-weight: 700;
-}
-:root[data-surface="gloss"] .profile-ach-card.is-plat .profile-ach-pct {
-  color: #003366;
-  font-weight: 800;
 }
 :root[data-surface="gloss"] .profile-ach-bar {
   background: rgba(43, 143, 239, 0.16);

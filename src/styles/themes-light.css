@@ -36,7 +36,7 @@
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
-:root[data-scheme="light"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo, .pcard-store-logo, .col-store-logo-img, .bk-store-logo) {
+:root[data-scheme="light"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo, .profile-unlock-store-logo, .pcard-store-logo, .col-store-logo-img, .bk-store-logo) {
   filter: brightness(0);
   opacity: 0.85;
 }
@@ -75,14 +75,14 @@
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.38);
 }
-:root[data-scheme="light"] .profile-hero-store-chip {
+:root[data-scheme="light"] :is(.profile-hero-store-chip, .profile-hero-acc-chip) {
   background: #ffffff;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
-:root[data-scheme="light"] .profile-hero-store-chip:hover {
+:root[data-scheme="light"] :is(.profile-hero-store-chip, .profile-hero-acc-chip):hover {
   background: var(--surface-2);
 }
-:root[data-scheme="light"] .profile-hero-store-chip.selected {
+:root[data-scheme="light"] :is(.profile-hero-store-chip, .profile-hero-acc-chip).selected {
   background: var(--accent-tint);
 }
 :root[data-scheme="light"] .profile-hero-banner::after {
@@ -147,12 +147,6 @@
 :root[data-scheme="light"] .profile-ach-card.is-plat:hover {
   border-color: var(--accent);
   box-shadow: 0 8px 20px rgba(37, 99, 235, 0.18);
-}
-:root[data-scheme="light"] .profile-ach-pct {
-  color: var(--accent);
-}
-:root[data-scheme="light"] .profile-ach-card.is-plat .profile-ach-pct {
-  color: var(--accent);
 }
 :root[data-scheme="light"] .profile-ach-bar {
   background: rgba(15, 23, 42, 0.08);
@@ -527,8 +521,8 @@
 
 /* Dark media overlays and popovers deliberately keep their own dark surface.
    Their text must not inherit the light theme's dark --text token. */
-:root[data-scheme="light"] :is(.gp-hero-tool, .ach-locked-badge, .ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn, .ss-game-chip, .cover-preview-badge, .profile-ach-badge.pct, .profile-ach-badge.store, .profile-banner-item-name, .profile-banner-edit-btn, .account-switch-name),
-:root[data-surface="gloss"] :is(.gp-hero-tool, .ach-locked-badge, .ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn, .ss-game-chip, .cover-preview-badge, .profile-ach-badge.pct, .profile-ach-badge.store, .profile-banner-item-name, .profile-banner-edit-btn, .account-switch-name) {
+:root[data-scheme="light"] :is(.gp-hero-tool, .ach-locked-badge, .ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn, .ss-game-chip, .cover-preview-badge, .profile-ach-badge.pct, .profile-ach-badge.store, .profile-banner-edit-btn, .account-switch-name),
+:root[data-surface="gloss"] :is(.gp-hero-tool, .ach-locked-badge, .ss-chip, .ss-share-btn, .ss-compress-btn, .ss-delete-btn, .ss-game-chip, .cover-preview-badge, .profile-ach-badge.pct, .profile-ach-badge.store, .profile-banner-edit-btn, .account-switch-name) {
   color: #f8fafc;
 }
 
