@@ -1926,6 +1926,19 @@
   font-size: 13px;
 }
 
+.profile-filter-tabs .tab svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.8;
+  transition: opacity var(--ease);
+}
+
+.profile-filter-tabs .tab:hover svg,
+.profile-filter-tabs .tab.active svg {
+  opacity: 1;
+}
+
 .profile-ach-tools {
   display: flex;
   align-items: center;
@@ -1935,7 +1948,7 @@
 }
 
 .profile-ach-tools .gp-search {
-  width: 210px;
+  width: 260px;
 }
 
 .profile-search-kbd {
@@ -1945,6 +1958,42 @@
   font-size: 11px;
   line-height: 15px;
   padding: 0 5px;
+  flex-shrink: 0;
+}
+
+.profile-search-kbd[hidden] {
+  display: none !important;
+}
+
+.profile-search-clear-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  border-radius: var(--r-xs, 4px);
+  flex-shrink: 0;
+  transition: color var(--ease), background-color var(--ease);
+}
+
+.profile-search-clear-btn:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.profile-search-clear-btn svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.profile-search-clear-btn[hidden] {
+  display: none !important;
 }
 
 #profile-sort-select {

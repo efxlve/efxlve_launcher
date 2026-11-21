@@ -15,7 +15,7 @@ import { PROFILE_CARD_CHUNK } from "../../core/constants";
 import { sortedAchievementHistory } from "../../core/achievement-history";
 import { achievementPins } from "../../core/achievement-pins";
 import { achSummaryOf } from "../../core/game-view";
-import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
+import { emptyState, epicPlatinumIcon, icon, type IconName } from "../../core/icons";
 import { epicWideArt, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { cachedSteamCover, steamCdnPortrait } from "../../core/steam-art-cache";
 import { avatarFor, currentProfileName, globalAvatar, S } from "../../core/state";
@@ -1026,9 +1026,10 @@ function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGa
     }
   }
 
-  const filterTab = (val: string, label: string, n: number): string => {
+  const filterTab = (val: string, label: string, n: number, iconName?: IconName): string => {
     const active = !S.profileShowHidden && S.profileFilter === val;
-    return `<button type="button" class="tab ${active ? "active" : ""}" data-act="profile-filter" data-val="${val}" aria-pressed="${active}">${label}<span class="count tabular-nums">${n}</span></button>`;
+    const iconHtml = iconName ? icon(iconName, 14) : "";
+    return `<button type="button" class="tab ${active ? "active" : ""}" data-act="profile-filter" data-val="${val}" aria-pressed="${active}">${iconHtml}${label}<span class="count tabular-nums">${n}</span></button>`;
   };
 
   const totals = profileStats(games);
@@ -1044,9 +1045,9 @@ function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGa
       </div>
       <div class="profile-ach-toolbar">
         <div class="tabs profile-filter-tabs" role="group" aria-label="${esc(t("lib.filters"))}">
-          ${filterTab("all", t("profile.filterAll"), countVisible)}
-          ${filterTab("platinum", t("profile.filterPlatinum"), countPlat)}
-          ${countAlmostDone > 0 || S.profileFilter === "almost_done" ? filterTab("almost_done", t("profile.goalsTitle"), countAlmostDone) : ""}
+          ${filterTab("all", t("profile.filterAll"), countVisible, "layers")}
+          ${filterTab("platinum", t("profile.filterPlatinum"), countPlat, "trophy")}
+          ${countAlmostDone > 0 || S.profileFilter === "almost_done" ? filterTab("almost_done", t("profile.goalsTitle"), countAlmostDone, "crosshair") : ""}
           ${filterTab("in_progress", t("profile.filterInProgress"), countProgress)}
           ${filterTab("not_started", t("profile.filterNotStarted"), countNotStarted)}
           ${countHidden > 0 || S.profileShowHidden ? `<button type="button" class="tab ${S.profileShowHidden ? "active" : ""}" data-act="profile-toggle-hidden" aria-pressed="${S.profileShowHidden}">${t("profile.hiddenToggle")}<span class="count tabular-nums">${countHidden}</span></button>` : ""}
@@ -1054,7 +1055,7 @@ function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGa
         <div class="profile-ach-tools">
           <label class="search gp-search">${icon("search", 15)}<input type="text" id="profile-search" placeholder="${esc(t("profile.searchPlaceholder"))}" aria-label="${esc(t("profile.searchPlaceholder"))}" value="${esc(S.profileSearchQuery)}" />
             <kbd class="kbd profile-search-kbd" aria-hidden="true"${S.profileSearchQuery ? " hidden" : ""}>/</kbd>
-            <button type="button" id="profile-search-clear-btn" class="icon-btn" data-act="profile-search-clear" title="${esc(t("lib.clearSearch"))}" aria-label="${esc(t("lib.clearSearch"))}"${S.profileSearchQuery ? "" : " hidden"}>${icon("x", 12)}</button>
+            <button type="button" id="profile-search-clear-btn" class="profile-search-clear-btn" data-act="profile-search-clear" title="${esc(t("lib.clearSearch"))}" aria-label="${esc(t("lib.clearSearch"))}"${S.profileSearchQuery ? "" : " hidden"}>${icon("x", 12)}</button>
           </label>
           <select id="profile-sort-select" data-act="profile-sort-change" aria-label="${esc(t("ach.sortTitle"))}">
             <option value="progress" ${S.profileSort === "progress" ? "selected" : ""}>${t("profile.sortProgress")}</option>

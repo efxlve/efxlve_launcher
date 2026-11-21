@@ -633,6 +633,8 @@ document.addEventListener("click", (e) => {
     S.profileSearchQuery = "";
     resetProfileCards();
     render();
+    const searchInput = document.getElementById("profile-search") as HTMLInputElement | null;
+    if (searchInput) searchInput.focus();
   } else if (act === "profile-view-mode" && t.dataset.val) {
     const mode = t.dataset.val as "grid" | "list";
     if ((mode === "grid" || mode === "list") && mode !== S.profileViewMode) {
