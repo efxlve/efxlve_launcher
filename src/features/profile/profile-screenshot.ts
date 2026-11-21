@@ -12,6 +12,87 @@ import {
 
 let isBusy = false;
 
+async function loadAllProfileImages(container: HTMLElement): Promise<void> {
+  // 1. Pre-resolve any uncached Steam art in batch so off-screen cards have valid cover URLs
+  const uncachedSteamIds: string[] = [];
+  container.querySelectorAll<HTMLImageElement>("img[data-steam-app]").forEach((img) => {
+    const appId = img.dataset.steamApp;
+    if (appId && /^\d+$/.test(appId) && cachedSteamCover(appId) === undefined) {
+      uncachedSteamIds.push(appId);
+    }
+  });
+
+  if (uncachedSteamIds.length > 0) {
+    try {
+      const uniqueIds = [...new Set(uncachedSteamIds)];
+      const artMap = await steamLibraryArt(uniqueIds);
+      for (const [appId, art] of Object.entries(artMap)) {
+        const cover = art?.cover || art?.hero || "";
+        rememberSteamCover(appId, cover);
+        if (art?.hero) rememberSteamHero(appId, art.hero);
+        if (cover) {
+          container.querySelectorAll<HTMLImageElement>(`img[data-steam-app="${appId}"]`).forEach((img) => {
+            img.dataset.artStep = "resolved";
+            img.removeAttribute("data-art-pending");
+            if (img.getAttribute("src") !== cover) {
+              img.src = cover;
+            }
+          });
+        }
+      }
+    } catch {
+      // Best-effort
+    }
+  }
+
+  // 2. Find all images in the container
+  const allImages = Array.from(container.querySelectorAll<HTMLImageElement>("img"));
+  if (allImages.length === 0) return;
+
+  // 3. For every image that is not yet fully loaded and decoded:
+  // Using an in-memory eager Image() instance forces Chromium to download the resource
+  // immediately, bypassing native lazy-load viewport heuristics.
+  const pending = allImages.map((img) => {
+    return new Promise<void>((resolve) => {
+      if (img.complete && img.naturalWidth > 0) {
+        resolve();
+        return;
+      }
+
+      const src = img.getAttribute("src") || img.src;
+      if (!src) {
+        resolve();
+        return;
+      }
+
+      img.removeAttribute("loading");
+      img.loading = "eager";
+
+      const loader = new Image();
+      let settled = false;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        // Trigger DOM image update from cached resource
+        img.src = src;
+        img.decode().catch(() => {}).then(() => resolve());
+      };
+
+      loader.onload = done;
+      loader.onerror = done;
+      loader.src = src;
+
+      img.addEventListener("load", done, { once: true });
+      img.addEventListener("error", done, { once: true });
+    });
+  });
+
+  await Promise.race([
+    Promise.all(pending),
+    new Promise((resolve) => setTimeout(resolve, 4000)),
+  ]);
+}
+
 export async function takeProfileScreenshot(): Promise<void> {
   if (isBusy) return;
 
@@ -39,74 +120,10 @@ export async function takeProfileScreenshot(): Promise<void> {
   document.body.classList.add("capturing-profile-screenshot");
 
   try {
-    // 1. Pre-resolve any uncached Steam art in batch so off-screen cards have valid cover URLs
-    const uncachedSteamIds: string[] = [];
-    profileEl.querySelectorAll<HTMLImageElement>("img[data-steam-app]").forEach((img) => {
-      const appId = img.dataset.steamApp;
-      if (appId && /^\d+$/.test(appId) && cachedSteamCover(appId) === undefined) {
-        uncachedSteamIds.push(appId);
-      }
-    });
+    // Eagerly resolve and decode all offscreen profile images
+    await loadAllProfileImages(profileEl);
 
-    if (uncachedSteamIds.length > 0) {
-      try {
-        const uniqueIds = [...new Set(uncachedSteamIds)];
-        const artMap = await steamLibraryArt(uniqueIds);
-        for (const [appId, art] of Object.entries(artMap)) {
-          const cover = art?.cover || art?.hero || "";
-          rememberSteamCover(appId, cover);
-          if (art?.hero) rememberSteamHero(appId, art.hero);
-          if (cover) {
-            profileEl.querySelectorAll<HTMLImageElement>(`img[data-steam-app="${appId}"]`).forEach((img) => {
-              img.dataset.artStep = "resolved";
-              img.removeAttribute("data-art-pending");
-              if (img.getAttribute("src") !== cover) {
-                img.src = cover;
-              }
-            });
-          }
-        }
-      } catch {
-        // Fallback chain continues below
-      }
-    }
-
-    // 2. Set loading="eager" on all images to ensure the browser fetches off-screen images
-    const allImages = Array.from(profileEl.querySelectorAll<HTMLImageElement>("img"));
-    allImages.forEach((img) => {
-      if (img.loading === "lazy") {
-        img.loading = "eager";
-      }
-    });
-
-    // 3. Wait for pending images to finish downloading and decoding
-    const pendingImages = allImages.filter((img) => !img.complete);
-    if (pendingImages.length > 0) {
-      await Promise.race([
-        Promise.all(
-          pendingImages.map(
-            (img) =>
-              new Promise<void>((resolve) => {
-                if (img.complete) {
-                  resolve();
-                  return;
-                }
-                const onDone = () => {
-                  img.removeEventListener("load", onDone);
-                  img.removeEventListener("error", onDone);
-                  resolve();
-                };
-                img.addEventListener("load", onDone, { once: true });
-                img.addEventListener("error", onDone, { once: true });
-                img.decode().catch(() => {}).then(onDone);
-              })
-          )
-        ),
-        new Promise((resolve) => setTimeout(resolve, 3000)),
-      ]);
-    }
-
-    // 4. Force layout reflow and wait two animation frames for styles to paint cleanly
+    // Force layout reflow and wait two animation frames for styles to paint cleanly
     void profileEl.offsetHeight;
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()))

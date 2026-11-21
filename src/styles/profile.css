@@ -3090,12 +3090,12 @@ body.capturing-profile-screenshot .profile-page {
 }
 
 body.capturing-profile-screenshot .profile-ach-card,
-body.capturing-profile-screenshot .profile-game-row,
-body.capturing-profile-screenshot .library-card,
-body.capturing-profile-screenshot * {
+body.capturing-profile-screenshot .profile-game-row {
   content-visibility: visible !important;
   contain: none !important;
-  contain-intrinsic-size: none !important;
+}
+
+body.capturing-profile-screenshot * {
   animation: none !important;
   transition: none !important;
 }
