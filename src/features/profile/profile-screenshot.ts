@@ -1,6 +1,8 @@
 import { captureProfileScreenshot, openProfileScreenshotsFolder } from "../../epic-commands";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
+import { cachedSteamCover, rememberSteamCover, rememberSteamHero } from "../../core/steam-art-cache";
+import { steamLibraryArt } from "../../steam";
 import {
   ssProfileClipboardOn,
   ssProfileCustomDir,
@@ -26,26 +28,86 @@ export async function takeProfileScreenshot(): Promise<void> {
     btn.setAttribute("aria-busy", "true");
   }
 
-  // Add the capture class which hides winbar, sidebar, page-header, and allows view to expand unclipped
+  const view = document.getElementById("view");
+  const savedScrollTop = view ? view.scrollTop : 0;
+
+  // Reset scroll to top so client rects and viewport coordinates are aligned from 0
+  if (view) view.scrollTop = 0;
+  window.scrollTo(0, 0);
+
+  // Add the capture class which overrides content-visibility, containment, hides chrome, and expands view
   document.body.classList.add("capturing-profile-screenshot");
 
   try {
-    // Eagerly load and decode any offscreen images inside the profile before taking the screenshot
-    const images = profileEl.querySelectorAll<HTMLImageElement>("img");
-    const pending: Promise<unknown>[] = [];
-    images.forEach((img) => {
+    // 1. Pre-resolve any uncached Steam art in batch so off-screen cards have valid cover URLs
+    const uncachedSteamIds: string[] = [];
+    profileEl.querySelectorAll<HTMLImageElement>("img[data-steam-app]").forEach((img) => {
+      const appId = img.dataset.steamApp;
+      if (appId && /^\d+$/.test(appId) && cachedSteamCover(appId) === undefined) {
+        uncachedSteamIds.push(appId);
+      }
+    });
+
+    if (uncachedSteamIds.length > 0) {
+      try {
+        const uniqueIds = [...new Set(uncachedSteamIds)];
+        const artMap = await steamLibraryArt(uniqueIds);
+        for (const [appId, art] of Object.entries(artMap)) {
+          const cover = art?.cover || art?.hero || "";
+          rememberSteamCover(appId, cover);
+          if (art?.hero) rememberSteamHero(appId, art.hero);
+          if (cover) {
+            profileEl.querySelectorAll<HTMLImageElement>(`img[data-steam-app="${appId}"]`).forEach((img) => {
+              img.dataset.artStep = "resolved";
+              img.removeAttribute("data-art-pending");
+              if (img.getAttribute("src") !== cover) {
+                img.src = cover;
+              }
+            });
+          }
+        }
+      } catch {
+        // Fallback chain continues below
+      }
+    }
+
+    // 2. Set loading="eager" on all images to ensure the browser fetches off-screen images
+    const allImages = Array.from(profileEl.querySelectorAll<HTMLImageElement>("img"));
+    allImages.forEach((img) => {
       if (img.loading === "lazy") {
         img.loading = "eager";
       }
-      if (!img.complete) {
-        pending.push(img.decode().catch(() => {}));
-      }
     });
-    if (pending.length > 0) {
-      await Promise.race([Promise.all(pending), new Promise((r) => setTimeout(r, 1200))]);
+
+    // 3. Wait for pending images to finish downloading and decoding
+    const pendingImages = allImages.filter((img) => !img.complete);
+    if (pendingImages.length > 0) {
+      await Promise.race([
+        Promise.all(
+          pendingImages.map(
+            (img) =>
+              new Promise<void>((resolve) => {
+                if (img.complete) {
+                  resolve();
+                  return;
+                }
+                const onDone = () => {
+                  img.removeEventListener("load", onDone);
+                  img.removeEventListener("error", onDone);
+                  resolve();
+                };
+                img.addEventListener("load", onDone, { once: true });
+                img.addEventListener("error", onDone, { once: true });
+                img.decode().catch(() => {}).then(onDone);
+              })
+          )
+        ),
+        new Promise((resolve) => setTimeout(resolve, 3000)),
+      ]);
     }
 
-    // Wait two animation frames for layout to settle cleanly without transition/animation artifacts
+    // 4. Force layout reflow and wait two animation frames for styles to paint cleanly
+    void profileEl.offsetHeight;
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
     );
@@ -96,6 +158,9 @@ export async function takeProfileScreenshot(): Promise<void> {
     toast(t("profile.screenshotFailed"), "err");
   } finally {
     document.body.classList.remove("capturing-profile-screenshot");
+    if (view && savedScrollTop > 0) {
+      view.scrollTop = savedScrollTop;
+    }
     if (btn) {
       btn.classList.remove("is-busy");
       btn.removeAttribute("aria-busy");
