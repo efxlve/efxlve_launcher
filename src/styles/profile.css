@@ -1625,12 +1625,16 @@
   width: 36px;
   height: 36px;
   border-radius: var(--r-sm);
-  background: var(--surface-2);
+  background: var(--accent-tint);
   border: 1px solid var(--line);
   display: grid;
   place-items: center;
-  color: var(--text);
+  color: var(--accent);
   flex-shrink: 0;
+  transition:
+    background-color var(--ease),
+    border-color var(--ease),
+    color var(--ease);
 }
 
 .profile-unlocks-modal-head h3 {

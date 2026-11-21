@@ -301,6 +301,13 @@
   color: #fcee0a;
   box-shadow: 0 0 6px rgba(252, 238, 10, 0.22);
 }
+:root[data-surface="neongrid"] .profile-unlocks-modal-icon {
+  background: #08090d;
+  border: 1px solid rgba(252, 238, 10, 0.35);
+  color: #fcee0a;
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(252, 238, 10, 0.2);
+}
 
 /* Neon Grid: Progress Bars */
 :root[data-surface="neongrid"] .progress {

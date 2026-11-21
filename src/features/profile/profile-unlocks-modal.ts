@@ -1,5 +1,5 @@
 import { sortedAchievementHistory, type AchievementHistoryEntry } from "../../core/achievement-history";
-import { icon } from "../../core/icons";
+import { filledTrophy, icon } from "../../core/icons";
 import { S } from "../../core/state";
 import { esc, fmtAchDate, fmtDecimal1 } from "../../core/utils";
 import { t } from "../../i18n";
@@ -139,7 +139,7 @@ export function openUnlocksModal(scope: "all" | StoreKind = S.profileStore || "a
       <div class="modal-box profile-unlocks-dialog" role="dialog" aria-modal="true" aria-labelledby="unlocks-modal-title">
         <div class="profile-unlocks-modal-head">
           <div class="profile-unlocks-modal-title-wrap">
-            <span class="profile-unlocks-modal-icon">${icon("trophy", 18)}</span>
+            <span class="profile-unlocks-modal-icon">${filledTrophy(18)}</span>
             <div>
               <h3 id="unlocks-modal-title">${esc(t("profile.unlocksTitle"))}</h3>
               <p class="profile-unlocks-modal-sub tabular-nums">${totalCount.toLocaleString()} ${esc(t("ach.filterAll").toLowerCase())}</p>
@@ -164,7 +164,7 @@ export function openUnlocksModal(scope: "all" | StoreKind = S.profileStore || "a
             </button>
             ${rareCount > 0 ? `
               <button type="button" class="tab" data-unlock-filter="rare">
-                ${icon("trophy", 12)}
+                ${filledTrophy(12)}
                 <span>${esc(t("settings.achTierUltra"))}</span>
                 <span class="count">(${rareCount})</span>
               </button>
