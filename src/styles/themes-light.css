@@ -84,11 +84,11 @@
   color: var(--text);
   border-color: var(--line-strong);
 }
-:root[data-scheme="light"] .profile-ach-card {
+:root[data-scheme="light"] :is(.profile-ach-card, .profile-showcase-card, .profile-recent-card, .profile-unlock-card, .play-activity-card) {
   background: #ffffff;
   border-color: var(--line);
 }
-:root[data-scheme="light"] .profile-ach-card:hover {
+:root[data-scheme="light"] :is(.profile-ach-card, .profile-showcase-card, .profile-recent-card, .profile-unlock-card):hover {
   background: #ffffff;
   border-color: var(--line-strong);
 }

@@ -1172,7 +1172,9 @@
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  padding: 4px 0 8px;
+  padding: 4px 2px 8px;
+  scrollbar-width: thin;
+  scroll-behavior: smooth;
 }
 
 .profile-recent-card {
@@ -1520,6 +1522,43 @@
 
 .profile-ach-tools .gp-search {
   width: 210px;
+}
+
+.profile-search-kbd {
+  margin-left: auto;
+  pointer-events: none;
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 15px;
+  padding: 0 5px;
+}
+
+#profile-sort-select {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    background-color var(--ease),
+    border-color var(--ease),
+    color var(--ease);
+}
+
+#profile-sort-select:hover {
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+#profile-sort-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  color: var(--text);
 }
 
 /* --- 6. Achievement Grid & List (With 3D Cover Physics from library.css) --- */
@@ -2129,19 +2168,20 @@
 }
 
 .profile-dormant-ico {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  border-radius: 50%;
+  border-radius: var(--r-sm);
   background: var(--surface-2);
-  color: var(--text-3);
+  border: 1px solid var(--line);
+  color: var(--text-2);
 }
 
 .profile-dormant-ico svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .profile-dormant-val {

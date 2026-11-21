@@ -451,6 +451,8 @@ document.addEventListener("keydown", (e) => {
         S.profileSearchQuery = "";
         resetProfileCards();
         document.getElementById("profile-search-clear-btn")?.setAttribute("hidden", "");
+        const kbd = document.querySelector<HTMLElement>(".profile-search-kbd");
+        if (kbd) kbd.hidden = false;
         const gridEl = document.getElementById("profile-games-grid");
         if (gridEl) gridEl.innerHTML = renderProfileGrid(filteredProfileGames(profileListGames()));
       } else {
@@ -1004,7 +1006,9 @@ document.addEventListener("input", (e) => {
   if (t.id === "profile-search") {
     S.profileSearchQuery = (t as HTMLInputElement).value;
     const clearBtn = document.getElementById("profile-search-clear-btn");
+    const kbd = document.querySelector<HTMLElement>(".profile-search-kbd");
     if (clearBtn) clearBtn.hidden = !S.profileSearchQuery;
+    if (kbd) kbd.hidden = Boolean(S.profileSearchQuery);
     // Rebuilding the card grid on every keystroke re-creates every cover and
     // reads as the list reloading while typing; batch the patch like the
     // hide-achievements search does.

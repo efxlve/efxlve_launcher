@@ -438,14 +438,14 @@
   color: #002d5a;
   box-shadow: 0 2px 6px rgba(43, 143, 239, 0.15), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="gloss"] .profile-ach-card {
+:root[data-surface="gloss"] :is(.profile-ach-card, .profile-showcase-card, .profile-recent-card, .profile-unlock-card, .play-activity-card) {
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(43, 143, 239, 0.28);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
-:root[data-surface="gloss"] .profile-ach-card:hover {
+:root[data-surface="gloss"] :is(.profile-ach-card, .profile-showcase-card, .profile-recent-card, .profile-unlock-card):hover {
   background: rgba(255, 255, 255, 0.92);
   border-color: rgba(43, 143, 239, 0.65);
   box-shadow: 0 8px 24px rgba(43, 143, 239, 0.2), inset 0 1px 0 #ffffff;

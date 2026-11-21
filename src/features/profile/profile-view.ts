@@ -124,7 +124,9 @@ function renderProfileGameGridCards(cardGames: ProfileGameRecord[], chips: boole
       ? t("profile.goalsRemaining", { n: remaining })
       : S.profileSort === "xp" && xpShort
         ? xpShort
-        : playtimeText || xpShort || lastPlayedText;
+        : S.profileSort === "recent" && lastPlayedText
+          ? lastPlayedText
+          : playtimeText || xpShort || lastPlayedText;
 
     return `
       <div class="profile-ach-card${isPlat ? " is-plat" : ""}" role="button" tabindex="0" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" data-tab="achievements" title="${esc(`${g.app_title}${meta ? ` · ${meta}` : ""}`)}">
@@ -520,6 +522,9 @@ export function filteredProfileGames(allGames: ProfileGameRecord[]): ProfileGame
         if (b.unlocked_percent !== a.unlocked_percent) return b.unlocked_percent - a.unlocked_percent;
       }
       return b.is_platinum !== a.is_platinum ? (b.is_platinum ? 1 : -1) : b.unlocked_percent - a.unlocked_percent || b.total_xp - a.total_xp;
+    }
+    if (S.profileSort === "recent") {
+      return (S.playtimeMap.get(b.app_name)?.last_played_timestamp || 0) - (S.playtimeMap.get(a.app_name)?.last_played_timestamp || 0);
     }
     if (S.profileSort === "xp") return b.total_xp - a.total_xp;
     if (S.profileSort === "playtime") {
@@ -1089,10 +1094,12 @@ function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGa
         </div>
         <div class="profile-ach-tools">
           <label class="search gp-search">${icon("search", 15)}<input type="text" id="profile-search" placeholder="${esc(t("profile.searchPlaceholder"))}" aria-label="${esc(t("profile.searchPlaceholder"))}" value="${esc(S.profileSearchQuery)}" />
+            <kbd class="kbd profile-search-kbd" aria-hidden="true"${S.profileSearchQuery ? " hidden" : ""}>/</kbd>
             <button type="button" id="profile-search-clear-btn" class="icon-btn" data-act="profile-search-clear" title="${esc(t("lib.clearSearch"))}" aria-label="${esc(t("lib.clearSearch"))}"${S.profileSearchQuery ? "" : " hidden"}>${icon("x", 12)}</button>
           </label>
           <select id="profile-sort-select" data-act="profile-sort-change" aria-label="${esc(t("ach.sortTitle"))}">
             <option value="progress" ${S.profileSort === "progress" ? "selected" : ""}>${t("profile.sortProgress")}</option>
+            <option value="recent" ${S.profileSort === "recent" ? "selected" : ""}>${t("lib.sortRecent")}</option>
             <option value="xp" ${S.profileSort === "xp" ? "selected" : ""}>${t("profile.sortXp")}</option>
             <option value="playtime" ${S.profileSort === "playtime" ? "selected" : ""}>${t("profile.sortPlaytime")}</option>
             <option value="alpha" ${S.profileSort === "alpha" ? "selected" : ""}>${t("profile.sortAlpha")}</option>

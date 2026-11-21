@@ -611,7 +611,7 @@ export const S = {
    */
   companionAchSummaries: ({}) as Record<string, EpicAchievementSummary>,
   profileFilter: ("all") as "all" | "platinum" | "almost_done" | "in_progress" | "not_started",
-  profileSort: ("progress") as "progress" | "xp" | "playtime" | "alpha",
+  profileSort: ("progress") as "progress" | "recent" | "xp" | "playtime" | "alpha",
   /** Hero chips: which store's achievements and totals the page is showing. */
   profileStore: ("all") as "all" | "epic" | "gog" | "steam" | "amazon" | "xbox" | "battlenet" | "ubisoft" | "ea" | "riot" | "custom",
   /** Play activity chart & top games window on the profile page. */
