@@ -115,7 +115,7 @@ import { gameStatusOf, setGameStatus, type GameStatus } from "../library/game-st
 import { hideGameIds, openHideGamesModal, unhideGameIds } from "../library/hide-games";
 import { openHideAchievementsModal, unhideAchievement } from "../profile/hide-achievements";
 import { clearAchievementHistory } from "../../core/achievement-history";
-import { removeAchievementPin } from "../../core/achievement-pins";
+import { moveAchievementPin, removeAchievementPin } from "../../core/achievement-pins";
 import {
   consumeCollectionDragClick,
   positionColDropdownMenu,
@@ -168,7 +168,7 @@ import { openInstallDialog } from "../install/install-dialog";
 import { loadNotesView, handleNotesAction } from "../notes/notes-view";
 import { handleDrawerNotesAction } from "../notes/drawer-notes";
 import { handleIgdbAction } from "./handlers/igdb-handlers";
-import { ALL_PROFILE_STORES, enterProfile, resetProfileCards, type StoreKind } from "../profile/profile-view";
+import { ALL_PROFILE_STORES, enterProfile, PIN_TIP_DISMISSED_KEY, resetProfileCards, type StoreKind } from "../profile/profile-view";
 import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
 import { closeFeedback, createFeedbackReport, openFeedback, openFeedbackFolder, openFeedbackIssue } from "../feedback/feedback-view";
@@ -579,6 +579,16 @@ document.addEventListener("click", (e) => {
   } else if (act === "unpin-ach" && t.dataset.key) {
     removeAchievementPin(t.dataset.key);
     render();
+  } else if (act === "move-pin-ach" && t.dataset.key) {
+    const dir = Number(t.dataset.dir) < 0 ? -1 : 1;
+    if (moveAchievementPin(t.dataset.key, dir)) render();
+  } else if (act === "dismiss-pin-tip") {
+    try {
+      localStorage.setItem(PIN_TIP_DISMISSED_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+    t.closest(".profile-pin-tip")?.remove();
   } else if (act === "open-pinned-achievement" && id) {
     const achievement = t.dataset.ach || "";
     openEpicModal(id, true);
@@ -606,9 +616,16 @@ document.addEventListener("click", (e) => {
       S.profileStore = store as typeof S.profileStore;
       S.profileAccount = "overview";
       S.profileFilter = "all";
+      S.profileShowHidden = false;
       resetProfileCards();
       render();
     }
+  } else if (act === "profile-reset-filters") {
+    S.profileFilter = "all";
+    S.profileShowHidden = false;
+    S.profileSearchQuery = "";
+    resetProfileCards();
+    render();
   } else if (act === "profile-show-more") {
     S.profileCardCount += PROFILE_CARD_CHUNK;
     render();

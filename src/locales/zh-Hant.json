@@ -4479,5 +4479,12 @@
   "match.searchFailed": "無法完成搜尋",
   "match.invalid": "無法使用該項目",
   "match.dlc": "DLC",
-  "match.game": "遊戲"
+  "match.game": "遊戲",
+  "profile.pinsEmptyTip": "開啟任意遊戲的「成就」分頁，點擊獎盃上的釘選圖示，即可在展示櫃中展示最多 3 項成就。",
+  "profile.completionRate": "完成率",
+  "profile.goalsTitle": "下一目標",
+  "profile.goalsSub": "最接近 100%",
+  "profile.goalsRemaining": "剩餘 {n} 項",
+  "profile.activityRange7d": "7 天",
+  "profile.activityRange30d": "30 天"
 }

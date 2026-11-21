@@ -4479,5 +4479,12 @@
   "match.searchFailed": "Impossibile completare la ricerca",
   "match.invalid": "Questa voce non può essere usata",
   "match.dlc": "DLC",
-  "match.game": "Gioco"
+  "match.game": "Gioco",
+  "profile.pinsEmptyTip": "Apri la scheda Obiettivi di un gioco e fai clic sull'icona della puntina su un trofeo per mostrare fino a 3 obiettivi nella tua vetrina.",
+  "profile.completionRate": "Completamento",
+  "profile.goalsTitle": "Prossimi obiettivi",
+  "profile.goalsSub": "Più vicini al 100%",
+  "profile.goalsRemaining": "{n} mancanti",
+  "profile.activityRange7d": "7 giorni",
+  "profile.activityRange30d": "30 giorni"
 }

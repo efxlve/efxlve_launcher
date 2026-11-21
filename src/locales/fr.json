@@ -4479,5 +4479,12 @@
   "match.searchFailed": "La recherche n'a pas pu aboutir",
   "match.invalid": "Cette entrée ne peut pas être utilisée",
   "match.dlc": "DLC",
-  "match.game": "Jeu"
+  "match.game": "Jeu",
+  "profile.pinsEmptyTip": "Ouvrez l'onglet Succès d'un jeu et cliquez sur l'icône d'épingle d'un trophée pour afficher jusqu'à 3 succès dans votre vitrine.",
+  "profile.completionRate": "Complétion",
+  "profile.goalsTitle": "Prochains objectifs",
+  "profile.goalsSub": "Au plus près des 100 %",
+  "profile.goalsRemaining": "{n} restants",
+  "profile.activityRange7d": "7 jours",
+  "profile.activityRange30d": "30 jours"
 }

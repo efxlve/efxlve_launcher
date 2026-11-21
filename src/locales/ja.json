@@ -4479,5 +4479,12 @@
   "match.searchFailed": "検索を完了できませんでした",
   "match.invalid": "この項目は使用できません",
   "match.dlc": "DLC",
-  "match.game": "ゲーム"
+  "match.game": "ゲーム",
+  "profile.pinsEmptyTip": "ゲームの「実績」タブを開き、トロフィーのピンアイコンをクリックすると、ショーケースに最大3件の実績を飾れます。",
+  "profile.completionRate": "達成率",
+  "profile.goalsTitle": "次の目標",
+  "profile.goalsSub": "100%に最も近いゲーム",
+  "profile.goalsRemaining": "残り{n}件",
+  "profile.activityRange7d": "7日間",
+  "profile.activityRange30d": "30日間"
 }

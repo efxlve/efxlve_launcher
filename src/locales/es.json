@@ -4479,5 +4479,12 @@
   "match.searchFailed": "No se pudo completar la búsqueda",
   "match.invalid": "Esa entrada no se puede usar",
   "match.dlc": "DLC",
-  "match.game": "Juego"
+  "match.game": "Juego",
+  "profile.pinsEmptyTip": "Abre la pestaña Logros de cualquier juego y pulsa el icono de fijar en un trofeo para destacar hasta 3 logros en tu escaparate.",
+  "profile.completionRate": "Completado",
+  "profile.goalsTitle": "Próximos objetivos",
+  "profile.goalsSub": "Más cerca del 100 %",
+  "profile.goalsRemaining": "Faltan {n}",
+  "profile.activityRange7d": "7 días",
+  "profile.activityRange30d": "30 días"
 }

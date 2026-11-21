@@ -4479,5 +4479,12 @@
   "match.searchFailed": "ไม่สามารถค้นหาให้เสร็จได้",
   "match.invalid": "ไม่สามารถใช้ข้อมูลนี้ได้",
   "match.dlc": "DLC",
-  "match.game": "เกม"
+  "match.game": "เกม",
+  "profile.pinsEmptyTip": "เปิดแท็บความสำเร็จของเกมใดก็ได้แล้วคลิกไอคอนปักหมุดบนถ้วยรางวัลเพื่อแสดงความสำเร็จสูงสุด 3 รายการในตู้โชว์",
+  "profile.completionRate": "ความสำเร็จ",
+  "profile.goalsTitle": "เป้าหมายถัดไป",
+  "profile.goalsSub": "ใกล้ครบ 100% มากที่สุด",
+  "profile.goalsRemaining": "เหลือ {n}",
+  "profile.activityRange7d": "7 วัน",
+  "profile.activityRange30d": "30 วัน"
 }

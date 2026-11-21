@@ -67,13 +67,20 @@ function xpUnitFor(appName: string): string {
   return gameStore(appName) === "xbox" ? "G" : "XP";
 }
 
+/** Column header for the score column in list view, scoped to the active store. */
+function scoreColumnHeader(scope: "all" | StoreKind): string {
+  if (scope === "xbox") return "G";
+  if (scope === "epic") return "XP";
+  return "XP / G";
+}
+
 /** Stores whose achievements the launcher tracks in bulk. */
 const ACHIEVEMENT_STORES: StoreKind[] = ["epic", "gog", "steam", "ubisoft"];
 
 /**
- * Achievement row: cover, title, trophy count, earned XP and a progress bar.
- * Only rows the launcher can actually track reach this list; a total that is
- * unknown hides the bar and the percentage instead of inventing one.
+ * Achievement card: cover with completion badge, title, trophy count + XP above
+ * the progress track, and playtime/last-played below. The percentage badge
+ * lives on the cover once and is not repeated in the body.
  */
 function renderProfileGameGridCards(cardGames: ProfileGameRecord[], chips: boolean): string {
   return cardGames.map((g) => {
@@ -87,20 +94,25 @@ function renderProfileGameGridCards(cardGames: ProfileGameRecord[], chips: boole
         ? `${g.total_xp.toLocaleString()} / ${g.total_product_xp.toLocaleString()} ${xpUnit}`
         : `${g.total_xp.toLocaleString()} ${xpUnit}`
       : "";
+    const xpShort = g.total_xp > 0 ? `${g.total_xp.toLocaleString()} ${xpUnit}` : "";
     const trophiesText = g.total_achievements > 0
       ? `${g.total_unlocked} / ${g.total_achievements} ${t("profile.trophies")}`
       : g.total_unlocked > 0
         ? `${g.total_unlocked} ${t("profile.trophies")}`
         : "";
+    const playtimeText = pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "";
+    const lastPlayedText = pt && pt.last_played_timestamp ? lastUsedLabel(pt.last_played_timestamp) : "";
     const meta = [
+      g.set_label || "",
       trophiesText,
       xpText,
-      pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "",
+      playtimeText,
     ].filter(Boolean).join(" · ");
     const show = S.profileShowHidden && g.sandbox_id
       ? `<button type="button" class="btn ghost small profile-unhide-btn" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
       : "";
     const storeChip = chips ? storeChipHtml(g.app_name) : "";
+    const setTag = g.set_label ? `<span class="profile-ach-set-tag">${esc(g.set_label)}</span>` : "";
 
     return `
       <div class="profile-ach-card${isPlat ? " is-plat" : ""}" role="button" tabindex="0" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" title="${esc(`${g.app_title}${meta ? ` · ${meta}` : ""}`)}">
@@ -108,37 +120,42 @@ function renderProfileGameGridCards(cardGames: ProfileGameRecord[], chips: boole
           ${cover ? `<img${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-ach-ph">${icon("gamepad-2", 24)}</span>`}
           ${isPlat
             ? `<span class="profile-ach-badge plat" title="${t("profile.filterPlatinum")}">${epicPlatinumIcon(14)}<span>100%</span></span>`
-            : pct > 0
-              ? `<span class="profile-ach-badge pct">${pct}%</span>`
+            : g.total_achievements > 0 && pct > 0
+              ? `<span class="profile-ach-badge pct tabular-nums">${pct}%</span>`
               : ""
           }
           ${storeChip ? `<span class="profile-ach-badge store">${storeChip}</span>` : ""}
           ${show}
         </div>
         <div class="profile-ach-info">
-          <span class="profile-ach-title">${esc(g.app_title)}</span>
+          <div class="profile-ach-title-line">
+            <span class="profile-ach-title">${esc(g.app_title)}</span>
+            ${setTag}
+          </div>
           <div class="profile-ach-progress-block">
             <div class="profile-ach-meta-row tabular-nums">
               <span class="profile-ach-count">${icon("trophy", 11)} <span>${g.total_achievements > 0 ? `${g.total_unlocked} / ${g.total_achievements}` : g.total_unlocked > 0 ? `${g.total_unlocked}` : "0"}</span></span>
-              ${g.total_achievements > 0 ? `<span class="profile-ach-pct">${pct}%</span>` : ""}
+              ${xpShort ? `<span class="profile-ach-xp" title="${esc(xpText)}">${esc(xpShort)}</span>` : ""}
             </div>
             ${g.total_achievements > 0 ? `<div class="profile-ach-bar"><span style="width:${pct}%"></span></div>` : ""}
           </div>
-          <div class="profile-ach-sub-meta tabular-nums">
-            ${xpText ? `<span class="profile-ach-xp">${esc(xpText)}</span>` : ""}
-            ${pt && pt.total_seconds > 0 ? `<span class="profile-ach-playtime">${fmtPlaytime(pt.total_seconds)}</span>` : ""}
-          </div>
+          ${playtimeText || lastPlayedText ? `
+            <div class="profile-ach-sub-meta tabular-nums">
+              ${playtimeText ? `<span class="profile-ach-playtime">${esc(playtimeText)}</span>` : ""}
+              ${lastPlayedText ? `<span class="profile-ach-last">${esc(lastPlayedText)}</span>` : ""}
+            </div>` : ""}
         </div>
       </div>`;
   }).join("");
 }
 
 function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): string {
+  const scoreHdr = scoreColumnHeader(achievementScope());
   const tableHeader = `
     <div class="profile-table-header${S.profileShowHidden ? " has-unhide" : ""}" aria-hidden="true">
       <div class="col-hdr col-game">${t("profile.games")}</div>
       <div class="col-hdr col-progress">${t("profile.progressTitle")}</div>
-      <div class="col-hdr col-xp">XP / G</div>
+      <div class="col-hdr col-xp">${esc(scoreHdr)}</div>
       <div class="col-hdr col-last">${t("profile.lastUsed")}</div>
       <div class="col-hdr col-badge">${t("profile.statCompleted")}</div>
     </div>`;
@@ -153,9 +170,6 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
     const playtimeText = pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "—";
     const lastPlayedText = pt && pt.last_played_timestamp ? (lastUsedLabel(pt.last_played_timestamp) || "—") : "—";
 
-    // The final layout: playtime sits under the game title, the trophy count
-    // above its progress bar, and only the last column shows the completion
-    // percentage.
     const trophyCount = g.total_achievements > 0
       ? `${g.total_unlocked} / ${g.total_achievements}`
       : g.total_unlocked > 0
@@ -166,10 +180,11 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
       ? `<button type="button" class="btn ghost small profile-unhide-btn" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
       : "";
     const storeChip = chips ? storeChipHtml(g.app_name) : "";
+    const setTag = g.set_label ? `<span class="profile-ach-set-tag">${esc(g.set_label)}</span>` : "";
 
     const pctRight = isPlat
       ? `<div class="profile-badge-pill is-plat" title="${t("profile.filterPlatinum")}">${epicPlatinumIcon(15)}<span>100%</span></div>`
-      : pct > 0
+      : g.total_achievements > 0 && pct > 0
         ? `<div class="profile-badge-pill in-prog tabular-nums">${pct}%</div>`
         : `<div class="profile-badge-pill not-started tabular-nums">—</div>`;
 
@@ -180,6 +195,7 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
           <div class="profile-game-info">
             <div class="profile-game-title-row">
               <span class="profile-game-title">${esc(g.app_title)}</span>
+              ${setTag}
               ${storeChip}
             </div>
             ${playtimeText !== "—" ? `<div class="profile-game-sub tabular-nums">${esc(playtimeText)}</div>` : ""}
@@ -197,7 +213,7 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
         </div>
 
         <div class="profile-col-stat profile-col-xp tabular-nums">
-          <span class="profile-stat-sub">XP / G</span>
+          <span class="profile-stat-sub">${esc(scoreHdr)}</span>
           <span class="profile-stat-main">${esc(xpText)}</span>
         </div>
 
@@ -218,13 +234,21 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
 
 function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
   if (cardGames.length === 0) {
-    const steamGap = !S.profileShowHidden && !S.profileSearchQuery && S.profileFilter === "all"
+    const hasFilterOrSearch = Boolean(S.profileSearchQuery.trim()) || S.profileFilter !== "all";
+    const steamGap = !S.profileShowHidden && !hasFilterOrSearch
       && achievementScope() === "steam" && totalSteamGames() > 0 && buildSteamProfileGames().filter(trackedGame).length === 0;
-    const companionGap = !S.profileShowHidden && !S.profileSearchQuery && S.profileFilter === "all"
+    const companionGap = !S.profileShowHidden && !hasFilterOrSearch
       && achievementScope() !== "all" && !ACHIEVEMENT_STORES.includes(achievementScope() as StoreKind);
     const title = S.profileShowHidden ? t("profile.hiddenEmpty") : companionGap ? t("profile.companionEmptyTitle") : steamGap ? t("profile.steamEmptyTitle") : t("profile.emptyTitle");
     const desc = S.profileShowHidden ? t("profile.hiddenEmptyDesc") : companionGap ? t("profile.companionEmptyDesc") : steamGap ? t("profile.steamEmptyDesc") : t("profile.emptyDesc");
-    return `<div class="profile-ach-empty">${emptyState("trophy", title, desc)}</div>`;
+    const cta = S.profileShowHidden
+      ? `<button type="button" class="btn ghost small" data-act="profile-filter" data-val="all">${esc(t("profile.filterAll"))}</button>`
+      : hasFilterOrSearch
+        ? `<button type="button" class="btn ghost small" data-act="profile-reset-filters">${esc(t("lib.filterClear"))}</button>`
+        : overviewStores().length === 0
+          ? `<button type="button" class="btn primary small" data-view="accounts">${esc(t("accounts.manageAccounts"))}</button>`
+          : `<button type="button" class="btn ghost small" data-view="library">${esc(t("downloads.goLibrary"))}</button>`;
+    return `<div class="profile-ach-empty">${emptyState("trophy", title, desc, cta)}</div>`;
   }
   const chips = showStoreChips();
   return S.profileViewMode === "list"
@@ -239,7 +263,7 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
 export function renderProfileGrid(cardGames: ProfileGameRecord[]): string {
   const shown = cardGames.slice(0, S.profileCardCount);
   const more = cardGames.length > shown.length
-    ? `<div class="row profile-more"><button class="btn ghost small" data-act="profile-show-more">${t("profile.showMore")} (${cardGames.length - shown.length})</button></div>`
+    ? `<div class="row profile-more"><button type="button" class="btn ghost small" data-act="profile-show-more">${t("profile.showMore")} (${cardGames.length - shown.length})</button></div>`
     : "";
   return renderProfileGameCards(shown) + more;
 }
@@ -456,18 +480,18 @@ export function filteredProfileGames(allGames: ProfileGameRecord[]): ProfileGame
   const q = S.profileSearchQuery.trim().toLowerCase();
   const list = allGames.filter((g) => {
     if (isOpaqueId(g.app_title) || S.hiddenGames.has(g.app_name)) return false;
+    // Games without a tracked achievement set are not achievement rows; they
+    // stay on the Recently Played rail instead of showing a fake 0%.
+    if (!trackedGame(g)) return false;
     const hiddenRow = userHidAchievement(g);
     if (S.profileShowHidden) {
       if (!hiddenRow) return false;
     } else {
       if (hiddenRow) return false;
-      // Games without a tracked achievement set are not achievement rows; they
-      // stay on the Recently Played rail instead of showing a fake 0%.
-      if (!trackedGame(g)) return false;
+      if (S.profileFilter === "platinum" && !isCompletedGame(g)) return false;
+      if (S.profileFilter === "in_progress" && !(hasGameProgress(g) && !isCompletedGame(g))) return false;
+      if (S.profileFilter === "not_started" && !(!isCompletedGame(g) && !hasGameProgress(g))) return false;
     }
-    if (S.profileFilter === "platinum" && !isCompletedGame(g)) return false;
-    if (S.profileFilter === "in_progress" && !(hasGameProgress(g) && !isCompletedGame(g))) return false;
-    if (S.profileFilter === "not_started" && !(!isCompletedGame(g) && !hasGameProgress(g))) return false;
     return !q || g.app_title.toLowerCase().includes(q) || g.app_name.toLowerCase().includes(q);
   });
   return list.sort((a, b) => {
@@ -977,8 +1001,10 @@ function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGa
     else countNotStarted++;
   }
 
-  const filterTab = (val: string, label: string, n: number): string =>
-    `<button type="button" class="tab ${!S.profileShowHidden && S.profileFilter === val ? "active" : ""}" data-act="profile-filter" data-val="${val}">${label}<span class="count">${n}</span></button>`;
+  const filterTab = (val: string, label: string, n: number): string => {
+    const active = !S.profileShowHidden && S.profileFilter === val;
+    return `<button type="button" class="tab ${active ? "active" : ""}" data-act="profile-filter" data-val="${val}" aria-pressed="${active}">${label}<span class="count tabular-nums">${n}</span></button>`;
+  };
 
   const sub = `${countVisible.toLocaleString()} ${t("profile.games")} · ${profileStats(games).unlocked.toLocaleString()} ${t("profile.trophies")}`;
 
@@ -986,7 +1012,7 @@ function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGa
     <section class="card profile-panel profile-ach-panel">
       <div class="profile-panel-head">
         <div class="profile-panel-title-wrap">
-          <span class="profile-panel-icon">${icon("trophy", 15)}</span>
+          <span class="profile-panel-icon" aria-hidden="true">${icon("trophy", 15)}</span>
           <div>
             <h3 class="profile-panel-title">${t("profile.tabAchievements")}</h3>
             <div class="profile-panel-sub tabular-nums">${sub}</div>
@@ -995,26 +1021,26 @@ function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGa
         <button type="button" class="icon-btn" data-act="open-hide-achievements" title="${esc(t("profile.hideAchTip"))}" aria-label="${esc(t("profile.hideAchTip"))}">${icon("eye-off", 16)}</button>
       </div>
       <div class="gp-toolbar profile-ach-toolbar">
-        <div class="tabs profile-filter-tabs">
+        <div class="tabs profile-filter-tabs" role="group" aria-label="${esc(t("lib.filters"))}">
           ${filterTab("all", t("profile.filterAll"), countVisible)}
           ${filterTab("platinum", t("profile.filterPlatinum"), countPlat)}
           ${filterTab("in_progress", t("profile.filterInProgress"), countProgress)}
           ${filterTab("not_started", t("profile.filterNotStarted"), countNotStarted)}
-          ${countHidden > 0 ? `<button type="button" class="tab ${S.profileShowHidden ? "active" : ""}" data-act="profile-toggle-hidden">${t("profile.hiddenToggle")}<span class="count">${countHidden}</span></button>` : ""}
+          ${countHidden > 0 || S.profileShowHidden ? `<button type="button" class="tab ${S.profileShowHidden ? "active" : ""}" data-act="profile-toggle-hidden" aria-pressed="${S.profileShowHidden}">${t("profile.hiddenToggle")}<span class="count tabular-nums">${countHidden}</span></button>` : ""}
         </div>
         <div class="gp-toolbar-right">
-          <label class="search gp-search">${icon("search", 15)}<input type="text" id="profile-search" placeholder="${t("profile.searchPlaceholder")}" value="${esc(S.profileSearchQuery)}" />
-            ${S.profileSearchQuery ? `<button type="button" class="icon-btn" data-act="profile-search-clear">${icon("x", 12)}</button>` : ""}
+          <label class="search gp-search">${icon("search", 15)}<input type="text" id="profile-search" placeholder="${esc(t("profile.searchPlaceholder"))}" aria-label="${esc(t("profile.searchPlaceholder"))}" value="${esc(S.profileSearchQuery)}" />
+            <button type="button" id="profile-search-clear-btn" class="icon-btn" data-act="profile-search-clear" title="${esc(t("lib.clearSearch"))}" aria-label="${esc(t("lib.clearSearch"))}"${S.profileSearchQuery ? "" : " hidden"}>${icon("x", 12)}</button>
           </label>
-          <select id="profile-sort-select" data-act="profile-sort-change">
+          <select id="profile-sort-select" data-act="profile-sort-change" aria-label="${esc(t("ach.sortTitle"))}">
             <option value="progress" ${S.profileSort === "progress" ? "selected" : ""}>${t("profile.sortProgress")}</option>
             <option value="xp" ${S.profileSort === "xp" ? "selected" : ""}>${t("profile.sortXp")}</option>
             <option value="playtime" ${S.profileSort === "playtime" ? "selected" : ""}>${t("profile.sortPlaytime")}</option>
             <option value="alpha" ${S.profileSort === "alpha" ? "selected" : ""}>${t("profile.sortAlpha")}</option>
           </select>
-          <div class="seg profile-view-mode-seg" role="group" aria-label="${t("lib.viewMode")}">
-            <button class="${S.profileViewMode === "grid" ? "active" : ""}" data-act="profile-view-mode" data-val="grid" title="${t("lib.viewGrid")}">${icon("layout-grid", 14)}</button>
-            <button class="${S.profileViewMode === "list" ? "active" : ""}" data-act="profile-view-mode" data-val="list" title="${t("lib.viewList")}">${icon("list", 14)}</button>
+          <div class="seg profile-view-mode-seg" role="group" aria-label="${esc(t("lib.viewMode"))}">
+            <button type="button" class="${S.profileViewMode === "grid" ? "active" : ""}" data-act="profile-view-mode" data-val="grid" title="${esc(t("lib.viewGrid"))}" aria-label="${esc(t("lib.viewGrid"))}" aria-pressed="${S.profileViewMode === "grid"}">${icon("layout-grid", 14)}</button>
+            <button type="button" class="${S.profileViewMode === "list" ? "active" : ""}" data-act="profile-view-mode" data-val="list" title="${esc(t("lib.viewList"))}" aria-label="${esc(t("lib.viewList"))}" aria-pressed="${S.profileViewMode === "list"}">${icon("list", 14)}</button>
           </div>
         </div>
       </div>
@@ -1022,16 +1048,33 @@ function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGa
     </section>`;
 }
 
+export const PIN_TIP_DISMISSED_KEY = "efxlve-ach-pin-tip-dismissed";
+
 /**
  * The curated showcase: up to three pinned achievements. A pin is a snapshot,
- * so it reads even when the game page was never opened this session.
+ * so it reads even when the game page was never opened this session. When
+ * empty, the section stays hidden and offers a one-time dismissible tip.
  */
-function renderShowcase(): string {
+function renderShowcase(hasUnlockedAny: boolean): string {
   const pins = achievementPins();
-  if (pins.length === 0) return "";
+  if (pins.length === 0) {
+    if (!hasUnlockedAny) return "";
+    try {
+      if (localStorage.getItem(PIN_TIP_DISMISSED_KEY) === "1") return "";
+    } catch {
+      return "";
+    }
+    return `
+      <div class="info-box profile-pin-tip" role="note">
+        ${icon("pin", 15)}
+        <span class="profile-pin-tip-text">${esc(t("profile.pinsEmptyTip"))}</span>
+        <button type="button" class="icon-btn profile-pin-tip-close" data-act="dismiss-pin-tip" title="${esc(t("common.close"))}" aria-label="${esc(t("common.close"))}">${icon("x", 13)}</button>
+      </div>`;
+  }
 
+  const canReorder = pins.length > 1;
   const cards = pins
-    .map((pin) => {
+    .map((pin, idx) => {
       const tierLabel =
         pin.tier === "platinum"
           ? t("trophy.plat")
@@ -1045,17 +1088,25 @@ function renderShowcase(): string {
       ]
         .filter(Boolean)
         .join(" · ");
+      const reorderBtns = canReorder
+        ? `
+          <button type="button" class="icon-btn profile-showcase-move" data-act="move-pin-ach" data-key="${esc(pin.key)}" data-dir="-1" title="${esc(t("col.moveLeft"))}" aria-label="${esc(t("col.moveLeft"))}"${idx === 0 ? " disabled" : ""}>${icon("chevron-left", 12)}</button>
+          <button type="button" class="icon-btn profile-showcase-move" data-act="move-pin-ach" data-key="${esc(pin.key)}" data-dir="1" title="${esc(t("col.moveRight"))}" aria-label="${esc(t("col.moveRight"))}"${idx === pins.length - 1 ? " disabled" : ""}>${icon("chevron-right", 12)}</button>`
+        : "";
       return `
         <div class="profile-showcase-card">
           <button type="button" class="profile-showcase-main" data-act="open-pinned-achievement" data-id="${esc(pin.appName)}" data-ach="${esc(pin.name)}" title="${esc(pin.title)} · ${esc(pin.game)}">
-            <span class="profile-showcase-art">${pin.icon ? `<img src="${esc(pin.icon)}" alt="" loading="lazy" />` : icon("trophy", 26)}</span>
+            <span class="profile-showcase-art">${pin.icon ? `<img src="${esc(pin.icon)}" alt="" loading="lazy" decoding="async" />` : icon("trophy", 26)}</span>
             <span class="profile-showcase-body">
               <span class="profile-showcase-title">${esc(pin.title)}</span>
               <span class="profile-showcase-game">${esc(pin.game)}</span>
               ${meta ? `<span class="profile-showcase-meta tabular-nums">${esc(meta)}</span>` : ""}
             </span>
           </button>
-          <button type="button" class="icon-btn profile-showcase-unpin" data-act="unpin-ach" data-key="${esc(pin.key)}" title="${esc(t("ach.unpin"))}" aria-label="${esc(t("ach.unpin"))}">${icon("x", 12)}</button>
+          <div class="profile-showcase-actions">
+            ${reorderBtns}
+            <button type="button" class="icon-btn profile-showcase-unpin" data-act="unpin-ach" data-key="${esc(pin.key)}" title="${esc(t("ach.unpin"))}" aria-label="${esc(t("ach.unpin"))}">${icon("x", 12)}</button>
+          </div>
         </div>`;
     })
     .join("");
@@ -1063,7 +1114,10 @@ function renderShowcase(): string {
   return `
     <section class="profile-row profile-showcase">
       <div class="profile-row-head">
-        <h3 class="profile-row-title">${esc(t("profile.pinsTitle"))}</h3>
+        <div class="profile-row-title-group">
+          <h3 class="profile-row-title">${esc(t("profile.pinsTitle"))}</h3>
+          <span class="profile-section-count tabular-nums">${pins.length} / 3</span>
+        </div>
         <span class="profile-unlock-stats">${esc(t("profile.pinsHint"))}</span>
       </div>
       <div class="profile-showcase-row">${cards}</div>
@@ -1317,7 +1371,7 @@ export function renderProfile(): string {
   return `
     <div class="page profile-page">
       ${heroHtml}
-      ${renderShowcase()}
+      ${renderShowcase(showData && totals.unlocked > 0)}
       ${showData ? renderRecentRow(scope) : ""}
       ${showData ? renderPlayActivity(scope) : ""}
       ${showData ? renderUnlockRow(scope) : ""}

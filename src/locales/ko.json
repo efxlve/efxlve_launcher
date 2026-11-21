@@ -4479,5 +4479,12 @@
   "match.searchFailed": "검색을 완료할 수 없습니다",
   "match.invalid": "이 항목은 사용할 수 없습니다",
   "match.dlc": "DLC",
-  "match.game": "게임"
+  "match.game": "게임",
+  "profile.pinsEmptyTip": "게임의 업적 탭을 열고 트로피의 고정 아이콘을 클릭하면 쇼케이스에 최대 3개의 업적을 전시할 수 있습니다.",
+  "profile.completionRate": "달성률",
+  "profile.goalsTitle": "다음 목표",
+  "profile.goalsSub": "100%에 가장 가까운 게임",
+  "profile.goalsRemaining": "{n}개 남음",
+  "profile.activityRange7d": "7일",
+  "profile.activityRange30d": "30일"
 }

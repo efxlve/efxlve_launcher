@@ -4479,5 +4479,12 @@
   "match.searchFailed": "Arama tamamlanamadı",
   "match.invalid": "Bu kayıt kullanılamıyor",
   "match.dlc": "DLC",
-  "match.game": "Oyun"
+  "match.game": "Oyun",
+  "profile.pinsEmptyTip": "Herhangi bir oyunun Başarımlar sekmesinden bir kupadaki sabitle simgesine tıklayarak Vitrin'de en fazla 3 başarım sergileyebilirsin.",
+  "profile.completionRate": "Tamamlama",
+  "profile.goalsTitle": "Sıradaki hedefler",
+  "profile.goalsSub": "%100'e en yakın oyunlar",
+  "profile.goalsRemaining": "{n} kaldı",
+  "profile.activityRange7d": "7 gün",
+  "profile.activityRange30d": "30 gün"
 }

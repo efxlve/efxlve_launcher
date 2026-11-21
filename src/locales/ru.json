@@ -4479,5 +4479,12 @@
   "match.searchFailed": "Не удалось выполнить поиск",
   "match.invalid": "Эту запись нельзя использовать",
   "match.dlc": "DLC",
-  "match.game": "Игра"
+  "match.game": "Игра",
+  "profile.pinsEmptyTip": "Откройте вкладку «Достижения» любой игры и нажмите значок булавки на трофее, чтобы закрепить до 3 достижений на витрине.",
+  "profile.completionRate": "Завершение",
+  "profile.goalsTitle": "Ближайшие цели",
+  "profile.goalsSub": "Ближе всего к 100%",
+  "profile.goalsRemaining": "Осталось: {n}",
+  "profile.activityRange7d": "7 дн.",
+  "profile.activityRange30d": "30 дн."
 }

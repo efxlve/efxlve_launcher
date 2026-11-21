@@ -918,6 +918,8 @@ document.addEventListener("input", (e) => {
   }
   if (t.id === "profile-search") {
     S.profileSearchQuery = (t as HTMLInputElement).value;
+    const clearBtn = document.getElementById("profile-search-clear-btn");
+    if (clearBtn) clearBtn.hidden = !S.profileSearchQuery;
     // Rebuilding the card grid on every keystroke re-creates every cover and
     // reads as the list reloading while typing; batch the patch like the
     // hide-achievements search does.

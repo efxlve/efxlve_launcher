@@ -151,7 +151,22 @@ export function refreshAchievementPin(appName: string, item: AchievementStateIte
   persist(updated);
 }
 
-export function removeAchievementPin(key: string): void {  const pins = achievementPins();
+export function removeAchievementPin(key: string): void {
+  const pins = achievementPins();
   if (!pins.some((pin) => pin.key === key)) return;
   persist(pins.filter((pin) => pin.key !== key));
+}
+
+/** Moves a pinned achievement left (-1) or right (+1) in the showcase row. */
+export function moveAchievementPin(key: string, direction: -1 | 1): boolean {
+  const pins = achievementPins();
+  const idx = pins.findIndex((pin) => pin.key === key);
+  if (idx < 0) return false;
+  const target = idx + direction;
+  if (target < 0 || target >= pins.length) return false;
+  const next = [...pins];
+  const [moved] = next.splice(idx, 1);
+  next.splice(target, 0, moved);
+  persist(next);
+  return true;
 }

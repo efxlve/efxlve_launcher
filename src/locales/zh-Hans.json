@@ -4479,5 +4479,12 @@
   "match.searchFailed": "无法完成搜索",
   "match.invalid": "无法使用该条目",
   "match.dlc": "DLC",
-  "match.game": "游戏"
+  "match.game": "游戏",
+  "profile.pinsEmptyTip": "打开任意游戏的“成就”标签页，点击奖杯上的固定图标，即可在展柜中展示最多 3 项成就。",
+  "profile.completionRate": "完成率",
+  "profile.goalsTitle": "下一目标",
+  "profile.goalsSub": "最接近 100%",
+  "profile.goalsRemaining": "剩余 {n} 项",
+  "profile.activityRange7d": "7 天",
+  "profile.activityRange30d": "30 天"
 }

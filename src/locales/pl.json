@@ -4479,5 +4479,12 @@
   "match.searchFailed": "Nie udało się wykonać wyszukiwania",
   "match.invalid": "Nie można użyć tego wpisu",
   "match.dlc": "DLC",
-  "match.game": "Gra"
+  "match.game": "Gra",
+  "profile.pinsEmptyTip": "Otwórz kartę Osiągnięcia dowolnej gry i kliknij ikonę pinezki przy trofeum, aby przypiąć do 3 osiągnięć w gablocie.",
+  "profile.completionRate": "Ukończenie",
+  "profile.goalsTitle": "Kolejne cele",
+  "profile.goalsSub": "Najbliżej 100%",
+  "profile.goalsRemaining": "Pozostało: {n}",
+  "profile.activityRange7d": "7 dni",
+  "profile.activityRange30d": "30 dni"
 }

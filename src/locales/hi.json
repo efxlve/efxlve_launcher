@@ -4479,5 +4479,12 @@
   "match.searchFailed": "खोज पूरी नहीं हो सकी",
   "match.invalid": "यह प्रविष्टि उपयोग नहीं की जा सकती",
   "match.dlc": "DLC",
-  "match.game": "गेम"
+  "match.game": "गेम",
+  "profile.pinsEmptyTip": "अपने शोकेस में 3 तक उपलब्धियाँ दिखाने के लिए किसी भी गेम का उपलब्धियाँ टैब खोलें और ट्रॉफी पर पिन आइकन पर क्लिक करें।",
+  "profile.completionRate": "पूर्णता",
+  "profile.goalsTitle": "अगले लक्ष्य",
+  "profile.goalsSub": "100% के सबसे करीब",
+  "profile.goalsRemaining": "{n} शेष",
+  "profile.activityRange7d": "7 दिन",
+  "profile.activityRange30d": "30 दिन"
 }

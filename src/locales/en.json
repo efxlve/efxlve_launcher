@@ -4479,5 +4479,12 @@
   "match.searchFailed": "The search could not be completed",
   "match.invalid": "That entry cannot be used",
   "match.dlc": "DLC",
-  "match.game": "Game"
+  "match.game": "Game",
+  "profile.pinsEmptyTip": "Open any game's Achievements tab and click the pin icon on a trophy to feature up to 3 achievements in your Showcase.",
+  "profile.completionRate": "Completion",
+  "profile.goalsTitle": "Next goals",
+  "profile.goalsSub": "Closest to 100%",
+  "profile.goalsRemaining": "{n} left",
+  "profile.activityRange7d": "7 days",
+  "profile.activityRange30d": "30 days"
 }

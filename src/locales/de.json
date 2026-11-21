@@ -4479,5 +4479,12 @@
   "match.searchFailed": "Die Suche konnte nicht abgeschlossen werden",
   "match.invalid": "Dieser Eintrag kann nicht verwendet werden",
   "match.dlc": "DLC",
-  "match.game": "Spiel"
+  "match.game": "Spiel",
+  "profile.pinsEmptyTip": "Öffne den Erfolge-Tab eines Spiels und klicke auf das Pin-Symbol einer Trophäe, um bis zu 3 Erfolge in deiner Vitrine auszustellen.",
+  "profile.completionRate": "Abschlussrate",
+  "profile.goalsTitle": "Nächste Ziele",
+  "profile.goalsSub": "Kurz vor 100 %",
+  "profile.goalsRemaining": "{n} offen",
+  "profile.activityRange7d": "7 Tage",
+  "profile.activityRange30d": "30 Tage"
 }

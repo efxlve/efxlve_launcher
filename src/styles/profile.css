@@ -926,7 +926,7 @@
   gap: 2px;
   min-width: 0;
   flex: 1;
-  padding-right: 20px;
+  padding-right: 68px;
 }
 
 .profile-showcase-title {
@@ -951,17 +951,59 @@
   font-size: 10.5px;
 }
 
-.profile-showcase-unpin {
+.profile-showcase-actions {
   position: absolute;
   top: 6px;
   right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.profile-showcase-move,
+.profile-showcase-unpin {
+  width: 24px;
+  height: 24px;
+}
+
+.profile-showcase-move:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.profile-pin-tip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.profile-pin-tip > svg {
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+
+.profile-pin-tip-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-pin-tip-close {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
 }
 
 /* --- 5. Achievements Panel --- */
 .profile-ach-panel {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   background: var(--surface-1);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
@@ -1011,12 +1053,17 @@
 }
 
 .profile-ach-toolbar {
+  position: sticky;
+  top: -24px;
+  z-index: 6;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px;
   flex-wrap: wrap;
-  padding-bottom: 2px;
+  padding: 10px 0;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--line);
 }
 
 /* Xbox Pill Filter Tabs */
@@ -1164,12 +1211,15 @@
   gap: 16px;
   min-height: 66px;
   padding: 10px 18px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid var(--line);
   cursor: pointer;
   background: transparent;
   transition: background-color var(--ease);
   position: relative;
   text-align: left;
+  contain: layout paint;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 66px;
 }
 
 .profile-game-row:first-child {
@@ -1178,11 +1228,11 @@
 
 .profile-game-row:hover,
 .profile-game-row:focus-visible {
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--surface-2);
 }
 
 .profile-game-row:active {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-3);
 }
 
 /* Col 1: Game */
@@ -1380,7 +1430,7 @@
   margin-left: 2px;
 }
 
-/* Elevated Xbox Tile Card */
+/* Achievement Tile Card */
 .profile-ach-card {
   display: flex;
   flex-direction: column;
@@ -1392,27 +1442,26 @@
   cursor: pointer;
   text-align: left;
   position: relative;
-  transition: all var(--ease);
+  transition: background-color var(--ease), border-color var(--ease);
   overflow: hidden;
+  contain: layout paint;
+  content-visibility: auto;
+  contain-intrinsic-size: 172px 290px;
 }
 
 .profile-ach-card:hover,
 .profile-ach-card:focus-visible {
-  transform: translateY(-4px);
   background: var(--surface-3);
   border-color: var(--line-strong);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
 }
 
-/* Completed 100% card highlight - White test */
+/* Completed 100% card highlight */
 .profile-ach-card.is-plat {
-  border-color: rgba(255, 255, 255, 0.24);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, var(--surface-2) 100%);
+  border-color: var(--accent);
 }
 
 .profile-ach-card.is-plat:hover {
-  border-color: var(--text);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55), 0 0 16px rgba(255, 255, 255, 0.15);
+  border-color: var(--accent);
 }
 
 /* Art container */
@@ -1434,11 +1483,6 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: filter var(--ease);
-}
-
-.profile-ach-card:hover .profile-ach-art img {
-  filter: brightness(1.1);
 }
 
 .profile-ach-ph {
@@ -1538,6 +1582,13 @@
   min-width: 0;
 }
 
+.profile-ach-title-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .profile-ach-title {
   font-size: 13px;
   font-weight: 600;
@@ -1546,6 +1597,21 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-ach-set-tag {
+  flex-shrink: 0;
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: var(--r-xs);
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .profile-ach-progress-block {
@@ -1562,6 +1628,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 6px;
   font-size: 11px;
   font-weight: 600;
   color: var(--text-2);
@@ -1576,16 +1643,6 @@
 
 .profile-ach-count svg {
   opacity: 0.8;
-}
-
-.profile-ach-pct {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.profile-ach-card.is-plat .profile-ach-pct {
-  color: #ffffff;
 }
 
 /* Progress Bar Track */
@@ -1610,29 +1667,39 @@
 
 .profile-ach-card.is-plat .profile-ach-bar > span {
   background: var(--accent);
-  box-shadow: 0 0 6px var(--accent-tint);
 }
 
-/* Sub Meta (XP / Playtime) */
+/* Sub Meta (Playtime / Last Played) */
 .profile-ach-sub-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 6px;
   min-height: 14px;
-  font-size: 10px;
+  font-size: 10.5px;
   color: var(--text-3);
   font-weight: 500;
   margin-top: 1px;
 }
 
 .profile-ach-xp {
+  font-size: 10.5px;
   font-weight: 600;
   color: var(--text-2);
+  white-space: nowrap;
 }
 
 .profile-ach-playtime {
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.profile-ach-last {
   color: var(--text-3);
   margin-left: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Empty State */

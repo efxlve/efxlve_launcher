@@ -4479,5 +4479,12 @@
   "match.searchFailed": "تعذر إكمال البحث",
   "match.invalid": "لا يمكن استخدام هذا الإدخال",
   "match.dlc": "DLC",
-  "match.game": "لعبة"
+  "match.game": "لعبة",
+  "profile.pinsEmptyTip": "افتح علامة تبويب الإنجازات في أي لعبة وانقر على أيقونة التثبيت على الكأس لعرض ما يصل إلى 3 إنجازات في واجهة العرض.",
+  "profile.completionRate": "الإكمال",
+  "profile.goalsTitle": "الأهداف التالية",
+  "profile.goalsSub": "الأقرب إلى 100%",
+  "profile.goalsRemaining": "المتبقي {n}",
+  "profile.activityRange7d": "7 أيام",
+  "profile.activityRange30d": "30 يومًا"
 }

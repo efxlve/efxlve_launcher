@@ -4479,5 +4479,12 @@
   "match.searchFailed": "Não foi possível concluir a busca",
   "match.invalid": "Essa entrada não pode ser usada",
   "match.dlc": "DLC",
-  "match.game": "Jogo"
+  "match.game": "Jogo",
+  "profile.pinsEmptyTip": "Abra a aba Conquistas de qualquer jogo e clique no ícone de fixar em um troféu para destacar até 3 conquistas na sua vitrine.",
+  "profile.completionRate": "Conclusão",
+  "profile.goalsTitle": "Próximas metas",
+  "profile.goalsSub": "Mais perto de 100%",
+  "profile.goalsRemaining": "Faltam {n}",
+  "profile.activityRange7d": "7 dias",
+  "profile.activityRange30d": "30 dias"
 }
