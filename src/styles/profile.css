@@ -772,7 +772,7 @@
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   background: var(--surface-1);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .play-activity-card.is-single {
@@ -890,11 +890,187 @@
 }
 
 .play-bar-slot {
+  position: relative;
   flex: 1;
   display: flex;
   align-items: flex-end;
   height: 100%;
   min-width: 0;
+  cursor: pointer;
+}
+
+.play-bar-slot:hover,
+.play-bar-slot:focus-visible {
+  z-index: 70;
+}
+
+.play-bar-slot:focus-visible {
+  outline: none;
+}
+
+.play-bar-slot:focus-visible .play-bar {
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-tint);
+}
+
+.play-day-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  z-index: 80;
+  pointer-events: none;
+  width: 236px;
+  padding: 10px 12px;
+  background-color: var(--bg);
+  background-image: linear-gradient(var(--surface-2), var(--surface-2));
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-pop);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 130ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 130ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.play-bar-slot.is-center .play-day-popover {
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+}
+
+.play-bar-slot.is-edge-left .play-day-popover {
+  left: 0;
+  transform: translateY(4px);
+}
+
+.play-bar-slot.is-edge-right .play-day-popover {
+  right: 0;
+  left: auto;
+  transform: translateY(4px);
+}
+
+.play-bar-slot:hover .play-day-popover,
+.play-bar-slot:focus-visible .play-day-popover {
+  opacity: 1;
+  visibility: visible;
+}
+
+.play-bar-slot.is-center:hover .play-day-popover,
+.play-bar-slot.is-center:focus-visible .play-day-popover {
+  transform: translateX(-50%) translateY(0);
+}
+
+.play-bar-slot.is-edge-left:hover .play-day-popover,
+.play-bar-slot.is-edge-left:focus-visible .play-day-popover,
+.play-bar-slot.is-edge-right:hover .play-day-popover,
+.play-bar-slot.is-edge-right:focus-visible .play-day-popover {
+  transform: translateY(0);
+}
+
+.play-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 7px;
+}
+
+.play-popover-date-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.play-popover-date {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.play-popover-today-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-tint);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.play-popover-total {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.play-popover-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.play-popover-game {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.play-popover-cover {
+  width: 20px;
+  height: 28px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+}
+
+.play-popover-cover.placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+}
+
+.play-popover-title {
+  flex: 1;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.play-popover-duration {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.play-popover-more {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--text-3);
+  text-align: center;
+  padding-top: 4px;
+  border-top: 1px dashed var(--line);
+}
+
+.play-popover-empty {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-3);
+  text-align: center;
+  padding: 4px 0;
 }
 
 .play-bar {
@@ -2485,6 +2661,10 @@
     transform: none !important;
   }
   .profile-showcase-card:hover .profile-showcase-art img {
+    transform: none !important;
+  }
+  .play-day-popover {
+    transition: none !important;
     transform: none !important;
   }
 }

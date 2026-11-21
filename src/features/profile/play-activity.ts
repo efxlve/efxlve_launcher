@@ -23,10 +23,18 @@ export interface PlaySession {
   seconds: number;
 }
 
+export interface PlayDayGame {
+  appName: string;
+  title: string;
+  seconds: number;
+  cover: string;
+}
+
 export interface PlayDay {
   /** Local `YYYY-MM-DD` key. */
   key: string;
   seconds: number;
+  games: PlayDayGame[];
 }
 
 export interface PlayTopEntry {
@@ -134,8 +142,9 @@ export function playActivityFor(scope: "all" | GameSource): PlayActivityData {
   const today = startOfLocalDay(new Date());
   const days: PlayDay[] = [];
   const totals = new Map<string, number>();
+  const dayGames = new Map<string, Map<string, number>>();
   for (let offset = 29; offset >= 0; offset--) {
-    days.push({ key: localDayKey(addDays(today, -offset)), seconds: 0 });
+    days.push({ key: localDayKey(addDays(today, -offset)), seconds: 0, games: [] });
   }
   const windowKeys = new Set(days.slice(-30).map((day) => day.key));
   const weekStart = days[days.length - 7].key;
@@ -159,11 +168,36 @@ export function playActivityFor(scope: "all" | GameSource): PlayActivityData {
         totals.set(key, (totals.get(key) ?? 0) + part);
         if (key >= weekStart) gameWeek.set(appName, (gameWeek.get(appName) ?? 0) + part);
         if (key >= monthStart) gameMonth.set(appName, (gameMonth.get(appName) ?? 0) + part);
+
+        let perGame = dayGames.get(key);
+        if (!perGame) {
+          perGame = new Map<string, number>();
+          dayGames.set(key, perGame);
+        }
+        perGame.set(appName, (perGame.get(appName) ?? 0) + part);
       }
     }
   }
 
-  for (const day of days) day.seconds = totals.get(day.key) ?? 0;
+  for (const day of days) {
+    day.seconds = totals.get(day.key) ?? 0;
+    const perGame = dayGames.get(day.key);
+    if (perGame && perGame.size > 0) {
+      day.games = [...perGame.entries()]
+        .sort((left, right) => right[1] - left[1])
+        .map(([appName, seconds]) => {
+          const summary = summaryOf(appName);
+          return {
+            appName,
+            seconds,
+            title: summary?.title || appName,
+            cover: topCoverOf(appName),
+          };
+        });
+    } else {
+      day.games = [];
+    }
+  }
   const last7 = days.slice(-7).reduce((sum, day) => sum + day.seconds, 0);
   const prev7 = days.slice(-14, -7).reduce((sum, day) => sum + day.seconds, 0);
   const last30 = days.reduce((sum, day) => sum + day.seconds, 0);
@@ -209,6 +243,50 @@ function fmtShortDay(key: string): string {
   return `${date}.${month}`;
 }
 
+function renderDayPopover(day: PlayDay, isToday: boolean): string {
+  const [year, month, date] = day.key.split("-");
+  const dateFormatted = `${date}.${month}.${year}`;
+  const totalLabel = day.seconds > 0 ? fmtPlaytime(day.seconds) : t("playtime.notPlayed");
+  const games = day.games ?? [];
+  const maxShown = 4;
+  const shownGames = games.slice(0, maxShown);
+  const remaining = games.length - shownGames.length;
+
+  let bodyHtml = "";
+  if (games.length > 0) {
+    const rows = shownGames
+      .map((g) => {
+        const art = g.cover
+          ? `<img class="play-popover-cover"${topSteamArtAttrs(g.appName)} src="${esc(g.cover)}" alt="" loading="lazy" decoding="async" />`
+          : `<span class="play-popover-cover placeholder">${icon("gamepad-2", 12)}</span>`;
+        return `<div class="play-popover-game">
+          ${art}
+          <span class="play-popover-title" title="${esc(g.title)}">${esc(g.title)}</span>
+          <span class="play-popover-duration tabular-nums">${esc(fmtPlaytime(g.seconds))}</span>
+        </div>`;
+      })
+      .join("");
+    const moreHtml =
+      remaining > 0
+        ? `<div class="play-popover-more">${esc(t("steam.more", { count: remaining }))}</div>`
+        : "";
+    bodyHtml = `<div class="play-popover-list">${rows}${moreHtml}</div>`;
+  } else {
+    bodyHtml = `<div class="play-popover-empty">${esc(t("playtime.notPlayed"))}</div>`;
+  }
+
+  return `<div class="play-day-popover" role="tooltip" aria-hidden="true">
+    <div class="play-popover-head">
+      <div class="play-popover-date-wrap">
+        <span class="play-popover-date tabular-nums">${esc(dateFormatted)}</span>
+        ${isToday ? `<span class="play-popover-today-badge">${esc(t("profile.activityToday"))}</span>` : ""}
+      </div>
+      <span class="play-popover-total tabular-nums">${esc(totalLabel)}</span>
+    </div>
+    ${bodyHtml}
+  </div>`;
+}
+
 function renderChart(data: PlayActivityData, range: "7d" | "30d"): string {
   const shown = range === "30d" ? data.days : data.days.slice(-14);
   const max = Math.max(1, ...shown.map((day) => day.seconds));
@@ -216,6 +294,7 @@ function renderChart(data: PlayActivityData, range: "7d" | "30d"): string {
   const firstKey = shown[0]?.key ?? "";
   const midKey = shown[Math.floor(shown.length / 2)]?.key ?? "";
   const activeDays = shown.filter((d) => d.seconds > 0).length;
+  const edgeThreshold = shown.length > 20 ? 6 : 3;
 
   const bars = shown
     .map((day, idx) => {
@@ -224,14 +303,21 @@ function renderChart(data: PlayActivityData, range: "7d" | "30d"): string {
       const height = isActive ? Math.max(10, Math.round((day.seconds / max) * 100)) : 5;
       const [year, month, date] = day.key.split("-");
       const label = isToday ? `${t("profile.activityToday")} (${date}.${month}.${year})` : `${date}.${month}.${year}`;
-      const tip = `${label} · ${fmtPlaytime(day.seconds)}`;
       const cls = [
         "play-bar",
         isActive ? "is-active" : "is-empty",
         isToday ? "is-today" : "",
       ].filter(Boolean).join(" ");
-      return `<span class="play-bar-slot" title="${esc(tip)}">
+      const edgeCls =
+        idx < edgeThreshold
+          ? " is-edge-left"
+          : idx >= shown.length - edgeThreshold
+            ? " is-edge-right"
+            : " is-center";
+      const popover = renderDayPopover(day, isToday);
+      return `<span class="play-bar-slot${edgeCls}" tabindex="0" role="button" aria-label="${esc(`${label} · ${fmtPlaytime(day.seconds)}`)}">
         <span class="${cls}" style="height:${height}%;--bar-i:${idx}"></span>
+        ${popover}
       </span>`;
     })
     .join("");
