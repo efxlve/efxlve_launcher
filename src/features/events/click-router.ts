@@ -23,7 +23,6 @@ import {
   REDUCE_EFFECTS_KEY,
   PAUSE_ON_PLAY_KEY,
   STEAM_EXIT_AFTER_PLAY_KEY,
-  PROFILE_CARD_CHUNK,
   PROFILE_VIEW_MODE_KEY,
   SPEED_BITS_KEY,
   SS_COMPRESS_KEY,
@@ -168,7 +167,7 @@ import { openInstallDialog } from "../install/install-dialog";
 import { loadNotesView, handleNotesAction } from "../notes/notes-view";
 import { handleDrawerNotesAction } from "../notes/drawer-notes";
 import { handleIgdbAction } from "./handlers/igdb-handlers";
-import { ALL_PROFILE_STORES, enterProfile, resetProfileCards, type StoreKind } from "../profile/profile-view";
+import { ALL_PROFILE_STORES, enterProfile, profileGridCapacity, resetProfileCards, type StoreKind } from "../profile/profile-view";
 import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
 import { closeUnlocksModal, openUnlocksModal } from "../profile/profile-unlocks-modal";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
@@ -627,7 +626,7 @@ document.addEventListener("click", (e) => {
     resetProfileCards();
     render();
   } else if (act === "profile-show-more") {
-    S.profileCardCount += PROFILE_CARD_CHUNK;
+    S.profileCardCount = (S.profileCardCount || profileGridCapacity(5)) + profileGridCapacity(5);
     render();
   } else if (act === "profile-search-clear") {
     S.profileSearchQuery = "";

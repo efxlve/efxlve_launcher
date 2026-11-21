@@ -7,7 +7,7 @@
  * game's rows, but restoring a row does not unhide the game.
  */
 
-import { HIDDEN_ACH_KEY, PROFILE_CARD_CHUNK } from "../../core/constants";
+import { HIDDEN_ACH_KEY } from "../../core/constants";
 import { coverThumb } from "../../core/game-view";
 import { icon } from "../../core/icons";
 import { render } from "../../core/render";
@@ -17,7 +17,7 @@ import { toast } from "../../core/toast";
 import { esc, isOpaqueId } from "../../core/utils";
 import type { ProfileGameRecord } from "../../epic";
 import { t } from "../../i18n";
-import { profileListGames, storeChipHtml, trackedGame } from "./profile-view";
+import { profileListGames, resetProfileCards, storeChipHtml, trackedGame } from "./profile-view";
 
 const selected = new Set<string>();
 let filterTimer = 0;
@@ -228,7 +228,7 @@ function saveHidden(): void {
 }
 
 function refreshProfileList(): void {
-  S.profileCardCount = PROFILE_CARD_CHUNK;
+  resetProfileCards();
   render();
 }
 

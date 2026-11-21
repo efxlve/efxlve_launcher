@@ -11,7 +11,6 @@
  * every number follows the selected store.
  */
 
-import { PROFILE_CARD_CHUNK } from "../../core/constants";
 import { sortedAchievementHistory } from "../../core/achievement-history";
 import { achievementPins } from "../../core/achievement-pins";
 import { achSummaryOf } from "../../core/game-view";
@@ -56,9 +55,26 @@ export function steamArtAttrs(appName: string): string {
   return ` data-steam-app="${appId}" data-art-step="${cachedSteamCover(appId) ? "resolved" : "0"}"`;
 }
 
+export function profileGridColumns(): number {
+  if (typeof window === "undefined") return 8;
+  const view = document.getElementById("view");
+  // Available width inside .profile-page (max-width: 1560px, padding: 28px each side)
+  const available = (view?.clientWidth || window.innerWidth - 64) - 56;
+  const rowWidth = Math.max(300, Math.min(1560, available));
+  const isNarrow = typeof window !== "undefined" && window.innerWidth <= 900;
+  const minCardWidth = isNarrow ? 152 : 174;
+  const gap = isNarrow ? 12 : 16;
+  return Math.max(1, Math.floor((rowWidth + gap) / (minCardWidth + gap)));
+}
+
+export function profileGridCapacity(rows = 5): number {
+  if (S.profileViewMode === "list") return 25;
+  return profileGridColumns() * rows;
+}
+
 /** Resets the profile list back to the first chunk (on filter/sort/search change). */
 export function resetProfileCards(): void {
-  S.profileCardCount = PROFILE_CARD_CHUNK;
+  S.profileCardCount = profileGridCapacity(5);
   S.profileUnlockCount = 8;
 }
 
@@ -267,11 +283,16 @@ function renderProfileGameCards(cardGames: ProfileGameRecord[]): string {
 }
 
 /**
- * Progress list with progressive rendering: only the first chunk is built so a
- * large profile never turns into thousands of DOM nodes at once.
+ * Progress list with progressive rendering: loads full rows of cards so the
+ * grid never breaks on awkward partial rows.
  */
 export function renderProfileGrid(cardGames: ProfileGameRecord[]): string {
-  const shown = cardGames.slice(0, S.profileCardCount);
+  const cols = profileGridColumns();
+  const baseCount = S.profileCardCount > 0 ? S.profileCardCount : profileGridCapacity(5);
+  const alignedCount = S.profileViewMode === "list"
+    ? baseCount
+    : Math.max(cols * 5, Math.ceil(baseCount / cols) * cols);
+  const shown = cardGames.slice(0, alignedCount);
   const more = cardGames.length > shown.length
     ? `<div class="row profile-more"><button type="button" class="btn ghost small" data-act="profile-show-more">${t("profile.showMore")} (${cardGames.length - shown.length})</button></div>`
     : "";
@@ -1433,7 +1454,7 @@ export function enterProfile(): void {
   S.profileFilter = "all";
   S.profileShowHidden = false;
   S.profileActivityRange = "7d";
-  S.profileCardCount = PROFILE_CARD_CHUNK;
+  S.profileCardCount = profileGridCapacity(5);
   S.profileUnlockCount = 8;
   S.profileError = "";
 }
