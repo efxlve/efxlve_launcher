@@ -15,7 +15,7 @@ import { PROFILE_CARD_CHUNK } from "../../core/constants";
 import { achievementHistoryStats, sortedAchievementHistory } from "../../core/achievement-history";
 import { achievementPins } from "../../core/achievement-pins";
 import { achSummaryOf } from "../../core/game-view";
-import { emptyState, epicPlatinumIcon, icon, platinumCup } from "../../core/icons";
+import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
 import { epicWideArt, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { cachedSteamCover, steamCdnPortrait } from "../../core/steam-art-cache";
 import { avatarFor, currentProfileName, globalAvatar, S } from "../../core/state";
@@ -844,12 +844,11 @@ interface ProfileStat {
   label: string;
   icon: "games" | "clock" | "trophy" | "plat" | "xp";
   sub?: string;
-  celebrate?: boolean;
 }
 
 function renderStat(stat: ProfileStat): string {
   const glyph = stat.icon === "plat"
-    ? (stat.celebrate ? platinumCup(22, true) : epicPlatinumIcon(22))
+    ? epicPlatinumIcon(22)
     : stat.icon === "games"
       ? icon("gamepad-2", 21)
       : stat.icon === "clock"
@@ -1369,7 +1368,6 @@ export function renderProfile(): string {
       label: t("profile.platLabel"),
       icon: "plat",
       sub: platSub,
-      celebrate: totals.completed > 0,
     });
     // XP is Epic-only currency and only shown when the scope is Epic itself.
     if (scope === "epic" && S.playerProfileData) {
