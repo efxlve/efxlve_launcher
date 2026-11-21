@@ -170,6 +170,7 @@ import { handleDrawerNotesAction } from "../notes/drawer-notes";
 import { handleIgdbAction } from "./handlers/igdb-handlers";
 import { ALL_PROFILE_STORES, enterProfile, resetProfileCards, type StoreKind } from "../profile/profile-view";
 import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
+import { closeUnlocksModal, openUnlocksModal } from "../profile/profile-unlocks-modal";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
 import { closeFeedback, createFeedbackReport, openFeedback, openFeedbackFolder, openFeedbackIssue } from "../feedback/feedback-view";
 import { closeAvatarModal, closeChangeNameModal, openAvatarFilePicker, openChangeNameModal, promptAvatarAction, removeCustomAvatar, saveProfileName } from "../profile/profile-avatar";
@@ -568,11 +569,13 @@ document.addEventListener("click", (e) => {
     }).then((ok) => {
       if (!ok) return;
       clearAchievementHistory();
+      closeUnlocksModal();
       render();
     });
-  } else if (act === "profile-unlocks-more") {
-    S.profileUnlockCount += 16;
-    render();
+  } else if (act === "open-unlocks-modal" || act === "profile-unlocks-more") {
+    openUnlocksModal();
+  } else if (act === "profile-unlocks-close") {
+    closeUnlocksModal();
   } else if (act === "profile-unlocks-less") {
     S.profileUnlockCount = 8;
     render();
@@ -583,6 +586,7 @@ document.addEventListener("click", (e) => {
     const dir = Number(t.dataset.dir) < 0 ? -1 : 1;
     if (moveAchievementPin(t.dataset.key, dir)) render();
   } else if (act === "open-pinned-achievement" && id) {
+    closeUnlocksModal();
     const achievement = t.dataset.ach || "";
     openEpicModal(id, true);
     if (achievement) {

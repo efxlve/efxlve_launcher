@@ -53,6 +53,7 @@ import { presenceSync } from "./core/render";
 import { renderProfile } from "./features/profile/profile-view";
 import { closeAvatarModal, closeChangeNameModal } from "./features/profile/profile-avatar";
 import { closeProfileBannerModal } from "./features/profile/profile-banner";
+import { closeUnlocksModal } from "./features/profile/profile-unlocks-modal";
 import { closeScreenshotLightbox, closeScreenshotMoveConfirm, closeShareModal } from "./features/screenshots/screenshots-view";
 import { renderSettings } from "./features/settings/settings-view";
 import { renderNotesPage } from "./features/notes/notes-view";
@@ -262,6 +263,7 @@ function closeAllModals(): void {
   closeAvatarModal();
   closeChangeNameModal();
   closeProfileBannerModal();
+  closeUnlocksModal();
   closeInstallDialog();
   closeAddCustomGameModal();
   closeManagePopup();

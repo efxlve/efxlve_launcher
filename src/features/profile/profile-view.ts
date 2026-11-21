@@ -12,7 +12,7 @@
  */
 
 import { PROFILE_CARD_CHUNK } from "../../core/constants";
-import { achievementHistoryStats, sortedAchievementHistory } from "../../core/achievement-history";
+import { sortedAchievementHistory } from "../../core/achievement-history";
 import { achievementPins } from "../../core/achievement-pins";
 import { achSummaryOf } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
@@ -1151,8 +1151,7 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
   });
   if (entries.length === 0) return "";
 
-  const stats = achievementHistoryStats(entries);
-  const shown = entries.slice(0, Math.max(8, S.profileUnlockCount));
+  const shown = entries.slice(0, 8);
   const showStore = showStoreChips();
   const cards = shown
     .map((entry) => {
@@ -1207,40 +1206,17 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
     })
     .join("");
 
-  const factChips: string[] = [];
-  if (stats.thisMonth > 0) {
-    factChips.push(`<span class="profile-unlock-chip tabular-nums">${icon("calendar", 11)}<span>${esc(t("profile.unlocksThisMonth", { n: stats.thisMonth }))}</span></span>`);
-  }
-  if (stats.streakDays > 1) {
-    factChips.push(`<span class="profile-unlock-chip tabular-nums">${icon("zap", 11)}<span>${esc(t("profile.unlocksStreak", { n: stats.streakDays }))}</span></span>`);
-  }
-  if (stats.rarest?.rarity != null) {
-    const r = stats.rarest;
-    factChips.push(
-      `<button type="button" class="profile-unlock-chip is-rarest tabular-nums" data-act="open-pinned-achievement" data-id="${esc(r.appName)}" data-ach="${esc(r.name)}" title="${esc(`${r.title} · ${r.game}`)}">${icon("trophy", 11)}<span>${esc(t("profile.unlocksRarest", { n: fmtDecimal1(r.rarity!) }))}</span></button>`,
-    );
-  }
-
   const hasMore = entries.length > shown.length;
-  const canCollapse = shown.length > 8;
 
   return `
     <section class="profile-row">
       <div class="profile-row-head">
-        <div class="profile-row-title-group">
-          <h3 class="profile-row-title">${esc(t("profile.unlocksTitle"))}</h3>
-          <span class="profile-row-count tabular-nums">${entries.length.toLocaleString()}</span>
-        </div>
-        <div class="profile-unlock-head-right">
-          ${factChips.join("")}
-          <button type="button" class="icon-btn" data-act="clear-ach-history" title="${esc(t("profile.unlocksClear"))}" aria-label="${esc(t("profile.unlocksClear"))}">${icon("trash", 14)}</button>
-        </div>
+        <h3 class="profile-row-title">${esc(t("profile.unlocksTitle"))}</h3>
       </div>
       <div class="profile-unlock-row">${cards}</div>
-      ${hasMore || canCollapse ? `
+      ${hasMore ? `
         <div class="profile-unlock-actions">
-          ${hasMore ? `<button type="button" class="btn ghost small profile-unlock-more" data-act="profile-unlocks-more">${icon("chevron-down", 13)}<span>${esc(t("profile.showMore"))} (${(entries.length - shown.length).toLocaleString()})</span></button>` : ""}
-          ${canCollapse ? `<button type="button" class="btn ghost small profile-unlock-less" data-act="profile-unlocks-less" title="${esc(t("nav.collapse"))}" aria-label="${esc(t("nav.collapse"))}">${icon("chevron-up", 13)}<span>${esc(t("nav.collapse"))}</span></button>` : ""}
+          <button type="button" class="btn ghost small profile-unlock-more" data-act="open-unlocks-modal">${icon("chevron-down", 13)}<span>${esc(t("profile.showMore"))} (${(entries.length - shown.length).toLocaleString()})</span></button>
         </div>` : ""}
     </section>`;
 }

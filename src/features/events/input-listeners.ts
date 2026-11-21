@@ -51,6 +51,7 @@ import { closeHideGamesModal } from "../library/hide-games";
 import { closeHideAchievementsModal } from "../profile/hide-achievements";
 import { closeAvatarModal, closeChangeNameModal } from "../profile/profile-avatar";
 import { closeProfileBannerModal } from "../profile/profile-banner";
+import { closeUnlocksModal } from "../profile/profile-unlocks-modal";
 import {
   closeCustomCoverModal,
   renderCustomCoverModalContent,
@@ -385,6 +386,10 @@ document.addEventListener("keydown", (e) => {
     }
     if (document.getElementById("profile-banner-modal")) {
       closeProfileBannerModal();
+      return;
+    }
+    if (document.getElementById("profile-unlocks-modal")) {
+      closeUnlocksModal();
       return;
     }
     if (document.getElementById("avatar-manage-modal")) {
