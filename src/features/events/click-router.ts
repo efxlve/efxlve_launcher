@@ -601,6 +601,9 @@ document.addEventListener("click", (e) => {
   } else if (act === "open-goal-game" && id) {
     openEpicModal(id, true);
     document.querySelector<HTMLElement>('.drawer-tab[data-tab="achievements"]')?.click();
+  } else if (act === "profile-activity-range" && (t.dataset.val === "7d" || t.dataset.val === "30d")) {
+    S.profileActivityRange = t.dataset.val;
+    render();
   } else if (act === "profile-account" && t.dataset.key) {
     // Profile header account selector: switch which account's stats are shown.
     S.profileAccount = t.dataset.key === "overview" ? null : t.dataset.key;

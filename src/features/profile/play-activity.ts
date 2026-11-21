@@ -1,5 +1,5 @@
 /**
- * Play activity: daily totals, a fourteen-day chart and a weekly recap.
+ * Play activity: daily totals, a 14-day / 30-day chart and a weekly or monthly recap.
  *
  * Sessions are stored as local spans (`started_at` + `seconds`) so a session
  * that crosses midnight is split across both days by the local clock. The
@@ -8,10 +8,12 @@
  */
 
 import { icon } from "../../core/icons";
+import { rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
-import { sourceOfKey, summaryOf } from "../../core/selectors";
+import { cachedSteamCover, steamCdnPortrait } from "../../core/steam-art-cache";
 import type { GameSource } from "../../core/types";
 import { esc, fmtPlaytime } from "../../core/utils";
+import { epicPortrait } from "../../epic";
 import { t } from "../../i18n";
 
 export interface PlaySession {
@@ -27,8 +29,15 @@ export interface PlayDay {
   seconds: number;
 }
 
+export interface PlayTopEntry {
+  appName: string;
+  seconds: number;
+  title: string;
+  cover: string;
+}
+
 export interface PlayActivityData {
-  /** Last fourteen days, oldest first. */
+  /** Last thirty days, oldest first. */
   days: PlayDay[];
   today: number;
   last7: number;
@@ -38,10 +47,10 @@ export interface PlayActivityData {
   hasSessions: boolean;
   /** Games with any playtime in the scope, even from before session tracking. */
   trackedGames: number;
-  top: Array<{ appName: string; seconds: number; title: string; cover: string }>;
+  top: PlayTopEntry[];
+  topWeek: PlayTopEntry[];
+  topMonth: PlayTopEntry[];
 }
-
-const DAY_MS = 86_400_000;
 
 function localDayKey(date: Date): string {
   const year = date.getFullYear();
@@ -58,6 +67,43 @@ function addDays(date: Date, days: number): Date {
   const next = new Date(date);
   next.setDate(next.getDate() + days);
   return next;
+}
+
+function topCoverOf(appName: string): string {
+  const custom = S.customCovers[appName];
+  if (custom) return custom;
+  if (appName.startsWith("steam::")) {
+    const appId = appName.slice(7);
+    if (/^\d+$/.test(appId)) {
+      return cachedSteamCover(appId) || steamCdnPortrait(appId);
+    }
+  }
+  const s = S.epicSummariesMap.get(appName) || summaryOf(appName);
+  const raw = rawOf(appName);
+  const gogItem = S.gogSummariesMap.get(appName) || S.allGamesMap.get(appName);
+  return (raw ? epicPortrait(raw) : null) || s?.cover || gogItem?.coverUrl || "";
+}
+
+function topSteamArtAttrs(appName: string): string {
+  if (S.customCovers[appName] || !appName.startsWith("steam::")) return "";
+  const appId = appName.slice(7);
+  if (!/^\d+$/.test(appId)) return "";
+  return ` data-steam-app="${appId}" data-art-step="${cachedSteamCover(appId) ? "resolved" : "0"}"`;
+}
+
+function buildTopList(map: Map<string, number>): PlayTopEntry[] {
+  return [...map.entries()]
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 4)
+    .map(([appName, seconds]) => {
+      const summary = summaryOf(appName);
+      return {
+        appName,
+        seconds,
+        title: summary?.title || appName,
+        cover: topCoverOf(appName),
+      };
+    });
 }
 
 /**
@@ -100,6 +146,7 @@ export function playActivityFor(scope: "all" | GameSource): PlayActivityData {
   let trackedGames = 0;
 
   for (const [appName, record] of S.playtimeMap) {
+    if (S.hiddenGames.has(appName)) continue;
     if (scope !== "all" && sourceOfKey(appName) !== scope) continue;
     if ((record.total_seconds || 0) > 0) trackedGames++;
     for (const session of record.sessions ?? []) {
@@ -123,21 +170,9 @@ export function playActivityFor(scope: "all" | GameSource): PlayActivityData {
   const prev7 = days.slice(-14, -7).reduce((sum, day) => sum + day.seconds, 0);
   const last30 = days.reduce((sum, day) => sum + day.seconds, 0);
 
-  // A week without play still owes the user a useful recap: fall back to the
-  // month so the card never opens empty while sessions exist.
-  const source = last7 > 0 ? gameWeek : gameMonth;
-  const top = [...source.entries()]
-    .sort((left, right) => right[1] - left[1])
-    .slice(0, 4)
-    .map(([appName, seconds]) => {
-      const summary = summaryOf(appName);
-      return {
-        appName,
-        seconds,
-        title: summary?.title || appName,
-        cover: S.customCovers[appName] || summary?.cover || "",
-      };
-    });
+  const topWeek = buildTopList(gameWeek);
+  const topMonth = buildTopList(gameMonth);
+  const top = topWeek.length > 0 ? topWeek : topMonth;
 
   return {
     days,
@@ -148,11 +183,13 @@ export function playActivityFor(scope: "all" | GameSource): PlayActivityData {
     hasSessions,
     trackedGames,
     top,
+    topWeek,
+    topMonth,
   };
 }
 
-function stat(label: string, seconds: number): string {
-  return `<div class="play-stat">
+function stat(label: string, seconds: number, highlight = false): string {
+  return `<div class="play-stat${highlight ? " is-active-range" : ""}">
     <span class="play-stat-val tabular-nums">${esc(fmtPlaytime(seconds))}</span>
     <span class="play-stat-label">${esc(label)}</span>
   </div>`;
@@ -165,34 +202,64 @@ function deltaText(data: PlayActivityData): string {
   return t("profile.activityVsPrev", { delta: `${sign}${fmtPlaytime(Math.abs(delta))}` });
 }
 
-function renderChart(data: PlayActivityData): string {
-  const shown = data.days.slice(-14);
+function fmtShortDay(key: string): string {
+  const [, month, date] = key.split("-");
+  return `${date}.${month}`;
+}
+
+function renderChart(data: PlayActivityData, range: "7d" | "30d"): string {
+  const shown = range === "30d" ? data.days : data.days.slice(-14);
   const max = Math.max(1, ...shown.map((day) => day.seconds));
   const todayKey = shown[shown.length - 1]?.key ?? "";
+  const firstKey = shown[0]?.key ?? "";
+  const midKey = shown[Math.floor(shown.length / 2)]?.key ?? "";
+  const activeDays = shown.filter((d) => d.seconds > 0).length;
+
   const bars = shown
     .map((day) => {
-      const height = day.seconds > 0 ? Math.max(4, Math.round((day.seconds / max) * 100)) : 0;
+      const isToday = day.key === todayKey;
+      const isActive = day.seconds > 0;
+      const height = isActive ? Math.max(8, Math.round((day.seconds / max) * 100)) : 4;
       const [year, month, date] = day.key.split("-");
-      const label = `${date}.${month}.${year}`;
+      const label = isToday ? `${t("profile.activityToday")} (${date}.${month}.${year})` : `${date}.${month}.${year}`;
       const tip = `${label} · ${fmtPlaytime(day.seconds)}`;
+      const cls = [
+        "play-bar",
+        isActive ? "is-active" : "is-empty",
+        isToday ? "is-today" : "",
+      ].filter(Boolean).join(" ");
       return `<span class="play-bar-slot" title="${esc(tip)}">
-        <span class="play-bar${day.key === todayKey ? " is-today" : ""}" style="height:${height}%"></span>
+        <span class="${cls}" style="height:${height}%"></span>
       </span>`;
     })
     .join("");
-  return `<div class="play-chart" role="img" aria-label="${esc(t("profile.activityChartTitle"))}">${bars}</div>`;
+
+  return `
+    <div class="play-chart-head-row">
+      <span class="play-chart-head">${esc(t("profile.activityChartTitle"))}</span>
+      <span class="play-chart-meta tabular-nums">${activeDays} / ${shown.length}</span>
+    </div>
+    <div class="play-chart${range === "30d" ? " is-30d" : ""}" role="img" aria-label="${esc(t("profile.activityChartTitle"))}">${bars}</div>
+    <div class="play-chart-axis tabular-nums" aria-hidden="true">
+      <span>${esc(fmtShortDay(firstKey))}</span>
+      <span>${esc(fmtShortDay(midKey))}</span>
+      <span class="is-today">${esc(t("profile.activityToday"))}</span>
+    </div>`;
 }
 
-function renderTop(data: PlayActivityData): string {
-  if (data.top.length === 0) return "";
-  const max = Math.max(1, ...data.top.map((row) => row.seconds));
-  const rows = data.top
+function renderTop(data: PlayActivityData, range: "7d" | "30d"): string {
+  const useMonth = range === "30d" || data.topWeek.length === 0;
+  const list = useMonth ? data.topMonth : data.topWeek;
+  if (list.length === 0) return "";
+  const heading = useMonth ? t("profile.activityTopMonth") : t("profile.activityTopWeek");
+  const max = Math.max(1, ...list.map((row) => row.seconds));
+  const rows = list
     .map((row) => {
       const width = Math.max(3, Math.round((row.seconds / max) * 100));
       const art = row.cover
-        ? `<img class="play-top-art" src="${esc(row.cover)}" alt="" loading="lazy" decoding="async" />`
+        ? `<img class="play-top-art"${topSteamArtAttrs(row.appName)} src="${esc(row.cover)}" alt="" loading="lazy" decoding="async" />`
         : `<span class="play-top-art placeholder">${icon("gamepad-2", 14)}</span>`;
-      return `<button type="button" class="play-top-row" data-act="open-game-from-profile" data-id="${esc(row.appName)}" title="${esc(row.title)}">
+      return `<button type="button" class="play-top-row" data-act="open-game-from-profile" data-id="${esc(row.appName)}" title="${esc(`${row.title} · ${fmtPlaytime(row.seconds)}`)}">
         ${art}
         <span class="play-top-main">
           <span class="play-top-name">${esc(row.title)}</span>
@@ -203,7 +270,7 @@ function renderTop(data: PlayActivityData): string {
     })
     .join("");
   return `<div class="play-top">
-    <div class="play-top-head">${esc(data.last7 > 0 ? t("profile.activityTopWeek") : t("profile.activityTopMonth"))}</div>
+    <div class="play-top-head">${esc(heading)}</div>
     ${rows}
   </div>`;
 }
@@ -215,21 +282,27 @@ function renderTop(data: PlayActivityData): string {
 export function renderPlayActivity(scope: "all" | GameSource): string {
   const data = playActivityFor(scope);
   if (!data.hasSessions && data.trackedGames === 0) return "";
+  const range = S.profileActivityRange || "7d";
+  const rangeToggle = data.hasSessions
+    ? `<div class="seg play-range-seg" role="group" aria-label="${esc(t("profile.activityTitle"))}">
+        <button type="button" class="${range === "7d" ? "active" : ""}" data-act="profile-activity-range" data-val="7d" aria-pressed="${range === "7d"}">${esc(t("profile.activityRange7d"))}</button>
+        <button type="button" class="${range === "30d" ? "active" : ""}" data-act="profile-activity-range" data-val="30d" aria-pressed="${range === "30d"}">${esc(t("profile.activityRange30d"))}</button>
+      </div>`
+    : "";
   const body = data.hasSessions
     ? `<div class="play-activity-card">
         <div class="play-summary">
           ${stat(t("profile.activityToday"), data.today)}
           <div class="play-stat-group">
-            ${stat(t("profile.activityWeek"), data.last7)}
-            ${deltaText(data) ? `<span class="play-delta${data.last7 >= data.prev7 ? " up" : ""}">${esc(deltaText(data))}</span>` : ""}
+            ${stat(t("profile.activityWeek"), data.last7, range === "7d")}
+            ${deltaText(data) ? `<span class="play-delta tabular-nums${data.last7 >= data.prev7 ? " up" : ""}">${esc(deltaText(data))}</span>` : ""}
           </div>
-          ${stat(t("profile.activityMonth"), data.last30)}
+          ${stat(t("profile.activityMonth"), data.last30, range === "30d")}
         </div>
         <div class="play-chart-wrap">
-          <div class="play-chart-head">${esc(t("profile.activityChartTitle"))}</div>
-          ${renderChart(data)}
+          ${renderChart(data, range)}
         </div>
-        ${renderTop(data)}
+        ${renderTop(data, range)}
       </div>`
     : `<div class="play-activity-card is-new">
         <p class="play-empty-copy">${esc(t("profile.activityNoSessions"))}</p>
@@ -237,13 +310,12 @@ export function renderPlayActivity(scope: "all" | GameSource): string {
   return `
     <section class="profile-row play-activity">
       <div class="profile-row-head">
-        <h3 class="profile-row-title">${esc(t("profile.activityTitle"))}</h3>
-        <span class="profile-unlock-stats tabular-nums">${esc(`${data.trackedGames} ${t("profile.games")}`)}</span>
+        <div class="profile-row-title-group">
+          <h3 class="profile-row-title">${esc(t("profile.activityTitle"))}</h3>
+          <span class="profile-section-count tabular-nums">${esc(`${data.trackedGames} ${t("profile.games")}`)}</span>
+        </div>
+        ${rangeToggle}
       </div>
       ${body}
     </section>`;
 }
-
-// Kept next to the aggregation so a future test can exercise the split rule
-// without a DOM: one local day is exactly 24h except across a DST change.
-export const __activityInternals = { localDayKey, DAY_MS };

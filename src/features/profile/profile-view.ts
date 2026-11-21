@@ -1411,6 +1411,7 @@ export function enterProfile(): void {
   S.profileAccount = null;
   S.profileFilter = "all";
   S.profileShowHidden = false;
+  S.profileActivityRange = "7d";
   S.profileCardCount = PROFILE_CARD_CHUNK;
   S.profileUnlockCount = 10;
   S.profileError = "";

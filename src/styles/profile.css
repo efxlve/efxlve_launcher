@@ -2314,6 +2314,16 @@
 }
 
 /* --- Play activity: daily rhythm, weekly recap and most-played list --- */
+.play-range-seg {
+  height: 28px;
+}
+
+.play-range-seg > button {
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .play-activity-card {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
@@ -2338,6 +2348,10 @@
   min-width: 84px;
 }
 
+.play-stat.is-active-range .play-stat-label {
+  color: var(--accent);
+}
+
 .play-stat-val {
   font-size: 22px;
   font-weight: 700;
@@ -2348,6 +2362,7 @@
 
 .play-stat-label {
   font-size: 10px;
+  font-weight: 600;
   color: var(--text-3);
   text-transform: uppercase;
   letter-spacing: 0.07em;
@@ -2371,15 +2386,29 @@
 .play-chart-wrap {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
+}
+
+.play-chart-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .play-chart-head {
   font-size: 10px;
+  font-weight: 600;
   color: var(--text-3);
   text-transform: uppercase;
   letter-spacing: 0.07em;
+}
+
+.play-chart-meta {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-3);
 }
 
 .play-chart {
@@ -2387,6 +2416,12 @@
   align-items: flex-end;
   gap: 4px;
   height: 72px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--line);
+}
+
+.play-chart.is-30d {
+  gap: 2px;
 }
 
 .play-bar-slot {
@@ -2399,13 +2434,42 @@
 
 .play-bar {
   width: 100%;
-  min-height: 2px;
+  min-height: 3px;
   border-radius: 3px 3px 1px 1px;
   background: var(--surface-3);
+  transition: background-color var(--ease), opacity var(--ease);
+}
+
+.play-bar.is-empty {
+  background: var(--surface-2);
+  opacity: 0.65;
+}
+
+.play-bar.is-active {
+  background: var(--text-2);
+  opacity: 0.72;
+}
+
+.play-bar-slot:hover .play-bar.is-active {
+  opacity: 1;
 }
 
 .play-bar.is-today {
   background: var(--accent);
+  opacity: 1;
+}
+
+.play-chart-axis {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-3);
+}
+
+.play-chart-axis .is-today {
+  font-weight: 600;
+  color: var(--accent);
 }
 
 .play-top {
