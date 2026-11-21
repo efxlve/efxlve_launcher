@@ -1,10 +1,10 @@
 import { sortedAchievementHistory, type AchievementHistoryEntry } from "../../core/achievement-history";
 import { icon } from "../../core/icons";
 import { S } from "../../core/state";
-import type { StoreKind } from "./profile-view";
 import { esc, fmtAchDate, fmtDecimal1 } from "../../core/utils";
 import { t } from "../../i18n";
 import { storeLogo } from "../store/store-logos";
+import type { StoreKind } from "./profile-view";
 
 let cachedEntries: AchievementHistoryEntry[] = [];
 let filteredEntries: AchievementHistoryEntry[] = [];
@@ -25,7 +25,7 @@ function filterList(query: string): void {
       (entry.description && entry.description.toLowerCase().includes(q))
     );
   });
-  renderList();
+  renderGrid();
 }
 
 function renderCard(entry: AchievementHistoryEntry): string {
@@ -33,11 +33,11 @@ function renderCard(entry: AchievementHistoryEntry): string {
   const date = dateIso ? fmtAchDate(dateIso) : "";
   const isUltraRare = entry.rarity != null && entry.rarity < 5;
   const rarityText = entry.rarity != null ? `%${fmtDecimal1(entry.rarity)}` : "";
-  const storeMark = entry.store ? storeLogo(entry.store, 13, "profile-unlock-store-logo") : "";
+  const storeMark = entry.store ? storeLogo(entry.store, 12, "profile-unlock-store-logo") : "";
 
   const art = entry.icon
-    ? `<img class="profile-unlocks-art" src="${esc(entry.icon)}" alt="" loading="lazy" decoding="async" />`
-    : `<span class="profile-unlocks-placeholder">${icon("trophy", 20)}</span>`;
+    ? `<img src="${esc(entry.icon)}" alt="" loading="lazy" decoding="async" />`
+    : `<span class="profile-unlocks-placeholder">${icon("trophy", 18)}</span>`;
 
   const shotIcon = entry.shot
     ? `<span class="profile-unlocks-shot-tag" title="${esc(t("profile.unlockShot"))}">${icon("camera", 11)}</span>`
@@ -60,30 +60,28 @@ function renderCard(entry: AchievementHistoryEntry): string {
   ].filter(Boolean).join(" · ");
 
   return `
-    <button type="button" class="profile-unlocks-item${isUltraRare ? " is-rare-item" : ""}" data-act="open-pinned-achievement" data-id="${esc(entry.appName)}" data-ach="${esc(entry.name)}" title="${esc(tip)}">
-      <div class="profile-unlocks-art-wrap">
+    <button type="button" class="profile-unlocks-card${isUltraRare ? " is-rare-card" : ""}" data-act="open-pinned-achievement" data-id="${esc(entry.appName)}" data-ach="${esc(entry.name)}" title="${esc(tip)}">
+      <div class="profile-unlocks-card-art">
         ${art}
       </div>
-      <div class="profile-unlocks-info">
-        <div class="profile-unlocks-row-top">
-          <span class="profile-unlocks-title">${esc(entry.title)}</span>
+      <div class="profile-unlocks-card-main">
+        <div class="profile-unlocks-card-header">
+          <span class="profile-unlocks-card-title">${esc(entry.title)}</span>
           ${shotIcon}
+          ${rarityBadge}
         </div>
-        <div class="profile-unlocks-row-sub">
+        <div class="profile-unlocks-card-meta">
           ${storeMark}
-          <span class="profile-unlocks-game">${esc(entry.game)}</span>
-          ${date ? `<span class="profile-unlocks-dot">·</span><span class="profile-unlocks-date tabular-nums">${esc(date)}</span>` : ""}
+          <span class="profile-unlocks-card-game">${esc(entry.game)}</span>
+          ${date ? `<span class="profile-unlocks-card-dot">·</span><span class="profile-unlocks-card-date tabular-nums">${esc(date)}</span>` : ""}
         </div>
-        ${entry.description ? `<p class="profile-unlocks-desc">${esc(entry.description)}</p>` : ""}
-      </div>
-      <div class="profile-unlocks-end">
-        ${rarityBadge}
+        ${entry.description ? `<p class="profile-unlocks-card-desc">${esc(entry.description)}</p>` : ""}
       </div>
     </button>`;
 }
 
 function appendPage(): void {
-  const container = document.getElementById("profile-unlocks-list");
+  const container = document.getElementById("profile-unlocks-grid");
   if (!container) return;
   const nextSlice = filteredEntries.slice(renderedCount, renderedCount + CHUNK_SIZE);
   if (nextSlice.length === 0) return;
@@ -92,15 +90,15 @@ function appendPage(): void {
   renderedCount += nextSlice.length;
 }
 
-function renderList(): void {
-  const container = document.getElementById("profile-unlocks-list");
+function renderGrid(): void {
+  const container = document.getElementById("profile-unlocks-grid");
   if (!container) return;
   renderedCount = 0;
   if (filteredEntries.length === 0) {
     container.innerHTML = `
       <div class="profile-unlocks-empty">
-        <span class="profile-unlocks-empty-icon">${icon("trophy", 28)}</span>
-        <p>${esc(t("common.noResults"))}</p>
+        <span class="profile-unlocks-empty-icon">${icon("trophy", 24)}</span>
+        <p class="empty-title">${esc(t("common.noResults"))}</p>
       </div>`;
     return;
   }
@@ -148,8 +146,8 @@ export function openUnlocksModal(scope: "all" | StoreKind = S.profileStore || "a
             </div>
           </div>
           <div class="profile-unlocks-head-actions">
-            <button type="button" class="icon-btn" data-act="clear-ach-history" title="${esc(t("profile.unlocksClear"))}" aria-label="${esc(t("profile.unlocksClear"))}">
-              ${icon("trash", 15)}
+            <button type="button" class="btn ghost small" data-act="clear-ach-history" title="${esc(t("profile.unlocksClear"))}">
+              ${icon("trash", 13)} <span>${esc(t("profile.unlocksClear"))}</span>
             </button>
             <button type="button" class="modal-close-btn" data-act="profile-unlocks-close" title="${esc(t("common.close"))}" aria-label="${esc(t("common.close"))}">
               ${icon("x", 16)}
@@ -157,40 +155,45 @@ export function openUnlocksModal(scope: "all" | StoreKind = S.profileStore || "a
           </div>
         </div>
 
-        <div class="profile-unlocks-modal-toolbar">
-          <div class="search profile-unlocks-search-box">
-            ${icon("search", 15)}
-            <input id="profile-unlocks-search" type="text" placeholder="${esc(t("ach.searchPlaceholder"))}" autocomplete="off" spellcheck="false" />
-          </div>
-          <div class="profile-unlocks-filters">
-            <button type="button" class="profile-unlocks-filter-btn is-active" data-unlock-filter="all">
-              ${esc(t("ach.filterAll"))} (${totalCount})
+        <div class="profile-unlocks-toolbar">
+          <div class="tabs profile-unlocks-tabs">
+            <button type="button" class="tab active" data-unlock-filter="all">
+              <span>${esc(t("ach.filterAll"))}</span>
+              <span class="count">(${totalCount})</span>
             </button>
             ${rareCount > 0 ? `
-              <button type="button" class="profile-unlocks-filter-btn is-rare-pill" data-unlock-filter="rare">
-                ${icon("trophy", 11)} <span>${esc(t("settings.achTierUltra"))} (${rareCount})</span>
+              <button type="button" class="tab" data-unlock-filter="rare">
+                ${icon("trophy", 12)}
+                <span>${esc(t("settings.achTierUltra"))}</span>
+                <span class="count">(${rareCount})</span>
               </button>
             ` : ""}
             ${shotCount > 0 ? `
-              <button type="button" class="profile-unlocks-filter-btn" data-unlock-filter="shot">
-                ${icon("camera", 11)} <span>${esc(t("profile.unlockShot"))} (${shotCount})</span>
+              <button type="button" class="tab" data-unlock-filter="shot">
+                ${icon("camera", 12)}
+                <span>${esc(t("profile.unlockShot"))}</span>
+                <span class="count">(${shotCount})</span>
               </button>
             ` : ""}
           </div>
+          <div class="search profile-unlocks-search">
+            ${icon("search", 14)}
+            <input id="profile-unlocks-search" type="text" placeholder="${esc(t("ach.searchPlaceholder"))}" autocomplete="off" spellcheck="false" />
+          </div>
         </div>
 
-        <div id="profile-unlocks-list" class="profile-unlocks-list"></div>
+        <div id="profile-unlocks-grid" class="profile-unlocks-grid"></div>
       </div>
     </div>
   `;
 
   document.body.insertAdjacentHTML("beforeend", modalHtml);
-  renderList();
+  renderGrid();
 
-  const listEl = document.getElementById("profile-unlocks-list");
-  if (listEl) {
-    listEl.addEventListener("scroll", () => {
-      if (listEl.scrollTop + listEl.clientHeight >= listEl.scrollHeight - 200) {
+  const gridEl = document.getElementById("profile-unlocks-grid");
+  if (gridEl) {
+    gridEl.addEventListener("scroll", () => {
+      if (gridEl.scrollTop + gridEl.clientHeight >= gridEl.scrollHeight - 200) {
         appendPage();
       }
     });
@@ -215,13 +218,13 @@ export function openUnlocksModal(scope: "all" | StoreKind = S.profileStore || "a
         closeUnlocksModal();
         return;
       }
-      const filterBtn = (e.target as HTMLElement).closest<HTMLElement>("[data-unlock-filter]");
-      if (filterBtn) {
-        const filterVal = filterBtn.dataset.unlockFilter as "all" | "rare" | "shot";
+      const tabBtn = (e.target as HTMLElement).closest<HTMLElement>("[data-unlock-filter]");
+      if (tabBtn) {
+        const filterVal = tabBtn.dataset.unlockFilter as "all" | "rare" | "shot";
         if (filterVal && filterVal !== activeFilter) {
           activeFilter = filterVal;
-          modalEl.querySelectorAll("[data-unlock-filter]").forEach((b) => b.classList.remove("is-active"));
-          filterBtn.classList.add("is-active");
+          modalEl.querySelectorAll("[data-unlock-filter]").forEach((b) => b.classList.remove("active"));
+          tabBtn.classList.add("active");
           filterList(searchInput?.value || "");
         }
       }
