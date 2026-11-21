@@ -613,11 +613,11 @@ export const S = {
   profileFilter: ("all") as "all" | "platinum" | "in_progress" | "not_started",
   profileSort: ("progress") as "progress" | "xp" | "playtime" | "alpha",
   /** Hero chips: which store's achievements and totals the page is showing. */
-  profileStore: ("all") as "all" | "epic" | "gog" | "steam" | "amazon" | "xbox" | "battlenet" | "ubisoft" | "ea" | "riot" | "custom",
+  profileStore: ("all") as "all" | "epic" | "gog" | "steam" | "amazon" | "xbox" | "battlenet" | "ubisoft" | "ea" | "riot",
   profileSearchQuery: "",
   profileViewMode: (localStorage.getItem(PROFILE_VIEW_MODE_KEY) === "list" ? "list" : "grid") as "grid" | "list",
-  /** Recent unlocks shown on the profile; "Show more" grows this in rows of 12. */
-  profileUnlockCount: 6,
+  /** Recent unlocks shown on the profile; "Show all" grows this by 20. */
+  profileUnlockCount: 10,
   offlineMode: false,
   networkProfile: ("balanced") as string,
   /** Epic download cap in Mbit/s; 0 = unlimited. */

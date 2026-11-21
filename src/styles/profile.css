@@ -1,16 +1,15 @@
 /* ==========================================================================
-   Profile Page
-   Identity hero with career ledger, recently played strip, play activity,
-   recent unlocks grid, and achievement catalog (grid + table views).
-   Strictly follows docs/DESIGN_SYSTEM.md (tokens, 6px/10px radii, no hover lift,
-   no neon glow, no cover badges).
+   Profile: Xbox-Style Redesign.
+   Cinematic hero on top; segmented stat bar; horizontal recently played row;
+   Xbox-style elevated achievement cards with progress tracks and completion badges.
+   Adheres to docs/DESIGN_SYSTEM.md (true black, surface-1/2/3, system tokens).
    ========================================================================== */
 
 /* --- 1. Page Shell --- */
 .profile-page {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 24px;
   max-width: 1560px;
   margin: 0 auto;
   width: 100%;
@@ -21,7 +20,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 0;
+  padding: 0 24px 20px;
   background: var(--surface-1);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
@@ -30,60 +29,58 @@
 
 .profile-hero-banner {
   position: relative;
-  height: 188px;
-  background-color: var(--surface-2);
+  height: 220px;
+  margin: 0 -24px;
+  background-color: var(--surface-3);
   background-size: cover;
-  background-position: center 26%;
-  overflow: hidden;
+  background-position: center 30%;
+  animation: profile-banner-reveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.profile-hero-backdrop {
-  position: absolute;
-  inset: -18px;
-  background-size: cover;
-  background-position: center;
-  filter: blur(28px) brightness(0.42);
-  opacity: 0.36;
-  pointer-events: none;
+@keyframes profile-banner-reveal {
+  from {
+    opacity: 0.6;
+    filter: brightness(0.85);
+  }
+  to {
+    opacity: 1;
+    filter: brightness(1);
+  }
 }
 
 .profile-hero-banner::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.16) 0%,
-    rgba(0, 0, 0, 0.08) 40%,
-    rgba(0, 0, 0, 0.56) 78%,
-    var(--surface-1) 100%
-  );
+  background: linear-gradient(180deg, transparent 72%, rgba(0, 0, 0, 0.28) 100%);
   pointer-events: none;
 }
 
 .profile-hero-banner.is-plain {
-  height: 104px;
-  background: var(--surface-2);
+  background-image: radial-gradient(130% 170% at 16% 0%, var(--surface-3) 0%, var(--surface-1) 75%);
 }
 
 .profile-banner-edit-btn {
   position: absolute;
-  top: 12px;
-  right: 14px;
+  top: 14px;
+  right: 18px;
   z-index: 4;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 10px;
-  border-radius: var(--r-sm);
-  background: rgba(10, 10, 10, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  gap: 7px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 15px;
+  background: rgba(10, 10, 10, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   color: #ffffff;
-  font-size: 11.5px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color var(--ease), border-color var(--ease);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  transition: all var(--ease);
 }
 
 .profile-banner-edit-btn svg {
@@ -92,13 +89,11 @@
 }
 
 .profile-banner-edit-btn:hover {
-  background: rgba(20, 20, 22, 0.92);
-  border-color: rgba(255, 255, 255, 0.32);
+  background: rgba(22, 22, 24, 0.95);
+  border-color: rgba(255, 255, 255, 0.4);
   color: #ffffff;
-}
-
-.profile-banner-edit-btn:active {
-  transform: scale(0.98);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  transform: translateY(-1px);
 }
 
 .profile-hero-top {
@@ -106,12 +101,12 @@
   z-index: 2;
   display: flex;
   align-items: flex-start;
-  gap: 18px;
-  padding: 0 22px 18px;
+  gap: 20px;
+  padding-top: 14px;
 }
 
 .profile-avatar-wrap {
-  margin-top: -36px;
+  margin-top: -62px;
   flex-shrink: 0;
   display: flex;
 }
@@ -141,22 +136,23 @@
 }
 
 .profile-avatar-lg {
-  width: 76px;
-  height: 76px;
-  font-size: 26px;
-  font-weight: 600;
+  width: 96px;
+  height: 96px;
+  font-size: 32px;
+  font-weight: 700;
   border-radius: 50%;
   background: var(--surface-2);
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 1px solid var(--line-strong);
-  box-shadow: 0 0 0 4px var(--surface-1);
-  transition: border-color var(--ease);
+  border: 3px solid var(--surface-3);
+  box-shadow: 0 0 0 3px var(--surface-3), 0 0 16px rgba(0, 0, 0, 0.6);
+  transition: all var(--ease);
 }
 
-.profile-avatar-btn:hover .profile-avatar-lg {
+.profile-avatar-lg.is-online {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent), 0 0 16px rgba(255, 255, 255, 0.18);
 }
 
 .profile-avatar img {
@@ -173,32 +169,30 @@
 /* Profile hero only: the account rows use the smaller badge from components.css. */
 .profile-avatar-btn .avatar-edit-badge {
   position: absolute;
-  right: -1px;
-  bottom: -1px;
-  width: 24px;
-  height: 24px;
+  right: 0;
+  bottom: 0;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: var(--surface-2);
+  background: var(--surface-3);
   border: 2px solid var(--surface-1);
-  color: var(--text-2);
+  color: var(--text);
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: background-color var(--ease), color var(--ease);
+  transition: transform var(--ease);
 }
 
 .profile-avatar-btn:hover .avatar-edit-badge {
-  background: var(--accent);
-  color: var(--on-accent);
+  transform: scale(1.1);
 }
 
 .profile-hero-identity {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   flex: 1;
   min-width: 0;
-  padding-top: 2px;
 }
 
 .profile-identity-head {
@@ -212,7 +206,7 @@
 .profile-name-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
   min-width: 0;
 }
@@ -220,9 +214,9 @@
 .profile-name-edit-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 2px 6px;
-  margin: -2px -6px;
+  gap: 8px;
+  padding: 2px 8px;
+  margin: -2px -8px;
   border: 1px solid transparent;
   background: transparent;
   border-radius: var(--r-sm);
@@ -239,10 +233,10 @@
 
 .profile-name {
   margin: 0;
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 700;
   color: var(--text);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   line-height: 1.15;
 }
 
@@ -251,7 +245,7 @@
   align-items: center;
   justify-content: center;
   color: var(--text-3);
-  opacity: 0.55;
+  opacity: 0.6;
   transition: opacity var(--ease), color var(--ease);
 }
 
@@ -264,19 +258,18 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 22px;
-  padding: 0 8px;
-  border-radius: var(--r-xs);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
   font-weight: 500;
   color: var(--text-2);
 }
 
 .profile-presence-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--text-3);
   flex-shrink: 0;
@@ -284,6 +277,7 @@
 
 .profile-presence-dot.online {
   background: var(--ok);
+  box-shadow: 0 0 6px var(--ok);
 }
 
 .profile-presence-dot.offline {
@@ -310,27 +304,27 @@
   align-items: center;
   gap: 6px;
   height: 28px;
-  padding: 0 9px;
+  padding: 0 10px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  font-size: 12px;
+  border-radius: 14px;
+  font-size: 11.5px;
   font-weight: 500;
   color: var(--text-2);
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+  transition: background var(--ease), color var(--ease), border-color var(--ease);
 }
 
 .profile-store-chip-logo {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
   object-fit: contain;
   flex-shrink: 0;
   display: block;
-  opacity: 0.85;
-  transition: opacity var(--ease);
+  opacity: 0.9;
+  transition: opacity 0.15s ease;
 }
 
 .profile-hero-store-chip:hover {
@@ -345,9 +339,12 @@
 }
 
 .profile-hero-store-chip:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
+/* The selected chip is the accent tint plus a single accent border. A ring
+   drawn with `box-shadow` on top of the border doubled the outline in every
+   theme and read as a rendering bug. */
 .profile-hero-store-chip.selected {
   background: var(--accent-tint);
   color: var(--text);
@@ -365,21 +362,27 @@
 }
 
 .profile-hero-chip-name {
-  font-size: 12px;
-  font-weight: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
   white-space: nowrap;
 }
 
 .profile-hero-chip-count {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-3);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--accent-tint);
+  padding: 1px 6px;
+  border-radius: 10px;
   font-variant-numeric: tabular-nums;
 }
 
+/* On the selected chip the badge inverts with the theme's accent: white on
+   black, black on white, blue on aero. Leaving the text white made it vanish
+   into a white accent. */
 .profile-hero-store-chip.selected .profile-hero-chip-count {
-  color: var(--text-2);
-  font-weight: 600;
+  color: var(--on-accent);
+  background: var(--accent);
 }
 
 .profile-hero-store-pill {
@@ -390,25 +393,25 @@
   padding: 0 10px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  font-size: 12px;
-  font-weight: 500;
+  border-radius: 14px;
+  font-size: 11.5px;
+  font-weight: 600;
   color: var(--text-2);
 }
 
 .profile-hero-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin-left: auto;
   flex-shrink: 0;
 }
 
 .profile-hero-action-btn {
   height: 28px;
-  border-radius: var(--r-sm);
-  padding: 0 10px;
-  font-size: 12px;
+  border-radius: 14px;
+  padding: 0 12px;
+  font-size: 11.5px;
   font-weight: 500;
   border: 1px solid var(--line);
   background: var(--surface-2);
@@ -417,17 +420,18 @@
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .profile-hero-action-btn:hover {
   background: var(--surface-3);
   color: var(--text);
   border-color: var(--line-strong);
+  transform: translateY(-1px);
 }
 
 .profile-hero-action-btn:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .profile-hero-action-btn.is-muted {
@@ -438,7 +442,7 @@
 .profile-refresh-btn {
   width: 28px;
   height: 28px;
-  border-radius: var(--r-sm);
+  border-radius: 14px;
   border: 1px solid var(--line);
   background: var(--surface-2);
   color: var(--text-2);
@@ -447,67 +451,69 @@
   justify-content: center;
   padding: 0;
   cursor: pointer;
-  transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .profile-refresh-btn:hover {
   background: var(--surface-3);
   color: var(--text);
   border-color: var(--line-strong);
+  transform: translateY(-1px);
 }
 
 .profile-refresh-btn:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
-/* --- 3. Hero Stats Ledger --- */
+/* --- 3. Hero Stats Bar --- */
 .profile-stats-bar {
-  border-top: 1px solid var(--line);
+  margin-top: 14px;
 }
 
 .profile-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
-  background: rgba(255, 255, 255, 0.012);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 0;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 14px 0;
+  animation: profile-fade-slide 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .profile-stat {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 13px 22px;
+  gap: 3px;
+  padding: 0 28px;
   border-left: 1px solid var(--line);
-  min-width: 0;
+  min-width: 100px;
 }
 
 .profile-stat:first-child {
   border-left: none;
+  padding-left: 20px;
 }
 
 .profile-stat-val {
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-size: 24px;
+  font-weight: 700;
   color: var(--text);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 6px;
-  line-height: 1.2;
 }
 
 .profile-stat-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.profile-stat-label::first-letter {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-3);
   text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
 .profile-stat-plat-ico {
@@ -521,7 +527,8 @@
   align-items: flex-start;
   gap: 10px;
   border-top: 1px solid var(--line);
-  padding: 16px 22px;
+  padding-top: 16px;
+  margin-top: 16px;
 }
 
 .profile-inactive .row-meta {
@@ -529,11 +536,11 @@
   max-width: 520px;
 }
 
-/* --- 4. Section Rows & Recently Played --- */
+/* --- 4. Recently Played Row --- */
 .profile-row {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .profile-row-head {
@@ -543,38 +550,43 @@
   gap: 12px;
 }
 
-.profile-row-title-group {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  flex-wrap: wrap;
-  min-width: 0;
-}
-
 .profile-row-title {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--text);
 }
 
 .profile-recent-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(122px, 1fr));
+  display: flex;
   gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  /* WebKit scrollbar active */
+  animation: profile-fade-slide 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .profile-recent-card {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  padding: 0;
-  border: none;
-  background: transparent;
+  gap: 8px;
+  width: 118px;
+  flex: none;
+  padding: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface-1);
+  border-radius: var(--r-md);
   cursor: pointer;
   text-align: left;
-  contain: layout paint;
+  transition: all var(--ease);
+}
+
+.profile-recent-card:hover {
+  transform: translateY(-4px);
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
 }
 
 .profile-recent-thumb-wrap {
@@ -584,12 +596,6 @@
   border-radius: var(--r-sm);
   overflow: hidden;
   background: var(--surface-2);
-  border: 1px solid var(--line);
-  transition: border-color var(--ease);
-}
-
-.profile-recent-card:hover .profile-recent-thumb-wrap {
-  border-color: var(--line-strong);
 }
 
 .profile-recent-thumb {
@@ -601,7 +607,7 @@
 }
 
 .profile-recent-card:hover .profile-recent-thumb {
-  filter: brightness(1.08);
+  filter: brightness(1.12);
 }
 
 .profile-recent-thumb.placeholder {
@@ -612,57 +618,33 @@
   color: var(--text-3);
 }
 
-.profile-recent-caption {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  padding: 0 1px;
-}
-
 .profile-recent-name {
-  font-size: 12.5px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding: 0 2px;
 }
 
-.profile-recent-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: var(--text-3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.profile-recent-meta .profile-store-chip-logo {
-  width: 11px;
-  height: 11px;
-  opacity: 0.72;
-}
-
-/* --- 4b. Recent Unlocks Grid --- */
+/* --- 4b. Recent unlocks strip --- */
 .profile-unlock-stats {
-  color: var(--text-2);
-  font-size: 12px;
+  color: var(--text-3);
+  font-size: 11px;
 }
 
 .profile-unlock-head-right {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-shrink: 0;
 }
 
 .profile-unlock-row {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(236px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(244px, 1fr));
   gap: 10px;
+  animation: profile-fade-slide 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .profile-unlock-card {
@@ -670,19 +652,15 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 9px 11px;
+  min-width: 0;
+  padding: 8px 10px;
   border: 1px solid var(--line);
   background: var(--surface-1);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   cursor: pointer;
   text-align: left;
   font-family: inherit;
-  contain: layout paint;
   transition: background-color var(--ease), border-color var(--ease);
-}
-
-.profile-unlock-card.is-rare {
-  border-color: var(--line-strong);
 }
 
 .profile-unlock-card:hover {
@@ -693,13 +671,12 @@
 .profile-unlock-icon {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
-  flex: 0 0 38px;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
   overflow: hidden;
   border-radius: var(--r-sm);
   background: var(--surface-2);
-  border: 1px solid var(--line);
   color: var(--text-3);
 }
 
@@ -718,14 +695,6 @@
   flex: 1;
 }
 
-.profile-unlock-top {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  min-width: 0;
-}
-
 .profile-unlock-name {
   overflow: hidden;
   color: var(--text);
@@ -735,29 +704,17 @@
   text-overflow: ellipsis;
 }
 
-.profile-unlock-rarity {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-3);
-  flex-shrink: 0;
-}
-
-.profile-unlock-card.is-rare .profile-unlock-rarity {
-  color: var(--text);
-  font-weight: 600;
-}
-
 .profile-unlock-game {
   overflow: hidden;
   color: var(--text-2);
-  font-size: 11.5px;
+  font-size: 11px;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .profile-unlock-meta {
   color: var(--text-3);
-  font-size: 10.5px;
+  font-size: 10px;
 }
 
 .profile-unlock-shot {
@@ -767,7 +724,9 @@
   color: var(--text-3);
 }
 
-/* --- 4c. Curated Showcase (Pinned Achievements) --- */
+.profile-unlock-more { align-self: flex-start; }
+
+/* --- 4c. Curated showcase (pinned achievements) --- */
 .profile-showcase-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -775,9 +734,7 @@
 }
 
 @media (max-width: 1100px) {
-  .profile-showcase-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
+  .profile-showcase-row { grid-template-columns: minmax(0, 1fr); }
 }
 
 .profile-showcase-card {
@@ -805,20 +762,17 @@
   transition: background-color var(--ease);
 }
 
-.profile-showcase-main:hover {
-  background: var(--surface-2);
-}
+.profile-showcase-main:hover { background: var(--surface-2); }
 
 .profile-showcase-art {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
-  flex: 0 0 52px;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
   overflow: hidden;
   border-radius: var(--r-sm);
   background: var(--surface-2);
-  border: 1px solid var(--line);
   color: var(--text-3);
 }
 
@@ -857,7 +811,7 @@
 
 .profile-showcase-meta {
   color: var(--text-3);
-  font-size: 11px;
+  font-size: 10.5px;
 }
 
 .profile-showcase-unpin {
@@ -866,76 +820,136 @@
   right: 6px;
 }
 
-/* --- 5. Achievements Catalog Panel --- */
+/* --- 5. Achievements Panel --- */
 .profile-ach-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   background: var(--surface-1);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
-  padding: 20px 22px;
+  padding: 22px 24px;
 }
 
 .profile-panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .profile-panel-title-wrap {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
   min-width: 0;
+}
+
+.profile-panel-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--accent);
+  flex-shrink: 0;
 }
 
 .profile-panel-title {
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   color: var(--text);
   line-height: 1.2;
   letter-spacing: -0.01em;
 }
 
 .profile-panel-sub {
+  margin-top: 3px;
   font-size: 12px;
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
 }
 
-.profile-panel-tools {
+.profile-ach-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 2px;
+}
+
+/* Xbox Pill Filter Tabs */
+.profile-filter-tabs {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-}
-
-/* Standard underline tabs matching Library and Game Page */
-.profile-filter-tabs {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid var(--line);
+  border-bottom: none;
 }
 
 .profile-filter-tabs .tab {
-  height: 36px;
-  font-size: 13px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all var(--ease);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-/* --- 6. Achievements Grid & Cards --- */
+.profile-filter-tabs .tab:hover {
+  background: var(--surface-3);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.profile-filter-tabs .tab.active {
+  background: var(--surface-3);
+  border-color: var(--accent);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* Remove bottom underline from active tab in filter tabs */
+.profile-filter-tabs .tab::after,
+.profile-filter-tabs .tab.active::after {
+  display: none !important;
+  content: none !important;
+}
+
+.profile-filter-tabs .tab .count {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- 6. The Xbox Achievement Grid & Cards --- */
+.profile-ach-list {
+  animation: profile-grid-enter 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 .profile-ach-list:not(.is-list) {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
+  gap: 16px;
 }
 
+/* The footer button and the empty state span the whole grid */
 .profile-ach-list:not(.is-list) > .profile-more,
 .profile-ach-list:not(.is-list) > .profile-ach-empty {
   grid-column: 1 / -1;
@@ -958,16 +972,19 @@
   justify-content: center;
 }
 
+/* Header row for list table */
 .profile-table-header {
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 10px 18px;
-  background: rgba(255, 255, 255, 0.015);
+  background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid var(--line);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--text-2);
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   user-select: none;
 }
 
@@ -1003,19 +1020,19 @@
   text-align: right;
 }
 
+/* Row Layout */
 .profile-game-row {
   display: flex;
   align-items: center;
   gap: 16px;
-  min-height: 64px;
+  min-height: 66px;
   padding: 10px 18px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
   cursor: pointer;
   background: transparent;
   transition: background-color var(--ease);
   position: relative;
   text-align: left;
-  contain: layout paint;
 }
 
 .profile-game-row:first-child {
@@ -1024,9 +1041,14 @@
 
 .profile-game-row:hover,
 .profile-game-row:focus-visible {
-  background: var(--surface-2);
+  background: rgba(255, 255, 255, 0.035);
 }
 
+.profile-game-row:active {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Col 1: Game */
 .profile-col-game {
   flex: 1.8;
   min-width: 200px;
@@ -1037,13 +1059,14 @@
 }
 
 .profile-game-thumb {
-  width: 40px;
-  height: 54px;
+  width: 42px;
+  height: 56px;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   flex-shrink: 0;
   background: var(--surface-2);
   border: 1px solid var(--line);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 .profile-game-thumb.placeholder {
@@ -1067,12 +1090,13 @@
 }
 
 .profile-game-title {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: -0.01em;
 }
 
 .profile-game-sub {
@@ -1083,6 +1107,7 @@
   text-overflow: ellipsis;
 }
 
+/* Col 2: Progress */
 .profile-col-progress {
   flex: 1.6;
   min-width: 170px;
@@ -1113,28 +1138,31 @@
 
 .profile-game-progress {
   width: 100%;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--surface-3);
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
 
 .profile-game-progress span {
   display: block;
   height: 100%;
-  background: var(--text-2);
-  border-radius: 2px;
-  transition: width var(--ease);
+  background: var(--text);
+  border-radius: 3px;
+  transition: width 0.3s ease;
 }
 
+/* The list keeps the same colour language as the cards. */
 .profile-game-row.is-plat .profile-game-progress span {
   background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-tint);
 }
 
 .profile-game-progress.is-empty span {
   width: 0 !important;
 }
 
+/* Col 3, 4, 5: Stats */
 .profile-col-stat {
   display: flex;
   flex-direction: column;
@@ -1152,21 +1180,24 @@
 }
 
 .profile-stat-sub {
-  font-size: 10.5px;
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 600;
   color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   display: none;
 }
 
 .profile-stat-main {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/* Col 6: Badge */
 .profile-col-badge {
   width: 75px;
   display: flex;
@@ -1179,24 +1210,25 @@
 .profile-badge-pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border-radius: var(--r-xs);
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 12px;
   font-size: 12px;
-  font-weight: 600;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-2);
 }
 
 .profile-badge-pill.is-plat {
-  background: var(--accent-tint);
-  color: var(--text);
-  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.12);
 }
 
 .profile-badge-pill.is-plat svg {
-  color: var(--accent);
+  color: #ffffff;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5));
 }
 
 .profile-badge-pill.in-prog {
@@ -1211,37 +1243,42 @@
   margin-left: 2px;
 }
 
-/* Grid Tile Card: unbadged cover art + structured progress block below */
+/* Elevated Xbox Tile Card */
 .profile-ach-card {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 8px;
+  padding: 10px;
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   cursor: pointer;
   text-align: left;
   position: relative;
-  contain: layout paint;
-  transition: background-color var(--ease), border-color var(--ease);
+  transition: all var(--ease);
   overflow: hidden;
 }
 
 .profile-ach-card:hover,
 .profile-ach-card:focus-visible {
+  transform: translateY(-4px);
   background: var(--surface-3);
   border-color: var(--line-strong);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
 }
 
+/* Completed 100% card highlight - White test */
 .profile-ach-card.is-plat {
-  border-color: var(--line-strong);
+  border-color: rgba(255, 255, 255, 0.24);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, var(--surface-2) 100%);
 }
 
 .profile-ach-card.is-plat:hover {
-  border-color: var(--accent);
+  border-color: var(--text);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55), 0 0 16px rgba(255, 255, 255, 0.15);
 }
 
+/* Art container */
 .profile-ach-art {
   position: relative;
   aspect-ratio: 3 / 4;
@@ -1264,7 +1301,7 @@
 }
 
 .profile-ach-card:hover .profile-ach-art img {
-  filter: brightness(1.06);
+  filter: brightness(1.1);
 }
 
 .profile-ach-ph {
@@ -1273,6 +1310,54 @@
   color: var(--text-3);
 }
 
+/* Badges floating on art */
+.profile-ach-badge {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.profile-ach-badge.plat {
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(10, 10, 10, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.profile-ach-badge.plat svg {
+  width: 14px;
+  height: 14px;
+}
+
+.profile-ach-badge.pct {
+  top: 6px;
+  right: 6px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: rgba(10, 10, 10, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.profile-ach-badge.store {
+  bottom: 6px;
+  left: 6px;
+}
+
+/* The unhide action overlays the cover on grid cards. On list rows it must
+   flow inline inside the badge column instead of pinning to the row corner. */
 .profile-ach-art .profile-unhide-btn {
   position: absolute;
   bottom: 6px;
@@ -1291,15 +1376,15 @@
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
-  height: 18px;
-  padding: 0 5px;
-  background: var(--surface-3);
-  border: 1px solid var(--line);
-  color: var(--text-2);
-  border-radius: var(--r-xs);
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  height: 20px;
+  padding: 0 6px;
+  background: rgba(10, 10, 10, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .profile-store-chip img {
@@ -1307,6 +1392,7 @@
   object-fit: contain;
 }
 
+/* Card Information Body */
 .profile-ach-info {
   display: flex;
   flex-direction: column;
@@ -1328,7 +1414,9 @@
 .profile-ach-progress-block {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
+  /* Games without tracked achievements have no bar; keep the space so every
+     card in a row ends on the same baseline. */
   min-height: 22px;
   margin-top: auto;
 }
@@ -1353,81 +1441,68 @@
   opacity: 0.8;
 }
 
-.profile-ach-card.is-plat .profile-ach-count svg {
-  color: var(--accent);
-  opacity: 1;
-}
-
 .profile-ach-pct {
   font-size: 11px;
-  font-weight: 600;
-  color: var(--text-2);
+  font-weight: 700;
+  color: var(--text);
 }
 
 .profile-ach-card.is-plat .profile-ach-pct {
-  color: var(--text);
-  font-weight: 700;
+  color: #ffffff;
 }
 
+/* Progress Bar Track */
 .profile-ach-bar {
   position: relative;
-  height: 4px;
+  height: 5px;
   width: 100%;
-  border-radius: 2px;
-  background: var(--surface-3);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
 
+/* Unfinished progress stays neutral (white on dark surfaces), so a finished
+   game is the only one that carries the theme colour. */
 .profile-ach-bar > span {
   display: block;
   height: 100%;
-  border-radius: 2px;
-  background: var(--text-2);
+  border-radius: 3px;
+  background: var(--text);
   transition: width var(--ease);
 }
 
 .profile-ach-card.is-plat .profile-ach-bar > span {
   background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-tint);
 }
 
+/* Sub Meta (XP / Playtime) */
 .profile-ach-sub-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
-  min-height: 18px;
-  font-size: 10.5px;
+  min-height: 14px;
+  font-size: 10px;
   color: var(--text-3);
   font-weight: 500;
-}
-
-.profile-ach-sub-left {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  overflow: hidden;
+  margin-top: 1px;
 }
 
 .profile-ach-xp {
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .profile-ach-playtime {
   color: var(--text-3);
   margin-left: auto;
-  flex-shrink: 0;
 }
 
 /* Empty State */
 .profile-ach-empty {
   display: grid;
   place-items: center;
-  min-height: 240px;
+  min-height: 280px;
   padding: 0 16px;
 }
 
@@ -1520,7 +1595,7 @@
   padding: 6px 10px;
   border-radius: var(--r-sm);
   cursor: pointer;
-  transition: background-color var(--ease);
+  transition: background var(--ease);
 }
 
 .hide-game-row:hover {
@@ -1632,14 +1707,39 @@
     width: 100%;
   }
   .profile-stat {
-    padding: 12px 16px;
+    padding: 0 16px;
+    min-width: 80px;
   }
   .profile-stat-val {
-    font-size: 18px;
+    font-size: 20px;
   }
 }
 
-/* --- 10. Profile Banner Picker & Name Modals --- */
+/* --- 10. Keyframes for Scope Transitions --- */
+@keyframes profile-fade-slide {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes profile-grid-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- 11. Profile Banner Picker Modal --- */
+/* Beats the shared `.modal-box` width (modals.css loads after this file). */
 .modal-box.profile-banner-dialog {
   width: min(920px, 100%);
   max-width: 920px;
@@ -1651,7 +1751,7 @@
   background: var(--surface-1);
   border: 1px solid var(--line-strong);
   border-radius: var(--r-md);
-  box-shadow: var(--shadow-pop);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
 }
 
 .profile-banner-modal-head {
@@ -1683,7 +1783,7 @@
 .profile-banner-modal-head h3 {
   margin: 0;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text);
 }
 
@@ -1729,17 +1829,20 @@
   border: 1px solid var(--line);
   cursor: pointer;
   text-align: left;
-  transition: background-color var(--ease), border-color var(--ease);
+  transition: all var(--ease);
 }
 
 .profile-banner-item:hover {
   background: var(--surface-3);
   border-color: var(--line-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
 .profile-banner-item.is-active {
   border-color: var(--accent);
   background: var(--surface-3);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 .profile-banner-thumb-wrap {
@@ -1758,6 +1861,7 @@
   display: block;
 }
 
+/* The store pill inside the wrap renders its own tiny logo image. */
 .profile-banner-store-pill img {
   width: 10px;
   height: 10px;
@@ -1781,12 +1885,12 @@
   align-items: center;
   gap: 3px;
   padding: 2px 6px;
-  border-radius: var(--r-xs);
+  border-radius: 10px;
   background: rgba(10, 10, 10, 0.85);
   border: 1px solid var(--accent);
   color: #ffffff;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .profile-banner-store-pill {
@@ -1801,7 +1905,7 @@
   background: rgba(10, 10, 10, 0.82);
   color: var(--text-2);
   font-size: 9px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .profile-banner-item-name {
@@ -1822,96 +1926,50 @@
   font-size: 13px;
 }
 
-.modal-box.profile-name-dialog {
-  max-width: 400px;
-}
-
-.profile-name-modal-body {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 12px;
-  padding: 18px 24px;
-}
-
-.profile-name-modal-label {
-  font-size: 12.5px;
-  color: var(--text-2);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.profile-name-modal-input {
-  width: 100%;
-  height: 36px;
-  padding: 0 12px;
-  font-size: 13.5px;
-}
-
-/* --- 11. Play Activity: Daily Rhythm & Most-Played Split --- */
+/* --- Play activity: daily rhythm, weekly recap and most-played list --- */
 .play-activity-card {
-  display: block;
-  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 18px 26px;
+  padding: 16px 18px;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   background: var(--surface-1);
 }
 
-.play-activity-card.has-top {
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-  gap: 22px;
-  align-items: stretch;
-}
-
-.play-overview {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 20px;
-  align-items: end;
-  min-width: 0;
-}
-
-.play-activity-card.has-top .play-overview {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: stretch;
-  gap: 16px;
-}
-
 .play-summary {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   flex-wrap: wrap;
-  gap: 24px;
+  gap: 20px;
 }
 
 .play-stat {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  min-width: 80px;
+  gap: 4px;
+  min-width: 84px;
 }
 
 .play-stat-val {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text);
-  line-height: 1.15;
+  line-height: 1.1;
 }
 
 .play-stat-label {
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--text-2);
+  font-size: 10px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
 }
 
 .play-stat-group {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .play-delta {
@@ -1931,16 +1989,17 @@
 }
 
 .play-chart-head {
-  font-size: 11.5px;
-  font-weight: 500;
+  font-size: 10px;
   color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
 }
 
 .play-chart {
   display: flex;
   align-items: flex-end;
   gap: 4px;
-  height: 56px;
+  height: 72px;
 }
 
 .play-bar-slot {
@@ -1954,40 +2013,29 @@
 .play-bar {
   width: 100%;
   min-height: 2px;
-  border-radius: 2px 2px 1px 1px;
+  border-radius: 3px 3px 1px 1px;
   background: var(--surface-3);
-}
-
-.play-bar.has-play {
-  min-height: 4px;
-  background: var(--text-2);
-  opacity: 0.6;
 }
 
 .play-bar.is-today {
   background: var(--accent);
-  opacity: 1;
 }
 
 .play-top {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-left: 22px;
-  border-left: 1px solid var(--line);
-  min-width: 0;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
 }
 
 .play-top-head {
+  grid-column: 1 / -1;
+  margin-bottom: 2px;
   font-size: 12px;
   font-weight: 600;
   color: var(--text-2);
-}
-
-.play-top-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px 14px;
 }
 
 .play-top-row {
@@ -1995,14 +2043,13 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-  padding: 5px 6px;
+  padding: 6px;
   border: 0;
   border-radius: var(--r-sm);
   background: none;
   color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background-color var(--ease);
 }
 
 .play-top-row:hover {
@@ -2010,13 +2057,12 @@
 }
 
 .play-top-art {
-  width: 30px;
-  height: 40px;
+  width: 32px;
+  height: 42px;
   flex: none;
   object-fit: cover;
-  border-radius: 3px;
+  border-radius: 4px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
 }
 
 .play-top-art.placeholder {
@@ -2028,14 +2074,14 @@
 .play-top-main {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   flex: 1;
   min-width: 0;
 }
 
 .play-top-name {
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -2044,7 +2090,7 @@
 
 .play-top-track {
   height: 3px;
-  border-radius: 2px;
+  border-radius: 999px;
   background: var(--surface-3);
   overflow: hidden;
 }
@@ -2058,7 +2104,7 @@
 
 .play-top-time {
   flex: none;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--text-2);
 }
 
@@ -2073,22 +2119,12 @@
   color: var(--text-2);
 }
 
-@media (max-width: 1050px) {
-  .play-activity-card.has-top {
+@media (max-width: 900px) {
+  .play-activity-card {
     grid-template-columns: 1fr;
   }
 
   .play-top {
-    padding-left: 0;
-    padding-top: 14px;
-    border-left: none;
-    border-top: 1px solid var(--line);
-  }
-}
-
-@media (max-width: 680px) {
-  .play-overview,
-  .play-top-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -171,18 +171,12 @@ function renderChart(data: PlayActivityData): string {
   const todayKey = shown[shown.length - 1]?.key ?? "";
   const bars = shown
     .map((day) => {
-      const hasPlay = day.seconds > 0;
-      const height = hasPlay ? Math.max(10, Math.round((day.seconds / max) * 100)) : 0;
+      const height = day.seconds > 0 ? Math.max(4, Math.round((day.seconds / max) * 100)) : 0;
       const [year, month, date] = day.key.split("-");
       const label = `${date}.${month}.${year}`;
       const tip = `${label} · ${fmtPlaytime(day.seconds)}`;
-      const cls = [
-        "play-bar",
-        hasPlay ? "has-play" : "is-zero",
-        day.key === todayKey ? "is-today" : "",
-      ].filter(Boolean).join(" ");
       return `<span class="play-bar-slot" title="${esc(tip)}">
-        <span class="${cls}" style="height:${height}%"></span>
+        <span class="play-bar${day.key === todayKey ? " is-today" : ""}" style="height:${height}%"></span>
       </span>`;
     })
     .join("");
@@ -210,7 +204,7 @@ function renderTop(data: PlayActivityData): string {
     .join("");
   return `<div class="play-top">
     <div class="play-top-head">${esc(data.last7 > 0 ? t("profile.activityTopWeek") : t("profile.activityTopMonth"))}</div>
-    <div class="play-top-grid">${rows}</div>
+    ${rows}
   </div>`;
 }
 
@@ -221,24 +215,21 @@ function renderTop(data: PlayActivityData): string {
 export function renderPlayActivity(scope: "all" | GameSource): string {
   const data = playActivityFor(scope);
   if (!data.hasSessions && data.trackedGames === 0) return "";
-  const topHtml = renderTop(data);
   const body = data.hasSessions
-    ? `<div class="play-activity-card${topHtml ? " has-top" : ""}">
-        <div class="play-overview">
-          <div class="play-summary">
-            ${stat(t("profile.activityToday"), data.today)}
-            <div class="play-stat-group">
-              ${stat(t("profile.activityWeek"), data.last7)}
-              ${deltaText(data) ? `<span class="play-delta${data.last7 >= data.prev7 ? " up" : ""}">${esc(deltaText(data))}</span>` : ""}
-            </div>
-            ${stat(t("profile.activityMonth"), data.last30)}
+    ? `<div class="play-activity-card">
+        <div class="play-summary">
+          ${stat(t("profile.activityToday"), data.today)}
+          <div class="play-stat-group">
+            ${stat(t("profile.activityWeek"), data.last7)}
+            ${deltaText(data) ? `<span class="play-delta${data.last7 >= data.prev7 ? " up" : ""}">${esc(deltaText(data))}</span>` : ""}
           </div>
-          <div class="play-chart-wrap">
-            <div class="play-chart-head">${esc(t("profile.activityChartTitle"))}</div>
-            ${renderChart(data)}
-          </div>
+          ${stat(t("profile.activityMonth"), data.last30)}
         </div>
-        ${topHtml}
+        <div class="play-chart-wrap">
+          <div class="play-chart-head">${esc(t("profile.activityChartTitle"))}</div>
+          ${renderChart(data)}
+        </div>
+        ${renderTop(data)}
       </div>`
     : `<div class="play-activity-card is-new">
         <p class="play-empty-copy">${esc(t("profile.activityNoSessions"))}</p>
