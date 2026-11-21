@@ -845,7 +845,6 @@ interface ProfileStat {
   icon: "games" | "clock" | "trophy" | "plat" | "xp";
   sub?: string;
   celebrate?: boolean;
-  jump?: "library" | "activity" | "all" | "platinum" | "xp";
 }
 
 function renderStat(stat: ProfileStat): string {
@@ -859,20 +858,13 @@ function renderStat(stat: ProfileStat): string {
           ? icon("zap", 15)
           : icon("trophy", 15);
   const sub = stat.sub ? `<span class="profile-stat-sub tabular-nums">${esc(stat.sub)}</span>` : "";
-  const actAttr = stat.jump === "library"
-    ? ` data-view="library"`
-    : stat.jump
-      ? ` data-act="profile-stat-jump" data-val="${stat.jump}"`
-      : "";
-  const tag = actAttr ? "button type=\"button\"" : "div";
-  const endTag = actAttr ? "button" : "div";
-  return `<${tag} class="profile-stat${stat.icon === "plat" ? " is-plat-stat" : ""}${actAttr ? " is-clickable" : ""}"${actAttr}>
+  return `<div class="profile-stat${stat.icon === "plat" ? " is-plat-stat" : ""}">
     <span class="profile-stat-icon" aria-hidden="true">${glyph}</span>
     <span class="profile-stat-text">
       <span class="profile-stat-label">${esc(stat.label)}</span>
       <span class="profile-stat-val tabular-nums"><span>${stat.value}</span>${sub}</span>
     </span>
-  </${endTag}>`;
+  </div>`;
 }
 
 function heroChipStoreName(kind: StoreKind): string {
@@ -1372,9 +1364,9 @@ export function renderProfile(): string {
 
   const stats: ProfileStat[] = [];
   if (showData) {
-    stats.push({ value: libraryCount(scope).toLocaleString(), label: t("profile.games"), icon: "games", jump: "library" });
-    stats.push({ value: playtimeSeconds > 0 ? fmtPlaytime(playtimeSeconds) : "—", label: t("profile.played"), icon: "clock", jump: playtimeSeconds > 0 ? "activity" : undefined });
-    stats.push({ value: totals.unlocked.toLocaleString(), label: t("profile.trophies"), icon: "trophy", jump: "all" });
+    stats.push({ value: libraryCount(scope).toLocaleString(), label: t("profile.games"), icon: "games" });
+    stats.push({ value: playtimeSeconds > 0 ? fmtPlaytime(playtimeSeconds) : "—", label: t("profile.played"), icon: "clock" });
+    stats.push({ value: totals.unlocked.toLocaleString(), label: t("profile.trophies"), icon: "trophy" });
     // The same completion count the Platinum filter and the showcase use, paired
     // with the honest completion ratio across tracked sets when available.
     const platSub = totals.trackedSets > 0
@@ -1386,15 +1378,14 @@ export function renderProfile(): string {
       icon: "plat",
       sub: platSub,
       celebrate: totals.completed > 0,
-      jump: totals.completed > 0 ? "platinum" : "all",
     });
     // XP is Epic-only currency and only shown when the scope is Epic itself.
     if (scope === "epic" && S.playerProfileData) {
-      stats.push({ value: S.playerProfileData.total_xp.toLocaleString(), label: "XP", icon: "xp", jump: "xp" });
+      stats.push({ value: S.playerProfileData.total_xp.toLocaleString(), label: "XP", icon: "xp" });
     }
     // Xbox reports gamerscore, the same number the console profile shows.
     if (scope === "xbox") {
-      stats.push({ value: totals.xp.toLocaleString(), label: "G", icon: "xp", jump: "xp" });
+      stats.push({ value: totals.xp.toLocaleString(), label: "G", icon: "xp" });
     }
   }
 

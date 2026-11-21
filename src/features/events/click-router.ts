@@ -606,21 +606,6 @@ document.addEventListener("click", (e) => {
     S.profileShowHidden = false;
     resetProfileCards();
     render();
-  } else if (act === "profile-stat-jump" && t.dataset.val) {
-    const val = t.dataset.val;
-    if (val === "activity") {
-      document.querySelector<HTMLElement>(".play-activity")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else {
-      if (val === "xp") {
-        S.profileSort = "xp";
-      } else if (val === "platinum" || val === "all") {
-        S.profileFilter = val;
-      }
-      S.profileShowHidden = false;
-      resetProfileCards();
-      render();
-      document.getElementById("profile-ach-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
   } else if (act === "profile-store" && t.dataset.val) {
     const store = t.dataset.val;
     if (store === "all" || ALL_PROFILE_STORES.includes(store as StoreKind)) {
