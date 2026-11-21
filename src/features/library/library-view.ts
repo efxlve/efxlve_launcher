@@ -1077,6 +1077,8 @@ function wireCardSettle(): void {
     if (S.isCoverSizeOpen) syncDensityMenu();
   }, { passive: true });
 
+  const TILT_CARD_SELECTOR = ".pgrid > .pcard, .profile-ach-card, .profile-recent-card";
+
   // The lifted/tilted cover is driven by this class, not :hover. The browser
   // can drop :hover before pointerout runs, which used to start the leave
   // transition with the 65ms tracking duration and snap the cover back.
@@ -1085,11 +1087,11 @@ function wireCardSettle(): void {
     (e) => {
       if (
         e.pointerType === "touch" ||
-        S.view !== "library" ||
+        (S.view !== "library" && S.view !== "profile") ||
         S.reduceEffects ||
         window.matchMedia("(prefers-reduced-motion: reduce)").matches
       ) return;
-      const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(".pgrid > .pcard");
+      const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(TILT_CARD_SELECTOR);
       if (!card) return;
       const existing = cardSettleTimers.get(card);
       if (existing) {
@@ -1106,16 +1108,16 @@ function wireCardSettle(): void {
     "pointermove",
     (e) => {
       if (e.pointerType === "touch") return;
-      // The tilt only exists on the library grid. Every other view was paying a
-      // `closest()` walk on each pointer move for a card that cannot be there.
-      if (S.view !== "library") {
+      // The tilt only exists on the library and profile cover grids. Every other
+      // view skips the `closest()` walk on pointer move.
+      if (S.view !== "library" && S.view !== "profile") {
         if (activeTiltCard) {
           clearCardTilt(activeTiltCard);
           activeTiltCard = null;
         }
         return;
       }
-      const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(".pgrid > .pcard") ?? null;
+      const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(TILT_CARD_SELECTOR) ?? null;
       if (activeTiltCard && activeTiltCard !== card) {
         clearCardTilt(activeTiltCard);
         activeTiltCard = null;
@@ -1167,7 +1169,7 @@ function wireCardSettle(): void {
   );
 
   document.addEventListener("pointerout", (e) => {
-    const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(".pcard");
+    const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(".pcard, .profile-ach-card, .profile-recent-card");
     if (!card) return;
     const next = e.relatedTarget as Node | null;
     if (next && card.contains(next)) return;

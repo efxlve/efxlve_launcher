@@ -347,7 +347,7 @@
   background: linear-gradient(180deg, #ffffff 0%, #f4f9fd 48%, #e0eef8 50%, #eef6fc 100%);
   box-shadow: 0 1px 3px rgba(0, 35, 75, 0.4), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="gloss"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo, .profile-unlock-store-logo, .pcard-store-logo, .col-store-logo-img, .bk-store-logo) {
+:root[data-surface="gloss"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-unlock-store-logo, .pcard-store-logo, .col-store-logo-img, .bk-store-logo) {
   filter: brightness(0) saturate(100%) invert(18%) sepia(35%) saturate(1400%) hue-rotate(175deg);
   opacity: 0.88;
 }
@@ -355,49 +355,9 @@
   filter: brightness(0) saturate(100%) invert(18%) sepia(35%) saturate(1400%) hue-rotate(175deg);
   opacity: 0.88;
 }
-:root[data-surface="gloss"] .profile-hero-actions .icon-btn {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(43, 143, 239, 0.35);
-  color: #0b4a8c;
-}
-:root[data-surface="gloss"] .profile-hero-actions .icon-btn:hover {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: rgba(43, 143, 239, 0.6);
-  color: #003366;
-}
-:root[data-surface="gloss"] .profile-banner-edit-btn {
-  background: rgba(10, 20, 36, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  color: #ffffff;
-}
-:root[data-surface="gloss"] .profile-banner-edit-btn:hover {
-  background: rgba(14, 30, 54, 0.92);
-  border-color: rgba(43, 143, 239, 0.7);
-  color: #ffffff;
-}
-:root[data-surface="gloss"] :is(.profile-hero-store-chip, .profile-hero-acc-chip) {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(43, 143, 239, 0.28);
-}
-:root[data-surface="gloss"] :is(.profile-hero-store-chip, .profile-hero-acc-chip):hover {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: rgba(43, 143, 239, 0.55);
-}
-:root[data-surface="gloss"] :is(.profile-hero-store-chip, .profile-hero-acc-chip).selected {
-  background: var(--accent-tint);
-  border-color: var(--accent);
-  color: var(--text);
-}
-:root[data-surface="gloss"] .profile-hero-banner::after {
-  background: linear-gradient(180deg, transparent 60%, rgba(0, 30, 60, 0.22) 100%);
-}
 :root[data-surface="gloss"] .profile-stats {
-  background: rgba(255, 255, 255, 0.45);
-  border-top-color: rgba(43, 143, 239, 0.2);
+  background: rgba(255, 255, 255, 0.72);
+  border-top-color: rgba(43, 143, 239, 0.22);
 }
 :root[data-surface="gloss"] .compat-note {
   color: #0d2f4f;

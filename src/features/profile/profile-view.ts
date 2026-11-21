@@ -15,7 +15,7 @@ import { PROFILE_CARD_CHUNK } from "../../core/constants";
 import { achievementHistoryStats, sortedAchievementHistory } from "../../core/achievement-history";
 import { achievementPins } from "../../core/achievement-pins";
 import { achSummaryOf } from "../../core/game-view";
-import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
+import { emptyState, epicPlatinumIcon, icon, platinumCup } from "../../core/icons";
 import { epicWideArt, rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { cachedSteamCover, steamCdnPortrait } from "../../core/steam-art-cache";
 import { avatarFor, currentProfileName, globalAvatar, S } from "../../core/state";
@@ -839,11 +839,13 @@ interface ProfileStat {
   label: string;
   icon: "games" | "clock" | "trophy" | "plat" | "xp";
   sub?: string;
+  celebrate?: boolean;
+  jump?: "library" | "activity" | "all" | "platinum" | "xp";
 }
 
 function renderStat(stat: ProfileStat): string {
   const glyph = stat.icon === "plat"
-    ? epicPlatinumIcon(15)
+    ? (stat.celebrate ? platinumCup(18, true) : epicPlatinumIcon(16))
     : stat.icon === "games"
       ? icon("gamepad-2", 15)
       : stat.icon === "clock"
@@ -852,13 +854,20 @@ function renderStat(stat: ProfileStat): string {
           ? icon("zap", 15)
           : icon("trophy", 15);
   const sub = stat.sub ? `<span class="profile-stat-sub tabular-nums">${esc(stat.sub)}</span>` : "";
-  return `<div class="profile-stat${stat.icon === "plat" ? " is-plat-stat" : ""}">
+  const actAttr = stat.jump === "library"
+    ? ` data-view="library"`
+    : stat.jump
+      ? ` data-act="profile-stat-jump" data-val="${stat.jump}"`
+      : "";
+  const tag = actAttr ? "button type=\"button\"" : "div";
+  const endTag = actAttr ? "button" : "div";
+  return `<${tag} class="profile-stat${stat.icon === "plat" ? " is-plat-stat" : ""}${actAttr ? " is-clickable" : ""}"${actAttr}>
     <span class="profile-stat-icon" aria-hidden="true">${glyph}</span>
     <span class="profile-stat-text">
       <span class="profile-stat-label">${esc(stat.label)}</span>
       <span class="profile-stat-val tabular-nums"><span>${stat.value}</span>${sub}</span>
     </span>
-  </div>`;
+  </${endTag}>`;
 }
 
 function heroChipStoreName(kind: StoreKind): string {
@@ -990,23 +999,33 @@ function renderProfileHero(
 
   return `
     <section class="card profile-hero">
-      <div class="profile-hero-banner${banner ? "" : " is-plain"}"${banner ? ` style="background-image:url('${esc(banner)}')"` : ""}>
-        ${banner ? `<div class="profile-hero-backdrop" style="background-image:url('${esc(banner)}')" aria-hidden="true"></div>` : ""}
-        ${showData ? `
-          <button type="button" class="profile-banner-edit-btn" data-act="profile-change-banner" data-scope="${esc(scopeKey)}" data-label="${esc(scopeLabel)}" title="${esc(t("profile.changeBannerTitle"))}">
-            ${icon("image", 13)}<span>${esc(t("profile.changeBanner"))}</span>
-          </button>
-        ` : ""}
-      </div>
-      <div class="profile-hero-top">
-        <div class="profile-avatar-wrap">
-          <button type="button" class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitle)}" aria-label="${esc(avatarTitle)}">
-            <span class="profile-avatar profile-avatar-lg${isOnline ? " is-online" : ""}">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : combined ? icon("gamepad-2", 32) : esc(initial)}</span>
-            <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 11)}</span>
-          </button>
+      <div class="profile-hero-stage${banner ? "" : " is-plain"}">
+        ${banner
+          ? `<div class="profile-hero-backdrop" style="background-image:url('${esc(banner)}')" aria-hidden="true"></div>
+             <div class="profile-hero-art" style="background-image:url('${esc(banner)}')" aria-hidden="true"></div>`
+          : ""}
+        <div class="profile-hero-scrim" aria-hidden="true"></div>
+        <div class="profile-hero-top-bar">
+          ${!combined
+            ? `<button type="button" class="btn small profile-hero-tool" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>`
+            : "<span></span>"}
+          <div class="profile-hero-actions">
+            ${showData
+              ? `<button type="button" class="btn small profile-hero-tool profile-banner-edit-btn" data-act="profile-change-banner" data-scope="${esc(scopeKey)}" data-label="${esc(scopeLabel)}" title="${esc(t("profile.changeBannerTitle"))}">${icon("image", 13)}<span>${esc(t("profile.changeBanner"))}</span></button>`
+              : ""}
+            <button type="button" class="btn small profile-hero-tool" data-view="accounts">${icon("settings", 13)}<span>${t("accounts.manageAccounts")}</span></button>
+            <button type="button" class="icon-btn profile-hero-tool${S.presenceEnabled ? "" : " is-muted"}" data-act="toggle-presence" title="${esc(presenceLabel)}" aria-label="${esc(presenceLabel)}" aria-pressed="${S.presenceEnabled}">${icon(S.presenceEnabled ? "eye" : "eye-off", 14)}</button>
+            <button type="button" class="icon-btn profile-hero-tool profile-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${esc(refreshTitle)}" aria-label="${esc(refreshTitle)}">${icon("refresh", 14)}</button>
+          </div>
         </div>
-        <div class="profile-hero-identity">
-          <div class="profile-identity-head">
+        <div class="profile-hero-bottom">
+          <div class="profile-avatar-wrap">
+            <button type="button" class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitle)}" aria-label="${esc(avatarTitle)}">
+              <span class="profile-avatar profile-avatar-lg${isOnline ? " is-online" : ""}">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : combined ? icon("gamepad-2", 34) : esc(initial)}</span>
+              <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 11)}</span>
+            </button>
+          </div>
+          <div class="profile-hero-identity">
             <div class="profile-name-row">
               ${nameHtml}
               <div class="profile-presence">
@@ -1014,16 +1033,8 @@ function renderProfileHero(
                 <span class="profile-presence-text">${isOnline ? t("nav.online") : t("profile.offlineMode")}</span>
               </div>
             </div>
-            <div class="profile-hero-actions">
-              ${!combined
-                ? `<button type="button" class="btn ghost small" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>`
-                : ""}
-              <button type="button" class="btn ghost small" data-view="accounts">${icon("settings", 13)}<span>${t("accounts.manageAccounts")}</span></button>
-              <button type="button" class="icon-btn${S.presenceEnabled ? "" : " is-muted"}" data-act="toggle-presence" title="${esc(presenceLabel)}" aria-label="${esc(presenceLabel)}" aria-pressed="${S.presenceEnabled}">${icon(S.presenceEnabled ? "eye" : "eye-off", 15)}</button>
-              <button type="button" class="icon-btn profile-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${esc(refreshTitle)}" aria-label="${esc(refreshTitle)}">${icon("refresh", 15)}</button>
-            </div>
+            ${scopeBarHtml}
           </div>
-          ${scopeBarHtml}
         </div>
       </div>
       ${statsHtml}
@@ -1114,9 +1125,6 @@ function renderShowcase(): string {
           : pin.tier === "gold" || pin.tier === "silver" || pin.tier === "bronze"
             ? t(`trophy.${pin.tier}`)
             : "";
-      const tierBadge = tierLabel
-        ? `<span class="profile-showcase-tier is-${esc(pin.tier || "bronze")}">${pin.tier === "platinum" ? epicPlatinumIcon(11) : icon("trophy", 11)}<span>${esc(tierLabel)}</span></span>`
-        : "";
       const meta = [
         pin.rarity != null ? `%${fmtDecimal1(pin.rarity)}` : "",
         pin.date ? fmtAchDate(pin.date) : "",
@@ -1133,14 +1141,14 @@ function renderShowcase(): string {
           <button type="button" class="profile-showcase-main" data-act="open-pinned-achievement" data-id="${esc(pin.appName)}" data-ach="${esc(pin.name)}" title="${esc(pin.title)} · ${esc(pin.game)}">
             <span class="profile-showcase-art">${pin.icon ? `<img src="${esc(pin.icon)}" alt="" loading="lazy" decoding="async" />` : icon("trophy", 22)}</span>
             <span class="profile-showcase-body">
-              <span class="profile-showcase-title-row">
-                <span class="profile-showcase-title">${esc(pin.title)}</span>
-                ${tierBadge}
-              </span>
-              <span class="profile-showcase-sub">
-                <span class="profile-showcase-game">${esc(pin.game)}</span>
-                ${meta ? `<span class="profile-showcase-meta tabular-nums">${esc(meta)}</span>` : ""}
-              </span>
+              ${tierLabel || meta ? `
+                <span class="profile-showcase-tag">
+                  ${tierLabel ? `<span class="profile-showcase-tier is-${esc(pin.tier || "bronze")}">${esc(tierLabel)}</span>` : ""}
+                  ${tierLabel && meta ? `<span class="profile-showcase-sep" aria-hidden="true">·</span>` : ""}
+                  ${meta ? `<span class="profile-showcase-meta tabular-nums">${esc(meta)}</span>` : ""}
+                </span>` : ""}
+              <span class="profile-showcase-title">${esc(pin.title)}</span>
+              <span class="profile-showcase-game">${esc(pin.game)}</span>
             </span>
           </button>
           <div class="profile-showcase-actions">
@@ -1199,16 +1207,16 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
         entry.description || "",
       ].filter(Boolean).join(" · ");
       return `
-        <button type="button" class="profile-unlock-card" data-act="open-pinned-achievement" data-id="${esc(entry.appName)}" data-ach="${esc(entry.name)}" title="${esc(tip)}">
-          <span class="profile-unlock-icon">${entry.icon ? `<img src="${esc(entry.icon)}" alt="" loading="lazy" decoding="async" />` : icon("trophy", 15)}</span>
+        <button type="button" class="profile-unlock-card${isUltraRare ? " is-rare-card" : ""}" data-act="open-pinned-achievement" data-id="${esc(entry.appName)}" data-ach="${esc(entry.name)}" title="${esc(tip)}">
+          <span class="profile-unlock-icon">${entry.icon ? `<img src="${esc(entry.icon)}" alt="" loading="lazy" decoding="async" />` : icon("trophy", 16)}</span>
           <span class="profile-unlock-main">
-            <span class="profile-unlock-top">
-              <span class="profile-unlock-name">${esc(entry.title)}</span>
-              ${shot}
-            </span>
             <span class="profile-unlock-bottom">
               <span class="profile-unlock-game-row">${storeMark}<span class="profile-unlock-game">${esc(entry.game)}</span></span>
               ${rightMeta ? `<span class="profile-unlock-meta tabular-nums${isUltraRare ? " is-rare" : ""}">${esc(rightMeta)}</span>` : ""}
+            </span>
+            <span class="profile-unlock-top">
+              <span class="profile-unlock-name">${esc(entry.title)}</span>
+              ${shot}
             </span>
           </span>
         </button>`;
@@ -1295,15 +1303,20 @@ function renderDormantView(account: ProfileAccount, displayName: string, avatarK
   return `
     <div class="page profile-page">
       <section class="card profile-hero is-dormant-hero">
-        <div class="profile-hero-top">
-          <div class="profile-avatar-wrap">
-            <button type="button" class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitleDormant)}" aria-label="${esc(avatarTitleDormant)}">
-              <span class="profile-avatar profile-avatar-lg">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : esc(initial)}</span>
-              <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 11)}</span>
-            </button>
+        <div class="profile-hero-stage is-plain">
+          <div class="profile-hero-scrim" aria-hidden="true"></div>
+          <div class="profile-hero-top-bar">
+            <button type="button" class="btn small profile-hero-tool" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>
+            <span></span>
           </div>
-          <div class="profile-hero-identity">
-            <div class="profile-identity-head">
+          <div class="profile-hero-bottom">
+            <div class="profile-avatar-wrap">
+              <button type="button" class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitleDormant)}" aria-label="${esc(avatarTitleDormant)}">
+                <span class="profile-avatar profile-avatar-lg">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : esc(initial)}</span>
+                <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 11)}</span>
+              </button>
+            </div>
+            <div class="profile-hero-identity">
               <div class="profile-name-row">
                 <h1 class="profile-name">${esc(displayName)}</h1>
                 <div class="profile-presence">
@@ -1311,11 +1324,8 @@ function renderDormantView(account: ProfileAccount, displayName: string, avatarK
                   <span class="profile-presence-text">${esc(t("profile.inactiveTitle"))}</span>
                 </div>
               </div>
-              <div class="profile-hero-actions">
-                <button type="button" class="btn ghost small" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>
-              </div>
+              <div class="profile-scope-bar">${storesHtml}${accountsHtml ? `<span class="profile-scope-sep" aria-hidden="true"></span>${accountsHtml}` : ""}</div>
             </div>
-            <div class="profile-scope-bar">${storesHtml}${accountsHtml ? `<span class="profile-scope-sep" aria-hidden="true"></span>${accountsHtml}` : ""}</div>
           </div>
         </div>
       </section>
@@ -1384,22 +1394,29 @@ export function renderProfile(): string {
 
   const stats: ProfileStat[] = [];
   if (showData) {
-    stats.push({ value: libraryCount(scope).toLocaleString(), label: t("profile.games"), icon: "games" });
-    stats.push({ value: playtimeSeconds > 0 ? fmtPlaytime(playtimeSeconds) : "—", label: t("profile.played"), icon: "clock" });
-    stats.push({ value: totals.unlocked.toLocaleString(), label: t("profile.trophies"), icon: "trophy" });
+    stats.push({ value: libraryCount(scope).toLocaleString(), label: t("profile.games"), icon: "games", jump: "library" });
+    stats.push({ value: playtimeSeconds > 0 ? fmtPlaytime(playtimeSeconds) : "—", label: t("profile.played"), icon: "clock", jump: playtimeSeconds > 0 ? "activity" : undefined });
+    stats.push({ value: totals.unlocked.toLocaleString(), label: t("profile.trophies"), icon: "trophy", jump: "all" });
     // The same completion count the Platinum filter and the showcase use, paired
     // with the honest completion ratio across tracked sets when available.
     const platSub = totals.trackedSets > 0
       ? `${Math.round((totals.completed / totals.trackedSets) * 100)}% (${totals.completed}/${totals.trackedSets})`
       : undefined;
-    stats.push({ value: totals.completed.toLocaleString(), label: t("profile.platLabel"), icon: "plat", sub: platSub });
+    stats.push({
+      value: totals.completed.toLocaleString(),
+      label: t("profile.platLabel"),
+      icon: "plat",
+      sub: platSub,
+      celebrate: totals.completed > 0,
+      jump: totals.completed > 0 ? "platinum" : "all",
+    });
     // XP is Epic-only currency and only shown when the scope is Epic itself.
     if (scope === "epic" && S.playerProfileData) {
-      stats.push({ value: S.playerProfileData.total_xp.toLocaleString(), label: "XP", icon: "xp" });
+      stats.push({ value: S.playerProfileData.total_xp.toLocaleString(), label: "XP", icon: "xp", jump: "xp" });
     }
     // Xbox reports gamerscore, the same number the console profile shows.
     if (scope === "xbox") {
-      stats.push({ value: totals.xp.toLocaleString(), label: "G", icon: "xp" });
+      stats.push({ value: totals.xp.toLocaleString(), label: "G", icon: "xp", jump: "xp" });
     }
   }
 

@@ -36,7 +36,7 @@
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
-:root[data-scheme="light"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo, .profile-unlock-store-logo, .pcard-store-logo, .col-store-logo-img, .bk-store-logo) {
+:root[data-scheme="light"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-unlock-store-logo, .pcard-store-logo, .col-store-logo-img, .bk-store-logo) {
   filter: brightness(0);
   opacity: 0.85;
 }
@@ -44,40 +44,8 @@
   filter: brightness(0);
   opacity: 0.85;
 }
-:root[data-scheme="light"] .profile-hero-actions .icon-btn {
-  background: #ffffff;
-  border-color: var(--line);
-  color: var(--text-2);
-}
-:root[data-scheme="light"] .profile-hero-actions .icon-btn:hover {
-  background: var(--surface-2);
-  color: var(--text);
-  border-color: var(--line-strong);
-}
-:root[data-scheme="light"] .profile-banner-edit-btn {
-  background: rgba(15, 23, 42, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  color: #ffffff;
-}
-:root[data-scheme="light"] .profile-banner-edit-btn:hover {
-  background: rgba(15, 23, 42, 0.92);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.38);
-}
-:root[data-scheme="light"] :is(.profile-hero-store-chip, .profile-hero-acc-chip) {
-  background: #ffffff;
-}
-:root[data-scheme="light"] :is(.profile-hero-store-chip, .profile-hero-acc-chip):hover {
-  background: var(--surface-2);
-}
-:root[data-scheme="light"] :is(.profile-hero-store-chip, .profile-hero-acc-chip).selected {
-  background: var(--accent-tint);
-}
-:root[data-scheme="light"] .profile-hero-banner::after {
-  background: linear-gradient(180deg, transparent 60%, rgba(0, 0, 0, 0.22) 100%);
-}
 :root[data-scheme="light"] .profile-stats {
-  background: var(--surface-2);
+  background: var(--surface-1);
   border-top-color: var(--line);
 }
 :root[data-scheme="light"] :is(.search input, .notes-search input, .notes-search-input,

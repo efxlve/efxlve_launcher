@@ -1,11 +1,10 @@
 /* ==========================================================================
    Profile Page (docs/DESIGN_SYSTEM.md).
-   Matches the visual craft and motion of library.css and game-page.css:
-   ambient hero backdrop + multi-stop scrim, icon-tile stats ledger, tactile
-   cover hover physics, tier-aware trophy plaques, and one-shot entrance motion.
+   Shares the exact visual craft, 3D cover physics, HUD medallion geometry, and
+   in-stage hero architecture of game-page.css, library.css, and ach-card.css.
    ========================================================================== */
 
-/* --- 1. Page Shell & Entrance Motion --- */
+/* --- 1. Page Shell & Keyframes --- */
 .profile-page {
   display: flex;
   flex-direction: column;
@@ -29,7 +28,7 @@
 @keyframes profile-banner-reveal {
   from {
     opacity: 0.55;
-    transform: scale(1.015);
+    transform: scale(1.02);
   }
   to {
     opacity: 1;
@@ -55,7 +54,7 @@
   }
 }
 
-/* --- 2. Identity Hero & Ledger --- */
+/* --- 2. In-Stage Cinematic Identity Hero (Matches .gp-hero in game-page.css) --- */
 .profile-hero {
   position: relative;
   display: flex;
@@ -63,105 +62,140 @@
   padding: 0;
   background: var(--surface-1);
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  border-radius: var(--r-lg, 14px);
   overflow: hidden;
   animation: profile-section-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.profile-hero-banner {
+.profile-hero-stage {
   position: relative;
-  height: 216px;
-  background-color: var(--surface-2);
-  background-size: cover;
-  background-position: center 28%;
+  min-height: 244px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 24px 20px;
+  background: #08090c;
   overflow: hidden;
-  animation: profile-banner-reveal 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* Hero content sits over key art and dark scrim in every theme */
+  --hero-fg: #ffffff;
+  --hero-fg-2: rgba(255, 255, 255, 0.84);
+  --hero-fg-3: rgba(255, 255, 255, 0.56);
+  --hero-line: rgba(255, 255, 255, 0.16);
+}
+
+.profile-hero-stage.is-plain {
+  min-height: 196px;
+  background-color: #0b0c10;
+  background-image:
+    radial-gradient(120% 140% at 12% 0%, rgba(255, 255, 255, 0.08) 0%, transparent 65%),
+    radial-gradient(90% 120% at 88% 100%, rgba(255, 255, 255, 0.04) 0%, transparent 60%);
 }
 
 .profile-hero-backdrop {
   position: absolute;
-  inset: -24px;
+  inset: -28px;
   background-size: cover;
   background-position: center center;
-  filter: blur(32px) brightness(0.42) saturate(1.15);
-  transform: scale(1.12);
-  opacity: 0.45;
+  filter: blur(36px) brightness(0.45) saturate(1.18);
+  transform: scale(1.14);
+  opacity: 0.85;
   pointer-events: none;
 }
 
-.profile-hero-banner::after {
-  content: "";
+.profile-hero-art {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 26%;
+  animation: profile-banner-reveal 440ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  pointer-events: none;
+}
+
+.profile-hero-scrim {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0.28) 0%,
-    rgba(0, 0, 0, 0.06) 28%,
-    rgba(0, 0, 0, 0.54) 72%,
-    var(--surface-1) 100%
+    rgba(6, 7, 10, 0.38) 0%,
+    rgba(6, 7, 10, 0.12) 28%,
+    rgba(6, 7, 10, 0.64) 68%,
+    rgba(8, 9, 12, 0.94) 100%
   );
   pointer-events: none;
 }
 
-.profile-hero-banner.is-plain {
-  height: 132px;
-  background-color: var(--surface-2);
-  background-image: radial-gradient(
-    120% 160% at 15% 0%,
-    var(--surface-3) 0%,
-    var(--surface-1) 80%
-  );
+.profile-hero-top-bar {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.profile-hero-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* Frosted hero tools (same surface contract as .gp-hero-tool in game-page.css) */
+.profile-hero-tool {
+  background: rgba(14, 15, 19, 0.72) !important;
+  border: 1px solid var(--hero-line) !important;
+  color: var(--hero-fg) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  transition:
+    background-color var(--ease),
+    border-color var(--ease),
+    color var(--ease),
+    opacity var(--ease);
+}
+
+.profile-hero-tool:hover {
+  background: rgba(24, 26, 32, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.32) !important;
+  color: #ffffff !important;
+}
+
+.profile-hero-tool.icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-sm);
+}
+
+.profile-hero-tool.is-muted {
+  color: var(--hero-fg-3) !important;
 }
 
 .profile-banner-edit-btn {
-  position: absolute;
-  top: 14px;
-  right: 16px;
-  z-index: 4;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 11px;
-  border-radius: var(--r-sm);
-  background: rgba(12, 13, 16, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #ffffff;
-  font-size: 11.5px;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
   opacity: 0;
-  transform: translateY(-2px);
   transition:
     opacity 160ms ease,
-    transform 160ms ease,
     background-color var(--ease),
     border-color var(--ease);
 }
 
-.profile-hero:hover .profile-banner-edit-btn,
+.profile-hero-stage:hover .profile-banner-edit-btn,
 .profile-banner-edit-btn:focus-visible {
   opacity: 1;
-  transform: translateY(0);
 }
 
-.profile-banner-edit-btn:hover {
-  background: rgba(18, 20, 24, 0.94);
-  border-color: rgba(255, 255, 255, 0.36);
-}
-
-.profile-hero-top {
+.profile-hero-bottom {
   position: relative;
   z-index: 2;
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: 20px;
-  padding: 0 24px 20px;
+  margin-top: 28px;
 }
 
 .profile-avatar-wrap {
-  margin-top: -48px;
   flex-shrink: 0;
   display: flex;
 }
@@ -191,26 +225,24 @@
 }
 
 .profile-avatar-lg {
-  width: 88px;
-  height: 88px;
+  width: 86px;
+  height: 86px;
   font-size: 28px;
   font-weight: 700;
   border-radius: 50%;
-  background: var(--surface-2);
+  background: #14161b;
+  color: #ffffff;
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 3px solid var(--surface-1);
-  box-shadow:
-    0 0 0 1px var(--line-strong),
-    0 10px 26px rgba(0, 0, 0, 0.48);
-  transition: box-shadow 180ms ease, transform 180ms ease;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+  transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
 }
 
 .profile-avatar-btn:hover .profile-avatar-lg {
-  box-shadow:
-    0 0 0 1px var(--accent),
-    0 12px 30px rgba(0, 0, 0, 0.56);
+  border-color: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.72);
 }
 
 .profile-avatar img {
@@ -221,7 +253,7 @@
 }
 
 .profile-avatar svg {
-  color: var(--text-2);
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .profile-avatar-btn .avatar-edit-badge {
@@ -231,10 +263,9 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: var(--surface-2);
-  border: 2px solid var(--surface-1);
-  box-shadow: 0 0 0 1px var(--line-strong);
-  color: var(--text);
+  background: rgba(16, 18, 22, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  color: #ffffff;
   display: grid;
   place-items: center;
   transition:
@@ -246,26 +277,16 @@
 .profile-avatar-btn:hover .avatar-edit-badge,
 .profile-avatar-btn:focus-visible .avatar-edit-badge {
   transform: scale(1.08);
-  background: var(--accent);
-  color: var(--on-accent);
+  background: #ffffff;
+  color: #090a0d;
 }
 
 .profile-hero-identity {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 11px;
   flex: 1;
   min-width: 0;
-  padding-top: 2px;
-}
-
-.profile-identity-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px 16px;
-  width: 100%;
 }
 
 .profile-name-row {
@@ -291,32 +312,33 @@
 }
 
 .profile-name-edit-btn:hover {
-  background: var(--surface-2);
-  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 .profile-name {
   margin: 0;
-  font-size: 26px;
+  font-size: clamp(24px, 2.1vw, 30px);
   font-weight: 700;
-  color: var(--text);
-  letter-spacing: -0.02em;
-  line-height: 1.15;
+  color: var(--hero-fg);
+  letter-spacing: -0.022em;
+  line-height: 1.12;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
 }
 
 .profile-name-edit-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-3);
-  opacity: 0.45;
+  color: var(--hero-fg-3);
+  opacity: 0;
   transition: opacity var(--ease), color var(--ease);
 }
 
 .profile-name-edit-btn:hover .profile-name-edit-icon,
 .profile-name-edit-btn:focus-visible .profile-name-edit-icon {
   opacity: 1;
-  color: var(--text);
+  color: var(--hero-fg);
 }
 
 .profile-presence {
@@ -324,30 +346,28 @@
   align-items: center;
   gap: 6px;
   height: 22px;
-  padding: 0 8px;
+  padding: 0 9px;
   border-radius: var(--r-sm);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  background: rgba(14, 16, 20, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   font-size: 11.5px;
   font-weight: 500;
-  color: var(--text-2);
+  color: var(--hero-fg-2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .profile-presence-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--text-3);
+  background: rgba(255, 255, 255, 0.4);
   flex-shrink: 0;
 }
 
 .profile-presence-dot.online {
   background: var(--ok);
-  box-shadow: 0 0 7px rgba(47, 179, 109, 0.45);
-}
-
-.profile-presence-dot.offline {
-  background: var(--text-3);
+  box-shadow: 0 0 8px rgba(47, 179, 109, 0.6);
 }
 
 .profile-presence-text {
@@ -356,32 +376,7 @@
   white-space: nowrap;
 }
 
-.profile-hero-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
-.profile-hero-actions .icon-btn {
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--line);
-  background: var(--surface-2);
-}
-
-.profile-hero-actions .icon-btn:hover {
-  background: var(--surface-3);
-  border-color: var(--line-strong);
-}
-
-.profile-hero-actions .icon-btn.is-muted {
-  color: var(--text-3);
-}
-
-/* Unified Store & Account Scope Bar */
+/* Unified Store & Account Scope Bar inside Hero Stage */
 .profile-scope-bar {
   display: flex;
   align-items: center;
@@ -393,7 +388,7 @@
   width: 1px;
   height: 18px;
   margin: 0 4px;
-  background: var(--line-strong);
+  background: rgba(255, 255, 255, 0.2);
   flex-shrink: 0;
 }
 
@@ -413,15 +408,17 @@
   gap: 6px;
   height: 28px;
   padding: 0 10px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  background: rgba(14, 16, 20, 0.66);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: var(--r-sm);
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
-  color: var(--text-2);
+  color: var(--hero-fg-2);
   white-space: nowrap;
   flex-shrink: 0;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   transition:
     background-color var(--ease),
     color var(--ease),
@@ -436,9 +433,9 @@
 
 .profile-hero-store-chip:hover,
 .profile-hero-acc-chip:hover {
-  background: var(--surface-3);
-  color: var(--text);
-  border-color: var(--line-strong);
+  background: rgba(26, 29, 36, 0.86);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .profile-hero-store-chip:active,
@@ -448,9 +445,9 @@
 
 .profile-hero-store-chip.selected,
 .profile-hero-acc-chip.selected {
-  background: var(--accent-tint);
-  color: var(--text);
-  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border-color: #ffffff;
   font-weight: 600;
 }
 
@@ -471,7 +468,7 @@
   object-fit: contain;
   flex-shrink: 0;
   display: block;
-  opacity: 0.85;
+  opacity: 0.88;
   transition: opacity var(--ease);
 }
 
@@ -491,14 +488,14 @@
   font-weight: 600;
   padding: 1px 5px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--hero-fg-2);
   font-variant-numeric: tabular-nums;
 }
 
 .profile-hero-store-chip.selected .profile-hero-chip-count {
-  background: var(--accent);
-  color: var(--on-accent);
+  background: #ffffff;
+  color: #090a0d;
 }
 
 .profile-hero-acc-name {
@@ -517,23 +514,15 @@
 }
 
 .profile-acc-dot.offline {
-  background: var(--text-3);
+  background: rgba(255, 255, 255, 0.42);
 }
 
-.profile-hero.is-dormant-hero .profile-hero-top {
-  padding: 20px 24px;
-}
-
-.profile-hero.is-dormant-hero .profile-avatar-wrap {
-  margin-top: 0;
-}
-
-/* --- 3. Hero Bottom Stats Ledger (Matches .gp-bar-meta-item in game-page.css) --- */
+/* --- 3. Hero Bottom Interactive Stats Ledger --- */
 .profile-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(156px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   border-top: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.016);
+  background: var(--surface-1);
 }
 
 .profile-stat {
@@ -541,30 +530,56 @@
   align-items: center;
   gap: 12px;
   padding: 14px 22px;
+  border: 0;
   border-left: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
   min-width: 0;
+  transition: background-color var(--ease);
 }
 
 .profile-stat:first-child {
   border-left: none;
 }
 
+.profile-stat.is-clickable {
+  cursor: pointer;
+}
+
+.profile-stat.is-clickable:hover {
+  background: var(--surface-2);
+}
+
 .profile-stat-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.05);
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--surface-2);
   border: 1px solid var(--line);
   color: var(--text-2);
   display: grid;
   place-items: center;
   flex-shrink: 0;
+  transition:
+    background-color var(--ease),
+    border-color var(--ease),
+    color var(--ease),
+    transform 160ms ease;
+}
+
+.profile-stat.is-clickable:hover .profile-stat-icon {
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+  color: var(--text);
+  transform: scale(1.05);
 }
 
 .profile-stat.is-plat-stat .profile-stat-icon {
   color: var(--accent);
   background: var(--accent-tint);
-  border-color: rgba(255, 255, 255, 0.14);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
 }
 
 .profile-stat-text {
@@ -577,7 +592,7 @@
 .profile-stat-label {
   font-size: 10.5px;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-3);
   white-space: nowrap;
@@ -595,7 +610,7 @@
   white-space: nowrap;
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 7px;
 }
 
 .profile-stat-sub {
@@ -658,7 +673,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* --- 4a. Pinned Achievements Showcase (Tier-Aware Plaques) --- */
+/* --- 4a. Pinned Achievements Showcase (HUD Medallion Plaques from ach-card.css) --- */
 .profile-showcase-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -670,7 +685,7 @@
   display: flex;
   background: var(--surface-1);
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  border-radius: 14px;
   overflow: hidden;
   transition:
     border-color 160ms ease,
@@ -679,51 +694,22 @@
     box-shadow 200ms ease;
 }
 
-.profile-showcase-card::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 3px;
-  background: var(--line-strong);
-  opacity: 0.7;
-}
-
-.profile-showcase-card[data-tier="platinum"]::before {
-  background: var(--accent);
-  opacity: 1;
-}
-
-.profile-showcase-card[data-tier="gold"]::before {
-  background: #d4a72c;
-  opacity: 1;
-}
-
-.profile-showcase-card[data-tier="silver"]::before {
-  background: #a9adb7;
-  opacity: 1;
-}
-
-.profile-showcase-card[data-tier="bronze"]::before {
-  background: #b07a4f;
-  opacity: 1;
-}
-
 .profile-showcase-card:hover {
   border-color: var(--line-strong);
   background: var(--surface-2);
   transform: translateY(-2px);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.34);
+  box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.55);
 }
 
 .profile-showcase-main {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 13px;
   width: 100%;
   min-width: 0;
-  padding: 12px 14px 12px 16px;
+  padding: 13px 16px 13px 13px;
   border: none;
-  border-radius: var(--r-md);
+  border-radius: 14px;
   background: transparent;
   color: inherit;
   font-family: inherit;
@@ -734,14 +720,14 @@
 .profile-showcase-art {
   display: grid;
   place-items: center;
-  width: 50px;
-  height: 50px;
-  flex: 0 0 50px;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
   overflow: hidden;
-  border-radius: var(--r-sm);
+  border-radius: 11px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--text-3);
+  border: 1px solid var(--line-strong);
+  color: var(--text-2);
 }
 
 .profile-showcase-art img {
@@ -753,93 +739,87 @@
 }
 
 .profile-showcase-card:hover .profile-showcase-art img {
-  transform: scale(1.05);
+  transform: scale(1.06);
 }
 
 .profile-showcase-body {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
   flex: 1;
 }
 
-.profile-showcase-title-row {
+.profile-showcase-tag {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 6px;
   min-width: 0;
-}
-
-.profile-showcase-title {
-  overflow: hidden;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  flex: 1;
-  min-width: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.4;
 }
 
 .profile-showcase-tier {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: 4px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  font-size: 10.5px;
-  font-weight: 600;
+  flex: 0 0 auto;
   color: var(--text-2);
-  flex-shrink: 0;
 }
 
 .profile-showcase-tier.is-platinum {
   color: var(--accent);
 }
 
-.profile-showcase-tier.is-gold svg {
-  color: #d4a72c;
+.profile-showcase-tier.is-gold {
+  color: #fbbf24;
 }
 
-.profile-showcase-tier.is-silver svg {
-  color: #a9adb7;
+.profile-showcase-tier.is-silver {
+  color: #cbd5e1;
 }
 
-.profile-showcase-tier.is-bronze svg {
-  color: #b07a4f;
+.profile-showcase-tier.is-bronze {
+  color: #d97706;
 }
 
-.profile-showcase-sub {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-width: 0;
+.profile-showcase-sep {
+  color: var(--text-3);
+}
+
+.profile-showcase-meta {
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-showcase-title {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .profile-showcase-game {
   overflow: hidden;
   color: var(--text-2);
   font-size: 12px;
+  line-height: 1.35;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.profile-showcase-meta {
-  color: var(--text-3);
-  font-size: 11px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
 .profile-showcase-actions {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 7px;
+  right: 7px;
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -1187,19 +1167,20 @@
   color: var(--text-2);
 }
 
-/* --- 4c. Recently Played Shelf --- */
+/* --- 4c. Recently Played Shelf (With 3D Tilt & Cursor Light from library.css) --- */
 .profile-recent-row {
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  padding: 2px 0 6px;
+  padding: 4px 0 8px;
 }
 
 .profile-recent-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 7px;
-  width: 124px;
+  width: 126px;
   flex: none;
   padding: 7px;
   border: 1px solid var(--line);
@@ -1208,19 +1189,29 @@
   cursor: pointer;
   text-align: left;
   font-family: inherit;
+  transform-origin: center center;
   transition:
+    transform 240ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 240ms cubic-bezier(0.4, 0, 0.2, 1),
     background-color 160ms ease,
-    border-color 160ms ease,
-    transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 200ms ease;
+    border-color 160ms ease;
 }
 
-.profile-recent-card:hover,
-.profile-recent-card:focus-visible {
+.profile-recent-card.pcard-tilting {
+  transition:
+    transform 65ms ease-out,
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.profile-recent-card:is(:hover, .pcard-hovering, :focus-visible) {
+  z-index: 3;
   background: var(--surface-2);
   border-color: var(--line-strong);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  transform: translateY(-3px) perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(1.02);
+  box-shadow:
+    0 0 16px 1px rgba(255, 255, 255, 0.06),
+    calc(var(--nx, 0) * -7px) calc(12px - var(--ny, 0) * 4px) 24px rgba(0, 0, 0, 0.45);
 }
 
 .profile-recent-thumb-wrap {
@@ -1233,16 +1224,32 @@
   border: 1px solid var(--line);
 }
 
+:root:not([data-surface="gloss"]):not([data-surface="blades"]) .profile-recent-thumb-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(
+    150px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.04) 42%,
+    transparent 68%
+  );
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+
+:root:not([data-surface="gloss"]):not([data-surface="blades"]) .profile-recent-card:is(:hover, .pcard-hovering, :focus-visible) .profile-recent-thumb-wrap::before {
+  opacity: 1;
+}
+
 .profile-recent-thumb {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.profile-recent-card:hover .profile-recent-thumb {
-  transform: scale(1.04);
 }
 
 .profile-recent-thumb.placeholder {
@@ -1276,7 +1283,7 @@
   text-overflow: ellipsis;
 }
 
-/* --- 4d. Recent Unlocks (5x2 Grid Directly Above Achievements) --- */
+/* --- 4d. Recent Unlocks (5x2 HUD Medallion Grid Directly Above Achievements) --- */
 .profile-unlock-head-right {
   display: flex;
   align-items: center;
@@ -1332,40 +1339,50 @@
 .profile-unlock-card {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   width: 100%;
   min-width: 0;
-  padding: 9px 11px;
+  padding: 10px 12px 10px 10px;
   border: 1px solid var(--line);
   background: var(--surface-1);
-  border-radius: var(--r-md);
+  border-radius: 12px;
   cursor: pointer;
   text-align: left;
   font-family: inherit;
   transition:
     background-color 160ms ease,
     border-color 160ms ease,
-    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms ease;
 }
 
 .profile-unlock-card:hover,
 .profile-unlock-card:focus-visible {
   background: var(--surface-2);
   border-color: var(--line-strong);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.45);
+}
+
+.profile-unlock-card.is-rare-card {
+  border-color: color-mix(in srgb, var(--warn) 28%, var(--line));
+}
+
+.profile-unlock-card.is-rare-card:hover {
+  border-color: color-mix(in srgb, var(--warn) 55%, var(--line-strong));
 }
 
 .profile-unlock-icon {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
   overflow: hidden;
-  border-radius: var(--r-sm);
+  border-radius: 9px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--text-3);
+  border: 1px solid var(--line-strong);
+  color: var(--text-2);
 }
 
 .profile-unlock-icon img {
@@ -1378,34 +1395,9 @@
 .profile-unlock-main {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
   flex: 1;
-}
-
-.profile-unlock-top {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
-}
-
-.profile-unlock-name {
-  overflow: hidden;
-  color: var(--text);
-  font-size: 12.5px;
-  font-weight: 600;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  flex: 1;
-  min-width: 0;
-}
-
-.profile-unlock-shot {
-  display: inline-flex;
-  align-items: center;
-  color: var(--text-3);
-  flex-shrink: 0;
 }
 
 .profile-unlock-bottom {
@@ -1434,23 +1426,53 @@
 
 .profile-unlock-game {
   overflow: hidden;
-  color: var(--text-2);
-  font-size: 11px;
+  color: var(--text-3);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .profile-unlock-meta {
   color: var(--text-3);
-  font-size: 10.5px;
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .profile-unlock-meta.is-rare {
   color: var(--warn);
+}
+
+.profile-unlock-top {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.profile-unlock-name {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
   font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-unlock-shot {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-3);
+  flex-shrink: 0;
 }
 
 .profile-unlock-actions {
@@ -1500,14 +1522,14 @@
   width: 210px;
 }
 
-/* --- 6. Achievement Grid & List --- */
+/* --- 6. Achievement Grid & List (With 3D Cover Physics from library.css) --- */
 .profile-ach-list {
   animation: profile-section-in 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .profile-ach-list:not(.is-list) {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(174px, 1fr));
   gap: 16px;
 }
 
@@ -1516,7 +1538,6 @@
   grid-column: 1 / -1;
 }
 
-/* Grid Card: Flush 3:4 Cover + Tactile Optical Hover + Animated Bar */
 .profile-ach-card {
   display: flex;
   flex-direction: column;
@@ -1527,30 +1548,44 @@
   cursor: pointer;
   text-align: left;
   position: relative;
+  transform-origin: center center;
   transition:
+    transform 240ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 240ms cubic-bezier(0.4, 0, 0.2, 1),
     background-color 160ms ease,
-    border-color 160ms ease,
-    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 220ms ease;
+    border-color 160ms ease;
   overflow: hidden;
   contain: layout paint;
   content-visibility: auto;
-  contain-intrinsic-size: 172px 292px;
+  contain-intrinsic-size: 174px 294px;
 }
 
-.profile-ach-card:hover,
-.profile-ach-card:focus-visible {
+.profile-ach-card.pcard-tilting {
+  transition:
+    transform 65ms ease-out,
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.profile-ach-card:is(:hover, .pcard-hovering, :focus-visible, .pcard-settling) {
+  z-index: 4;
+  contain: layout;
+}
+
+.profile-ach-card:is(:hover, .pcard-hovering, :focus-visible) {
   background: var(--surface-2);
   border-color: var(--line-strong);
-  transform: translateY(-3px);
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.42);
+  transform: translateY(-3px) perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(1.018);
+  box-shadow:
+    0 0 18px 1px rgba(255, 255, 255, 0.07),
+    calc(var(--nx, 0) * -8px) calc(14px - var(--ny, 0) * 5px) 28px rgba(0, 0, 0, 0.48);
 }
 
 .profile-ach-card.is-plat {
   border-color: rgba(255, 255, 255, 0.22);
 }
 
-.profile-ach-card.is-plat:hover {
+.profile-ach-card.is-plat:is(:hover, .pcard-hovering, :focus-visible) {
   border-color: var(--accent);
 }
 
@@ -1565,19 +1600,43 @@
   color: var(--text-3);
 }
 
+/* Cursor-following radial light across achievement covers (matches .pcard-art::before) */
+:root:not([data-surface="gloss"]):not([data-surface="blades"]) .profile-ach-art::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(
+    185px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.04) 42%,
+    transparent 68%
+  );
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+
+:root:not([data-surface="gloss"]):not([data-surface="blades"]) .profile-ach-card:is(:hover, .pcard-hovering, :focus-visible) .profile-ach-art::before {
+  opacity: 1;
+}
+
+/* Subtle bottom vignette so store/unhide badges stay legible on bright covers */
+.profile-ach-art::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 44px;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.5) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
 .profile-ach-art img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  transition:
-    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
-    filter 200ms ease;
-}
-
-.profile-ach-card:hover .profile-ach-art img {
-  transform: scale(1.035);
-  filter: brightness(1.04);
 }
 
 .profile-ach-ph {
@@ -1588,7 +1647,7 @@
 
 .profile-ach-badge {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   pointer-events: none;
 }
 
@@ -2421,12 +2480,9 @@
 }
 
 @media (max-width: 900px) {
-  .profile-hero-top {
+  .profile-hero-bottom {
     flex-wrap: wrap;
-  }
-  .profile-hero-actions {
-    margin-left: 0;
-    width: 100%;
+    align-items: flex-start;
   }
   .profile-stat {
     padding: 12px 16px;
@@ -2466,7 +2522,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .profile-hero,
-  .profile-hero-banner,
+  .profile-hero-art,
   .profile-row,
   .profile-ach-list,
   .play-bar,
@@ -2476,14 +2532,12 @@
     animation: none !important;
   }
   .profile-showcase-card:hover,
-  .profile-recent-card:hover,
+  .profile-recent-card:is(:hover, .pcard-hovering, :focus-visible),
   .profile-unlock-card:hover,
-  .profile-ach-card:hover {
+  .profile-ach-card:is(:hover, .pcard-hovering, :focus-visible) {
     transform: none !important;
   }
-  .profile-showcase-card:hover .profile-showcase-art img,
-  .profile-recent-card:hover .profile-recent-thumb,
-  .profile-ach-card:hover .profile-ach-art img {
+  .profile-showcase-card:hover .profile-showcase-art img {
     transform: none !important;
   }
 }
