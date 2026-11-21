@@ -9,7 +9,22 @@
 }
 :root[data-surface="neongrid"] #main-col,
 :root[data-surface="neongrid"] #view { background: transparent; }
-:root[data-surface="neongrid"] .overlay { background: var(--scene-bg); }
+/* The game page scrolls inside this fixed sheet. A viewport-fixed background
+   on the scroller makes WebView2 repaint the full-size SVG on every scroll
+   frame, so paint the scene on a fixed plane and keep the sheet itself
+   opaque (the library must not show through). */
+:root[data-surface="neongrid"] .overlay { background: var(--bg); }
+:root[data-surface="neongrid"] .overlay::before {
+  content: "";
+  position: fixed;
+  top: var(--winbar-h);
+  left: var(--sidebar-w);
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--scene-bg);
+}
 
 /* Neon Grid (Cyberpunk) Custom Visible High-Tech Scrollbars */
 :root[data-surface="neongrid"] ::-webkit-scrollbar-thumb {
@@ -63,7 +78,6 @@
 :root[data-surface="neongrid"] #sidebar {
   background: rgba(10, 12, 16, 0.96);
   border-right: 1px solid rgba(252, 238, 10, 0.18);
-  backdrop-filter: blur(8px);
 }
 :root[data-surface="neongrid"] #page-header {
   background: var(--bg);
@@ -162,11 +176,12 @@
   .ss-share-card, .modal-box, .manage-dialog, .storage-dialog, .hide-list-dialog,
   .changelog-dialog, .lib-filter-panel, .custom-game-modal
 ) {
-  background: rgba(14, 16, 22, 0.88);
+  /* No backdrop blur: the surface is nearly opaque and blurring every card
+     against the scrolling scene was the theme's most expensive paint. */
+  background: rgba(14, 16, 22, 0.92);
   border: 1px solid rgba(252, 238, 10, 0.2);
   border-radius: 3px;
   box-shadow: inset 0 1px 0 rgba(252, 238, 10, 0.18), 0 8px 24px rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
 }
 
 /* Neon Grid: Customize Images Dialog */
