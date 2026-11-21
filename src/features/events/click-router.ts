@@ -571,10 +571,10 @@ document.addEventListener("click", (e) => {
       render();
     });
   } else if (act === "profile-unlocks-more") {
-    S.profileUnlockCount += 8;
+    S.profileUnlockCount += 12;
     render();
   } else if (act === "profile-unlocks-less") {
-    S.profileUnlockCount = 8;
+    S.profileUnlockCount = 6;
     render();
   } else if (act === "unpin-ach" && t.dataset.key) {
     removeAchievementPin(t.dataset.key);
@@ -591,6 +591,7 @@ document.addEventListener("click", (e) => {
   } else if (act === "profile-account" && t.dataset.key) {
     // Profile header account selector: switch which account's stats are shown.
     S.profileAccount = t.dataset.key;
+    S.profileUnlockCount = 6;
     resetProfileCards();
     render();
   } else if (act === "profile-filter" && t.dataset.val) {
@@ -604,6 +605,7 @@ document.addEventListener("click", (e) => {
       S.profileStore = store as typeof S.profileStore;
       S.profileAccount = "overview";
       S.profileFilter = "all";
+      S.profileUnlockCount = 6;
       resetProfileCards();
       render();
     }

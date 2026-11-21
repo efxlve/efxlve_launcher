@@ -158,10 +158,10 @@ export function promptAvatarAction(key?: string, displayName?: string): void {
         </div>
 
         <div class="panel-avatar-modal-footer">
-          <button class="apple-pill-btn secondary" data-act="avatar-modal-remove" data-id="${esc(avatarKey)}">
+          <button type="button" class="btn ghost" data-act="avatar-modal-remove" data-id="${esc(avatarKey)}">
             ${icon("trash", 13)} <span>${t("profile.removePhoto")}</span>
           </button>
-          <button class="apple-pill-btn primary" data-act="avatar-modal-upload" data-id="${esc(avatarKey)}">
+          <button type="button" class="btn primary" data-act="avatar-modal-upload" data-id="${esc(avatarKey)}">
             ${icon("camera", 13)} <span>${t("profile.choosePhoto")}</span>
           </button>
         </div>
@@ -200,29 +200,29 @@ export function openChangeNameModal(): void {
   const placeholder = t("profile.user");
   const modalHtml = `
     <div id="profile-name-modal" class="modal-backdrop fadeIn" style="z-index: 1050;">
-      <div class="modal-box panel-avatar-modal" role="dialog" aria-modal="true" style="max-width: 400px;">
+      <div class="modal-box panel-avatar-modal profile-name-dialog" role="dialog" aria-modal="true">
         <div class="panel-avatar-modal-header">
           <div class="panel-avatar-modal-title">
             ${icon("edit", 16)}
             <h3>${esc(t("profile.changeNameTitle"))}</h3>
           </div>
-          <button class="modal-close-btn" data-act="profile-name-modal-close" title="${t("common.close")}">
+          <button type="button" class="modal-close-btn" data-act="profile-name-modal-close" title="${t("common.close")}">
             ${icon("x", 16)}
           </button>
         </div>
 
-        <div class="panel-avatar-modal-body" style="flex-direction: column; align-items: stretch; gap: 12px; padding: 18px 24px;">
-          <label style="font-size: 13px; color: var(--fg-muted); display: flex; flex-direction: column; gap: 8px;">
+        <div class="panel-avatar-modal-body profile-name-modal-body">
+          <label class="profile-name-modal-label">
             <span>${esc(t("profile.user"))}</span>
-            <input id="profile-name-input" type="text" class="input" style="padding: 10px 14px; font-size: 14px; border-radius: 8px; border: 1px solid var(--border-subtle); background: var(--bg-surface-elevated, #1a1d24); color: var(--fg-default, #fff); width: 100%; box-sizing: border-box;" value="${esc(current)}" placeholder="${esc(placeholder)}" maxlength="32" autofocus />
+            <input id="profile-name-input" type="text" class="input profile-name-modal-input" value="${esc(current)}" placeholder="${esc(placeholder)}" maxlength="32" autofocus />
           </label>
         </div>
 
         <div class="panel-avatar-modal-footer">
-          <button class="apple-pill-btn secondary" data-act="profile-name-modal-close">
+          <button type="button" class="btn ghost" data-act="profile-name-modal-close">
             <span>${t("common.cancel")}</span>
           </button>
-          <button class="apple-pill-btn primary" data-act="profile-name-modal-save">
+          <button type="button" class="btn primary" data-act="profile-name-modal-save">
             <span>${t("common.save")}</span>
           </button>
         </div>

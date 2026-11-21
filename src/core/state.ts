@@ -616,8 +616,8 @@ export const S = {
   profileStore: ("all") as "all" | "epic" | "gog" | "steam" | "amazon" | "xbox" | "battlenet" | "ubisoft" | "ea" | "riot" | "custom",
   profileSearchQuery: "",
   profileViewMode: (localStorage.getItem(PROFILE_VIEW_MODE_KEY) === "list" ? "list" : "grid") as "grid" | "list",
-  /** Recent unlocks shown on the profile; expands in 8-card (2-row) steps. */
-  profileUnlockCount: 8,
+  /** Recent unlocks shown on the profile; "Show more" grows this in rows of 12. */
+  profileUnlockCount: 6,
   offlineMode: false,
   networkProfile: ("balanced") as string,
   /** Epic download cap in Mbit/s; 0 = unlimited. */

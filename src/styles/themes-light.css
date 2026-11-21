@@ -36,7 +36,7 @@
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
-:root[data-scheme="light"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo, .profile-unlock-store-logo, .pcard-store-logo, .col-store-logo-img, .bk-store-logo) {
+:root[data-scheme="light"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo, .pcard-store-logo, .col-store-logo-img, .bk-store-logo) {
   filter: brightness(0);
   opacity: 0.85;
 }

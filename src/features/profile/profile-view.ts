@@ -12,7 +12,6 @@
  */
 
 import { PROFILE_CARD_CHUNK } from "../../core/constants";
-import { tierFromPercent } from "../../core/achievements";
 import { achievementHistoryStats, sortedAchievementHistory } from "../../core/achievement-history";
 import { achievementPins } from "../../core/achievement-pins";
 import { achSummaryOf } from "../../core/game-view";
@@ -60,7 +59,6 @@ export function steamArtAttrs(appName: string): string {
 /** Resets the profile list back to the first chunk (on filter/sort/search change). */
 export function resetProfileCards(): void {
   S.profileCardCount = PROFILE_CARD_CHUNK;
-  S.profileUnlockCount = 8;
 }
 
 /** Score unit: Xbox counts gamerscore, the rest count XP. */
@@ -101,32 +99,34 @@ function renderProfileGameGridCards(cardGames: ProfileGameRecord[], chips: boole
     const show = S.profileShowHidden && g.sandbox_id
       ? `<button type="button" class="btn ghost small profile-unhide-btn" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
       : "";
-    const storeChip = chips ? storeChipHtml(g.app_name) : "";
+    const storeChip = chips ? storeChipHtml(g.app_name, 11) : "";
+    const countLabel = g.total_achievements > 0
+      ? `${g.total_unlocked} / ${g.total_achievements}`
+      : g.total_unlocked > 0
+        ? `${g.total_unlocked}`
+        : "0";
+    const leadIcon = isPlat ? epicPlatinumIcon(12) : icon("trophy", 11);
 
     return `
       <div class="profile-ach-card${isPlat ? " is-plat" : ""}" role="button" tabindex="0" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" title="${esc(`${g.app_title}${meta ? ` · ${meta}` : ""}`)}">
         <div class="profile-ach-art">
           ${cover ? `<img${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-ach-ph">${icon("gamepad-2", 24)}</span>`}
-          ${isPlat
-            ? `<span class="profile-ach-badge plat" title="${t("profile.filterPlatinum")}">${epicPlatinumIcon(14)}<span>100%</span></span>`
-            : pct > 0
-              ? `<span class="profile-ach-badge pct">${pct}%</span>`
-              : ""
-          }
-          ${storeChip ? `<span class="profile-ach-badge store">${storeChip}</span>` : ""}
           ${show}
         </div>
         <div class="profile-ach-info">
           <span class="profile-ach-title">${esc(g.app_title)}</span>
           <div class="profile-ach-progress-block">
             <div class="profile-ach-meta-row tabular-nums">
-              <span class="profile-ach-count">${icon("trophy", 11)} <span>${g.total_achievements > 0 ? `${g.total_unlocked} / ${g.total_achievements}` : g.total_unlocked > 0 ? `${g.total_unlocked}` : "0"}</span></span>
+              <span class="profile-ach-count">${leadIcon}<span>${countLabel}</span></span>
               ${g.total_achievements > 0 ? `<span class="profile-ach-pct">${pct}%</span>` : ""}
             </div>
             ${g.total_achievements > 0 ? `<div class="profile-ach-bar"><span style="width:${pct}%"></span></div>` : ""}
           </div>
           <div class="profile-ach-sub-meta tabular-nums">
-            ${xpText ? `<span class="profile-ach-xp">${esc(xpText)}</span>` : ""}
+            <span class="profile-ach-sub-left">
+              ${storeChip}
+              ${xpText ? `<span class="profile-ach-xp">${esc(xpText)}</span>` : ""}
+            </span>
             ${pt && pt.total_seconds > 0 ? `<span class="profile-ach-playtime">${fmtPlaytime(pt.total_seconds)}</span>` : ""}
           </div>
         </div>
@@ -166,10 +166,10 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
     const show = S.profileShowHidden && g.sandbox_id
       ? `<button type="button" class="btn ghost small profile-unhide-btn" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
       : "";
-    const storeChip = chips ? storeChipHtml(g.app_name) : "";
+    const storeChip = chips ? storeChipHtml(g.app_name, 11) : "";
 
     const pctRight = isPlat
-      ? `<div class="profile-badge-pill is-plat" title="${t("profile.filterPlatinum")}">${epicPlatinumIcon(15)}<span>100%</span></div>`
+      ? `<div class="profile-badge-pill is-plat" title="${t("profile.filterPlatinum")}">${epicPlatinumIcon(14)}<span>100%</span></div>`
       : pct > 0
         ? `<div class="profile-badge-pill in-prog tabular-nums">${pct}%</div>`
         : `<div class="profile-badge-pill not-started tabular-nums">—</div>`;
@@ -729,16 +729,23 @@ interface ProfileTotals {
   unlocked: number;
   completed: number;
   xp: number;
+  avgCompletion: number | null;
 }
 
 function profileStats(games: ProfileGameRecord[]): ProfileTotals {
   let unlocked = 0, completed = 0, xp = 0;
+  let pctSum = 0, pctCount = 0;
   for (const g of games) {
     unlocked += g.total_unlocked;
     xp += g.total_xp;
     if (isCompletedGame(g)) completed++;
+    if (g.total_achievements > 0 && hasGameProgress(g)) {
+      pctSum += Math.min(100, Math.max(0, g.unlocked_percent));
+      pctCount++;
+    }
   }
-  return { unlocked, completed, xp };
+  const avgCompletion = pctCount > 0 ? Math.round(pctSum / pctCount) : null;
+  return { unlocked, completed, xp, avgCompletion };
 }
 
 /** Playtime sum for one store or everything. Keys carry their store prefix. */
@@ -802,7 +809,7 @@ interface ProfileStat {
 }
 
 function renderStat(stat: ProfileStat): string {
-  const ico = stat.icon === "plat" ? `<span class="profile-stat-plat-ico">${epicPlatinumIcon(18)}</span>` : "";
+  const ico = stat.icon === "plat" ? `<span class="profile-stat-plat-ico">${epicPlatinumIcon(16)}</span>` : "";
   return `<div class="profile-stat"><span class="profile-stat-val tabular-nums">${ico}${stat.value}</span><span class="profile-stat-label">${esc(stat.label)}</span></div>`;
 }
 
@@ -827,7 +834,7 @@ function renderHeroStoreChips(scope: "all" | StoreKind): string {
     const tooltip = `${label}${connected ? " · " + t("accounts.connected") : installed ? " · " + t("accounts.localAccount") : " · " + t("accounts.notConnected")}${count > 0 ? ` (${count})` : ""}`;
     return `
       <button type="button" class="profile-hero-store-chip ${statusClass}${selected ? " selected" : ""}" data-act="profile-store" data-val="${val}" title="${esc(tooltip)}">
-        ${val === "all" ? icon("layers", 13) : storeLogo(val, 15, "profile-store-chip-logo")}
+        ${val === "all" ? icon("layers", 13) : storeLogo(val, 14, "profile-store-chip-logo")}
         <span class="profile-hero-chip-name">${esc(label)}</span>
         ${count > 0 ? `<span class="profile-hero-chip-count tabular-nums">${count}</span>` : ""}
       </button>`;
@@ -862,7 +869,7 @@ export function profileBannerArt(scope: "all" | StoreKind, account?: ProfileAcco
   return "";
 }
 
-/** Identity hero: banner, avatar, name, presence, career stats ledger and store scope rail. */
+/** Identity hero: banner, avatar, name, presence, scope chips and career ledger. */
 function renderProfileHero(
   displayName: string,
   avatarKey: string,
@@ -882,27 +889,24 @@ function renderProfileHero(
   const storesHtml = combined
     ? renderHeroStoreChips(scope)
     : account
-      ? `<div class="profile-hero-stores"><span class="profile-hero-store-pill"><span class="profile-acc-dot ${account.active ? "" : "offline"}" aria-hidden="true"></span>${storeLogo(account.kind, 15, "profile-store-chip-logo")}${esc(storeName(account.kind))}</span></div>`
+      ? `<div class="profile-hero-stores"><span class="profile-hero-store-pill"><span class="profile-acc-dot ${account.active ? "" : "offline"}" aria-hidden="true"></span>${storeLogo(account.kind, 14, "profile-store-chip-logo")}${esc(storeName(account.kind))}</span></div>`
       : "";
 
   const statsHtml = showData
     ? `<div class="profile-stats-bar"><div class="profile-stats">${stats.map(renderStat).join("")}</div></div>`
-    : "";
-
-  const inactiveHtml = !showData
-    ? `<div class="profile-inactive">
+    : `<div class="profile-inactive">
         <p class="row-meta">${t("profile.inactiveDesc")}</p>
         <button class="btn primary small" ${combined ? `data-view="accounts"` : `data-act="${switchAct(account!.kind)}" data-id="${esc(account!.id)}"`}>
           ${combined ? t("accounts.manageAccounts") : t("settings.accountSwitchBtn")}
         </button>
-      </div>`
-    : "";
+      </div>`;
 
   const banner = showData ? profileBannerArt(scope, account) : "";
 
   return `
     <section class="card profile-hero">
       <div class="profile-hero-banner${banner ? "" : " is-plain"}"${banner ? ` style="background-image:url('${esc(banner)}')"` : ""}>
+        ${banner ? `<span class="profile-hero-backdrop" style="background-image:url('${esc(banner)}')" aria-hidden="true"></span>` : ""}
         ${showData ? `
           <button type="button" class="profile-banner-edit-btn" data-act="profile-change-banner" data-scope="${esc(scopeKey)}" data-label="${esc(scopeLabel)}" title="${esc(t("profile.changeBannerTitle"))}">
             ${icon("image", 13)}<span>${esc(t("profile.changeBanner"))}</span>
@@ -912,40 +916,37 @@ function renderProfileHero(
       <div class="profile-hero-top">
         <div class="profile-avatar-wrap">
           <button class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitle)}" aria-label="${esc(avatarTitle)}">
-            <span class="profile-avatar profile-avatar-lg${isOnline ? " is-online" : ""}">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : combined ? icon("gamepad-2", 34) : esc(initial)}</span>
-            <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 12)}</span>
+            <span class="profile-avatar profile-avatar-lg${isOnline ? " is-online" : ""}">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : combined ? icon("gamepad-2", 26) : esc(initial)}</span>
+            <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 11)}</span>
           </button>
         </div>
         <div class="profile-hero-identity">
           <div class="profile-identity-head">
-            <div class="profile-name-col">
-              <div class="profile-name-row">
-                <button type="button" class="profile-name-edit-btn" data-act="profile-change-name" title="${esc(t("profile.changeNameTitle"))}">
-                  <h1 class="profile-name">${esc(displayName)}</h1>
-                  <span class="profile-name-edit-icon">${icon("edit", 13)}</span>
-                </button>
-                <div class="profile-presence">
-                  <span class="profile-presence-dot ${isOnline ? "online" : "offline"}" aria-hidden="true"></span>
-                  <span class="profile-presence-text">${isOnline ? t("nav.online") : t("profile.offlineMode")}</span>
-                </div>
-              </div>
-              <div class="profile-hero-actions">
-                ${!combined
-                  ? `<button type="button" class="btn ghost small profile-hero-action-btn" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>`
-                  : ""}
-                <button type="button" class="btn ghost small profile-hero-action-btn" data-view="accounts">${icon("settings", 13)}<span>${t("accounts.manageAccounts")}</span></button>
-                <button type="button" class="btn ghost small profile-hero-action-btn${S.presenceEnabled ? "" : " is-muted"}" data-act="toggle-presence" title="${esc(t("profile.presenceToggleTip"))}" aria-pressed="${S.presenceEnabled}">
-                  ${icon(S.presenceEnabled ? "eye" : "eye-off", 13)}<span>${esc(S.presenceEnabled ? t("profile.presenceVisible") : t("profile.presenceHidden"))}</span>
-                </button>
-                <button class="icon-btn profile-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${overviewStores().length > 1 ? t("profile.refreshTitleMulti") : t("profile.refreshTitle")}">${icon("refresh", 14)}</button>
+            <div class="profile-name-row">
+              <button type="button" class="profile-name-edit-btn" data-act="profile-change-name" title="${esc(t("profile.changeNameTitle"))}">
+                <h1 class="profile-name">${esc(displayName)}</h1>
+                <span class="profile-name-edit-icon">${icon("edit", 13)}</span>
+              </button>
+              <div class="profile-presence">
+                <span class="profile-presence-dot ${isOnline ? "online" : "offline"}" aria-hidden="true"></span>
+                <span class="profile-presence-text">${isOnline ? t("nav.online") : t("profile.offlineMode")}</span>
               </div>
             </div>
-            ${statsHtml}
+            <div class="profile-hero-actions">
+              ${!combined
+                ? `<button type="button" class="btn ghost small profile-hero-action-btn" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>`
+                : ""}
+              <button type="button" class="btn ghost small profile-hero-action-btn" data-view="accounts">${icon("settings", 13)}<span>${t("accounts.manageAccounts")}</span></button>
+              <button type="button" class="btn ghost small profile-hero-action-btn${S.presenceEnabled ? "" : " is-muted"}" data-act="toggle-presence" title="${esc(t("profile.presenceToggleTip"))}" aria-pressed="${S.presenceEnabled}">
+                ${icon(S.presenceEnabled ? "eye" : "eye-off", 13)}<span>${esc(S.presenceEnabled ? t("profile.presenceVisible") : t("profile.presenceHidden"))}</span>
+              </button>
+              <button class="icon-btn profile-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${overviewStores().length > 1 ? t("profile.refreshTitleMulti") : t("profile.refreshTitle")}">${icon("refresh", 14)}</button>
+            </div>
           </div>
+          ${storesHtml}
         </div>
       </div>
-      ${storesHtml ? `<div class="profile-hero-footer">${storesHtml}</div>` : ""}
-      ${inactiveHtml}
+      ${statsHtml}
     </section>`;
 }
 
@@ -974,23 +975,10 @@ function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGa
     <section class="card profile-panel profile-ach-panel">
       <div class="profile-panel-head">
         <div class="profile-panel-title-wrap">
-          <span class="profile-panel-icon">${icon("trophy", 15)}</span>
-          <div>
-            <h3 class="profile-panel-title">${t("profile.tabAchievements")}</h3>
-            <div class="profile-panel-sub tabular-nums">${sub}</div>
-          </div>
+          <h3 class="profile-panel-title">${t("profile.tabAchievements")}</h3>
+          <span class="profile-panel-sub tabular-nums">${sub}</span>
         </div>
-        <button type="button" class="icon-btn" data-act="open-hide-achievements" title="${esc(t("profile.hideAchTip"))}" aria-label="${esc(t("profile.hideAchTip"))}">${icon("eye-off", 16)}</button>
-      </div>
-      <div class="gp-toolbar profile-ach-toolbar">
-        <div class="tabs profile-filter-tabs">
-          ${filterTab("all", t("profile.filterAll"), countVisible)}
-          ${filterTab("platinum", t("profile.filterPlatinum"), countPlat)}
-          ${filterTab("in_progress", t("profile.filterInProgress"), countProgress)}
-          ${filterTab("not_started", t("profile.filterNotStarted"), countNotStarted)}
-          ${countHidden > 0 ? `<button type="button" class="tab ${S.profileShowHidden ? "active" : ""}" data-act="profile-toggle-hidden">${t("profile.hiddenToggle")}<span class="count">${countHidden}</span></button>` : ""}
-        </div>
-        <div class="gp-toolbar-right">
+        <div class="gp-toolbar-right profile-panel-tools">
           <label class="search gp-search">${icon("search", 15)}<input type="text" id="profile-search" placeholder="${t("profile.searchPlaceholder")}" value="${esc(S.profileSearchQuery)}" />
             ${S.profileSearchQuery ? `<button type="button" class="icon-btn" data-act="profile-search-clear">${icon("x", 12)}</button>` : ""}
           </label>
@@ -1004,7 +992,15 @@ function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGa
             <button class="${S.profileViewMode === "grid" ? "active" : ""}" data-act="profile-view-mode" data-val="grid" title="${t("lib.viewGrid")}">${icon("layout-grid", 14)}</button>
             <button class="${S.profileViewMode === "list" ? "active" : ""}" data-act="profile-view-mode" data-val="list" title="${t("lib.viewList")}">${icon("list", 14)}</button>
           </div>
+          <button type="button" class="icon-btn" data-act="open-hide-achievements" title="${esc(t("profile.hideAchTip"))}" aria-label="${esc(t("profile.hideAchTip"))}">${icon("eye-off", 16)}</button>
         </div>
+      </div>
+      <div class="tabs profile-filter-tabs">
+        ${filterTab("all", t("profile.filterAll"), countVisible)}
+        ${filterTab("platinum", t("profile.filterPlatinum"), countPlat)}
+        ${filterTab("in_progress", t("profile.filterInProgress"), countProgress)}
+        ${filterTab("not_started", t("profile.filterNotStarted"), countNotStarted)}
+        ${countHidden > 0 ? `<button type="button" class="tab ${S.profileShowHidden ? "active" : ""}" data-act="profile-toggle-hidden">${t("profile.hiddenToggle")}<span class="count">${countHidden}</span></button>` : ""}
       </div>
       <div id="profile-games-grid" class="profile-ach-list ${S.profileViewMode === "list" ? "is-list" : "is-grid"}">${renderProfileGrid(filtered)}</div>
     </section>`;
@@ -1020,34 +1016,27 @@ function renderShowcase(): string {
 
   const cards = pins
     .map((pin) => {
-      const tier =
-        pin.tier === "platinum" || pin.tier === "gold" || pin.tier === "silver" || pin.tier === "bronze"
-          ? pin.tier
-          : pin.rarity != null
-            ? tierFromPercent(pin.rarity)
-            : "";
       const tierLabel =
-        tier === "platinum"
+        pin.tier === "platinum"
           ? t("trophy.plat")
-          : tier === "gold" || tier === "silver" || tier === "bronze"
-            ? t(`trophy.${tier}`)
+          : pin.tier === "gold" || pin.tier === "silver" || pin.tier === "bronze"
+            ? t(`trophy.${pin.tier}`)
             : "";
-      const rarityText = pin.rarity != null ? `%${fmtDecimal1(pin.rarity)}` : "";
-      const badgeText = [tierLabel, rarityText].filter(Boolean).join(" ");
-      const dateText = pin.date ? fmtAchDate(pin.date) : "";
+      const meta = [
+        tierLabel,
+        pin.rarity != null ? `%${fmtDecimal1(pin.rarity)}` : "",
+        pin.date ? fmtAchDate(pin.date) : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
       return `
-        <div class="profile-showcase-card${tier ? ` is-${tier}` : ""}">
-          <button type="button" class="profile-showcase-main" data-act="open-pinned-achievement" data-id="${esc(pin.appName)}" data-ach="${esc(pin.name)}" title="${esc(pin.title)} — ${esc(pin.game)}">
-            <span class="profile-showcase-art${tier ? ` tier-${tier}` : ""}">${pin.icon ? `<img src="${esc(pin.icon)}" alt="" loading="lazy" decoding="async" />` : icon("trophy", 24)}</span>
+        <div class="profile-showcase-card">
+          <button type="button" class="profile-showcase-main" data-act="open-pinned-achievement" data-id="${esc(pin.appName)}" data-ach="${esc(pin.name)}" title="${esc(pin.title)} · ${esc(pin.game)}">
+            <span class="profile-showcase-art">${pin.icon ? `<img src="${esc(pin.icon)}" alt="" loading="lazy" />` : icon("trophy", 26)}</span>
             <span class="profile-showcase-body">
-              <span class="profile-showcase-top">
-                <span class="profile-showcase-title">${esc(pin.title)}</span>
-                ${badgeText ? `<span class="profile-unlock-rarity${tier ? ` tier-${tier}` : ""} tabular-nums">${icon("trophy", 10)}<span>${esc(badgeText)}</span></span>` : ""}
-              </span>
-              <span class="profile-showcase-foot">
-                <span class="profile-showcase-game">${esc(pin.game)}</span>
-                ${dateText ? `<span class="profile-showcase-meta tabular-nums">${esc(dateText)}</span>` : ""}
-              </span>
+              <span class="profile-showcase-title">${esc(pin.title)}</span>
+              <span class="profile-showcase-game">${esc(pin.game)}</span>
+              ${meta ? `<span class="profile-showcase-meta tabular-nums">${esc(meta)}</span>` : ""}
             </span>
           </button>
           <button type="button" class="icon-btn profile-showcase-unpin" data-act="unpin-ach" data-key="${esc(pin.key)}" title="${esc(t("ach.unpin"))}" aria-label="${esc(t("ach.unpin"))}">${icon("x", 12)}</button>
@@ -1058,20 +1047,16 @@ function renderShowcase(): string {
   return `
     <section class="profile-row profile-showcase">
       <div class="profile-row-head">
-        <div class="profile-row-title-group">
-          <h3 class="profile-row-title">${esc(t("profile.pinsTitle"))}</h3>
-          <span class="profile-unlock-stats">${esc(t("profile.pinsHint"))}</span>
-        </div>
+        <h3 class="profile-row-title">${esc(t("profile.pinsTitle"))}</h3>
+        <span class="profile-unlock-stats">${esc(t("profile.pinsHint"))}</span>
       </div>
       <div class="profile-showcase-row">${cards}</div>
     </section>`;
 }
 
 /**
- * Recent unlocks across every store, newest first. The list is the one place
- * the launcher's own history is visible: the bell forgets after a day and a
- * game page only knows one set. Cards sit in a balanced responsive grid and
- * open the achievement directly on its game page.
+ * Recent unlocks across every store, newest first. Starts at one compact row
+ * (6 cards) so the activity sections and the catalog stay in view.
  */
 function renderUnlockRow(scope: "all" | StoreKind): string {
   const entries = sortedAchievementHistory().filter((entry) => {
@@ -1083,96 +1068,70 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
   if (entries.length === 0) return "";
 
   const stats = achievementHistoryStats(entries);
-  const limit = Math.max(8, S.profileUnlockCount);
-  const shown = entries.slice(0, limit);
-  const showStore = showStoreChips();
-
+  const shown = entries.slice(0, Math.max(6, S.profileUnlockCount));
   const cards = shown
     .map((entry) => {
       const date = entry.date ? fmtAchDate(entry.date) : "";
-      const tier = entry.rarity != null ? tierFromPercent(entry.rarity) : null;
-      const desc = entry.description ? entry.description.trim() : "";
-      const rarityHtml =
-        entry.rarity != null
-          ? `<span class="profile-unlock-rarity${tier ? ` tier-${tier}` : ""} tabular-nums">${icon("trophy", 10)}<span>%${fmtDecimal1(entry.rarity)}</span></span>`
-          : entry.manual
-            ? `<span class="profile-unlock-rarity is-manual">${esc(t("profile.unlockManual"))}</span>`
-            : "";
+      const rarity = entry.rarity != null ? `%${fmtDecimal1(entry.rarity)}` : "";
+      const isRare = entry.rarity != null && entry.rarity <= 10;
+      const meta = [
+        date,
+        entry.manual ? t("profile.unlockManual") : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
       const shot = entry.shot
-        ? `<span class="profile-unlock-shot" title="${esc(t("profile.unlockShot"))}">${icon("camera", 11)}</span>`
+        ? ` <span class="profile-unlock-shot" title="${esc(t("profile.unlockShot"))}">${icon("camera", 10)}</span>`
         : "";
-      const tip = [entry.title, desc, entry.game].filter(Boolean).join(" — ");
       return `
-        <button type="button" class="profile-unlock-card${tier === "gold" ? " is-gold" : ""}" data-act="open-pinned-achievement" data-id="${esc(entry.appName)}" data-ach="${esc(entry.name)}" title="${esc(tip)}">
-          <span class="profile-unlock-icon${tier ? ` tier-${tier}` : ""}">${entry.icon ? `<img src="${esc(entry.icon)}" alt="" loading="lazy" decoding="async" />` : icon("trophy", 18)}</span>
+        <button type="button" class="profile-unlock-card${isRare ? " is-rare" : ""}" data-act="open-game-from-profile" data-id="${esc(entry.appName)}" title="${esc(entry.title)} · ${esc(entry.game)}">
+          <span class="profile-unlock-icon">${entry.icon ? `<img src="${esc(entry.icon)}" alt="" loading="lazy" decoding="async" />` : icon("trophy", 16)}</span>
           <span class="profile-unlock-main">
             <span class="profile-unlock-top">
               <span class="profile-unlock-name">${esc(entry.title)}</span>
-              ${rarityHtml}
+              ${rarity ? `<span class="profile-unlock-rarity tabular-nums">${esc(rarity)}</span>` : ""}
             </span>
-            ${desc ? `<span class="profile-unlock-desc">${esc(desc)}</span>` : ""}
-            <span class="profile-unlock-foot">
-              <span class="profile-unlock-game-wrap">
-                ${showStore && entry.store ? storeLogo(entry.store, 11, "profile-unlock-store-logo") : ""}
-                <span class="profile-unlock-game">${esc(entry.game)}</span>
-              </span>
-              ${date || shot ? `<span class="profile-unlock-meta tabular-nums">${shot}${date ? `<span>${esc(date)}</span>` : ""}</span>` : ""}
-            </span>
+            <span class="profile-unlock-game">${esc(entry.game)}</span>
+            ${meta || shot ? `<span class="profile-unlock-meta tabular-nums">${esc(meta)}${shot}</span>` : ""}
           </span>
         </button>`;
     })
     .join("");
 
-  const factChips: string[] = [];
-  if (stats.thisMonth > 0) {
-    factChips.push(
-      `<span class="profile-unlock-chip tabular-nums">${icon("calendar", 11)}<span>${esc(t("profile.unlocksThisMonth", { n: stats.thisMonth }))}</span></span>`,
-    );
-  }
-  if (stats.streakDays > 1) {
-    factChips.push(
-      `<span class="profile-unlock-chip tabular-nums">${icon("zap", 11)}<span>${esc(t("profile.unlocksStreak", { n: stats.streakDays }))}</span></span>`,
-    );
-  }
-  if (stats.rarest?.rarity != null) {
-    const r = stats.rarest;
-    factChips.push(
-      `<button type="button" class="profile-unlock-chip is-rarest tabular-nums" data-act="open-pinned-achievement" data-id="${esc(r.appName)}" data-ach="${esc(r.name)}" title="${esc(`${r.title} — ${r.game}`)}">${icon("trophy", 11)}<span>${esc(t("profile.unlocksRarest", { n: fmtDecimal1(r.rarity!) }))}</span></button>`,
-    );
-  }
+  const facts = [
+    t("profile.unlocksThisMonth", { n: stats.thisMonth }),
+    stats.streakDays > 1 ? t("profile.unlocksStreak", { n: stats.streakDays }) : "",
+    stats.rarest?.rarity != null
+      ? t("profile.unlocksRarest", { n: fmtDecimal1(stats.rarest.rarity) })
+      : "",
+  ].filter(Boolean);
 
-  const hasMore = entries.length > shown.length;
-  const canCollapse = shown.length > 8;
-  const footerHtml =
-    hasMore || canCollapse
-      ? `<div class="profile-unlock-actions">
-          ${hasMore ? `<button type="button" class="btn ghost small profile-unlock-more" data-act="profile-unlocks-more">${esc(t("profile.showMore"))} (${entries.length - shown.length})</button>` : ""}
-          ${canCollapse ? `<button type="button" class="btn ghost small profile-unlock-less" data-act="profile-unlocks-less">${icon("chevron-up", 13)}</button>` : ""}
-        </div>`
-      : "";
+  const remaining = entries.length - shown.length;
+  const moreBtn = remaining > 0
+    ? `<button type="button" class="btn ghost small profile-unlock-more" data-act="profile-unlocks-more">${esc(t("profile.showMore"))} (${remaining})</button>`
+    : "";
 
   return `
-    <section class="profile-row profile-unlock-section">
+    <section class="profile-row profile-unlocks-section">
       <div class="profile-row-head">
         <div class="profile-row-title-group">
           <h3 class="profile-row-title">${esc(t("profile.unlocksTitle"))}</h3>
-          <span class="profile-section-count tabular-nums">${entries.length.toLocaleString()}</span>
+          ${facts.length ? `<span class="profile-unlock-stats tabular-nums">${facts.map((fact) => esc(fact)).join(" · ")}</span>` : ""}
         </div>
         <div class="profile-unlock-head-right">
-          ${factChips.join("")}
+          ${moreBtn}
           <button type="button" class="icon-btn" data-act="clear-ach-history" title="${esc(t("profile.unlocksClear"))}" aria-label="${esc(t("profile.unlocksClear"))}">${icon("trash", 14)}</button>
         </div>
       </div>
       <div class="profile-unlock-row">${cards}</div>
-      ${footerHtml}
     </section>`;
 }
 
-/** Horizontal strip of recently played covers with playtime and store mark. */
+/** Horizontal strip of recently played covers with playtime captions. */
 function renderRecentRow(scope: "all" | StoreKind): string {
   const recents = recentApps(scope).slice(0, 10);
   if (recents.length === 0) return "";
-  const showStore = showStoreChips();
+  const showChips = showStoreChips();
   const cards = recents.map((appName) => {
     const title = summaryOf(appName)?.title || appName;
     const cover = coverOf(appName);
@@ -1180,16 +1139,18 @@ function renderRecentRow(scope: "all" | StoreKind): string {
     const played = pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "";
     const store = gameStore(appName);
     return `
-      <button type="button" class="profile-recent-card" data-act="open-game-from-profile" data-id="${esc(appName)}" title="${esc(title)}">
+      <button type="button" class="profile-recent-card" data-act="open-game-from-profile" data-id="${esc(appName)}" title="${esc(played ? `${title} · ${played}` : title)}">
         <span class="profile-recent-thumb-wrap">
           ${cover ? `<img class="profile-recent-thumb"${steamArtAttrs(appName)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-recent-thumb placeholder">${icon("gamepad-2", 20)}</span>`}
         </span>
-        <span class="profile-recent-name">${esc(title)}</span>
-        ${played || showStore ? `<span class="profile-recent-meta tabular-nums">${showStore ? storeLogo(store, 11, "profile-unlock-store-logo") : ""}<span>${esc(played || storeCode(store))}</span></span>` : ""}
+        <span class="profile-recent-caption">
+          <span class="profile-recent-name">${esc(title)}</span>
+          ${played || showChips ? `<span class="profile-recent-meta tabular-nums">${showChips ? storeLogo(store, 11, "profile-store-chip-logo") : ""}${played ? `<span>${esc(played)}</span>` : ""}</span>` : ""}
+        </span>
       </button>`;
   }).join("");
   return `
-    <section class="profile-row">
+    <section class="profile-row profile-recent-section">
       <div class="profile-row-head">
         <h3 class="profile-row-title">${t("profile.recentGamesTitle")}</h3>
         <button type="button" class="btn ghost small" data-view="library">${t("profile.showAll")}</button>
@@ -1210,7 +1171,7 @@ function renderDormantView(account: ProfileAccount, displayName: string, avatarK
         <div class="profile-hero-top">
           <button class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitleDormant)}" aria-label="${esc(avatarTitleDormant)}">
             <span class="profile-avatar profile-avatar-lg">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : esc(initial)}</span>
-            <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 12)}</span>
+            <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 11)}</span>
           </button>
           <div class="profile-hero-identity">
             <h1 class="profile-name">${esc(displayName)}</h1>
@@ -1295,6 +1256,9 @@ export function renderProfile(): string {
     stats.push({ value: totals.unlocked.toLocaleString(), label: t("profile.trophies") });
     // The same completion count the Platinum filter and the showcase use.
     stats.push({ value: totals.completed.toLocaleString(), label: t("profile.platLabel"), icon: "plat" });
+    if (totals.avgCompletion !== null) {
+      stats.push({ value: `${totals.avgCompletion}%`, label: t("profile.progressTitle") });
+    }
     // XP is Epic-only currency and only shown when the scope is Epic itself.
     if (scope === "epic" && S.playerProfileData) {
       stats.push({ value: S.playerProfileData.total_xp.toLocaleString(), label: "XP" });
@@ -1321,9 +1285,9 @@ export function renderProfile(): string {
     <div class="page profile-page">
       ${heroHtml}
       ${renderShowcase()}
-      ${showData ? renderUnlockRow(scope) : ""}
       ${showData ? renderRecentRow(scope) : ""}
       ${showData ? renderPlayActivity(scope) : ""}
+      ${showData ? renderUnlockRow(scope) : ""}
       ${renderAchievementsPanel(games, filtered)}
     </div>`;
 }
@@ -1340,6 +1304,6 @@ export function enterProfile(): void {
   S.profileFilter = "all";
   S.profileShowHidden = false;
   S.profileCardCount = PROFILE_CARD_CHUNK;
-  S.profileUnlockCount = 8;
+  S.profileUnlockCount = 6;
   S.profileError = "";
 }

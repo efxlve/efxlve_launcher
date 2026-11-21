@@ -347,7 +347,7 @@
   background: linear-gradient(180deg, #ffffff 0%, #f4f9fd 48%, #e0eef8 50%, #eef6fc 100%);
   box-shadow: 0 1px 3px rgba(0, 35, 75, 0.4), inset 0 1px 0 #ffffff;
 }
-:root[data-surface="gloss"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo, .profile-unlock-store-logo, .pcard-store-logo, .col-store-logo-img, .bk-store-logo) {
+:root[data-surface="gloss"] :is(.settings-store-logo, .case-store-row-logo, .about-link-logo, .storage-store-logo, .storage-combo-logo, .store-option-logo img, .lrow-store-logo, .dl-store-logo, .gp-source img, .gp-store-row img, .profile-store-chip-logo, .pcard-store-logo, .col-store-logo-img, .bk-store-logo) {
   filter: brightness(0) saturate(100%) invert(18%) sepia(35%) saturate(1400%) hue-rotate(175deg);
   opacity: 0.88;
 }
@@ -506,8 +506,7 @@
 :root[data-surface="gloss"] .profile-ach-card:hover {
   background: rgba(255, 255, 255, 0.92);
   border-color: rgba(43, 143, 239, 0.65);
-  box-shadow: 0 8px 24px rgba(43, 143, 239, 0.2), inset 0 1px 0 #ffffff;
-  transform: translateY(-4px);
+  box-shadow: 0 4px 14px rgba(43, 143, 239, 0.16), inset 0 1px 0 #ffffff;
 }
 :root[data-surface="gloss"] .profile-ach-card.is-plat {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(220, 240, 255, 0.85) 100%);
