@@ -1533,7 +1533,7 @@
   "profile.activityTopWeek": "Most played this week",
   "profile.activityTopMonth": "Most played this month",
   "profile.activityNoSessions": "Daily tracking starts with your next session. Older totals stay unchanged.",
-  "profile.unlocksTitle": "Recent unlocks",
+  "profile.unlocksTitle": "Recent achievements",
   "profile.unlocksThisMonth": "{n} this month",
   "profile.unlocksStreak": "{n}-day streak",
   "profile.unlocksRarest": "rarest {n}%",

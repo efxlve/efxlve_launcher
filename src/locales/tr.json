@@ -1533,7 +1533,7 @@
   "profile.activityTopWeek": "Bu hafta en çok oynanan",
   "profile.activityTopMonth": "Bu ay en çok oynanan",
   "profile.activityNoSessions": "Günlük takip bir sonraki oturumunuzla başlar. Eski toplamlar değişmez.",
-  "profile.unlocksTitle": "Son açılanlar",
+  "profile.unlocksTitle": "Son açılan başarımlar",
   "profile.unlocksThisMonth": "bu ay {n}",
   "profile.unlocksStreak": "{n} günlük seri",
   "profile.unlocksRarest": "en nadir %{n}",
