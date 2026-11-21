@@ -908,31 +908,6 @@ function renderHeroStoreChips(scope: "all" | StoreKind): string {
   </div>`;
 }
 
-/** Saved account switcher row when multiple accounts or dormant accounts exist. */
-function renderHeroAccountChips(combined: boolean, currentAccount: ProfileAccount | null): string {
-  const accounts = profileAccounts();
-  if (accounts.length <= 1 && !accounts.some((a) => !a.active)) return "";
-  const overviewBtn = `
-    <button type="button" class="profile-hero-acc-chip${combined ? " selected" : ""}" data-act="profile-account" data-key="overview" aria-pressed="${combined}" title="${esc(t("profile.overviewDesc"))}">
-      ${icon("layers", 12)}
-      <span>${esc(t("profile.overview"))}</span>
-    </button>`;
-  const accBtns = accounts
-    .map((acc) => {
-      const selected = !combined && currentAccount?.key === acc.key;
-      const statusText = acc.active ? t("profile.activeSession") : t("profile.inactiveTitle");
-      const tip = `${storeName(acc.kind)} · ${acc.name} (${statusText})`;
-      return `
-        <button type="button" class="profile-hero-acc-chip${selected ? " selected" : ""}${acc.active ? "" : " is-dormant"}" data-act="profile-account" data-key="${esc(acc.key)}" aria-pressed="${selected}" title="${esc(tip)}">
-          <span class="profile-acc-dot ${acc.active ? "online" : "offline"}" aria-hidden="true"></span>
-          ${storeLogo(acc.kind, 13, "profile-store-chip-logo")}
-          <span class="profile-hero-acc-name">${esc(acc.name)}</span>
-        </button>`;
-    })
-    .join("");
-  return `<div class="profile-hero-accounts" role="group" aria-label="${esc(t("profile.linkedAccounts"))}">${overviewBtn}${accBtns}</div>`;
-}
-
 /** Wide art for the profile banner: custom pick for this scope, else recent game's hero. */
 export function profileBannerArt(scope: "all" | StoreKind, account?: ProfileAccount | null): string {
   const scopeKey = account ? account.key : scope;
@@ -979,10 +954,7 @@ function renderProfileHero(
     : account
       ? `<div class="profile-hero-stores"><span class="profile-hero-store-pill"><span class="profile-acc-dot ${account.active ? "online" : "offline"}" aria-hidden="true"></span>${storeLogo(account.kind, 14, "profile-store-chip-logo")}<span>${esc(storeName(account.kind))}</span></span></div>`
       : "";
-  const accountsHtml = renderHeroAccountChips(combined, account);
-  const scopeBarHtml = storesHtml || accountsHtml
-    ? `<div class="profile-scope-bar">${storesHtml}${storesHtml && accountsHtml ? `<span class="profile-scope-sep" aria-hidden="true"></span>` : ""}${accountsHtml}</div>`
-    : "";
+  const scopeBarHtml = storesHtml ? `<div class="profile-scope-bar">${storesHtml}</div>` : "";
 
   const statsHtml = showData
     ? `<div class="profile-stats">${stats.map(renderStat).join("")}</div>`
@@ -1305,7 +1277,6 @@ function renderDormantView(account: ProfileAccount, displayName: string, avatarK
   const dormantSwitch = switchAct(account.kind);
   const avatarTitleDormant = customAvatar ? t("profile.changeAvatarTitle") : t("profile.uploadAvatarTitle");
   const storesHtml = `<div class="profile-hero-stores"><span class="profile-hero-store-pill"><span class="profile-acc-dot offline" aria-hidden="true"></span>${storeLogo(account.kind, 14, "profile-store-chip-logo")}<span>${esc(storeName(account.kind))}</span></span></div>`;
-  const accountsHtml = renderHeroAccountChips(false, account);
 
   return `
     <div class="page profile-page">
@@ -1331,7 +1302,7 @@ function renderDormantView(account: ProfileAccount, displayName: string, avatarK
                   <span class="profile-presence-text">${esc(t("profile.inactiveTitle"))}</span>
                 </div>
               </div>
-              <div class="profile-scope-bar">${storesHtml}${accountsHtml ? `<span class="profile-scope-sep" aria-hidden="true"></span>${accountsHtml}` : ""}</div>
+              <div class="profile-scope-bar">${storesHtml}</div>
             </div>
           </div>
         </div>

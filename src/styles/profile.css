@@ -384,16 +384,7 @@
   gap: 6px;
 }
 
-.profile-scope-sep {
-  width: 1px;
-  height: 18px;
-  margin: 0 4px;
-  background: rgba(255, 255, 255, 0.2);
-  flex-shrink: 0;
-}
-
-.profile-hero-stores,
-.profile-hero-accounts {
+.profile-hero-stores {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -401,7 +392,6 @@
 }
 
 .profile-hero-store-chip,
-.profile-hero-acc-chip,
 .profile-hero-store-pill {
   display: inline-flex;
   align-items: center;
@@ -426,39 +416,33 @@
     transform 120ms ease;
 }
 
-.profile-hero-store-chip,
-.profile-hero-acc-chip {
+.profile-hero-store-chip {
   cursor: pointer;
 }
 
-.profile-hero-store-chip:hover,
-.profile-hero-acc-chip:hover {
+.profile-hero-store-chip:hover {
   background: rgba(26, 29, 36, 0.86);
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.3);
 }
 
-.profile-hero-store-chip:active,
-.profile-hero-acc-chip:active {
+.profile-hero-store-chip:active {
   transform: scale(0.98);
 }
 
-.profile-hero-store-chip.selected,
-.profile-hero-acc-chip.selected {
+.profile-hero-store-chip.selected {
   background: rgba(255, 255, 255, 0.16);
   color: #ffffff;
   border-color: #ffffff;
   font-weight: 600;
 }
 
-.profile-hero-store-chip.unlinked,
-.profile-hero-acc-chip.is-dormant {
+.profile-hero-store-chip.unlinked {
   opacity: 0.72;
   border-style: dashed;
 }
 
-.profile-hero-store-chip.unlinked:hover,
-.profile-hero-acc-chip.is-dormant:hover {
+.profile-hero-store-chip.unlinked:hover {
   opacity: 1;
 }
 
@@ -473,9 +457,7 @@
 }
 
 .profile-hero-store-chip:hover .profile-store-chip-logo,
-.profile-hero-store-chip.selected .profile-store-chip-logo,
-.profile-hero-acc-chip:hover .profile-store-chip-logo,
-.profile-hero-acc-chip.selected .profile-store-chip-logo {
+.profile-hero-store-chip.selected .profile-store-chip-logo {
   opacity: 1;
 }
 
@@ -496,13 +478,6 @@
 .profile-hero-store-chip.selected .profile-hero-chip-count {
   background: #ffffff;
   color: #090a0d;
-}
-
-.profile-hero-acc-name {
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .profile-acc-dot {
