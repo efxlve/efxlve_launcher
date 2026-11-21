@@ -59,7 +59,7 @@ export function steamArtAttrs(appName: string): string {
 /** Resets the profile list back to the first chunk (on filter/sort/search change). */
 export function resetProfileCards(): void {
   S.profileCardCount = PROFILE_CARD_CHUNK;
-  S.profileUnlockCount = 10;
+  S.profileUnlockCount = 8;
 }
 
 /** Score unit: Xbox counts gamerscore, the rest count XP. */
@@ -1152,39 +1152,57 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
   if (entries.length === 0) return "";
 
   const stats = achievementHistoryStats(entries);
-  const shown = entries.slice(0, Math.max(10, S.profileUnlockCount));
+  const shown = entries.slice(0, Math.max(8, S.profileUnlockCount));
   const showStore = showStoreChips();
   const cards = shown
     .map((entry) => {
-      const date = entry.date ? fmtAchDate(entry.date) : "";
+      const dateIso = entry.date || (entry.seenAt ? new Date(entry.seenAt).toISOString() : "");
+      const date = dateIso ? fmtAchDate(dateIso) : "";
       const rarity = entry.rarity != null ? `%${fmtDecimal1(entry.rarity)}` : "";
       const isUltraRare = entry.rarity != null && entry.rarity < 5;
-      const rightMeta = rarity || date || (entry.manual ? t("profile.unlockManual") : "");
       const fullMeta = [date, rarity, entry.manual ? t("profile.unlockManual") : ""].filter(Boolean).join(" · ");
       const shot = entry.shot
-        ? `<span class="profile-unlock-shot" title="${esc(t("profile.unlockShot"))}">${icon("camera", 10)}</span>`
+        ? `<span class="profile-unlock-shot" title="${esc(t("profile.unlockShot"))}">${icon("camera", 11)}</span>`
         : "";
       const storeMark = showStore && entry.store
-        ? storeLogo(entry.store, 11, "profile-unlock-store-logo")
+        ? storeLogo(entry.store, 12, "profile-unlock-store-logo")
         : "";
       const tip = [
         `${entry.title} — ${entry.game}`,
         fullMeta,
         entry.description || "",
       ].filter(Boolean).join(" · ");
+
+      const art = entry.icon
+        ? `<img class="profile-unlock-art" src="${esc(entry.icon)}" alt="" loading="lazy" decoding="async" />`
+        : `<span class="profile-unlock-placeholder">${icon("trophy", 18)}</span>`;
+
+      let rarityBadge = "";
+      if (entry.rarity != null) {
+        rarityBadge = isUltraRare
+          ? `<span class="profile-unlock-badge is-rare tabular-nums">${icon("trophy", 10)}<span>%${fmtDecimal1(entry.rarity)}</span></span>`
+          : `<span class="profile-unlock-badge tabular-nums">%${fmtDecimal1(entry.rarity)}</span>`;
+      } else if (entry.manual) {
+        rarityBadge = `<span class="profile-unlock-badge is-manual">${esc(t("profile.unlockManual"))}</span>`;
+      }
+
       return `
         <button type="button" class="profile-unlock-card${isUltraRare ? " is-rare-card" : ""}" data-act="open-pinned-achievement" data-id="${esc(entry.appName)}" data-ach="${esc(entry.name)}" title="${esc(tip)}">
-          <span class="profile-unlock-icon">${entry.icon ? `<img src="${esc(entry.icon)}" alt="" loading="lazy" decoding="async" />` : icon("trophy", 16)}</span>
-          <span class="profile-unlock-main">
-            <span class="profile-unlock-bottom">
-              <span class="profile-unlock-game-row">${storeMark}<span class="profile-unlock-game">${esc(entry.game)}</span></span>
-              ${rightMeta ? `<span class="profile-unlock-meta tabular-nums${isUltraRare ? " is-rare" : ""}">${esc(rightMeta)}</span>` : ""}
-            </span>
-            <span class="profile-unlock-top">
-              <span class="profile-unlock-name">${esc(entry.title)}</span>
+          <div class="profile-unlock-art-wrap">
+            ${art}
+          </div>
+          <div class="profile-unlock-main">
+            <div class="profile-unlock-top">
+              <span class="profile-unlock-title">${esc(entry.title)}</span>
               ${shot}
-            </span>
-          </span>
+            </div>
+            <div class="profile-unlock-sub">
+              ${storeMark}
+              <span class="profile-unlock-game">${esc(entry.game)}</span>
+              ${date ? `<span class="profile-unlock-dot">·</span><span class="profile-unlock-date tabular-nums">${esc(date)}</span>` : ""}
+            </div>
+          </div>
+          ${rarityBadge}
         </button>`;
     })
     .join("");
@@ -1204,7 +1222,7 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
   }
 
   const hasMore = entries.length > shown.length;
-  const canCollapse = shown.length > 10;
+  const canCollapse = shown.length > 8;
 
   return `
     <section class="profile-row">
@@ -1221,7 +1239,7 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
       <div class="profile-unlock-row">${cards}</div>
       ${hasMore || canCollapse ? `
         <div class="profile-unlock-actions">
-          ${hasMore ? `<button type="button" class="btn ghost small profile-unlock-more" data-act="profile-unlocks-more">${esc(t("profile.showMore"))} (${entries.length - shown.length})</button>` : ""}
+          ${hasMore ? `<button type="button" class="btn ghost small profile-unlock-more" data-act="profile-unlocks-more">${icon("chevron-down", 13)}<span>${esc(t("profile.showMore"))} (${(entries.length - shown.length).toLocaleString()})</span></button>` : ""}
           ${canCollapse ? `<button type="button" class="btn ghost small profile-unlock-less" data-act="profile-unlocks-less" title="${esc(t("nav.collapse"))}" aria-label="${esc(t("nav.collapse"))}">${icon("chevron-up", 13)}<span>${esc(t("nav.collapse"))}</span></button>` : ""}
         </div>` : ""}
     </section>`;
@@ -1426,6 +1444,6 @@ export function enterProfile(): void {
   S.profileShowHidden = false;
   S.profileActivityRange = "7d";
   S.profileCardCount = PROFILE_CARD_CHUNK;
-  S.profileUnlockCount = 10;
+  S.profileUnlockCount = 8;
   S.profileError = "";
 }

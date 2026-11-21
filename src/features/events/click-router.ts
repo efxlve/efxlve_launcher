@@ -571,10 +571,10 @@ document.addEventListener("click", (e) => {
       render();
     });
   } else if (act === "profile-unlocks-more") {
-    S.profileUnlockCount += 20;
+    S.profileUnlockCount += 16;
     render();
   } else if (act === "profile-unlocks-less") {
-    S.profileUnlockCount = 10;
+    S.profileUnlockCount = 8;
     render();
   } else if (act === "unpin-ach" && t.dataset.key) {
     removeAchievementPin(t.dataset.key);
