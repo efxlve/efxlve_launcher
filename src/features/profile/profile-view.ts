@@ -1257,7 +1257,7 @@ function renderRecentRow(scope: "all" | StoreKind): string {
           ${cover ? `<img class="profile-recent-thumb"${steamArtAttrs(appName)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-recent-thumb placeholder">${icon("gamepad-2", 20)}</span>`}
         </span>
         <span class="profile-recent-name">${esc(title)}</span>
-        ${played || showStore ? `<span class="profile-recent-meta tabular-nums">${showStore ? storeLogo(store, 11, "profile-unlock-store-logo") : ""}<span>${esc(played || storeCode(store))}</span></span>` : ""}
+        ${played || showStore ? `<span class="profile-recent-meta tabular-nums">${showStore ? storeLogo(store, 12, "profile-recent-store-logo") : ""}<span>${esc(played || storeCode(store))}</span></span>` : ""}
       </button>`;
   }).join("");
   return `
