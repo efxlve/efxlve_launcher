@@ -139,6 +139,12 @@
   width: 100%;
 }
 
+/* The lazy gallery appends the next batch before this one-pixel sentinel. */
+.theme-gallery-sentinel {
+  grid-column: 1 / -1;
+  height: 1px;
+}
+
 /* --- Theme Card --- */
 .theme-card {
   position: relative;
@@ -155,8 +161,6 @@
   content-visibility: auto;
   contain-intrinsic-size: 240px 200px;
 }
-
-.theme-card-hidden { display: none !important; }
 
 .theme-card:hover {
   border-color: var(--line-strong);

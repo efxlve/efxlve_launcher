@@ -43,6 +43,19 @@ let currentFilter: ThemeFilter = "all";
 let themeQuery = "";
 let themeSearchWired = false;
 
+/**
+ * The catalog carries 250 themes. Building every card before the gallery
+ * paints costs an older PC thousands of nodes and a large HTML parse, so the
+ * grid starts with one batch and appends the next when its sentinel nears the
+ * viewport. Searching still covers the whole catalog and re-batches its hits.
+ */
+const THEME_BATCH = 48;
+let galleryCategoryThemes: ThemeDef[] = [];
+let galleryThemes: ThemeDef[] = [];
+let galleryRendered = 0;
+let galleryObserver: IntersectionObserver | null = null;
+let themeSearchTimer = 0;
+
 let favoriteCache: Set<string> | null = null;
 
 function themeFavorites(): Set<string> {
@@ -106,15 +119,126 @@ function toggleThemeFavorite(id: string): void {
       Number(favorites.has(a.dataset.surface ?? "")),
   );
   cards.forEach((item) => grid.appendChild(item));
+  // The sentinel must stay after the last card, or the next append lands
+  // inside the batch the user is already looking at.
+  const sentinel = grid.querySelector<HTMLElement>(".theme-gallery-sentinel");
+  if (sentinel) grid.appendChild(sentinel);
 }
 
-/** Filters the rendered cards in place, so typing never rebuilds the gallery. */
+function themeDisplayName(theme: ThemeDef): string {
+  return theme.name ?? (theme.labelKey ? t(theme.labelKey) : theme.id);
+}
+
+/** The card's searchable text, shared by the renderer and the lazy filter. */
+function themeSearchText(theme: ThemeDef): string {
+  const tags = theme.tags?.join(" ") ?? "";
+  return `${themeDisplayName(theme)} ${theme.scheme} ${tags}${theme.custom ? " custom" : ""}`;
+}
+
+function sortThemesByFavorites(list: ThemeDef[], favorites: Set<string>): ThemeDef[] {
+  return [...list].sort(
+    (a, b) => Number(favorites.has(b.id)) - Number(favorites.has(a.id)),
+  );
+}
+
+function themeEmptyState(): string {
+  if (currentFilter === "custom") {
+    return `<div class="theme-empty-custom">
+      <span style="font-size: 24px; opacity: 0.8;">${icon("sparkles", 28)}</span>
+      <span>${esc(t("settings.themeEmptyCustom"))}</span>
+      <button type="button" class="btn primary small" data-act="theme-add">
+        ${icon("plus", 13)} ${t("settings.themeAdd")}
+      </button>
+    </div>`;
+  }
+  if (currentFilter === "favorites") {
+    return `<div class="theme-empty-custom">
+      <span style="font-size: 24px; opacity: 0.8;">${icon("star", 28)}</span>
+      <span>${esc(t("settings.themeEmptyFavorites"))}</span>
+    </div>`;
+  }
+  return `<div class="theme-empty-custom">
+    <span style="font-size: 24px; opacity: 0.8;">${icon("search", 28)}</span>
+    <span>${esc(t("settings.searchEmpty"))}</span>
+  </div>`;
+}
+
+function themeSentinelHtml(remaining: number): string {
+  return remaining > 0
+    ? `<div class="theme-gallery-sentinel" aria-hidden="true"></div>`
+    : "";
+}
+
+function disconnectThemeGallery(): void {
+  galleryObserver?.disconnect();
+  galleryObserver = null;
+}
+
+function appendThemeBatch(grid: HTMLElement, take = THEME_BATCH): void {
+  const sentinel = grid.querySelector<HTMLElement>(".theme-gallery-sentinel");
+  if (!sentinel) {
+    disconnectThemeGallery();
+    return;
+  }
+  const next = galleryThemes.slice(galleryRendered, galleryRendered + take);
+  if (next.length === 0) {
+    sentinel.remove();
+    disconnectThemeGallery();
+    return;
+  }
+  sentinel.insertAdjacentHTML("beforebegin", next.map(renderThemeCard).join(""));
+  galleryRendered += next.length;
+  if (galleryRendered >= galleryThemes.length) {
+    sentinel.remove();
+    disconnectThemeGallery();
+  }
+}
+
+function observeThemeGallery(): void {
+  disconnectThemeGallery();
+  const grid = document.querySelector<HTMLElement>(".theme-card-grid");
+  const sentinel = grid?.querySelector<HTMLElement>(".theme-gallery-sentinel") ?? null;
+  if (!grid || !sentinel) return;
+  if (!("IntersectionObserver" in window)) {
+    appendThemeBatch(grid, galleryThemes.length);
+    return;
+  }
+  galleryObserver = new IntersectionObserver(
+    (entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      appendThemeBatch(grid);
+    },
+    { root: document.getElementById("view"), rootMargin: "600px 0px" },
+  );
+  galleryObserver.observe(sentinel);
+}
+
+/** Rebuilds the grid from a complete list; the first batch stays lazy. */
+function resetThemeGallery(themes: ThemeDef[]): void {
+  galleryThemes = themes;
+  galleryRendered = 0;
+  disconnectThemeGallery();
+  const grid = document.querySelector<HTMLElement>(".theme-card-grid");
+  if (!grid) return;
+  if (themes.length === 0) {
+    grid.innerHTML = themeEmptyState();
+    return;
+  }
+  galleryRendered = Math.min(themes.length, THEME_BATCH);
+  grid.innerHTML =
+    themes.slice(0, galleryRendered).map(renderThemeCard).join("") +
+    themeSentinelHtml(themes.length - galleryRendered);
+  observeThemeGallery();
+}
+
 function applyThemeSearch(query: string): void {
   const needle = query.trim().toLowerCase();
-  document.querySelectorAll<HTMLElement>(".theme-card").forEach((card) => {
-    const haystack = `${card.dataset.search ?? ""} ${card.textContent ?? ""}`.toLowerCase();
-    card.classList.toggle("theme-card-hidden", needle.length > 0 && !haystack.includes(needle));
-  });
+  const matches = needle
+    ? galleryCategoryThemes.filter((theme) =>
+        themeSearchText(theme).toLowerCase().includes(needle),
+      )
+    : galleryCategoryThemes;
+  resetThemeGallery(matches);
 }
 
 function wireThemeSearch(): void {
@@ -124,7 +248,8 @@ function wireThemeSearch(): void {
     const input = event.target;
     if (!(input instanceof HTMLInputElement) || input.id !== "theme-search") return;
     themeQuery = input.value;
-    applyThemeSearch(themeQuery);
+    window.clearTimeout(themeSearchTimer);
+    themeSearchTimer = window.setTimeout(() => applyThemeSearch(themeQuery), 120);
   });
 }
 
@@ -194,38 +319,28 @@ export function renderThemeSection(): string {
     filtered = allThemes.filter((th) => Boolean(th.custom));
   }
 
-  filtered = [...filtered].sort(
-    (a, b) => Number(favorites.has(b.id)) - Number(favorites.has(a.id)),
-  );
+  filtered = sortThemesByFavorites(filtered, favorites);
 
-  const themeNames = allThemes
-    .map((theme) => theme.name ?? (theme.labelKey ? t(theme.labelKey) : theme.id))
-    .join(" ");
+  const themeNames = allThemes.map((theme) => themeDisplayName(theme)).join(" ");
+
+  const needle = themeQuery.trim().toLowerCase();
+  const initialThemes = needle
+    ? filtered.filter((theme) => themeSearchText(theme).toLowerCase().includes(needle))
+    : filtered;
+  galleryCategoryThemes = filtered;
+  galleryThemes = initialThemes;
+  galleryRendered = Math.min(initialThemes.length, THEME_BATCH);
+  window.clearTimeout(themeSearchTimer);
 
   const cardsHtml =
-    filtered.length > 0
-      ? filtered.map((theme) => renderThemeCard(theme)).join("")
-      : currentFilter === "custom"
-        ? `<div class="theme-empty-custom">
-            <span style="font-size: 24px; opacity: 0.8;">${icon("sparkles", 28)}</span>
-            <span>${esc(t("settings.themeEmptyCustom"))}</span>
-            <button type="button" class="btn primary small" data-act="theme-add">
-              ${icon("plus", 13)} ${t("settings.themeAdd")}
-            </button>
-          </div>`
-        : currentFilter === "favorites"
-          ? `<div class="theme-empty-custom">
-              <span style="font-size: 24px; opacity: 0.8;">${icon("star", 28)}</span>
-              <span>${esc(t("settings.themeEmptyFavorites"))}</span>
-            </div>`
-          : `<div class="theme-empty-custom">
-              <span style="font-size: 24px; opacity: 0.8;">${icon("search", 28)}</span>
-              <span>${esc(t("settings.searchEmpty"))}</span>
-            </div>`;
+    initialThemes.length > 0
+      ? initialThemes.slice(0, galleryRendered).map(renderThemeCard).join("") +
+        themeSentinelHtml(initialThemes.length - galleryRendered)
+      : themeEmptyState();
 
   wireThemeSearch();
   wireThemeSelection();
-  queueMicrotask(() => applyThemeSearch(themeQuery));
+  queueMicrotask(observeThemeGallery);
 
   return `
     <div class="theme-section" data-search="${esc(`${t("settings.secThemes")} ${t("settings.themeTitle")} ${t("settings.themeDesc")} theme surface appearance palette ${themeNames}`)}">
@@ -311,7 +426,7 @@ function wireThemeSelection(): void {
 function renderThemeCard(theme: ThemeDef): string {
   const isActive = S.surface === theme.id;
   const isFavorite = themeFavorites().has(theme.id);
-  const displayName = theme.name ?? (theme.labelKey ? t(theme.labelKey) : theme.id);
+  const displayName = themeDisplayName(theme);
   const favoriteLabel = isFavorite ? t("settings.themeUnfavorite") : t("settings.themeFavorite");
 
   const previewBg = theme.customInput?.previewBg ?? theme.bg;
@@ -335,7 +450,7 @@ function renderThemeCard(theme: ThemeDef): string {
   const cardArtGradient = `linear-gradient(135deg, ${accent}33 0%, ${surface2} 100%)`;
 
   return `
-    <div class="theme-card ${isActive ? "active" : ""}" data-act="set-surface" data-surface="${esc(theme.id)}" data-theme-name="${esc(displayName)}" data-search="${esc(`${displayName} ${theme.scheme} ${theme.tags?.join(" ") ?? ""}${theme.custom ? " custom" : ""}`)}" role="button" tabindex="0" aria-pressed="${isActive ? "true" : "false"}" aria-label="${esc(displayName)}">
+    <div class="theme-card ${isActive ? "active" : ""}" data-act="set-surface" data-surface="${esc(theme.id)}" data-theme-name="${esc(displayName)}" data-search="${esc(themeSearchText(theme))}" role="button" tabindex="0" aria-pressed="${isActive ? "true" : "false"}" aria-label="${esc(displayName)}">
       <div class="theme-card-preview" style="background: ${esc(previewBg)};">
         ${scene ? `<div class="theme-card-preview-scene" style="background-image: url('${esc(scene)}'); filter: blur(${sceneBlur}px);"></div>` : ""}
         <div class="theme-card-preview-scrim" style="background: ${scrimColor};"></div>
