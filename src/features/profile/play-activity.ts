@@ -176,7 +176,7 @@ function renderChart(data: PlayActivityData): string {
       const label = `${date}.${month}.${year}`;
       const tip = `${label} · ${fmtPlaytime(day.seconds)}`;
       return `<span class="play-bar-slot" title="${esc(tip)}">
-        <span class="play-bar${day.key === todayKey ? " is-today" : ""}" style="height:${height}%"></span>
+        <span class="play-bar${day.seconds > 0 ? " is-active" : ""}${day.key === todayKey ? " is-today" : ""}" style="height:${height}%"></span>
       </span>`;
     })
     .join("");

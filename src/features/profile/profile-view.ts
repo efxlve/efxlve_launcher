@@ -12,6 +12,7 @@
  */
 
 import { PROFILE_CARD_CHUNK } from "../../core/constants";
+import { tierFromPercent } from "../../core/achievements";
 import { achievementHistoryStats, sortedAchievementHistory } from "../../core/achievement-history";
 import { achievementPins } from "../../core/achievement-pins";
 import { achSummaryOf } from "../../core/game-view";
@@ -59,6 +60,7 @@ export function steamArtAttrs(appName: string): string {
 /** Resets the profile list back to the first chunk (on filter/sort/search change). */
 export function resetProfileCards(): void {
   S.profileCardCount = PROFILE_CARD_CHUNK;
+  S.profileUnlockCount = 8;
 }
 
 /** Score unit: Xbox counts gamerscore, the rest count XP. */
@@ -102,7 +104,7 @@ function renderProfileGameGridCards(cardGames: ProfileGameRecord[], chips: boole
     const storeChip = chips ? storeChipHtml(g.app_name) : "";
 
     return `
-      <div class="profile-ach-card${isPlat ? " is-plat" : ""}" role="button" tabindex="0" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(`${g.app_title}${meta ? ` · ${meta}` : ""}`)}">
+      <div class="profile-ach-card${isPlat ? " is-plat" : ""}" role="button" tabindex="0" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" title="${esc(`${g.app_title}${meta ? ` · ${meta}` : ""}`)}">
         <div class="profile-ach-art">
           ${cover ? `<img${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-ach-ph">${icon("gamepad-2", 24)}</span>`}
           ${isPlat
@@ -173,7 +175,7 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
         : `<div class="profile-badge-pill not-started tabular-nums">—</div>`;
 
     return `
-      <div class="row profile-game-row${isPlat ? " is-plat" : ""}${S.profileShowHidden ? " has-unhide" : ""}" role="button" tabindex="0" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(g.app_title)}">
+      <div class="row profile-game-row${isPlat ? " is-plat" : ""}${S.profileShowHidden ? " has-unhide" : ""}" role="button" tabindex="0" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" title="${esc(g.app_title)}">
         <div class="profile-col-game">
           ${cover ? `<img class="profile-game-thumb"${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-game-thumb placeholder">${icon("gamepad-2", 18)}</span>`}
           <div class="profile-game-info">
@@ -860,7 +862,7 @@ export function profileBannerArt(scope: "all" | StoreKind, account?: ProfileAcco
   return "";
 }
 
-/** Xbox-style identity hero: banner, avatar, name, presence, scope chips and stats. */
+/** Identity hero: banner, avatar, name, presence, career stats ledger and store scope rail. */
 function renderProfileHero(
   displayName: string,
   avatarKey: string,
@@ -885,12 +887,16 @@ function renderProfileHero(
 
   const statsHtml = showData
     ? `<div class="profile-stats-bar"><div class="profile-stats">${stats.map(renderStat).join("")}</div></div>`
-    : `<div class="profile-inactive">
+    : "";
+
+  const inactiveHtml = !showData
+    ? `<div class="profile-inactive">
         <p class="row-meta">${t("profile.inactiveDesc")}</p>
         <button class="btn primary small" ${combined ? `data-view="accounts"` : `data-act="${switchAct(account!.kind)}" data-id="${esc(account!.id)}"`}>
           ${combined ? t("accounts.manageAccounts") : t("settings.accountSwitchBtn")}
         </button>
-      </div>`;
+      </div>`
+    : "";
 
   const banner = showData ? profileBannerArt(scope, account) : "";
 
@@ -912,31 +918,34 @@ function renderProfileHero(
         </div>
         <div class="profile-hero-identity">
           <div class="profile-identity-head">
-            <div class="profile-name-row">
-              <button type="button" class="profile-name-edit-btn" data-act="profile-change-name" title="${esc(t("profile.changeNameTitle"))}">
-                <h1 class="profile-name">${esc(displayName)}</h1>
-                <span class="profile-name-edit-icon">${icon("edit", 13)}</span>
-              </button>
-              <div class="profile-presence">
-                <span class="profile-presence-dot ${isOnline ? "online" : "offline"}" aria-hidden="true"></span>
-                <span class="profile-presence-text">${isOnline ? t("nav.online") : t("profile.offlineMode")}</span>
+            <div class="profile-name-col">
+              <div class="profile-name-row">
+                <button type="button" class="profile-name-edit-btn" data-act="profile-change-name" title="${esc(t("profile.changeNameTitle"))}">
+                  <h1 class="profile-name">${esc(displayName)}</h1>
+                  <span class="profile-name-edit-icon">${icon("edit", 13)}</span>
+                </button>
+                <div class="profile-presence">
+                  <span class="profile-presence-dot ${isOnline ? "online" : "offline"}" aria-hidden="true"></span>
+                  <span class="profile-presence-text">${isOnline ? t("nav.online") : t("profile.offlineMode")}</span>
+                </div>
+              </div>
+              <div class="profile-hero-actions">
+                ${!combined
+                  ? `<button type="button" class="btn ghost small profile-hero-action-btn" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>`
+                  : ""}
+                <button type="button" class="btn ghost small profile-hero-action-btn" data-view="accounts">${icon("settings", 13)}<span>${t("accounts.manageAccounts")}</span></button>
+                <button type="button" class="btn ghost small profile-hero-action-btn${S.presenceEnabled ? "" : " is-muted"}" data-act="toggle-presence" title="${esc(t("profile.presenceToggleTip"))}" aria-pressed="${S.presenceEnabled}">
+                  ${icon(S.presenceEnabled ? "eye" : "eye-off", 13)}<span>${esc(S.presenceEnabled ? t("profile.presenceVisible") : t("profile.presenceHidden"))}</span>
+                </button>
+                <button class="icon-btn profile-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${overviewStores().length > 1 ? t("profile.refreshTitleMulti") : t("profile.refreshTitle")}">${icon("refresh", 14)}</button>
               </div>
             </div>
-            <div class="profile-hero-actions">
-              ${!combined
-                ? `<button type="button" class="btn ghost small profile-hero-action-btn" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>`
-                : ""}
-              <button type="button" class="btn ghost small profile-hero-action-btn" data-view="accounts">${icon("settings", 13)}<span>${t("accounts.manageAccounts")}</span></button>
-              <button type="button" class="btn ghost small profile-hero-action-btn${S.presenceEnabled ? "" : " is-muted"}" data-act="toggle-presence" title="${esc(t("profile.presenceToggleTip"))}" aria-pressed="${S.presenceEnabled}">
-                ${icon(S.presenceEnabled ? "eye" : "eye-off", 13)}<span>${esc(S.presenceEnabled ? t("profile.presenceVisible") : t("profile.presenceHidden"))}</span>
-              </button>
-              <button class="icon-btn profile-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${overviewStores().length > 1 ? t("profile.refreshTitleMulti") : t("profile.refreshTitle")}">${icon("refresh", 14)}</button>
-            </div>
+            ${statsHtml}
           </div>
-          ${storesHtml}
         </div>
       </div>
-      ${statsHtml}
+      ${storesHtml ? `<div class="profile-hero-footer">${storesHtml}</div>` : ""}
+      ${inactiveHtml}
     </section>`;
 }
 
@@ -1011,27 +1020,34 @@ function renderShowcase(): string {
 
   const cards = pins
     .map((pin) => {
-      const tierLabel =
-        pin.tier === "platinum"
-          ? t("trophy.plat")
-          : pin.tier === "gold" || pin.tier === "silver" || pin.tier === "bronze"
-            ? t(`trophy.${pin.tier}`)
+      const tier =
+        pin.tier === "platinum" || pin.tier === "gold" || pin.tier === "silver" || pin.tier === "bronze"
+          ? pin.tier
+          : pin.rarity != null
+            ? tierFromPercent(pin.rarity)
             : "";
-      const meta = [
-        tierLabel,
-        pin.rarity != null ? `%${fmtDecimal1(pin.rarity)}` : "",
-        pin.date ? fmtAchDate(pin.date) : "",
-      ]
-        .filter(Boolean)
-        .join(" · ");
+      const tierLabel =
+        tier === "platinum"
+          ? t("trophy.plat")
+          : tier === "gold" || tier === "silver" || tier === "bronze"
+            ? t(`trophy.${tier}`)
+            : "";
+      const rarityText = pin.rarity != null ? `%${fmtDecimal1(pin.rarity)}` : "";
+      const badgeText = [tierLabel, rarityText].filter(Boolean).join(" ");
+      const dateText = pin.date ? fmtAchDate(pin.date) : "";
       return `
-        <div class="profile-showcase-card">
-          <button type="button" class="profile-showcase-main" data-act="open-pinned-achievement" data-id="${esc(pin.appName)}" data-ach="${esc(pin.name)}" title="${esc(pin.title)} · ${esc(pin.game)}">
-            <span class="profile-showcase-art">${pin.icon ? `<img src="${esc(pin.icon)}" alt="" loading="lazy" />` : icon("trophy", 26)}</span>
+        <div class="profile-showcase-card${tier ? ` is-${tier}` : ""}">
+          <button type="button" class="profile-showcase-main" data-act="open-pinned-achievement" data-id="${esc(pin.appName)}" data-ach="${esc(pin.name)}" title="${esc(pin.title)} — ${esc(pin.game)}">
+            <span class="profile-showcase-art${tier ? ` tier-${tier}` : ""}">${pin.icon ? `<img src="${esc(pin.icon)}" alt="" loading="lazy" decoding="async" />` : icon("trophy", 24)}</span>
             <span class="profile-showcase-body">
-              <span class="profile-showcase-title">${esc(pin.title)}</span>
-              <span class="profile-showcase-game">${esc(pin.game)}</span>
-              ${meta ? `<span class="profile-showcase-meta tabular-nums">${esc(meta)}</span>` : ""}
+              <span class="profile-showcase-top">
+                <span class="profile-showcase-title">${esc(pin.title)}</span>
+                ${badgeText ? `<span class="profile-unlock-rarity${tier ? ` tier-${tier}` : ""} tabular-nums">${icon("trophy", 10)}<span>${esc(badgeText)}</span></span>` : ""}
+              </span>
+              <span class="profile-showcase-foot">
+                <span class="profile-showcase-game">${esc(pin.game)}</span>
+                ${dateText ? `<span class="profile-showcase-meta tabular-nums">${esc(dateText)}</span>` : ""}
+              </span>
             </span>
           </button>
           <button type="button" class="icon-btn profile-showcase-unpin" data-act="unpin-ach" data-key="${esc(pin.key)}" title="${esc(t("ach.unpin"))}" aria-label="${esc(t("ach.unpin"))}">${icon("x", 12)}</button>
@@ -1042,8 +1058,10 @@ function renderShowcase(): string {
   return `
     <section class="profile-row profile-showcase">
       <div class="profile-row-head">
-        <h3 class="profile-row-title">${esc(t("profile.pinsTitle"))}</h3>
-        <span class="profile-unlock-stats">${esc(t("profile.pinsHint"))}</span>
+        <div class="profile-row-title-group">
+          <h3 class="profile-row-title">${esc(t("profile.pinsTitle"))}</h3>
+          <span class="profile-unlock-stats">${esc(t("profile.pinsHint"))}</span>
+        </div>
       </div>
       <div class="profile-showcase-row">${cards}</div>
     </section>`;
@@ -1052,8 +1070,8 @@ function renderShowcase(): string {
 /**
  * Recent unlocks across every store, newest first. The list is the one place
  * the launcher's own history is visible: the bell forgets after a day and a
- * game page only knows one set. Cards wrap onto new rows, so a long history
- * never hides behind a horizontal scrollbar.
+ * game page only knows one set. Cards sit in a balanced responsive grid and
+ * open the achievement directly on its game page.
  */
 function renderUnlockRow(scope: "all" | StoreKind): string {
   const entries = sortedAchievementHistory().filter((entry) => {
@@ -1065,66 +1083,109 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
   if (entries.length === 0) return "";
 
   const stats = achievementHistoryStats(entries);
-  const shown = entries.slice(0, Math.max(10, S.profileUnlockCount));
+  const limit = Math.max(8, S.profileUnlockCount);
+  const shown = entries.slice(0, limit);
+  const showStore = showStoreChips();
+
   const cards = shown
     .map((entry) => {
       const date = entry.date ? fmtAchDate(entry.date) : "";
-      const meta = [
-        date,
-        entry.rarity != null ? `%${fmtDecimal1(entry.rarity)}` : "",
-        entry.manual ? t("profile.unlockManual") : "",
-      ]
-        .filter(Boolean)
-        .join(" · ");
+      const tier = entry.rarity != null ? tierFromPercent(entry.rarity) : null;
+      const desc = entry.description ? entry.description.trim() : "";
+      const rarityHtml =
+        entry.rarity != null
+          ? `<span class="profile-unlock-rarity${tier ? ` tier-${tier}` : ""} tabular-nums">${icon("trophy", 10)}<span>%${fmtDecimal1(entry.rarity)}</span></span>`
+          : entry.manual
+            ? `<span class="profile-unlock-rarity is-manual">${esc(t("profile.unlockManual"))}</span>`
+            : "";
       const shot = entry.shot
-        ? ` <span class="profile-unlock-shot" title="${esc(t("profile.unlockShot"))}">${icon("camera", 10)}</span>`
+        ? `<span class="profile-unlock-shot" title="${esc(t("profile.unlockShot"))}">${icon("camera", 11)}</span>`
         : "";
+      const tip = [entry.title, desc, entry.game].filter(Boolean).join(" — ");
       return `
-        <button type="button" class="profile-unlock-card" data-act="open-game-from-profile" data-id="${esc(entry.appName)}" title="${esc(entry.title)} · ${esc(entry.game)}">
-          <span class="profile-unlock-icon">${entry.icon ? `<img src="${esc(entry.icon)}" alt="" loading="lazy" />` : icon("trophy", 16)}</span>
+        <button type="button" class="profile-unlock-card${tier === "gold" ? " is-gold" : ""}" data-act="open-pinned-achievement" data-id="${esc(entry.appName)}" data-ach="${esc(entry.name)}" title="${esc(tip)}">
+          <span class="profile-unlock-icon${tier ? ` tier-${tier}` : ""}">${entry.icon ? `<img src="${esc(entry.icon)}" alt="" loading="lazy" decoding="async" />` : icon("trophy", 18)}</span>
           <span class="profile-unlock-main">
-            <span class="profile-unlock-name">${esc(entry.title)}</span>
-            <span class="profile-unlock-game">${esc(entry.game)}</span>
-            ${meta || shot ? `<span class="profile-unlock-meta tabular-nums">${esc(meta)}${shot}</span>` : ""}
+            <span class="profile-unlock-top">
+              <span class="profile-unlock-name">${esc(entry.title)}</span>
+              ${rarityHtml}
+            </span>
+            ${desc ? `<span class="profile-unlock-desc">${esc(desc)}</span>` : ""}
+            <span class="profile-unlock-foot">
+              <span class="profile-unlock-game-wrap">
+                ${showStore && entry.store ? storeLogo(entry.store, 11, "profile-unlock-store-logo") : ""}
+                <span class="profile-unlock-game">${esc(entry.game)}</span>
+              </span>
+              ${date || shot ? `<span class="profile-unlock-meta tabular-nums">${shot}${date ? `<span>${esc(date)}</span>` : ""}</span>` : ""}
+            </span>
           </span>
         </button>`;
     })
     .join("");
 
-  const facts = [
-    t("profile.unlocksThisMonth", { n: stats.thisMonth }),
-    stats.streakDays > 1 ? t("profile.unlocksStreak", { n: stats.streakDays }) : "",
-    stats.rarest?.rarity != null
-      ? t("profile.unlocksRarest", { n: fmtDecimal1(stats.rarest.rarity) })
-      : "",
-  ].filter(Boolean);
+  const factChips: string[] = [];
+  if (stats.thisMonth > 0) {
+    factChips.push(
+      `<span class="profile-unlock-chip tabular-nums">${icon("calendar", 11)}<span>${esc(t("profile.unlocksThisMonth", { n: stats.thisMonth }))}</span></span>`,
+    );
+  }
+  if (stats.streakDays > 1) {
+    factChips.push(
+      `<span class="profile-unlock-chip tabular-nums">${icon("zap", 11)}<span>${esc(t("profile.unlocksStreak", { n: stats.streakDays }))}</span></span>`,
+    );
+  }
+  if (stats.rarest?.rarity != null) {
+    const r = stats.rarest;
+    factChips.push(
+      `<button type="button" class="profile-unlock-chip is-rarest tabular-nums" data-act="open-pinned-achievement" data-id="${esc(r.appName)}" data-ach="${esc(r.name)}" title="${esc(`${r.title} — ${r.game}`)}">${icon("trophy", 11)}<span>${esc(t("profile.unlocksRarest", { n: fmtDecimal1(r.rarity!) }))}</span></button>`,
+    );
+  }
+
+  const hasMore = entries.length > shown.length;
+  const canCollapse = shown.length > 8;
+  const footerHtml =
+    hasMore || canCollapse
+      ? `<div class="profile-unlock-actions">
+          ${hasMore ? `<button type="button" class="btn ghost small profile-unlock-more" data-act="profile-unlocks-more">${esc(t("profile.showMore"))} (${entries.length - shown.length})</button>` : ""}
+          ${canCollapse ? `<button type="button" class="btn ghost small profile-unlock-less" data-act="profile-unlocks-less">${icon("chevron-up", 13)}</button>` : ""}
+        </div>`
+      : "";
 
   return `
-    <section class="profile-row">
+    <section class="profile-row profile-unlock-section">
       <div class="profile-row-head">
-        <h3 class="profile-row-title">${esc(t("profile.unlocksTitle"))}</h3>
+        <div class="profile-row-title-group">
+          <h3 class="profile-row-title">${esc(t("profile.unlocksTitle"))}</h3>
+          <span class="profile-section-count tabular-nums">${entries.length.toLocaleString()}</span>
+        </div>
         <div class="profile-unlock-head-right">
-          ${facts.length ? `<span class="profile-unlock-stats tabular-nums">${facts.map((fact) => esc(fact)).join(" · ")}</span>` : ""}
+          ${factChips.join("")}
           <button type="button" class="icon-btn" data-act="clear-ach-history" title="${esc(t("profile.unlocksClear"))}" aria-label="${esc(t("profile.unlocksClear"))}">${icon("trash", 14)}</button>
         </div>
       </div>
       <div class="profile-unlock-row">${cards}</div>
-      ${entries.length > shown.length ? `<button type="button" class="btn ghost small profile-unlock-more" data-act="profile-unlocks-more">${esc(t("profile.showAll"))}</button>` : ""}
+      ${footerHtml}
     </section>`;
 }
 
-/** Xbox-style horizontal strip of recently played covers. */
-function renderRecentRow(scope: "all" | StoreKind): string {  const recents = recentApps(scope).slice(0, 10);
+/** Horizontal strip of recently played covers with playtime and store mark. */
+function renderRecentRow(scope: "all" | StoreKind): string {
+  const recents = recentApps(scope).slice(0, 10);
   if (recents.length === 0) return "";
+  const showStore = showStoreChips();
   const cards = recents.map((appName) => {
     const title = summaryOf(appName)?.title || appName;
     const cover = coverOf(appName);
+    const pt = S.playtimeMap.get(appName);
+    const played = pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "";
+    const store = gameStore(appName);
     return `
       <button type="button" class="profile-recent-card" data-act="open-game-from-profile" data-id="${esc(appName)}" title="${esc(title)}">
         <span class="profile-recent-thumb-wrap">
           ${cover ? `<img class="profile-recent-thumb"${steamArtAttrs(appName)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-recent-thumb placeholder">${icon("gamepad-2", 20)}</span>`}
         </span>
         <span class="profile-recent-name">${esc(title)}</span>
+        ${played || showStore ? `<span class="profile-recent-meta tabular-nums">${showStore ? storeLogo(store, 11, "profile-unlock-store-logo") : ""}<span>${esc(played || storeCode(store))}</span></span>` : ""}
       </button>`;
   }).join("");
   return `
@@ -1279,5 +1340,6 @@ export function enterProfile(): void {
   S.profileFilter = "all";
   S.profileShowHidden = false;
   S.profileCardCount = PROFILE_CARD_CHUNK;
+  S.profileUnlockCount = 8;
   S.profileError = "";
 }
