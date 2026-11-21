@@ -30,6 +30,26 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.64",
+    date: "2026-11-21",
+    improved: [
+      {
+        en: "The theme gallery loads in batches as you scroll, so browsing 250 themes stays smooth on older PCs.",
+        tr: "Tema galerisi kaydırdıkça parça parça yükleniyor; 250 temada gezinmek eski bilgisayarlarda da akıcı kalıyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "The launcher no longer freezes when the Spotify sidebar checks its session.",
+        tr: "Spotify kenar çubuğu oturumu kontrol ederken launcher artık donmuyor.",
+      },
+      {
+        en: "The Neon Grid (Cyberpunk) theme keeps its look without repainting the whole page on every scroll.",
+        tr: "Neon Izgara (Cyberpunk) teması görünümünü koruyor ve her kaydırmada tüm sayfayı yeniden çizmiyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.63",
     date: "2026-11-21",
     improved: [
