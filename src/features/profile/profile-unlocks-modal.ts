@@ -158,6 +158,7 @@ export function openUnlocksModal(scope: "all" | StoreKind = S.profileStore || "a
         <div class="profile-unlocks-toolbar">
           <div class="tabs profile-unlocks-tabs">
             <button type="button" class="tab active" data-unlock-filter="all">
+              ${icon("layers", 12)}
               <span>${esc(t("ach.filterAll"))}</span>
               <span class="count">(${totalCount})</span>
             </button>
