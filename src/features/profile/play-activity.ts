@@ -7,10 +7,13 @@
  * the numbers consistent with the "played" stat in the hero.
  */
 
-import { sourceOfKey, summaryOf } from "../../core/selectors";
+import { icon } from "../../core/icons";
+import { rawOf, sourceOfKey, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
+import { cachedSteamCover, steamCdnPortrait } from "../../core/steam-art-cache";
 import type { GameSource } from "../../core/types";
 import { esc, fmtPlaytime } from "../../core/utils";
+import { epicPortrait } from "../../epic";
 import { t } from "../../i18n";
 
 export interface PlaySession {
@@ -30,6 +33,7 @@ export interface PlayTopEntry {
   appName: string;
   seconds: number;
   title: string;
+  cover: string;
 }
 
 export interface PlayActivityData {
@@ -65,6 +69,28 @@ function addDays(date: Date, days: number): Date {
   return next;
 }
 
+function topCoverOf(appName: string): string {
+  const custom = S.customCovers[appName];
+  if (custom) return custom;
+  if (appName.startsWith("steam::")) {
+    const appId = appName.slice(7);
+    if (/^\d+$/.test(appId)) {
+      return cachedSteamCover(appId) || steamCdnPortrait(appId);
+    }
+  }
+  const s = S.epicSummariesMap.get(appName) || summaryOf(appName);
+  const raw = rawOf(appName);
+  const gogItem = S.gogSummariesMap.get(appName) || S.allGamesMap.get(appName);
+  return (raw ? epicPortrait(raw) : null) || s?.cover || gogItem?.coverUrl || "";
+}
+
+function topSteamArtAttrs(appName: string): string {
+  if (S.customCovers[appName] || !appName.startsWith("steam::")) return "";
+  const appId = appName.slice(7);
+  if (!/^\d+$/.test(appId)) return "";
+  return ` data-steam-app="${appId}" data-art-step="${cachedSteamCover(appId) ? "resolved" : "0"}"`;
+}
+
 function buildTopList(map: Map<string, number>): PlayTopEntry[] {
   return [...map.entries()]
     .sort((left, right) => right[1] - left[1])
@@ -75,6 +101,7 @@ function buildTopList(map: Map<string, number>): PlayTopEntry[] {
         appName,
         seconds,
         title: summary?.title || appName,
+        cover: topCoverOf(appName),
       };
     });
 }
@@ -191,10 +218,10 @@ function renderChart(data: PlayActivityData, range: "7d" | "30d"): string {
   const activeDays = shown.filter((d) => d.seconds > 0).length;
 
   const bars = shown
-    .map((day) => {
+    .map((day, idx) => {
       const isToday = day.key === todayKey;
       const isActive = day.seconds > 0;
-      const height = isActive ? Math.max(10, Math.round((day.seconds / max) * 100)) : 4;
+      const height = isActive ? Math.max(10, Math.round((day.seconds / max) * 100)) : 5;
       const [year, month, date] = day.key.split("-");
       const label = isToday ? `${t("profile.activityToday")} (${date}.${month}.${year})` : `${date}.${month}.${year}`;
       const tip = `${label} · ${fmtPlaytime(day.seconds)}`;
@@ -204,7 +231,7 @@ function renderChart(data: PlayActivityData, range: "7d" | "30d"): string {
         isToday ? "is-today" : "",
       ].filter(Boolean).join(" ");
       return `<span class="play-bar-slot" title="${esc(tip)}">
-        <span class="${cls}" style="height:${height}%"></span>
+        <span class="${cls}" style="height:${height}%;--bar-i:${idx}"></span>
       </span>`;
     })
     .join("");
@@ -231,8 +258,12 @@ function renderTop(data: PlayActivityData, range: "7d" | "30d"): string {
   const rows = list
     .map((row, idx) => {
       const width = Math.max(4, Math.round((row.seconds / max) * 100));
+      const art = row.cover
+        ? `<img class="play-top-art"${topSteamArtAttrs(row.appName)} src="${esc(row.cover)}" alt="" loading="lazy" decoding="async" />`
+        : `<span class="play-top-art placeholder">${icon("gamepad-2", 14)}</span>`;
       return `<button type="button" class="play-top-row" data-act="open-game-from-profile" data-id="${esc(row.appName)}" title="${esc(`${row.title} · ${fmtPlaytime(row.seconds)}`)}">
         <span class="play-top-rank tabular-nums">${idx + 1}</span>
+        ${art}
         <span class="play-top-main">
           <span class="play-top-line">
             <span class="play-top-name">${esc(row.title)}</span>

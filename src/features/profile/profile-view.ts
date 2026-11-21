@@ -837,16 +837,27 @@ export function accountArchiveInfo(account: ProfileAccount): { games: number | n
 interface ProfileStat {
   value: string;
   label: string;
-  icon?: "plat";
+  icon: "games" | "clock" | "trophy" | "plat" | "xp";
   sub?: string;
 }
 
 function renderStat(stat: ProfileStat): string {
-  const ico = stat.icon === "plat" ? `<span class="profile-stat-plat-ico">${epicPlatinumIcon(16)}</span>` : "";
+  const glyph = stat.icon === "plat"
+    ? epicPlatinumIcon(15)
+    : stat.icon === "games"
+      ? icon("gamepad-2", 15)
+      : stat.icon === "clock"
+        ? icon("clock", 15)
+        : stat.icon === "xp"
+          ? icon("zap", 15)
+          : icon("trophy", 15);
   const sub = stat.sub ? `<span class="profile-stat-sub tabular-nums">${esc(stat.sub)}</span>` : "";
-  return `<div class="profile-stat">
-    <span class="profile-stat-label">${esc(stat.label)}</span>
-    <span class="profile-stat-val tabular-nums">${ico}<span>${stat.value}</span>${sub}</span>
+  return `<div class="profile-stat${stat.icon === "plat" ? " is-plat-stat" : ""}">
+    <span class="profile-stat-icon" aria-hidden="true">${glyph}</span>
+    <span class="profile-stat-text">
+      <span class="profile-stat-label">${esc(stat.label)}</span>
+      <span class="profile-stat-val tabular-nums"><span>${stat.value}</span>${sub}</span>
+    </span>
   </div>`;
 }
 
@@ -980,6 +991,7 @@ function renderProfileHero(
   return `
     <section class="card profile-hero">
       <div class="profile-hero-banner${banner ? "" : " is-plain"}"${banner ? ` style="background-image:url('${esc(banner)}')"` : ""}>
+        ${banner ? `<div class="profile-hero-backdrop" style="background-image:url('${esc(banner)}')" aria-hidden="true"></div>` : ""}
         ${showData ? `
           <button type="button" class="profile-banner-edit-btn" data-act="profile-change-banner" data-scope="${esc(scopeKey)}" data-label="${esc(scopeLabel)}" title="${esc(t("profile.changeBannerTitle"))}">
             ${icon("image", 13)}<span>${esc(t("profile.changeBanner"))}</span>
@@ -989,7 +1001,7 @@ function renderProfileHero(
       <div class="profile-hero-top">
         <div class="profile-avatar-wrap">
           <button type="button" class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitle)}" aria-label="${esc(avatarTitle)}">
-            <span class="profile-avatar profile-avatar-lg">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : combined ? icon("gamepad-2", 30) : esc(initial)}</span>
+            <span class="profile-avatar profile-avatar-lg${isOnline ? " is-online" : ""}">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : combined ? icon("gamepad-2", 32) : esc(initial)}</span>
             <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 11)}</span>
           </button>
         </div>
@@ -1102,8 +1114,10 @@ function renderShowcase(): string {
           : pin.tier === "gold" || pin.tier === "silver" || pin.tier === "bronze"
             ? t(`trophy.${pin.tier}`)
             : "";
+      const tierBadge = tierLabel
+        ? `<span class="profile-showcase-tier is-${esc(pin.tier || "bronze")}">${pin.tier === "platinum" ? epicPlatinumIcon(11) : icon("trophy", 11)}<span>${esc(tierLabel)}</span></span>`
+        : "";
       const meta = [
-        tierLabel,
         pin.rarity != null ? `%${fmtDecimal1(pin.rarity)}` : "",
         pin.date ? fmtAchDate(pin.date) : "",
       ]
@@ -1115,11 +1129,14 @@ function renderShowcase(): string {
           <button type="button" class="icon-btn profile-showcase-move" data-act="move-pin-ach" data-key="${esc(pin.key)}" data-dir="1" title="${esc(t("col.moveRight"))}" aria-label="${esc(t("col.moveRight"))}"${idx === pins.length - 1 ? " disabled" : ""}>${icon("chevron-right", 12)}</button>`
         : "";
       return `
-        <div class="profile-showcase-card">
+        <div class="profile-showcase-card" data-tier="${esc(pin.tier || "")}">
           <button type="button" class="profile-showcase-main" data-act="open-pinned-achievement" data-id="${esc(pin.appName)}" data-ach="${esc(pin.name)}" title="${esc(pin.title)} · ${esc(pin.game)}">
             <span class="profile-showcase-art">${pin.icon ? `<img src="${esc(pin.icon)}" alt="" loading="lazy" decoding="async" />` : icon("trophy", 22)}</span>
             <span class="profile-showcase-body">
-              <span class="profile-showcase-title">${esc(pin.title)}</span>
+              <span class="profile-showcase-title-row">
+                <span class="profile-showcase-title">${esc(pin.title)}</span>
+                ${tierBadge}
+              </span>
               <span class="profile-showcase-sub">
                 <span class="profile-showcase-game">${esc(pin.game)}</span>
                 ${meta ? `<span class="profile-showcase-meta tabular-nums">${esc(meta)}</span>` : ""}
@@ -1167,6 +1184,7 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
     .map((entry) => {
       const date = entry.date ? fmtAchDate(entry.date) : "";
       const rarity = entry.rarity != null ? `%${fmtDecimal1(entry.rarity)}` : "";
+      const isUltraRare = entry.rarity != null && entry.rarity < 5;
       const rightMeta = rarity || date || (entry.manual ? t("profile.unlockManual") : "");
       const fullMeta = [date, rarity, entry.manual ? t("profile.unlockManual") : ""].filter(Boolean).join(" · ");
       const shot = entry.shot
@@ -1190,24 +1208,24 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
             </span>
             <span class="profile-unlock-bottom">
               <span class="profile-unlock-game-row">${storeMark}<span class="profile-unlock-game">${esc(entry.game)}</span></span>
-              ${rightMeta ? `<span class="profile-unlock-meta tabular-nums">${esc(rightMeta)}</span>` : ""}
+              ${rightMeta ? `<span class="profile-unlock-meta tabular-nums${isUltraRare ? " is-rare" : ""}">${esc(rightMeta)}</span>` : ""}
             </span>
           </span>
         </button>`;
     })
     .join("");
 
-  const facts: string[] = [];
+  const factChips: string[] = [];
   if (stats.thisMonth > 0) {
-    facts.push(`<span class="profile-unlock-fact tabular-nums">${esc(t("profile.unlocksThisMonth", { n: stats.thisMonth }))}</span>`);
+    factChips.push(`<span class="profile-unlock-chip tabular-nums">${icon("calendar", 11)}<span>${esc(t("profile.unlocksThisMonth", { n: stats.thisMonth }))}</span></span>`);
   }
   if (stats.streakDays > 1) {
-    facts.push(`<span class="profile-unlock-fact tabular-nums">${esc(t("profile.unlocksStreak", { n: stats.streakDays }))}</span>`);
+    factChips.push(`<span class="profile-unlock-chip tabular-nums">${icon("zap", 11)}<span>${esc(t("profile.unlocksStreak", { n: stats.streakDays }))}</span></span>`);
   }
   if (stats.rarest?.rarity != null) {
     const r = stats.rarest;
-    facts.push(
-      `<button type="button" class="profile-unlock-fact is-link tabular-nums" data-act="open-pinned-achievement" data-id="${esc(r.appName)}" data-ach="${esc(r.name)}" title="${esc(`${r.title} · ${r.game}`)}">${esc(t("profile.unlocksRarest", { n: fmtDecimal1(r.rarity!) }))}</button>`,
+    factChips.push(
+      `<button type="button" class="profile-unlock-chip is-rarest tabular-nums" data-act="open-pinned-achievement" data-id="${esc(r.appName)}" data-ach="${esc(r.name)}" title="${esc(`${r.title} · ${r.game}`)}">${icon("trophy", 11)}<span>${esc(t("profile.unlocksRarest", { n: fmtDecimal1(r.rarity!) }))}</span></button>`,
     );
   }
 
@@ -1222,7 +1240,7 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
           <span class="profile-row-count tabular-nums">${entries.length.toLocaleString()}</span>
         </div>
         <div class="profile-unlock-head-right">
-          ${facts.join('<span class="profile-unlock-sep" aria-hidden="true">·</span>')}
+          ${factChips.join("")}
           <button type="button" class="icon-btn" data-act="clear-ach-history" title="${esc(t("profile.unlocksClear"))}" aria-label="${esc(t("profile.unlocksClear"))}">${icon("trash", 14)}</button>
         </div>
       </div>
@@ -1366,9 +1384,9 @@ export function renderProfile(): string {
 
   const stats: ProfileStat[] = [];
   if (showData) {
-    stats.push({ value: libraryCount(scope).toLocaleString(), label: t("profile.games") });
-    stats.push({ value: playtimeSeconds > 0 ? fmtPlaytime(playtimeSeconds) : "—", label: t("profile.played") });
-    stats.push({ value: totals.unlocked.toLocaleString(), label: t("profile.trophies") });
+    stats.push({ value: libraryCount(scope).toLocaleString(), label: t("profile.games"), icon: "games" });
+    stats.push({ value: playtimeSeconds > 0 ? fmtPlaytime(playtimeSeconds) : "—", label: t("profile.played"), icon: "clock" });
+    stats.push({ value: totals.unlocked.toLocaleString(), label: t("profile.trophies"), icon: "trophy" });
     // The same completion count the Platinum filter and the showcase use, paired
     // with the honest completion ratio across tracked sets when available.
     const platSub = totals.trackedSets > 0
@@ -1377,11 +1395,11 @@ export function renderProfile(): string {
     stats.push({ value: totals.completed.toLocaleString(), label: t("profile.platLabel"), icon: "plat", sub: platSub });
     // XP is Epic-only currency and only shown when the scope is Epic itself.
     if (scope === "epic" && S.playerProfileData) {
-      stats.push({ value: S.playerProfileData.total_xp.toLocaleString(), label: "XP" });
+      stats.push({ value: S.playerProfileData.total_xp.toLocaleString(), label: "XP", icon: "xp" });
     }
     // Xbox reports gamerscore, the same number the console profile shows.
     if (scope === "xbox") {
-      stats.push({ value: totals.xp.toLocaleString(), label: "G" });
+      stats.push({ value: totals.xp.toLocaleString(), label: "G", icon: "xp" });
     }
   }
 
