@@ -444,6 +444,20 @@ document.addEventListener("keydown", (e) => {
       document.querySelector<HTMLElement>(".gp-version-trigger")?.setAttribute("aria-expanded", "false");
       return;
     }
+    if (document.activeElement instanceof HTMLInputElement && document.activeElement.id === "profile-search") {
+      const searchEl = document.activeElement;
+      if (searchEl.value.length > 0) {
+        searchEl.value = "";
+        S.profileSearchQuery = "";
+        resetProfileCards();
+        document.getElementById("profile-search-clear-btn")?.setAttribute("hidden", "");
+        const gridEl = document.getElementById("profile-games-grid");
+        if (gridEl) gridEl.innerHTML = renderProfileGrid(filteredProfileGames(profileListGames()));
+      } else {
+        searchEl.blur();
+      }
+      return;
+    }
     // The achievements detail no longer has its own dismissal level: Escape
     // closes the game page, as it does on every other tab.
     const hadModal = Boolean(modalRoot.firstElementChild);
@@ -451,6 +465,65 @@ document.addEventListener("keydown", (e) => {
     // Escape at the root of the classic couch shell is a second exit route for
     // keyboard users; an open page must consume the press first.
     if (!hadModal && S.isFullscreen) void setFullscreenMode(false);
+  }
+  if (
+    S.view === "profile" &&
+    !modalRoot.firstElementChild &&
+    !e.altKey &&
+    !e.ctrlKey &&
+    !e.metaKey
+  ) {
+    const active = document.activeElement as HTMLElement | null;
+    const isTyping = Boolean(
+      active &&
+        (active instanceof HTMLInputElement ||
+          active instanceof HTMLTextAreaElement ||
+          active instanceof HTMLSelectElement ||
+          active.isContentEditable),
+    );
+    if (e.key === "/" && !e.shiftKey && !isTyping) {
+      const profileSearch = document.getElementById("profile-search") as HTMLInputElement | null;
+      if (profileSearch) {
+        e.preventDefault();
+        profileSearch.focus();
+        profileSearch.select();
+        return;
+      }
+    }
+    if (
+      !isTyping &&
+      !e.shiftKey &&
+      (e.key === "ArrowRight" || e.key === "ArrowLeft" || e.key === "ArrowDown" || e.key === "ArrowUp") &&
+      active
+    ) {
+      const cardSelector = ".profile-ach-card, .profile-game-row, .profile-unlock-card, .profile-recent-card, .profile-goal-card, .profile-showcase-main, .play-top-row";
+      const card = active.matches(cardSelector) ? active : active.closest<HTMLElement>(cardSelector);
+      const container = card?.closest<HTMLElement>(
+        ".profile-ach-list, .profile-unlock-row, .profile-recent-row, .profile-goals-grid, .profile-showcase-row, .play-top",
+      );
+      if (card && container) {
+        const items = Array.from(container.querySelectorAll<HTMLElement>(cardSelector));
+        const idx = items.indexOf(card);
+        if (idx !== -1 && items.length > 1) {
+          const firstTop = items[0].offsetTop;
+          let cols = 1;
+          for (let i = 1; i < items.length; i++) {
+            if (Math.abs(items[i].offsetTop - firstTop) <= 4) cols++;
+            else break;
+          }
+          let nextIdx = idx;
+          if (e.key === "ArrowRight") nextIdx = Math.min(items.length - 1, idx + 1);
+          else if (e.key === "ArrowLeft") nextIdx = Math.max(0, idx - 1);
+          else if (e.key === "ArrowDown") nextIdx = Math.min(items.length - 1, idx + cols);
+          else if (e.key === "ArrowUp") nextIdx = Math.max(0, idx - cols);
+          if (nextIdx !== idx) {
+            e.preventDefault();
+            items[nextIdx].focus();
+            return;
+          }
+        }
+      }
+    }
   }
   if (e.key === "Enter") {
     const activeEl = document.activeElement as HTMLElement | null;
@@ -503,10 +576,11 @@ document.addEventListener("keydown", (e) => {
     }
   }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
-    const s = document.getElementById("search");
+    const s = (document.getElementById("search") || document.getElementById("profile-search")) as HTMLInputElement | null;
     if (s) {
       e.preventDefault();
       s.focus();
+      s.select?.();
     }
   }
 });
