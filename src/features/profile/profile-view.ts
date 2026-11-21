@@ -24,6 +24,7 @@ import { t } from "../../i18n";
 
 import { epicPortrait, type ProfileGameRecord } from "../../epic";
 import { storeLogo } from "../store/store-logos";
+import { renderNextGoals } from "./next-goals";
 import { renderPlayActivity } from "./play-activity";
 import { STORE_LABELS } from "../store/store-view";
 
@@ -741,22 +742,26 @@ interface ProfileTotals {
   unlocked: number;
   completed: number;
   xp: number;
+  trackedSets: number;
 }
 
 function profileStats(games: ProfileGameRecord[]): ProfileTotals {
-  let unlocked = 0, completed = 0, xp = 0;
+  let unlocked = 0, completed = 0, xp = 0, trackedSets = 0;
   for (const g of games) {
+    if (!trackedGame(g) || isOpaqueId(g.app_title) || S.hiddenGames.has(g.app_name) || userHidAchievement(g)) continue;
+    trackedSets++;
     unlocked += g.total_unlocked;
     xp += g.total_xp;
     if (isCompletedGame(g)) completed++;
   }
-  return { unlocked, completed, xp };
+  return { unlocked, completed, xp, trackedSets };
 }
 
 /** Playtime sum for one store or everything. Keys carry their store prefix. */
 export function playtimeFor(scope: "all" | StoreKind): number {
   let total = 0;
   for (const [key, rec] of S.playtimeMap) {
+    if (S.hiddenGames.has(key)) continue;
     if (scope !== "all" && gameStore(key) !== scope) continue;
     total += rec.total_seconds || 0;
   }
@@ -811,11 +816,17 @@ interface ProfileStat {
   value: string;
   label: string;
   icon?: "plat";
+  sub?: string;
+  progress?: number;
 }
 
 function renderStat(stat: ProfileStat): string {
   const ico = stat.icon === "plat" ? `<span class="profile-stat-plat-ico">${epicPlatinumIcon(18)}</span>` : "";
-  return `<div class="profile-stat"><span class="profile-stat-val tabular-nums">${ico}${stat.value}</span><span class="profile-stat-label">${esc(stat.label)}</span></div>`;
+  const sub = stat.sub ? `<span class="profile-stat-sub tabular-nums">${esc(stat.sub)}</span>` : "";
+  const bar = stat.progress != null
+    ? `<span class="profile-stat-track" aria-hidden="true"><span style="width:${Math.min(100, Math.max(0, stat.progress))}%"></span></span>`
+    : "";
+  return `<div class="profile-stat"><span class="profile-stat-val tabular-nums">${ico}${stat.value}${sub}</span><span class="profile-stat-label">${esc(stat.label)}</span>${bar}</div>`;
 }
 
 function heroChipStoreName(kind: StoreKind): string {
@@ -1346,6 +1357,15 @@ export function renderProfile(): string {
     stats.push({ value: totals.unlocked.toLocaleString(), label: t("profile.trophies") });
     // The same completion count the Platinum filter and the showcase use.
     stats.push({ value: totals.completed.toLocaleString(), label: t("profile.platLabel"), icon: "plat" });
+    if (totals.trackedSets > 0) {
+      const rate = Math.round((totals.completed / totals.trackedSets) * 100);
+      stats.push({
+        value: `${rate}%`,
+        label: t("profile.completionRate"),
+        sub: `${totals.completed}/${totals.trackedSets}`,
+        progress: rate,
+      });
+    }
     // XP is Epic-only currency and only shown when the scope is Epic itself.
     if (scope === "epic" && S.playerProfileData) {
       stats.push({ value: S.playerProfileData.total_xp.toLocaleString(), label: "XP" });
@@ -1374,6 +1394,7 @@ export function renderProfile(): string {
       ${renderShowcase(showData && totals.unlocked > 0)}
       ${showData ? renderRecentRow(scope) : ""}
       ${showData ? renderPlayActivity(scope) : ""}
+      ${showData ? renderNextGoals(games, showStoreChips()) : ""}
       ${showData ? renderUnlockRow(scope) : ""}
       ${renderAchievementsPanel(games, filtered)}
     </div>`;

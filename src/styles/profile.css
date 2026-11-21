@@ -581,6 +581,32 @@
   color: var(--accent);
 }
 
+.profile-stat-sub {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-3);
+  margin-left: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-stat-track {
+  display: block;
+  width: 100%;
+  min-width: 68px;
+  height: 3px;
+  margin-top: 2px;
+  border-radius: 2px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.profile-stat-track > span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
 .profile-inactive {
   display: flex;
   flex-direction: column;
@@ -997,6 +1023,127 @@
   width: 24px;
   height: 24px;
   flex-shrink: 0;
+}
+
+/* --- 4e. Next Achievement Goals --- */
+.profile-goals-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-goal-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  transition: background-color var(--ease), border-color var(--ease);
+}
+
+.profile-goal-card:hover {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+
+.profile-goal-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.profile-goal-thumb-wrap {
+  width: 44px;
+  height: 58px;
+  border-radius: var(--r-xs);
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+
+.profile-goal-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-goal-thumb.placeholder {
+  color: var(--text-3);
+}
+
+.profile-goal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+
+.profile-goal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.profile-goal-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-goal-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.profile-goal-rem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-goal-frac {
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-goal-bar {
+  display: block;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.profile-goal-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
 }
 
 /* --- 5. Achievements Panel --- */

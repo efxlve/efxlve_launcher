@@ -598,6 +598,9 @@ document.addEventListener("click", (e) => {
       // detail was set first so the achievements tab opens on that card.
       document.querySelector<HTMLElement>('.drawer-tab[data-tab="achievements"]')?.click();
     }
+  } else if (act === "open-goal-game" && id) {
+    openEpicModal(id, true);
+    document.querySelector<HTMLElement>('.drawer-tab[data-tab="achievements"]')?.click();
   } else if (act === "profile-account" && t.dataset.key) {
     // Profile header account selector: switch which account's stats are shown.
     S.profileAccount = t.dataset.key === "overview" ? null : t.dataset.key;
