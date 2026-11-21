@@ -71,16 +71,13 @@
   height: 30px;
   padding: 0 12px;
   border-radius: 15px;
-  background: rgba(10, 10, 10, 0.75);
+  background: rgba(10, 10, 10, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.22);
   color: #ffffff;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-  transition: all var(--ease);
+  transition: background-color var(--ease), border-color var(--ease), color var(--ease);
 }
 
 .profile-banner-edit-btn svg {
@@ -89,11 +86,9 @@
 }
 
 .profile-banner-edit-btn:hover {
-  background: rgba(22, 22, 24, 0.95);
+  background: rgba(22, 22, 24, 0.96);
   border-color: rgba(255, 255, 255, 0.4);
   color: #ffffff;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
-  transform: translateY(-1px);
 }
 
 .profile-hero-top {
@@ -385,6 +380,14 @@
   background: var(--accent);
 }
 
+.profile-hero.is-dormant-hero {
+  padding-top: 20px;
+}
+
+.profile-hero.is-dormant-hero .profile-avatar-wrap {
+  margin-top: 0;
+}
+
 .profile-hero-store-pill {
   display: inline-flex;
   align-items: center;
@@ -397,6 +400,65 @@
   font-size: 11.5px;
   font-weight: 600;
   color: var(--text-2);
+}
+
+.profile-hero-accounts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.profile-hero-acc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+}
+
+.profile-hero-acc-chip:hover {
+  background: var(--surface-3);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.profile-hero-acc-chip.selected {
+  background: var(--accent-tint);
+  color: var(--text);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.profile-hero-acc-chip.is-dormant {
+  border-style: dashed;
+}
+
+.profile-hero-acc-name {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-acc-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+  flex-shrink: 0;
+}
+
+.profile-acc-dot.offline {
+  background: var(--text-3);
 }
 
 .profile-hero-actions {
@@ -420,18 +482,17 @@
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color var(--ease), color var(--ease), border-color var(--ease);
 }
 
 .profile-hero-action-btn:hover {
   background: var(--surface-3);
   color: var(--text);
   border-color: var(--line-strong);
-  transform: translateY(-1px);
 }
 
 .profile-hero-action-btn:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 
 .profile-hero-action-btn.is-muted {
@@ -451,18 +512,17 @@
   justify-content: center;
   padding: 0;
   cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color var(--ease), color var(--ease), border-color var(--ease);
 }
 
 .profile-refresh-btn:hover {
   background: var(--surface-3);
   color: var(--text);
   border-color: var(--line-strong);
-  transform: translateY(-1px);
 }
 
 .profile-refresh-btn:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 
 /* --- 3. Hero Stats Bar --- */
@@ -570,8 +630,8 @@
 .profile-recent-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  width: 118px;
+  gap: 6px;
+  width: 122px;
   flex: none;
   padding: 6px;
   border: 1px solid var(--line);
@@ -579,14 +639,13 @@
   border-radius: var(--r-md);
   cursor: pointer;
   text-align: left;
-  transition: all var(--ease);
+  transition: background-color var(--ease), border-color var(--ease);
 }
 
-.profile-recent-card:hover {
-  transform: translateY(-4px);
+.profile-recent-card:hover,
+.profile-recent-card:focus-visible {
   background: var(--surface-2);
   border-color: var(--line-strong);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
 }
 
 .profile-recent-thumb-wrap {
@@ -603,11 +662,6 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: filter var(--ease);
-}
-
-.profile-recent-card:hover .profile-recent-thumb {
-  filter: brightness(1.12);
 }
 
 .profile-recent-thumb.placeholder {
@@ -628,7 +682,39 @@
   padding: 0 2px;
 }
 
+.profile-recent-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 2px;
+  font-size: 10.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* --- 4b. Recent unlocks strip --- */
+.profile-row-title-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.profile-section-count {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
 .profile-unlock-stats {
   color: var(--text-3);
   font-size: 11px;
@@ -637,13 +723,40 @@
 .profile-unlock-head-right {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
+}
+
+.profile-unlock-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.profile-unlock-chip.is-rarest {
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color var(--ease), border-color var(--ease), color var(--ease);
+}
+
+.profile-unlock-chip.is-rarest:hover {
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+  color: var(--text);
 }
 
 .profile-unlock-row {
   display: grid;
-  /* Ten cards, five columns: the strip is always exactly two rows, whatever
-     the window width, so it keeps the same height on every screen. */
+  /* Ten cards, five columns: the strip is always exactly two rows on desktop. */
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
   animation: profile-fade-slide 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -665,7 +778,8 @@
   transition: background-color var(--ease), border-color var(--ease);
 }
 
-.profile-unlock-card:hover {
+.profile-unlock-card:hover,
+.profile-unlock-card:focus-visible {
   background: var(--surface-2);
   border-color: var(--line-strong);
 }
@@ -706,6 +820,21 @@
   text-overflow: ellipsis;
 }
 
+.profile-unlock-game-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.profile-unlock-store-logo {
+  width: 11px;
+  height: 11px;
+  object-fit: contain;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
 .profile-unlock-game {
   overflow: hidden;
   color: var(--text-2);
@@ -724,6 +853,12 @@
   align-items: center;
   vertical-align: -1px;
   color: var(--text-3);
+}
+
+.profile-unlock-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .profile-unlock-more { align-self: flex-start; }
@@ -1926,6 +2061,42 @@
   color: var(--text-3);
   padding: 40px 0;
   font-size: 13px;
+}
+
+.modal-box.profile-name-dialog {
+  max-width: 400px;
+}
+
+.profile-name-modal-body {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 18px 24px;
+}
+
+.profile-name-modal-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.profile-name-modal-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  font-size: 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  box-sizing: border-box;
+}
+
+.profile-name-modal-input:focus {
+  border-color: var(--accent);
+  outline: none;
 }
 
 /* --- Play activity: daily rhythm, weekly recap and most-played list --- */

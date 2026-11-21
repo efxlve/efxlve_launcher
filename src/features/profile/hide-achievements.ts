@@ -139,12 +139,34 @@ function onRootInput(e: Event): void {
   }, 120);
 }
 
+function onRootKeydown(e: KeyboardEvent): void {
+  if (e.key !== "Tab") return;
+  const root = rootEl();
+  if (!root || !root.innerHTML.trim()) return;
+  const focusables = Array.from(
+    root.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter((el) => !el.closest("[hidden]"));
+  if (focusables.length === 0) return;
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  }
+}
+
 function wire(root: HTMLElement): void {
   if (wired) return;
   wired = true;
   root.addEventListener("click", onRootClick);
   root.addEventListener("change", onRootChange);
   root.addEventListener("input", onRootInput);
+  root.addEventListener("keydown", onRootKeydown);
 }
 
 export function closeHideAchievementsModal(): void {
@@ -168,7 +190,7 @@ export function openHideAchievementsModal(): void {
       <div class="modal-box hide-list-dialog" role="dialog" aria-modal="true" aria-labelledby="hide-ach-title">
         <div class="manage-head">
           <h2 id="hide-ach-title">${t("profile.hideListTitle")}</h2>
-          <button type="button" class="manage-head-close" data-hide-ach="close" title="${esc(t("common.close"))}">${icon("x", 16)}</button>
+          <button type="button" class="manage-head-close" data-hide-ach="close" title="${esc(t("common.close"))}" aria-label="${esc(t("common.close"))}">${icon("x", 16)}</button>
         </div>
         <div class="hide-list-body">
           <div class="search">

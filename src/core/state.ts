@@ -613,7 +613,9 @@ export const S = {
   profileFilter: ("all") as "all" | "platinum" | "in_progress" | "not_started",
   profileSort: ("progress") as "progress" | "xp" | "playtime" | "alpha",
   /** Hero chips: which store's achievements and totals the page is showing. */
-  profileStore: ("all") as "all" | "epic" | "gog" | "steam" | "amazon" | "xbox" | "battlenet" | "ubisoft" | "ea" | "riot",
+  profileStore: ("all") as "all" | "epic" | "gog" | "steam" | "amazon" | "xbox" | "battlenet" | "ubisoft" | "ea" | "riot" | "custom",
+  /** Play activity chart & top games window on the profile page. */
+  profileActivityRange: ("7d") as "7d" | "30d",
   profileSearchQuery: "",
   profileViewMode: (localStorage.getItem(PROFILE_VIEW_MODE_KEY) === "list" ? "list" : "grid") as "grid" | "list",
   /** Recent unlocks shown on the profile; "Show all" grows this by 20. */

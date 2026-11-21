@@ -12,7 +12,7 @@
  */
 
 import { PROFILE_CARD_CHUNK } from "../../core/constants";
-import { achievementHistoryStats, clearAchievementHistory, sortedAchievementHistory } from "../../core/achievement-history";
+import { achievementHistoryStats, sortedAchievementHistory } from "../../core/achievement-history";
 import { achievementPins } from "../../core/achievement-pins";
 import { achSummaryOf } from "../../core/game-view";
 import { emptyState, epicPlatinumIcon, icon } from "../../core/icons";
@@ -59,6 +59,7 @@ export function steamArtAttrs(appName: string): string {
 /** Resets the profile list back to the first chunk (on filter/sort/search change). */
 export function resetProfileCards(): void {
   S.profileCardCount = PROFILE_CARD_CHUNK;
+  S.profileUnlockCount = 10;
 }
 
 /** Score unit: Xbox counts gamerscore, the rest count XP. */
@@ -102,7 +103,7 @@ function renderProfileGameGridCards(cardGames: ProfileGameRecord[], chips: boole
     const storeChip = chips ? storeChipHtml(g.app_name) : "";
 
     return `
-      <div class="profile-ach-card${isPlat ? " is-plat" : ""}" role="button" tabindex="0" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(`${g.app_title}${meta ? ` · ${meta}` : ""}`)}">
+      <div class="profile-ach-card${isPlat ? " is-plat" : ""}" role="button" tabindex="0" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" title="${esc(`${g.app_title}${meta ? ` · ${meta}` : ""}`)}">
         <div class="profile-ach-art">
           ${cover ? `<img${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-ach-ph">${icon("gamepad-2", 24)}</span>`}
           ${isPlat
@@ -173,7 +174,7 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
         : `<div class="profile-badge-pill not-started tabular-nums">—</div>`;
 
     return `
-      <div class="row profile-game-row${isPlat ? " is-plat" : ""}${S.profileShowHidden ? " has-unhide" : ""}" role="button" tabindex="0" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" tabindex="0" role="button" title="${esc(g.app_title)}">
+      <div class="row profile-game-row${isPlat ? " is-plat" : ""}${S.profileShowHidden ? " has-unhide" : ""}" role="button" tabindex="0" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" title="${esc(g.app_title)}">
         <div class="profile-col-game">
           ${cover ? `<img class="profile-game-thumb"${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-game-thumb placeholder">${icon("gamepad-2", 18)}</span>`}
           <div class="profile-game-info">
@@ -708,17 +709,6 @@ export function libraryCount(scope: "all" | StoreKind): number {
   return totalEpicGames() + totalSteamGames() + libraryCount("gog") + libraryCount("amazon") + libraryCount("xbox") + libraryCount("battlenet") + libraryCount("ubisoft") + libraryCount("ea") + libraryCount("riot") + libraryCount("custom");
 }
 
-/** Sums the stats the launcher actually has for the given game list. */
-export function sumStats(games: ProfileGameRecord[]): { unlocked: number; platinums: number; xp: number } {
-  let unlocked = 0, platinums = 0, xp = 0;
-  for (const g of games) {
-    unlocked += g.total_unlocked;
-    xp += g.total_xp;
-    if (g.is_platinum || g.unlocked_percent >= 100) platinums++;
-  }
-  return { unlocked, platinums, xp };
-}
-
 /**
  * Scoped totals for the hero. One completion count drives the platinum stat,
  * the achievements filter and the showcase, so the whole page agrees.
@@ -824,17 +814,42 @@ function renderHeroStoreChips(scope: "all" | StoreKind): string {
     const selected = scope === val;
     const tooltip = `${label}${connected ? " · " + t("accounts.connected") : installed ? " · " + t("accounts.localAccount") : " · " + t("accounts.notConnected")}${count > 0 ? ` (${count})` : ""}`;
     return `
-      <button type="button" class="profile-hero-store-chip ${statusClass}${selected ? " selected" : ""}" data-act="profile-store" data-val="${val}" title="${esc(tooltip)}">
+      <button type="button" class="profile-hero-store-chip ${statusClass}${selected ? " selected" : ""}" data-act="profile-store" data-val="${val}" aria-pressed="${selected}" title="${esc(tooltip)}">
         ${val === "all" ? icon("layers", 13) : storeLogo(val, 15, "profile-store-chip-logo")}
         <span class="profile-hero-chip-name">${esc(label)}</span>
         ${count > 0 ? `<span class="profile-hero-chip-count tabular-nums">${count}</span>` : ""}
       </button>`;
   };
   const all = stores.length > 1 ? chip("all", t("profile.storeAll"), libraryCount("all"), true, true) : "";
-  return `<div class="profile-hero-stores">
+  return `<div class="profile-hero-stores" role="group" aria-label="${esc(t("profile.linkedStores"))}">
     ${all}
     ${stores.map((s) => chip(s, heroChipStoreName(s), libraryCount(s), isStoreConnected(s), isStoreInstalled(s))).join("")}
   </div>`;
+}
+
+/** Saved account switcher row when multiple accounts or dormant accounts exist. */
+function renderHeroAccountChips(combined: boolean, currentAccount: ProfileAccount | null): string {
+  const accounts = profileAccounts();
+  if (accounts.length <= 1 && !accounts.some((a) => !a.active)) return "";
+  const overviewBtn = `
+    <button type="button" class="profile-hero-acc-chip${combined ? " selected" : ""}" data-act="profile-account" data-key="overview" aria-pressed="${combined}" title="${esc(t("profile.overviewDesc"))}">
+      ${icon("layers", 12)}
+      <span>${esc(t("profile.overview"))}</span>
+    </button>`;
+  const accBtns = accounts
+    .map((acc) => {
+      const selected = !combined && currentAccount?.key === acc.key;
+      const statusText = acc.active ? t("profile.activeSession") : t("profile.inactiveTitle");
+      const tip = `${storeName(acc.kind)} · ${acc.name} (${statusText})`;
+      return `
+        <button type="button" class="profile-hero-acc-chip${selected ? " selected" : ""}${acc.active ? "" : " is-dormant"}" data-act="profile-account" data-key="${esc(acc.key)}" aria-pressed="${selected}" title="${esc(tip)}">
+          <span class="profile-acc-dot ${acc.active ? "online" : "offline"}" aria-hidden="true"></span>
+          ${storeLogo(acc.kind, 13, "profile-store-chip-logo")}
+          <span class="profile-hero-acc-name">${esc(acc.name)}</span>
+        </button>`;
+    })
+    .join("");
+  return `<div class="profile-hero-accounts" role="group" aria-label="${esc(t("profile.linkedAccounts"))}">${overviewBtn}${accBtns}</div>`;
 }
 
 /** Wide art for the profile banner: custom pick for this scope, else recent game's hero. */
@@ -860,7 +875,7 @@ export function profileBannerArt(scope: "all" | StoreKind, account?: ProfileAcco
   return "";
 }
 
-/** Xbox-style identity hero: banner, avatar, name, presence, scope chips and stats. */
+/** Identity hero: banner, avatar, name, presence, scope chips and stats. */
 function renderProfileHero(
   displayName: string,
   avatarKey: string,
@@ -876,23 +891,31 @@ function renderProfileHero(
   const isOnline = combined ? overviewStores().length > 0 : Boolean(account?.active);
   const scopeKey = account ? account.key : scope;
   const scopeLabel = combined ? (scope === "all" ? t("profile.storeAll") : storeName(scope)) : storeName(account!.kind);
+  const refreshTitle = overviewStores().length > 1 ? t("profile.refreshTitleMulti") : t("profile.refreshTitle");
 
   const storesHtml = combined
     ? renderHeroStoreChips(scope)
     : account
-      ? `<div class="profile-hero-stores"><span class="profile-hero-store-pill"><span class="profile-acc-dot ${account.active ? "" : "offline"}" aria-hidden="true"></span>${storeLogo(account.kind, 15, "profile-store-chip-logo")}${esc(storeName(account.kind))}</span></div>`
+      ? `<div class="profile-hero-stores"><span class="profile-hero-store-pill"><span class="profile-acc-dot ${account.active ? "online" : "offline"}" aria-hidden="true"></span>${storeLogo(account.kind, 15, "profile-store-chip-logo")}<span>${esc(storeName(account.kind))}</span></span></div>`
       : "";
+  const accountsHtml = renderHeroAccountChips(combined, account);
 
   const statsHtml = showData
     ? `<div class="profile-stats-bar"><div class="profile-stats">${stats.map(renderStat).join("")}</div></div>`
     : `<div class="profile-inactive">
         <p class="row-meta">${t("profile.inactiveDesc")}</p>
-        <button class="btn primary small" ${combined ? `data-view="accounts"` : `data-act="${switchAct(account!.kind)}" data-id="${esc(account!.id)}"`}>
+        <button type="button" class="btn primary small" ${combined ? `data-view="accounts"` : `data-act="${switchAct(account!.kind)}" data-id="${esc(account!.id)}"`}>
           ${combined ? t("accounts.manageAccounts") : t("settings.accountSwitchBtn")}
         </button>
       </div>`;
 
   const banner = showData ? profileBannerArt(scope, account) : "";
+  const nameHtml = combined
+    ? `<button type="button" class="profile-name-edit-btn" data-act="profile-change-name" title="${esc(t("profile.changeNameTitle"))}">
+        <h1 class="profile-name">${esc(displayName)}</h1>
+        <span class="profile-name-edit-icon" aria-hidden="true">${icon("edit", 13)}</span>
+      </button>`
+    : `<h1 class="profile-name">${esc(displayName)}</h1>`;
 
   return `
     <section class="card profile-hero">
@@ -905,7 +928,7 @@ function renderProfileHero(
       </div>
       <div class="profile-hero-top">
         <div class="profile-avatar-wrap">
-          <button class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitle)}" aria-label="${esc(avatarTitle)}">
+          <button type="button" class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitle)}" aria-label="${esc(avatarTitle)}">
             <span class="profile-avatar profile-avatar-lg${isOnline ? " is-online" : ""}">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : combined ? icon("gamepad-2", 34) : esc(initial)}</span>
             <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 12)}</span>
           </button>
@@ -913,10 +936,7 @@ function renderProfileHero(
         <div class="profile-hero-identity">
           <div class="profile-identity-head">
             <div class="profile-name-row">
-              <button type="button" class="profile-name-edit-btn" data-act="profile-change-name" title="${esc(t("profile.changeNameTitle"))}">
-                <h1 class="profile-name">${esc(displayName)}</h1>
-                <span class="profile-name-edit-icon">${icon("edit", 13)}</span>
-              </button>
+              ${nameHtml}
               <div class="profile-presence">
                 <span class="profile-presence-dot ${isOnline ? "online" : "offline"}" aria-hidden="true"></span>
                 <span class="profile-presence-text">${isOnline ? t("nav.online") : t("profile.offlineMode")}</span>
@@ -930,10 +950,11 @@ function renderProfileHero(
               <button type="button" class="btn ghost small profile-hero-action-btn${S.presenceEnabled ? "" : " is-muted"}" data-act="toggle-presence" title="${esc(t("profile.presenceToggleTip"))}" aria-pressed="${S.presenceEnabled}">
                 ${icon(S.presenceEnabled ? "eye" : "eye-off", 13)}<span>${esc(S.presenceEnabled ? t("profile.presenceVisible") : t("profile.presenceHidden"))}</span>
               </button>
-              <button class="icon-btn profile-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${overviewStores().length > 1 ? t("profile.refreshTitleMulti") : t("profile.refreshTitle")}">${icon("refresh", 14)}</button>
+              <button type="button" class="icon-btn profile-refresh-btn ${S.profileLoading ? "spinning" : ""}" data-act="refresh-profile" title="${esc(refreshTitle)}" aria-label="${esc(refreshTitle)}">${icon("refresh", 14)}</button>
             </div>
           </div>
           ${storesHtml}
+          ${accountsHtml}
         </div>
       </div>
       ${statsHtml}
@@ -1065,6 +1086,7 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
 
   const stats = achievementHistoryStats(entries);
   const shown = entries.slice(0, Math.max(10, S.profileUnlockCount));
+  const showStore = showStoreChips();
   const cards = shown
     .map((entry) => {
       const date = entry.date ? fmtAchDate(entry.date) : "";
@@ -1078,52 +1100,82 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
       const shot = entry.shot
         ? ` <span class="profile-unlock-shot" title="${esc(t("profile.unlockShot"))}">${icon("camera", 10)}</span>`
         : "";
+      const storeMark = showStore && entry.store
+        ? storeLogo(entry.store, 11, "profile-unlock-store-logo")
+        : "";
       return `
-        <button type="button" class="profile-unlock-card" data-act="open-game-from-profile" data-id="${esc(entry.appName)}" title="${esc(entry.title)} · ${esc(entry.game)}">
-          <span class="profile-unlock-icon">${entry.icon ? `<img src="${esc(entry.icon)}" alt="" loading="lazy" />` : icon("trophy", 16)}</span>
+        <button type="button" class="profile-unlock-card" data-act="open-pinned-achievement" data-id="${esc(entry.appName)}" data-ach="${esc(entry.name)}" title="${esc(entry.title)} · ${esc(entry.game)}${entry.description ? ` — ${esc(entry.description)}` : ""}">
+          <span class="profile-unlock-icon">${entry.icon ? `<img src="${esc(entry.icon)}" alt="" loading="lazy" decoding="async" />` : icon("trophy", 16)}</span>
           <span class="profile-unlock-main">
             <span class="profile-unlock-name">${esc(entry.title)}</span>
-            <span class="profile-unlock-game">${esc(entry.game)}</span>
+            <span class="profile-unlock-game-row">${storeMark}<span class="profile-unlock-game">${esc(entry.game)}</span></span>
             ${meta || shot ? `<span class="profile-unlock-meta tabular-nums">${esc(meta)}${shot}</span>` : ""}
           </span>
         </button>`;
     })
     .join("");
 
-  const facts = [
-    t("profile.unlocksThisMonth", { n: stats.thisMonth }),
-    stats.streakDays > 1 ? t("profile.unlocksStreak", { n: stats.streakDays }) : "",
-    stats.rarest?.rarity != null
-      ? t("profile.unlocksRarest", { n: fmtDecimal1(stats.rarest.rarity) })
-      : "",
-  ].filter(Boolean);
+  const factChips: string[] = [];
+  if (stats.thisMonth > 0) {
+    factChips.push(
+      `<span class="profile-unlock-chip tabular-nums">${icon("calendar", 11)}<span>${esc(t("profile.unlocksThisMonth", { n: stats.thisMonth }))}</span></span>`,
+    );
+  }
+  if (stats.streakDays > 1) {
+    factChips.push(
+      `<span class="profile-unlock-chip tabular-nums">${icon("zap", 11)}<span>${esc(t("profile.unlocksStreak", { n: stats.streakDays }))}</span></span>`,
+    );
+  }
+  if (stats.rarest?.rarity != null) {
+    const r = stats.rarest;
+    factChips.push(
+      `<button type="button" class="profile-unlock-chip is-rarest tabular-nums" data-act="open-pinned-achievement" data-id="${esc(r.appName)}" data-ach="${esc(r.name)}" title="${esc(`${r.title} · ${r.game}`)}">${icon("trophy", 11)}<span>${esc(t("profile.unlocksRarest", { n: fmtDecimal1(r.rarity!) }))}</span></button>`,
+    );
+  }
+
+  const hasMore = entries.length > shown.length;
+  const canCollapse = shown.length > 10;
 
   return `
     <section class="profile-row">
       <div class="profile-row-head">
-        <h3 class="profile-row-title">${esc(t("profile.unlocksTitle"))}</h3>
+        <div class="profile-row-title-group">
+          <h3 class="profile-row-title">${esc(t("profile.unlocksTitle"))}</h3>
+          <span class="profile-section-count tabular-nums">${entries.length.toLocaleString()}</span>
+        </div>
         <div class="profile-unlock-head-right">
-          ${facts.length ? `<span class="profile-unlock-stats tabular-nums">${facts.map((fact) => esc(fact)).join(" · ")}</span>` : ""}
+          ${factChips.join("")}
           <button type="button" class="icon-btn" data-act="clear-ach-history" title="${esc(t("profile.unlocksClear"))}" aria-label="${esc(t("profile.unlocksClear"))}">${icon("trash", 14)}</button>
         </div>
       </div>
       <div class="profile-unlock-row">${cards}</div>
-      ${entries.length > shown.length ? `<button type="button" class="btn ghost small profile-unlock-more" data-act="profile-unlocks-more">${esc(t("profile.showAll"))}</button>` : ""}
+      ${hasMore || canCollapse ? `
+        <div class="profile-unlock-actions">
+          ${hasMore ? `<button type="button" class="btn ghost small profile-unlock-more" data-act="profile-unlocks-more">${esc(t("profile.showMore"))} (${entries.length - shown.length})</button>` : ""}
+          ${canCollapse ? `<button type="button" class="btn ghost small profile-unlock-less" data-act="profile-unlocks-less" title="${esc(t("nav.collapse"))}" aria-label="${esc(t("nav.collapse"))}">${icon("chevron-up", 13)}<span>${esc(t("nav.collapse"))}</span></button>` : ""}
+        </div>` : ""}
     </section>`;
 }
 
-/** Xbox-style horizontal strip of recently played covers. */
-function renderRecentRow(scope: "all" | StoreKind): string {  const recents = recentApps(scope).slice(0, 10);
+/** Horizontal strip of recently played covers with playtime and store mark. */
+function renderRecentRow(scope: "all" | StoreKind): string {
+  const recents = recentApps(scope).slice(0, 10);
   if (recents.length === 0) return "";
+  const showStore = showStoreChips();
   const cards = recents.map((appName) => {
     const title = summaryOf(appName)?.title || appName;
     const cover = coverOf(appName);
+    const pt = S.playtimeMap.get(appName);
+    const played = pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "";
+    const store = gameStore(appName);
+    const tip = played ? `${title} · ${played}` : title;
     return `
-      <button type="button" class="profile-recent-card" data-act="open-game-from-profile" data-id="${esc(appName)}" title="${esc(title)}">
+      <button type="button" class="profile-recent-card" data-act="open-game-from-profile" data-id="${esc(appName)}" title="${esc(tip)}">
         <span class="profile-recent-thumb-wrap">
           ${cover ? `<img class="profile-recent-thumb"${steamArtAttrs(appName)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-recent-thumb placeholder">${icon("gamepad-2", 20)}</span>`}
         </span>
         <span class="profile-recent-name">${esc(title)}</span>
+        ${played || showStore ? `<span class="profile-recent-meta tabular-nums">${showStore ? storeLogo(store, 11, "profile-unlock-store-logo") : ""}<span>${esc(played || storeCode(store))}</span></span>` : ""}
       </button>`;
   }).join("");
   return `
@@ -1144,24 +1196,29 @@ function renderDormantView(account: ProfileAccount, displayName: string, avatarK
 
   return `
     <div class="page profile-page">
-      <section class="card profile-hero">
+      <section class="card profile-hero is-dormant-hero">
         <div class="profile-hero-top">
-          <button class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitleDormant)}" aria-label="${esc(avatarTitleDormant)}">
+          <button type="button" class="avatar-edit-btn profile-avatar-btn" data-act="profile-change-avatar" data-key="${esc(avatarKey)}" data-name="${esc(displayName)}" title="${esc(avatarTitleDormant)}" aria-label="${esc(avatarTitleDormant)}">
             <span class="profile-avatar profile-avatar-lg">${customAvatar ? `<img src="${esc(customAvatar)}" alt="" />` : esc(initial)}</span>
             <span class="avatar-edit-badge" aria-hidden="true">${icon("camera", 12)}</span>
           </button>
           <div class="profile-hero-identity">
-            <h1 class="profile-name">${esc(displayName)}</h1>
-            <div class="profile-presence">
-              <span class="profile-presence-dot offline" aria-hidden="true"></span>
-              <span class="profile-presence-text">${esc(t("profile.inactiveTitle"))}</span>
+            <div class="profile-identity-head">
+              <div class="profile-name-row">
+                <h1 class="profile-name">${esc(displayName)}</h1>
+                <div class="profile-presence">
+                  <span class="profile-presence-dot offline" aria-hidden="true"></span>
+                  <span class="profile-presence-text">${esc(t("profile.inactiveTitle"))}</span>
+                </div>
+              </div>
+              <div class="profile-hero-actions">
+                <button type="button" class="btn ghost small profile-hero-action-btn" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>
+              </div>
             </div>
             <div class="profile-hero-stores">
-              <span class="profile-hero-store-pill">${storeName(account.kind)}</span>
+              <span class="profile-hero-store-pill"><span class="profile-acc-dot offline" aria-hidden="true"></span>${storeLogo(account.kind, 15, "profile-store-chip-logo")}<span>${esc(storeName(account.kind))}</span></span>
             </div>
-          </div>
-          <div class="profile-hero-actions">
-            <button type="button" class="btn ghost small" data-act="profile-account" data-key="overview">${icon("arrow-left", 13)}<span>${t("profile.backToOverview")}</span></button>
+            ${renderHeroAccountChips(false, account)}
           </div>
         </div>
       </section>
@@ -1185,7 +1242,9 @@ function renderDormantView(account: ProfileAccount, displayName: string, avatarK
           <span class="profile-dormant-val">${storeName(account.kind)}</span>
         </div>
         <div class="row profile-dormant-actions">
-          <button type="button" class="btn primary" data-act="${dormantSwitch}" data-id="${esc(account.id)}">${t("settings.accountSwitchBtn")}</button>
+          ${dormantSwitch
+            ? `<button type="button" class="btn primary" data-act="${dormantSwitch}" data-id="${esc(account.id)}">${t("settings.accountSwitchBtn")}</button>`
+            : `<button type="button" class="btn primary" data-view="accounts">${t("accounts.manageAccounts")}</button>`}
         </div>
       </section>
     </div>`;
@@ -1278,5 +1337,6 @@ export function enterProfile(): void {
   S.profileFilter = "all";
   S.profileShowHidden = false;
   S.profileCardCount = PROFILE_CARD_CHUNK;
+  S.profileUnlockCount = 10;
   S.profileError = "";
 }

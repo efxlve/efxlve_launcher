@@ -183,7 +183,7 @@ export function openProfileBannerModal(scopeKey: string, scopeLabel = ""): void 
               <p class="profile-banner-modal-sub">${scopeLabel ? `${esc(scopeLabel)} · ` : ""}${esc(t("profile.bannerModalDesc"))}</p>
             </div>
           </div>
-          <button type="button" class="modal-close-btn" data-act="profile-banner-close" title="${esc(t("common.close"))}">
+          <button type="button" class="modal-close-btn" data-act="profile-banner-close" title="${esc(t("common.close"))}" aria-label="${esc(t("common.close"))}">
             ${icon("x", 16)}
           </button>
         </div>
@@ -234,6 +234,27 @@ export function openProfileBannerModal(scopeKey: string, scopeLabel = ""): void 
   if (modalEl) {
     modalEl.addEventListener("click", (e) => {
       if (e.target === modalEl) closeProfileBannerModal();
+    });
+    modalEl.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeProfileBannerModal();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const focusables = modalEl.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     });
   }
 }

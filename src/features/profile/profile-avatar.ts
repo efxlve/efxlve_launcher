@@ -120,6 +120,35 @@ export function closeAvatarModal(): void {
   if (modal) modal.remove();
 }
 
+function wireModalDialog(modalId: string, onClose: () => void): void {
+  const modalEl = document.getElementById(modalId);
+  if (!modalEl) return;
+  modalEl.addEventListener("click", (e) => {
+    if (e.target === modalEl) onClose();
+  });
+  modalEl.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      onClose();
+      return;
+    }
+    if (e.key !== "Tab") return;
+    const focusables = modalEl.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  });
+}
+
 /** Opens the avatar flow for one key (`global` or `epic:/gog:<id>`). */
 export function promptAvatarAction(key?: string, displayName?: string): void {
   const avatarKey = key || getCurrentAvatarKey();
@@ -136,13 +165,13 @@ export function promptAvatarAction(key?: string, displayName?: string): void {
   closeAvatarModal();
   const modalHtml = `
     <div id="avatar-manage-modal" class="modal-backdrop fadeIn" style="z-index: 1050;">
-      <div class="modal-box panel-avatar-modal" role="dialog" aria-modal="true">
+      <div class="modal-box panel-avatar-modal" role="dialog" aria-modal="true" aria-labelledby="avatar-modal-title">
         <div class="panel-avatar-modal-header">
           <div class="panel-avatar-modal-title">
             ${icon("camera", 16)}
-            <h3>${t("profile.avatarTitle")}</h3>
+            <h3 id="avatar-modal-title">${t("profile.avatarTitle")}</h3>
           </div>
-          <button class="modal-close-btn" data-act="avatar-modal-close" title="${t("common.close")}">
+          <button type="button" class="modal-close-btn" data-act="avatar-modal-close" title="${esc(t("common.close"))}" aria-label="${esc(t("common.close"))}">
             ${icon("x", 16)}
           </button>
         </div>
@@ -158,10 +187,10 @@ export function promptAvatarAction(key?: string, displayName?: string): void {
         </div>
 
         <div class="panel-avatar-modal-footer">
-          <button class="apple-pill-btn secondary" data-act="avatar-modal-remove" data-id="${esc(avatarKey)}">
+          <button type="button" class="apple-pill-btn secondary" data-act="avatar-modal-remove" data-id="${esc(avatarKey)}">
             ${icon("trash", 13)} <span>${t("profile.removePhoto")}</span>
           </button>
-          <button class="apple-pill-btn primary" data-act="avatar-modal-upload" data-id="${esc(avatarKey)}">
+          <button type="button" class="apple-pill-btn primary" id="avatar-modal-primary-btn" data-act="avatar-modal-upload" data-id="${esc(avatarKey)}">
             ${icon("camera", 13)} <span>${t("profile.choosePhoto")}</span>
           </button>
         </div>
@@ -169,6 +198,8 @@ export function promptAvatarAction(key?: string, displayName?: string): void {
     </div>
   `;
   document.body.insertAdjacentHTML("beforeend", modalHtml);
+  wireModalDialog("avatar-manage-modal", closeAvatarModal);
+  document.getElementById("avatar-modal-primary-btn")?.focus();
 }
 
 export function closeChangeNameModal(): void {
@@ -200,29 +231,29 @@ export function openChangeNameModal(): void {
   const placeholder = t("profile.user");
   const modalHtml = `
     <div id="profile-name-modal" class="modal-backdrop fadeIn" style="z-index: 1050;">
-      <div class="modal-box panel-avatar-modal" role="dialog" aria-modal="true" style="max-width: 400px;">
+      <div class="modal-box panel-avatar-modal profile-name-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-name-modal-title">
         <div class="panel-avatar-modal-header">
           <div class="panel-avatar-modal-title">
             ${icon("edit", 16)}
-            <h3>${esc(t("profile.changeNameTitle"))}</h3>
+            <h3 id="profile-name-modal-title">${esc(t("profile.changeNameTitle"))}</h3>
           </div>
-          <button class="modal-close-btn" data-act="profile-name-modal-close" title="${t("common.close")}">
+          <button type="button" class="modal-close-btn" data-act="profile-name-modal-close" title="${esc(t("common.close"))}" aria-label="${esc(t("common.close"))}">
             ${icon("x", 16)}
           </button>
         </div>
 
-        <div class="panel-avatar-modal-body" style="flex-direction: column; align-items: stretch; gap: 12px; padding: 18px 24px;">
-          <label style="font-size: 13px; color: var(--fg-muted); display: flex; flex-direction: column; gap: 8px;">
+        <div class="panel-avatar-modal-body profile-name-modal-body">
+          <label class="profile-name-modal-label">
             <span>${esc(t("profile.user"))}</span>
-            <input id="profile-name-input" type="text" class="input" style="padding: 10px 14px; font-size: 14px; border-radius: 8px; border: 1px solid var(--border-subtle); background: var(--bg-surface-elevated, #1a1d24); color: var(--fg-default, #fff); width: 100%; box-sizing: border-box;" value="${esc(current)}" placeholder="${esc(placeholder)}" maxlength="32" autofocus />
+            <input id="profile-name-input" type="text" class="input profile-name-modal-input" value="${esc(current)}" placeholder="${esc(placeholder)}" maxlength="32" autofocus />
           </label>
         </div>
 
         <div class="panel-avatar-modal-footer">
-          <button class="apple-pill-btn secondary" data-act="profile-name-modal-close">
+          <button type="button" class="apple-pill-btn secondary" data-act="profile-name-modal-close">
             <span>${t("common.cancel")}</span>
           </button>
-          <button class="apple-pill-btn primary" data-act="profile-name-modal-save">
+          <button type="button" class="apple-pill-btn primary" data-act="profile-name-modal-save">
             <span>${t("common.save")}</span>
           </button>
         </div>
@@ -230,6 +261,7 @@ export function openChangeNameModal(): void {
     </div>
   `;
   document.body.insertAdjacentHTML("beforeend", modalHtml);
+  wireModalDialog("profile-name-modal", closeChangeNameModal);
   const input = document.getElementById("profile-name-input") as HTMLInputElement | null;
   if (input) {
     input.focus();
@@ -238,9 +270,6 @@ export function openChangeNameModal(): void {
       if (e.key === "Enter") {
         e.preventDefault();
         saveProfileName(input.value);
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        closeChangeNameModal();
       }
     });
   }

@@ -49,6 +49,8 @@ import {
 import { closeChangelogModal } from "../changelog/changelog-view";
 import { closeHideGamesModal } from "../library/hide-games";
 import { closeHideAchievementsModal } from "../profile/hide-achievements";
+import { closeAvatarModal, closeChangeNameModal } from "../profile/profile-avatar";
+import { closeProfileBannerModal } from "../profile/profile-banner";
 import {
   closeCustomCoverModal,
   renderCustomCoverModalContent,
@@ -379,6 +381,18 @@ document.addEventListener("keydown", (e) => {
     const hideAchRoot = document.getElementById("hide-achievements-root");
     if (hideAchRoot && hideAchRoot.innerHTML.trim()) {
       closeHideAchievementsModal();
+      return;
+    }
+    if (document.getElementById("profile-banner-modal")) {
+      closeProfileBannerModal();
+      return;
+    }
+    if (document.getElementById("avatar-manage-modal")) {
+      closeAvatarModal();
+      return;
+    }
+    if (document.getElementById("profile-name-modal")) {
+      closeChangeNameModal();
       return;
     }
     if (playtimeRoot && playtimeRoot.innerHTML.trim()) {

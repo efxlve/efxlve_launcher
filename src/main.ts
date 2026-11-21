@@ -51,7 +51,8 @@ import { initMiniPlayer } from "./features/music/mini-player";
 import { closeNotifPanel, renderNotificationPanel } from "./features/notifications/notifications";
 import { presenceSync } from "./core/render";
 import { renderProfile } from "./features/profile/profile-view";
-import { closeAvatarModal } from "./features/profile/profile-avatar";
+import { closeAvatarModal, closeChangeNameModal } from "./features/profile/profile-avatar";
+import { closeProfileBannerModal } from "./features/profile/profile-banner";
 import { closeScreenshotLightbox, closeScreenshotMoveConfirm, closeShareModal } from "./features/screenshots/screenshots-view";
 import { renderSettings } from "./features/settings/settings-view";
 import { renderNotesPage } from "./features/notes/notes-view";
@@ -259,6 +260,8 @@ function closeAllModals(): void {
   closeStorageManager();
   closeNotifPanel();
   closeAvatarModal();
+  closeChangeNameModal();
+  closeProfileBannerModal();
   closeInstallDialog();
   closeAddCustomGameModal();
   closeManagePopup();
