@@ -441,17 +441,17 @@ export function accountAvatar(account: ProfileAccount): string | null {
   return avatarFor(account.key);
 }
 
-/** Up to nine recently played games for the rail, scoped to one store. */
-export function recentApps(scope: "all" | StoreKind): string[] {
+/** Recently played games for the rail, scoped to one store and capped by limit. */
+export function recentApps(scope: "all" | StoreKind, limit = 16): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
   const push = (name: string): boolean => {
-    if (out.length >= 9) return true;
+    if (out.length >= limit) return true;
     if (seen.has(name) || (scope !== "all" && gameStore(name) !== scope)) return false;
     if (!S.epicSummariesMap.has(name) && !S.allGamesMap.has(name)) return false;
     seen.add(name);
     out.push(name);
-    return out.length >= 9;
+    return out.length >= limit;
   };
   for (const name of S.epicRecent) if (push(name)) return out;
   const played = [...S.playtimeMap.entries()]
@@ -1227,9 +1227,21 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
     </section>`;
 }
 
-/** Horizontal strip of recently played covers with playtime and store mark. */
+function recentRowCapacity(): number {
+  if (typeof window === "undefined") return 9;
+  const view = document.getElementById("view");
+  // Available row width inside .profile-page (max-width: 1560px, padding: 28px each side)
+  const available = (view?.clientWidth || window.innerWidth - 64) - 56;
+  const rowWidth = Math.max(300, Math.min(1560, available));
+  const minCardWidth = 124;
+  const gap = 12;
+  return Math.max(3, Math.floor((rowWidth + gap) / (minCardWidth + gap)));
+}
+
+/** Horizontal single row of recently played covers with playtime and store mark. */
 function renderRecentRow(scope: "all" | StoreKind): string {
-  const recents = recentApps(scope).slice(0, 10);
+  const capacity = recentRowCapacity();
+  const recents = recentApps(scope, capacity);
   if (recents.length === 0) return "";
   const showStore = showStoreChips();
   const cards = recents.map((appName) => {
@@ -1252,7 +1264,6 @@ function renderRecentRow(scope: "all" | StoreKind): string {
     <section class="profile-row">
       <div class="profile-row-head">
         <h3 class="profile-row-title">${t("profile.recentGamesTitle")}</h3>
-        <button type="button" class="btn ghost small" data-view="library">${t("profile.showAll")}</button>
       </div>
       <div class="profile-recent-row">${cards}</div>
     </section>`;

@@ -1252,12 +1252,10 @@
 
 /* --- 4c. Recently Played Shelf (With 3D Tilt & Cursor Light from library.css) --- */
 .profile-recent-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
   gap: 12px;
-  overflow-x: auto;
   padding: 4px 2px 8px;
-  scrollbar-width: thin;
-  scroll-behavior: smooth;
 }
 
 .profile-recent-card {
@@ -1265,8 +1263,8 @@
   display: flex;
   flex-direction: column;
   gap: 7px;
-  width: 126px;
-  flex: none;
+  width: 100%;
+  min-width: 0;
   padding: 7px;
   border: 1px solid var(--line);
   background: var(--surface-1);
