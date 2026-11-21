@@ -12,6 +12,7 @@ import { drawSpeedCanvas } from "../features/downloads/downloads-view";
 import { positionNotifPanel } from "../features/notifications/notifications";
 import { embeddedStoreHeld, syncStoreViewSize } from "../features/store/store-view";
 import { syncStoreTabsUnderline, updateSidebarGames } from "./nav";
+import { scheduleRender } from "./render";
 
 /** Start with Windows: the HKCU Run entry the installer never touches. */
 export const appGetAutostart = () => invoke<boolean>("app_get_autostart");
@@ -47,6 +48,7 @@ export function handleWindowResize(): void {
   }
   // The open notification panel is anchored to the bell: keep it there on resize.
   if (S.notifOpen) positionNotifPanel();
+  if (S.view === "profile") scheduleRender();
   if (S.view === "store" || embeddedStoreHeld()) {
     syncStoreViewSize();
     // The storefront tabs sit in the header, so a resize moves their underline.

@@ -1137,6 +1137,17 @@ function renderShowcase(): string {
     </section>`;
 }
 
+function unlockRowCapacity(): number {
+  if (typeof window === "undefined") return 5;
+  const view = document.getElementById("view");
+  // Available row width inside .profile-page (max-width: 1560px, padding: 28px each side)
+  const available = (view?.clientWidth || window.innerWidth - 64) - 56;
+  const rowWidth = Math.max(300, Math.min(1560, available));
+  const minCardWidth = 280;
+  const gap = 12;
+  return Math.max(1, Math.floor((rowWidth + gap) / (minCardWidth + gap)));
+}
+
 /**
  * Recent unlocks across every store, newest first. The strip is the one place
  * the launcher's own history is visible: the bell forgets after a day and a
@@ -1151,7 +1162,9 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
   });
   if (entries.length === 0) return "";
 
-  const shown = entries.slice(0, 8);
+  const cols = unlockRowCapacity();
+  const capacity = cols * 2;
+  const shown = entries.slice(0, capacity);
   const showStore = showStoreChips();
   const cards = shown
     .map((entry) => {
