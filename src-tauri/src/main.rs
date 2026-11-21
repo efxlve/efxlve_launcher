@@ -47,6 +47,7 @@ mod task_manager;
 mod game_running;
 mod game_match;
 mod presence;
+mod profile_screenshot;
 mod retroachievements;
 mod shared_library;
 mod slug;
@@ -2637,6 +2638,7 @@ fn main() {
             legendary::screenshots::epic_save_screenshot_preview,
             legendary::screenshots::epic_delete_game_screenshot,
             legendary::screenshots::epic_save_edited_screenshot,
+            profile_screenshot::capture_profile_screenshot,
             legendary::screenshots::screenshot_share_discord,
             legendary::screenshots::screenshot_webhook_info,
             legendary::screenshots::screenshot_scan_roots,

@@ -1103,6 +1103,24 @@ export const screenshotShareDiscord = (input: {
 export const screenshotWebhookInfo = (webhook: string) =>
   invoke<string>("screenshot_webhook_info", { webhook });
 
+export interface ProfileClip {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  scale?: number;
+}
+
+export interface ProfileScreenshotResult {
+  filePath: string;
+  fileName: string;
+  dataUrl: string;
+}
+
+/** Captures a clean screenshot of the profile page via WebView2's CDP interface. */
+export const captureProfileScreenshot = (clip?: ProfileClip | null) =>
+  invoke<ProfileScreenshotResult>("capture_profile_screenshot", { clip });
+
 /* ---------- Game clips (MJPEG AVI recorder) ---------- */
 
 export interface ClipStatus {

@@ -4486,5 +4486,9 @@
   "profile.goalsSub": "Più vicini al 100%",
   "profile.goalsRemaining": "{n} mancanti",
   "profile.activityRange7d": "7 giorni",
-  "profile.activityRange30d": "30 giorni"
+  "profile.activityRange30d": "30 giorni",
+  "profile.screenshotTip": "Cattura schermata del profilo",
+  "profile.screenshotSaved": "Schermata del profilo salvata ({file})",
+  "profile.screenshotSavedClip": "Schermata del profilo copiata negli appunti e salvata ({file})",
+  "profile.screenshotFailed": "Impossibile catturare la schermata del profilo"
 }

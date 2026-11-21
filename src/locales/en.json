@@ -4486,5 +4486,9 @@
   "profile.goalsSub": "Closest to 100%",
   "profile.goalsRemaining": "{n} left",
   "profile.activityRange7d": "7 days",
-  "profile.activityRange30d": "30 days"
+  "profile.activityRange30d": "30 days",
+  "profile.screenshotTip": "Take profile screenshot",
+  "profile.screenshotSaved": "Profile screenshot saved ({file})",
+  "profile.screenshotSavedClip": "Profile screenshot copied to clipboard and saved ({file})",
+  "profile.screenshotFailed": "Failed to take profile screenshot"
 }

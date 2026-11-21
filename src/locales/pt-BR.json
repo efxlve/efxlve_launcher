@@ -4486,5 +4486,9 @@
   "profile.goalsSub": "Mais perto de 100%",
   "profile.goalsRemaining": "Faltam {n}",
   "profile.activityRange7d": "7 dias",
-  "profile.activityRange30d": "30 dias"
+  "profile.activityRange30d": "30 dias",
+  "profile.screenshotTip": "Capturar tela do perfil",
+  "profile.screenshotSaved": "Captura do perfil salva ({file})",
+  "profile.screenshotSavedClip": "Captura do perfil copiada para a área de transferência e salva ({file})",
+  "profile.screenshotFailed": "Falha ao capturar tela do perfil"
 }

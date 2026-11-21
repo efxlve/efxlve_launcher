@@ -4486,5 +4486,9 @@
   "profile.goalsSub": "Ближе всего к 100%",
   "profile.goalsRemaining": "Осталось: {n}",
   "profile.activityRange7d": "7 дн.",
-  "profile.activityRange30d": "30 дн."
+  "profile.activityRange30d": "30 дн.",
+  "profile.screenshotTip": "Сделать снимок профиля",
+  "profile.screenshotSaved": "Снимок профиля сохранен ({file})",
+  "profile.screenshotSavedClip": "Снимок профиля скопирован в буфер обмена и сохранен ({file})",
+  "profile.screenshotFailed": "Не удалось сделать снимок профиля"
 }

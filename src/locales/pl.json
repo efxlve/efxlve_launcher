@@ -4486,5 +4486,9 @@
   "profile.goalsSub": "Najbliżej 100%",
   "profile.goalsRemaining": "Pozostało: {n}",
   "profile.activityRange7d": "7 dni",
-  "profile.activityRange30d": "30 dni"
+  "profile.activityRange30d": "30 dni",
+  "profile.screenshotTip": "Zrób zrzut ekranu profilu",
+  "profile.screenshotSaved": "Zrzut ekranu profilu zapisany ({file})",
+  "profile.screenshotSavedClip": "Zrzut ekranu profilu skopiowany do schowka i zapisany ({file})",
+  "profile.screenshotFailed": "Nie udało się zrobić zrzutu ekranu profilu"
 }

@@ -4486,5 +4486,9 @@
   "profile.goalsSub": "100%에 가장 가까운 게임",
   "profile.goalsRemaining": "{n}개 남음",
   "profile.activityRange7d": "7일",
-  "profile.activityRange30d": "30일"
+  "profile.activityRange30d": "30일",
+  "profile.screenshotTip": "프로필 스크린샷 캡처",
+  "profile.screenshotSaved": "프로필 스크린샷 저장됨 ({file})",
+  "profile.screenshotSavedClip": "프로필 스크린샷이 클립보드에 복사되고 저장되었습니다 ({file})",
+  "profile.screenshotFailed": "프로필 스크린샷 캡처 실패"
 }

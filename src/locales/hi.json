@@ -4486,5 +4486,9 @@
   "profile.goalsSub": "100% के सबसे करीब",
   "profile.goalsRemaining": "{n} शेष",
   "profile.activityRange7d": "7 दिन",
-  "profile.activityRange30d": "30 दिन"
+  "profile.activityRange30d": "30 दिन",
+  "profile.screenshotTip": "प्रोफ़ाइल स्क्रीनशॉट लें",
+  "profile.screenshotSaved": "प्रोफ़ाइल स्क्रीनशॉट सहेजा गया ({file})",
+  "profile.screenshotSavedClip": "प्रोफ़ाइल स्क्रीनशॉट क्लिपबोर्ड पर कॉपी और सहेजा गया ({file})",
+  "profile.screenshotFailed": "प्रोफ़ाइल स्क्रीनशॉट लेने में विफल"
 }

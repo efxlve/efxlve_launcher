@@ -4486,5 +4486,9 @@
   "profile.goalsSub": "Au plus près des 100 %",
   "profile.goalsRemaining": "{n} restants",
   "profile.activityRange7d": "7 jours",
-  "profile.activityRange30d": "30 jours"
+  "profile.activityRange30d": "30 jours",
+  "profile.screenshotTip": "Prendre une capture du profil",
+  "profile.screenshotSaved": "Capture du profil enregistrée ({file})",
+  "profile.screenshotSavedClip": "Capture du profil copiée dans le presse-papiers et enregistrée ({file})",
+  "profile.screenshotFailed": "Échec de la capture du profil"
 }

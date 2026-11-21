@@ -3053,3 +3053,44 @@
     transform: none !important;
   }
 }
+
+/* --- Profile Screenshot Capture Mode --- */
+.profile-screenshot-btn.is-busy svg {
+  animation: spin 0.8s linear infinite;
+  opacity: 0.6;
+}
+
+body.capturing-profile-screenshot #winbar,
+body.capturing-profile-screenshot #sidebar,
+body.capturing-profile-screenshot #page-header,
+body.capturing-profile-screenshot #totop,
+body.capturing-profile-screenshot #palette-root,
+body.capturing-profile-screenshot #toast-root {
+  display: none !important;
+}
+
+body.capturing-profile-screenshot,
+body.capturing-profile-screenshot #app,
+body.capturing-profile-screenshot #body-row,
+body.capturing-profile-screenshot #main-col,
+body.capturing-profile-screenshot #content,
+body.capturing-profile-screenshot #view {
+  overflow: visible !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: var(--bg) !important;
+}
+
+body.capturing-profile-screenshot .profile-page {
+  padding: 24px 28px 48px !important;
+  background: var(--bg) !important;
+}
+
+body.capturing-profile-screenshot * {
+  animation: none !important;
+  transition: none !important;
+}
+

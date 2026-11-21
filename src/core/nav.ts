@@ -196,6 +196,10 @@ export function updatePageHeader(): void {
       if (filterCount > 0) badge.textContent = String(filterCount);
     }
   }
+  const profileShotBtn = document.getElementById("profile-screenshot-btn");
+  if (profileShotBtn) {
+    profileShotBtn.hidden = S.view !== "profile";
+  }
   const back = document.getElementById("nav-back-btn") as HTMLButtonElement | null;
   if (back) back.disabled = !S.currentModalAppName && !canNavBack();
 }

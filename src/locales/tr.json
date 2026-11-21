@@ -4486,5 +4486,9 @@
   "profile.goalsSub": "%100'e en yakın oyunlar",
   "profile.goalsRemaining": "{n} kaldı",
   "profile.activityRange7d": "7 gün",
-  "profile.activityRange30d": "30 gün"
+  "profile.activityRange30d": "30 gün",
+  "profile.screenshotTip": "Profil ekran görüntüsü al",
+  "profile.screenshotSaved": "Profil ekran görüntüsü kaydedildi ({file})",
+  "profile.screenshotSavedClip": "Profil ekran görüntüsü panoya kopyalandı ve kaydedildi ({file})",
+  "profile.screenshotFailed": "Profil ekran görüntüsü alınamadı"
 }

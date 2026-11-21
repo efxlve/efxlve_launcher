@@ -4486,5 +4486,9 @@
   "profile.goalsSub": "ใกล้ครบ 100% มากที่สุด",
   "profile.goalsRemaining": "เหลือ {n}",
   "profile.activityRange7d": "7 วัน",
-  "profile.activityRange30d": "30 วัน"
+  "profile.activityRange30d": "30 วัน",
+  "profile.screenshotTip": "ถ่ายภาพหน้าจอโปรไฟล์",
+  "profile.screenshotSaved": "บันทึกภาพหน้าจอโปรไฟล์แล้ว ({file})",
+  "profile.screenshotSavedClip": "คัดลอกภาพหน้าจอโปรไฟล์ไปยังคลิปบอร์ดและบันทึกแล้ว ({file})",
+  "profile.screenshotFailed": "ถ่ายภาพหน้าจอโปรไฟล์ไม่สำเร็จ"
 }

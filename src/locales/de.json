@@ -4486,5 +4486,9 @@
   "profile.goalsSub": "Kurz vor 100 %",
   "profile.goalsRemaining": "{n} offen",
   "profile.activityRange7d": "7 Tage",
-  "profile.activityRange30d": "30 Tage"
+  "profile.activityRange30d": "30 Tage",
+  "profile.screenshotTip": "Profil-Screenshot erstellen",
+  "profile.screenshotSaved": "Profil-Screenshot gespeichert ({file})",
+  "profile.screenshotSavedClip": "Profil-Screenshot in die Zwischenablage kopiert und gespeichert ({file})",
+  "profile.screenshotFailed": "Profil-Screenshot fehlgeschlagen"
 }

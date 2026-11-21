@@ -4486,5 +4486,9 @@
   "profile.goalsSub": "الأقرب إلى 100%",
   "profile.goalsRemaining": "المتبقي {n}",
   "profile.activityRange7d": "7 أيام",
-  "profile.activityRange30d": "30 يومًا"
+  "profile.activityRange30d": "30 يومًا",
+  "profile.screenshotTip": "التقاط لقطة شاشة للملف الشخصي",
+  "profile.screenshotSaved": "تم حفظ لقطة شاشة الملف الشخصي ({file})",
+  "profile.screenshotSavedClip": "تم نسخ لقطة شاشة الملف الشخصي إلى الحافظة وحفظها ({file})",
+  "profile.screenshotFailed": "فشل التقاط لقطة شاشة الملف الشخصي"
 }

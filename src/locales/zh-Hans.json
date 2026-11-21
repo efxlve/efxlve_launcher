@@ -4486,5 +4486,9 @@
   "profile.goalsSub": "最接近 100%",
   "profile.goalsRemaining": "剩余 {n} 项",
   "profile.activityRange7d": "7 天",
-  "profile.activityRange30d": "30 天"
+  "profile.activityRange30d": "30 天",
+  "profile.screenshotTip": "截取个人资料屏幕",
+  "profile.screenshotSaved": "个人资料截图已保存 ({file})",
+  "profile.screenshotSavedClip": "个人资料截图已复制到剪贴板并保存 ({file})",
+  "profile.screenshotFailed": "截取个人资料屏幕失败"
 }

@@ -168,6 +168,7 @@ import { loadNotesView, handleNotesAction } from "../notes/notes-view";
 import { handleDrawerNotesAction } from "../notes/drawer-notes";
 import { handleIgdbAction } from "./handlers/igdb-handlers";
 import { ALL_PROFILE_STORES, enterProfile, profileGridCapacity, resetProfileCards, type StoreKind } from "../profile/profile-view";
+import { takeProfileScreenshot } from "../profile/profile-screenshot";
 import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
 import { closeUnlocksModal, openUnlocksModal } from "../profile/profile-unlocks-modal";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
@@ -628,6 +629,8 @@ document.addEventListener("click", (e) => {
   } else if (act === "profile-show-more") {
     S.profileCardCount = (S.profileCardCount || profileGridCapacity(5)) + profileGridCapacity(5);
     render();
+  } else if (act === "take-profile-screenshot") {
+    void takeProfileScreenshot();
   } else if (act === "profile-search-clear") {
     S.profileSearchQuery = "";
     resetProfileCards();
