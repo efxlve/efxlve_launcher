@@ -1033,7 +1033,7 @@ function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGa
   };
 
   const totals = profileStats(games);
-  const sub = `${countVisible.toLocaleString()} ${t("profile.games")} · ${totals.unlocked.toLocaleString()} ${t("profile.trophies")}`;
+  const sub = `${totals.unlocked.toLocaleString()} ${t("profile.trophies")}`;
 
   return `
     <section id="profile-ach-section" class="profile-row profile-ach-section">
@@ -1048,9 +1048,9 @@ function renderAchievementsPanel(games: ProfileGameRecord[], filtered: ProfileGa
           ${filterTab("all", t("profile.filterAll"), countVisible, "layers")}
           ${filterTab("platinum", t("profile.filterPlatinum"), countPlat, "trophy")}
           ${countAlmostDone > 0 || S.profileFilter === "almost_done" ? filterTab("almost_done", t("profile.goalsTitle"), countAlmostDone, "crosshair") : ""}
-          ${filterTab("in_progress", t("profile.filterInProgress"), countProgress)}
-          ${filterTab("not_started", t("profile.filterNotStarted"), countNotStarted)}
-          ${countHidden > 0 || S.profileShowHidden ? `<button type="button" class="tab ${S.profileShowHidden ? "active" : ""}" data-act="profile-toggle-hidden" aria-pressed="${S.profileShowHidden}">${t("profile.hiddenToggle")}<span class="count tabular-nums">${countHidden}</span></button>` : ""}
+          ${filterTab("in_progress", t("profile.filterInProgress"), countProgress, "timer")}
+          ${filterTab("not_started", t("profile.filterNotStarted"), countNotStarted, "circle")}
+          ${countHidden > 0 || S.profileShowHidden ? `<button type="button" class="tab ${S.profileShowHidden ? "active" : ""}" data-act="profile-toggle-hidden" aria-pressed="${S.profileShowHidden}">${icon("eye-off", 14)}${t("profile.hiddenToggle")}<span class="count tabular-nums">${countHidden}</span></button>` : ""}
         </div>
         <div class="profile-ach-tools">
           <label class="search gp-search">${icon("search", 15)}<input type="text" id="profile-search" placeholder="${esc(t("profile.searchPlaceholder"))}" aria-label="${esc(t("profile.searchPlaceholder"))}" value="${esc(S.profileSearchQuery)}" />
