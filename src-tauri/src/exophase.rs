@@ -689,7 +689,7 @@ fn build_summary(
     });
 
     let profile_url = if username.is_empty() {
-        format!("{PROFILE_ROOT}/user/{player_id}/")
+        format!("{PROFILE_ROOT}/")
     } else {
         format!("{PROFILE_ROOT}/user/{}/", encode_segment(&username))
     };

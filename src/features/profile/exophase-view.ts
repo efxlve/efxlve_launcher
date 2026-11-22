@@ -46,6 +46,14 @@ function errorText(code: string): string {
   return t("profile.exophaseErrGeneric");
 }
 
+/** A numeric player id has no username page; the site home is the honest link. */
+function profileUrlFor(username: string): string {
+  const trimmed = username.trim();
+  return /^\d+$/.test(trimmed)
+    ? EXOPHASE_SITE
+    : `${EXOPHASE_SITE}user/${encodeURIComponent(trimmed)}/`;
+}
+
 function stat(glyph: string, label: string, value: string, sub = "", platinum = false): string {
   return `<div class="profile-stat${platinum ? " is-plat-stat" : ""}">
     <span class="profile-stat-icon" aria-hidden="true">${glyph}</span>
@@ -262,12 +270,12 @@ function loadedView(data: ExophaseData): string {
 }
 
 function loadingView(): string {
-  return `${profileHero(S.exophaseUsername, S.exophaseUsername, "", "", true, `${EXOPHASE_SITE}user/${encodeURIComponent(S.exophaseUsername)}/`, true)}
+  return `${profileHero(S.exophaseUsername, S.exophaseUsername, "", "", true, profileUrlFor(S.exophaseUsername), true)}
     <div class="profile-exophase-loading"><span class="spinner"></span><p>${esc(t("profile.exophaseLoading"))}</p></div>`;
 }
 
 function errorView(): string {
-  return `${profileHero(S.exophaseUsername, S.exophaseUsername, "", "", false, `${EXOPHASE_SITE}user/${encodeURIComponent(S.exophaseUsername)}/`, false)}
+  return `${profileHero(S.exophaseUsername, S.exophaseUsername, "", "", false, profileUrlFor(S.exophaseUsername), false)}
     ${emptyState(
       "info",
       t("profile.errorTitle"),
