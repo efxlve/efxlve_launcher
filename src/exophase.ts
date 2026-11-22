@@ -51,7 +51,10 @@ export interface ExophaseGame {
   totalAwards: number;
   playtimeMinutes: number;
   lastPlayed: number;
+  /** Wide card art (288x158). */
   cover: string;
+  /** Wide hero art used as the tab backdrop. */
+  hero: string;
   url: string;
 }
 

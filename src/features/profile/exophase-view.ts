@@ -37,6 +37,11 @@ function relativeTime(ts: number): string {
   return t("notif.daysAgo", { n: Math.floor(hours / 24) });
 }
 
+/** `Nov 18, 2026, 4:35 pm` drops its time so the game name keeps the room. */
+function shortEarned(value: string): string {
+  return value.replace(/,\s*\d{1,2}:\d{2}(?:\s*(?:am|pm))?\s*$/i, "");
+}
+
 function errorText(code: string): string {
   const raw = code.toLowerCase();
   if (raw.includes("not_configured")) return t("profile.exophaseErrNotConfigured");
@@ -87,14 +92,16 @@ function points(): string {
 function connectView(): string {
   return `
     <section class="card profile-exophase-hero">
-      <div class="profile-exophase-hero-stage">
-        <span class="profile-exophase-mark" aria-hidden="true">${icon("globe", 28)}</span>
-        <div class="profile-exophase-hero-copy">
-          <div class="profile-exophase-title-row">
-            <h1 class="profile-exophase-title">Exophase</h1>
-            <span class="profile-exophase-pill"><span class="profile-exophase-dot" aria-hidden="true"></span>${esc(t("accounts.notConnected"))}</span>
+      <div class="profile-exophase-hero-stage is-plain">
+        <div class="profile-exophase-hero-bottom">
+          <span class="profile-exophase-avatar" aria-hidden="true">${icon("globe", 28)}</span>
+          <div class="profile-exophase-hero-copy">
+            <div class="profile-exophase-title-row">
+              <h1 class="profile-exophase-title">Exophase</h1>
+              <span class="profile-exophase-pill"><span class="profile-exophase-dot" aria-hidden="true"></span>${esc(t("accounts.notConnected"))}</span>
+            </div>
+            <p class="profile-exophase-sub">${esc(t("profile.exophaseSubtitle"))}</p>
           </div>
-          <p class="profile-exophase-sub">${esc(t("profile.exophaseSubtitle"))}</p>
         </div>
       </div>
       <div class="profile-exophase-hero-body">
@@ -113,6 +120,7 @@ function profileHero(
   name: string,
   username: string,
   avatar: string,
+  hero: string,
   stats: string,
   loading: boolean,
   profileUrl: string,
@@ -120,21 +128,29 @@ function profileHero(
 ): string {
   const avatarHtml = avatar
     ? `<img src="${esc(avatar)}" alt="" loading="lazy" decoding="async" />`
-    : icon("globe", 28);
+    : icon("globe", 30);
   const handle = username ? `@${username}` : "Exophase";
+  const art = hero
+    ? `<div class="profile-exophase-hero-backdrop" style="background-image:url('${esc(hero)}')" aria-hidden="true"></div>
+       <div class="profile-exophase-hero-scrim" aria-hidden="true"></div>`
+    : "";
   return `<section class="card profile-exophase-hero">
-    <div class="profile-exophase-hero-stage">
-      <span class="profile-exophase-mark profile-exophase-avatar" aria-hidden="true">${avatarHtml}</span>
-      <div class="profile-exophase-hero-copy">
-        <div class="profile-exophase-title-row">
-          <h1 class="profile-exophase-title">${esc(name)}</h1>
-          <span class="profile-exophase-pill${connected ? " is-connected" : ""}"><span class="profile-exophase-dot" aria-hidden="true"></span>${esc(t(connected ? "settings.connected" : "accounts.notConnected"))}</span>
-        </div>
-        <p class="profile-exophase-sub">${esc(handle)}</p>
-      </div>
+    <div class="profile-exophase-hero-stage${hero ? " has-art" : " is-plain"}">
+      ${art}
+      ${hero ? `<span class="profile-exophase-source">${icon("globe", 12)}<span>Exophase</span></span>` : ""}
       <div class="profile-exophase-hero-actions">
         <button type="button" class="icon-btn profile-exophase-refresh${loading ? " is-busy" : ""}" data-act="exophase-refresh" title="${esc(t("profile.exophaseRefresh"))}" aria-label="${esc(t("profile.exophaseRefresh"))}">${icon("refresh", 14)}</button>
-        <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${esc(profileUrl)}">${icon("external", 12)}<span>Exophase</span></button>
+        <button type="button" class="btn small" data-act="open-external-url" data-url="${esc(profileUrl)}">${icon("external", 12)}<span>Exophase</span></button>
+      </div>
+      <div class="profile-exophase-hero-bottom">
+        <span class="profile-exophase-avatar" aria-hidden="true">${avatarHtml}</span>
+        <div class="profile-exophase-hero-copy">
+          <div class="profile-exophase-title-row">
+            <h1 class="profile-exophase-title">${esc(name)}</h1>
+            <span class="profile-exophase-pill${connected ? " is-connected" : ""}"><span class="profile-exophase-dot" aria-hidden="true"></span>${esc(t(connected ? "settings.connected" : "accounts.notConnected"))}</span>
+          </div>
+          <p class="profile-exophase-sub">${esc(handle)}</p>
+        </div>
       </div>
     </div>
     ${stats ? `<div class="profile-stats profile-exophase-stats">${stats}</div>` : ""}
@@ -189,10 +205,12 @@ function gameCard(game: ExophaseGame): string {
     <span class="profile-exophase-card-body">
       <span class="profile-exophase-card-title">${esc(game.title)}</span>
       <span class="profile-exophase-card-meta tabular-nums">
-        <span class="profile-exophase-card-platform">${esc(game.platform)}</span>
-        <span>${icon("trophy", 10)}<span>${esc(count)}</span></span>
+        <span class="profile-exophase-card-sub">
+          <span class="profile-exophase-card-platform">${esc(game.platform)}</span>
+          ${playtime ? `<span class="profile-exophase-card-dot" aria-hidden="true">·</span><span>${esc(playtime)}</span>` : ""}
+        </span>
+        <span class="profile-exophase-card-trophies">${icon("trophy", 10)}<span>${esc(count)}</span></span>
       </span>
-      ${playtime ? `<span class="profile-exophase-card-time tabular-nums">${esc(playtime)}</span>` : ""}
     </span>
   </button>`;
 }
@@ -222,17 +240,32 @@ function gamesSection(data: ExophaseData, selected: string): string {
 
 function awardCard(award: ExophaseAward): string {
   const rarity = award.rarity != null ? `%${award.rarity.toFixed(1)}` : "";
-  const meta = [award.earned, rarity].filter(Boolean).join(" · ");
+  const isRare = award.rarity != null && award.rarity < 5;
   const action = award.url
     ? ` data-act="open-external-url" data-url="${esc(award.url)}"`
     : "";
-  return `<button type="button" class="profile-exophase-award"${action} title="${esc(`${award.name} — ${award.game}${meta ? ` · ${meta}` : ""}`)}">
-    <span class="profile-exophase-award-icon">${award.icon ? `<img src="${esc(award.icon)}" alt="" loading="lazy" decoding="async" />` : icon("trophy", 18)}</span>
-    <span class="profile-exophase-award-copy">
-      <span class="profile-exophase-award-name">${esc(award.name)}</span>
-      <span class="profile-exophase-award-game">${esc(award.game)}</span>
-      ${meta ? `<span class="profile-exophase-award-meta tabular-nums">${esc(meta)}</span>` : ""}
-    </span>
+  const art = award.icon
+    ? `<img class="profile-unlock-art" src="${esc(award.icon)}" alt="" loading="lazy" decoding="async" />`
+    : `<span class="profile-unlock-placeholder">${icon("trophy", 18)}</span>`;
+  const rarityBadge = rarity
+    ? `<span class="profile-unlock-badge${isRare ? " is-rare" : ""} tabular-nums">${isRare ? icon("trophy", 10) : ""}<span>${rarity}</span></span>`
+    : "";
+  const tip = [award.name, award.game, award.earned, rarity, award.description]
+    .filter(Boolean)
+    .join(" · ");
+  const earned = shortEarned(award.earned);
+  return `<button type="button" class="profile-unlock-card${isRare ? " is-rare-card" : ""}"${action} title="${esc(tip)}">
+    <div class="profile-unlock-art-wrap">${art}</div>
+    <div class="profile-unlock-main">
+      <div class="profile-unlock-top">
+        <span class="profile-unlock-title">${esc(award.name)}</span>
+      </div>
+      <div class="profile-unlock-sub">
+        <span class="profile-unlock-game">${esc(award.game)}</span>
+        ${earned ? `<span class="profile-unlock-dot" aria-hidden="true">·</span><span class="profile-unlock-date tabular-nums">${esc(earned)}</span>` : ""}
+      </div>
+    </div>
+    ${rarityBadge}
   </button>`;
 }
 
@@ -242,9 +275,10 @@ function awardsSection(data: ExophaseData): string {
     <div class="profile-row-head">
       <div class="profile-row-title-group">
         <h3 class="profile-row-title">${esc(t("profile.unlocksTitle"))}</h3>
+        <span class="profile-row-count tabular-nums">${data.awards.length}</span>
       </div>
     </div>
-    <div class="profile-exophase-award-grid">${data.awards.map(awardCard).join("")}</div>
+    <div class="profile-unlock-row">${data.awards.map(awardCard).join("")}</div>
   </section>`;
 }
 
@@ -260,22 +294,24 @@ function loadedView(data: ExophaseData): string {
 
   const serviceAvailable = summary.services.some((service) => service.slug === S.exophaseService);
   const selected = serviceAvailable ? S.exophaseService : "all";
+  const lead = [...data.games].sort((left, right) => right.lastPlayed - left.lastPlayed)[0];
+  const heroArt = lead?.hero || lead?.cover || "";
 
   return `
-    ${profileHero(summary.displayName || summary.username, summary.username, summary.avatar, stats, S.exophaseLoading, summary.profileUrl, true)}
+    ${profileHero(summary.displayName || summary.username, summary.username, summary.avatar, heroArt, stats, S.exophaseLoading, summary.profileUrl, true)}
     ${metaLine(summary)}
-    ${gamesSection(data, selected)}
     ${awardsSection(data)}
+    ${gamesSection(data, selected)}
     ${note()}`;
 }
 
 function loadingView(): string {
-  return `${profileHero(S.exophaseUsername, S.exophaseUsername, "", "", true, profileUrlFor(S.exophaseUsername), true)}
+  return `${profileHero(S.exophaseUsername, S.exophaseUsername, "", "", "", true, profileUrlFor(S.exophaseUsername), true)}
     <div class="profile-exophase-loading"><span class="spinner"></span><p>${esc(t("profile.exophaseLoading"))}</p></div>`;
 }
 
 function errorView(): string {
-  return `${profileHero(S.exophaseUsername, S.exophaseUsername, "", "", false, profileUrlFor(S.exophaseUsername), false)}
+  return `${profileHero(S.exophaseUsername, S.exophaseUsername, "", "", "", false, profileUrlFor(S.exophaseUsername), false)}
     ${emptyState(
       "info",
       t("profile.errorTitle"),

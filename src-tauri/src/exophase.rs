@@ -20,7 +20,7 @@ use crate::lookup_cache;
 
 const PROFILE_ROOT: &str = "https://www.exophase.com";
 const API_ROOT: &str = "https://api.exophase.com";
-const CACHE_SCHEMA: u32 = 1;
+const CACHE_SCHEMA: u32 = 2;
 /// The launcher's own copy is refreshed at most this often. Exophase itself
 /// only moves when the user runs its profile sync, so a shorter TTL would just
 /// repeat the same answer.
@@ -81,7 +81,11 @@ pub struct ExophaseGame {
     pub total_awards: u32,
     pub playtime_minutes: u32,
     pub last_played: u64,
+    /// Wide card art (`meta.images.l`, 288x158) so the grid is not a 64px tile.
     pub cover: String,
+    /// Wide hero art (`meta.images.o`) for the tab backdrop.
+    #[serde(default)]
+    pub hero: String,
     pub url: String,
 }
 
@@ -510,9 +514,27 @@ fn parse_game(raw: &Value) -> Option<ExophaseGame> {
         playtime_minutes = hours_to_minutes(text_playtime);
     }
 
-    let cover = ["resource_tile", "resource_small", "resource_standard"]
+    let images = meta.and_then(|meta| meta.get("images"));
+    let featured = text_of(meta.and_then(|meta| meta.get("featured_image")));
+    // The `t` asset is a 64x64 tile; the card uses the 288x158 `l` image and the
+    // hero uses the original `o` art, both of which the API already ships.
+    let cover = ["l", "m", "s"]
         .iter()
-        .map(|key| text_of(raw.get(*key)))
+        .map(|key| text_of(images.and_then(|images| images.get(*key))))
+        .chain(std::iter::once(featured.clone()))
+        .chain(
+            ["resource_standard", "resource_small", "resource_tile"]
+                .iter()
+                .map(|key| text_of(raw.get(*key))),
+        )
+        .find(|value| !value.is_empty())
+        .map(|value| absolute_url(&value))
+        .unwrap_or_default();
+    let hero = ["o"]
+        .iter()
+        .map(|key| text_of(images.and_then(|images| images.get(*key))))
+        .chain(std::iter::once(featured))
+        .chain(std::iter::once(cover.clone()))
         .find(|value| !value.is_empty())
         .map(|value| absolute_url(&value))
         .unwrap_or_default();
@@ -539,6 +561,7 @@ fn parse_game(raw: &Value) -> Option<ExophaseGame> {
         playtime_minutes,
         last_played: u64_of(raw.get("lastplayed_utc")).max(u64_of(raw.get("lastplayed"))),
         cover,
+        hero,
         url,
     })
 }
@@ -1113,6 +1136,10 @@ mod tests {
                 "title": "Grand Theft Auto III - The Definitive Edition",
                 "environment_slug": "epic",
                 "platforms": [{ "name": "Epic" }],
+                "images": {
+                    "l": "https://m.exophase.com/epic/games/l/40jee88.png",
+                    "o": "https://m.exophase.com/epic/games/o/40jee88.png"
+                },
                 "endpoint_awards": "https://www.exophase.com/game/gta-iii-epic/achievements/"
             }
         });
@@ -1123,6 +1150,8 @@ mod tests {
         assert_eq!(game.playtime_minutes, 90);
         assert_eq!(game.total_awards, 29);
         assert_eq!(game.percent, 15.0);
+        assert!(game.cover.ends_with("/games/l/40jee88.png"));
+        assert!(game.hero.ends_with("/games/o/40jee88.png"));
     }
 
     #[test]
@@ -1156,6 +1185,7 @@ mod tests {
                 playtime_minutes: 60,
                 last_played: 0,
                 cover: String::new(),
+                hero: String::new(),
                 url: String::new(),
             },
             ExophaseGame {
@@ -1170,6 +1200,7 @@ mod tests {
                 playtime_minutes: 90,
                 last_played: 0,
                 cover: String::new(),
+                hero: String::new(),
                 url: String::new(),
             },
         ];

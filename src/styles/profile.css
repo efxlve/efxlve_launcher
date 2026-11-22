@@ -26,28 +26,96 @@
   overflow: hidden;
 }
 .profile-exophase-hero-stage {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 26px 28px 24px;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 240px;
+  padding: 24px 28px;
   border-bottom: 1px solid var(--line);
   background:
     radial-gradient(120% 160% at 6% 0%, color-mix(in srgb, var(--accent) 8%, transparent) 0%, transparent 60%),
     var(--surface-1);
+  overflow: hidden;
 }
-.profile-exophase-mark {
+.profile-exophase-hero-stage.is-plain {
+  min-height: 0;
+  padding: 24px 28px 22px;
+}
+.profile-exophase-hero-backdrop {
+  position: absolute;
+  inset: -28px;
+  background-size: cover;
+  background-position: center 36%;
+  filter: blur(9px) brightness(0.6) saturate(1.2);
+  transform: scale(1.08);
+  pointer-events: none;
+}
+.profile-exophase-hero-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(6, 7, 10, 0.1) 0%,
+      rgba(6, 7, 10, 0.26) 42%,
+      rgba(8, 9, 12, 0.94) 100%
+    ),
+    linear-gradient(to right, rgba(6, 7, 10, 0.5) 0%, rgba(6, 7, 10, 0.1) 56%, transparent 100%);
+}
+.profile-exophase-source {
+  position: absolute;
+  top: 16px;
+  left: 24px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(12, 13, 17, 0.55);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.profile-exophase-hero-bottom {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+.profile-exophase-avatar {
   display: grid;
   place-items: center;
-  width: 54px;
-  height: 54px;
-  flex: 0 0 54px;
-  border-radius: 16px;
-  border: 1px solid var(--line-strong);
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, var(--text) 26%, transparent);
+  border-radius: 50%;
   background: var(--surface-2);
   color: var(--text-2);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.34);
+}
+.profile-exophase-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  display: block;
 }
 .profile-exophase-hero-copy {
   min-width: 0;
+  padding-bottom: 2px;
 }
 .profile-exophase-title-row {
   display: flex;
@@ -57,15 +125,16 @@
 }
 .profile-exophase-title {
   margin: 0;
-  font-size: 24px;
+  color: var(--text);
+  font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--text);
+  line-height: 1.05;
 }
 .profile-exophase-sub {
-  margin: 3px 0 0;
-  font-size: 12.5px;
+  margin: 4px 0 0;
   color: var(--text-3);
+  font-size: 13px;
 }
 .profile-exophase-pill {
   display: inline-flex;
@@ -88,6 +157,23 @@
   height: 6px;
   border-radius: 50%;
   background: var(--text-3);
+}
+/* Art stages are dark images in every theme: text and chrome go white. */
+.profile-exophase-hero-stage.has-art .profile-exophase-title {
+  color: #fff;
+}
+.profile-exophase-hero-stage.has-art .profile-exophase-sub {
+  color: rgba(255, 255, 255, 0.68);
+}
+.profile-exophase-hero-stage.has-art .profile-exophase-pill {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(12, 13, 17, 0.55);
+  color: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.profile-exophase-hero-stage.has-art .profile-exophase-avatar {
+  border-color: rgba(255, 255, 255, 0.42);
 }
 .profile-exophase-hero-body {
   display: flex;
@@ -156,22 +242,37 @@
 }
 
 /* Loaded Exophase mirror: identity, stats, service filter, game grid. */
-.profile-exophase-avatar {
-  overflow: hidden;
-}
-.profile-exophase-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: inherit;
-  display: block;
-}
 .profile-exophase-hero-actions {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  z-index: 3;
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
   flex-wrap: wrap;
+}
+.profile-exophase-hero-actions .icon-btn,
+.profile-exophase-hero-actions .btn {
+  min-height: 30px;
+  border: 1px solid var(--line-strong);
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  color: var(--text-2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.profile-exophase-hero-actions .icon-btn {
+  width: 30px;
+  height: 30px;
+}
+.profile-exophase-hero-actions .btn span {
+  font-size: 12px;
+}
+.profile-exophase-hero-stage.has-art .profile-exophase-hero-actions .icon-btn,
+.profile-exophase-hero-stage.has-art .profile-exophase-hero-actions .btn {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(14, 15, 19, 0.72);
+  color: #fff;
 }
 .profile-exophase-refresh.is-busy svg {
   animation: spin 0.8s linear infinite;
@@ -186,6 +287,7 @@
 }
 .profile-exophase-stats {
   border-top: 0;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 .profile-exophase-meta-block {
   display: flex;
@@ -256,7 +358,7 @@
 }
 .profile-exophase-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 14px;
 }
 .profile-exophase-card {
@@ -283,7 +385,7 @@
 }
 .profile-exophase-card-art {
   position: relative;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 16 / 9;
   width: 100%;
   display: grid;
   place-items: center;
@@ -341,84 +443,28 @@
   color: var(--text-3);
   font-size: 10.5px;
 }
-.profile-exophase-card-meta > span:last-child {
+.profile-exophase-card-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.profile-exophase-card-dot {
+  color: var(--text-3);
+  opacity: 0.6;
+}
+.profile-exophase-card-trophies {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
 }
 .profile-exophase-card-platform {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.profile-exophase-card-time {
-  color: var(--text-3);
-  font-size: 10.5px;
-}
-.profile-exophase-award-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-}
-.profile-exophase-award {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: var(--surface-1);
-  color: inherit;
-  text-align: left;
-  font-family: inherit;
-  cursor: pointer;
-  transition:
-    border-color 160ms ease,
-    background-color 160ms ease;
-}
-.profile-exophase-award:hover {
-  border-color: var(--line-strong);
-  background: var(--surface-2);
-}
-.profile-exophase-award-icon {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  flex: 0 0 40px;
-  overflow: hidden;
-  border: 1px solid var(--line-strong);
-  border-radius: 10px;
-  background: var(--surface-2);
-  color: var(--text-3);
-}
-.profile-exophase-award-icon img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.profile-exophase-award-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.profile-exophase-award-name {
-  color: var(--text);
-  font-size: 12.5px;
-  font-weight: 600;
-}
-.profile-exophase-award-game {
-  overflow: hidden;
-  color: var(--text-2);
-  font-size: 11.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.profile-exophase-award-meta {
-  color: var(--text-3);
-  font-size: 10.5px;
 }
 .profile-exophase-loading {
   display: flex;
@@ -3415,23 +3461,34 @@
     padding: 12px 16px;
   }
   .profile-exophase-hero-stage {
-    flex-wrap: wrap;
-    padding: 20px;
+    min-height: 220px;
+    padding: 18px 20px;
+  }
+  .profile-exophase-hero-bottom {
+    gap: 12px;
+  }
+  .profile-exophase-avatar {
+    width: 60px;
+    height: 60px;
+    flex-basis: 60px;
+  }
+  .profile-exophase-title {
+    font-size: 24px;
+  }
+  .profile-exophase-hero-actions {
+    top: 12px;
+    right: 12px;
   }
   .profile-exophase-hero-body {
     flex-direction: column;
     align-items: flex-start;
     padding: 18px 20px 20px;
   }
-  .profile-exophase-hero-actions {
-    width: 100%;
-    margin-left: 0;
-  }
   .profile-exophase-points {
     grid-template-columns: 1fr;
   }
-  .profile-exophase-award-grid {
-    grid-template-columns: 1fr;
+  .profile-exophase-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   }
   .profile-exophase-note {
     flex-direction: column;
