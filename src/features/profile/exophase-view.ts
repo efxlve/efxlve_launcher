@@ -8,8 +8,11 @@
  */
 
 import { emptyState, epicPlatinumIcon, icon, type IconName } from "../../core/icons";
+import { rawOf } from "../../core/selectors";
 import { S } from "../../core/state";
+import { cachedSteamCover, steamCdnPortrait } from "../../core/steam-art-cache";
 import { esc, fmtDecimal1, fmtPlaytime } from "../../core/utils";
+import { epicPortrait } from "../../epic-model";
 import { currentLanguage, t } from "../../i18n";
 import { storeLogo } from "../store/store-logos";
 import { EXOPHASE_SITE, type ExophaseAward, type ExophaseData, type ExophaseGame, type ExophaseSummary } from "../../exophase";
@@ -66,21 +69,117 @@ function profileUrlFor(username: string): string {
 }
 
 function platformLogo(slug: string): string {
-  const norm = slug.toLowerCase();
-  if (norm === "origin" || norm === "ea") return storeLogo("ea", 13, "profile-store-chip-logo");
-  if (norm === "steam") return storeLogo("steam", 13, "profile-store-chip-logo");
-  if (norm === "epic") return storeLogo("epic", 13, "profile-store-chip-logo");
-  if (norm === "xbox") return storeLogo("xbox", 13, "profile-store-chip-logo");
-  if (norm === "gog") return storeLogo("gog", 13, "profile-store-chip-logo");
-  if (norm === "uplay" || norm === "ubisoft") return storeLogo("ubisoft", 13, "profile-store-chip-logo");
-  if (norm === "battlenet" || norm === "blizzard") return storeLogo("battlenet", 13, "profile-store-chip-logo");
-  if (norm === "psn" || norm === "playstation") return icon("globe", 13, "profile-store-chip-logo");
-  if (norm === "nintendo" || norm === "switch") return icon("gamepad-2", 13, "profile-store-chip-logo");
-  return icon("globe", 13, "profile-store-chip-logo");
+  const norm = (slug || "").toLowerCase().trim();
+  if (norm === "origin" || norm === "ea" || norm === "electronicarts" || norm === "electronic-arts") return storeLogo("ea", 14, "profile-store-chip-logo");
+  if (norm === "steam") return storeLogo("steam", 14, "profile-store-chip-logo");
+  if (norm === "epic") return storeLogo("epic", 14, "profile-store-chip-logo");
+  if (norm === "xbox" || norm === "xboxnetwork" || norm === "xboxlive") return storeLogo("xbox", 14, "profile-store-chip-logo");
+  if (norm === "gog") return storeLogo("gog", 14, "profile-store-chip-logo");
+  if (norm === "uplay" || norm === "ubisoft") return storeLogo("ubisoft", 14, "profile-store-chip-logo");
+  if (norm === "battlenet" || norm === "blizzard") return storeLogo("battlenet", 14, "profile-store-chip-logo");
+  if (norm === "psn" || norm === "playstation") return icon("globe", 14, "profile-store-chip-logo");
+  if (norm === "nintendo" || norm === "switch") return icon("gamepad-2", 14, "profile-store-chip-logo");
+  return icon("globe", 14, "profile-store-chip-logo");
 }
 
-function platformChip(slug: string, label: string): string {
-  return `<span class="profile-store-chip">${platformLogo(slug)}<span>${esc(label)}</span></span>`;
+function heroServiceLabel(slug: string, rawLabel: string): string {
+  const norm = (slug || "").toLowerCase().trim();
+  if (norm === "origin" || norm === "ea") return "EA";
+  if (norm === "steam") return "Steam";
+  if (norm === "epic") return "Epic Games";
+  if (norm === "psn" || norm === "playstation") return "PlayStation";
+  if (norm === "xbox") return "Xbox";
+  if (norm === "gog") return "GOG";
+  if (norm === "ubisoft" || norm === "uplay") return "Ubisoft";
+  if (norm === "battlenet" || norm === "blizzard") return "Battle.net";
+  if (norm === "nintendo" || norm === "switch") return "Nintendo";
+  return rawLabel || slug;
+}
+
+function exophaseStoreChip(slug: string): string {
+  const norm = (slug || "").toLowerCase().trim();
+  let storeId = norm;
+  let code = norm.slice(0, 5).toUpperCase();
+  if (norm === "steam") {
+    storeId = "steam";
+    code = "STEAM";
+  } else if (norm === "epic") {
+    storeId = "epic";
+    code = "EPIC";
+  } else if (norm === "origin" || norm === "ea" || norm === "electronicarts" || norm === "electronic-arts") {
+    storeId = "ea";
+    code = "EA";
+  } else if (norm === "xbox" || norm === "xboxnetwork" || norm === "xboxlive") {
+    storeId = "xbox";
+    code = "XBOX";
+  } else if (norm === "gog") {
+    storeId = "gog";
+    code = "GOG";
+  } else if (norm === "ubisoft" || norm === "uplay") {
+    storeId = "ubisoft";
+    code = "UBI";
+  } else if (norm === "battlenet" || norm === "blizzard") {
+    storeId = "battlenet";
+    code = "BNET";
+  } else if (norm === "psn" || norm === "playstation") {
+    return `<span class="profile-store-chip">${icon("globe", 12)}<span>PSN</span></span>`;
+  } else if (norm === "nintendo" || norm === "switch") {
+    return `<span class="profile-store-chip">${icon("gamepad-2", 12)}<span>SWTCH</span></span>`;
+  }
+  return `<span class="profile-store-chip">${storeLogo(storeId, 12)}<span>${code}</span></span>`;
+}
+
+interface LocalCoverInfo {
+  cover: string;
+  isSteam: boolean;
+  appId?: string;
+}
+
+function coverForApp(appName: string, fallback = ""): string {
+  const custom = S.customCovers[appName];
+  if (custom) return custom;
+  if (appName.startsWith("steam::")) {
+    const appId = appName.slice(7);
+    if (/^\d+$/.test(appId)) {
+      const cached = cachedSteamCover(appId);
+      return cached || steamCdnPortrait(appId);
+    }
+  }
+  const s = S.epicSummariesMap.get(appName);
+  const raw = rawOf(appName);
+  const gogItem = S.gogSummariesMap.get(appName) || S.allGamesMap.get(appName);
+  return (raw ? epicPortrait(raw) : null) || s?.cover || gogItem?.coverUrl || fallback;
+}
+
+function findLocalGameKey(title: string): string | null {
+  if (!title) return null;
+  const cleanTitle = title.trim().toLowerCase();
+  for (const [key, item] of S.allGamesMap.entries()) {
+    if (item.title && item.title.trim().toLowerCase() === cleanTitle) {
+      return key;
+    }
+  }
+  const normTitle = cleanTitle.replace(/[\u2122\u00ae\u00a9]/g, "").replace(/\s+/g, " ");
+  for (const [key, item] of S.allGamesMap.entries()) {
+    if (item.title) {
+      const norm = item.title.toLowerCase().replace(/[\u2122\u00ae\u00a9]/g, "").replace(/\s+/g, " ");
+      if (norm === normTitle) return key;
+    }
+  }
+  return null;
+}
+
+function findLocalPortraitCover(game: ExophaseGame): LocalCoverInfo {
+  const localKey = findLocalGameKey(game.title);
+  if (localKey) {
+    const isSteam = localKey.startsWith("steam::");
+    const appId = isSteam ? localKey.slice(7) : undefined;
+    const cov = coverForApp(localKey);
+    if (cov) {
+      return { cover: cov, isSteam, appId };
+    }
+  }
+  return { cover: game.cover || game.hero || "", isSteam: false };
 }
 
 function stat(glyph: string, label: string, value: string, sub = "", platinum = false): string {
@@ -175,9 +274,9 @@ function profileHero(
           .filter((s) => s.games > 0)
           .map(
             (s) => `
-            <button type="button" class="profile-hero-store-chip${selectedService === s.slug ? " selected" : ""}" data-act="exophase-service" data-val="${esc(s.slug)}" title="${esc(s.label)}">
+            <button type="button" class="profile-hero-store-chip${selectedService === s.slug ? " selected" : ""}" data-act="exophase-service" data-val="${esc(s.slug)}" title="${esc(heroServiceLabel(s.slug, s.label))}">
               ${platformLogo(s.slug)}
-              <span class="profile-hero-chip-name">${esc(s.label)}</span>
+              <span class="profile-hero-chip-name">${esc(heroServiceLabel(s.slug, s.label))}</span>
               <span class="profile-hero-chip-count tabular-nums">${fmtCount(s.games)}</span>
             </button>`,
           )
@@ -242,12 +341,17 @@ function gameCard(game: ExophaseGame): string {
     ? ` data-act="open-external-url" data-url="${esc(game.url)}"`
     : "";
 
+  const { cover, isSteam, appId } = findLocalPortraitCover(game);
+  const steamAttrs = isSteam && appId && /^\d+$/.test(appId)
+    ? ` data-steam-app="${appId}" data-art-step="${cachedSteamCover(appId) ? "resolved" : "0"}"`
+    : "";
+
   return `
-    <div class="profile-exophase-card${isComplete ? " is-plat" : ""}" role="button" tabindex="0"${action} title="${esc(tip)}">
-      <div class="profile-exophase-card-art">
-        ${game.cover
-          ? `<img src="${esc(game.cover)}" alt="" loading="lazy" decoding="async" />`
-          : `<span class="profile-exophase-card-ph">${icon("gamepad-2", 24)}</span>`
+    <div class="profile-ach-card profile-exophase-card${isComplete ? " is-plat" : ""}" role="button" tabindex="0"${action} title="${esc(tip)}">
+      <div class="profile-ach-art">
+        ${cover
+          ? `<img${steamAttrs} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />`
+          : `<span class="profile-ach-ph">${icon("gamepad-2", 24)}</span>`
         }
         ${isComplete
           ? `<span class="profile-ach-badge plat" title="${t("profile.filterPlatinum")}">${epicPlatinumIcon(13)}<span>100%</span></span>`
@@ -255,22 +359,19 @@ function gameCard(game: ExophaseGame): string {
             ? `<span class="profile-ach-badge pct tabular-nums">${percent}%</span>`
             : ""
         }
-        <span class="profile-ach-badge store">${platformChip(game.platformSlug, game.platform)}</span>
+        <span class="profile-ach-badge store">${exophaseStoreChip(game.platformSlug)}</span>
       </div>
       ${total > 0
         ? `<div class="profile-ach-bar${isComplete ? " is-plat-bar" : ""}"><span style="width:${Math.min(100, Math.max(0, percent))}%"></span></div>`
         : `<div class="profile-ach-bar is-empty"></div>`
       }
-      <div class="profile-exophase-card-body">
-        <div class="profile-exophase-card-title-line">
-          <span class="profile-exophase-card-title">${esc(game.title)}</span>
+      <div class="profile-ach-info">
+        <div class="profile-ach-title-line">
+          <span class="profile-ach-title">${esc(game.title)}</span>
         </div>
-        <div class="profile-exophase-card-meta tabular-nums">
-          <span class="profile-exophase-card-sub">
-            <span class="profile-exophase-card-platform">${esc(game.platform)}</span>
-            ${playtime ? `<span class="profile-exophase-card-dot" aria-hidden="true">·</span><span>${esc(playtime)}</span>` : ""}
-          </span>
-          <span class="profile-exophase-card-trophies">${icon("trophy", 11)}<span>${esc(count)}</span></span>
+        <div class="profile-ach-meta-row tabular-nums">
+          <span class="profile-ach-count">${icon("trophy", 11)}<span>${esc(count)}</span></span>
+          ${playtime ? `<span class="profile-ach-sub-right">${esc(playtime)}</span>` : ""}
         </div>
       </div>
     </div>`;
@@ -308,12 +409,12 @@ export function getExophaseGamesGridHtml(data: ExophaseData, selected: string): 
     ? `<div class="row profile-more"><button type="button" class="btn ghost small" data-act="exophase-show-more">${t("profile.showMore")} (${fmtCount(sorted.length - shown.length)})</button></div>`
     : "";
   const body = shown.length > 0
-    ? `<div class="profile-exophase-grid">${shown.map(gameCard).join("")}</div>`
+    ? `<div class="profile-ach-list profile-exophase-grid">${shown.map(gameCard).join("")}${more}</div>`
     : emptyState("gamepad-2", t("profile.exophaseEmptyFilter"));
 
   return {
     count: fmtCount(sorted.length),
-    html: `${body}${more}`,
+    html: body,
   };
 }
 

@@ -38,6 +38,9 @@ const EXTRA_LOGOS: Record<string, string> = { ea, ubisoft, xbox, battlenet, riot
 // Amazon uses the same gaming mark for Amazon Games and Luna, so one asset
 // identifies both rows.
 EXTRA_LOGOS.amazon = luna;
+EXTRA_LOGOS.origin = ea;
+EXTRA_LOGOS.uplay = ubisoft;
+EXTRA_LOGOS.blizzard = battlenet;
 
 /** Asset URL of a store/launcher mark, or null when the id has none. */
 export function storeLogoUrl(id: string): string | null {
