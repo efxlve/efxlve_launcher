@@ -2,7 +2,7 @@ import { captureProfileScreenshot, openProfileScreenshotsFolder } from "../../ep
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
 import { cachedSteamCover, rememberSteamCover, rememberSteamHero } from "../../core/steam-art-cache";
-import { steamLibraryArt } from "../../steam";
+import { steamLibraryArt, type SteamLibraryArt } from "../../steam";
 import {
   ssProfileClipboardOn,
   ssProfileCustomDir,
@@ -11,6 +11,9 @@ import {
 } from "../screenshots/ss-settings";
 
 let isBusy = false;
+
+/** How long one cover may take before the capture gives up on it. */
+const IMAGE_WAIT_MS = 15000;
 
 async function loadAllProfileImages(container: HTMLElement): Promise<void> {
   // 1. Pre-resolve any uncached Steam art in batch so off-screen cards have valid cover URLs
@@ -25,19 +28,32 @@ async function loadAllProfileImages(container: HTMLElement): Promise<void> {
   if (uncachedSteamIds.length > 0) {
     try {
       const uniqueIds = [...new Set(uncachedSteamIds)];
-      const artMap = await steamLibraryArt(uniqueIds);
-      for (const [appId, art] of Object.entries(artMap)) {
-        const cover = art?.cover || art?.hero || "";
-        rememberSteamCover(appId, cover);
-        if (art?.hero) rememberSteamHero(appId, art.hero);
-        if (cover) {
-          container.querySelectorAll<HTMLImageElement>(`img[data-steam-app="${appId}"]`).forEach((img) => {
-            img.dataset.artStep = "resolved";
-            img.removeAttribute("data-art-pending");
-            if (img.getAttribute("src") !== cover) {
-              img.src = cover;
-            }
-          });
+      // steam_library_art answers at most 40 ids per call. A full profile page
+      // can easily ask for more, so send one batch per 40 instead of letting
+      // the backend's take(40) silently drop the rest.
+      const batches: string[][] = [];
+      for (let i = 0; i < uniqueIds.length; i += 40) {
+        batches.push(uniqueIds.slice(i, i + 40));
+      }
+      const artMaps = await Promise.all(
+        batches.map((batch) =>
+          steamLibraryArt(batch).catch((): Record<string, SteamLibraryArt> => ({}))
+        ),
+      );
+      for (const artMap of artMaps) {
+        for (const [appId, art] of Object.entries(artMap)) {
+          const cover = art?.cover || art?.hero || "";
+          rememberSteamCover(appId, cover);
+          if (art?.hero) rememberSteamHero(appId, art.hero);
+          if (cover) {
+            container.querySelectorAll<HTMLImageElement>(`img[data-steam-app="${appId}"]`).forEach((img) => {
+              img.dataset.artStep = "resolved";
+              img.removeAttribute("data-art-pending");
+              if (img.getAttribute("src") !== cover) {
+                img.src = cover;
+              }
+            });
+          }
         }
       }
     } catch {
@@ -49,16 +65,13 @@ async function loadAllProfileImages(container: HTMLElement): Promise<void> {
   const allImages = Array.from(container.querySelectorAll<HTMLImageElement>("img"));
   if (allImages.length === 0) return;
 
-  // 3. For every image that is not yet fully loaded and decoded:
-  // Using an in-memory eager Image() instance forces Chromium to download the resource
-  // immediately, bypassing native lazy-load viewport heuristics.
+  // 3. Every picture is pulled through an in-memory Image() so Chromium's lazy
+  //    heuristics cannot skip the cards far below the viewport. The capture
+  //    waits for all of them: a fixed short race timed out on a slow connection
+  //    and left every offscreen cover blank. A single dead URL still releases
+  //    its slot after a ceiling instead of holding the whole page.
   const pending = allImages.map((img) => {
     return new Promise<void>((resolve) => {
-      if (img.complete && img.naturalWidth > 0) {
-        resolve();
-        return;
-      }
-
       const src = img.getAttribute("src") || img.src;
       if (!src) {
         resolve();
@@ -68,29 +81,40 @@ async function loadAllProfileImages(container: HTMLElement): Promise<void> {
       img.removeAttribute("loading");
       img.loading = "eager";
 
-      const loader = new Image();
+      if (img.complete && img.naturalWidth > 0) {
+        resolve();
+        return;
+      }
+
       let settled = false;
+      let timer = 0;
       const done = () => {
         if (settled) return;
         settled = true;
-        // Trigger DOM image update from cached resource
-        img.src = src;
-        img.decode().catch(() => {}).then(() => resolve());
+        window.clearTimeout(timer);
+        // Re-assign the source instead of writing the same value again: a
+        // deferred lazy image ignores an identical src, so the downloaded
+        // bytes in the cache would never reach the element. Removing the
+        // attribute first forces the element to resolve the source again, and
+        // the cached response arrives without a second network request.
+        img.removeAttribute("src");
+        img.setAttribute("src", src);
+        const decodeTimer = window.setTimeout(resolve, 1500);
+        img.decode().catch(() => {}).then(() => {
+          window.clearTimeout(decodeTimer);
+          resolve();
+        });
       };
 
+      const loader = new Image();
       loader.onload = done;
       loader.onerror = done;
+      timer = window.setTimeout(done, IMAGE_WAIT_MS);
       loader.src = src;
-
-      img.addEventListener("load", done, { once: true });
-      img.addEventListener("error", done, { once: true });
     });
   });
 
-  await Promise.race([
-    Promise.all(pending),
-    new Promise((resolve) => setTimeout(resolve, 4000)),
-  ]);
+  await Promise.all(pending);
 }
 
 export async function takeProfileScreenshot(): Promise<void> {
@@ -128,6 +152,9 @@ export async function takeProfileScreenshot(): Promise<void> {
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
     );
+    // The frames schedule the paint; give the compositor a moment to upload the
+    // offscreen tiles that were just filled with covers.
+    await new Promise<void>((resolve) => setTimeout(resolve, 150));
 
     const rect = profileEl.getBoundingClientRect();
     const clip = {
