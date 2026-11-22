@@ -287,7 +287,6 @@ function profileHero(
     <div class="profile-exophase-hero-stage${hero ? " has-art" : " is-plain"}">
       ${art}
       <div class="profile-hero-top-bar">
-        <span class="profile-exophase-source">${icon("globe", 12)}<span>Exophase</span></span>
         <div class="profile-hero-actions">
           <button type="button" class="btn small profile-hero-tool profile-exophase-refresh${loading ? " is-busy" : ""}" data-act="exophase-refresh" title="${esc(t("profile.exophaseRefresh"))}" aria-label="${esc(t("profile.exophaseRefresh"))}">${icon("refresh", 13)}<span>${esc(t("profile.retry"))}</span></button>
           <button type="button" class="btn small profile-hero-tool" data-act="open-external-url" data-url="${esc(profileUrl)}">${icon("external", 12)}<span>Exophase</span></button>
