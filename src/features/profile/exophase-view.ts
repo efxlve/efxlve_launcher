@@ -193,9 +193,9 @@ function stat(glyph: string, label: string, value: string, sub = "", platinum = 
 }
 
 function note(): string {
-  return `<footer class="profile-exophase-note">
+  return `<div class="profile-exophase-note">
     <p>${esc(t("profile.exophaseDisclaimer"))}</p>
-  </footer>`;
+  </div>`;
 }
 
 function point(name: IconName, label: string): string {
@@ -532,9 +532,9 @@ function loadedView(data: ExophaseData): string {
   return `
     ${profileHero(summary.displayName || summary.username, summary.username, summary.avatar, heroArt, stats, S.exophaseLoading, summary.profileUrl, true, summary, selected)}
     ${metaLine(summary)}
+    ${note()}
     ${awardsSection(data)}
-    ${gamesSection(data, selected)}
-    ${note()}`;
+    ${gamesSection(data, selected)}`;
 }
 
 function loadingView(): string {
