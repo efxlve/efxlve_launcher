@@ -212,8 +212,8 @@ function guideGrid(): string {
     "RetroAchievements",
   ];
 
-  const chips = platforms
-    .map((name) => `<span class="profile-exophase-platform-chip"><span>${name}</span></span>`)
+  const items = platforms
+    .map((name) => `<li>${icon("check-circle", 12)}<span>${name}</span></li>`)
     .join("");
 
   return `<div class="profile-exophase-guide-grid">
@@ -223,7 +223,7 @@ function guideGrid(): string {
         <h3 class="profile-exophase-guide-title">${esc(t("profile.exophaseGuidePlatformsTitle"))}</h3>
       </div>
       <p class="profile-exophase-guide-desc">${esc(t("profile.exophaseGuidePlatformsDesc"))}</p>
-      <div class="profile-exophase-platform-badges">${chips}</div>
+      <ul class="profile-exophase-guide-list is-inline">${items}</ul>
     </div>
     <div class="profile-exophase-guide-card">
       <div class="profile-exophase-guide-card-header">
