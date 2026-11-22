@@ -139,6 +139,14 @@ function scheduleRender(): void {
 
 /** Render the active view and refresh the surrounding chrome. */
 function render(): void {
+  // A full-page screenshot reads the page geometry and its images across
+  // several frames. Replacing the page mid-capture leaves detached nodes and a
+  // zero width, so park the repaint and flush it when the capture unlocks.
+  if (S.profileScreenshotActive) {
+    S.profileScreenshotDeferred = true;
+    return;
+  }
+
   // TV Mode is a full-screen shell state; a single place toggles its body class.
     // The Spotify page is an embedded web player: it owns the whole content area.
   document.body.classList.toggle("spotify-page", S.view === "music");

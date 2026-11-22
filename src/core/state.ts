@@ -618,6 +618,9 @@ export const S = {
   profileActivityRange: ("7d") as "7d" | "30d",
   profileSearchQuery: "",
   profileViewMode: (localStorage.getItem(PROFILE_VIEW_MODE_KEY) === "list" ? "list" : "grid") as "grid" | "list",
+  /** A full-page screenshot is reading the profile; park repaints. */
+  profileScreenshotActive: false,
+  profileScreenshotDeferred: false,
   offlineMode: false,
   networkProfile: ("balanced") as string,
   /** Epic download cap in Mbit/s; 0 = unlimited. */

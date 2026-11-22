@@ -1,6 +1,8 @@
 import { captureProfileScreenshot, openProfileScreenshotsFolder } from "../../epic-commands";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
+import { S } from "../../core/state";
+import { scheduleRender } from "../../core/render";
 import { cachedSteamCover, rememberSteamCover, rememberSteamHero } from "../../core/steam-art-cache";
 import { steamLibraryArt, type SteamLibraryArt } from "../../steam";
 import {
@@ -195,6 +197,11 @@ export async function takeProfileScreenshot(): Promise<void> {
   const view = document.getElementById("view");
   const savedScrollTop = view ? view.scrollTop : 0;
 
+  // Hold the page still for the whole capture: a repaint would detach the
+  // element mid-measurement and leave the clip with a zero width.
+  S.profileScreenshotActive = true;
+  S.profileScreenshotDeferred = false;
+
   try {
     // 1. Resolve the Steam art first, then walk the page through the viewport.
     //    The capture class below changes the geometry, so the normal layout is
@@ -208,7 +215,11 @@ export async function takeProfileScreenshot(): Promise<void> {
     //    wraps to a second row in the screenshot only.
     if (view) view.scrollTop = 0;
     window.scrollTo(0, 0);
-    const renderWidth = Math.ceil(profileEl.getBoundingClientRect().width);
+    // A detached page measures 0; fall back to the view width so the capture
+    // can never collapse into a one-column strip.
+    const measured = profileEl.getBoundingClientRect().width;
+    const fallback = Math.max(320, (view?.clientWidth || window.innerWidth) - 56);
+    const renderWidth = Math.ceil(measured > 200 ? measured : fallback);
     document.body.style.setProperty(
       "--capture-page-width",
       `${renderWidth + CAPTURE_PAGE_PADDING_X}px`,
@@ -292,6 +303,12 @@ export async function takeProfileScreenshot(): Promise<void> {
       btn.classList.remove("is-busy");
       btn.removeAttribute("aria-busy");
     }
+    // Repaints asked for during the capture are replayed now that the page is
+    // back to its normal geometry.
+    const deferred = S.profileScreenshotDeferred;
+    S.profileScreenshotActive = false;
+    S.profileScreenshotDeferred = false;
+    if (deferred) scheduleRender();
     isBusy = false;
   }
 }
