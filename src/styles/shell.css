@@ -6,14 +6,15 @@
 #body { flex: 1; min-height: 0; display: flex; }
 
 /* --- Window bar --- */
-/* Dragging comes from `data-tauri-drag-region`, which Tauri handles in JS.
-   The native `-webkit-app-region: drag` mask is deliberately not used: after a
-   full-screen modal covers the bar, WebView2 can keep that mask stale and
-   swallow every click in the top strip until the webview reloads. */
+/* Dragging is a manual mousedown handler (core/winbar-drag.ts), not Tauri's
+   `data-tauri-drag-region`: on Windows the drag region becomes a native caption
+   click, and after a modal or an HMR reload that state can swallow every click
+   in the top strip. */
 #winbar {
   height: var(--winbar-h); flex-shrink: 0; display: flex; align-items: center; gap: 2px;
   padding-left: 14px; background: var(--bg); position: relative; z-index: 20;
   border-bottom: 1px solid var(--line);
+  user-select: none;
 }
 .winbar-icon {
   width: 16px;

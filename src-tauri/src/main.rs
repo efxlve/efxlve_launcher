@@ -662,6 +662,17 @@ fn app_minimize(app: AppHandle) -> Result<(), String> {
     window.minimize().map_err(|e| e.to_string())
 }
 
+/// Starts the native window drag from the HTML window bar. The bar does not
+/// use `data-tauri-drag-region`; on Windows that becomes a caption click whose
+/// state can outlive a modal or an HMR reload and swallow the top strip.
+#[tauri::command]
+fn app_start_drag(app: AppHandle) -> Result<(), String> {
+    let window = app
+        .get_window("main")
+        .ok_or_else(|| "@t:win.mainWindowNotFound".to_string())?;
+    window.start_dragging().map_err(|e| e.to_string())
+}
+
 /// HKCU Run entry that opens the launcher at sign-in.
 const AUTOSTART_KEY: &str = r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run";
 const AUTOSTART_VALUE: &str = "EfxlveLauncher";
@@ -2289,6 +2300,7 @@ fn main() {
             image_cache::image_cache_size,
             image_cache::clear_image_cache,
             app_minimize,
+            app_start_drag,
             app_get_autostart,
             perf::perf_mark,
             app_set_autostart,

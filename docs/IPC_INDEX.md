@@ -35,6 +35,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `app_set_taskbar_badge` | `appSetTaskbarBadge({ ... })` | `src-tauri/src/taskbar_badge.rs` |
 | `app_set_taskbar_badge` | `appSetTaskbarBadge({ ... })` | `src-tauri/src/taskbar_badge.rs` |
 | `app_set_tray_labels` | `appSetTrayLabels({ ... })` | `src-tauri/src/main.rs` |
+| `app_start_drag` | `appStartDrag({ ... })` | `src-tauri/src/main.rs` |
 | `app_toggle_maximize` | `appToggleMaximize({ ... })` | `src-tauri/src/main.rs` |
 | `archive_cancel` | `archiveCancel({ ... })` | `src-tauri/src/media_archive/commands.rs` |
 | `archive_default_target` | `archiveDefaultTarget({ ... })` | `src-tauri/src/media_archive/commands.rs` |

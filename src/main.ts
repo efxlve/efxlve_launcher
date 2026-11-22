@@ -10,6 +10,7 @@
 import "./styles/index.css";
 import { invoke } from "@tauri-apps/api/core";
 import { initSidebarLayout } from "./core/sidebar-layout";
+import { initWinbarDrag } from "./core/winbar-drag";
 import { applySidebarPageVisibility, discordPageVisible, overlayEnabled } from "./core/page-visibility";
 import { perfMark } from "./core/perf";
 import { applyCustomCss } from "./core/custom-css";
@@ -99,6 +100,7 @@ perfMark("main:module");
 // when the user opens that page.
 void invoke("hide_store_view").catch(() => undefined);
 initSidebarLayout();
+initWinbarDrag();
 initMiniPlayer();
 applySidebarPageVisibility();
 // Windows reports a lost/restored connection; the chip follows it so the
