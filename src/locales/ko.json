@@ -2089,6 +2089,8 @@
   "profile.exophaseConnectTitle": "Exophase 프로필 연결",
   "profile.exophaseConnectDesc": "Exophase 사용자 이름을 연결하면 PlayStation, Xbox, Switch, GOG 업적을 여기에서 볼 수 있습니다.",
   "profile.exophaseConnectCta": "설정 열기",
+  "profile.exophaseDisclaimer": "Exophase는 타사 서비스입니다. Efxlve Launcher는 Exophase와 제휴하지 않으며 Exophase의 승인을 받지 않았습니다.",
+  "profile.exophasePointProgress": "트로피 및 플레이 시간",
   "profile.showcaseTitle": "100% 완료",
   "profile.showcaseSubtitle": "모든 업적을 열고 끝낸 게임",
   "profile.showcaseEmpty": "아직 100% 완료가 없습니다",

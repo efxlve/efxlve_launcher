@@ -2089,6 +2089,8 @@
   "profile.exophaseConnectTitle": "เชื่อมต่อโปรไฟล์ Exophase",
   "profile.exophaseConnectDesc": "เชื่อมต่อชื่อผู้ใช้ Exophase เพื่อดูความสำเร็จจาก PlayStation, Xbox, Switch และ GOG ที่นี่",
   "profile.exophaseConnectCta": "เปิดการตั้งค่า",
+  "profile.exophaseDisclaimer": "Exophase เป็นบริการของบุคคลที่สาม Efxlve Launcher ไม่ได้มีความเกี่ยวข้องหรือได้รับการรับรองจาก Exophase",
+  "profile.exophasePointProgress": "ถ้วยรางวัลและเวลาเล่น",
   "profile.showcaseTitle": "จบ 100%",
   "profile.showcaseSubtitle": "ปลดล็อกความสำเร็จครบแล้วจบเกม",
   "profile.showcaseEmpty": "ยังไม่มีการจบ 100%",

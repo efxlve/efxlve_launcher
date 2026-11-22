@@ -2089,6 +2089,8 @@
   "profile.exophaseConnectTitle": "Exophase-Profil verbinden",
   "profile.exophaseConnectDesc": "Verbinde deinen Exophase-Nutzernamen, um PlayStation-, Xbox-, Switch- und GOG-Erfolge hier zu sehen.",
   "profile.exophaseConnectCta": "Einstellungen öffnen",
+  "profile.exophaseDisclaimer": "Exophase ist ein Drittanbieter-Dienst. Efxlve Launcher ist weder mit Exophase verbunden noch von Exophase unterstützt.",
+  "profile.exophasePointProgress": "Trophäen & Spielzeit",
   "profile.showcaseTitle": "100-%-Abschlüsse",
   "profile.showcaseSubtitle": "Spiele, die mit allen Errungenschaften abgeschlossen wurden",
   "profile.showcaseEmpty": "Noch keine 100-%-Abschlüsse",

@@ -1030,6 +1030,9 @@ html.sb-narrow .sb-toggle-label {
   flex: 0 0 auto;
   margin: 0 2px 0 12px;
 }
+.profile-tabs .tab {
+  gap: 7px;
+}
 .profile-tabs .tab > svg {
   width: 16px;
   height: 16px;

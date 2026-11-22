@@ -2089,6 +2089,8 @@
   "profile.exophaseConnectTitle": "连接你的 Exophase 个人资料",
   "profile.exophaseConnectDesc": "连接你的 Exophase 用户名，即可在此查看 PlayStation、Xbox、Switch 和 GOG 的成就。",
   "profile.exophaseConnectCta": "打开设置",
+  "profile.exophaseDisclaimer": "Exophase 是第三方服务。Efxlve Launcher 与 Exophase 无关联，也未获得 Exophase 的认可。",
+  "profile.exophasePointProgress": "奖杯与游戏时间",
   "profile.showcaseTitle": "100% 完成",
   "profile.showcaseSubtitle": "解锁全部成就并完成的游戏",
   "profile.showcaseEmpty": "还没有 100% 完成",

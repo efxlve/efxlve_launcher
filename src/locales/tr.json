@@ -1468,6 +1468,8 @@
   "profile.exophaseConnectTitle": "Exophase profilinizi bağlayın",
   "profile.exophaseConnectDesc": "Exophase kullanıcı adınızı bağlayın; PlayStation, Xbox, Switch ve GOG başarımlarını burada görün.",
   "profile.exophaseConnectCta": "Ayarları aç",
+  "profile.exophaseDisclaimer": "Exophase üçüncü taraf bir hizmettir. Efxlve Launcher, Exophase ile bağlantılı değildir ve Exophase tarafından onaylanmaz.",
+  "profile.exophasePointProgress": "Kupa ve oynama süresi",
   "profile.showcaseTitle": "Kusursuz Tamamlananlar (%100)",
   "profile.showcaseSubtitle": "Tüm başarımları açılarak tamamlanan oyunlar",
   "profile.showcaseEmpty": "Henüz %100 tamamlanan oyun yok",

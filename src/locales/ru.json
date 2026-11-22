@@ -2089,6 +2089,8 @@
   "profile.exophaseConnectTitle": "Подключите профиль Exophase",
   "profile.exophaseConnectDesc": "Подключите имя пользователя Exophase, чтобы видеть здесь достижения PlayStation, Xbox, Switch и GOG.",
   "profile.exophaseConnectCta": "Открыть настройки",
+  "profile.exophaseDisclaimer": "Exophase — сторонний сервис. Efxlve Launcher не связан с Exophase и не одобрен ею.",
+  "profile.exophasePointProgress": "Трофеи и время игры",
   "profile.showcaseTitle": "Прохождения на 100%",
   "profile.showcaseSubtitle": "Игры, пройденные со всеми достижениями",
   "profile.showcaseEmpty": "Пока нет прохождений на 100%",

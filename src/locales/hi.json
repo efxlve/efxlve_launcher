@@ -1468,6 +1468,8 @@
   "profile.exophaseConnectTitle": "अपना Exophase प्रोफ़ाइल जोड़ें",
   "profile.exophaseConnectDesc": "PlayStation, Xbox, Switch और GOG की उपलब्धियाँ यहाँ देखने के लिए अपना Exophase उपयोगकर्ता नाम जोड़ें।",
   "profile.exophaseConnectCta": "सेटिंग्स खोलें",
+  "profile.exophaseDisclaimer": "Exophase एक तृतीय-पक्ष सेवा है। Efxlve Launcher का Exophase से कोई संबंध नहीं है और यह Exophase द्वारा समर्थित नहीं है।",
+  "profile.exophasePointProgress": "ट्रॉफ़ियाँ और खेलने का समय",
   "profile.showcaseTitle": "100% पूर्णताएं",
   "profile.showcaseSubtitle": "सभी उपलब्धियां अनलॉक करके समाप्त किए गए गेम",
   "profile.showcaseEmpty": "अभी कोई 100% पूर्णता नहीं है",

@@ -2089,6 +2089,8 @@
   "profile.exophaseConnectTitle": "Exophase プロフィールを連携",
   "profile.exophaseConnectDesc": "Exophase のユーザー名を連携すると、PlayStation、Xbox、Switch、GOG の実績をここに表示できます。",
   "profile.exophaseConnectCta": "設定を開く",
+  "profile.exophaseDisclaimer": "Exophase はサードパーティのサービスです。Efxlve Launcher は Exophase と提携しておらず、Exophase による承認も受けていません。",
+  "profile.exophasePointProgress": "トロフィーとプレイ時間",
   "profile.showcaseTitle": "100% クリア",
   "profile.showcaseSubtitle": "すべての実績を解除して終えたゲーム",
   "profile.showcaseEmpty": "まだ 100% クリアはありません",

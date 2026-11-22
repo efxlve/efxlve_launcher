@@ -2089,6 +2089,8 @@
   "profile.exophaseConnectTitle": "Collega il tuo profilo Exophase",
   "profile.exophaseConnectDesc": "Collega il tuo nome utente Exophase per vedere qui gli obiettivi PlayStation, Xbox, Switch e GOG.",
   "profile.exophaseConnectCta": "Apri impostazioni",
+  "profile.exophaseDisclaimer": "Exophase è un servizio di terze parti. Efxlve Launcher non è affiliato né approvato da Exophase.",
+  "profile.exophasePointProgress": "Trofei e tempo di gioco",
   "profile.showcaseTitle": "Completamenti al 100%",
   "profile.showcaseSubtitle": "Giochi finiti con tutti gli obiettivi sbloccati",
   "profile.showcaseEmpty": "Nessun completamento al 100% per ora",

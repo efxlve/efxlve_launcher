@@ -2089,6 +2089,8 @@
   "profile.exophaseConnectTitle": "اربط ملفك الشخصي على Exophase",
   "profile.exophaseConnectDesc": "اربط اسم مستخدم Exophase لعرض إنجازات PlayStation وXbox وSwitch وGOG هنا.",
   "profile.exophaseConnectCta": "فتح الإعدادات",
+  "profile.exophaseDisclaimer": "Exophase خدمة تابعة لجهة خارجية. Efxlve Launcher غير مرتبط بـ Exophase ولا معتمد منها.",
+  "profile.exophasePointProgress": "الجوائز ووقت اللعب",
   "profile.showcaseTitle": "إكمال بنسبة 100%",
   "profile.showcaseSubtitle": "ألعاب أُكملت مع فتح كل الإنجازات",
   "profile.showcaseEmpty": "لا يوجد إكمال بنسبة 100% بعد",
