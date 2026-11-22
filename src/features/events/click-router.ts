@@ -160,7 +160,7 @@ import {
   renderNotificationPanel,
   selectNotifTab,
 } from "../notifications/notifications";
-import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, refreshUbiDirectProbe, handleSettingsAction, resetSettingsSearch, scheduleControllerBridgeRefresh } from "../settings/settings-view";
+import { loadIntegrationsView, loadControllerView, loadLaunchersView, loadSettingsView, refreshUbiDirectProbe, handleSettingsAction, resetSettingsSearch, scheduleControllerBridgeRefresh, openSettingsDetail } from "../settings/settings-view";
 import { loadCompatView } from "../settings/compat-view";
 import { probeUbisoftClientDownloads } from "../downloads/downloads-view";
 import { openInstallDialog } from "../install/install-dialog";
@@ -169,7 +169,7 @@ import { handleDrawerNotesAction } from "../notes/drawer-notes";
 import { handleIgdbAction } from "./handlers/igdb-handlers";
 import { ALL_PROFILE_STORES, enterProfile, profileGridCapacity, resetProfileCards, type StoreKind } from "../profile/profile-view";
 import { takeProfileScreenshot } from "../profile/profile-screenshot";
-import { loadExophase } from "../profile/exophase-actions";
+import { loadExophase, saveExophaseUsername } from "../profile/exophase-actions";
 import { patchExophaseGamesGrid } from "../profile/exophase-view";
 import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
 import { closeUnlocksModal, openUnlocksModal } from "../profile/profile-unlocks-modal";
@@ -335,6 +335,9 @@ document.addEventListener("click", (e) => {
       // A deep link into a section leaves the search, otherwise the panel keeps
       // showing the last query's results.
       resetSettingsSearch();
+    }
+    if (targetView === "settings" && t.dataset.settingsDetail) {
+      openSettingsDetail(t.dataset.settingsDetail);
     }
     setView(targetView);
     pushNavHistory({ view: targetView, settingsSection });
@@ -643,6 +646,26 @@ document.addEventListener("click", (e) => {
     void write
       .then(() => toast(i18nT("profile.exophaseCopied"), "ok"))
       .catch(() => toast(i18nT("ss.copyFailed"), "err"));
+  } else if (act === "profile-exophase-connect") {
+    const input = document.getElementById("profile-exophase-quick-input") as HTMLInputElement | null;
+    const username = input?.value.trim() ?? "";
+    if (!username) {
+      toast(i18nT("profile.exophaseErrNotFound"), "err");
+      input?.focus();
+      return;
+    }
+    void saveExophaseUsername(username)
+      .then((status) => {
+        S.exophaseConfigured = status.configured;
+        S.exophaseUsername = status.username;
+        toast(i18nT(status.configured ? "settings.exophaseSaved" : "settings.exophaseCleared"), "ok");
+        if (status.configured) {
+          void loadExophase(true);
+        } else {
+          render();
+        }
+      })
+      .catch((error) => toast(String(error), "err"));
   } else if (act === "exophase-service" && t.dataset.val) {
     S.exophaseService = t.dataset.val;
     S.exophaseGameCount = 60;

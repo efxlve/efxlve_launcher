@@ -199,19 +199,58 @@ function note(): string {
   </div>`;
 }
 
-function point(name: IconName, label: string): string {
-  return `<div class="profile-exophase-point">${icon(name, 15)}<span>${esc(label)}</span></div>`;
-}
+function guideGrid(): string {
+  const platforms = [
+    { name: "Steam", mark: storeLogo("steam", 12) },
+    { name: "PlayStation", mark: icon("globe", 12) },
+    { name: "Xbox", mark: storeLogo("xbox", 12) },
+    { name: "Switch", mark: icon("gamepad-2", 12) },
+    { name: "Epic Games", mark: storeLogo("epic", 12) },
+    { name: "GOG", mark: storeLogo("gog", 12) },
+    { name: "EA App", mark: storeLogo("ea", 12) },
+    { name: "Ubisoft", mark: storeLogo("ubisoft", 12) },
+    { name: "RetroAchievements", mark: icon("trophy", 12) },
+  ];
 
-function points(): string {
-  return `<div class="profile-exophase-points">
-    ${point("globe", "PlayStation · Xbox · Switch · GOG")}
-    ${point("trophy", t("profile.exophasePointProgress"))}
-    ${point("clock", t("profile.unlocksTitle"))}
+  const chips = platforms
+    .map((p) => `<span class="profile-exophase-platform-chip">${p.mark}<span>${p.name}</span></span>`)
+    .join("");
+
+  return `<div class="profile-exophase-guide-grid">
+    <div class="profile-exophase-guide-card">
+      <div class="profile-exophase-guide-card-header">
+        <span class="profile-exophase-guide-icon" aria-hidden="true">${icon("gamepad-2", 16)}</span>
+        <h3 class="profile-exophase-guide-title">${esc(t("profile.exophaseGuidePlatformsTitle"))}</h3>
+      </div>
+      <p class="profile-exophase-guide-desc">${esc(t("profile.exophaseGuidePlatformsDesc"))}</p>
+      <div class="profile-exophase-platform-badges">${chips}</div>
+    </div>
+    <div class="profile-exophase-guide-card">
+      <div class="profile-exophase-guide-card-header">
+        <span class="profile-exophase-guide-icon" aria-hidden="true">${icon("lock", 16)}</span>
+        <h3 class="profile-exophase-guide-title">${esc(t("profile.exophaseGuideSafeTitle"))}</h3>
+      </div>
+      <p class="profile-exophase-guide-desc">${esc(t("profile.exophaseGuideSafeDesc"))}</p>
+      <ul class="profile-exophase-guide-list">
+        <li>${icon("check-circle", 12)}<span>${esc(t("profile.exophaseGuideSafeItem1"))}</span></li>
+        <li>${icon("check-circle", 12)}<span>${esc(t("profile.exophaseGuideSafeItem2"))}</span></li>
+      </ul>
+    </div>
+    <div class="profile-exophase-guide-card">
+      <div class="profile-exophase-guide-card-header">
+        <span class="profile-exophase-guide-icon" aria-hidden="true">${icon("trophy", 16)}</span>
+        <h3 class="profile-exophase-guide-title">${esc(t("profile.exophaseGuideShowcaseTitle"))}</h3>
+      </div>
+      <p class="profile-exophase-guide-desc">${esc(t("profile.exophaseGuideShowcaseDesc"))}</p>
+      <ul class="profile-exophase-guide-list">
+        <li>${icon("check-circle", 12)}<span>${esc(t("profile.exophaseGuideShowcaseItem1"))}</span></li>
+        <li>${icon("check-circle", 12)}<span>${esc(t("profile.exophaseGuideShowcaseItem2"))}</span></li>
+      </ul>
+    </div>
   </div>`;
 }
 
-/** The unconfigured state: a compact hero, the connect row, what you get and the note. */
+/** The unconfigured state: a compact hero, the connect row with quick input, what you get and the note. */
 function connectView(): string {
   return `
     <section class="card profile-hero profile-exophase-hero">
@@ -236,10 +275,26 @@ function connectView(): string {
           <h2 class="profile-exophase-connect-title">${esc(t("profile.exophaseConnectTitle"))}</h2>
           <p class="profile-exophase-connect-desc">${esc(t("profile.exophaseConnectDesc"))}</p>
         </div>
-        <button type="button" class="btn primary" data-view="settings">${esc(t("profile.exophaseConnectCta"))}</button>
+        <div class="profile-exophase-connect-form">
+          <div class="profile-exophase-connect-input-row">
+            <input
+              id="profile-exophase-quick-input"
+              class="input profile-exophase-quick-input"
+              type="text"
+              placeholder="${esc(t("settings.exophasePlaceholder"))}"
+              value="${esc(S.exophaseUsername)}"
+              spellcheck="false"
+              autocomplete="off"
+            />
+            <button type="button" class="btn primary" data-act="profile-exophase-connect">${icon("link", 13)}<span>${esc(t("profile.exophaseConnectBtn"))}</span></button>
+            <button type="button" class="btn ghost small" data-view="settings" data-settings-section="integrations" data-settings-detail="exophase" title="${esc(t("profile.exophaseConnectCta"))}">${icon("settings", 12)}<span>${esc(t("profile.exophaseConnectCta"))}</span></button>
+            <button type="button" class="btn ghost small" data-act="open-external-url" data-url="https://www.exophase.com/" title="Exophase.com">${icon("external", 12)}<span>exophase.com</span></button>
+          </div>
+          <div class="profile-exophase-input-hint">${icon("check-circle", 12)}<span>${esc(t("profile.exophaseConnectHelp"))}</span></div>
+        </div>
       </div>
     </section>
-    ${points()}
+    ${guideGrid()}
     ${note()}`;
 }
 

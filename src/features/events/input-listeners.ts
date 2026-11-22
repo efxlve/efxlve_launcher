@@ -1419,6 +1419,9 @@ document.addEventListener("keydown", (e) => {
     } else if (t && t.id === "steam-guard") {
       e.preventDefault();
       void submitSteamGuardCode();
+    } else if (t && t.id === "profile-exophase-quick-input") {
+      e.preventDefault();
+      document.querySelector<HTMLButtonElement>('[data-act="profile-exophase-connect"]')?.click();
     }
   }
 });

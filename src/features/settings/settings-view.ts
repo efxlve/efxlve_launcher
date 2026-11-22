@@ -232,6 +232,20 @@ function detailsRow(key: string, title: string, desc: string, chip: string, cont
 /** Collapsible rows the user opened, by key, so a repaint does not close them. */
 const openDetails = new Set<string>();
 
+/** Opens a collapsible details group and smoothly scrolls to it. */
+export function openSettingsDetail(key: string): void {
+  openDetails.add(key);
+  setTimeout(() => {
+    const details = document.querySelector<HTMLDetailsElement>(`[data-details-key="${key}"]`);
+    if (details) {
+      details.open = true;
+      details.scrollIntoView({ behavior: "smooth", block: "center" });
+      const input = details.querySelector<HTMLInputElement>("input");
+      if (input) input.focus();
+    }
+  }, 120);
+}
+
 /** Reads the open rows out of the mounted panel before it is replaced. */
 function captureOpenDetails(): void {
   const panel = document.querySelector<HTMLElement>(".settings-panel");

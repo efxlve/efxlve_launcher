@@ -184,29 +184,172 @@
 }
 .profile-exophase-hero-body {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 20px 28px 24px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 22px 28px 26px;
 }
 .profile-exophase-connect-copy {
-  min-width: 0;
+  width: 100%;
 }
 .profile-exophase-connect-title {
   margin: 0;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text);
 }
 .profile-exophase-connect-desc {
-  margin: 4px 0 0;
-  max-width: 660px;
+  margin: 6px 0 0;
+  max-width: 820px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+.profile-exophase-connect-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.profile-exophase-connect-input-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+.profile-exophase-quick-input {
+  flex: 1 1 280px;
+  max-width: 440px;
+  height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  outline: none;
+  transition: border-color var(--ease), box-shadow var(--ease);
+}
+.profile-exophase-quick-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.profile-exophase-connect-input-row .btn {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.profile-exophase-input-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.profile-exophase-input-hint svg {
+  color: var(--color-green, #10b981);
+  flex-shrink: 0;
+}
+.profile-exophase-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.profile-exophase-guide-card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+  transition: border-color var(--ease), background-color var(--ease);
+}
+.profile-exophase-guide-card:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+}
+.profile-exophase-guide-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.profile-exophase-guide-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  flex-shrink: 0;
+}
+.profile-exophase-guide-card:hover .profile-exophase-guide-icon {
+  border-color: var(--line-strong);
+  color: var(--text-strong);
+}
+.profile-exophase-guide-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.profile-exophase-guide-desc {
+  margin: 0 0 14px;
   font-size: 12.5px;
   line-height: 1.55;
   color: var(--text-2);
 }
-.profile-exophase-hero-body .btn {
-  flex: none;
+.profile-exophase-platform-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+}
+.profile-exophase-platform-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.profile-exophase-platform-chip img {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+}
+.profile-exophase-guide-list {
+  list-style: none;
+  padding: 0;
+  margin: auto 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.profile-exophase-guide-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.profile-exophase-guide-list li svg {
+  color: var(--color-green, #10b981);
+  flex-shrink: 0;
 }
 .profile-exophase-points {
   display: grid;
@@ -3376,7 +3519,8 @@
     align-items: flex-start;
     padding: 18px 20px 20px;
   }
-  .profile-exophase-points {
+  .profile-exophase-points,
+  .profile-exophase-guide-grid {
     grid-template-columns: 1fr;
   }
   .profile-exophase-grid {
