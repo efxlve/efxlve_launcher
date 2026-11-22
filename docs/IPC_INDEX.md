@@ -314,6 +314,9 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_uninstall_game` | `epicUninstallGame({ ... })` | `src-tauri/src/legendary/transfers/uninstall.rs` |
 | `epic_upcoming_releases` | `epicUpcomingReleases({ ... })` | `src-tauri/src/release_calendar.rs` |
 | `epic_verify_game` | `epicVerifyGame({ ... })` | `src-tauri/src/legendary/commands/verify.rs` |
+| `exophase_get` | `exophaseGet({ ... })` | `src-tauri/src/exophase.rs` |
+| `exophase_set_username` | `exophaseSetUsername({ ... })` | `src-tauri/src/exophase.rs` |
+| `exophase_status` | `exophaseStatus({ ... })` | `src-tauri/src/exophase.rs` |
 | `feedback_create_report` | `feedbackCreateReport({ ... })` | `src-tauri/src/feedback.rs` |
 | `feedback_has_crash` | `feedbackHasCrash({ ... })` | `src-tauri/src/feedback.rs` |
 | `feedback_recovery_pending` | `feedbackRecoveryPending({ ... })` | `src-tauri/src/feedback.rs` |

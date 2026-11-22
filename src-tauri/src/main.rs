@@ -18,6 +18,7 @@ mod download_limit;
 mod download_log;
 mod eos;
 mod egl_removal;
+mod exophase;
 mod file_dialog;
 mod epic_shim;
 mod feedback;
@@ -496,6 +497,10 @@ pub struct EpicSettings {
     pub ra_username: Option<String>,
     #[serde(default)]
     pub ra_api_key: Option<String>,
+    /// Public Exophase username, profile URL or numeric player id. The profile
+    /// is read-only and public; no token is stored.
+    #[serde(default)]
+    pub exophase_username: Option<String>,
 }
 
 fn default_true() -> bool {
@@ -2571,6 +2576,9 @@ fn main() {
             retroachievements::ra_test,
             retroachievements::ra_game_progress,
             retroachievements::ra_recent_games,
+            exophase::exophase_status,
+            exophase::exophase_set_username,
+            exophase::exophase_get,
             guides::powerpyx::powerpyx_game_guide,
             steam::steam_get_achievement_source,
             steam::steam_set_achievement_source,

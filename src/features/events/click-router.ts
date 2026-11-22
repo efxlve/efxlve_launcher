@@ -169,6 +169,7 @@ import { handleDrawerNotesAction } from "../notes/drawer-notes";
 import { handleIgdbAction } from "./handlers/igdb-handlers";
 import { ALL_PROFILE_STORES, enterProfile, profileGridCapacity, resetProfileCards, type StoreKind } from "../profile/profile-view";
 import { takeProfileScreenshot } from "../profile/profile-screenshot";
+import { loadExophase } from "../profile/exophase-actions";
 import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
 import { closeUnlocksModal, openUnlocksModal } from "../profile/profile-unlocks-modal";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
@@ -614,7 +615,17 @@ document.addEventListener("click", (e) => {
     if ((tab === "launcher" || tab === "exophase") && tab !== S.profileTab) {
       S.profileTab = tab;
       render();
+      if (tab === "exophase") void loadExophase();
     }
+  } else if (act === "exophase-refresh") {
+    void loadExophase(true);
+  } else if (act === "exophase-service" && t.dataset.val) {
+    S.exophaseService = t.dataset.val;
+    S.exophaseGameCount = 60;
+    render();
+  } else if (act === "exophase-show-more") {
+    S.exophaseGameCount = (S.exophaseGameCount || 60) + 60;
+    render();
   } else if (act === "profile-filter" && t.dataset.val) {
     S.profileFilter = t.dataset.val as typeof S.profileFilter;
     S.profileShowHidden = false;

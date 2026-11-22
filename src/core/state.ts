@@ -23,6 +23,7 @@ import type {
   RestoreResult,
   XtoolProgress,
 } from "../archive";
+import type { ExophaseData } from "../exophase";
 import { initialLanguage, t } from "../i18n";
 import type { MtuProbe } from "../net-diag";
 import {
@@ -623,6 +624,14 @@ export const S = {
   /** A full-page screenshot is reading the profile; park repaints. */
   profileScreenshotActive: false,
   profileScreenshotDeferred: false,
+  /** Exophase mirror: public username and the last read of its profile. */
+  exophaseConfigured: false,
+  exophaseUsername: "",
+  exophaseData: (null) as ExophaseData | null,
+  exophaseLoading: false,
+  exophaseError: "",
+  exophaseService: "all",
+  exophaseGameCount: 60,
   offlineMode: false,
   networkProfile: ("balanced") as string,
   /** Epic download cap in Mbit/s; 0 = unlimited. */

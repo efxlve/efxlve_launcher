@@ -49,6 +49,7 @@ import { DEFAULT_STORE_COLORS, syncCaseCustomStoreColors } from "../library/case
 import { cdnShortLabel, esc, fmtBytes } from "../../core/utils";
 import { toast } from "../../core/toast";
 import { raSetCredentials, raTest } from "../../retroachievements";
+import { saveExophaseUsername } from "../profile/exophase-actions";
 import { LANGUAGES, localizeMessage, t } from "../../i18n";
 import { renderAccountSettings } from "../accounts/accounts-view";
 import { loadSavedAccounts } from "../auth/account-switcher";
@@ -681,6 +682,18 @@ function renderIntegrations(): string {
      <button class="btn ghost small" data-act="open-external-url" data-url="https://retroachievements.org/controlpanel.php">${esc(t("settings.raGetKey"))}</button>`,
   );
 
+  // Exophase: public cross-platform mirror. No key and no token; a username,
+  // profile URL or numeric player id is enough.
+  const exophase = detailsRow(
+    "exophase",
+    t("settings.exophaseTitle"),
+    t("settings.exophaseDesc"),
+    `<span class="chip ${S.exophaseConfigured ? "ok" : ""}">${S.exophaseConfigured ? t("settings.connected") : t("accounts.notConnected")}</span>`,
+    `<input id="settings-exophase-username" class="input settings-path-input" placeholder="${esc(t("settings.exophasePlaceholder"))}" value="${esc(S.exophaseUsername)}" spellcheck="false" autocomplete="off" />
+     <button class="btn primary small" data-act="save-exophase-username">${t("common.save")}</button>
+     <button class="btn ghost small" data-act="open-external-url" data-url="https://www.exophase.com/">exophase.com</button>`,
+  );
+
   // Amazon Games runs through the open-source Nile helper; the row reports
   // whether it is already on disk and links to the account card.
   const nileReady = Boolean(S.amazonStatus?.binary);
@@ -731,7 +744,8 @@ function renderIntegrations(): string {
     afterPlaying +
     group(sgdb, t("settings.coverArtTitle")) +
     group(igdb, t("settings.igdbGroup")) +
-    group(ra, t("settings.raGroup"))
+    group(ra, t("settings.raGroup")) +
+    group(exophase, t("settings.exophaseGroup"))
   );
 }
 
@@ -3440,6 +3454,19 @@ export function handleSettingsAction(act: string | undefined, _el: HTMLElement, 
     case "test-ra": {
       void raTest()
         .then((user) => toast(t("settings.raConnected", { user }), "ok"))
+        .catch((error) => toast(String(error), "err"));
+      return true;
+    }
+    case "save-exophase-username": {
+      const username =
+        (document.getElementById("settings-exophase-username") as HTMLInputElement | null)?.value ?? "";
+      void saveExophaseUsername(username)
+        .then((status) => {
+          S.exophaseConfigured = status.configured;
+          S.exophaseUsername = status.username;
+          toast(t(status.configured ? "settings.exophaseSaved" : "settings.exophaseCleared"), "ok");
+          render();
+        })
         .catch((error) => toast(String(error), "err"));
       return true;
     }

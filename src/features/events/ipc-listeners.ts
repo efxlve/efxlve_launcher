@@ -81,6 +81,7 @@ import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom, refreshGameActionUi } from "../../core/game-view";
 import { recordAchievementUnlocks, attachAchievementScreenshot } from "../../core/achievement-history";
 import { raStatus } from "../../retroachievements";
+import { exophaseStatus } from "../../exophase";
 import { libraryItemOf, rebuildAllGamesMap, sourceOfKey, summaryOf } from "../../core/selectors";
 import { BRAND_ICONS } from "../../core/icons";
 import { updateBadge, updateOfflineModeUi } from "../../core/nav";
@@ -1438,13 +1439,14 @@ export async function initApp(hooks: {
       })
       .catch(() => undefined);
     // Independent boot reads; running them together removes serial IPC round trips.
-    const [networkProfile, settings, autoShortcut, defaultDir, drives, ra] = await Promise.all([
+    const [networkProfile, settings, autoShortcut, defaultDir, drives, ra, exophase] = await Promise.all([
       epicGetNetworkProfile().catch(() => null),
       epicGetSettings().catch(() => null),
       epicGetAutoDesktopShortcut().catch(() => null),
       epicDefaultInstallDir().catch(() => ""),
       epicGetSystemDrives().catch(() => []),
       raStatus().catch(() => null),
+      exophaseStatus().catch(() => null),
     ]);
     if (networkProfile !== null) S.networkProfile = networkProfile ?? "";
     if (settings) {
@@ -1455,6 +1457,10 @@ export async function initApp(hooks: {
     if (ra) {
       S.raConfigured = ra.configured;
       S.raUsername = ra.username;
+    }
+    if (exophase) {
+      S.exophaseConfigured = exophase.configured;
+      S.exophaseUsername = exophase.username;
     }
     if (defaultDir) S.epicDefaultDir = defaultDir;
     S.moveSystemDrives = Array.isArray(drives) ? drives : [];
