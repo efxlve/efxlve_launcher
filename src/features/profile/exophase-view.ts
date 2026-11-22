@@ -195,7 +195,6 @@ function stat(glyph: string, label: string, value: string, sub = "", platinum = 
 function note(): string {
   return `<footer class="profile-exophase-note">
     <p>${esc(t("profile.exophaseDisclaimer"))}</p>
-    <button type="button" class="btn ghost small" data-act="open-external-url" data-url="${EXOPHASE_SITE}">${icon("external", 12)}<span>exophase.com</span></button>
   </footer>`;
 }
 
