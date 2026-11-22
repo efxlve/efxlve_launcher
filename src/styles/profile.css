@@ -27,6 +27,7 @@
 }
 .profile-exophase-hero-stage {
   position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -52,6 +53,7 @@
 }
 .profile-exophase-hero-backdrop {
   position: absolute;
+  z-index: 0;
   inset: -32px;
   background-size: cover;
   background-position: center center;
@@ -62,6 +64,7 @@
 }
 .profile-exophase-hero-art {
   position: absolute;
+  z-index: 1;
   inset: 0;
   background-size: cover;
   background-position: center 30%;
@@ -70,6 +73,7 @@
 }
 .profile-exophase-hero-scrim {
   position: absolute;
+  z-index: 2;
   inset: 0;
   pointer-events: none;
   background: linear-gradient(
@@ -374,11 +378,9 @@
 @keyframes profile-banner-reveal {
   from {
     opacity: 0.55;
-    transform: scale(1.02);
   }
   to {
     opacity: 1;
-    transform: scale(1);
   }
 }
 
@@ -415,6 +417,7 @@
 
 .profile-hero-stage {
   position: relative;
+  isolation: isolate;
   height: clamp(340px, 38vh, 430px);
   min-height: 340px;
   display: flex;
@@ -441,6 +444,7 @@
 
 .profile-hero-backdrop {
   position: absolute;
+  z-index: 0;
   inset: -32px;
   background-size: cover;
   background-position: center center;
@@ -452,6 +456,7 @@
 
 .profile-hero-art {
   position: absolute;
+  z-index: 1;
   inset: 0;
   background-size: cover;
   background-position: center 30%;
@@ -461,6 +466,7 @@
 
 .profile-hero-scrim {
   position: absolute;
+  z-index: 2;
   inset: 0;
   background: linear-gradient(
     to bottom,
@@ -474,7 +480,7 @@
 
 .profile-hero-top-bar {
   position: relative;
-  z-index: 3;
+  z-index: 4;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -523,7 +529,7 @@
 
 .profile-hero-bottom {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   display: flex;
   align-items: flex-end;
   gap: 22px;
