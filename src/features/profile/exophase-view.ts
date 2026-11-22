@@ -194,6 +194,7 @@ function stat(glyph: string, label: string, value: string, sub = "", platinum = 
 
 function note(): string {
   return `<div class="profile-exophase-note">
+    ${icon("info", 14)}
     <p>${esc(t("profile.exophaseDisclaimer"))}</p>
   </div>`;
 }
