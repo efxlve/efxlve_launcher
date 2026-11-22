@@ -618,6 +618,8 @@ export const S = {
   profileActivityRange: ("7d") as "7d" | "30d",
   profileSearchQuery: "",
   profileViewMode: (localStorage.getItem(PROFILE_VIEW_MODE_KEY) === "list" ? "list" : "grid") as "grid" | "list",
+  /** Active page tab: the local profile or the read-only Exophase mirror. */
+  profileTab: ("launcher") as "launcher" | "exophase",
   /** A full-page screenshot is reading the profile; park repaints. */
   profileScreenshotActive: false,
   profileScreenshotDeferred: false,

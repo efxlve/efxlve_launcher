@@ -609,6 +609,12 @@ document.addEventListener("click", (e) => {
     S.profileShowHidden = false;
     resetProfileCards();
     render();
+  } else if (act === "profile-tab") {
+    const tab = t.dataset.val;
+    if ((tab === "launcher" || tab === "exophase") && tab !== S.profileTab) {
+      S.profileTab = tab;
+      render();
+    }
   } else if (act === "profile-filter" && t.dataset.val) {
     S.profileFilter = t.dataset.val as typeof S.profileFilter;
     S.profileShowHidden = false;
