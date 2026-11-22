@@ -620,6 +620,29 @@ document.addEventListener("click", (e) => {
     }
   } else if (act === "exophase-refresh") {
     void loadExophase(true);
+  } else if (act === "copy-exophase-url" && t.dataset.url) {
+    const url = t.dataset.url;
+    const write = navigator.clipboard?.writeText
+      ? navigator.clipboard.writeText(url)
+      : new Promise<void>((resolve, reject) => {
+          try {
+            const el = document.createElement("textarea");
+            el.value = url;
+            el.style.position = "fixed";
+            el.style.opacity = "0";
+            document.body.appendChild(el);
+            el.select();
+            const ok = document.execCommand("copy");
+            document.body.removeChild(el);
+            if (ok) resolve();
+            else reject(new Error("Copy command failed"));
+          } catch (e) {
+            reject(e);
+          }
+        });
+    void write
+      .then(() => toast(i18nT("profile.exophaseCopied"), "ok"))
+      .catch(() => toast(i18nT("ss.copyFailed"), "err"));
   } else if (act === "exophase-service" && t.dataset.val) {
     S.exophaseService = t.dataset.val;
     S.exophaseGameCount = 60;

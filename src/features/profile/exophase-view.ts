@@ -291,6 +291,7 @@ function profileHero(
       ${art}
       <div class="profile-hero-top-bar">
         <div class="profile-hero-actions">
+          ${profileUrl ? `<button type="button" class="btn small profile-hero-tool" data-act="copy-exophase-url" data-url="${esc(profileUrl)}" title="${esc(t("profile.exophaseCopyTip"))}" aria-label="${esc(t("profile.exophaseCopy"))}">${icon("copy", 12)}<span>${esc(t("profile.exophaseCopy"))}</span></button>` : ""}
           <button type="button" class="btn small profile-hero-tool profile-exophase-refresh${loading ? " is-busy" : ""}" data-act="exophase-refresh" title="${esc(t("profile.exophaseRefresh"))}" aria-label="${esc(t("profile.exophaseRefresh"))}">${icon("refresh", 13)}<span>${esc(t("profile.retry"))}</span></button>
           <button type="button" class="btn small profile-hero-tool" data-act="open-external-url" data-url="${esc(profileUrl)}">${icon("external", 12)}<span>Exophase</span></button>
         </div>
