@@ -3085,6 +3085,10 @@ body.capturing-profile-screenshot #view {
 }
 
 body.capturing-profile-screenshot .profile-page {
+  /* The capture moves #view's side padding onto the page. Pin the width to the
+     size the page was rendered at so the grids keep their column count. */
+  width: var(--capture-page-width, auto) !important;
+  max-width: none !important;
   padding: 24px 28px 48px !important;
   background: var(--bg) !important;
 }

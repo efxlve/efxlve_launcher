@@ -14,9 +14,19 @@ let isBusy = false;
 
 /** How long one cover may take before the capture gives up on it. */
 const IMAGE_WAIT_MS = 15000;
+/** The capture class moves #view's 28px side padding onto .profile-page. */
+const CAPTURE_PAGE_PADDING_X = 56;
 
-async function loadAllProfileImages(container: HTMLElement): Promise<void> {
-  // 1. Pre-resolve any uncached Steam art in batch so off-screen cards have valid cover URLs
+function nextFrame(): Promise<void> {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+/**
+ * Resolves the published Steam asset URLs for cards whose flat CDN capsule is a
+ * 404. `steam_library_art` answers at most 40 ids per call, so a full profile
+ * page needs several batches instead of a silent truncation.
+ */
+async function resolveProfileSteamArt(container: HTMLElement): Promise<void> {
   const uncachedSteamIds: string[] = [];
   container.querySelectorAll<HTMLImageElement>("img[data-steam-app]").forEach((img) => {
     const appId = img.dataset.steamApp;
@@ -24,97 +34,98 @@ async function loadAllProfileImages(container: HTMLElement): Promise<void> {
       uncachedSteamIds.push(appId);
     }
   });
+  if (uncachedSteamIds.length === 0) return;
 
-  if (uncachedSteamIds.length > 0) {
-    try {
-      const uniqueIds = [...new Set(uncachedSteamIds)];
-      // steam_library_art answers at most 40 ids per call. A full profile page
-      // can easily ask for more, so send one batch per 40 instead of letting
-      // the backend's take(40) silently drop the rest.
-      const batches: string[][] = [];
-      for (let i = 0; i < uniqueIds.length; i += 40) {
-        batches.push(uniqueIds.slice(i, i + 40));
-      }
-      const artMaps = await Promise.all(
-        batches.map((batch) =>
-          steamLibraryArt(batch).catch((): Record<string, SteamLibraryArt> => ({}))
-        ),
-      );
-      for (const artMap of artMaps) {
-        for (const [appId, art] of Object.entries(artMap)) {
-          const cover = art?.cover || art?.hero || "";
-          rememberSteamCover(appId, cover);
-          if (art?.hero) rememberSteamHero(appId, art.hero);
-          if (cover) {
-            container.querySelectorAll<HTMLImageElement>(`img[data-steam-app="${appId}"]`).forEach((img) => {
-              img.dataset.artStep = "resolved";
-              img.removeAttribute("data-art-pending");
-              if (img.getAttribute("src") !== cover) {
-                img.src = cover;
-              }
-            });
-          }
+  try {
+    const uniqueIds = [...new Set(uncachedSteamIds)];
+    const batches: string[][] = [];
+    for (let i = 0; i < uniqueIds.length; i += 40) {
+      batches.push(uniqueIds.slice(i, i + 40));
+    }
+    const artMaps = await Promise.all(
+      batches.map((batch) =>
+        steamLibraryArt(batch).catch((): Record<string, SteamLibraryArt> => ({}))
+      ),
+    );
+    for (const artMap of artMaps) {
+      for (const [appId, art] of Object.entries(artMap)) {
+        const cover = art?.cover || art?.hero || "";
+        rememberSteamCover(appId, cover);
+        if (art?.hero) rememberSteamHero(appId, art.hero);
+        if (cover) {
+          container.querySelectorAll<HTMLImageElement>(`img[data-steam-app="${appId}"]`).forEach((img) => {
+            img.dataset.artStep = "resolved";
+            img.removeAttribute("data-art-pending");
+            if (img.getAttribute("src") !== cover) {
+              img.src = cover;
+            }
+          });
         }
       }
-    } catch {
-      // Best-effort
     }
+  } catch {
+    // Best-effort: the flat CDN capsule is still a valid image for many games.
   }
+}
 
-  // 2. Find all images in the container
+/**
+ * Walks the page through the viewport once. Chromium loads and paints a lazy
+ * image when it enters the viewport; forcing an offscreen <img> to fetch puts
+ * the bytes in the cache but not necessarily a painted tile, which is why the
+ * lower rows used to stay blank.
+ */
+async function primeProfileImages(view: HTMLElement | null, container: HTMLElement): Promise<void> {
+  if (!view) return;
+  const max = Math.max(0, container.scrollHeight - view.clientHeight);
+  if (max <= 0) return;
+
+  const step = Math.max(320, Math.floor(view.clientHeight * 0.7));
+  for (let top = step; top < max; top += step) {
+    view.scrollTop = top;
+    await nextFrame();
+    await nextFrame();
+  }
+  view.scrollTop = max;
+  // Give the last lazy rows a moment to start before the layout expands.
+  await new Promise<void>((resolve) => setTimeout(resolve, 80));
+  view.scrollTop = 0;
+  await nextFrame();
+}
+
+/**
+ * Waits for every image the priming pass started. The source is never rewritten
+ * here: resetting a decoded cover forces a fresh decode, and forty large covers
+ * do not finish that before the capture reads the surface.
+ */
+async function waitForProfileImages(container: HTMLElement): Promise<void> {
   const allImages = Array.from(container.querySelectorAll<HTMLImageElement>("img"));
-  if (allImages.length === 0) return;
+  await Promise.all(
+    allImages.map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          img.removeAttribute("loading");
+          img.loading = "eager";
+          if (img.complete && img.naturalWidth > 0) {
+            resolve();
+            return;
+          }
 
-  // 3. Every picture is pulled through an in-memory Image() so Chromium's lazy
-  //    heuristics cannot skip the cards far below the viewport. The capture
-  //    waits for all of them: a fixed short race timed out on a slow connection
-  //    and left every offscreen cover blank. A single dead URL still releases
-  //    its slot after a ceiling instead of holding the whole page.
-  const pending = allImages.map((img) => {
-    return new Promise<void>((resolve) => {
-      const src = img.getAttribute("src") || img.src;
-      if (!src) {
-        resolve();
-        return;
-      }
-
-      img.removeAttribute("loading");
-      img.loading = "eager";
-
-      if (img.complete && img.naturalWidth > 0) {
-        resolve();
-        return;
-      }
-
-      let settled = false;
-      let timer = 0;
-      const done = () => {
-        if (settled) return;
-        settled = true;
-        window.clearTimeout(timer);
-        // Re-assign the source instead of writing the same value again: a
-        // deferred lazy image ignores an identical src, so the downloaded
-        // bytes in the cache would never reach the element. Removing the
-        // attribute first forces the element to resolve the source again, and
-        // the cached response arrives without a second network request.
-        img.removeAttribute("src");
-        img.setAttribute("src", src);
-        const decodeTimer = window.setTimeout(resolve, 1500);
-        img.decode().catch(() => {}).then(() => {
-          window.clearTimeout(decodeTimer);
-          resolve();
-        });
-      };
-
-      const loader = new Image();
-      loader.onload = done;
-      loader.onerror = done;
-      timer = window.setTimeout(done, IMAGE_WAIT_MS);
-      loader.src = src;
-    });
-  });
-
-  await Promise.all(pending);
+          let settled = false;
+          let timer = 0;
+          const done = () => {
+            if (settled) return;
+            settled = true;
+            window.clearTimeout(timer);
+            img.removeEventListener("load", done);
+            img.removeEventListener("error", done);
+            resolve();
+          };
+          img.addEventListener("load", done, { once: true });
+          img.addEventListener("error", done, { once: true });
+          timer = window.setTimeout(done, IMAGE_WAIT_MS);
+        }),
+    ),
+  );
 }
 
 export async function takeProfileScreenshot(): Promise<void> {
@@ -136,32 +147,48 @@ export async function takeProfileScreenshot(): Promise<void> {
   const view = document.getElementById("view");
   const savedScrollTop = view ? view.scrollTop : 0;
 
-  // Reset scroll to top so client rects and viewport coordinates are aligned from 0
-  if (view) view.scrollTop = 0;
-  window.scrollTo(0, 0);
-
-  // Add the capture class which overrides content-visibility, containment, hides chrome, and expands view
-  document.body.classList.add("capturing-profile-screenshot");
-
   try {
-    // Eagerly resolve and decode all offscreen profile images
-    await loadAllProfileImages(profileEl);
+    // 1. Resolve the Steam art first, then walk the page through the viewport.
+    //    The capture class below changes the geometry, so the normal layout is
+    //    the only place native lazy loading can see every row.
+    await resolveProfileSteamArt(profileEl);
+    await primeProfileImages(view, profileEl);
 
-    // Force layout reflow and wait two animation frames for styles to paint cleanly
-    void profileEl.offsetHeight;
-    await new Promise<void>((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    // 2. Reset the scroll and expand the page. Pin the width to the rendered
+    //    content width: the capture class moves #view's side padding onto the
+    //    page, and without this the grids reflow to fewer columns and a card
+    //    wraps to a second row in the screenshot only.
+    if (view) view.scrollTop = 0;
+    window.scrollTo(0, 0);
+    const renderWidth = Math.ceil(profileEl.getBoundingClientRect().width);
+    document.body.style.setProperty(
+      "--capture-page-width",
+      `${renderWidth + CAPTURE_PAGE_PADDING_X}px`,
     );
+    document.body.classList.add("capturing-profile-screenshot");
+
+    // 3. Wait for the covers the scroll started. A background render can
+    //    replace the page while they load, so wait on the live element too.
+    await waitForProfileImages(profileEl);
+    let live = document.querySelector<HTMLElement>(".profile-page") ?? profileEl;
+    if (live !== profileEl) {
+      await waitForProfileImages(live);
+    }
+
+    // Force layout reflow and wait two animation frames for styles to paint cleanly.
+    void live.offsetHeight;
+    await nextFrame();
+    await nextFrame();
     // The frames schedule the paint; give the compositor a moment to upload the
-    // offscreen tiles that were just filled with covers.
+    // tiles that were just filled with covers.
     await new Promise<void>((resolve) => setTimeout(resolve, 150));
 
-    const rect = profileEl.getBoundingClientRect();
+    const rect = live.getBoundingClientRect();
     const clip = {
       x: Math.max(0, Math.floor(rect.left)),
       y: Math.max(0, Math.floor(rect.top)),
       width: Math.max(100, Math.ceil(rect.width)),
-      height: Math.max(100, Math.ceil(Math.max(rect.height, profileEl.scrollHeight))),
+      height: Math.max(100, Math.ceil(Math.max(rect.height, live.scrollHeight))),
       scale: window.devicePixelRatio || 1,
     };
 
@@ -209,6 +236,7 @@ export async function takeProfileScreenshot(): Promise<void> {
     toast(t("profile.screenshotFailed"), "err");
   } finally {
     document.body.classList.remove("capturing-profile-screenshot");
+    document.body.style.removeProperty("--capture-page-width");
     if (view && savedScrollTop > 0) {
       view.scrollTop = savedScrollTop;
     }
