@@ -220,11 +220,13 @@ function connectView(): string {
             <span class="profile-avatar profile-avatar-lg profile-exophase-avatar" aria-hidden="true">${icon("globe", 32)}</span>
           </div>
           <div class="profile-hero-identity">
-            <div class="profile-name-row">
-              <h1 class="profile-name">Exophase</h1>
-              <span class="profile-exophase-pill"><span class="profile-exophase-dot" aria-hidden="true"></span>${esc(t("accounts.notConnected"))}</span>
+            <div class="profile-hero-title-group">
+              <div class="profile-name-row">
+                <h1 class="profile-name">Exophase</h1>
+                <span class="profile-exophase-pill"><span class="profile-exophase-dot" aria-hidden="true"></span>${esc(t("accounts.notConnected"))}</span>
+              </div>
+              <p class="profile-exophase-sub">${esc(t("profile.exophaseSubtitle"))}</p>
             </div>
-            <p class="profile-exophase-sub">${esc(t("profile.exophaseSubtitle"))}</p>
           </div>
         </div>
       </div>
@@ -297,11 +299,13 @@ function profileHero(
           <span class="profile-avatar profile-avatar-lg profile-exophase-avatar" aria-hidden="true">${avatarHtml}</span>
         </div>
         <div class="profile-hero-identity">
-          <div class="profile-name-row">
-            <h1 class="profile-name">${esc(name)}</h1>
-            <span class="profile-exophase-pill${connected ? " is-connected" : ""}"><span class="profile-exophase-dot" aria-hidden="true"></span>${esc(t(connected ? "settings.connected" : "accounts.notConnected"))}</span>
+          <div class="profile-hero-title-group">
+            <div class="profile-name-row">
+              <h1 class="profile-name">${esc(name)}</h1>
+              <span class="profile-exophase-pill${connected ? " is-connected" : ""}"><span class="profile-exophase-dot" aria-hidden="true"></span>${esc(t(connected ? "settings.connected" : "accounts.notConnected"))}</span>
+            </div>
+            <p class="profile-exophase-sub">${esc(handle)}</p>
           </div>
-          <p class="profile-exophase-sub">${esc(handle)}</p>
           ${storesHtml ? `<div class="profile-scope-bar">${storesHtml}</div>` : ""}
         </div>
       </div>

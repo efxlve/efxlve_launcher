@@ -128,10 +128,16 @@
   letter-spacing: -0.02em;
   line-height: 1.05;
 }
+.profile-hero-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 .profile-exophase-sub {
-  margin: 4px 0 0;
+  margin: 0;
   color: var(--text-3);
   font-size: 13px;
+  line-height: 1.25;
 }
 .profile-exophase-pill {
   display: inline-flex;
