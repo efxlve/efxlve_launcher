@@ -632,6 +632,8 @@ export const S = {
   exophaseError: "",
   exophaseService: "all",
   exophaseGameCount: 60,
+  exophaseSort: ("recent") as "recent" | "progress" | "trophies" | "playtime" | "alpha",
+  exophaseSearchQuery: "",
   offlineMode: false,
   networkProfile: ("balanced") as string,
   /** Epic download cap in Mbit/s; 0 = unlimited. */

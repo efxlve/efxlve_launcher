@@ -651,7 +651,7 @@ async fn fetch_awards(
     Ok(value
         .get("awards")
         .and_then(Value::as_array)
-        .map(|awards| awards.iter().take(5).filter_map(parse_award).collect())
+        .map(|awards| awards.iter().take(10).filter_map(parse_award).collect())
         .unwrap_or_default())
 }
 

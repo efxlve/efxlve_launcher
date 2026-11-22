@@ -170,6 +170,7 @@ import { handleIgdbAction } from "./handlers/igdb-handlers";
 import { ALL_PROFILE_STORES, enterProfile, profileGridCapacity, resetProfileCards, type StoreKind } from "../profile/profile-view";
 import { takeProfileScreenshot } from "../profile/profile-screenshot";
 import { loadExophase } from "../profile/exophase-actions";
+import { patchExophaseGamesGrid } from "../profile/exophase-view";
 import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
 import { closeUnlocksModal, openUnlocksModal } from "../profile/profile-unlocks-modal";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
@@ -625,7 +626,18 @@ document.addEventListener("click", (e) => {
     render();
   } else if (act === "exophase-show-more") {
     S.exophaseGameCount = (S.exophaseGameCount || 60) + 60;
-    render();
+    patchExophaseGamesGrid();
+  } else if (act === "exophase-search-clear") {
+    S.exophaseSearchQuery = "";
+    S.exophaseGameCount = 60;
+    const input = document.getElementById("exophase-search") as HTMLInputElement | null;
+    if (input) {
+      input.value = "";
+      input.focus();
+    }
+    const clearBtn = document.getElementById("exophase-search-clear-btn");
+    if (clearBtn) clearBtn.hidden = true;
+    patchExophaseGamesGrid();
   } else if (act === "profile-filter" && t.dataset.val) {
     S.profileFilter = t.dataset.val as typeof S.profileFilter;
     S.profileShowHidden = false;

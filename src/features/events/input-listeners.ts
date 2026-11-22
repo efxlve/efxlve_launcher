@@ -80,6 +80,7 @@ import { updateMoveSpaceBadgeInPlace } from "../move-game/move-game-view";
 import { closeManagePopup, manageSearchOpen, setManageSearchOpen } from "../manage/manage-view";
 import { closeEditPlaytimeModal } from "../playtime/playtime-view";
 import { filteredProfileGames, profileListGames, renderProfileGrid, resetProfileCards } from "../profile/profile-view";
+import { patchExophaseGamesGrid } from "../profile/exophase-view";
 import {
   closeScreenshotDeleteConfirm,
   closeScreenshotLightbox,
@@ -465,6 +466,19 @@ document.addEventListener("keydown", (e) => {
       }
       return;
     }
+    if (document.activeElement instanceof HTMLInputElement && document.activeElement.id === "exophase-search") {
+      const searchEl = document.activeElement;
+      if (searchEl.value.length > 0) {
+        searchEl.value = "";
+        S.exophaseSearchQuery = "";
+        S.exophaseGameCount = 60;
+        document.getElementById("exophase-search-clear-btn")?.setAttribute("hidden", "");
+        patchExophaseGamesGrid();
+      } else {
+        searchEl.blur();
+      }
+      return;
+    }
     // The achievements detail no longer has its own dismissal level: Escape
     // closes the game page, as it does on every other tab.
     const hadModal = Boolean(modalRoot.firstElementChild);
@@ -594,7 +608,13 @@ document.addEventListener("keydown", (e) => {
     }
   }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
-    const s = (document.getElementById("search") || document.getElementById("profile-search")) as HTMLInputElement | null;
+    const s = (
+      (S.view === "profile" && S.profileTab === "exophase"
+        ? document.getElementById("exophase-search")
+        : null) ||
+      document.getElementById("search") ||
+      document.getElementById("profile-search")
+    ) as HTMLInputElement | null;
     if (s) {
       e.preventDefault();
       s.focus();
@@ -1027,6 +1047,18 @@ document.addEventListener("input", (e) => {
     }, 140);
     return;
   }
+  if (t.id === "exophase-search") {
+    S.exophaseSearchQuery = (t as HTMLInputElement).value;
+    const clearBtn = document.getElementById("exophase-search-clear-btn");
+    if (clearBtn) clearBtn.hidden = !S.exophaseSearchQuery;
+    if (profileSearchTimer) window.clearTimeout(profileSearchTimer);
+    profileSearchTimer = window.setTimeout(() => {
+      profileSearchTimer = 0;
+      S.exophaseGameCount = 60;
+      patchExophaseGamesGrid();
+    }, 140);
+    return;
+  }
   if (t.id === "move-target-input") {
     const val = (t as HTMLInputElement).value;
     S.selectedMoveTargetPath = val;
@@ -1067,6 +1099,12 @@ document.addEventListener("change", (e) => {
     S.profileSort = (t as HTMLSelectElement).value as typeof S.profileSort;
     resetProfileCards();
     render();
+    return;
+  }
+  if (t.id === "exophase-sort-select") {
+    S.exophaseSort = (t as HTMLSelectElement).value as typeof S.exophaseSort;
+    S.exophaseGameCount = 60;
+    patchExophaseGamesGrid();
     return;
   }
   if (t.id === "ss-cleanup-size" || t.id === "ss-cleanup-days") {

@@ -9,21 +9,27 @@
 
 import { emptyState, epicPlatinumIcon, icon, type IconName } from "../../core/icons";
 import { S } from "../../core/state";
-import { esc, fmtPlaytime } from "../../core/utils";
-import { t } from "../../i18n";
+import { esc, fmtDecimal1, fmtPlaytime } from "../../core/utils";
+import { currentLanguage, t } from "../../i18n";
+import { storeLogo } from "../store/store-logos";
 import { EXOPHASE_SITE, type ExophaseAward, type ExophaseData, type ExophaseGame, type ExophaseSummary } from "../../exophase";
 
 function fmtCount(value: number): string {
   return value.toLocaleString();
 }
 
-function fmtDate(ts: number): string {
+function fmtExoDate(ts: number): string {
   if (!ts) return "";
-  return new Date(ts * 1000).toLocaleDateString(undefined, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  try {
+    const d = new Date(ts * 1000);
+    return d.toLocaleDateString(currentLanguage(), {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return "";
+  }
 }
 
 function relativeTime(ts: number): string {
@@ -59,6 +65,24 @@ function profileUrlFor(username: string): string {
     : `${EXOPHASE_SITE}user/${encodeURIComponent(trimmed)}/`;
 }
 
+function platformLogo(slug: string): string {
+  const norm = slug.toLowerCase();
+  if (norm === "origin" || norm === "ea") return storeLogo("ea", 13, "profile-store-chip-logo");
+  if (norm === "steam") return storeLogo("steam", 13, "profile-store-chip-logo");
+  if (norm === "epic") return storeLogo("epic", 13, "profile-store-chip-logo");
+  if (norm === "xbox") return storeLogo("xbox", 13, "profile-store-chip-logo");
+  if (norm === "gog") return storeLogo("gog", 13, "profile-store-chip-logo");
+  if (norm === "uplay" || norm === "ubisoft") return storeLogo("ubisoft", 13, "profile-store-chip-logo");
+  if (norm === "battlenet" || norm === "blizzard") return storeLogo("battlenet", 13, "profile-store-chip-logo");
+  if (norm === "psn" || norm === "playstation") return icon("globe", 13, "profile-store-chip-logo");
+  if (norm === "nintendo" || norm === "switch") return icon("gamepad-2", 13, "profile-store-chip-logo");
+  return icon("globe", 13, "profile-store-chip-logo");
+}
+
+function platformChip(slug: string, label: string): string {
+  return `<span class="profile-store-chip">${platformLogo(slug)}<span>${esc(label)}</span></span>`;
+}
+
 function stat(glyph: string, label: string, value: string, sub = "", platinum = false): string {
   return `<div class="profile-stat${platinum ? " is-plat-stat" : ""}">
     <span class="profile-stat-icon" aria-hidden="true">${glyph}</span>
@@ -91,13 +115,15 @@ function points(): string {
 /** The unconfigured state: a compact hero, the connect row, what you get and the note. */
 function connectView(): string {
   return `
-    <section class="card profile-exophase-hero">
+    <section class="card profile-hero profile-exophase-hero">
       <div class="profile-exophase-hero-stage is-plain">
-        <div class="profile-exophase-hero-bottom">
-          <span class="profile-exophase-avatar" aria-hidden="true">${icon("globe", 28)}</span>
-          <div class="profile-exophase-hero-copy">
-            <div class="profile-exophase-title-row">
-              <h1 class="profile-exophase-title">Exophase</h1>
+        <div class="profile-hero-bottom">
+          <div class="profile-avatar-wrap">
+            <span class="profile-avatar profile-avatar-lg profile-exophase-avatar" aria-hidden="true">${icon("globe", 32)}</span>
+          </div>
+          <div class="profile-hero-identity">
+            <div class="profile-name-row">
+              <h1 class="profile-name">Exophase</h1>
               <span class="profile-exophase-pill"><span class="profile-exophase-dot" aria-hidden="true"></span>${esc(t("accounts.notConnected"))}</span>
             </div>
             <p class="profile-exophase-sub">${esc(t("profile.exophaseSubtitle"))}</p>
@@ -125,31 +151,61 @@ function profileHero(
   loading: boolean,
   profileUrl: string,
   connected: boolean,
+  summary?: ExophaseSummary,
+  selectedService = "all",
 ): string {
   const avatarHtml = avatar
     ? `<img src="${esc(avatar)}" alt="" loading="lazy" decoding="async" />`
-    : icon("globe", 30);
+    : icon("globe", 32);
   const handle = username ? `@${username}` : "Exophase";
   const art = hero
     ? `<div class="profile-exophase-hero-backdrop" style="background-image:url('${esc(hero)}')" aria-hidden="true"></div>
+       <div class="profile-exophase-hero-art" style="background-image:url('${esc(hero)}')" aria-hidden="true"></div>
        <div class="profile-exophase-hero-scrim" aria-hidden="true"></div>`
     : "";
-  return `<section class="card profile-exophase-hero">
+
+  const storesHtml = summary?.services?.filter((s) => s.games > 0)
+    ? `<div class="profile-hero-stores">
+        <button type="button" class="profile-hero-store-chip${selectedService === "all" ? " selected" : ""}" data-act="exophase-service" data-val="all" title="${esc(t("profile.filterAll"))}">
+          ${icon("layers", 13, "profile-store-chip-logo")}
+          <span class="profile-hero-chip-name">${esc(t("profile.filterAll"))}</span>
+          <span class="profile-hero-chip-count tabular-nums">${fmtCount(summary.totalGames)}</span>
+        </button>
+        ${summary.services
+          .filter((s) => s.games > 0)
+          .map(
+            (s) => `
+            <button type="button" class="profile-hero-store-chip${selectedService === s.slug ? " selected" : ""}" data-act="exophase-service" data-val="${esc(s.slug)}" title="${esc(s.label)}">
+              ${platformLogo(s.slug)}
+              <span class="profile-hero-chip-name">${esc(s.label)}</span>
+              <span class="profile-hero-chip-count tabular-nums">${fmtCount(s.games)}</span>
+            </button>`,
+          )
+          .join("")}
+       </div>`
+    : "";
+
+  return `<section class="card profile-hero profile-exophase-hero">
     <div class="profile-exophase-hero-stage${hero ? " has-art" : " is-plain"}">
       ${art}
-      ${hero ? `<span class="profile-exophase-source">${icon("globe", 12)}<span>Exophase</span></span>` : ""}
-      <div class="profile-exophase-hero-actions">
-        <button type="button" class="icon-btn profile-exophase-refresh${loading ? " is-busy" : ""}" data-act="exophase-refresh" title="${esc(t("profile.exophaseRefresh"))}" aria-label="${esc(t("profile.exophaseRefresh"))}">${icon("refresh", 14)}</button>
-        <button type="button" class="btn small" data-act="open-external-url" data-url="${esc(profileUrl)}">${icon("external", 12)}<span>Exophase</span></button>
+      <div class="profile-hero-top-bar">
+        <span class="profile-exophase-source">${icon("globe", 12)}<span>Exophase</span></span>
+        <div class="profile-hero-actions">
+          <button type="button" class="btn small profile-hero-tool profile-exophase-refresh${loading ? " is-busy" : ""}" data-act="exophase-refresh" title="${esc(t("profile.exophaseRefresh"))}" aria-label="${esc(t("profile.exophaseRefresh"))}">${icon("refresh", 13)}<span>${esc(t("profile.retry"))}</span></button>
+          <button type="button" class="btn small profile-hero-tool" data-act="open-external-url" data-url="${esc(profileUrl)}">${icon("external", 12)}<span>Exophase</span></button>
+        </div>
       </div>
-      <div class="profile-exophase-hero-bottom">
-        <span class="profile-exophase-avatar" aria-hidden="true">${avatarHtml}</span>
-        <div class="profile-exophase-hero-copy">
-          <div class="profile-exophase-title-row">
-            <h1 class="profile-exophase-title">${esc(name)}</h1>
+      <div class="profile-hero-bottom">
+        <div class="profile-avatar-wrap">
+          <span class="profile-avatar profile-avatar-lg profile-exophase-avatar" aria-hidden="true">${avatarHtml}</span>
+        </div>
+        <div class="profile-hero-identity">
+          <div class="profile-name-row">
+            <h1 class="profile-name">${esc(name)}</h1>
             <span class="profile-exophase-pill${connected ? " is-connected" : ""}"><span class="profile-exophase-dot" aria-hidden="true"></span>${esc(t(connected ? "settings.connected" : "accounts.notConnected"))}</span>
           </div>
           <p class="profile-exophase-sub">${esc(handle)}</p>
+          ${storesHtml ? `<div class="profile-scope-bar">${storesHtml}</div>` : ""}
         </div>
       </div>
     </div>
@@ -158,32 +214,19 @@ function profileHero(
 }
 
 function metaLine(summary: ExophaseSummary): string {
-  const sync = summary.lastSync
-    ? `${t("profile.exophaseSync")}: ${fmtDate(summary.lastSync)}`
-    : "";
+  const syncDate = summary.lastSync ? fmtExoDate(summary.lastSync) : "";
+  const sync = syncDate ? `${t("profile.exophaseSync")}: ${syncDate}` : "";
   const updated = summary.fetchedAt
     ? t("profile.exophaseUpdated", { when: relativeTime(summary.fetchedAt) })
     : "";
-  return `<div class="profile-exophase-meta-block">
-    <div class="profile-exophase-meta">
-      ${sync ? `<span>${esc(sync)}</span>` : ""}
-      ${updated ? `<span class="profile-exophase-updated">${esc(updated)}</span>` : ""}
+  return `<div class="profile-exophase-meta-card">
+    <div class="profile-exophase-meta-left">
+      ${sync ? `<span class="profile-exophase-meta-item">${icon("calendar", 13)}<span>${esc(sync)}</span></span>` : ""}
+      <span class="profile-exophase-hint">(${esc(t("profile.exophaseSyncHint"))})</span>
     </div>
-    <p class="profile-exophase-hint">${esc(t("profile.exophaseSyncHint"))}</p>
-  </div>`;
-}
-
-function servicesRow(data: ExophaseData, selected: string): string {
-  const services = data.summary.services.filter((service) => service.games > 0);
-  const chip = (value: string, label: string, count: number): string => {
-    const active = selected === value;
-    return `<button type="button" class="profile-exophase-chip${active ? " active" : ""}" data-act="exophase-service" data-val="${esc(value)}" aria-pressed="${active}">
-      <span>${esc(label)}</span><span class="count tabular-nums">${fmtCount(count)}</span>
-    </button>`;
-  };
-  return `<div class="profile-exophase-services" role="group" aria-label="${esc(t("profile.tabExophase"))}">
-    ${chip("all", t("profile.filterAll"), data.summary.totalGames)}
-    ${services.map((service) => chip(service.slug, service.label, service.games)).join("")}
+    <div class="profile-exophase-meta-right">
+      ${updated ? `<span class="profile-exophase-meta-item">${icon("clock", 13)}<span class="profile-exophase-updated">${esc(updated)}</span></span>` : ""}
+    </div>
   </div>`;
 }
 
@@ -191,69 +234,155 @@ function gameCard(game: ExophaseGame): string {
   const percent = Math.round(game.percent);
   const total = game.totalAwards;
   const earned = game.earnedAwards;
-  const count = total > 0 ? `${earned}/${total}` : `${earned}`;
+  const count = total > 0 ? `${earned} / ${total}` : `${earned}`;
   const playtime = game.playtimeMinutes > 0 ? fmtPlaytime(game.playtimeMinutes * 60) : "";
+  const isComplete = percent >= 100 || (total > 0 && earned >= total);
   const tip = `${game.title} · ${game.platform} · ${percent}%${playtime ? ` · ${playtime}` : ""}`;
   const action = game.url
     ? ` data-act="open-external-url" data-url="${esc(game.url)}"`
     : "";
-  return `<button type="button" class="profile-exophase-card${percent >= 100 ? " is-complete" : ""}"${action} title="${esc(tip)}">
-    <span class="profile-exophase-card-art">
-      ${game.cover ? `<img src="${esc(game.cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-exophase-card-ph">${icon("gamepad-2", 24)}</span>`}
-      ${total > 0 ? `<span class="profile-exophase-card-badge tabular-nums">${percent}%</span>` : ""}
-    </span>
-    <span class="profile-exophase-card-body">
-      <span class="profile-exophase-card-title">${esc(game.title)}</span>
-      <span class="profile-exophase-card-meta tabular-nums">
-        <span class="profile-exophase-card-sub">
-          <span class="profile-exophase-card-platform">${esc(game.platform)}</span>
-          ${playtime ? `<span class="profile-exophase-card-dot" aria-hidden="true">·</span><span>${esc(playtime)}</span>` : ""}
-        </span>
-        <span class="profile-exophase-card-trophies">${icon("trophy", 10)}<span>${esc(count)}</span></span>
-      </span>
-    </span>
-  </button>`;
+
+  return `
+    <div class="profile-exophase-card${isComplete ? " is-plat" : ""}" role="button" tabindex="0"${action} title="${esc(tip)}">
+      <div class="profile-exophase-card-art">
+        ${game.cover
+          ? `<img src="${esc(game.cover)}" alt="" loading="lazy" decoding="async" />`
+          : `<span class="profile-exophase-card-ph">${icon("gamepad-2", 24)}</span>`
+        }
+        ${isComplete
+          ? `<span class="profile-ach-badge plat" title="${t("profile.filterPlatinum")}">${epicPlatinumIcon(13)}<span>100%</span></span>`
+          : total > 0 && percent > 0
+            ? `<span class="profile-ach-badge pct tabular-nums">${percent}%</span>`
+            : ""
+        }
+        <span class="profile-ach-badge store">${platformChip(game.platformSlug, game.platform)}</span>
+      </div>
+      ${total > 0
+        ? `<div class="profile-ach-bar${isComplete ? " is-plat-bar" : ""}"><span style="width:${Math.min(100, Math.max(0, percent))}%"></span></div>`
+        : `<div class="profile-ach-bar is-empty"></div>`
+      }
+      <div class="profile-exophase-card-body">
+        <div class="profile-exophase-card-title-line">
+          <span class="profile-exophase-card-title">${esc(game.title)}</span>
+        </div>
+        <div class="profile-exophase-card-meta tabular-nums">
+          <span class="profile-exophase-card-sub">
+            <span class="profile-exophase-card-platform">${esc(game.platform)}</span>
+            ${playtime ? `<span class="profile-exophase-card-dot" aria-hidden="true">·</span><span>${esc(playtime)}</span>` : ""}
+          </span>
+          <span class="profile-exophase-card-trophies">${icon("trophy", 11)}<span>${esc(count)}</span></span>
+        </div>
+      </div>
+    </div>`;
 }
 
-function gamesSection(data: ExophaseData, selected: string): string {
-  const all = [...data.games].sort((left, right) => right.lastPlayed - left.lastPlayed);
-  const filtered = selected === "all" ? all : all.filter((game) => game.platformSlug === selected);
-  const shown = filtered.slice(0, S.exophaseGameCount);
-  const more = filtered.length > shown.length
-    ? `<div class="row profile-more"><button type="button" class="btn ghost small" data-act="exophase-show-more">${t("profile.showMore")} (${fmtCount(filtered.length - shown.length)})</button></div>`
+export function getExophaseGamesGridHtml(data: ExophaseData, selected: string): { count: string; html: string } {
+  const q = (S.exophaseSearchQuery || "").trim().toLowerCase();
+  const sort = S.exophaseSort || "recent";
+
+  let list = selected === "all" ? data.games : data.games.filter((game) => game.platformSlug === selected);
+
+  if (q) {
+    list = list.filter((g) => g.title.toLowerCase().includes(q) || g.platform.toLowerCase().includes(q));
+  }
+
+  const sorted = [...list].sort((a, b) => {
+    if (sort === "progress") {
+      return b.percent !== a.percent ? b.percent - a.percent : b.lastPlayed - a.lastPlayed;
+    }
+    if (sort === "trophies") {
+      return b.earnedAwards !== a.earnedAwards ? b.earnedAwards - a.earnedAwards : b.percent - a.percent;
+    }
+    if (sort === "playtime") {
+      return b.playtimeMinutes !== a.playtimeMinutes ? b.playtimeMinutes - a.playtimeMinutes : b.lastPlayed - a.lastPlayed;
+    }
+    if (sort === "alpha") {
+      return S.trCollator.compare(a.title, b.title);
+    }
+    // "recent" (default)
+    return b.lastPlayed - a.lastPlayed;
+  });
+
+  const shown = sorted.slice(0, S.exophaseGameCount || 60);
+  const more = sorted.length > shown.length
+    ? `<div class="row profile-more"><button type="button" class="btn ghost small" data-act="exophase-show-more">${t("profile.showMore")} (${fmtCount(sorted.length - shown.length)})</button></div>`
     : "";
   const body = shown.length > 0
     ? `<div class="profile-exophase-grid">${shown.map(gameCard).join("")}</div>`
     : emptyState("gamepad-2", t("profile.exophaseEmptyFilter"));
+
+  return {
+    count: fmtCount(sorted.length),
+    html: `${body}${more}`,
+  };
+}
+
+export function patchExophaseGamesGrid(): void {
+  if (!S.exophaseData) return;
+  const summary = S.exophaseData.summary;
+  const serviceAvailable = summary.services.some((service) => service.slug === S.exophaseService);
+  const selected = serviceAvailable ? S.exophaseService : "all";
+  const { count, html } = getExophaseGamesGridHtml(S.exophaseData, selected);
+  const countEl = document.getElementById("exophase-games-count");
+  if (countEl) countEl.textContent = count;
+  const wrap = document.getElementById("exophase-games-grid-wrap");
+  if (wrap) {
+    wrap.innerHTML = html;
+  }
+}
+
+function gamesSection(data: ExophaseData, selected: string): string {
+  const sort = S.exophaseSort || "recent";
+  const { count, html } = getExophaseGamesGridHtml(data, selected);
+
   return `<section class="profile-row profile-exophase-games">
     <div class="profile-row-head">
       <div class="profile-row-title-group">
         <h3 class="profile-row-title">${esc(t("profile.games"))}</h3>
-        <span class="profile-row-count tabular-nums">${fmtCount(filtered.length)}</span>
+        <span id="exophase-games-count" class="profile-row-count tabular-nums">${count}</span>
+      </div>
+      <div class="profile-exophase-controls">
+        <label class="search gp-search profile-exophase-search">
+          ${icon("search", 14)}
+          <input type="text" id="exophase-search" placeholder="${esc(t("profile.bannerSearchPlaceholder"))}" aria-label="${esc(t("profile.bannerSearchPlaceholder"))}" value="${esc(S.exophaseSearchQuery || "")}" spellcheck="false" autocomplete="off" />
+          <button type="button" id="exophase-search-clear-btn" class="profile-search-clear-btn" data-act="exophase-search-clear" title="${esc(t("lib.clearSearch"))}" aria-label="${esc(t("lib.clearSearch"))}"${S.exophaseSearchQuery ? "" : " hidden"}>${icon("x", 12)}</button>
+        </label>
+        <div class="profile-sort-wrap">
+          <select id="exophase-sort-select" class="profile-sort-select" aria-label="${esc(t("ach.sortTitle"))}">
+            <option value="recent"${sort === "recent" ? " selected" : ""}>${esc(t("lib.sortRecent"))}</option>
+            <option value="progress"${sort === "progress" ? " selected" : ""}>${esc(t("profile.sortProgress"))}</option>
+            <option value="trophies"${sort === "trophies" ? " selected" : ""}>${esc(t("profile.trophies"))}</option>
+            <option value="playtime"${sort === "playtime" ? " selected" : ""}>${esc(t("profile.sortPlaytime"))}</option>
+            <option value="alpha"${sort === "alpha" ? " selected" : ""}>${esc(t("profile.sortAlpha"))}</option>
+          </select>
+        </div>
       </div>
     </div>
-    ${servicesRow(data, selected)}
-    ${body}
-    ${more}
+    <div id="exophase-games-grid-wrap">
+      ${html}
+    </div>
   </section>`;
 }
 
 function awardCard(award: ExophaseAward): string {
-  const rarity = award.rarity != null ? `%${award.rarity.toFixed(1)}` : "";
   const isRare = award.rarity != null && award.rarity < 5;
+  const rarityText = award.rarity != null
+    ? (currentLanguage() === "tr" ? `%${fmtDecimal1(award.rarity)}` : `${fmtDecimal1(award.rarity)}%`)
+    : "";
   const action = award.url
     ? ` data-act="open-external-url" data-url="${esc(award.url)}"`
     : "";
   const art = award.icon
     ? `<img class="profile-unlock-art" src="${esc(award.icon)}" alt="" loading="lazy" decoding="async" />`
     : `<span class="profile-unlock-placeholder">${icon("trophy", 18)}</span>`;
-  const rarityBadge = rarity
-    ? `<span class="profile-unlock-badge${isRare ? " is-rare" : ""} tabular-nums">${isRare ? icon("trophy", 10) : ""}<span>${rarity}</span></span>`
+  const rarityBadge = rarityText
+    ? `<span class="profile-unlock-badge${isRare ? " is-rare" : ""} tabular-nums">${isRare ? icon("trophy", 10) : ""}<span>${rarityText}</span></span>`
     : "";
-  const tip = [award.name, award.game, award.earned, rarity, award.description]
+  const tip = [award.name, award.game, award.earned, rarityText, award.description]
     .filter(Boolean)
     .join(" · ");
   const earned = shortEarned(award.earned);
+
   return `<button type="button" class="profile-unlock-card${isRare ? " is-rare-card" : ""}"${action} title="${esc(tip)}">
     <div class="profile-unlock-art-wrap">${art}</div>
     <div class="profile-unlock-main">
@@ -284,11 +413,14 @@ function awardsSection(data: ExophaseData): string {
 
 function loadedView(data: ExophaseData): string {
   const summary = data.summary;
+  const platRatio = summary.totalGames > 0
+    ? `${Math.round((summary.completedGames / summary.totalGames) * 100)}% (${summary.completedGames}/${summary.totalGames})`
+    : "";
   const stats = [
     stat(icon("gamepad-2", 21), t("profile.games"), fmtCount(summary.totalGames)),
     stat(icon("trophy", 21), t("profile.trophies"), fmtCount(summary.totalAwards)),
     stat(icon("clock", 21), t("profile.played"), summary.playtimeMinutes > 0 ? fmtPlaytime(summary.playtimeMinutes * 60) : "—"),
-    stat(epicPlatinumIcon(22), t("profile.statCompleted"), fmtCount(summary.completedGames), "", true),
+    stat(epicPlatinumIcon(22), t("profile.statCompleted"), fmtCount(summary.completedGames), platRatio, true),
     ...(summary.rank > 0 ? [stat(icon("globe", 21), t("profile.exophaseRank"), `#${fmtCount(summary.rank)}`)] : []),
   ].join("");
 
@@ -298,7 +430,7 @@ function loadedView(data: ExophaseData): string {
   const heroArt = lead?.hero || lead?.cover || "";
 
   return `
-    ${profileHero(summary.displayName || summary.username, summary.username, summary.avatar, heroArt, stats, S.exophaseLoading, summary.profileUrl, true)}
+    ${profileHero(summary.displayName || summary.username, summary.username, summary.avatar, heroArt, stats, S.exophaseLoading, summary.profileUrl, true, summary, selected)}
     ${metaLine(summary)}
     ${awardsSection(data)}
     ${gamesSection(data, selected)}
