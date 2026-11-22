@@ -1028,8 +1028,9 @@ html.sb-narrow .sb-toggle-label {
 /* --- Profile page switcher: the same segmented control as the store tabs --- */
 .profile-tabs {
   flex: 0 0 auto;
-  margin: 0 2px 0 12px;
+  margin: 0 auto 0 14px;
 }
+.profile-tabs[hidden] { display: none !important; }
 .profile-tabs .tab {
   gap: 7px;
 }
@@ -1049,7 +1050,7 @@ html.sb-narrow .sb-toggle-label {
   }
 }
 
-#page-header:not(:has(.page-header-count:not([hidden]))):not(:has(#store-tabs-bar:not([hidden]))) .page-header-title { flex: 1; }
+#page-header:not(:has(.page-header-count:not([hidden]))):not(:has(#store-tabs-bar:not([hidden]))):not(:has(#profile-tabs:not([hidden]))) .page-header-title { flex: 1; }
 .page-header-count[hidden] { display: none; }
 .store-progress-line { display: none !important; }
 .page-calendar-btn {
