@@ -14,19 +14,7 @@
   width: 100%;
 }
 
-/* --- 1a. Page Tabs & Exophase Shell --- */
-.profile-tabs {
-  /* The page gap is 28px; pull the hero a little closer to the strip. */
-  margin-bottom: -8px;
-}
-.profile-tabs .tab svg {
-  color: var(--text-3);
-  transition: color var(--ease);
-}
-.profile-tabs .tab:hover svg,
-.profile-tabs .tab.active svg {
-  color: var(--accent);
-}
+/* --- 1a. Exophase Shell --- */
 .profile-tab-panel {
   display: flex;
   flex-direction: column;

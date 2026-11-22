@@ -166,6 +166,18 @@ export function updatePageHeader(): void {
       });
     }
   }
+  const profileTabs = document.getElementById("profile-tabs");
+  if (profileTabs) {
+    const onProfile = S.view === "profile";
+    profileTabs.hidden = !onProfile;
+    if (onProfile) {
+      profileTabs.querySelectorAll<HTMLElement>("[data-act='profile-tab']").forEach((btn) => {
+        const active = btn.dataset.val === S.profileTab;
+        btn.classList.toggle("active", active);
+        btn.setAttribute("aria-current", active ? "page" : "false");
+      });
+    }
+  }
   const showLibFilters = S.view === "library" && !S.currentModalAppName;
   if (!showLibFilters && S.isFilterPanelOpen) {
     S.isFilterPanelOpen = false;

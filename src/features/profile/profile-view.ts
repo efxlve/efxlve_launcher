@@ -1321,25 +1321,13 @@ function renderRecentRow(scope: "all" | StoreKind): string {
     </section>`;
 }
 
-/** Page tabs: the launcher profile and the read-only Exophase mirror. */
-function renderProfileTabs(): string {
-  const tab = (val: "launcher" | "exophase", label: string, iconName: IconName): string => {
-    const active = S.profileTab === val;
-    return `<button type="button" class="tab${active ? " active" : ""}" id="profile-tab-${val}" role="tab" aria-selected="${active}" aria-controls="profile-tabpanel" data-act="profile-tab" data-val="${val}">${icon(iconName, 14)}<span>${esc(label)}</span></button>`;
-  };
-  return `<nav class="tabs profile-tabs" role="tablist" aria-label="${esc(t("profile.tabsLabel"))}">
-    ${tab("launcher", t("profile.tabLocal"), "user")}
-    ${tab("exophase", t("profile.tabExophase"), "globe")}
-  </nav>`;
-}
-
-/** The active tab's panel keeps the page's single scroll container and gap. */
+/** The active tab's content block keeps the page's single gap and scroll container. */
 function profileTabPanel(content: string): string {
-  return `<div id="profile-tabpanel" class="profile-tab-panel" role="tabpanel" aria-labelledby="profile-tab-${S.profileTab}">${content}</div>`;
+  return `<div class="profile-tab-panel">${content}</div>`;
 }
 
 /** Dormant account panel: calm grouped list when an inactive account is selected. */
-function renderDormantView(account: ProfileAccount, displayName: string, avatarKey: string, customAvatar: string | null, initial: string, tabs: string): string {
+function renderDormantView(account: ProfileAccount, displayName: string, avatarKey: string, customAvatar: string | null, initial: string): string {
   const archive = accountArchiveInfo(account);
   const dormantSwitch = switchAct(account.kind);
   const avatarTitleDormant = customAvatar ? t("profile.changeAvatarTitle") : t("profile.uploadAvatarTitle");
@@ -1394,24 +1382,23 @@ function renderDormantView(account: ProfileAccount, displayName: string, avatarK
             : `<button type="button" class="btn primary" data-view="accounts">${t("accounts.manageAccounts")}</button>`}
         </div>
       </section>`;
-  return `<div class="page profile-page">${tabs}${profileTabPanel(body)}</div>`;
+  return `<div class="page profile-page">${profileTabPanel(body)}</div>`;
 }
 
 /** Main Profile Page Entry Point */
 export function renderProfile(): string {
-  const tabs = renderProfileTabs();
   if (S.profileTab === "exophase") {
-    return `<div class="page profile-page">${tabs}${profileTabPanel(renderExophaseTab())}</div>`;
+    return `<div class="page profile-page">${profileTabPanel(renderExophaseTab())}</div>`;
   }
 
   const hasAnyData = S.playerProfileData || S.gogSummaries.length > 0 || steamConnected() || S.amazonSummaries.length > 0 || S.companionSummaries.length > 0;
   if (S.profileLoading && !hasAnyData) {
     const loading = `<div class="empty-state"><span class="spinner"></span><h3>${t("profile.loadingTitle")}</h3><p>${t("profile.loadingDesc")}</p></div>`;
-    return `<div class="page profile-page">${tabs}${profileTabPanel(loading)}</div>`;
+    return `<div class="page profile-page">${profileTabPanel(loading)}</div>`;
   }
   if (S.profileError && !hasAnyData) {
     const error = emptyState("info", t("profile.errorTitle"), esc(S.profileError), `<button class="btn primary" data-act="refresh-profile">${t("profile.retry")}</button>`);
-    return `<div class="page profile-page">${tabs}${profileTabPanel(error)}</div>`;
+    return `<div class="page profile-page">${profileTabPanel(error)}</div>`;
   }
 
   const selection = profileSelection();
@@ -1429,7 +1416,7 @@ export function renderProfile(): string {
 
   // If selecting an inactive account, show the calm dormant panel.
   if (!showData && !combined) {
-    return renderDormantView(account!, displayName, avatarKey, customAvatar, initial, tabs);
+    return renderDormantView(account!, displayName, avatarKey, customAvatar, initial);
   }
 
   const allGames = showData ? profileListGames(scope) : [];
@@ -1484,7 +1471,7 @@ export function renderProfile(): string {
       ${showData ? renderRecentRow(scope) : ""}
       ${showData ? renderUnlockRow(scope) : ""}
       ${renderAchievementsPanel(games, filtered)}`;
-  return `<div class="page profile-page">${tabs}${profileTabPanel(content)}</div>`;
+  return `<div class="page profile-page">${profileTabPanel(content)}</div>`;
 }
 
 /**

@@ -1025,6 +1025,16 @@ html.sb-narrow .sb-toggle-label {
   pointer-events: auto;
   text-overflow: ellipsis;
 }
+/* --- Profile page switcher: the same segmented control as the store tabs --- */
+.profile-tabs {
+  flex: 0 0 auto;
+  margin: 0 2px 0 12px;
+}
+.profile-tabs .tab > svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
 .store-tabs-underline { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
