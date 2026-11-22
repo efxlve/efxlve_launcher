@@ -13,6 +13,7 @@ import { closeAllModals, openEpicModal, registerNavHistoryPush, render } from ".
 import { canonicalGameTitle, compareLibraryRecent, rawOf, totalLibraryGamesCount } from "./selectors";
 import { downloadBadgeCounts } from "./download-badge";
 import { hasConnection } from "./offline";
+import { HAS_NATIVE_CAPTURE } from "./platform";
 import { cachedSteamCover } from "./steam-art-cache";
 import { currentProfileName, globalAvatar, S } from "./state";
 import type { EpicFilter, SettingsSection, View } from "./types";
@@ -198,7 +199,9 @@ export function updatePageHeader(): void {
   }
   const profileShotBtn = document.getElementById("profile-screenshot-btn");
   if (profileShotBtn) {
-    profileShotBtn.hidden = S.view !== "profile";
+    // The capture goes through WebView2's CDP interface; the other desktops
+    // must not offer a button that can only fail.
+    profileShotBtn.hidden = S.view !== "profile" || !HAS_NATIVE_CAPTURE;
   }
   const back = document.getElementById("nav-back-btn") as HTMLButtonElement | null;
   if (back) back.disabled = !S.currentModalAppName && !canNavBack();

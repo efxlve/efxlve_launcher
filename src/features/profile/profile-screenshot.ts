@@ -138,15 +138,21 @@ export async function takeProfileScreenshot(): Promise<void> {
       scale: window.devicePixelRatio || 1,
     };
 
-    const copyToClipboard = ssProfileClipboardOn();
-    const saveToFile = ssProfileSaveFileOn();
-    const openFolder = ssProfileOpenFolderOn();
+    // The clipboard write is the only reason to carry the image back over IPC.
+    const canCopy = ssProfileClipboardOn()
+      && Boolean(navigator.clipboard)
+      && typeof ClipboardItem !== "undefined";
+    // A capture that neither copies nor writes a file would produce nothing the
+    // user can reach, so file output is the fallback when copying is unavailable.
+    const saveToFile = ssProfileSaveFileOn() || !canCopy;
+    // Opening the folder only makes sense when a new file landed in it.
+    const openFolder = saveToFile && ssProfileOpenFolderOn();
     const customDir = ssProfileCustomDir() || null;
 
-    const res = await captureProfileScreenshot(clip, customDir);
+    const res = await captureProfileScreenshot(clip, customDir, saveToFile, canCopy);
 
     let copied = false;
-    if (copyToClipboard && res.dataUrl && navigator.clipboard && typeof ClipboardItem !== "undefined") {
+    if (canCopy && res.dataUrl) {
       try {
         const resp = await fetch(res.dataUrl);
         const blob = await resp.blob();
@@ -168,7 +174,8 @@ export async function takeProfileScreenshot(): Promise<void> {
     } else if (saveToFile) {
       toast(t("profile.screenshotSaved", { file: res.fileName }), "ok");
     } else {
-      toast(t("profile.screenshotDone"), "ok");
+      // Copying was the only requested output and the clipboard write failed.
+      toast(t("profile.screenshotFailed"), "err");
     }
   } catch (error) {
     console.error("Profile screenshot failed:", error);

@@ -1,10 +1,10 @@
 /**
  * Profile page renderer.
  *
- * Single-page, Xbox-style profile: one identity hero on top, the achievement
- * catalog as the main column, and Recently Played, Connected Accounts and the
- * completion showcase in the side rail. There are no tabs; store scope lives
- * on the hero chips and filters live inside the achievement panel.
+ * Single-page profile: a cinematic identity hero on top, then the pinned
+ * showcase, play activity, recently played, recent unlocks and the achievement
+ * catalog. There are no tabs; store scope lives on the hero chips and filters
+ * live inside the achievement panel.
  *
  * Statistics are scoped and honest by design: only games with a tracked
  * achievement set count toward trophy, completion and platinum numbers, and
@@ -58,10 +58,13 @@ export function steamArtAttrs(appName: string): string {
 export function profileGridColumns(): number {
   if (typeof window === "undefined") return 8;
   const view = document.getElementById("view");
-  // Available width inside .profile-page (max-width: 1560px, padding: 28px each side)
+  // Available width inside .profile-page (max-width: 1560px, #view padding 28px each side)
   const available = (view?.clientWidth || window.innerWidth - 64) - 56;
   const rowWidth = Math.max(300, Math.min(1560, available));
-  const isNarrow = typeof window !== "undefined" && window.innerWidth <= 900;
+  // Mirrors .profile-ach-list in profile.css: 174px / 16px by default, and
+  // 152px / 12px under 1100px. Keep this breakpoint in step with the CSS, or
+  // the card count no longer fills whole rows and the five-row view breaks.
+  const isNarrow = window.innerWidth <= 1100;
   const minCardWidth = isNarrow ? 152 : 174;
   const gap = isNarrow ? 12 : 16;
   return Math.max(1, Math.floor((rowWidth + gap) / (minCardWidth + gap)));
@@ -75,7 +78,6 @@ export function profileGridCapacity(rows = 5): number {
 /** Resets the profile list back to the first chunk (on filter/sort/search change). */
 export function resetProfileCards(): void {
   S.profileCardCount = profileGridCapacity(5);
-  S.profileUnlockCount = 8;
 }
 
 /** Score unit: Xbox counts gamerscore, the rest count XP. */
@@ -754,6 +756,21 @@ export function profileListGames(targetScope?: "all" | StoreKind): ProfileGameRe
   return games;
 }
 
+/**
+ * Library keys whose achievement set the user hid from the profile. The hidden
+ * set stores sandbox ids while the unlock history stores library keys, so the
+ * strip and its modal translate through the game list instead of looking up
+ * the history key directly (which only matches on the stores where the two
+ * identifiers happen to be the same).
+ */
+export function hiddenAchievementAppNames(scope?: "all" | StoreKind): Set<string> {
+  const out = new Set<string>();
+  for (const g of profileListGames(scope)) {
+    if (g.sandbox_id && S.hiddenAchievements.has(g.sandbox_id)) out.add(g.app_name);
+  }
+  return out;
+}
+
 export function libraryCount(scope: "all" | StoreKind): number {
   if (scope === "epic") return totalEpicGames();
   if (scope === "steam") return totalSteamGames();
@@ -1176,10 +1193,11 @@ function unlockRowCapacity(): number {
  * game page only knows one set.
  */
 function renderUnlockRow(scope: "all" | StoreKind): string {
+  const hidden = hiddenAchievementAppNames(scope);
   const entries = sortedAchievementHistory().filter((entry) => {
     if (scope !== "all" && entry.store !== scope) return false;
     if (S.hiddenGames.has(entry.appName)) return false;
-    if (S.hiddenAchievements.has(entry.appName)) return false;
+    if (hidden.has(entry.appName) || S.hiddenAchievements.has(entry.appName)) return false;
     return true;
   });
   if (entries.length === 0) return "";
@@ -1251,7 +1269,7 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
       <div class="profile-unlock-row">${cards}</div>
       ${hasMore ? `
         <div class="profile-unlock-actions">
-          <button type="button" class="btn ghost small profile-unlock-more" data-act="open-unlocks-modal">${icon("chevron-down", 13)}<span>${esc(t("profile.showMore"))} (${(entries.length - shown.length).toLocaleString()})</span></button>
+          <button type="button" class="btn ghost small profile-unlock-more" data-act="open-unlocks-modal" data-scope="${esc(scope)}">${icon("chevron-down", 13)}<span>${esc(t("profile.showMore"))} (${(entries.length - shown.length).toLocaleString()})</span></button>
         </div>` : ""}
     </section>`;
 }
@@ -1259,11 +1277,14 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
 function recentRowCapacity(): number {
   if (typeof window === "undefined") return 9;
   const view = document.getElementById("view");
-  // Available row width inside .profile-page (max-width: 1560px, padding: 28px each side)
+  // Available row width inside .profile-page (max-width: 1560px, #view padding 28px each side)
   const available = (view?.clientWidth || window.innerWidth - 64) - 56;
-  const rowWidth = Math.max(300, Math.min(1560, available));
+  // .profile-recent-row adds 2px of padding on each side.
+  const rowWidth = Math.max(300, Math.min(1560, available)) - 4;
+  // Mirrors .profile-recent-row in profile.css: minmax(124px, 1fr) with a 14px
+  // gap. A smaller gap here overcounts by one card and wraps the single row.
   const minCardWidth = 124;
-  const gap = 12;
+  const gap = 14;
   return Math.max(3, Math.floor((rowWidth + gap) / (minCardWidth + gap)));
 }
 
@@ -1455,6 +1476,5 @@ export function enterProfile(): void {
   S.profileShowHidden = false;
   S.profileActivityRange = "7d";
   S.profileCardCount = profileGridCapacity(5);
-  S.profileUnlockCount = 8;
   S.profileError = "";
 }

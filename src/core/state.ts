@@ -618,8 +618,6 @@ export const S = {
   profileActivityRange: ("7d") as "7d" | "30d",
   profileSearchQuery: "",
   profileViewMode: (localStorage.getItem(PROFILE_VIEW_MODE_KEY) === "list" ? "list" : "grid") as "grid" | "list",
-  /** Recent unlocks shown on the profile; "Show all" grows this by 16. */
-  profileUnlockCount: 8,
   offlineMode: false,
   networkProfile: ("balanced") as string,
   /** Epic download cap in Mbit/s; 0 = unlimited. */

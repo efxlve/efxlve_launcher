@@ -34,6 +34,8 @@ pub async fn capture_profile_screenshot_impl(
     app: tauri::AppHandle,
     clip: Option<ProfileClip>,
     target_dir: Option<String>,
+    save_to_file: bool,
+    include_data_url: bool,
 ) -> Result<ProfileScreenshotResult, String> {
     use base64::Engine;
     use tauri::Manager;
@@ -123,25 +125,37 @@ pub async fn capture_profile_screenshot_impl(
     let parsed: CdpResponse = serde_json::from_str(&raw_json)
         .map_err(|e| format!("Failed to parse CDP response: {e}"))?;
 
-    let png_bytes = base64::engine::general_purpose::STANDARD
-        .decode(&parsed.data)
-        .map_err(|e| format!("Base64 decode failed: {e}"))?;
+    // Decoding is only needed for the file. The clipboard path carries the
+    // base64 through untouched, and a caller that asked for neither output
+    // still gets a successful capture with empty fields.
+    let (file_path, file_name) = if save_to_file {
+        let png_bytes = base64::engine::general_purpose::STANDARD
+            .decode(&parsed.data)
+            .map_err(|e| format!("Base64 decode failed: {e}"))?;
 
-    let dest_dir = resolve_profile_screenshots_dir(target_dir);
-    let _ = std::fs::create_dir_all(&dest_dir);
+        let dest_dir = resolve_profile_screenshots_dir(target_dir);
+        let _ = std::fs::create_dir_all(&dest_dir);
 
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis();
-    let file_name = format!("Profile_{timestamp}.png");
-    let file_path = dest_dir.join(&file_name);
-    std::fs::write(&file_path, &png_bytes).map_err(|e| e.to_string())?;
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis();
+        let file_name = format!("Profile_{timestamp}.png");
+        let path = dest_dir.join(&file_name);
+        std::fs::write(&path, &png_bytes).map_err(|e| e.to_string())?;
+        (path.to_string_lossy().to_string(), file_name)
+    } else {
+        (String::new(), String::new())
+    };
 
-    let data_url = format!("data:image/png;base64,{}", parsed.data);
+    let data_url = if include_data_url {
+        format!("data:image/png;base64,{}", parsed.data)
+    } else {
+        String::new()
+    };
 
     Ok(ProfileScreenshotResult {
-        file_path: file_path.to_string_lossy().to_string(),
+        file_path,
         file_name,
         data_url,
     })
@@ -152,6 +166,8 @@ pub async fn capture_profile_screenshot_impl(
     _app: tauri::AppHandle,
     _clip: Option<ProfileClip>,
     _target_dir: Option<String>,
+    _save_to_file: bool,
+    _include_data_url: bool,
 ) -> Result<ProfileScreenshotResult, String> {
     Err("Profile screenshots are currently only supported on Windows".to_string())
 }
@@ -161,8 +177,17 @@ pub async fn capture_profile_screenshot(
     app: tauri::AppHandle,
     clip: Option<ProfileClip>,
     target_dir: Option<String>,
+    save_to_file: Option<bool>,
+    include_data_url: Option<bool>,
 ) -> Result<ProfileScreenshotResult, String> {
-    capture_profile_screenshot_impl(app, clip, target_dir).await
+    capture_profile_screenshot_impl(
+        app,
+        clip,
+        target_dir,
+        save_to_file.unwrap_or(true),
+        include_data_url.unwrap_or(false),
+    )
+    .await
 }
 
 #[tauri::command]

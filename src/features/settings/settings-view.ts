@@ -2084,7 +2084,7 @@ function renderScreenshots(): string {
         sidebar,
       t("settings.screenshotsTitle"),
     ) +
-    profileSection +
+    (HAS_NATIVE_CAPTURE ? profileSection : "") +
     (HAS_NATIVE_CAPTURE ? group(compression + options, t("ss.compressionSection")) : "") +
     group(sortRow + densityRow, t("ss.gallerySection")) +
     (HAS_NATIVE_CAPTURE ? group(disabledRows, t("ss.disabledTitle"), infoBox("ss.disabledHint")) : "") +

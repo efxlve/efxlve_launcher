@@ -573,12 +573,16 @@ document.addEventListener("click", (e) => {
       render();
     });
   } else if (act === "open-unlocks-modal" || act === "profile-unlocks-more") {
-    openUnlocksModal();
+    // The strip knows its scope (a store chip or one account); the modal must
+    // open on the same unlocks instead of falling back to the last store chip.
+    const scope = t.dataset.scope;
+    openUnlocksModal(
+      scope === "all" || (scope && ALL_PROFILE_STORES.includes(scope as StoreKind))
+        ? (scope as "all" | StoreKind)
+        : undefined,
+    );
   } else if (act === "profile-unlocks-close") {
     closeUnlocksModal();
-  } else if (act === "profile-unlocks-less") {
-    S.profileUnlockCount = 8;
-    render();
   } else if (act === "unpin-ach" && t.dataset.key) {
     removeAchievementPin(t.dataset.key);
     render();

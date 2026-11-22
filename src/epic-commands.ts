@@ -1121,8 +1121,15 @@ export interface ProfileScreenshotResult {
 export const captureProfileScreenshot = (
   clip?: ProfileClip | null,
   targetDir?: string | null,
+  saveToFile = true,
+  includeDataUrl = false,
 ) =>
-  invoke<ProfileScreenshotResult>("capture_profile_screenshot", { clip, targetDir: targetDir || null });
+  invoke<ProfileScreenshotResult>("capture_profile_screenshot", {
+    clip,
+    targetDir: targetDir || null,
+    saveToFile,
+    includeDataUrl,
+  });
 
 export const getProfileScreenshotsDir = (customDir?: string | null) =>
   invoke<string>("get_profile_screenshots_dir", { customDir: customDir || null });

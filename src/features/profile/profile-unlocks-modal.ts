@@ -4,7 +4,7 @@ import { S } from "../../core/state";
 import { esc, fmtAchDate, fmtDecimal1 } from "../../core/utils";
 import { t } from "../../i18n";
 import { storeLogo } from "../store/store-logos";
-import type { StoreKind } from "./profile-view";
+import { hiddenAchievementAppNames, type StoreKind } from "./profile-view";
 
 let cachedEntries: AchievementHistoryEntry[] = [];
 let filteredEntries: AchievementHistoryEntry[] = [];
@@ -122,10 +122,11 @@ export function openUnlocksModal(scope: "all" | StoreKind = S.profileStore || "a
   closeUnlocksModal();
   activeFilter = "all";
 
+  const hidden = hiddenAchievementAppNames(scope);
   cachedEntries = sortedAchievementHistory().filter((entry) => {
     if (scope !== "all" && entry.store !== scope) return false;
     if (S.hiddenGames.has(entry.appName)) return false;
-    if (S.hiddenAchievements.has(entry.appName)) return false;
+    if (hidden.has(entry.appName) || S.hiddenAchievements.has(entry.appName)) return false;
     return true;
   });
   filteredEntries = cachedEntries;
