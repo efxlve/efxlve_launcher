@@ -138,6 +138,12 @@ async function primeProfileImages(view: HTMLElement | null, container: HTMLEleme
     await nextFrame();
     await waitForVisibleImages(container, view, 2500);
   }
+  // The last whole step can stop short of the page bottom; visit it explicitly
+  // or the final row never enters the viewport and stays blank.
+  view.scrollTop = max;
+  await nextFrame();
+  await nextFrame();
+  await waitForVisibleImages(container, view, 2500);
   view.scrollTop = 0;
   await nextFrame();
 }
