@@ -37,11 +37,61 @@ import {
 } from "../../core/themes";
 import { t } from "../../i18n";
 import { THEME_FAVORITES_KEY } from "../../core/constants";
+import { themeColorFamily, type ThemeColorFamily } from "../../core/theme/colors";
 
 type ThemeFilter = "all" | "favorites" | "dark" | "light" | "custom";
+type ThemeColorFilter = ThemeColorFamily | "all";
 let currentFilter: ThemeFilter = "all";
+let currentColor: ThemeColorFilter = "all";
 let themeQuery = "";
 let themeSearchWired = false;
+
+interface ThemeColorGroup {
+  id: ThemeColorFamily;
+  swatch: string;
+}
+
+const THEME_COLOR_LABELS: Record<ThemeColorFamily, string> = {
+  red: "settings.themeColorRed",
+  orange: "settings.themeColorOrange",
+  yellow: "settings.themeColorYellow",
+  green: "settings.themeColorGreen",
+  cyan: "settings.themeColorCyan",
+  blue: "settings.themeColorBlue",
+  purple: "settings.themeColorPurple",
+  pink: "settings.themeColorPink",
+  neutral: "settings.themeColorNeutral",
+};
+
+/** Hue order, so the chips read like a colour wheel, with neutral last. */
+const THEME_COLOR_GROUPS: readonly ThemeColorGroup[] = [
+  { id: "red", swatch: "#e5484d" },
+  { id: "orange", swatch: "#f97316" },
+  { id: "yellow", swatch: "#fcee0a" },
+  { id: "green", swatch: "#22c55e" },
+  { id: "cyan", swatch: "#22d3ee" },
+  { id: "blue", swatch: "#3b82f6" },
+  { id: "purple", swatch: "#8b5cf6" },
+  { id: "pink", swatch: "#ec4899" },
+  { id: "neutral", swatch: "#9ca3af" },
+];
+const THEME_COLOR_IDS = new Set<string>(THEME_COLOR_GROUPS.map((group) => group.id));
+
+function countThemeColors(list: readonly ThemeDef[]): Record<ThemeColorFamily, number> {
+  const counts: Record<ThemeColorFamily, number> = {
+    red: 0,
+    orange: 0,
+    yellow: 0,
+    green: 0,
+    cyan: 0,
+    blue: 0,
+    purple: 0,
+    pink: 0,
+    neutral: 0,
+  };
+  for (const theme of list) counts[themeColorFamily(theme)] += 1;
+  return counts;
+}
 
 /**
  * The catalog carries 250 themes. Building every card before the gallery
@@ -132,7 +182,8 @@ function themeDisplayName(theme: ThemeDef): string {
 /** The card's searchable text, shared by the renderer and the lazy filter. */
 function themeSearchText(theme: ThemeDef): string {
   const tags = theme.tags?.join(" ") ?? "";
-  return `${themeDisplayName(theme)} ${theme.scheme} ${tags}${theme.custom ? " custom" : ""}`;
+  const color = themeColorFamily(theme);
+  return `${themeDisplayName(theme)} ${theme.scheme} ${color} ${t(THEME_COLOR_LABELS[color])} ${tags}${theme.custom ? " custom" : ""}`;
 }
 
 function sortThemesByFavorites(list: ThemeDef[], favorites: Set<string>): ThemeDef[] {
@@ -142,7 +193,7 @@ function sortThemesByFavorites(list: ThemeDef[], favorites: Set<string>): ThemeD
 }
 
 function themeEmptyState(): string {
-  if (currentFilter === "custom") {
+  if (currentFilter === "custom" && customThemes().length === 0) {
     return `<div class="theme-empty-custom">
       <span style="font-size: 24px; opacity: 0.8;">${icon("sparkles", 28)}</span>
       <span>${esc(t("settings.themeEmptyCustom"))}</span>
@@ -151,10 +202,20 @@ function themeEmptyState(): string {
       </button>
     </div>`;
   }
-  if (currentFilter === "favorites") {
+  if (currentFilter === "favorites" && !themes().some((theme) => themeFavorites().has(theme.id))) {
     return `<div class="theme-empty-custom">
       <span style="font-size: 24px; opacity: 0.8;">${icon("star", 28)}</span>
       <span>${esc(t("settings.themeEmptyFavorites"))}</span>
+    </div>`;
+  }
+  if (currentColor !== "all" && !themeQuery.trim()) {
+    const group = THEME_COLOR_GROUPS.find((item) => item.id === currentColor);
+    return `<div class="theme-empty-custom">
+      <span class="theme-empty-color-dot" style="background: ${esc(group?.swatch ?? "#9ca3af")};"></span>
+      <span>${esc(t("settings.themeEmptyColor"))}</span>
+      <button type="button" class="btn ghost small" data-act="theme-color" data-color="all">
+        ${esc(t("settings.themeColorAll"))}
+      </button>
     </div>`;
   }
   return `<div class="theme-empty-custom">
@@ -319,6 +380,13 @@ export function renderThemeSection(): string {
     filtered = allThemes.filter((th) => Boolean(th.custom));
   }
 
+  // Counts describe the tone/source filter, so they stay useful while a colour
+  // is selected. The colour then narrows that list.
+  const colorCounts = countThemeColors(filtered);
+  if (currentColor !== "all") {
+    filtered = filtered.filter((theme) => themeColorFamily(theme) === currentColor);
+  }
+
   filtered = sortThemesByFavorites(filtered, favorites);
 
   const themeNames = allThemes.map((theme) => themeDisplayName(theme)).join(" ");
@@ -337,6 +405,16 @@ export function renderThemeSection(): string {
       ? initialThemes.slice(0, galleryRendered).map(renderThemeCard).join("") +
         themeSentinelHtml(initialThemes.length - galleryRendered)
       : themeEmptyState();
+
+  const colorChips = THEME_COLOR_GROUPS.map((group) => {
+    const label = t(THEME_COLOR_LABELS[group.id]);
+    const active = currentColor === group.id;
+    return `<button type="button" class="theme-color-chip${active ? " active" : ""}" data-act="theme-color" data-color="${group.id}" aria-pressed="${active}" title="${esc(`${label} (${colorCounts[group.id]})`)}">
+      <span class="theme-color-dot" style="background: ${esc(group.swatch)};" aria-hidden="true"></span>
+      <span>${esc(label)}</span>
+      <span class="theme-color-count tabular-nums">${colorCounts[group.id]}</span>
+    </button>`;
+  }).join("");
 
   wireThemeSearch();
   wireThemeSelection();
@@ -362,38 +440,48 @@ export function renderThemeSection(): string {
       </div>
 
       <div class="theme-filter-bar">
-        <div class="seg theme-filter-seg">
-          <button type="button" class="${currentFilter === "all" ? "active" : ""}" data-act="theme-filter" data-filter="all">
-            ${esc(t("settings.themeFilterAll"))} (${allThemes.length})
-          </button>
-          <button type="button" class="${currentFilter === "favorites" ? "active" : ""}" data-act="theme-filter" data-filter="favorites">
-            ${esc(t("settings.themeFilterFavorites"))} (${favoriteThemes.length})
-          </button>
-          <button type="button" class="${currentFilter === "dark" ? "active" : ""}" data-act="theme-filter" data-filter="dark">
-            ${esc(t("settings.themeFilterDark"))}
-          </button>
-          <button type="button" class="${currentFilter === "light" ? "active" : ""}" data-act="theme-filter" data-filter="light">
-            ${esc(t("settings.themeFilterLight"))}
-          </button>
-          <button type="button" class="${currentFilter === "custom" ? "active" : ""}" data-act="theme-filter" data-filter="custom">
-            ${esc(t("settings.themeFilterCustom"))} (${customList.length})
-          </button>
+        <div class="theme-filter-row">
+          <div class="seg theme-filter-seg">
+            <button type="button" class="${currentFilter === "all" ? "active" : ""}" data-act="theme-filter" data-filter="all">
+              ${esc(t("settings.themeFilterAll"))} (${allThemes.length})
+            </button>
+            <button type="button" class="${currentFilter === "favorites" ? "active" : ""}" data-act="theme-filter" data-filter="favorites">
+              ${esc(t("settings.themeFilterFavorites"))} (${favoriteThemes.length})
+            </button>
+            <button type="button" class="${currentFilter === "dark" ? "active" : ""}" data-act="theme-filter" data-filter="dark">
+              ${esc(t("settings.themeFilterDark"))}
+            </button>
+            <button type="button" class="${currentFilter === "light" ? "active" : ""}" data-act="theme-filter" data-filter="light">
+              ${esc(t("settings.themeFilterLight"))}
+            </button>
+            <button type="button" class="${currentFilter === "custom" ? "active" : ""}" data-act="theme-filter" data-filter="custom">
+              ${esc(t("settings.themeFilterCustom"))} (${customList.length})
+            </button>
+          </div>
+
+          <label class="theme-search-box">
+            ${icon("search", 13)}
+            <input
+              id="theme-search"
+              class="theme-search-input"
+              type="search"
+              value="${esc(themeQuery)}"
+              placeholder="${esc(t("settings.themeSearchPlaceholder"))}"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+            />
+          </label>
         </div>
 
-        <label class="theme-search-box">
-          ${icon("search", 13)}
-          <input
-            id="theme-search"
-            class="theme-search-input"
-            type="search"
-            value="${esc(themeQuery)}"
-            placeholder="${esc(t("settings.themeSearchPlaceholder"))}"
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="off"
-            spellcheck="false"
-          />
-        </label>
+        <div class="theme-color-bar" role="group" aria-label="${esc(t("settings.themeColor"))}">
+          <span class="theme-color-bar-label">${esc(t("settings.themeColor"))}</span>
+          <button type="button" class="theme-color-chip${currentColor === "all" ? " active" : ""}" data-act="theme-color" data-color="all" aria-pressed="${currentColor === "all"}">
+            ${esc(t("settings.themeColorAll"))}
+          </button>
+          ${colorChips}
+        </div>
       </div>
 
       <div class="theme-card-grid theme-grid">
@@ -1470,6 +1558,15 @@ export function handleThemeSettingsAction(act: string | undefined, el: HTMLEleme
       const filter = el.dataset.filter as ThemeFilter;
       if (filter && ["all", "favorites", "dark", "light", "custom"].includes(filter)) {
         currentFilter = filter;
+        render();
+      }
+      return true;
+    }
+
+    case "theme-color": {
+      const color = el.dataset.color;
+      if (color === "all" || (color && THEME_COLOR_IDS.has(color))) {
+        currentColor = color as ThemeColorFilter;
         render();
       }
       return true;
