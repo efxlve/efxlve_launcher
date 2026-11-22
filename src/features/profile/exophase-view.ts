@@ -201,19 +201,19 @@ function note(): string {
 
 function guideGrid(): string {
   const platforms = [
-    { name: "Steam", mark: storeLogo("steam", 12) },
-    { name: "PlayStation", mark: icon("globe", 12) },
-    { name: "Xbox", mark: storeLogo("xbox", 12) },
-    { name: "Switch", mark: icon("gamepad-2", 12) },
-    { name: "Epic Games", mark: storeLogo("epic", 12) },
-    { name: "GOG", mark: storeLogo("gog", 12) },
-    { name: "EA App", mark: storeLogo("ea", 12) },
-    { name: "Ubisoft", mark: storeLogo("ubisoft", 12) },
-    { name: "RetroAchievements", mark: icon("trophy", 12) },
+    "Steam",
+    "PlayStation",
+    "Xbox",
+    "Switch",
+    "Epic Games",
+    "GOG",
+    "EA App",
+    "Ubisoft",
+    "RetroAchievements",
   ];
 
   const chips = platforms
-    .map((p) => `<span class="profile-exophase-platform-chip">${p.mark}<span>${p.name}</span></span>`)
+    .map((name) => `<span class="profile-exophase-platform-chip"><span>${name}</span></span>`)
     .join("");
 
   return `<div class="profile-exophase-guide-grid">
