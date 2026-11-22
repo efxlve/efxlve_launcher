@@ -133,6 +133,8 @@ interface LocalCoverInfo {
   cover: string;
   isSteam: boolean;
   appId?: string;
+  /** The art is wider than the portrait card, so it is contained over a blur. */
+  wide: boolean;
 }
 
 function coverForApp(appName: string, fallback = ""): string {
@@ -176,10 +178,65 @@ function findLocalPortraitCover(game: ExophaseGame): LocalCoverInfo {
     const appId = isSteam ? localKey.slice(7) : undefined;
     const cov = coverForApp(localKey);
     if (cov) {
-      return { cover: cov, isSteam, appId };
+      return { cover: cov, isSteam, appId, wide: false };
     }
   }
-  return { cover: game.cover || game.hero || "", isSteam: false };
+  const fallback = game.cover || game.hero || "";
+  return { cover: fallback, isSteam: false, wide: Boolean(fallback) };
+}
+
+/**
+ * A portrait card must not crop a landscape cover to a random vertical slice.
+ * Wide art is contained over a blurred copy of itself; portrait art keeps the
+ * full-bleed look. The natural size is only known after the image loads, which
+ * also catches a Steam header that replaced a missing portrait capsule.
+ */
+function markWideCover(img: HTMLImageElement): void {
+  if (!img.naturalWidth || !img.naturalHeight) return;
+  const art = img.closest<HTMLElement>(".profile-ach-art");
+  if (!art) return;
+  if (img.naturalWidth <= img.naturalHeight * 1.08) {
+    art.classList.remove("is-wide");
+    art.querySelector(".profile-ach-art-fill")?.remove();
+    return;
+  }
+  let fill = art.querySelector<HTMLElement>(".profile-ach-art-fill");
+  if (!fill) {
+    fill = document.createElement("span");
+    fill.className = "profile-ach-art-fill";
+    fill.setAttribute("aria-hidden", "true");
+    art.prepend(fill);
+  }
+  const src = img.currentSrc || img.src;
+  if (src) fill.style.setProperty("--wide-art", `url(${JSON.stringify(src)})`);
+  art.classList.add("is-wide");
+}
+
+let wideCoverListener = false;
+
+function installWideCoverListener(): void {
+  if (wideCoverListener) return;
+  wideCoverListener = true;
+  document.addEventListener(
+    "load",
+    (event) => {
+      const img = event.target;
+      if (!(img instanceof HTMLImageElement) || !img.closest(".profile-exophase-card")) return;
+      markWideCover(img);
+    },
+    true,
+  );
+}
+
+/** Cached images do not always fire a fresh load event; scan after a paint. */
+function scanWideCovers(): void {
+  requestAnimationFrame(() => {
+    document
+      .querySelectorAll<HTMLImageElement>(".profile-exophase-card .profile-ach-art img")
+      .forEach((img) => {
+        if (img.complete) markWideCover(img);
+      });
+  });
 }
 
 function stat(glyph: string, label: string, value: string, sub = "", platinum = false): string {
@@ -400,14 +457,16 @@ function gameCard(game: ExophaseGame): string {
     ? ` data-act="open-external-url" data-url="${esc(game.url)}"`
     : "";
 
-  const { cover, isSteam, appId } = findLocalPortraitCover(game);
+  const { cover, isSteam, appId, wide } = findLocalPortraitCover(game);
   const steamAttrs = isSteam && appId && /^\d+$/.test(appId)
     ? ` data-steam-app="${appId}" data-art-step="${cachedSteamCover(appId) ? "resolved" : "0"}"`
     : "";
+  const artStyle = wide && cover ? ` style="--wide-art:url('${esc(cover)}')"` : "";
 
   return `
     <div class="profile-ach-card profile-exophase-card${isComplete ? " is-plat" : ""}" role="button" tabindex="0"${action} title="${esc(tip)}">
-      <div class="profile-ach-art">
+      <div class="profile-ach-art${wide ? " is-wide" : ""}"${artStyle}>
+        ${wide && cover ? `<span class="profile-ach-art-fill" aria-hidden="true"></span>` : ""}
         ${cover
           ? `<img${steamAttrs} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />`
           : `<span class="profile-ach-ph">${icon("gamepad-2", 24)}</span>`
@@ -437,6 +496,7 @@ function gameCard(game: ExophaseGame): string {
 }
 
 export function getExophaseGamesGridHtml(data: ExophaseData, selected: string): { count: string; html: string } {
+  installWideCoverListener();
   const q = (S.exophaseSearchQuery || "").trim().toLowerCase();
   const sort = S.exophaseSort || "recent";
 
@@ -471,6 +531,7 @@ export function getExophaseGamesGridHtml(data: ExophaseData, selected: string): 
     ? `<div class="profile-ach-list profile-exophase-grid">${shown.map(gameCard).join("")}${more}</div>`
     : emptyState("gamepad-2", t("profile.exophaseEmptyFilter"));
 
+  scanWideCovers();
   return {
     count: fmtCount(sorted.length),
     html: body,

@@ -2588,6 +2588,25 @@
   color: var(--text-3);
 }
 
+/* A landscape cover is contained over a blurred copy instead of being cropped
+   to a random vertical slice. */
+.profile-ach-art-fill {
+  position: absolute;
+  inset: -18px;
+  z-index: 0;
+  background-image: var(--wide-art);
+  background-size: cover;
+  background-position: center;
+  filter: blur(16px) brightness(0.55) saturate(1.1);
+  pointer-events: none;
+}
+
+.profile-ach-art.is-wide img {
+  position: relative;
+  z-index: 1;
+  object-fit: contain;
+}
+
 /* Cursor-following radial light across achievement covers (matches .pcard-art::before) */
 :root:not([data-surface="gloss"]):not([data-surface="blades"]) .profile-ach-art::before {
   content: "";
