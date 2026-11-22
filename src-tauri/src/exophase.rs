@@ -20,7 +20,7 @@ use crate::lookup_cache;
 
 const PROFILE_ROOT: &str = "https://www.exophase.com";
 const API_ROOT: &str = "https://api.exophase.com";
-const CACHE_SCHEMA: u32 = 2;
+const CACHE_SCHEMA: u32 = 3;
 /// The launcher's own copy is refreshed at most this often. Exophase itself
 /// only moves when the user runs its profile sync, so a shorter TTL would just
 /// repeat the same answer.
@@ -299,6 +299,24 @@ fn absolute_url(raw: &str) -> String {
     trimmed.to_string()
 }
 
+/// The public API's `meta.images` only ships the 127x70 `m` tile. The CDN
+/// serves `l` (288x158) and `o` (the original upload) at the same path, so swap
+/// the single-letter size segment instead of upscaling the thumbnail.
+fn art_at_size(raw: &str, size: &str) -> String {
+    let url = absolute_url(raw);
+    let Some(games) = url.find("/games/") else {
+        return url;
+    };
+    let start = games + "/games/".len();
+    let Some(end) = url[start..].find('/').map(|offset| start + offset) else {
+        return url;
+    };
+    if url[start..end].len() != 1 {
+        return url;
+    }
+    format!("{}{}{}", &url[..start], size, &url[end..])
+}
+
 fn platform_label(slug: &str) -> String {
     match slug {
         "steam" => "Steam",
@@ -516,12 +534,10 @@ fn parse_game(raw: &Value) -> Option<ExophaseGame> {
 
     let images = meta.and_then(|meta| meta.get("images"));
     let featured = text_of(meta.and_then(|meta| meta.get("featured_image")));
-    // The `t` asset is a 64x64 tile; the card uses the 288x158 `l` image and the
-    // hero uses the original `o` art, both of which the API already ships.
-    let cover = ["l", "m", "s"]
+    let base_art = ["m", "l", "s", "t"]
         .iter()
         .map(|key| text_of(images.and_then(|images| images.get(*key))))
-        .chain(std::iter::once(featured.clone()))
+        .chain(std::iter::once(featured))
         .chain(
             ["resource_standard", "resource_small", "resource_tile"]
                 .iter()
@@ -530,14 +546,8 @@ fn parse_game(raw: &Value) -> Option<ExophaseGame> {
         .find(|value| !value.is_empty())
         .map(|value| absolute_url(&value))
         .unwrap_or_default();
-    let hero = ["o"]
-        .iter()
-        .map(|key| text_of(images.and_then(|images| images.get(*key))))
-        .chain(std::iter::once(featured))
-        .chain(std::iter::once(cover.clone()))
-        .find(|value| !value.is_empty())
-        .map(|value| absolute_url(&value))
-        .unwrap_or_default();
+    let cover = art_at_size(&base_art, "l");
+    let hero = art_at_size(&base_art, "o");
 
     let url = ["endpoint_awards", "endpoint_overview"]
         .iter()
@@ -1137,8 +1147,7 @@ mod tests {
                 "environment_slug": "epic",
                 "platforms": [{ "name": "Epic" }],
                 "images": {
-                    "l": "https://m.exophase.com/epic/games/l/40jee88.png",
-                    "o": "https://m.exophase.com/epic/games/o/40jee88.png"
+                    "m": "https://m.exophase.com/epic/games/m/40jee88.png"
                 },
                 "endpoint_awards": "https://www.exophase.com/game/gta-iii-epic/achievements/"
             }
@@ -1152,6 +1161,24 @@ mod tests {
         assert_eq!(game.percent, 15.0);
         assert!(game.cover.ends_with("/games/l/40jee88.png"));
         assert!(game.hero.ends_with("/games/o/40jee88.png"));
+    }
+
+    #[test]
+    fn the_thumbnail_url_grows_to_the_card_and_hero_sizes() {
+        let raw = "https://m.exophase.com/epic/games/m/40jee88.png?hash=1";
+        assert_eq!(
+            art_at_size(raw, "l"),
+            "https://m.exophase.com/epic/games/l/40jee88.png?hash=1"
+        );
+        assert_eq!(
+            art_at_size(raw, "o"),
+            "https://m.exophase.com/epic/games/o/40jee88.png?hash=1"
+        );
+        assert_eq!(
+            art_at_size("https://example.com/art.png", "l"),
+            "https://example.com/art.png"
+        );
+        assert_eq!(art_at_size("", "l"), "");
     }
 
     #[test]
