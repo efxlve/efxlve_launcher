@@ -69,25 +69,73 @@ async function resolveProfileSteamArt(container: HTMLElement): Promise<void> {
 }
 
 /**
- * Walks the page through the viewport once. Chromium loads and paints a lazy
- * image when it enters the viewport; forcing an offscreen <img> to fetch puts
- * the bytes in the cache but not necessarily a painted tile, which is why the
- * lower rows used to stay blank.
+ * Waits until the covers currently on screen have loaded (or failed). Chrome
+ * does not fetch a new image that has never been visible, even after
+ * `loading="eager"` or a source reset; the only reliable trigger is the image
+ * being inside the viewport, so the priming pass waits row by row.
+ */
+function waitForVisibleImages(
+  container: HTMLElement,
+  view: HTMLElement,
+  timeoutMs: number,
+): Promise<void> {
+  const viewRect = view.getBoundingClientRect();
+  const pending = Array.from(container.querySelectorAll<HTMLImageElement>("img")).filter((img) => {
+    if (img.naturalWidth > 0) return false;
+    const rect = img.getBoundingClientRect();
+    return rect.bottom >= viewRect.top - 120 && rect.top <= viewRect.bottom + 120;
+  });
+  if (pending.length === 0) return Promise.resolve();
+
+  return new Promise<void>((resolve) => {
+    let remaining = pending.length;
+    let timer = 0;
+    const finish = () => {
+      window.clearTimeout(timer);
+      resolve();
+    };
+    const done = () => {
+      remaining -= 1;
+      if (remaining <= 0) finish();
+    };
+    for (const img of pending) {
+      // The image may have loaded between the filter and this loop.
+      if (img.complete && img.naturalWidth > 0) {
+        done();
+        continue;
+      }
+      let settled = false;
+      const one = () => {
+        if (settled) return;
+        settled = true;
+        done();
+      };
+      img.addEventListener("load", one, { once: true });
+      img.addEventListener("error", one, { once: true });
+    }
+    timer = window.setTimeout(finish, timeoutMs);
+  });
+}
+
+/**
+ * Walks the page through the viewport one row at a time and waits for each
+ * row's covers before moving on. Chromium loads and paints a lazy image when it
+ * enters the viewport; forcing an offscreen <img> to fetch puts the bytes in
+ * the cache but not necessarily a painted tile, which is why the lower rows
+ * used to stay blank.
  */
 async function primeProfileImages(view: HTMLElement | null, container: HTMLElement): Promise<void> {
   if (!view) return;
   const max = Math.max(0, container.scrollHeight - view.clientHeight);
   if (max <= 0) return;
 
-  const step = Math.max(320, Math.floor(view.clientHeight * 0.7));
-  for (let top = step; top < max; top += step) {
-    view.scrollTop = top;
+  const step = Math.max(240, Math.floor(view.clientHeight * 0.6));
+  for (let top = 0; top <= max; top += step) {
+    view.scrollTop = Math.min(top, max);
     await nextFrame();
     await nextFrame();
+    await waitForVisibleImages(container, view, 2500);
   }
-  view.scrollTop = max;
-  // Give the last lazy rows a moment to start before the layout expands.
-  await new Promise<void>((resolve) => setTimeout(resolve, 80));
   view.scrollTop = 0;
   await nextFrame();
 }
