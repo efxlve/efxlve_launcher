@@ -2093,6 +2093,7 @@
   "profile.tabsLabel": "Sekcje profilu",
   "profile.exophaseSubtitle": "Osiągnięcia międzyplatformowe",
   "profile.exophaseShowTab": "Pokaż kartę Exophase",
+  "profile.exophaseShowTabDesc": "Wyłącz, aby ukryć kartę Exophase w profilu. Możesz ją włączyć ponownie w Ustawienia → Integracje → Exophase.",
   "profile.exophaseConnectTitle": "Połącz profil Exophase",
   "profile.exophaseConnectDesc": "Exophase łączy osiągnięcia, trofea i czas gry z PlayStation, Xbox, Steam, Switch, Epic, GOG, Ubisoft, EA i RetroAchievements w jeden profil.",
   "profile.exophaseConnectCta": "Otwórz ustawienia",

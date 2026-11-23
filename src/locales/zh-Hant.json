@@ -2093,6 +2093,7 @@
   "profile.tabsLabel": "個人檔案區段",
   "profile.exophaseSubtitle": "跨平台成就",
   "profile.exophaseShowTab": "顯示 Exophase 分頁",
+  "profile.exophaseShowTabDesc": "關閉後會從個人資料中隱藏 Exophase 分頁。可在設定 → 整合 → Exophase 中重新開啟。",
   "profile.exophaseConnectTitle": "連接你的 Exophase 個人檔案",
   "profile.exophaseConnectDesc": "Exophase將PlayStation、Xbox、Steam、Switch、Epic、GOG、Ubisoft、EA和RetroAchievements的成就、獎盃及遊玩時間匯聚於統一檔案中。",
   "profile.exophaseConnectCta": "開啟設定",

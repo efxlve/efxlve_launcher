@@ -2093,6 +2093,7 @@
   "profile.tabsLabel": "ส่วนของโปรไฟล์",
   "profile.exophaseSubtitle": "ความสำเร็จข้ามแพลตฟอร์ม",
   "profile.exophaseShowTab": "แสดงแท็บ Exophase",
+  "profile.exophaseShowTabDesc": "ปิดเพื่อซ่อนแท็บ Exophase จากโปรไฟล์ คุณสามารถเปิดอีกครั้งได้ที่การตั้งค่า → การเชื่อมต่อ → Exophase",
   "profile.exophaseConnectTitle": "เชื่อมต่อโปรไฟล์ Exophase",
   "profile.exophaseConnectDesc": "Exophase รวบรวมความสำเร็จ ถ้วยรางวัล และเวลาเล่นของคุณจาก PlayStation, Xbox, Steam, Switch, Epic, GOG, Ubisoft, EA และ RetroAchievements ไว้ในโปรไฟล์เดียว",
   "profile.exophaseConnectCta": "เปิดการตั้งค่า",

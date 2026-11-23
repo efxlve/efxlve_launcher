@@ -1472,6 +1472,7 @@
   "profile.tabsLabel": "प्रोफ़ाइल अनुभाग",
   "profile.exophaseSubtitle": "क्रॉस-प्लेटफ़ॉर्म उपलब्धियाँ",
   "profile.exophaseShowTab": "Exophase टैब दिखाएँ",
+  "profile.exophaseShowTabDesc": "Exophase टैब को प्रोफ़ाइल से छिपाने के लिए इसे बंद करें। आप इसे सेटिंग्स → इंटीग्रेशन → Exophase से फिर चालू कर सकते हैं।",
   "profile.exophaseConnectTitle": "अपना Exophase प्रोफ़ाइल जोड़ें",
   "profile.exophaseConnectDesc": "Exophase आपके PlayStation, Xbox, Steam, Switch, Epic, GOG, Ubisoft, EA और RetroAchievements की उपलब्धियों, ट्रॉफियों और प्लेटाइम को एक ही प्रोफ़ाइल में लाता है।",
   "profile.exophaseConnectCta": "सेटिंग्स खोलें",

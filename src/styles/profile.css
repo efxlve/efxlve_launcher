@@ -271,6 +271,19 @@
 .profile-exophase-enable-label {
   min-width: 0;
 }
+.profile-exophase-enable-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.profile-exophase-enable-desc {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 11.5px;
+  line-height: 1.55;
+  max-width: 760px;
+}
 .profile-exophase-guide-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

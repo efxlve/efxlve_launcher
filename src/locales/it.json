@@ -2093,6 +2093,7 @@
   "profile.tabsLabel": "Sezioni del profilo",
   "profile.exophaseSubtitle": "Obiettivi multipiattaforma",
   "profile.exophaseShowTab": "Mostra scheda Exophase",
+  "profile.exophaseShowTabDesc": "Disattivalo per nascondere la scheda Exophase dal profilo. Puoi riattivarla in Impostazioni → Integrazioni → Exophase.",
   "profile.exophaseConnectTitle": "Collega il tuo profilo Exophase",
   "profile.exophaseConnectDesc": "Exophase unisce trofei, obiettivi e ore di gioco da PlayStation, Xbox, Steam, Switch, Epic, GOG, Ubisoft, EA e RetroAchievements in un unico profilo.",
   "profile.exophaseConnectCta": "Apri impostazioni",

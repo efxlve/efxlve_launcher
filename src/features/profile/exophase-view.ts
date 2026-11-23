@@ -513,7 +513,10 @@ function connectView(): string {
           <div class="profile-exophase-input-hint">${icon("check-circle", 12)}<span>${esc(t("profile.exophaseConnectHelp"))}</span></div>
         </div>
         <div class="profile-exophase-enable-row">
-          <span class="profile-exophase-enable-label">${esc(t("profile.exophaseShowTab"))}</span>
+          <div class="profile-exophase-enable-copy">
+            <span class="profile-exophase-enable-label">${esc(t("profile.exophaseShowTab"))}</span>
+            <p class="profile-exophase-enable-desc">${esc(t("profile.exophaseShowTabDesc"))}</p>
+          </div>
           <label class="switch">
             <input type="checkbox" data-act="exophase-enabled" aria-label="${esc(t("profile.exophaseShowTab"))}" ${S.exophaseEnabled ? "checked" : ""} />
             <span class="track"></span>

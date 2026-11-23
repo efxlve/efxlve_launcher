@@ -2093,6 +2093,7 @@
   "profile.tabsLabel": "أقسام الملف الشخصي",
   "profile.exophaseSubtitle": "إنجازات عبر المنصات",
   "profile.exophaseShowTab": "إظهار علامة تبويب Exophase",
+  "profile.exophaseShowTabDesc": "أوقف هذا الخيار لإخفاء علامة تبويب Exophase من الملف الشخصي. يمكنك إعادة تفعيلها من الإعدادات ← التكاملات ← Exophase.",
   "profile.exophaseConnectTitle": "اربط ملفك الشخصي على Exophase",
   "profile.exophaseConnectDesc": "يجمع Exophase إنجازاتك وجوائزك ووقت لعبك من PlayStation وXbox وSteam وSwitch وEpic وGOG وUbisoft وEA وRetroAchievements في ملف شخصي موحد.",
   "profile.exophaseConnectCta": "فتح الإعدادات",

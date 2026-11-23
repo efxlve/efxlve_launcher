@@ -2093,6 +2093,7 @@
   "profile.tabsLabel": "Sections du profil",
   "profile.exophaseSubtitle": "Succès multiplateformes",
   "profile.exophaseShowTab": "Afficher l’onglet Exophase",
+  "profile.exophaseShowTabDesc": "Désactivez cette option pour masquer l’onglet Exophase du profil. Vous pouvez le réactiver dans Paramètres → Intégrations → Exophase.",
   "profile.exophaseConnectTitle": "Connectez votre profil Exophase",
   "profile.exophaseConnectDesc": "Exophase regroupe vos succès, trophées et temps de jeu de PlayStation, Xbox, Steam, Switch, Epic, GOG, Ubisoft, EA et RetroAchievements dans un profil unifié.",
   "profile.exophaseConnectCta": "Ouvrir les paramètres",

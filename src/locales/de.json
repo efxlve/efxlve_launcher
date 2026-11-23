@@ -2093,6 +2093,7 @@
   "profile.tabsLabel": "Profilbereiche",
   "profile.exophaseSubtitle": "Plattformübergreifende Erfolge",
   "profile.exophaseShowTab": "Exophase-Tab anzeigen",
+  "profile.exophaseShowTabDesc": "Schalten Sie dies aus, um den Exophase-Tab aus dem Profil auszublenden. Unter Einstellungen → Integrationen → Exophase können Sie ihn wieder einschalten.",
   "profile.exophaseConnectTitle": "Exophase-Profil verbinden",
   "profile.exophaseConnectDesc": "Exophase bündelt Erfolge, Trophäen und Spielzeit von PlayStation, Xbox, Steam, Switch, Epic, GOG, Ubisoft, EA und RetroAchievements in einem Profil.",
   "profile.exophaseConnectCta": "Einstellungen öffnen",
