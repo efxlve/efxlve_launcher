@@ -29,6 +29,7 @@ import { t } from "../../i18n";
 import { achCardHtml, achCardVars, achTagParts } from "../achievement-card/ach-card";
 import {
   achMotionDirection,
+  achMotionVerticalDirection,
   playAchCardEntry,
   playAchCardExit,
 } from "../achievement-card/ach-card-motion";
@@ -182,16 +183,17 @@ export function runStagePreviewChoreography(mode: "entry" | "exit" | "cycle" = "
     const options = S.achievementNotificationOptions;
     const style = options.animStyle;
     const direction = achMotionDirection(options.position);
+    const vDir = achMotionVerticalDirection(options.position);
 
     const playEntry = () => {
       if (!card.isConnected) return;
-      playAchCardEntry(card, style, direction);
+      playAchCardEntry(card, style, direction, vDir);
     };
 
     const playExitThenRestore = () => {
       playAchCardExit(card, style, direction, () => {
         stagePreviewTimer = window.setTimeout(playEntry, 240);
-      });
+      }, vDir);
     };
 
     if (mode === "exit") {
@@ -252,7 +254,7 @@ export function renderAchievementsSettingsView(): string {
   const customAccent = options.customAccent || "#00f0ff";
 
   // One choice covers the whole card: opening and closing are the same motion.
-  const allowedMotions = ["minimal", "slide", "soft", "pop"];
+  const allowedMotions = ["minimal", "slide", "soft", "pop", "spring", "drift", "drop"];
   const animStyle = allowedMotions.includes(options.animStyle) ? options.animStyle : "minimal";
 
   const opacity = typeof options.opacity === "number" ? Math.max(50, Math.min(100, options.opacity)) : 100;
@@ -397,6 +399,9 @@ export function renderAchievementsSettingsView(): string {
     { id: "slide", label: t("settings.achAnimSlide"), ico: "arrow-right" },
     { id: "soft", label: t("settings.achAnimSoft"), ico: "circle" },
     { id: "pop", label: t("settings.achAnimPop"), ico: "sparkles" },
+    { id: "spring", label: t("settings.achAnimSpring"), ico: "zap" },
+    { id: "drift", label: t("settings.achAnimDrift"), ico: "activity" },
+    { id: "drop", label: t("settings.achAnimDrop"), ico: "chevron-down" },
   ];
 
   const animStyleButtons = animStyleOptions
@@ -1090,13 +1095,13 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     }
 
     case "set-ach-anim": {
-      const allowed = ["minimal", "slide", "soft", "pop"];
+      const allowed = ["minimal", "slide", "soft", "pop", "spring", "drift", "drop"];
       const animStyle = allowed.includes(el.dataset.val ?? "") ? el.dataset.val! : "minimal";
       const next = { ...S.achievementNotificationOptions, animStyle };
       S.achievementNotificationOptions = next;
       void achievementSetNotificationOptions(next).catch((e) => toast(String(e), "err"));
       render();
-      runStagePreviewChoreography("cycle");
+      runStagePreviewChoreography("entry");
       return true;
     }
 
@@ -1189,7 +1194,7 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
 
     case "ach-replay-stage": {
       render();
-      runStagePreviewChoreography("cycle");
+      runStagePreviewChoreography("entry");
       if (S.achievementNotificationOptions.sound) {
         previewAchievementSound();
       }

@@ -8,8 +8,9 @@
  */
 
 /** `minimal` rises into place, `slide` comes in from the screen edge, `soft`
- *  only fades, `pop` settles from a slight scale. */
-export type AchMotionStyle = "minimal" | "slide" | "soft" | "pop";
+ *  only fades, `pop` settles from a slight scale, `spring` has an energetic bounce,
+ *  `drift` is a silky smooth glide, `drop` lands vertically from the screen edge. */
+export type AchMotionStyle = "minimal" | "slide" | "soft" | "pop" | "spring" | "drift" | "drop";
 
 export interface AchCardAnimation {
   frames: Keyframe[];
@@ -18,12 +19,31 @@ export interface AchCardAnimation {
 }
 
 export function normalizeAchMotion(value: string | undefined): AchMotionStyle {
-  return value === "slide" || value === "soft" || value === "pop" ? value : "minimal";
+  return value === "slide" ||
+    value === "soft" ||
+    value === "pop" ||
+    value === "spring" ||
+    value === "drift" ||
+    value === "drop"
+    ? value
+    : "minimal";
 }
 
 /** Cards anchored to the left edge slide in from the left, the rest from the right. */
 export function achMotionDirection(position: string | undefined): 1 | -1 {
   return (position || "").trim().endsWith("left") ? -1 : 1;
+}
+
+/** Detects whether the card is bottom-anchored (+1, ascends) or top-anchored (-1, descends). */
+export function achMotionVerticalDirection(position: string | undefined): 1 | -1 {
+  return (position || "").trim().includes("bottom") ? 1 : -1;
+}
+
+function detectVerticalDirection(card: HTMLElement, explicitVDir?: 1 | -1): 1 | -1 {
+  if (explicitVDir !== undefined) return explicitVDir;
+  const parent = card.closest<HTMLElement>("[class*='pos-']");
+  if (parent && parent.className.includes("bottom")) return 1;
+  return -1;
 }
 
 /** The CSS media query already stops decorative motion; the JS choreography
@@ -36,7 +56,11 @@ function reducedMotion(): boolean {
   );
 }
 
-export function achEntryKeyframes(style: string, direction: 1 | -1 = 1): AchCardAnimation {
+export function achEntryKeyframes(
+  style: string,
+  direction: 1 | -1 = 1,
+  vDir: 1 | -1 = -1,
+): AchCardAnimation {
   switch (normalizeAchMotion(style)) {
     case "slide":
       return {
@@ -58,12 +82,41 @@ export function achEntryKeyframes(style: string, direction: 1 | -1 = 1): AchCard
       };
     case "pop":
       return {
-        duration: 400,
+        duration: 360,
         easing: "cubic-bezier(0.16, 1, 0.3, 1)",
         frames: [
           { opacity: 0, transform: "scale(0.92)", offset: 0 },
-          { opacity: 1, transform: "scale(1.015)", offset: 0.62 },
+          { opacity: 1, transform: "scale(1.018)", offset: 0.65 },
           { opacity: 1, transform: "scale(1)", offset: 1 },
+        ],
+      };
+    case "spring":
+      return {
+        duration: 500,
+        easing: "cubic-bezier(0.34, 1.4, 0.64, 1)",
+        frames: [
+          { opacity: 0, transform: `scale(0.88) translateY(${vDir * 10}px)`, offset: 0 },
+          { opacity: 1, transform: "scale(1.025) translateY(0px)", offset: 0.62 },
+          { opacity: 1, transform: "scale(0.995)", offset: 0.82 },
+          { opacity: 1, transform: "scale(1)", offset: 1 },
+        ],
+      };
+    case "drift":
+      return {
+        duration: 480,
+        easing: "cubic-bezier(0.08, 0.92, 0.18, 1)",
+        frames: [
+          { opacity: 0, transform: `translateX(${direction * 36}px) scale(0.98)` },
+          { opacity: 1, transform: "translateX(0px) scale(1)" },
+        ],
+      };
+    case "drop":
+      return {
+        duration: 380,
+        easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+        frames: [
+          { opacity: 0, transform: `translateY(${vDir * 32}px) scale(0.99)` },
+          { opacity: 1, transform: "translateY(0px) scale(1)" },
         ],
       };
     default:
@@ -79,7 +132,11 @@ export function achEntryKeyframes(style: string, direction: 1 | -1 = 1): AchCard
   }
 }
 
-export function achExitKeyframes(style: string, direction: 1 | -1 = 1): AchCardAnimation {
+export function achExitKeyframes(
+  style: string,
+  direction: 1 | -1 = 1,
+  vDir: 1 | -1 = -1,
+): AchCardAnimation {
   switch (normalizeAchMotion(style)) {
     case "slide":
       return {
@@ -105,7 +162,34 @@ export function achExitKeyframes(style: string, direction: 1 | -1 = 1): AchCardA
         easing: "cubic-bezier(0.4, 0, 1, 1)",
         frames: [
           { opacity: 1, transform: "scale(1)" },
-          { opacity: 0, transform: "scale(0.96)" },
+          { opacity: 0, transform: "scale(0.94)" },
+        ],
+      };
+    case "spring":
+      return {
+        duration: 220,
+        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+        frames: [
+          { opacity: 1, transform: "scale(1)" },
+          { opacity: 0, transform: "scale(0.92)" },
+        ],
+      };
+    case "drift":
+      return {
+        duration: 260,
+        easing: "cubic-bezier(0.4, 0, 0.8, 1)",
+        frames: [
+          { opacity: 1, transform: "translateX(0px) scale(1)" },
+          { opacity: 0, transform: `translateX(${direction * 28}px) scale(0.98)` },
+        ],
+      };
+    case "drop":
+      return {
+        duration: 240,
+        easing: "cubic-bezier(0.4, 0, 1, 1)",
+        frames: [
+          { opacity: 1, transform: "translateY(0px) scale(1)" },
+          { opacity: 0, transform: `translateY(${vDir * 24}px) scale(0.98)` },
         ],
       };
     default:
@@ -121,9 +205,20 @@ export function achExitKeyframes(style: string, direction: 1 | -1 = 1): AchCardA
 }
 
 /** Plays the opening: the card, then the art tile and text where the style wants it. */
-export function playAchCardEntry(card: HTMLElement, style = "minimal", direction: 1 | -1 = 1): void {
+export function playAchCardEntry(
+  card: HTMLElement,
+  style = "minimal",
+  direction: 1 | -1 = 1,
+  vDir?: 1 | -1,
+): void {
   if (typeof card.animate !== "function") return;
   card.getAnimations().forEach((animation) => animation.cancel());
+  card.querySelectorAll("*").forEach((el) => {
+    if (typeof el.getAnimations === "function") {
+      el.getAnimations().forEach((a) => a.cancel());
+    }
+  });
+
   const motion = normalizeAchMotion(style);
   if (reducedMotion()) {
     card.animate([{ opacity: 0 }, { opacity: 1 }], {
@@ -133,93 +228,86 @@ export function playAchCardEntry(card: HTMLElement, style = "minimal", direction
     return;
   }
 
-  const entry = achEntryKeyframes(motion, direction);
+  const vertical = detectVerticalDirection(card, vDir);
+  const entry = achEntryKeyframes(motion, direction, vertical);
   card.animate(entry.frames, {
     duration: entry.duration,
     easing: entry.easing,
     fill: "both",
   });
 
-  // "Soft" is the quiet option: the card fades as one piece, no inner motion.
-  if (motion === "soft") return;
+  // "soft", "pop", and "spring" animate the whole card organically;
+  // they don't delay inner elements so nothing disappears or flickers.
+  if (motion === "soft" || motion === "pop" || motion === "spring") {
+    const fill = card.querySelector<HTMLElement>(".ach-hud-progress-fill");
+    if (fill && typeof fill.animate === "function") {
+      fill.animate(
+        [{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }],
+        { duration: 400, delay: 140, easing: "cubic-bezier(0.16, 1, 0.3, 1)", fill: "both" },
+      );
+    }
+    return;
+  }
 
   const ease = "cubic-bezier(0.16, 1, 0.3, 1)";
-  const cancel = (element: HTMLElement) =>
-    element.getAnimations().forEach((animation) => animation.cancel());
 
-  if (motion !== "slide") {
-    // The art tile lands just after the card so the eye starts on the picture.
+  if (motion !== "slide" && motion !== "drift") {
     const medallion = card.querySelector<HTMLElement>(".ach-hud-medallion");
     if (medallion && typeof medallion.animate === "function") {
-      cancel(medallion);
       medallion.animate(
         [
-          { opacity: 0, transform: `scale(${motion === "pop" ? 0.7 : 0.82})`, offset: 0 },
-          { opacity: 1, transform: `scale(${motion === "pop" ? 1.08 : 1.05})`, offset: 0.6 },
+          { opacity: 0, transform: "scale(0.88)", offset: 0 },
           { opacity: 1, transform: "scale(1)", offset: 1 },
         ],
         {
-          duration: motion === "pop" ? 480 : 520,
-          delay: 60,
-          easing: "cubic-bezier(0.18, 1.2, 0.32, 1)",
+          duration: 380,
+          delay: 40,
+          easing: "cubic-bezier(0.18, 1.15, 0.32, 1)",
           fill: "both",
         },
       );
     }
   }
 
-  const textCol = card.querySelector<HTMLElement>(".ach-hud-text-col");
-  if (textCol && typeof textCol.animate === "function") {
-    cancel(textCol);
-    textCol.animate(
-      [{ opacity: 0 }, { opacity: 1 }],
-      { duration: 300, delay: 60, easing: ease, fill: "both" },
-    );
-  }
-
   const tag = card.querySelector<HTMLElement>(".ach-hud-tag");
   if (tag && typeof tag.animate === "function") {
-    cancel(tag);
     tag.animate(
       [
         { opacity: 0, clipPath: "inset(0 100% 0 0)" },
         { opacity: 1, clipPath: "inset(0 0% 0 0)" },
       ],
-      { duration: 320, delay: 110, easing: ease, fill: "both" },
+      { duration: 300, delay: 80, easing: ease, fill: "both" },
     );
   }
 
   const title = card.querySelector<HTMLElement>(".ach-hud-title");
   if (title && typeof title.animate === "function") {
-    cancel(title);
     title.animate(
       [
-        { opacity: 0, transform: "translateY(6px)" },
+        { opacity: 0, transform: "translateY(5px)" },
         { opacity: 1, transform: "translateY(0px)" },
       ],
-      { duration: 320, delay: 140, easing: ease, fill: "both" },
+      { duration: 300, delay: 100, easing: ease, fill: "both" },
     );
   }
 
   const desc = card.querySelector<HTMLElement>(".ach-hud-desc");
   if (desc && typeof desc.animate === "function") {
-    cancel(desc);
     desc.animate(
       [
         { opacity: 0, transform: "translateY(4px)" },
         { opacity: 1, transform: "translateY(0px)" },
       ],
-      { duration: 320, delay: 170, easing: ease, fill: "both" },
+      { duration: 300, delay: 120, easing: ease, fill: "both" },
     );
   }
 
   // The progress rule draws itself from the left once the text has landed.
   const fill = card.querySelector<HTMLElement>(".ach-hud-progress-fill");
   if (fill && typeof fill.animate === "function") {
-    cancel(fill);
     fill.animate(
       [{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }],
-      { duration: 460, delay: 180, easing: ease, fill: "both" },
+      { duration: 440, delay: 140, easing: ease, fill: "both" },
     );
   }
 }
@@ -230,6 +318,7 @@ export function playAchCardExit(
   style = "minimal",
   direction: 1 | -1 = 1,
   onDone?: () => void,
+  vDir?: 1 | -1,
 ): Animation | null {
   if (typeof card.animate !== "function") {
     onDone?.();
@@ -243,7 +332,8 @@ export function playAchCardExit(
     animation.onfinish = () => onDone?.();
     return animation;
   }
-  const exit = achExitKeyframes(style, direction);
+  const vertical = detectVerticalDirection(card, vDir);
+  const exit = achExitKeyframes(style, direction, vertical);
   const animation = card.animate(exit.frames, {
     duration: exit.duration,
     easing: exit.easing,

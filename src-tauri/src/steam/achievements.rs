@@ -2606,6 +2606,9 @@ fn normalize_anim_style(value: Option<&str>) -> String {
         Some("slide") => "slide",
         Some("soft") => "soft",
         Some("pop") => "pop",
+        Some("spring") => "spring",
+        Some("drift") => "drift",
+        Some("drop") => "drop",
         _ => "minimal",
     }
     .to_string()
@@ -4648,6 +4651,9 @@ mod tests {
         assert_eq!(normalize_anim_style(Some("slide")), "slide");
         assert_eq!(normalize_anim_style(Some("soft")), "soft");
         assert_eq!(normalize_anim_style(Some("pop")), "pop");
+        assert_eq!(normalize_anim_style(Some("spring")), "spring");
+        assert_eq!(normalize_anim_style(Some("drift")), "drift");
+        assert_eq!(normalize_anim_style(Some("drop")), "drop");
         assert_eq!(normalize_anim_style(Some("prism")), "minimal");
         assert_eq!(normalize_anim_style(Some("unknown")), "minimal");
         assert_eq!(

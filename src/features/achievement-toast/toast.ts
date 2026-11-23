@@ -11,6 +11,7 @@ import { initialLanguage, setLanguage, t } from "../../i18n";
 import { achCardHtml, achTagParts, type AchCardPalette } from "../achievement-card/ach-card";
 import {
   achMotionDirection,
+  achMotionVerticalDirection,
   playAchCardEntry,
   playAchCardExit,
 } from "../achievement-card/ach-card-motion";
@@ -132,13 +133,14 @@ function renderToast(payload: ToastPayload): void {
     .querySelectorAll<HTMLImageElement>(".ach-hud-ach-icon")
     .forEach((img) => img.addEventListener("error", () => img.remove(), { once: true }));
   const direction = achMotionDirection(position);
-  playAchCardEntry(card, payload.style, direction);
+  const vDir = achMotionVerticalDirection(position);
+  playAchCardEntry(card, payload.style, direction, vDir);
 
   clearExitTimer();
   exitTimer = window.setTimeout(() => {
     playAchCardExit(card, payload.style, direction, () => {
       void invoke("toast_done", { generation: payload.generation }).catch(() => {});
-    });
+    }, vDir);
   }, Math.max(1200, payload.holdMs));
 }
 
@@ -180,7 +182,7 @@ function renderDemo(): void {
     hint: isHint,
   })}</div>`;
   const card = root.querySelector<HTMLElement>(".ach-hud-toast");
-  if (card) playAchCardEntry(card, style, achMotionDirection(position));
+  if (card) playAchCardEntry(card, style, achMotionDirection(position), achMotionVerticalDirection(position));
 }
 
 async function boot(): Promise<void> {
