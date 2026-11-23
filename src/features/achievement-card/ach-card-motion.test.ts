@@ -51,7 +51,7 @@ describe("achievement motion choreography", () => {
   it("ensures spring and pop have smooth non-abrupt entry keyframes", () => {
     const pop = achEntryKeyframes("pop", 1, -1);
     expect(pop.duration).toBe(440);
-    expect(pop.easing).toBe("cubic-bezier(0.175, 0.885, 0.32, 1.275)");
+    expect(pop.easing).toBe("cubic-bezier(0.2, 1.55, 0.35, 1.0)");
     expect(pop.frames).toEqual([
       { opacity: 0, transform: "scale(0.86)" },
       { opacity: 1, transform: "scale(1)" },
