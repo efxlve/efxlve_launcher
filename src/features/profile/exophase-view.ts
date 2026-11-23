@@ -8,7 +8,7 @@
  */
 
 import { emptyState, epicPlatinumIcon, icon, type IconName } from "../../core/icons";
-import { rawOf } from "../../core/selectors";
+import { rawOf, storeKeysForTitle } from "../../core/selectors";
 import { S } from "../../core/state";
 import { cachedSteamCover, steamCdnPortrait } from "../../core/steam-art-cache";
 import { esc, fmtDecimal1, fmtPlaytime } from "../../core/utils";
@@ -155,20 +155,13 @@ function coverForApp(appName: string, fallback = ""): string {
 
 function findLocalGameKey(title: string): string | null {
   if (!title) return null;
-  const cleanTitle = title.trim().toLowerCase();
-  for (const [key, item] of S.allGamesMap.entries()) {
-    if (item.title && item.title.trim().toLowerCase() === cleanTitle) {
-      return key;
-    }
-  }
-  const normTitle = cleanTitle.replace(/[\u2122\u00ae\u00a9]/g, "").replace(/\s+/g, " ");
-  for (const [key, item] of S.allGamesMap.entries()) {
-    if (item.title) {
-      const norm = item.title.toLowerCase().replace(/[\u2122\u00ae\u00a9]/g, "").replace(/\s+/g, " ");
-      if (norm === normTitle) return key;
-    }
-  }
-  return null;
+  const keys = storeKeysForTitle(title);
+  // The player's own pick wins, then Steam: its capsule is the most reliable
+  // portrait art. Epic and GOG fall back when the title has no Steam copy.
+  const custom = keys.find((key) => Boolean(S.customCovers[key]));
+  if (custom) return custom;
+  const steam = keys.find((key) => key.startsWith("steam::"));
+  return steam ?? keys[0] ?? null;
 }
 
 function findLocalPortraitCover(game: ExophaseGame): LocalCoverInfo {
