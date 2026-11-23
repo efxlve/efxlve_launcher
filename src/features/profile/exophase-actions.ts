@@ -71,6 +71,8 @@ export async function saveExophaseUsername(username: string): Promise<ExophaseSt
   S.exophaseError = "";
   S.exophaseService = "all";
   S.exophaseGameCount = 60;
+  S.exophaseSearchQuery = "";
+  S.exophaseSort = "recent";
   return status;
 }
 

@@ -172,6 +172,9 @@
 .profile-exophase-hero-stage.has-art .profile-exophase-sub {
   color: rgba(255, 255, 255, 0.68);
 }
+.profile-exophase-hero-stage.is-plain .profile-exophase-sub {
+  color: rgba(255, 255, 255, 0.68);
+}
 .profile-exophase-hero-stage.has-art .profile-exophase-pill {
   border-color: rgba(255, 255, 255, 0.18);
   background: rgba(12, 13, 17, 0.55);

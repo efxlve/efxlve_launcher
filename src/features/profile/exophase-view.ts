@@ -547,7 +547,7 @@ function profileHero(
 
   const storesHtml = summary?.services?.filter((s) => s.games > 0)
     ? `<div class="profile-hero-stores">
-        <button type="button" class="profile-hero-store-chip${selectedService === "all" ? " selected" : ""}" data-act="exophase-service" data-val="all" title="${esc(t("profile.filterAll"))}">
+        <button type="button" class="profile-hero-store-chip${selectedService === "all" ? " selected" : ""}" data-act="exophase-service" data-val="all" title="${esc(t("profile.filterAll"))}" aria-pressed="${selectedService === "all"}">
           ${icon("layers", 13, "profile-store-chip-logo")}
           <span class="profile-hero-chip-name">${esc(t("profile.filterAll"))}</span>
           <span class="profile-hero-chip-count tabular-nums">${fmtCount(summary.totalGames)}</span>
@@ -556,7 +556,7 @@ function profileHero(
           .filter((s) => s.games > 0)
           .map(
             (s) => `
-            <button type="button" class="profile-hero-store-chip${selectedService === s.slug ? " selected" : ""}" data-act="exophase-service" data-val="${esc(s.slug)}" title="${esc(heroServiceLabel(s.slug, s.label))}">
+            <button type="button" class="profile-hero-store-chip${selectedService === s.slug ? " selected" : ""}" data-act="exophase-service" data-val="${esc(s.slug)}" title="${esc(heroServiceLabel(s.slug, s.label))}" aria-pressed="${selectedService === s.slug}">
               ${platformLogo(s.slug)}
               <span class="profile-hero-chip-name">${esc(heroServiceLabel(s.slug, s.label))}</span>
               <span class="profile-hero-chip-count tabular-nums">${fmtCount(s.games)}</span>
@@ -572,7 +572,7 @@ function profileHero(
       <div class="profile-hero-top-bar">
         <div class="profile-hero-actions">
           ${profileUrl ? `<button type="button" class="btn small profile-hero-tool" data-act="copy-exophase-url" data-url="${esc(profileUrl)}" title="${esc(t("profile.exophaseCopyTip"))}" aria-label="${esc(t("profile.exophaseCopy"))}">${icon("copy", 12)}<span>${esc(t("profile.exophaseCopy"))}</span></button>` : ""}
-          <button type="button" class="btn small profile-hero-tool profile-exophase-refresh${loading ? " is-busy" : ""}" data-act="exophase-refresh" title="${esc(t("profile.exophaseRefresh"))}" aria-label="${esc(t("profile.exophaseRefresh"))}">${icon("refresh", 13)}<span>${esc(t("profile.retry"))}</span></button>
+          <button type="button" class="btn small profile-hero-tool profile-exophase-refresh${loading ? " is-busy" : ""}" data-act="exophase-refresh" title="${esc(t("profile.exophaseRefresh"))}" aria-label="${esc(t("profile.exophaseRefresh"))}">${icon("refresh", 13)}<span>${esc(t("overlay.refresh"))}</span></button>
           <button type="button" class="btn small profile-hero-tool" data-act="open-external-url" data-url="${esc(profileUrl)}">${icon("external", 12)}<span>Exophase</span></button>
         </div>
       </div>
@@ -723,6 +723,9 @@ export function patchExophaseGamesGrid(): void {
   const wrap = document.getElementById("exophase-games-grid-wrap");
   if (wrap) {
     wrap.innerHTML = html;
+    // Search/sort/show-more patches are not page entries; the section-in
+    // animation would restart on every keystroke and read as a flicker.
+    wrap.querySelector<HTMLElement>(".profile-ach-list")?.style.setProperty("animation", "none");
   }
 }
 

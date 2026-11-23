@@ -635,19 +635,20 @@ document.addEventListener("click", (e) => {
     const write = navigator.clipboard?.writeText
       ? navigator.clipboard.writeText(url)
       : new Promise<void>((resolve, reject) => {
+          const el = document.createElement("textarea");
           try {
-            const el = document.createElement("textarea");
             el.value = url;
             el.style.position = "fixed";
             el.style.opacity = "0";
             document.body.appendChild(el);
             el.select();
             const ok = document.execCommand("copy");
-            document.body.removeChild(el);
             if (ok) resolve();
             else reject(new Error("Copy command failed"));
           } catch (e) {
             reject(e);
+          } finally {
+            el.remove();
           }
         });
     void write
