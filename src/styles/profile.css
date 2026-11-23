@@ -66,8 +66,12 @@
   position: absolute;
   z-index: 1;
   inset: 0;
-  background-size: cover;
-  background-position: center 30%;
+  /* Exophase key art is 16:9 and the banner is much wider. Containing the art
+     keeps the logo and the bottom of the image intact; the blurred backdrop
+     below fills the rest of the frame. Cover cropped the logo away. */
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: right center;
   animation: profile-banner-reveal 440ms cubic-bezier(0.16, 1, 0.3, 1) both;
   pointer-events: none;
 }
@@ -76,13 +80,21 @@
   z-index: 2;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    rgba(6, 7, 10, 0.32) 0%,
-    rgba(6, 7, 10, 0.05) 30%,
-    rgba(6, 7, 10, 0.42) 65%,
-    rgba(8, 9, 12, 0.94) 100%
-  );
+  background:
+    linear-gradient(
+      to right,
+      rgba(6, 7, 10, 0.7) 0%,
+      rgba(6, 7, 10, 0.4) 34%,
+      rgba(6, 7, 10, 0.1) 60%,
+      rgba(6, 7, 10, 0) 78%
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(6, 7, 10, 0.24) 0%,
+      rgba(6, 7, 10, 0.03) 36%,
+      rgba(6, 7, 10, 0.1) 70%,
+      rgba(8, 9, 12, 0.45) 100%
+    );
 }
 .profile-exophase-hero-bottom {
   position: relative;
