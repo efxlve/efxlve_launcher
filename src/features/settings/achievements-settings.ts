@@ -715,6 +715,19 @@ export function renderAchievementsSettingsView(): string {
           </div>
         </div>
 
+        <!-- Visual Screen Position Pad -->
+        <div class="row settings-row stacked">
+          <div class="row-main">
+            <div class="settings-row-title">${esc(t("settings.achPositionTitle"))}</div>
+            <div class="settings-row-desc">${esc(t("settings.achPositionDesc"))}</div>
+          </div>
+          <div class="settings-row-control" style="width: 100%;">
+            <div class="ach-pad-grid">
+              ${positionPadButtons}
+            </div>
+          </div>
+        </div>
+
         <!-- Per-store Achievement Notification Toggles -->
         <div class="row settings-row stacked">
           <div class="row-main">
@@ -859,19 +872,6 @@ export function renderAchievementsSettingsView(): string {
               <input type="checkbox" data-act="toggle-ach-overlay" ${options.overlay ? "checked" : ""} />
               <span class="track"></span>
             </label>
-          </div>
-        </div>
-
-        <!-- Visual Screen Position Pad -->
-        <div class="row settings-row stacked">
-          <div class="row-main">
-            <div class="settings-row-title">${esc(t("settings.achPositionTitle"))}</div>
-            <div class="settings-row-desc">${esc(t("settings.achPositionDesc"))}</div>
-          </div>
-          <div class="settings-row-control" style="width: 100%;">
-            <div class="ach-pad-grid">
-              ${positionPadButtons}
-            </div>
           </div>
         </div>
 

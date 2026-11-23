@@ -109,11 +109,12 @@ export function achEntryKeyframes(
       };
     case "pop":
       return {
-        duration: 440,
-        easing: "cubic-bezier(0.2, 1.55, 0.35, 1.0)",
+        duration: 400,
+        easing: "cubic-bezier(0.16, 1, 0.3, 1)",
         frames: [
-          { opacity: 0, transform: "scale(0.86)" },
-          { opacity: 1, transform: "scale(1)" },
+          { opacity: 0, transform: `translateY(${vDir * 8}px) scale(0.94)`, offset: 0 },
+          { opacity: 1, transform: `translateY(${vDir * -1.5}px) scale(1.012)`, offset: 0.6 },
+          { opacity: 1, transform: "translateY(0px) scale(1)", offset: 1 },
         ],
       };
     case "spring":
@@ -182,8 +183,8 @@ export function achExitKeyframes(
         duration: 220,
         easing: "cubic-bezier(0.4, 0, 1, 1)",
         frames: [
-          { opacity: 1, transform: "scale(1)" },
-          { opacity: 0, transform: "scale(0.94)" },
+          { opacity: 1, transform: "translateY(0px) scale(1)" },
+          { opacity: 0, transform: `translateY(${vDir * 6}px) scale(0.95)` },
         ],
       };
     case "spring":
@@ -277,13 +278,11 @@ export function playAchCardEntry(
       const medEasing =
         motion === "spring"
           ? "cubic-bezier(0.34, 1.3, 0.64, 1)"
-          : motion === "pop"
-            ? "cubic-bezier(0.2, 1.55, 0.35, 1.0)"
-            : "cubic-bezier(0.18, 1.15, 0.32, 1)";
-      const medDuration = motion === "spring" ? 480 : motion === "pop" ? 440 : 380;
+          : "cubic-bezier(0.18, 1.15, 0.32, 1)";
+      const medDuration = motion === "spring" ? 480 : 380;
       medallion.animate(
         [
-          { opacity: 0, transform: "scale(0.85)", offset: 0 },
+          { opacity: 0, transform: "scale(0.88)", offset: 0 },
           { opacity: 1, transform: "scale(1)", offset: 1 },
         ],
         {
@@ -296,42 +295,37 @@ export function playAchCardEntry(
     }
   }
 
-  // In "pop", the card scales up as one cohesive unit; shifting text lines with
-  // separate delays or transforms causes text to drift out of sync and snap when
-  // inner animations end.
-  if (motion !== "pop") {
-    const tag = card.querySelector<HTMLElement>(".ach-hud-tag");
-    if (tag && typeof tag.animate === "function") {
-      tag.animate(
-        [
-          { opacity: 0, clipPath: "inset(0 100% 0 0)" },
-          { opacity: 1, clipPath: "inset(0 0% 0 0)" },
-        ],
-        { duration: 300, delay: 80, easing: ease, fill: "both" },
-      );
-    }
+  const tag = card.querySelector<HTMLElement>(".ach-hud-tag");
+  if (tag && typeof tag.animate === "function") {
+    tag.animate(
+      [
+        { opacity: 0, clipPath: "inset(0 100% 0 0)" },
+        { opacity: 1, clipPath: "inset(0 0% 0 0)" },
+      ],
+      { duration: 280, delay: 60, easing: ease, fill: "both" },
+    );
+  }
 
-    const title = card.querySelector<HTMLElement>(".ach-hud-title");
-    if (title && typeof title.animate === "function") {
-      title.animate(
-        [
-          { opacity: 0, transform: "translateY(5px)" },
-          { opacity: 1, transform: "translateY(0px)" },
-        ],
-        { duration: 300, delay: 100, easing: ease, fill: "both" },
-      );
-    }
+  const title = card.querySelector<HTMLElement>(".ach-hud-title");
+  if (title && typeof title.animate === "function") {
+    title.animate(
+      [
+        { opacity: 0, transform: `translateY(${vertical * 4}px)` },
+        { opacity: 1, transform: "translateY(0px)" },
+      ],
+      { duration: 280, delay: 80, easing: ease, fill: "both" },
+    );
+  }
 
-    const desc = card.querySelector<HTMLElement>(".ach-hud-desc");
-    if (desc && typeof desc.animate === "function") {
-      desc.animate(
-        [
-          { opacity: 0, transform: "translateY(4px)" },
-          { opacity: 1, transform: "translateY(0px)" },
-        ],
-        { duration: 300, delay: 120, easing: ease, fill: "both" },
-      );
-    }
+  const desc = card.querySelector<HTMLElement>(".ach-hud-desc");
+  if (desc && typeof desc.animate === "function") {
+    desc.animate(
+      [
+        { opacity: 0, transform: `translateY(${vertical * 3}px)` },
+        { opacity: 1, transform: "translateY(0px)" },
+      ],
+      { duration: 280, delay: 100, easing: ease, fill: "both" },
+    );
   }
 
   // The progress rule draws itself from the left once the text has landed.
@@ -339,7 +333,7 @@ export function playAchCardEntry(
   if (fill && typeof fill.animate === "function") {
     fill.animate(
       [{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }],
-      { duration: 440, delay: motion === "pop" ? 100 : 140, easing: ease, fill: "both" },
+      { duration: 420, delay: 120, easing: ease, fill: "both" },
     );
   }
 }
