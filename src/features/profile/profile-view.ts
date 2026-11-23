@@ -1387,7 +1387,7 @@ function renderDormantView(account: ProfileAccount, displayName: string, avatarK
 
 /** Main Profile Page Entry Point */
 export function renderProfile(): string {
-  if (S.profileTab === "exophase") {
+  if (S.profileTab === "exophase" && S.exophaseEnabled) {
     return `<div class="page profile-page">${profileTabPanel(renderExophaseTab())}</div>`;
   }
 

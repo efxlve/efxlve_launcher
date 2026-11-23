@@ -169,7 +169,7 @@ import { handleDrawerNotesAction } from "../notes/drawer-notes";
 import { handleIgdbAction } from "./handlers/igdb-handlers";
 import { ALL_PROFILE_STORES, enterProfile, profileGridCapacity, resetProfileCards, type StoreKind } from "../profile/profile-view";
 import { takeProfileScreenshot } from "../profile/profile-screenshot";
-import { loadExophase, saveExophaseUsername } from "../profile/exophase-actions";
+import { loadExophase, saveExophaseEnabled, saveExophaseUsername } from "../profile/exophase-actions";
 import { patchExophaseGamesGrid } from "../profile/exophase-view";
 import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
 import { closeUnlocksModal, openUnlocksModal } from "../profile/profile-unlocks-modal";
@@ -616,11 +616,18 @@ document.addEventListener("click", (e) => {
     render();
   } else if (act === "profile-tab") {
     const tab = t.dataset.val;
-    if ((tab === "launcher" || tab === "exophase") && tab !== S.profileTab) {
+    if (
+      (tab === "launcher" || (tab === "exophase" && S.exophaseEnabled)) &&
+      tab !== S.profileTab
+    ) {
       S.profileTab = tab;
       render();
       if (tab === "exophase") void loadExophase();
     }
+  } else if (act === "exophase-enabled") {
+    void saveExophaseEnabled((t as HTMLInputElement).checked).catch((error) =>
+      toast(String(error), "err"),
+    );
   } else if (act === "exophase-refresh") {
     void loadExophase(true);
   } else if (act === "copy-exophase-url" && t.dataset.url) {

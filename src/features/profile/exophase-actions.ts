@@ -9,6 +9,7 @@ import { render } from "../../core/render";
 import { S } from "../../core/state";
 import {
   exophaseGet,
+  exophaseSetEnabled,
   exophaseSetUsername,
   exophaseStatus,
   type ExophaseStatus,
@@ -28,6 +29,7 @@ export async function loadExophase(force = false): Promise<void> {
     try {
       const status = await exophaseStatus();
       S.exophaseConfigured = status.configured;
+      S.exophaseEnabled = status.enabled;
       S.exophaseUsername = status.username;
       if (!status.configured) {
         render();
@@ -63,10 +65,24 @@ export async function loadExophase(force = false): Promise<void> {
 export async function saveExophaseUsername(username: string): Promise<ExophaseStatus> {
   const status = await exophaseSetUsername(username);
   S.exophaseConfigured = status.configured;
+  S.exophaseEnabled = status.enabled;
   S.exophaseUsername = status.username;
   S.exophaseData = null;
   S.exophaseError = "";
   S.exophaseService = "all";
   S.exophaseGameCount = 60;
+  return status;
+}
+
+/** Shows or hides the Profile > Exophase tab without deleting the username. */
+export async function saveExophaseEnabled(enabled: boolean): Promise<ExophaseStatus> {
+  const status = await exophaseSetEnabled(enabled);
+  S.exophaseEnabled = status.enabled;
+  S.exophaseConfigured = status.configured;
+  S.exophaseUsername = status.username;
+  if (!status.enabled && S.profileTab === "exophase") {
+    S.profileTab = "launcher";
+  }
+  render();
   return status;
 }

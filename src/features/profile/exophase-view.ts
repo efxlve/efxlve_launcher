@@ -512,6 +512,13 @@ function connectView(): string {
           </div>
           <div class="profile-exophase-input-hint">${icon("check-circle", 12)}<span>${esc(t("profile.exophaseConnectHelp"))}</span></div>
         </div>
+        <div class="profile-exophase-enable-row">
+          <span class="profile-exophase-enable-label">${esc(t("profile.exophaseShowTab"))}</span>
+          <label class="switch">
+            <input type="checkbox" data-act="exophase-enabled" aria-label="${esc(t("profile.exophaseShowTab"))}" ${S.exophaseEnabled ? "checked" : ""} />
+            <span class="track"></span>
+          </label>
+        </div>
       </div>
     </section>
     ${guideGrid()}

@@ -169,7 +169,10 @@ export function updatePageHeader(): void {
   const profileTabs = document.getElementById("profile-tabs");
   if (profileTabs) {
     const onProfile = S.view === "profile";
-    profileTabs.hidden = !onProfile;
+    if (!S.exophaseEnabled && S.profileTab === "exophase") {
+      S.profileTab = "launcher";
+    }
+    profileTabs.hidden = !onProfile || !S.exophaseEnabled;
     if (onProfile) {
       profileTabs.querySelectorAll<HTMLElement>("[data-act='profile-tab']").forEach((btn) => {
         const active = btn.dataset.val === S.profileTab;

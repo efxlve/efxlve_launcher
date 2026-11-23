@@ -2092,6 +2092,7 @@
   "profile.tabExophase": "Exophase",
   "profile.tabsLabel": "プロフィールセクション",
   "profile.exophaseSubtitle": "クロスプラットフォーム実績",
+  "profile.exophaseShowTab": "Exophaseタブを表示",
   "profile.exophaseConnectTitle": "Exophase プロフィールを連携",
   "profile.exophaseConnectDesc": "ExophaseはPlayStation、Xbox、Steam、Switch、Epic、GOG、Ubisoft、EA、RetroAchievementsの実績やトロフィー、プレイ時間を1つのプロフィールに統合します。",
   "profile.exophaseConnectCta": "設定を開く",

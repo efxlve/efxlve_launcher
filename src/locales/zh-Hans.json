@@ -2092,6 +2092,7 @@
   "profile.tabExophase": "Exophase",
   "profile.tabsLabel": "个人资料分区",
   "profile.exophaseSubtitle": "跨平台成就",
+  "profile.exophaseShowTab": "显示 Exophase 标签页",
   "profile.exophaseConnectTitle": "连接你的 Exophase 个人资料",
   "profile.exophaseConnectDesc": "Exophase将PlayStation、Xbox、Steam、Switch、Epic、GOG、Ubisoft、EA和RetroAchievements的成就、奖杯及游玩时间汇聚于统一档案中。",
   "profile.exophaseConnectCta": "打开设置",

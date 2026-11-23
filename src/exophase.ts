@@ -11,6 +11,7 @@ import { invoke } from "@tauri-apps/api/core";
 export interface ExophaseStatus {
   configured: boolean;
   username: string;
+  enabled: boolean;
 }
 
 export interface ExophaseService {
@@ -79,6 +80,9 @@ export const exophaseStatus = () => invoke<ExophaseStatus>("exophase_status");
 
 export const exophaseSetUsername = (username: string) =>
   invoke<ExophaseStatus>("exophase_set_username", { username });
+
+export const exophaseSetEnabled = (enabled: boolean) =>
+  invoke<ExophaseStatus>("exophase_set_enabled", { enabled });
 
 export const exophaseGet = (force = false) =>
   invoke<ExophaseData>("exophase_get", { force });

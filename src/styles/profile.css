@@ -256,6 +256,21 @@
   color: var(--color-green, #10b981);
   flex-shrink: 0;
 }
+.profile-exophase-enable-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--text-2);
+}
+.profile-exophase-enable-label {
+  min-width: 0;
+}
 .profile-exophase-guide-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

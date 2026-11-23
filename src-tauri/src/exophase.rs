@@ -34,6 +34,8 @@ const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
 pub struct ExophaseStatus {
     pub configured: bool,
     pub username: String,
+    /// The Profile tab switch. Existing settings without the key stay visible.
+    pub enabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -150,10 +152,16 @@ fn stored_username(app: &tauri::AppHandle) -> String {
 }
 
 fn status_for(app: &tauri::AppHandle) -> ExophaseStatus {
-    let username = stored_username(app);
+    let settings = crate::load_settings(app);
+    let username = settings
+        .exophase_username
+        .unwrap_or_default()
+        .trim()
+        .to_string();
     ExophaseStatus {
         configured: !username.is_empty(),
         username,
+        enabled: settings.exophase_enabled.unwrap_or(true),
     }
 }
 
@@ -1072,6 +1080,19 @@ pub fn exophase_set_username(
     };
     crate::save_settings(&app, &settings);
     clear_cache(&app);
+    Ok(status_for(&app))
+}
+
+/// Shows or hides the Profile > Exophase tab. The saved username and cache stay
+/// on disk, so turning it back on immediately restores the profile.
+#[tauri::command]
+pub fn exophase_set_enabled(
+    app: tauri::AppHandle,
+    enabled: bool,
+) -> Result<ExophaseStatus, String> {
+    let mut settings = crate::load_settings(&app);
+    settings.exophase_enabled = Some(enabled);
+    crate::save_settings(&app, &settings);
     Ok(status_for(&app))
 }
 

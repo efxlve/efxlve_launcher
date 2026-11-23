@@ -1460,6 +1460,7 @@ export async function initApp(hooks: {
     }
     if (exophase) {
       S.exophaseConfigured = exophase.configured;
+      S.exophaseEnabled = exophase.enabled;
       S.exophaseUsername = exophase.username;
     }
     if (defaultDir) S.epicDefaultDir = defaultDir;

@@ -626,6 +626,7 @@ export const S = {
   profileScreenshotDeferred: false,
   /** Exophase mirror: public username and the last read of its profile. */
   exophaseConfigured: false,
+  exophaseEnabled: true,
   exophaseUsername: "",
   exophaseData: (null) as ExophaseData | null,
   exophaseLoading: false,

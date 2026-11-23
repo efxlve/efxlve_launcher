@@ -501,6 +501,10 @@ pub struct EpicSettings {
     /// is read-only and public; no token is stored.
     #[serde(default)]
     pub exophase_username: Option<String>,
+    /// Whether the Profile > Exophase tab is shown. `None` keeps it visible for
+    /// settings written before the switch existed.
+    #[serde(default)]
+    pub exophase_enabled: Option<bool>,
 }
 
 fn default_true() -> bool {
@@ -2590,6 +2594,7 @@ fn main() {
             retroachievements::ra_recent_games,
             exophase::exophase_status,
             exophase::exophase_set_username,
+            exophase::exophase_set_enabled,
             exophase::exophase_get,
             guides::powerpyx::powerpyx_game_guide,
             steam::steam_get_achievement_source,
