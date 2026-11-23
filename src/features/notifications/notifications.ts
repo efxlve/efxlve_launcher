@@ -534,11 +534,15 @@ function notificationMarkup(n: AppNotification): string {
   // The subject (a game title) sits in the dim line before the timestamp.
   const meta = esc([n.context, relativeTime(n.ts)].filter(Boolean).join(" · "));
   // An unlock belongs to a game; its own icon reads better than the repeated
-  // cover, with the cover and the trophy glyph behind it as fallbacks.
+  // cover, with the cover and the trophy glyph behind it as fallbacks. A save
+  // backup row is game-facing too, so the game's own art names it; the bulk and
+  // profile rows have no game and keep their cloud glyph.
   const tile =
     n.kind === "achievement"
       ? artTile(n.appName, "trophy", "kind-achievement", achievementIconFor(n))
-      : `<span class="notif-item-icon kind-${n.kind}">${icon(KIND_ICON[n.kind], 14)}</span>`;
+      : (n.kind === "cloud" || n.kind === "cloud-error") && n.appName
+        ? artTile(n.appName, KIND_ICON[n.kind], `kind-${n.kind}`)
+        : `<span class="notif-item-icon kind-${n.kind}">${icon(KIND_ICON[n.kind], 14)}</span>`;
   const mark = n.kind === "achievement" && n.appName ? storeMark(n.appName) : "";
   const actIcon = n.action === "eos-update-apply" ? "refresh" : "external";
   return `
