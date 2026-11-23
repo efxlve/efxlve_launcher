@@ -1,4 +1,9 @@
 fn main() {
+    // `cargo run` keeps the previous frontend embedded unless Cargo watches the
+    // bundle. Without this, `npm run build` changed `dist` while the next run
+    // still served the old UI (the stale EA covers and dead window bar).
+    println!("cargo:rerun-if-changed=../dist/index.html");
+    println!("cargo:rerun-if-changed=../dist/assets");
     link_discord_social_sdk();
     #[cfg(windows)]
     {
