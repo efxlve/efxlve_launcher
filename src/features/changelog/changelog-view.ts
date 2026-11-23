@@ -30,6 +30,36 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.65",
+    date: "2026-11-23",
+    added: [
+      {
+        en: "A new Exophase tab mirrors your public Exophase profile: games, trophies, playtime, world rank and recent unlocks. Hide it from Settings → Integrations → Exophase.",
+        tr: "Yeni Exophase sekmesi herkese açık profilinizi gösteriyor: oyunlar, kupalar, oynama süresi, dünya sıralaması ve son açılanlar. Ayarlar → Entegrasyonlar → Exophase bölümünden gizlenebilir.",
+      },
+      {
+        en: "Profile screenshots capture the whole profile page into a folder you choose.",
+        tr: "Profil ekran görüntüleri tüm profil sayfasını seçtiğiniz klasöre kaydediyor.",
+      },
+    ],
+    improved: [
+      {
+        en: "The Profile page has a new layout with a larger banner, play activity, completion stats, recently played games and a cleaner achievement catalog.",
+        tr: "Profil sayfası daha büyük bir afiş, oyun etkinliği, tamamlama istatistikleri, son oynanan oyunlar ve daha temiz bir başarım kataloğuyla yeni bir düzene kavuştu.",
+      },
+      {
+        en: "Exophase covers use your library's portrait art first, then IGDB, and landscape store art is contained instead of cropped.",
+        tr: "Exophase kapakları önce kütüphanenizdeki dikey görseli, sonra IGDB'yi kullanıyor; yatay mağaza görselleri kırpılmak yerine tam gösteriliyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "The Profile and Exophase pages no longer flash or jump while covers and background data load, and a changed Exophase username no longer keeps the previous profile.",
+        tr: "Profil ve Exophase sayfaları kapaklar ve arka plan verileri yüklenirken artık yanıp zıplamıyor; değiştirilen Exophase kullanıcı adı eski profili göstermiyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.64",
     date: "2026-11-21",
     improved: [
