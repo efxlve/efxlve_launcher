@@ -2670,12 +2670,12 @@ fn launcher_palette() -> crate::overlay::toast::ToastPalette {
         .ok()
         .and_then(|slot| slot.clone())
         .unwrap_or_else(|| crate::overlay::toast::ToastPalette {
-            background: "#0d0f14".into(),
+            background: "#130f08".into(),
             accent: "#f59e0b".into(),
             border: "#785018".into(),
             icon: "#fbbf24".into(),
             title: "#ffffff".into(),
-            body: "#acb2b8".into(),
+            body: "#d6cbb8".into(),
         })
 }
 

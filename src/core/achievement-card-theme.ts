@@ -13,14 +13,14 @@ import { achievementSetNotificationColors } from "../steam";
 import { isTauri } from "./constants";
 import { SURFACE_APPLIED_EVENT } from "./themes";
 
-/** The built-in console card: warm gold on smoked obsidian. */
+/** The built-in console card: warm gold on deep amber obsidian. */
 export const GOLD_ACHIEVEMENT_CARD: AchievementCardColors = {
-  background: "#0d0f14",
+  background: "#130f08",
   accent: "#f59e0b",
   border: "#785018",
   icon: "#fbbf24",
   title: "#ffffff",
-  body: "#acb2b8",
+  body: "#d6cbb8",
 };
 
 export const CYBER_ACHIEVEMENT_CARD: AchievementCardColors = {
