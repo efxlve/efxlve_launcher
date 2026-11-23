@@ -56,6 +56,33 @@ function reducedMotion(): boolean {
   );
 }
 
+function buildSpringFrames(vDir: 1 | -1): Keyframe[] {
+  const steps = 14;
+  const damping = 5.2;
+  const freq = 10.5;
+  const frames: Keyframe[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const env = Math.exp(-damping * t);
+    const osc = Math.cos(freq * t);
+    const val = 1 - env * osc;
+    const scale = Number((0.86 + val * 0.14).toFixed(4));
+    const y = Number(((1 - val) * 14 * vDir).toFixed(2));
+    const opacity = Number(Math.min(1, t < 0.15 ? t / 0.15 : 1).toFixed(3));
+    frames.push({
+      offset: Number(t.toFixed(3)),
+      opacity,
+      transform: `translateY(${y}px) scale(${scale})`,
+    });
+  }
+  frames[frames.length - 1] = {
+    offset: 1,
+    opacity: 1,
+    transform: "translateY(0px) scale(1)",
+  };
+  return frames;
+}
+
 export function achEntryKeyframes(
   style: string,
   direction: 1 | -1 = 1,
@@ -82,24 +109,18 @@ export function achEntryKeyframes(
       };
     case "pop":
       return {
-        duration: 360,
-        easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+        duration: 440,
+        easing: "cubic-bezier(0.175, 0.885, 0.32, 1.275)",
         frames: [
-          { opacity: 0, transform: "scale(0.92)", offset: 0 },
-          { opacity: 1, transform: "scale(1.018)", offset: 0.65 },
-          { opacity: 1, transform: "scale(1)", offset: 1 },
+          { opacity: 0, transform: "scale(0.86)" },
+          { opacity: 1, transform: "scale(1)" },
         ],
       };
     case "spring":
       return {
-        duration: 500,
-        easing: "cubic-bezier(0.34, 1.4, 0.64, 1)",
-        frames: [
-          { opacity: 0, transform: `scale(0.88) translateY(${vDir * 10}px)`, offset: 0 },
-          { opacity: 1, transform: "scale(1.025) translateY(0px)", offset: 0.62 },
-          { opacity: 1, transform: "scale(0.995)", offset: 0.82 },
-          { opacity: 1, transform: "scale(1)", offset: 1 },
-        ],
+        duration: 560,
+        easing: "linear",
+        frames: buildSpringFrames(vDir),
       };
     case "drift":
       return {
@@ -167,11 +188,11 @@ export function achExitKeyframes(
       };
     case "spring":
       return {
-        duration: 220,
+        duration: 240,
         easing: "cubic-bezier(0.4, 0, 0.2, 1)",
         frames: [
-          { opacity: 1, transform: "scale(1)" },
-          { opacity: 0, transform: "scale(0.92)" },
+          { opacity: 1, transform: "translateY(0px) scale(1)" },
+          { opacity: 0, transform: `translateY(${vDir * 10}px) scale(0.92)` },
         ],
       };
     case "drift":
@@ -236,14 +257,13 @@ export function playAchCardEntry(
     fill: "both",
   });
 
-  // "soft", "pop", and "spring" animate the whole card organically;
-  // they don't delay inner elements so nothing disappears or flickers.
-  if (motion === "soft" || motion === "pop" || motion === "spring") {
+  // "soft" is the quiet option: the card fades as one piece, no inner element shift.
+  if (motion === "soft") {
     const fill = card.querySelector<HTMLElement>(".ach-hud-progress-fill");
     if (fill && typeof fill.animate === "function") {
       fill.animate(
         [{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }],
-        { duration: 400, delay: 140, easing: "cubic-bezier(0.16, 1, 0.3, 1)", fill: "both" },
+        { duration: 400, delay: 100, easing: "cubic-bezier(0.16, 1, 0.3, 1)", fill: "both" },
       );
     }
     return;
@@ -254,15 +274,22 @@ export function playAchCardEntry(
   if (motion !== "slide" && motion !== "drift") {
     const medallion = card.querySelector<HTMLElement>(".ach-hud-medallion");
     if (medallion && typeof medallion.animate === "function") {
+      const medEasing =
+        motion === "spring"
+          ? "cubic-bezier(0.34, 1.3, 0.64, 1)"
+          : motion === "pop"
+            ? "cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+            : "cubic-bezier(0.18, 1.15, 0.32, 1)";
+      const medDuration = motion === "spring" ? 480 : motion === "pop" ? 420 : 380;
       medallion.animate(
         [
-          { opacity: 0, transform: "scale(0.88)", offset: 0 },
+          { opacity: 0, transform: "scale(0.85)", offset: 0 },
           { opacity: 1, transform: "scale(1)", offset: 1 },
         ],
         {
-          duration: 380,
+          duration: medDuration,
           delay: 40,
-          easing: "cubic-bezier(0.18, 1.15, 0.32, 1)",
+          easing: medEasing,
           fill: "both",
         },
       );

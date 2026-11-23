@@ -47,4 +47,25 @@ describe("achievement motion choreography", () => {
       expect(typeof exit.easing).toBe("string");
     }
   });
+
+  it("ensures spring and pop have smooth non-abrupt entry keyframes", () => {
+    const pop = achEntryKeyframes("pop", 1, -1);
+    expect(pop.duration).toBe(440);
+    expect(pop.easing).toBe("cubic-bezier(0.175, 0.885, 0.32, 1.275)");
+    expect(pop.frames).toEqual([
+      { opacity: 0, transform: "scale(0.86)" },
+      { opacity: 1, transform: "scale(1)" },
+    ]);
+
+    const spring = achEntryKeyframes("spring", 1, -1);
+    expect(spring.duration).toBe(560);
+    expect(spring.easing).toBe("linear");
+    expect(spring.frames.length).toBe(15);
+    expect(spring.frames[0]).toMatchObject({ opacity: 0, offset: 0 });
+    expect(spring.frames[spring.frames.length - 1]).toEqual({
+      offset: 1,
+      opacity: 1,
+      transform: "translateY(0px) scale(1)",
+    });
+  });
 });
