@@ -580,6 +580,7 @@
   "ach.definitionsSourceNote": "Ta lista opiera się na definicjach Steam gry i początkowo jest cała zablokowana. Launcher nie może odczytać postępów sklepu; oznacz odblokowane osiągnięcia w edytorze stanu osiągnięć.",
   "ach.platinumComplete": "Trofeum platynowe ukończone!",
   "ach.platinumEarned": "Zdobyto trofeum platynowe!",
+  "ach.unlockedToast": "Osiągnięcie odblokowane!",
   "ach.platinumEarnedDesc": "Wszystkie osiągnięcia w tej grze są odblokowane. Gratulacje!",
   "ach.searchPlaceholder": "Szukaj osiągnięć...",
   "ach.clearSearch": "Wyczyść wyszukiwanie",

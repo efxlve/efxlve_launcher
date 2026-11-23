@@ -580,6 +580,7 @@
   "ach.definitionsSourceNote": "この一覧はゲームの Steam 定義に基づき、最初はすべてロックされています。ランチャーはストア側の進行状況を読み取れません。解除した実績は実績状態エディターでマークしてください。",
   "ach.platinumComplete": "プラチナトロフィー完了！",
   "ach.platinumEarned": "プラチナトロフィー獲得！",
+  "ach.unlockedToast": "実績を獲得！",
   "ach.platinumEarnedDesc": "このゲームの実績はすべて解除済みです。おめでとうございます！",
   "ach.searchPlaceholder": "実績を検索...",
   "ach.clearSearch": "検索をクリア",

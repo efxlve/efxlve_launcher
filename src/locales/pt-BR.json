@@ -580,6 +580,7 @@
   "ach.definitionsSourceNote": "Esta lista segue as definições da Steam do jogo e começa toda bloqueada. O launcher não consegue ler o progresso da loja; marque o que você desbloqueou no editor de estado das conquistas.",
   "ach.platinumComplete": "Troféu de platina concluído!",
   "ach.platinumEarned": "Trofeu de platina conquistado!",
+  "ach.unlockedToast": "Conquista desbloqueada!",
   "ach.platinumEarnedDesc": "Todas as conquistas deste jogo estão desbloqueadas. Parabéns!",
   "ach.searchPlaceholder": "Buscar conquistas...",
   "ach.clearSearch": "Limpar busca",

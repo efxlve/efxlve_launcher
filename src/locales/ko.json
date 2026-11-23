@@ -580,6 +580,7 @@
   "ach.definitionsSourceNote": "이 목록은 게임의 Steam 정의를 따르며 처음에는 모두 잠겨 있습니다. 런처는 스토어의 진행 상황을 읽을 수 없습니다. 해제한 업적은 업적 상태 편집기에서 표시하세요.",
   "ach.platinumComplete": "플래티넘 트로피 완료.",
   "ach.platinumEarned": "플래티넘 트로피 획득!",
+  "ach.unlockedToast": "도전 과제 달성!",
   "ach.platinumEarnedDesc": "이 게임의 모든 업적을 달성했습니다. 축하합니다!",
   "ach.searchPlaceholder": "업적 검색...",
   "ach.clearSearch": "검색 지우기",

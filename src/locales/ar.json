@@ -580,6 +580,7 @@
   "ach.definitionsSourceNote": "تعتمد هذه القائمة على تعريفات Steam الخاصة باللعبة وتبدأ جميعها مقفلة. لا يستطيع المشغّل قراءة تقدّم المتجر؛ استخدم محرر حالة الإنجازات لتمييز ما فتحته.",
   "ach.platinumComplete": "اكتملت الجائزة البلاتينية!",
   "ach.platinumEarned": "تم الحصول على كأس البلاتين!",
+  "ach.unlockedToast": "تم فتح الإنجاز!",
   "ach.platinumEarnedDesc": "تم فتح جميع الإنجازات في هذه اللعبة. تهانينا!",
   "ach.searchPlaceholder": "البحث في الإنجازات...",
   "ach.clearSearch": "مسح البحث",

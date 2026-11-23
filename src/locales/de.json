@@ -580,6 +580,7 @@
   "ach.definitionsSourceNote": "Diese Liste folgt den Steam-Definitionen des Spiels und startet komplett gesperrt. Der Launcher kann den Fortschritt des Stores nicht lesen; markiere Freigeschaltetes im Erfolgsstatus-Editor.",
   "ach.platinumComplete": "Platin-Trophäe abgeschlossen!",
   "ach.platinumEarned": "Platin-Trophäe erhalten!",
+  "ach.unlockedToast": "Erfolg freigeschaltet!",
   "ach.platinumEarnedDesc": "Alle Erfolge in diesem Spiel sind freigeschaltet. Glückwunsch!",
   "ach.searchPlaceholder": "Erfolge suchen...",
   "ach.clearSearch": "Suche löschen",

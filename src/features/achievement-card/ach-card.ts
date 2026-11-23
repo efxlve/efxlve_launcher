@@ -41,6 +41,8 @@ export interface AchCardModel {
   hideDesc?: boolean;
   showProgress?: boolean;
   progressPct?: number;
+  /** Optional custom status ("Başarım kazanıldı!"). When omitted on non-hints, defaults to t("ach.unlockedToast"). */
+  statusLabel?: string;
 }
 
 /** CSS custom properties that colour the card and its accent surfaces. */
@@ -92,14 +94,18 @@ export function achTagParts(
 /** The card itself. No stage, no position: both callers place it. */
 export function achCardHtml(m: AchCardModel): string {
   const hintClass = m.hint ? " is-hint" : "";
-  const tagHtml = !m.hideTag && (m.tagLabel || m.tagMeta)
-    ? `<span class="ach-hud-tag">${
-        m.tagLabel ? `<span class="ach-hud-tag-tier">${esc(m.tagLabel)}</span>` : ""
-      }${
-        m.tagLabel && m.tagMeta ? `<span class="ach-hud-tag-sep">·</span>` : ""
-      }${
-        m.tagMeta ? `<span class="ach-hud-tag-meta">${esc(m.tagMeta)}</span>` : ""
-      }</span>`
+  const statusText = !m.hint ? (m.statusLabel ?? t("ach.unlockedToast")) : "";
+  const statusHtml = statusText ? `<span class="ach-hud-tag-status">${esc(statusText)}</span>` : "";
+  const tierHtml = !m.hideTag && m.tagLabel ? `<span class="ach-hud-tag-tier">${esc(m.tagLabel)}</span>` : "";
+  const metaHtml = !m.hideTag && m.tagMeta ? `<span class="ach-hud-tag-meta">${esc(m.tagMeta)}</span>` : "";
+
+  const tagParts: string[] = [];
+  if (statusHtml) tagParts.push(statusHtml);
+  if (tierHtml) tagParts.push(tierHtml);
+  if (metaHtml) tagParts.push(metaHtml);
+
+  const tagHtml = tagParts.length > 0
+    ? `<span class="ach-hud-tag">${tagParts.join('<span class="ach-hud-tag-sep">·</span>')}</span>`
     : "";
   const descHtml = !m.hideDesc && m.desc ? `<span class="ach-hud-desc">${esc(m.desc)}</span>` : "";
   const progressHtml = m.showProgress && typeof m.progressPct === "number" && m.progressPct >= 0

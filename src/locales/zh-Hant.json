@@ -580,6 +580,7 @@
   "ach.definitionsSourceNote": "此清單依據遊戲的 Steam 成就定義，初始全部鎖定。啟動器無法讀取商店自身的進度；請在成就狀態編輯器中標記已解鎖的成就。",
   "ach.platinumComplete": "白金獎盃完成！",
   "ach.platinumEarned": "獲得白金獎盃！",
+  "ach.unlockedToast": "已解鎖成就！",
   "ach.platinumEarnedDesc": "此遊戲的所有成就均已解鎖。恭喜！",
   "ach.searchPlaceholder": "搜尋成就...",
   "ach.clearSearch": "清除搜尋",

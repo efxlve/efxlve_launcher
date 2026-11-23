@@ -580,6 +580,7 @@
   "ach.definitionsSourceNote": "Cette liste suit les définitions Steam du jeu et démarre entièrement verrouillée. Le launcher ne peut pas lire la progression de la boutique ; marquez ce que vous avez débloqué dans l'éditeur d'état des succès.",
   "ach.platinumComplete": "Trophée platine terminé !",
   "ach.platinumEarned": "Trophée platine obtenu !",
+  "ach.unlockedToast": "Succès déverrouillé !",
   "ach.platinumEarnedDesc": "Tous les succès de ce jeu sont débloqués. Félicitations !",
   "ach.searchPlaceholder": "Rechercher des succès...",
   "ach.clearSearch": "Effacer la recherche",

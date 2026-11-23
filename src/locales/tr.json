@@ -610,6 +610,7 @@
   "ach.definitionsSourceNote": "Bu liste oyunun Steam tanımlarından geliyor ve başlangıçta tümü kilitli görünür. Launcher mağazanın kendi ilerlemesini okuyamaz; açtıklarınızı başarım durumu düzenleyicisinden işaretleyin.",
   "ach.platinumComplete": "Platin Kupa Tamamlandı!",
   "ach.platinumEarned": "Platin kupa kazanıldı!",
+  "ach.unlockedToast": "Başarım kazanıldı!",
   "ach.platinumEarnedDesc": "Bu oyundaki tüm başarımlar açıldı. Tebrikler!",
   "ach.searchPlaceholder": "Başarım ara...",
   "ach.clearSearch": "Aramayı Temizle",

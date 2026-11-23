@@ -610,6 +610,7 @@
   "ach.definitionsSourceNote": "This list follows the game's Steam definitions and starts fully locked. The launcher cannot read the store's own progress; use the achievement state editor to mark what you unlocked.",
   "ach.platinumComplete": "Platinum Trophy Complete!",
   "ach.platinumEarned": "Platinum trophy earned!",
+  "ach.unlockedToast": "Achievement unlocked!",
   "ach.platinumEarnedDesc": "Every achievement in this game is unlocked. Congratulations!",
   "ach.searchPlaceholder": "Search achievements...",
   "ach.clearSearch": "Clear Search",
