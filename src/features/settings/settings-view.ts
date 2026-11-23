@@ -1746,8 +1746,10 @@ function renderAchievementsSettings(): string {
   }
   const html = panel.renderAchievementsSettingsView();
   // The card no longer carries a CSS entry animation; the shared motion runs
-  // once the panel is in the DOM, exactly like the in-game toast.
-  window.requestAnimationFrame(() => panel.runStagePreviewChoreography("entry"));
+  // after the section is attached but before the frame is painted, so the
+  // settled card never flashes for one frame first. A replay scheduled in the
+  // same task owns the card and this entry is skipped.
+  panel.scheduleStagePreviewEntry();
   return html;
 }
 

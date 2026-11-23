@@ -174,6 +174,22 @@ function previewAchievementSound(tier = previewRarityTier): void {
 }
 
 let stagePreviewTimer: number | null = null;
+/** Bumped whenever a caller drives the stage, so a paint-time auto entry can yield. */
+let stageChoreographyGen = 0;
+
+/**
+ * Plays the opening once the section has just been painted. The repaint is
+ * followed by the innerHTML write in the same task, so this runs in a microtask:
+ * the animation starts before the browser paints, instead of showing one
+ * settled frame and then snapping back to the entrance. An explicit replay or
+ * exit scheduled in the same task owns the card and cancels this entry.
+ */
+export function scheduleStagePreviewEntry(): void {
+  const gen = stageChoreographyGen;
+  queueMicrotask(() => {
+    if (gen === stageChoreographyGen) runStagePreviewChoreography("entry");
+  });
+}
 
 /**
  * A real achievement picture for the preview: the newest unlock in the local
@@ -191,22 +207,25 @@ function previewAchievementArt(): string | undefined {
  * Drives the live preview stage card using the Web Animations API so that
  * opening and closing animations ALWAYS play visibly on every click. The
  * keyframes come from the same module as the in-game toast.
+ *
+ * The card is played in the same task the section was painted in. Deferring
+ * the start to the next animation frame let the browser paint one settled
+ * frame first, so the card flashed at its final place before the entrance.
  */
 export function runStagePreviewChoreography(mode: "entry" | "exit" | "cycle" = "entry"): void {
+  stageChoreographyGen += 1;
   if (stagePreviewTimer !== null) {
     window.clearTimeout(stagePreviewTimer);
     stagePreviewTimer = null;
   }
-  // An art URL that cannot load must reveal the trophy underneath instead of
-  // leaving an empty tile.
-  document
-    .querySelectorAll<HTMLImageElement>(".ach-stage-screen .ach-hud-ach-icon")
-    .forEach((image) => {
+  const play = (): boolean => {
+    const card = document.querySelector<HTMLElement>(".ach-stage-screen .ach-hud-toast");
+    if (!card) return false;
+    // An art URL that cannot load must reveal the trophy underneath instead
+    // of leaving an empty tile.
+    card.querySelectorAll<HTMLImageElement>(".ach-hud-ach-icon").forEach((image) => {
       image.onerror = () => image.remove();
     });
-  window.requestAnimationFrame(() => {
-    const card = document.querySelector<HTMLElement>(".ach-stage-screen .ach-hud-toast");
-    if (!card) return;
     const options = S.achievementNotificationOptions;
     const style = options.animStyle;
     const direction = achMotionDirection(options.position);
@@ -231,7 +250,10 @@ export function runStagePreviewChoreography(mode: "entry" | "exit" | "cycle" = "
     } else {
       playEntry();
     }
-  });
+    return true;
+  };
+  // A caller that runs before the section is attached retries next frame.
+  if (!play()) window.requestAnimationFrame(() => play());
 }
 
 /** The five stage cards: the same counts the test notification sends. */

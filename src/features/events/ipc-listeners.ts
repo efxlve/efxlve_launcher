@@ -266,6 +266,32 @@ function listenLater<T>(event: string, handler: (event: { payload: T }) => void)
   bootListeners.push(listen<T>(event, handler));
 }
 
+/**
+ * True when two notification option payloads describe the same settings.
+ * A Rust write echoes the saved values back; comparing them keeps the main
+ * window from repainting the settings page over its own echo. Store lists are
+ * order-insensitive, and `undefined`/`null` mean the same "not set".
+ */
+function sameAchievementOptions(
+  a: AchievementNotificationOptions,
+  b: AchievementNotificationOptions,
+): boolean {
+  const keys = new Set<string>([...Object.keys(a), ...Object.keys(b)]);
+  const left = a as unknown as Record<string, unknown>;
+  const right = b as unknown as Record<string, unknown>;
+  for (const key of keys) {
+    const l = left[key];
+    const r = right[key];
+    if (Array.isArray(l) || Array.isArray(r)) {
+      const asList = (value: unknown) => (Array.isArray(value) ? value.map(String).sort().join("\u0000") : "");
+      if (asList(l) !== asList(r)) return false;
+      continue;
+    }
+    if ((l ?? null) !== (r ?? null)) return false;
+  }
+  return true;
+}
+
 export async function initApp(hooks: {
   render: () => void;
   scheduleRender: () => void;
@@ -1380,8 +1406,13 @@ export async function initApp(hooks: {
   // The overlay panel can flip the same notification switches. Keep the main
   // window's in-memory copy in step so the next settings render is current.
   listenLater<AchievementNotificationOptions>("achievement-notification-options", (event) => {
+    // The write itself echoes this event back. Repainting on our own echo
+    // rebuilt the live preview card in the middle of its entrance (a spring
+    // was cut and restarted), so only an actual change from another surface
+    // repaints the page.
+    const changed = !sameAchievementOptions(S.achievementNotificationOptions, event.payload);
     S.achievementNotificationOptions = event.payload;
-    if (S.view === "settings") hooks.scheduleRender();
+    if (changed && S.view === "settings") hooks.scheduleRender();
   });
 
   // Game clips: the recorder runs in Rust; the UI only mirrors its state.
