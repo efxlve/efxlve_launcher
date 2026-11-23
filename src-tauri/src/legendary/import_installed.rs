@@ -184,7 +184,7 @@ fn keep_scanned_game(
     !companion || egl_installed.contains(app_name)
 }
 
-fn is_companion_launcher_game(catalog: &Value) -> bool {
+pub(crate) fn is_companion_launcher_game(catalog: &Value) -> bool {
     let dev = catalog
         .pointer("/metadata/developer")
         .and_then(|v| v.as_str())

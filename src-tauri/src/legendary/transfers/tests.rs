@@ -217,6 +217,28 @@ fn legendary_disk_space_wording_maps_to_the_disk_full_message() {
 }
 
 #[test]
+fn partner_cloud_titles_never_run_the_epic_sync() {
+    // Star Wars Jedi: Fallen Order ("shoebill") is Epic-owned but installed and
+    // synced by the EA App; legendary refuses it with "Game not installed".
+    let shoebill = serde_json::json!({
+        "app_title": "Star Wars: Jedi Fallen Order",
+        "metadata": {
+            "developer": "Electronic Arts",
+            "customAttributes": { "ThirdPartyManagedApp": { "value": "Origin" } }
+        }
+    });
+    let normal = serde_json::json!({
+        "app_title": "Fortnite",
+        "metadata": { "developer": "Epic Games" }
+    });
+    assert!(!epic_cloud_sync_allowed(true, Some(&shoebill)));
+    assert!(epic_cloud_sync_allowed(true, Some(&normal)));
+    assert!(epic_cloud_sync_allowed(true, None));
+    // A partner launch is never installed in legendary's own record.
+    assert!(!epic_cloud_sync_allowed(false, Some(&normal)));
+}
+
+#[test]
 fn debug_noise_does_not_hide_the_cloud_sync_failure() {
     // Legendary probes its overlay record at startup; a missing file is normal
     // and prints "Failed to load ...", which used to become the sync error.

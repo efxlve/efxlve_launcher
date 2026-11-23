@@ -844,6 +844,19 @@ fn ensure_eos_service_blocking() {
     }
 }
 
+/// Whether the automatic run may call legendary `sync-saves` for this title.
+///
+/// A partner cloud owns the saves of EA App, Ubisoft Connect and Rockstar
+/// titles, and legendary refuses an app it did not install with "Game not
+/// installed", so the run would only report a failure the player cannot fix.
+pub(super) fn epic_cloud_sync_allowed(
+    installed_by_legendary: bool,
+    catalog: Option<&serde_json::Value>,
+) -> bool {
+    installed_by_legendary
+        && !catalog.is_some_and(crate::legendary::import_installed::is_companion_launcher_game)
+}
+
 pub(super) async fn spawn_launched(
     app: &AppHandle,
     bin: &PathBuf,
@@ -855,18 +868,17 @@ pub(super) async fn spawn_launched(
     let installed_entry = installed_games.iter().find(|g| g.app_name == app_name);
 
     let meta_path = config.join("metadata").join(format!("{app_name}.json"));
+    let catalog = std::fs::read_to_string(&meta_path)
+        .ok()
+        .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok());
     let game_title = installed_entry
         .map(|g| g.title.clone())
         .filter(|t| !t.trim().is_empty())
         .or_else(|| {
-            std::fs::read_to_string(&meta_path)
-                .ok()
-                .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
-                .and_then(|v| {
-                    v.get("app_title")
-                        .and_then(|t| t.as_str())
-                        .map(|s| s.to_string())
-                })
+            catalog
+                .as_ref()
+                .and_then(|v| v.get("app_title").and_then(|t| t.as_str()))
+                .map(|s| s.to_string())
         })
         .unwrap_or_else(|| app_name.to_string());
 
@@ -1042,6 +1054,9 @@ pub(super) async fn spawn_launched(
     let bin_bg = bin.clone();
     let install_path_bg = install_path;
     let candidate_exes_bg = candidate_exes;
+    // Decided before the monitor starts so the exit path does not launch a CLI
+    // run that can only fail for a title another client owns.
+    let epic_cloud = epic_cloud_sync_allowed(installed_entry.is_some(), catalog.as_ref());
     let start_time = std::time::Instant::now();
     let start_system_time = std::time::SystemTime::now();
 
@@ -1162,7 +1177,10 @@ pub(super) async fn spawn_launched(
             .and_then(|c| c.cloud_saves_enabled)
             .unwrap_or(true);
 
-        if should_sync {
+        // EA App, Ubisoft Connect and Rockstar titles sync through their own
+        // cloud, and legendary only knows games it installed. Either case would
+        // end in "Game not installed" instead of a real upload.
+        if should_sync && epic_cloud {
             let save_path = crate::legendary::commands::resolve_save_path(&app_name_bg);
             let (success, message) = match crate::legendary::commands::run_cloud_sync(
                 &bin_bg,
