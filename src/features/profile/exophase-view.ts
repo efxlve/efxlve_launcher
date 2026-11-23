@@ -547,8 +547,7 @@ function profileHero(
     : icon("globe", 32);
   const handle = username ? `@${username}` : "Exophase";
   const art = hero
-    ? `<div class="profile-exophase-hero-backdrop" style="background-image:url('${esc(hero)}')" aria-hidden="true"></div>
-       <div class="profile-exophase-hero-art" style="background-image:url('${esc(hero)}')" aria-hidden="true"></div>
+    ? `<div class="profile-exophase-hero-art" style="background-image:url('${esc(hero)}')" aria-hidden="true"></div>
        <div class="profile-exophase-hero-scrim" aria-hidden="true"></div>`
     : "";
 

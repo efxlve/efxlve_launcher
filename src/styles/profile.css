@@ -51,27 +51,19 @@
     radial-gradient(120% 140% at 12% 0%, rgba(255, 255, 255, 0.08) 0%, transparent 65%),
     radial-gradient(90% 120% at 88% 100%, rgba(255, 255, 255, 0.04) 0%, transparent 60%);
 }
-.profile-exophase-hero-backdrop {
-  position: absolute;
-  z-index: 0;
-  inset: -32px;
-  background-size: cover;
-  background-position: center center;
-  filter: blur(40px) brightness(0.42) saturate(1.25);
-  transform: scale(1.15);
-  opacity: 0.85;
-  pointer-events: none;
+/* The 16:9 key art keeps its full logo in a 2.5:1 frame; the profile block
+   sits in the dark bottom band instead of on top of the artwork. */
+.profile-exophase-hero-stage.has-art {
+  height: auto;
+  aspect-ratio: 2.5 / 1;
 }
 .profile-exophase-hero-art {
   position: absolute;
   z-index: 1;
   inset: 0;
-  /* Exophase key art is 16:9 and the banner is much wider. Containing the art
-     keeps the logo and the bottom of the image intact; the blurred backdrop
-     below fills the rest of the frame. Cover cropped the logo away. */
-  background-size: contain;
+  background-size: cover;
   background-repeat: no-repeat;
-  background-position: right center;
+  background-position: center 85%;
   animation: profile-banner-reveal 440ms cubic-bezier(0.16, 1, 0.3, 1) both;
   pointer-events: none;
 }
@@ -80,21 +72,23 @@
   z-index: 2;
   inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(
-      to right,
-      rgba(6, 7, 10, 0.7) 0%,
-      rgba(6, 7, 10, 0.4) 34%,
-      rgba(6, 7, 10, 0.1) 60%,
-      rgba(6, 7, 10, 0) 78%
-    ),
-    linear-gradient(
-      to bottom,
-      rgba(6, 7, 10, 0.24) 0%,
-      rgba(6, 7, 10, 0.03) 36%,
-      rgba(6, 7, 10, 0.1) 70%,
-      rgba(8, 9, 12, 0.45) 100%
-    );
+  background: linear-gradient(
+    to bottom,
+    rgba(6, 7, 10, 0.16) 0%,
+    rgba(6, 7, 10, 0.02) 30%,
+    rgba(6, 7, 10, 0.16) 70%,
+    rgba(8, 9, 12, 0.62) 100%
+  );
+}
+/* The full-bleed art puts the game's face at the top; keep the tools out of it
+   and row them with the profile block on the dark bottom band. */
+.profile-exophase-hero .profile-hero-top-bar {
+  position: absolute;
+  top: auto;
+  right: 22px;
+  bottom: 18px;
+  z-index: 4;
+  width: auto;
 }
 .profile-exophase-hero-bottom {
   position: relative;
