@@ -227,6 +227,11 @@ const OVERLAY_BIND_SCRIPT: &str = r#"
     event.preventDefault();
     send(node.getAttribute("data-act") || "", node.getAttribute("data-id") || "");
   });
+  // A broken achievement icon must leave the game cover and the glyph underneath.
+  document.addEventListener("error", (event) => {
+    const img = event.target;
+    if (img && img.classList && img.classList.contains("notif-ach-img")) img.remove();
+  }, true);
   // The dropdown owns the keyboard once it is clicked; Escape must still close
   // it (and the changelog card, which shares this host).
   document.addEventListener("keydown", (event) => {
@@ -290,6 +295,8 @@ fn overlay_document(panel_html: &str) -> String {
         display: grid; place-items: center; background: var(--surface-2, #141414); color: var(--text-2, #9a9a9a); }
       .notif-item-art { position: relative; overflow: hidden; }
       .notif-art { position: absolute; inset: 0; background-position: center; background-size: cover; }
+      .notif-ach-img { position: absolute; inset: 0; width: 100%; height: 100%;
+        object-fit: cover; background: var(--surface-2, #141414); }
       .notif-item-store { align-self: center; margin-left: auto; flex-shrink: 0; opacity: 0.75; }
       .notif-item-store img { display: block; }
       .notif-item-icon.kind-download { color: var(--ok, #2fb36d); }

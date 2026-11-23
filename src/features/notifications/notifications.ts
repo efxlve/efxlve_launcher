@@ -157,6 +157,10 @@ export interface NotifInput {
   actionData?: string;
   /** Short label for that action, shown as a chip inside the entry. */
   actionLabel?: string;
+  /** Picture the row paints instead of the game cover (an achievement icon). */
+  icon?: string;
+  /** Store achievement id, so the icon can be resolved again after a restore. */
+  achName?: string;
   toast?: boolean;
 }
 
@@ -271,6 +275,8 @@ export function pushNotification(input: NotifInput): void {
     existing.action = input.action ?? existing.action;
     existing.actionData = input.actionData ?? existing.actionData;
     existing.actionLabel = input.actionLabel ?? existing.actionLabel;
+    existing.icon = input.icon ?? existing.icon;
+    existing.achName = input.achName ?? existing.achName;
   } else {
     S.notifications.unshift({
       id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
@@ -282,6 +288,8 @@ export function pushNotification(input: NotifInput): void {
       action: input.action,
       actionData: input.actionData,
       actionLabel: input.actionLabel,
+      icon: input.icon,
+      achName: input.achName,
       ts: now,
       read: false,
     });
@@ -422,14 +430,37 @@ function notifPanelData(): NotifPanelData {
 }
 
 /**
+ * The achievement's own picture. A live unlock carries it on the event; a
+ * restored row asks the loaded store list instead, which also covers an
+ * emulator that only learns its schema after the unlock. Empty means the row
+ * keeps the game cover and, below that, the trophy glyph.
+ */
+function achievementIconFor(n: AppNotification): string {
+  if (n.icon) return n.icon;
+  if (!n.achName || !n.appName) return "";
+  const item = S.loadedAchievements
+    .get(n.appName)
+    ?.achievements.find((ach) => ach.name === n.achName);
+  return item?.icon_unlocked || item?.icon_link || "";
+}
+
+/**
  * The 28px tile in front of a row. A game-facing row shows the game's own art
  * (the same cover the library paints) and falls back to the kind glyph when the
  * store has no picture; the glyph stays visible under a cover that fails to
  * load, because it is painted by the tile itself and the art sits above it.
+ * When the row knows its achievement, that icon sits on top of the cover and a
+ * failed load drops it, leaving the cover and then the glyph.
  */
-function artTile(appName: string | undefined, glyph: Parameters<typeof icon>[0], kindClass: string): string {
+function artTile(
+  appName: string | undefined,
+  glyph: Parameters<typeof icon>[0],
+  kindClass: string,
+  achievementIcon?: string,
+): string {
   const cover = appName ? summaryOf(appName)?.cover : null;
-  return `<span class="notif-item-icon notif-item-art ${kindClass}">${icon(glyph, 14)}${cover ? `<span class="notif-art" style="background-image:url('${esc(cover)}')"></span>` : ""}</span>`;
+  const iconUrl = achievementIcon?.trim() ? assetUrl(achievementIcon) : "";
+  return `<span class="notif-item-icon notif-item-art ${kindClass}">${icon(glyph, 14)}${cover ? `<span class="notif-art" style="background-image:url('${esc(cover)}')"></span>` : ""}${iconUrl ? `<img class="notif-ach-img" src="${esc(iconUrl)}" alt="" draggable="false" />` : ""}</span>`;
 }
 
 /**
@@ -502,10 +533,11 @@ function notificationMarkup(n: AppNotification): string {
     : "";
   // The subject (a game title) sits in the dim line before the timestamp.
   const meta = esc([n.context, relativeTime(n.ts)].filter(Boolean).join(" · "));
-  // An unlock belongs to a game; its cover reads better than a repeated glyph.
+  // An unlock belongs to a game; its own icon reads better than the repeated
+  // cover, with the cover and the trophy glyph behind it as fallbacks.
   const tile =
     n.kind === "achievement"
-      ? artTile(n.appName, "trophy", "kind-achievement")
+      ? artTile(n.appName, "trophy", "kind-achievement", achievementIconFor(n))
       : `<span class="notif-item-icon kind-${n.kind}">${icon(KIND_ICON[n.kind], 14)}</span>`;
   const mark = n.kind === "achievement" && n.appName ? storeMark(n.appName) : "";
   const actIcon = n.action === "eos-update-apply" ? "refresh" : "external";
@@ -645,6 +677,13 @@ function bindNotifOverlay(): void {
   });
 }
 
+/** A remote achievement icon that cannot load leaves the cover and glyph. */
+function bindAchievementArt(root: ParentNode): void {
+  root.querySelectorAll<HTMLImageElement>("img.notif-ach-img").forEach((img) => {
+    img.addEventListener("error", () => img.remove(), { once: true });
+  });
+}
+
 /** Renders the dropdown into #notif-root (or clears it when closed). */
 export function renderNotificationPanel(): void {
   const root = document.getElementById("notif-root");
@@ -679,6 +718,7 @@ export function renderNotificationPanel(): void {
     void presentStoreOverlay(markup).catch(() => {
       notifOverlayOn = false;
       root.innerHTML = markup;
+      bindAchievementArt(root);
       positionNotifPanel();
     });
     return;
@@ -686,6 +726,7 @@ export function renderNotificationPanel(): void {
   if (notifOverlayOn) hideStoreOverlay();
   notifOverlayOn = false;
   root.innerHTML = markup;
+  bindAchievementArt(root);
   positionNotifPanel();
 }
 

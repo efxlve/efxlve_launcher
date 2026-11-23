@@ -98,6 +98,10 @@ export interface AppNotification {
   actionData?: string;
   /** Short label for the action, shown as a chip inside the entry. */
   actionLabel?: string;
+  /** Picture the row paints instead of the game cover (an achievement icon). */
+  icon?: string;
+  /** Store achievement id, so the icon can be resolved again after a restore. */
+  achName?: string;
   ts: number;
   read: boolean;
 }

@@ -1358,6 +1358,14 @@ export async function initApp(hooks: {
       .find((ach) => Boolean(ach));
     const label = displayName || cachedItem?.display_name || name;
     const gameTitle = summaryOf(appKeys[0])?.title || "";
+    // Every store path lands here: the watcher and the store poll both carry
+    // the earned picture on the event, and the cached row covers an emulator
+    // that only has the grey art (or none) at announce time.
+    const achievementIcon =
+      event.payload.iconUrl?.trim() ||
+      cachedItem?.icon_unlocked?.trim() ||
+      cachedItem?.icon_link?.trim() ||
+      "";
     if (notification) {
       pushNotification({
         kind: "achievement",
@@ -1365,6 +1373,8 @@ export async function initApp(hooks: {
         body: description || cachedItem?.description || "",
         context: gameTitle,
         appName: appKeys[0],
+        icon: achievementIcon || undefined,
+        achName: name,
         // The in-game card already announced it; the bell keeps the history.
         toast: !card,
       });
