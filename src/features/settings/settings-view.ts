@@ -702,7 +702,13 @@ function renderIntegrations(): string {
     "exophase",
     t("settings.exophaseTitle"),
     t("settings.exophaseDesc"),
-    `<span class="chip ${S.exophaseConfigured ? "ok" : ""}">${S.exophaseConfigured ? t("settings.connected") : t("accounts.notConnected")}</span>`,
+    `<span class="chip ${S.exophaseEnabled && S.exophaseConfigured ? "ok" : ""}">${
+      S.exophaseEnabled
+        ? S.exophaseConfigured
+          ? t("settings.connected")
+          : t("accounts.notConnected")
+        : t("settings.storeNotifOff")
+    }</span>`,
     `<div class="settings-exophase-enable">${toggle("exophase-enabled", S.exophaseEnabled)}<span>${esc(t("profile.exophaseShowTab"))}</span></div>
      <input id="settings-exophase-username" class="input settings-path-input" placeholder="${esc(t("settings.exophasePlaceholder"))}" value="${esc(S.exophaseUsername)}" spellcheck="false" autocomplete="off" />
      <button class="btn primary small" data-act="save-exophase-username">${t("common.save")}</button>
