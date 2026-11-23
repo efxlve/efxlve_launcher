@@ -171,11 +171,27 @@ function findLocalPortraitCover(game: ExophaseGame): LocalCoverInfo {
     const appId = isSteam ? localKey.slice(7) : undefined;
     const cov = coverForApp(localKey);
     if (cov) {
-      return { cover: cov, isSteam, appId, wide: false };
+      return { cover: cov, isSteam, appId, wide: localCoverWide(localKey, cov) };
     }
   }
   const fallback = game.cover || game.hero || "";
   return { cover: fallback, isSteam: false, wide: Boolean(fallback) };
+}
+
+/** Companion clients mostly serve landscape tiles, not portrait box art. */
+const WIDE_COVER_SOURCES = new Set(["ea", "ubisoft", "xbox", "battlenet", "riot"]);
+
+/** Known landscape URL families; the `Tall` variants stay portrait. */
+const WIDE_COVER_URL =
+  /(?:header\.jpg|library_hero|capsule_|DieselGameBox(?!Tall)|OfferImage(?!Tall)|DieselStoreFront(?!Tall))/i;
+
+function localCoverWide(localKey: string, cover: string): boolean {
+  const source = S.allGamesMap.get(localKey)?.source;
+  if (source && WIDE_COVER_SOURCES.has(source)) return true;
+  // Steam's flat capsule and hashed fallback art can be landscape even though
+  // the normal portrait asset is `library_600x900`.
+  if (localKey.startsWith("steam::") && !/library_600x900/i.test(cover)) return true;
+  return WIDE_COVER_URL.test(cover);
 }
 
 /**
