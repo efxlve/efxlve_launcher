@@ -254,7 +254,7 @@
   margin-top: 2px;
 }
 .profile-exophase-input-hint svg {
-  color: var(--color-green, #10b981);
+  color: var(--accent);
   flex-shrink: 0;
 }
 .profile-exophase-enable-row {
@@ -358,7 +358,7 @@
   color: var(--text-2);
 }
 .profile-exophase-guide-list li svg {
-  color: var(--color-green, #10b981);
+  color: var(--accent);
   flex-shrink: 0;
 }
 .profile-exophase-points {
