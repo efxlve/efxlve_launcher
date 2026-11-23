@@ -8,12 +8,13 @@
  */
 
 import { emptyState, epicPlatinumIcon, icon, type IconName } from "../../core/icons";
-import { rawOf, storeKeysForTitle } from "../../core/selectors";
+import { canonicalGameTitle, rawOf, storeKeysForTitle } from "../../core/selectors";
 import { S } from "../../core/state";
-import { cachedSteamCover, steamCdnPortrait } from "../../core/steam-art-cache";
+import { steamCdnPortrait } from "../../core/steam-art-cache";
 import { esc, fmtDecimal1, fmtPlaytime } from "../../core/utils";
 import { epicPortrait } from "../../epic-model";
 import { currentLanguage, t } from "../../i18n";
+import { igdbCovers, igdbImage } from "../../igdb";
 import { storeLogo } from "../store/store-logos";
 import { EXOPHASE_SITE, type ExophaseAward, type ExophaseData, type ExophaseGame, type ExophaseSummary } from "../../exophase";
 
@@ -143,8 +144,9 @@ function coverForApp(appName: string, fallback = ""): string {
   if (appName.startsWith("steam::")) {
     const appId = appName.slice(7);
     if (/^\d+$/.test(appId)) {
-      const cached = cachedSteamCover(appId);
-      return cached || steamCdnPortrait(appId);
+      // The known portrait capsule is the safest first URL; the shared art
+      // fallback repairs a missing flat capsule with the hashed library cover.
+      return steamCdnPortrait(appId);
     }
   }
   const s = S.epicSummariesMap.get(appName);
@@ -171,9 +173,16 @@ function findLocalPortraitCover(game: ExophaseGame): LocalCoverInfo {
     const appId = isSteam ? localKey.slice(7) : undefined;
     const cov = coverForApp(localKey);
     if (cov) {
-      return { cover: cov, isSteam, appId, wide: localCoverWide(localKey, cov) };
+      const wide = localCoverWide(localKey, cov);
+      if (wide) {
+        const igdb = igdbCoverFor(game.title);
+        if (igdb) return { cover: igdb, isSteam: false, wide: false };
+      }
+      return { cover: cov, isSteam, appId, wide };
     }
   }
+  const igdb = igdbCoverFor(game.title);
+  if (igdb) return { cover: igdb, isSteam: false, wide: false };
   const fallback = game.cover || game.hero || "";
   return { cover: fallback, isSteam: false, wide: Boolean(fallback) };
 }
@@ -188,7 +197,143 @@ const WIDE_COVER_URL =
 function localCoverWide(localKey: string, cover: string): boolean {
   const source = S.allGamesMap.get(localKey)?.source;
   if (source && WIDE_COVER_SOURCES.has(source)) return true;
+  if (source === "epic") {
+    // `epicPortrait` falls back to the wide key art when the tall store image
+    // is missing; only a real tall image is safe for the portrait card.
+    const images = rawOf(localKey)?.metadata?.keyImages;
+    const tall =
+      Array.isArray(images) &&
+      images.some(
+        (image) =>
+          ["DieselGameBoxTall", "OfferImageTall", "DieselStoreFrontTall"].includes(image?.type) &&
+          Boolean(image?.url),
+      );
+    if (!tall) return true;
+  }
   return WIDE_COVER_URL.test(cover);
+}
+
+const IGDB_COVER_STORAGE = "efxlve.exophase.igdbCovers";
+const IGDB_COVER_MAX = 400;
+const igdbCoverCache = new Map<string, string>();
+let igdbCacheLoaded = false;
+
+function loadIgdbCoverCache(): void {
+  if (igdbCacheLoaded) return;
+  igdbCacheLoaded = true;
+  try {
+    const raw = localStorage.getItem(IGDB_COVER_STORAGE);
+    if (!raw) return;
+    const value = JSON.parse(raw) as unknown;
+    if (!value || typeof value !== "object") return;
+    for (const [key, url] of Object.entries(value)) {
+      if (key && typeof url === "string" && url) igdbCoverCache.set(key, url);
+    }
+  } catch {
+    // A broken cache only means the next answer is fetched again.
+  }
+}
+
+function saveIgdbCoverCache(): void {
+  try {
+    const out: Record<string, string> = {};
+    let count = 0;
+    for (const [key, url] of igdbCoverCache) {
+      if (count >= IGDB_COVER_MAX) break;
+      out[key] = url;
+      count += 1;
+    }
+    localStorage.setItem(IGDB_COVER_STORAGE, JSON.stringify(out));
+  } catch {
+    // Storage pressure must never break cover rendering.
+  }
+}
+
+interface IgdbCoverQuery {
+  key: string;
+  title: string;
+}
+
+const igdbCoverQueue: IgdbCoverQuery[] = [];
+const igdbCoverQueued = new Set<string>();
+let igdbCoverBusy = false;
+
+function igdbCoverFor(title: string): string | null {
+  loadIgdbCoverCache();
+  const key = canonicalGameTitle(title);
+  if (!key) return null;
+  const cached = igdbCoverCache.get(key);
+  if (cached) return cached;
+  queueIgdbCover(title);
+  return null;
+}
+
+function queueIgdbCover(title: string): void {
+  if (!S.igdbConfigured || S.offlineMode) return;
+  const key = canonicalGameTitle(title);
+  if (!key || igdbCoverCache.has(key) || igdbCoverQueued.has(key)) return;
+  igdbCoverQueued.add(key);
+  igdbCoverQueue.push({ key, title });
+  void pumpIgdbCovers();
+}
+
+/** IGDB allows four requests per second; keep a little headroom and stay quiet on failure. */
+async function pumpIgdbCovers(): Promise<void> {
+  if (igdbCoverBusy) return;
+  igdbCoverBusy = true;
+  try {
+    while (igdbCoverQueue.length > 0) {
+      const item = igdbCoverQueue.shift();
+      if (!item) break;
+      try {
+        const hits = await igdbCovers(item.title, 4);
+        const hit = hits.find(
+          (candidate) => candidate.coverId && canonicalGameTitle(candidate.name) === item.key,
+        );
+        if (hit?.coverId) {
+          const url = igdbImage(hit.coverId, "cover_big_2x");
+          igdbCoverCache.set(item.key, url);
+          saveIgdbCoverCache();
+          applyIgdbCover(item.key, url);
+        }
+      } catch {
+        // The local safe view stays in place when IGDB is unavailable.
+      }
+      igdbCoverQueued.delete(item.key);
+      await new Promise((resolve) => setTimeout(resolve, 320));
+    }
+  } finally {
+    igdbCoverBusy = false;
+  }
+}
+
+function applyIgdbCover(key: string, url: string): void {
+  let applied = false;
+  document.querySelectorAll<HTMLElement>(".profile-exophase-card").forEach((card) => {
+    const title = card.dataset.exophaseTitle;
+    if (!title || canonicalGameTitle(title) !== key) return;
+    const art = card.querySelector<HTMLElement>(".profile-ach-art");
+    if (!art) return;
+    let img = art.querySelector<HTMLImageElement>("img");
+    if (!img) {
+      art.querySelector(".profile-ach-ph")?.remove();
+      img = document.createElement("img");
+      img.alt = "";
+      img.loading = "lazy";
+      img.decoding = "async";
+      art.prepend(img);
+    }
+    art.classList.remove("is-wide");
+    art.querySelector(".profile-ach-art-fill")?.remove();
+    img.removeAttribute("data-steam-app");
+    img.removeAttribute("data-art-step");
+    img.src = url;
+    applied = true;
+  });
+  if (!applied) {
+    // The answer can arrive while the grid is still being inserted.
+    window.setTimeout(() => patchExophaseGamesGrid(), 30);
+  }
 }
 
 /**
@@ -216,6 +361,11 @@ function markWideCover(img: HTMLImageElement): void {
   const src = img.currentSrc || img.src;
   if (src) fill.style.setProperty("--wide-art", `url(${JSON.stringify(src)})`);
   art.classList.add("is-wide");
+  const title = art.closest<HTMLElement>(".profile-exophase-card")?.dataset.exophaseTitle;
+  if (title) {
+    const igdb = igdbCoverFor(title);
+    if (igdb) applyIgdbCover(canonicalGameTitle(title), igdb);
+  }
 }
 
 let wideCoverListener = false;
@@ -472,12 +622,12 @@ function gameCard(game: ExophaseGame): string {
 
   const { cover, isSteam, appId, wide } = findLocalPortraitCover(game);
   const steamAttrs = isSteam && appId && /^\d+$/.test(appId)
-    ? ` data-steam-app="${appId}" data-art-step="${cachedSteamCover(appId) ? "resolved" : "0"}"`
+    ? ` data-steam-app="${appId}" data-art-step="0"`
     : "";
   const artStyle = wide && cover ? ` style="--wide-art:url('${esc(cover)}')"` : "";
 
   return `
-    <div class="profile-ach-card profile-exophase-card${isComplete ? " is-plat" : ""}" role="button" tabindex="0"${action} title="${esc(tip)}">
+    <div class="profile-ach-card profile-exophase-card${isComplete ? " is-plat" : ""}" role="button" tabindex="0" data-exophase-title="${esc(game.title)}"${action} title="${esc(tip)}">
       <div class="profile-ach-art${wide ? " is-wide" : ""}"${artStyle}>
         ${wide && cover ? `<span class="profile-ach-art-fill" aria-hidden="true"></span>` : ""}
         ${cover
