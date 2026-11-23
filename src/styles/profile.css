@@ -82,16 +82,6 @@
     rgba(8, 9, 12, 0.62) 100%
   );
 }
-/* The full-bleed art puts the game's face at the top; keep the tools out of it
-   and row them with the profile block on the dark bottom band. */
-.profile-exophase-hero .profile-hero-top-bar {
-  position: absolute;
-  top: auto;
-  right: 22px;
-  bottom: 18px;
-  z-index: 4;
-  width: auto;
-}
 .profile-exophase-hero-bottom {
   position: relative;
   z-index: 2;
