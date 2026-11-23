@@ -601,19 +601,25 @@ function profileHero(
   </section>`;
 }
 
-function metaLine(summary: ExophaseSummary): string {
+function infoCard(summary: ExophaseSummary): string {
   const syncDate = summary.lastSync ? fmtExoDate(summary.lastSync) : "";
   const sync = syncDate ? `${t("profile.exophaseSync")}: ${syncDate}` : "";
   const updated = summary.fetchedAt
     ? t("profile.exophaseUpdated", { when: relativeTime(summary.fetchedAt) })
     : "";
-  return `<div class="profile-exophase-meta-card">
-    <div class="profile-exophase-meta-left">
-      ${sync ? `<span class="profile-exophase-meta-item">${icon("calendar", 13)}<span>${esc(sync)}</span></span>` : ""}
-      <span class="profile-exophase-hint">(${esc(t("profile.exophaseSyncHint"))})</span>
+  return `<div class="profile-exophase-info-card">
+    <div class="profile-exophase-info-meta">
+      <div class="profile-exophase-meta-left">
+        ${sync ? `<span class="profile-exophase-meta-item">${icon("calendar", 13)}<span>${esc(sync)}</span></span>` : ""}
+        <span class="profile-exophase-hint">(${esc(t("profile.exophaseSyncHint"))})</span>
+      </div>
+      <div class="profile-exophase-meta-right">
+        ${updated ? `<span class="profile-exophase-meta-item">${icon("clock", 13)}<span class="profile-exophase-updated">${esc(updated)}</span></span>` : ""}
+      </div>
     </div>
-    <div class="profile-exophase-meta-right">
-      ${updated ? `<span class="profile-exophase-meta-item">${icon("clock", 13)}<span class="profile-exophase-updated">${esc(updated)}</span></span>` : ""}
+    <div class="profile-exophase-info-disclaimer">
+      ${icon("info", 14)}
+      <p>${esc(t("profile.exophaseDisclaimer"))}</p>
     </div>
   </div>`;
 }
@@ -825,8 +831,7 @@ function loadedView(data: ExophaseData): string {
 
   return `
     ${profileHero(summary.displayName || summary.username, summary.username, summary.avatar, heroArt, stats, S.exophaseLoading, summary.profileUrl, true, summary, selected)}
-    ${metaLine(summary)}
-    ${note()}
+    ${infoCard(summary)}
     ${awardsSection(data)}
     ${gamesSection(data, selected)}`;
 }

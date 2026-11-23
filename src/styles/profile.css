@@ -450,18 +450,38 @@
   border-top: 0;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
-.profile-exophase-meta-card {
+.profile-exophase-info-card {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+  overflow: hidden;
+}
+.profile-exophase-info-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
   padding: 10px 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: var(--surface-1);
   color: var(--text-3);
   font-size: 11.5px;
+}
+.profile-exophase-info-disclaimer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px 10px;
+  border-top: 1px solid var(--line);
+  color: var(--text-3);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+.profile-exophase-info-disclaimer svg {
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+.profile-exophase-info-disclaimer p {
+  margin: 0;
 }
 .profile-exophase-meta-left,
 .profile-exophase-meta-right {
