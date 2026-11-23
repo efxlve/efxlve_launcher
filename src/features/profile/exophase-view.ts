@@ -178,8 +178,8 @@ function findLocalPortraitCover(game: ExophaseGame): LocalCoverInfo {
   return { cover: fallback, isSteam: false, wide: Boolean(fallback) };
 }
 
-/** Companion clients mostly serve landscape tiles, not portrait box art. */
-const WIDE_COVER_SOURCES = new Set(["ea", "ubisoft", "xbox", "battlenet", "riot"]);
+/** Companion clients that serve landscape tiles rather than portrait box art. */
+const WIDE_COVER_SOURCES = new Set(["ea", "riot"]);
 
 /** Known landscape URL families; the `Tall` variants stay portrait. */
 const WIDE_COVER_URL =
@@ -188,9 +188,6 @@ const WIDE_COVER_URL =
 function localCoverWide(localKey: string, cover: string): boolean {
   const source = S.allGamesMap.get(localKey)?.source;
   if (source && WIDE_COVER_SOURCES.has(source)) return true;
-  // Steam's flat capsule and hashed fallback art can be landscape even though
-  // the normal portrait asset is `library_600x900`.
-  if (localKey.startsWith("steam::") && !/library_600x900/i.test(cover)) return true;
   return WIDE_COVER_URL.test(cover);
 }
 
@@ -235,6 +232,13 @@ function installWideCoverListener(): void {
     },
     true,
   );
+  // Cached covers can be complete before the load listener sees them; scan
+  // whenever the page gains nodes so a late grid insert is still measured.
+  const view = document.getElementById("view");
+  if (view) {
+    const observer = new MutationObserver(() => scanWideCovers());
+    observer.observe(view, { childList: true, subtree: true });
+  }
 }
 
 /** Cached images do not always fire a fresh load event; scan after a paint. */
