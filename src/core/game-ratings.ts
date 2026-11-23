@@ -367,13 +367,13 @@ export async function syncUncachedLibraryIgdb(initialDelayMs = 3500): Promise<vo
           if (rows.length > 0 && applyIgdbSummaries(rows)) {
             S.libraryDataRev++;
             unrenderedChanges = true;
-            if (genreUiVisible() || batchesRun % 4 === 3) {
+            if (S.view === "library" && (genreUiVisible() || batchesRun % 4 === 3)) {
               unrenderedChanges = false;
               scheduleRender();
             }
           }
         } catch {
-          if (unrenderedChanges) scheduleRender();
+          if (unrenderedChanges && S.view === "library") scheduleRender();
           return;
         }
         batchesRun++;
@@ -408,7 +408,7 @@ export async function syncUncachedLibraryIgdb(initialDelayMs = 3500): Promise<vo
         if (game) {
           recordLiveIgdbGame(cand.appName, cand.title, game);
           unrenderedChanges = true;
-          if (genreUiVisible()) {
+          if (S.view === "library" && genreUiVisible()) {
             unrenderedChanges = false;
             scheduleRender();
           }
@@ -419,7 +419,7 @@ export async function syncUncachedLibraryIgdb(initialDelayMs = 3500): Promise<vo
       await sleep(1100);
     }
 
-    if (unrenderedChanges) {
+    if (unrenderedChanges && S.view === "library") {
       scheduleRender();
     }
   } finally {

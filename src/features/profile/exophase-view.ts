@@ -308,7 +308,6 @@ async function pumpIgdbCovers(): Promise<void> {
 }
 
 function applyIgdbCover(key: string, url: string): void {
-  let applied = false;
   document.querySelectorAll<HTMLElement>(".profile-exophase-card").forEach((card) => {
     const title = card.dataset.exophaseTitle;
     if (!title || canonicalGameTitle(title) !== key) return;
@@ -328,12 +327,7 @@ function applyIgdbCover(key: string, url: string): void {
     img.removeAttribute("data-steam-app");
     img.removeAttribute("data-art-step");
     img.src = url;
-    applied = true;
   });
-  if (!applied) {
-    // The answer can arrive while the grid is still being inserted.
-    window.setTimeout(() => patchExophaseGamesGrid(), 30);
-  }
 }
 
 /**
@@ -394,6 +388,7 @@ function installWideCoverListener(): void {
 /** Cached images do not always fire a fresh load event; scan after a paint. */
 function scanWideCovers(): void {
   requestAnimationFrame(() => {
+    if (S.view !== "profile" || S.profileTab !== "exophase") return;
     document
       .querySelectorAll<HTMLImageElement>(".profile-exophase-card .profile-ach-art img")
       .forEach((img) => {
