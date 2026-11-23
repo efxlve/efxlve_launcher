@@ -3099,6 +3099,7 @@ pub fn achievement_test_notification(
         } else {
             // No card to wait for: the sound is the whole notification.
             play_achievement_notification_sound(&app, &options, tier);
+            let _ = app.emit("ach-toast-done", 0u64);
         }
     }
     let payload = AchievementUnlockedPayload {

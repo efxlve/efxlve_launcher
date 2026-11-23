@@ -44,9 +44,36 @@ import { askConfirm } from "../../core/confirm-dialog";
 import { coverThumb } from "../../core/game-view";
 import { summaryOf } from "../../core/selectors";
 import { setView } from "../store/store-view";
+import { listen } from "@tauri-apps/api/event";
 
 /** Active rarity tier in the interactive stage (0=Bronze, 1=Silver, 2=Gold, 3=Ultra, 4=Platinum). */
 let previewRarityTier = 2;
+let isTestingNotification = false;
+let testNotificationDoneTimeout: number | null = null;
+let toastDoneUnlisten: (() => void) | null = null;
+
+function updateTestNotificationButtonState(): void {
+  const btn = document.querySelector<HTMLButtonElement>('button[data-act="ach-test-notification"]');
+  if (btn) {
+    btn.disabled = isTestingNotification;
+    btn.classList.toggle("disabled", isTestingNotification);
+  }
+}
+
+function ensureToastDoneListener(): void {
+  if (toastDoneUnlisten) return;
+  void listen("ach-toast-done", () => {
+    if (!isTestingNotification) return;
+    isTestingNotification = false;
+    if (testNotificationDoneTimeout !== null) {
+      window.clearTimeout(testNotificationDoneTimeout);
+      testNotificationDoneTimeout = null;
+    }
+    updateTestNotificationButtonState();
+  }).then((unsub) => {
+    toastDoneUnlisten = unsub;
+  });
+}
 
 let sharedAudioCtx: AudioContext | null = null;
 let activeMasterGain: GainNode | null = null;
@@ -663,7 +690,7 @@ export function renderAchievementsSettingsView(): string {
           <button type="button" class="btn ghost small" data-act="ach-replay-stage">
             ${icon("refresh", 13)} <span>${esc(t("settings.achReplayBtn"))}</span>
           </button>
-          <button type="button" class="btn primary small" data-act="ach-test-notification">
+          <button type="button" class="btn primary small ${isTestingNotification ? "disabled" : ""}" data-act="ach-test-notification" ${isTestingNotification ? "disabled" : ""}>
             ${icon("bell", 13)} <span>${esc(t("settings.achTestTitle"))}</span>
           </button>
         </div>
@@ -1307,8 +1334,25 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
     }
 
     case "ach-test-notification": {
+      if (isTestingNotification) return true;
+      isTestingNotification = true;
+      updateTestNotificationButtonState();
       stopWebAudioAchievementChime();
       const meta = getPreviewTierMeta(previewRarityTier);
+
+      ensureToastDoneListener();
+
+      const options = S.achievementNotificationOptions;
+      const holdMs = Math.max(1200, options.durationMs || 5000);
+      if (testNotificationDoneTimeout !== null) {
+        window.clearTimeout(testNotificationDoneTimeout);
+      }
+      testNotificationDoneTimeout = window.setTimeout(() => {
+        isTestingNotification = false;
+        testNotificationDoneTimeout = null;
+        updateTestNotificationButtonState();
+      }, holdMs + 800);
+
       // The test card paints the same picture the stage shows, so the preview
       // and the in-game notification stay one design.
       void achievementTestNotification(
@@ -1318,7 +1362,15 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
         undefined,
         undefined,
         previewAchievementArt(),
-      ).catch((e) => toast(String(e), "err"));
+      ).catch((e) => {
+        isTestingNotification = false;
+        if (testNotificationDoneTimeout !== null) {
+          window.clearTimeout(testNotificationDoneTimeout);
+          testNotificationDoneTimeout = null;
+        }
+        updateTestNotificationButtonState();
+        toast(String(e), "err");
+      });
       return true;
     }
 

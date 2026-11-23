@@ -486,6 +486,7 @@ pub fn toast_done(app: AppHandle, generation: u64) {
     if let Some(win) = app.get_webview_window(TOAST_LABEL) {
         let _ = win.hide();
     }
+    let _ = app.emit("ach-toast-done", generation);
     schedule_idle_release(app, generation);
 }
 
