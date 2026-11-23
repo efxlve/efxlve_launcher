@@ -443,24 +443,39 @@ export function renderAchievementsSettingsView(): string {
     )
     .join("");
 
-  const animStyleOptions: Array<{ id: string; label: string; ico: IconName }> = [
-    { id: "minimal", label: t("settings.achAnimMinimal"), ico: "square" },
-    { id: "slide", label: t("settings.achAnimSlide"), ico: "arrow-right" },
-    { id: "soft", label: t("settings.achAnimSoft"), ico: "circle" },
-    { id: "pop", label: t("settings.achAnimPop"), ico: "sparkles" },
-    { id: "spring", label: t("settings.achAnimSpring"), ico: "zap" },
-    { id: "drift", label: t("settings.achAnimDrift"), ico: "activity" },
-    { id: "drop", label: t("settings.achAnimDrop"), ico: "chevron-down" },
+  // Each animation is drawn as a tiny motion strip: the card's resting place,
+  // plus two ghost positions showing where it starts and overshoots. The tile
+  // explains the motion without playing it, so the picker stays quiet.
+  const animStyleOptions: Array<{
+    id: string;
+    label: string;
+    ghosts: Array<{ x: number; y: number; s?: number; o: number }>;
+  }> = [
+    { id: "minimal", label: t("settings.achAnimMinimal"), ghosts: [{ x: 0, y: 10, o: 0.16 }, { x: 0, y: 5, o: 0.36 }] },
+    { id: "slide", label: t("settings.achAnimSlide"), ghosts: [{ x: -19, y: 0, o: 0.16 }, { x: -9, y: 0, o: 0.36 }] },
+    { id: "soft", label: t("settings.achAnimSoft"), ghosts: [{ x: 0, y: 0, s: 0.9, o: 0.16 }, { x: 0, y: 0, s: 0.95, o: 0.34 }] },
+    { id: "pop", label: t("settings.achAnimPop"), ghosts: [{ x: 0, y: 0, s: 0.64, o: 0.16 }, { x: 0, y: 0, s: 0.82, o: 0.36 }] },
+    { id: "spring", label: t("settings.achAnimSpring"), ghosts: [{ x: 0, y: -10, o: 0.16 }, { x: 0, y: 5, o: 0.4 }] },
+    { id: "drift", label: t("settings.achAnimDrift"), ghosts: [{ x: -19, y: 6, o: 0.16 }, { x: -9, y: 3, o: 0.36 }] },
+    { id: "drop", label: t("settings.achAnimDrop"), ghosts: [{ x: 0, y: -11, o: 0.16 }, { x: 0, y: -6, o: 0.36 }] },
   ];
 
   const animStyleButtons = animStyleOptions
     .map((opt) => {
       const isActive = animStyle === opt.id;
+      const ghosts = opt.ghosts
+        .map(
+          (g) =>
+            `<span class="ach-motion-ghost" style="--gx:${g.x}px;--gy:${g.y}px;--gs:${g.s ?? 1};--go:${g.o};"></span>`,
+        )
+        .join("");
       return `
-        <button type="button" class="ach-style-chip ${isActive ? "active" : ""}" data-act="set-ach-anim" data-val="${opt.id}">
-          <span class="ach-style-chip-icon">${icon(opt.ico, 14)}</span>
-          <span class="ach-style-chip-label">${esc(opt.label)}</span>
-          ${isActive ? `<span class="ach-style-chip-check">${icon("check", 11)}</span>` : ""}
+        <button type="button" class="ach-motion-tile ${isActive ? "active" : ""}" data-act="set-ach-anim" data-val="${opt.id}" aria-pressed="${isActive}">
+          <span class="ach-motion-figure" aria-hidden="true">${ghosts}<span class="ach-motion-bar"></span></span>
+          <span class="ach-motion-meta">
+            <span class="ach-motion-label">${esc(opt.label)}</span>
+            <span class="ach-motion-check" aria-hidden="true">${icon("check", 12)}</span>
+          </span>
         </button>
       `;
     })
@@ -541,16 +556,18 @@ export function renderAchievementsSettingsView(): string {
     .map((p) => {
       const isCurrent = position === p.id;
       return `
-      <button type="button" class="ach-pad-btn ${isCurrent ? "active" : ""}" data-act="set-ach-position" data-val="${esc(p.id)}" title="${esc(p.label)}">
-        <span class="ach-pos-monitor ${p.id}" aria-hidden="true">
-          <span class="ach-pos-pip"></span>
+      <button type="button" class="ach-pos-zone ${p.id} ${isCurrent ? "active" : ""}" data-act="set-ach-position" data-val="${esc(p.id)}" title="${esc(p.label)}" aria-pressed="${isCurrent}">
+        <span class="ach-pos-toast" aria-hidden="true">
+          <span class="ach-pos-toast-tile"></span>
+          <span class="ach-pos-toast-lines"><i></i><i></i></span>
         </span>
-        <span class="ach-pad-label">${esc(p.label)}</span>
-        ${isCurrent ? `<span class="ach-pad-check">${icon("check", 11)}</span>` : ""}
+        <span class="ach-pos-zone-label">${esc(p.label)}</span>
       </button>
     `;
     })
     .join("");
+
+  const positionLabel = positions.find((p) => p.id === position)?.label ?? position;
 
   // Launcher-only achievement state, one row per game. The count comes from the
   // stored edit list, so a game whose page was never opened still shows up.
@@ -732,7 +749,7 @@ export function renderAchievementsSettingsView(): string {
           <div class="ach-stage-tier-bar" role="group" aria-label="${esc(t("settings.achRarityStageLabel"))}">
             ${rarityTierPills}
           </div>
-          <span class="settings-value">${esc(t("settings.achPositionTitle"))}: <strong>${esc(position)}</strong></span>
+          <span class="settings-value">${esc(t("settings.achPositionTitle"))}: <strong>${esc(positionLabel)}</strong></span>
         </div>
 
         <div class="ach-stage-screen pos-${esc(position)}" style="${achCardVars(palette, opacity)} padding: ${offset}px;">
@@ -764,7 +781,7 @@ export function renderAchievementsSettingsView(): string {
             <div class="settings-row-desc">${esc(t("settings.achAnimDesc"))}</div>
           </div>
           <div class="settings-row-control" style="width: 100%;">
-            <div class="ach-style-grid" role="group">${animStyleButtons}</div>
+            <div class="ach-motion-grid" role="group" aria-label="${esc(t("settings.achAnimTitle"))}">${animStyleButtons}</div>
           </div>
         </div>
 
@@ -775,7 +792,7 @@ export function renderAchievementsSettingsView(): string {
             <div class="settings-row-desc">${esc(t("settings.achPositionDesc"))}</div>
           </div>
           <div class="settings-row-control" style="width: 100%;">
-            <div class="ach-pad-grid">
+            <div class="ach-pos-screen" role="group" aria-label="${esc(t("settings.achPositionTitle"))}">
               ${positionPadButtons}
             </div>
           </div>

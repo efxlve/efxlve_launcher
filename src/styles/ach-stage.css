@@ -97,71 +97,116 @@
 .ach-stage-screen.pos-center-bottom { justify-content: center; align-items: flex-end; }
 .ach-stage-screen.pos-bottom-right { justify-content: flex-end; align-items: flex-end; }
 
-/* One animation chooser: each chip is a whole entrance + exit. */
-.ach-style-grid {
+/* One animation chooser: each tile draws the motion as a ghost trail inside a
+   miniature screen, so the picker explains the move without playing it. */
+.ach-motion-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
   gap: 8px;
   width: 100%;
 }
 
-.ach-style-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 40px;
-  padding: 0 12px;
+.ach-motion-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 8px 9px 7px;
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
   color: var(--text-2);
-  font-size: 13px;
-  font-weight: 500;
   font-family: inherit;
+  text-align: start;
   cursor: pointer;
   user-select: none;
-  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
 }
 
-.ach-style-chip:hover {
+.ach-motion-tile:hover {
   background: var(--surface-3);
+  border-color: var(--line-strong);
   color: var(--text);
-  border-color: rgba(255, 255, 255, 0.2);
 }
 
-.ach-style-chip.active {
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
+.ach-motion-tile.active {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
   border-color: var(--accent);
   color: var(--text);
+}
+
+.ach-motion-tile:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ach-motion-figure {
+  position: relative;
+  display: block;
+  height: 34px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--bg) 55%, var(--surface-1));
+}
+
+/* The solid bar is the card at rest; the two ghosts are where it starts and
+   where it overshoots. */
+.ach-motion-ghost,
+.ach-motion-bar {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 26px;
+  height: 8px;
+  border-radius: 2px;
+  transform: translate(calc(-50% + var(--gx, 0px)), calc(-50% + var(--gy, 0px))) scale(var(--gs, 1));
+}
+
+.ach-motion-ghost {
+  background: var(--text-3);
+  opacity: var(--go, 0.3);
+  transition: background 140ms ease;
+}
+
+.ach-motion-bar {
+  background: var(--text-2);
+  transition: background 140ms ease;
+}
+
+.ach-motion-tile:hover .ach-motion-bar {
+  background: var(--text);
+}
+
+.ach-motion-tile.active .ach-motion-bar,
+.ach-motion-tile.active .ach-motion-ghost {
+  background: var(--accent);
+}
+
+.ach-motion-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ach-motion-label {
+  font-size: 12px;
   font-weight: 600;
-  box-shadow: inset 0 0 0 1px var(--accent);
-}
-
-.ach-style-chip-icon {
-  display: inline-flex;
-  align-items: center;
-  color: var(--text-3);
-  transition: color 140ms ease;
-}
-
-.ach-style-chip:hover .ach-style-chip-icon {
-  color: var(--text-2);
-}
-
-.ach-style-chip.active .ach-style-chip-icon {
-  color: var(--accent);
-}
-
-.ach-style-chip-label {
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.ach-style-chip-check {
-  display: inline-flex;
+.ach-motion-check {
+  display: none;
   align-items: center;
   color: var(--accent);
-  margin-left: 2px;
+  flex: 0 0 auto;
+}
+
+.ach-motion-tile.active .ach-motion-check {
+  display: inline-flex;
 }
 
 /* Per-store notification toggle grid */
@@ -327,10 +372,16 @@
   box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
 }
 
-.ach-pad-grid {
+/* The six anchors share one screen: each zone previews a miniature card
+   sitting exactly where the real notification will land. */
+.ach-pos-screen {
   display: grid;
+  /* The anchors are physical screen corners, so the map itself never mirrors:
+     an RTL page still shows "top left" on the left of the display. */
+  direction: ltr;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  grid-template-rows: repeat(2, 1fr);
+  gap: 4px;
   width: 100%;
   max-width: 560px;
   padding: 8px;
@@ -339,95 +390,115 @@
   border-radius: var(--r-md);
 }
 
-.ach-pad-btn {
-  display: inline-flex;
+.ach-pos-zone {
+  position: relative;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  height: 42px;
-  padding: 0 12px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  min-height: 68px;
+  padding: 8px;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: var(--r-sm);
-  color: var(--text-2);
-  font-size: 13px;
-  font-weight: 500;
+  color: var(--text-3);
   font-family: inherit;
   cursor: pointer;
   user-select: none;
-  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
 }
 
-.ach-pad-btn:hover {
-  background: var(--surface-3);
-  color: var(--text);
-  border-color: rgba(255, 255, 255, 0.2);
+.ach-pos-zone:hover {
+  background: var(--surface-2);
+  border-color: var(--line);
+  color: var(--text-2);
 }
 
-.ach-pad-btn.active {
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
-  border-color: var(--accent);
+.ach-pos-zone.active {
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
   color: var(--text);
+}
+
+.ach-pos-zone:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ach-pos-zone-label {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ach-pos-zone.active .ach-pos-zone-label {
   font-weight: 600;
-  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
-.ach-pos-monitor {
-  display: inline-block;
-  width: 17px;
-  height: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  border-radius: 2px;
-  position: relative;
-  background: rgba(0, 0, 0, 0.3);
-  flex-shrink: 0;
+/* A miniature of the notification card at this anchor. */
+.ach-pos-toast {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  width: 40px;
+  height: 14px;
+  padding: 2px 3px;
+  border: 1px solid color-mix(in srgb, var(--text-3) 50%, transparent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--surface-1) 75%, transparent);
   transition: border-color 140ms ease, background 140ms ease;
 }
 
-.ach-pos-pip {
-  display: block;
-  width: 5px;
-  height: 3px;
+.ach-pos-toast-tile {
+  width: 7px;
+  height: 8px;
+  flex: 0 0 7px;
   border-radius: 1px;
-  position: absolute;
   background: var(--text-3);
-  transition: background 140ms ease, box-shadow 140ms ease;
+  transition: background 140ms ease;
 }
 
-.ach-pos-monitor.top-left .ach-pos-pip { top: 1px; left: 1px; }
-.ach-pos-monitor.center-top .ach-pos-pip { top: 1px; left: 50%; transform: translateX(-50%); }
-.ach-pos-monitor.top-right .ach-pos-pip { top: 1px; right: 1px; }
-.ach-pos-monitor.bottom-left .ach-pos-pip { bottom: 1px; left: 1px; }
-.ach-pos-monitor.center-bottom .ach-pos-pip { bottom: 1px; left: 50%; transform: translateX(-50%); }
-.ach-pos-monitor.bottom-right .ach-pos-pip { bottom: 1px; right: 1px; }
-
-.ach-pad-btn:hover .ach-pos-monitor {
-  border-color: rgba(255, 255, 255, 0.55);
-}
-.ach-pad-btn:hover .ach-pos-pip {
-  background: var(--text);
+.ach-pos-toast-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
 }
 
-.ach-pad-btn.active .ach-pos-monitor {
+.ach-pos-toast-lines i {
+  display: block;
+  height: 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--text-3) 55%, transparent);
+}
+
+.ach-pos-toast-lines i:last-child {
+  width: 62%;
+}
+
+.ach-pos-zone.top-left .ach-pos-toast { top: 8px; left: 8px; }
+.ach-pos-zone.center-top .ach-pos-toast { top: 8px; left: 50%; transform: translateX(-50%); }
+.ach-pos-zone.top-right .ach-pos-toast { top: 8px; right: 8px; }
+.ach-pos-zone.bottom-left .ach-pos-toast { bottom: 8px; left: 8px; }
+.ach-pos-zone.center-bottom .ach-pos-toast { bottom: 8px; left: 50%; transform: translateX(-50%); }
+.ach-pos-zone.bottom-right .ach-pos-toast { bottom: 8px; right: 8px; }
+
+.ach-pos-zone:hover .ach-pos-toast {
+  border-color: color-mix(in srgb, var(--text-2) 65%, transparent);
+}
+
+.ach-pos-zone.active .ach-pos-toast {
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
 }
-.ach-pad-btn.active .ach-pos-pip {
+
+.ach-pos-zone.active .ach-pos-toast-tile {
   background: var(--accent);
-  box-shadow: 0 0 4px var(--accent);
 }
 
-.ach-pad-label {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.ach-pad-check {
-  color: var(--accent);
-  display: inline-flex;
-  align-items: center;
-  margin-left: 2px;
+.ach-pos-zone.active .ach-pos-toast-lines i {
+  background: color-mix(in srgb, var(--accent) 65%, transparent);
 }
 
 .ach-sound-control-wrap {
