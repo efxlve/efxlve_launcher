@@ -454,14 +454,16 @@ export function renderAchievementsSettingsView(): string {
   ];
 
   const animStyleButtons = animStyleOptions
-    .map(
-      (opt) => `
-        <button type="button" class="ach-style-chip ${animStyle === opt.id ? "active" : ""}" data-act="set-ach-anim" data-val="${opt.id}">
-          ${icon(opt.ico, 13)}
-          <span>${esc(opt.label)}</span>
+    .map((opt) => {
+      const isActive = animStyle === opt.id;
+      return `
+        <button type="button" class="ach-style-chip ${isActive ? "active" : ""}" data-act="set-ach-anim" data-val="${opt.id}">
+          <span class="ach-style-chip-icon">${icon(opt.ico, 14)}</span>
+          <span class="ach-style-chip-label">${esc(opt.label)}</span>
+          ${isActive ? `<span class="ach-style-chip-check">${icon("check", 11)}</span>` : ""}
         </button>
-      `,
-    )
+      `;
+    })
     .join("");
 
   const offsetButtons = [
@@ -526,13 +528,13 @@ export function renderAchievementsSettingsView(): string {
     .join("");
 
   // Position anchors for the visual monitor pad
-  const positions: Array<{ id: string; label: string; iconName: string }> = [
-    { id: "top-left", label: t("settings.achPositionTopLeft"), iconName: "arrow-up-left" },
-    { id: "center-top", label: t("settings.achPositionCenterTop"), iconName: "arrow-up" },
-    { id: "top-right", label: t("settings.achPositionTopRight"), iconName: "arrow-up-right" },
-    { id: "bottom-left", label: t("settings.achPositionBottomLeft"), iconName: "arrow-down-left" },
-    { id: "center-bottom", label: t("settings.achPositionCenterBottom"), iconName: "arrow-down" },
-    { id: "bottom-right", label: t("settings.achPositionBottomRight"), iconName: "arrow-down-right" },
+  const positions: Array<{ id: string; label: string }> = [
+    { id: "top-left", label: t("settings.achPositionTopLeft") },
+    { id: "center-top", label: t("settings.achPositionCenterTop") },
+    { id: "top-right", label: t("settings.achPositionTopRight") },
+    { id: "bottom-left", label: t("settings.achPositionBottomLeft") },
+    { id: "center-bottom", label: t("settings.achPositionCenterBottom") },
+    { id: "bottom-right", label: t("settings.achPositionBottomRight") },
   ];
 
   const positionPadButtons = positions
@@ -540,7 +542,9 @@ export function renderAchievementsSettingsView(): string {
       const isCurrent = position === p.id;
       return `
       <button type="button" class="ach-pad-btn ${isCurrent ? "active" : ""}" data-act="set-ach-position" data-val="${esc(p.id)}" title="${esc(p.label)}">
-        <span class="ach-pad-dot"></span>
+        <span class="ach-pos-monitor ${p.id}" aria-hidden="true">
+          <span class="ach-pos-pip"></span>
+        </span>
         <span class="ach-pad-label">${esc(p.label)}</span>
         ${isCurrent ? `<span class="ach-pad-check">${icon("check", 11)}</span>` : ""}
       </button>
