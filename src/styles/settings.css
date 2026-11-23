@@ -499,13 +499,53 @@
   object-fit: cover; display: block;
 }
 .settings-about-copy { min-width: 0; }
-.settings-about-text { margin: 0 0 10px; font-size: 13px; line-height: 1.6; color: var(--text-2); max-width: 720px; }
-.settings-about-texts { margin-top: 16px; }
-.settings-about-texts .section-title {
-  display: inline-flex; align-items: center; gap: 7px; margin: 0 0 12px;
+.settings-about-legal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
 }
-.settings-about-texts .settings-about-text { max-width: 860px; }
-.settings-about-texts .settings-about-text:last-child { margin-bottom: 0; }
+.settings-about-legal .section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 2px;
+}
+.about-legal-card {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.about-legal-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.about-legal-card-icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.about-legal-card-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.about-legal-card-text {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-2);
+  max-width: 860px;
+}
 
 @media (max-width: 980px) {
   .settings-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }

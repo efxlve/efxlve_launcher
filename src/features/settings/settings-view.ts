@@ -2213,17 +2213,48 @@ function renderAbout(): string {
       link(DISCORD_INVITE_URL, storeLogo("discord", 14, "about-link-logo"), t("settings.aboutDiscord"), "discord.gg/3TY8hNTx5M"),
       t("settings.aboutLinksTitle"),
     )}
-    <div class="card settings-about-texts" data-search="about">
-      <h3 class="section-title">${icon("shield", 13)} ${t("settings.aboutDisclaimerTitle")}</h3>
-      <p class="settings-about-text">${t("settings.aboutDisclaimer")}</p>
-      <p class="settings-about-text">${t("settings.aboutLogos")}</p>
-      <p class="settings-about-text">${t("settings.aboutMarks")}</p>
-      <p class="settings-about-text">${t("settings.aboutThemes")}</p>
-      <p class="settings-about-text">${t("settings.aboutDrmNotice")}</p>
-      <p class="settings-about-text">${t("settings.aboutThirdParty")}</p>
-      <p class="settings-about-text">${t("settings.aboutStoreExtensions")}</p>
-      <p class="settings-about-text">${t("settings.aboutPrivacy")}</p>
-      <p class="settings-about-text">${t("settings.aboutOpenSource")}</p>
+    <div class="settings-about-legal" data-search="about legal disclaimer privacy drm licenses exophase steam epic gog amazon igdb">
+      <h3 class="section-title">${icon("shield-check", 14)} ${t("settings.aboutDisclaimerTitle")}</h3>
+      <div class="card about-legal-card">
+        <div class="about-legal-card-head">
+          <span class="about-legal-card-icon">${icon("shield", 14)}</span>
+          <h4 class="about-legal-card-title">${t("settings.aboutTrademarksTitle")}</h4>
+        </div>
+        <p class="about-legal-card-text">${t("settings.aboutDisclaimer")}</p>
+        <p class="about-legal-card-text">${t("settings.aboutMarks")}</p>
+      </div>
+      <div class="card about-legal-card">
+        <div class="about-legal-card-head">
+          <span class="about-legal-card-icon">${icon("lock", 14)}</span>
+          <h4 class="about-legal-card-title">${t("settings.aboutDrmTitle")}</h4>
+        </div>
+        <p class="about-legal-card-text">${t("settings.aboutDrmNotice")}</p>
+      </div>
+      <div class="card about-legal-card">
+        <div class="about-legal-card-head">
+          <span class="about-legal-card-icon">${icon("globe", 14)}</span>
+          <h4 class="about-legal-card-title">${t("settings.aboutServicesTitle")}</h4>
+        </div>
+        <p class="about-legal-card-text">${t("settings.aboutExophaseNotice")}</p>
+        <p class="about-legal-card-text">${t("settings.aboutStoreExtensions")}</p>
+        <p class="about-legal-card-text">${t("settings.aboutLogos")}</p>
+      </div>
+      <div class="card about-legal-card">
+        <div class="about-legal-card-head">
+          <span class="about-legal-card-icon">${icon("server", 14)}</span>
+          <h4 class="about-legal-card-title">${t("settings.aboutPrivacyTitle")}</h4>
+        </div>
+        <p class="about-legal-card-text">${t("settings.aboutPrivacy")}</p>
+      </div>
+      <div class="card about-legal-card">
+        <div class="about-legal-card-head">
+          <span class="about-legal-card-icon">${icon("package", 14)}</span>
+          <h4 class="about-legal-card-title">${t("settings.aboutLicensesTitle")}</h4>
+        </div>
+        <p class="about-legal-card-text">${t("settings.aboutThirdParty")}</p>
+        <p class="about-legal-card-text">${t("settings.aboutThemes")}</p>
+        <p class="about-legal-card-text">${t("settings.aboutOpenSource")}</p>
+      </div>
     </div>`;
 }
 
