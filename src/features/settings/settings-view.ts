@@ -2207,7 +2207,7 @@ function renderAbout(): string {
     </div>
     ${group(
       link("mailto:hi@efxlve.com", icon("mail", 14), t("settings.aboutEmail"), "hi@efxlve.com") +
-      link("https://x.com/efxlve", icon("twitter", 14), t("settings.aboutTwitter"), "x.com/efxlve") +
+      link("https://x.com/efxlvelauncher", icon("twitter", 14), t("settings.aboutTwitter"), "x.com/efxlvelauncher") +
       link("https://github.com/efxlve/efxlve_launcher", icon("github", 14), t("settings.aboutGithub"), "github.com/efxlve/efxlve_launcher") +
       link("https://efxlve.com/", icon("globe", 14), t("settings.aboutWebsite"), "efxlve.com") +
       link(DISCORD_INVITE_URL, storeLogo("discord", 14, "about-link-logo"), t("settings.aboutDiscord"), "discord.gg/3TY8hNTx5M"),
