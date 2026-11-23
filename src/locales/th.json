@@ -3341,7 +3341,7 @@
   "settings.caseStoreReset": "รีเซ็ตเป็นสีเริ่มต้น",
   "settings.caseStoreResetAll": "รีเซ็ตสีของทุกร้านค้า",
   "settings.caseDisabledNote": "กล่องเกม 3D ปิดใช้งานอยู่ในขณะนี้ เปิดสวิตช์ด้านบนเพื่อนำการปรับแต่งเหล่านี้ไปใช้กับคลังของคุณ",
-  "settings.aboutStoreExtensions": "การปรับปรุงหน้าร้านค้า Steam ได้รวมโครงการโอเพนซอร์ส: SteamDB Browser Extension (ลิขสิทธิ์ © SteamDB, BSD-3-Clause) และ Augmented Steam (ลิขสิทธิ์ © IsThereAnyDeal, GPL-3.0) ทั้งสองโครงการไม่มีส่วนเกี่ยวข้องกับ Valve Corporation นอกจากนี้ เมทาดาตา ปกเกม และคะแนนรีวิวที่ใช้ในการเติมเต็มคลังเกมยังมาจากแหล่งข้อมูลชุมชนแบบเปิด (IGDB, SteamGridDB, HowLongToBeat, OpenCritic, Metacritic, Goygoy Engine, ProtonDB, PCGamingWiki)",
+  "settings.aboutStoreExtensions": "การปรับปรุงหน้าร้านค้า Steam ได้รวมโครงการโอเพนซอร์ส: SteamDB Browser Extension (ลิขสิทธิ์ © SteamDB, BSD-3-Clause) และ Augmented Steam (ลิขสิทธิ์ © IsThereAnyDeal, GPL-3.0) ทั้งสองโครงการไม่มีส่วนเกี่ยวข้องกับ Valve Corporation นอกจากนี้ เมทาดาตา ปกเกม และคะแนนรีวิวที่ใช้ในการเติมเต็มคลังเกมยังมาจากแหล่งข้อมูลชุมชนแบบเปิด (IGDB, SteamGridDB, HowLongToBeat, OpenCritic, Metacritic, ProtonDB, PCGamingWiki)",
   "settings.storeExtensionDownload": "ดาวน์โหลด",
   "settings.storeExtensionDownloading": "กำลังดาวน์โหลด...",
   "settings.storeExtensionInstalled": "ติดตั้งแล้ว",

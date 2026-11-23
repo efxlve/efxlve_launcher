@@ -3341,7 +3341,7 @@
   "settings.caseStoreReset": "重設為預設顏色",
   "settings.caseStoreResetAll": "重設所有商店顏色",
   "settings.caseDisabledNote": "實體遊戲盒封面目前已停用。開啟上方的開關即可將這些自訂設定套用至你的遊戲庫。",
-  "settings.aboutStoreExtensions": "Steam 商店增強功能整合了開源專案：SteamDB Browser Extension（版權所有 © SteamDB，BSD-3-Clause）與 Augmented Steam（版權所有 © IsThereAnyDeal，GPL-3.0）。這些專案均未獲得 Valve Corporation 的附屬或認可。此外，充實遊戲庫所用的中繼資料、封面與評分均來自公開社群（IGDB、SteamGridDB、HowLongToBeat、OpenCritic、Metacritic、Goygoy Engine、ProtonDB、PCGamingWiki）。",
+  "settings.aboutStoreExtensions": "Steam 商店增強功能整合了開源專案：SteamDB Browser Extension（版權所有 © SteamDB，BSD-3-Clause）與 Augmented Steam（版權所有 © IsThereAnyDeal，GPL-3.0）。這些專案均未獲得 Valve Corporation 的附屬或認可。此外，充實遊戲庫所用的中繼資料、封面與評分均來自公開社群（IGDB、SteamGridDB、HowLongToBeat、OpenCritic、Metacritic、、ProtonDB、PCGamingWiki）。",
   "settings.storeExtensionDownload": "下載",
   "settings.storeExtensionDownloading": "正在下載...",
   "settings.storeExtensionInstalled": "已安裝",

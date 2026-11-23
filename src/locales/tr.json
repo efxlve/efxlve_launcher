@@ -3341,7 +3341,7 @@
   "settings.caseStoreReset": "Varsayılan renge sıfırla",
   "settings.caseStoreResetAll": "Tüm Mağaza Renklerini Sıfırla",
   "settings.caseDisabledNote": "Fiziksel kutu kapakları şu an kapalı. Bu özelleştirmelerin oyun kütüphanenizde görünmesi için yukarıdaki anahtarı açın.",
-  "settings.aboutStoreExtensions": "Gömülü Steam mağazası geliştirmeleri açık kaynaklı projelerden yararlanır: SteamDB Tarayıcı Eklentisi (Telif Hakkı © SteamDB, BSD-3-Clause) ve Augmented Steam (Telif Hakkı © IsThereAnyDeal, GPL-3.0). Bu projelerin hiçbirisi Valve Corporation ile bağlantılı veya onaylı değildir. Ayrıca oyun kütüphanesini zenginleştirmek için kullanılan meta veriler, kapak görselleri ve inceleme puanları açık topluluk kaynakları (IGDB, SteamGridDB, HowLongToBeat, OpenCritic, Metacritic, Goygoy Engine, ProtonDB, PCGamingWiki) üzerinden sağlanmaktadır.",
+  "settings.aboutStoreExtensions": "Gömülü Steam mağazası geliştirmeleri açık kaynaklı projelerden yararlanır: SteamDB Tarayıcı Eklentisi (Telif Hakkı © SteamDB, BSD-3-Clause) ve Augmented Steam (Telif Hakkı © IsThereAnyDeal, GPL-3.0). Bu projelerin hiçbirisi Valve Corporation ile bağlantılı veya onaylı değildir. Ayrıca oyun kütüphanesini zenginleştirmek için kullanılan meta veriler, kapak görselleri ve inceleme puanları açık topluluk kaynakları (IGDB, SteamGridDB, HowLongToBeat, OpenCritic, Metacritic, ProtonDB, PCGamingWiki) üzerinden sağlanmaktadır.",
   "settings.storeExtensionDownload": "İndir",
   "settings.storeExtensionDownloading": "İndiriliyor...",
   "settings.storeExtensionInstalled": "Yüklendi",

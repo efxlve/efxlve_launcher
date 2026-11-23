@@ -3341,7 +3341,7 @@
   "settings.caseStoreReset": "Auf Standardfarbe zurücksetzen",
   "settings.caseStoreResetAll": "Alle Store-Farben zurücksetzen",
   "settings.caseDisabledNote": "Physische Box-Cover sind derzeit deaktiviert. Schalten Sie den obigen Schalter ein, um diese Anpassungen anzuwenden.",
-  "settings.aboutStoreExtensions": "Erweiterungen für den Steam-Store binden Open-Source-Projekte ein: SteamDB Browser Extension (Copyright © SteamDB, BSD-3-Clause) und Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Keines der Projekte steht in Verbindung mit Valve Corporation. Metadaten, Cover und Wertungen zur Anreicherung der Bibliothek stammen aus offenen Community-Quellen (IGDB, SteamGridDB, HowLongToBeat, OpenCritic, Metacritic, Goygoy Engine, ProtonDB, PCGamingWiki).",
+  "settings.aboutStoreExtensions": "Erweiterungen für den Steam-Store binden Open-Source-Projekte ein: SteamDB Browser Extension (Copyright © SteamDB, BSD-3-Clause) und Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Keines der Projekte steht in Verbindung mit Valve Corporation. Metadaten, Cover und Wertungen zur Anreicherung der Bibliothek stammen aus offenen Community-Quellen (IGDB, SteamGridDB, HowLongToBeat, OpenCritic, Metacritic, ProtonDB, PCGamingWiki).",
   "settings.storeExtensionDownload": "Herunterladen",
   "settings.storeExtensionDownloading": "Wird heruntergeladen...",
   "settings.storeExtensionInstalled": "Installiert",

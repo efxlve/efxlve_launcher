@@ -3341,7 +3341,7 @@
   "settings.caseStoreReset": "Rétablir la couleur par défaut",
   "settings.caseStoreResetAll": "Réinitialiser toutes les couleurs",
   "settings.caseDisabledNote": "Les boîtiers physiques sont actuellement désactivés. Activez l'interrupteur ci-dessus pour appliquer ces options.",
-  "settings.aboutStoreExtensions": "Les améliorations de la boutique Steam intègrent des projets open source : SteamDB Browser Extension (Copyright © SteamDB, BSD-3-Clause) et Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Aucun de ces projets n'est affilié à Valve Corporation. De plus, les métadonnées, jaquettes et notes proviennent de plateformes communautaires ouvertes (IGDB, SteamGridDB, HowLongToBeat, OpenCritic, Metacritic, Goygoy Engine, ProtonDB, PCGamingWiki).",
+  "settings.aboutStoreExtensions": "Les améliorations de la boutique Steam intègrent des projets open source : SteamDB Browser Extension (Copyright © SteamDB, BSD-3-Clause) et Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Aucun de ces projets n'est affilié à Valve Corporation. De plus, les métadonnées, jaquettes et notes proviennent de plateformes communautaires ouvertes (IGDB, SteamGridDB, HowLongToBeat, OpenCritic, Metacritic, ProtonDB, PCGamingWiki).",
   "settings.storeExtensionDownload": "Télécharger",
   "settings.storeExtensionDownloading": "Téléchargement...",
   "settings.storeExtensionInstalled": "Installé",

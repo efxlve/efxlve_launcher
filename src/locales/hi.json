@@ -3341,7 +3341,7 @@
   "settings.caseStoreReset": "डिफ़ॉल्ट रंग पर रीसेट करें",
   "settings.caseStoreResetAll": "सभी स्टोर रंग रीसेट करें",
   "settings.caseDisabledNote": "फिजिकल केस कवर वर्तमान में अक्षम हैं। अपनी लाइब्रेरी में इन कस्टमाइज़ेशन को लागू करने के लिए ऊपर दिए गए स्विच को चालू करें।",
-  "settings.aboutStoreExtensions": "Steam स्टोर संवर्द्धन में ओपन-सोर्स प्रोजेक्ट शामिल हैं: SteamDB Browser Extension (कॉपीराइट © SteamDB, BSD-3-Clause) और Augmented Steam (कॉपीराइट © IsThereAnyDeal, GPL-3.0)। दोनों में से कोई भी प्रोजेक्ट Valve Corporation से संबद्ध नहीं है। इसके अतिरिक्त, गेम लाइब्रेरी को समृद्ध करने वाला मेटाडेटा, कवर आर्ट और समीक्षा स्कोर खुले सामुदायिक स्रोतों (IGDB, SteamGridDB, HowLongToBeat, OpenCritic, Metacritic, Goygoy Engine, ProtonDB, PCGamingWiki) से प्राप्त किए जाते हैं।",
+  "settings.aboutStoreExtensions": "Steam स्टोर संवर्द्धन में ओपन-सोर्स प्रोजेक्ट शामिल हैं: SteamDB Browser Extension (कॉपीराइट © SteamDB, BSD-3-Clause) और Augmented Steam (कॉपीराइट © IsThereAnyDeal, GPL-3.0)। दोनों में से कोई भी प्रोजेक्ट Valve Corporation से संबद्ध नहीं है। इसके अतिरिक्त, गेम लाइब्रेरी को समृद्ध करने वाला मेटाडेटा, कवर आर्ट और समीक्षा स्कोर खुले सामुदायिक स्रोतों (IGDB, SteamGridDB, HowLongToBeat, OpenCritic, Metacritic, ProtonDB, PCGamingWiki) से प्राप्त किए जाते हैं।",
   "settings.storeExtensionDownload": "डाउनलोड",
   "settings.storeExtensionDownloading": "डाउनलोड हो रहा है...",
   "settings.storeExtensionInstalled": "स्थापित",

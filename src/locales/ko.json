@@ -3341,7 +3341,7 @@
   "settings.caseStoreReset": "기본 색상으로 재설정",
   "settings.caseStoreResetAll": "모든 스토어 색상 재설정",
   "settings.caseDisabledNote": "물리 케이스 커버가 비활성화되어 있습니다. 라이브러리에 적용하려면 상단 스위치를 켜세요.",
-  "settings.aboutStoreExtensions": "Steam 상점 개선 기능은 오픈 소스 프로젝트를 통합합니다: SteamDB Browser Extension (Copyright © SteamDB, BSD-3-Clause) 및 Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). 두 프로젝트 모두 Valve Corporation과 제휴되지 않았습니다. 또한 라이브러리를 보강하는 메타데이터, 표지 및 평가 점수는 공개 커뮤니티(IGDB, SteamGridDB, HowLongToBeat, OpenCritic, Metacritic, Goygoy Engine, ProtonDB, PCGamingWiki)에서 제공됩니다.",
+  "settings.aboutStoreExtensions": "Steam 상점 개선 기능은 오픈 소스 프로젝트를 통합합니다: SteamDB Browser Extension (Copyright © SteamDB, BSD-3-Clause) 및 Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). 두 프로젝트 모두 Valve Corporation과 제휴되지 않았습니다. 또한 라이브러리를 보강하는 메타데이터, 표지 및 평가 점수는 공개 커뮤니티(IGDB, SteamGridDB, HowLongToBeat, OpenCritic, Metacritic, ProtonDB, PCGamingWiki)에서 제공됩니다.",
   "settings.storeExtensionDownload": "다운로드",
   "settings.storeExtensionDownloading": "다운로드 중...",
   "settings.storeExtensionInstalled": "설치됨",

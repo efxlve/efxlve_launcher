@@ -3341,7 +3341,7 @@
   "settings.caseStoreReset": "Ripristina colore predefinito",
   "settings.caseStoreResetAll": "Ripristina tutti i colori dei negozi",
   "settings.caseDisabledNote": "Le custodie fisiche sono attualmente disattivate. Attiva l'interruttore sopra per applicare queste opzioni.",
-  "settings.aboutStoreExtensions": "I miglioramenti del negozio Steam integrano progetti open source: SteamDB Browser Extension (Copyright © SteamDB, BSD-3-Clause) e Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Nessuno dei due progetti è affiliato o approvato da Valve Corporation. Inoltre, metadati, copertine e voti provengono da fonti aperte della community (IGDB, SteamGridDB, HowLongToBeat, OpenCritic, Metacritic, Goygoy Engine, ProtonDB, PCGamingWiki).",
+  "settings.aboutStoreExtensions": "I miglioramenti del negozio Steam integrano progetti open source: SteamDB Browser Extension (Copyright © SteamDB, BSD-3-Clause) e Augmented Steam (Copyright © IsThereAnyDeal, GPL-3.0). Nessuno dei due progetti è affiliato o approvato da Valve Corporation. Inoltre, metadati, copertine e voti provengono da fonti aperte della community (IGDB, SteamGridDB, HowLongToBeat, OpenCritic, Metacritic, ProtonDB, PCGamingWiki).",
   "settings.storeExtensionDownload": "Scarica",
   "settings.storeExtensionDownloading": "Download in corso...",
   "settings.storeExtensionInstalled": "Installato",
