@@ -256,6 +256,8 @@ interface IgdbCoverQuery {
 
 const igdbCoverQueue: IgdbCoverQuery[] = [];
 const igdbCoverQueued = new Set<string>();
+/** Titles IGDB has no exact cover for; a render must not re-ask every time. */
+const igdbCoverMisses = new Set<string>();
 let igdbCoverBusy = false;
 
 function igdbCoverFor(title: string): string | null {
@@ -264,6 +266,7 @@ function igdbCoverFor(title: string): string | null {
   if (!key) return null;
   const cached = igdbCoverCache.get(key);
   if (cached) return cached;
+  if (igdbCoverMisses.has(key)) return null;
   queueIgdbCover(title);
   return null;
 }
@@ -295,6 +298,10 @@ async function pumpIgdbCovers(): Promise<void> {
           igdbCoverCache.set(item.key, url);
           saveIgdbCoverCache();
           applyIgdbCover(item.key, url);
+        } else {
+          // Remember the miss for this session; otherwise every render queues
+          // the same failed lookup again.
+          igdbCoverMisses.add(item.key);
         }
       } catch {
         // The local safe view stays in place when IGDB is unavailable.

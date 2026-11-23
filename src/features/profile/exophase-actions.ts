@@ -17,6 +17,8 @@ import {
 
 const TTL_SECS = 6 * 3600;
 let inFlight: Promise<void> | null = null;
+/** Bumped when the saved username changes so an older read cannot land in the new profile. */
+let loadEpoch = 0;
 
 export function exophaseIsStale(): boolean {
   if (!S.exophaseData) return true;
@@ -42,27 +44,41 @@ export async function loadExophase(force = false): Promise<void> {
   if (!force && S.exophaseData && !exophaseIsStale()) return;
   if (inFlight) return inFlight;
 
+  const epoch = loadEpoch;
   S.exophaseLoading = true;
   S.exophaseError = "";
   render();
 
   inFlight = (async () => {
     try {
-      S.exophaseData = await exophaseGet(force);
+      const data = await exophaseGet(force);
+      if (epoch !== loadEpoch) return;
+      S.exophaseData = data;
       S.exophaseError = "";
     } catch (error) {
+      if (epoch !== loadEpoch) return;
       S.exophaseError = String(error);
     } finally {
-      S.exophaseLoading = false;
-      inFlight = null;
-      render();
+      if (epoch === loadEpoch) {
+        S.exophaseLoading = false;
+        inFlight = null;
+        render();
+      }
     }
   })();
   return inFlight;
 }
 
+/** Drops the previous profile's read when the username changes underneath it. */
+function invalidateExophaseLoad(): void {
+  loadEpoch += 1;
+  inFlight = null;
+  S.exophaseLoading = false;
+}
+
 /** Saves the public username/URL/id and drops the previous profile's cache. */
 export async function saveExophaseUsername(username: string): Promise<ExophaseStatus> {
+  invalidateExophaseLoad();
   const status = await exophaseSetUsername(username);
   S.exophaseConfigured = status.configured;
   S.exophaseEnabled = status.enabled;

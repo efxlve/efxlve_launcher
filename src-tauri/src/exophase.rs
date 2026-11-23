@@ -144,20 +144,29 @@ fn cache_path(app: &tauri::AppHandle) -> PathBuf {
 }
 
 fn stored_username(app: &tauri::AppHandle) -> String {
-    crate::load_settings(app)
-        .exophase_username
-        .unwrap_or_default()
-        .trim()
-        .to_string()
+    normalize_stored_input(
+        &crate::load_settings(app)
+            .exophase_username
+            .unwrap_or_default(),
+    )
+}
+
+/// The settings field keeps the bare handle or player id, never the pasted URL:
+/// the hero handle and the profile link are built from it.
+fn normalize_stored_input(raw: &str) -> String {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return String::new();
+    }
+    match parse_input(trimmed) {
+        Input::Username(name) => name,
+        Input::PlayerId(id) => id,
+    }
 }
 
 fn status_for(app: &tauri::AppHandle) -> ExophaseStatus {
     let settings = crate::load_settings(app);
-    let username = settings
-        .exophase_username
-        .unwrap_or_default()
-        .trim()
-        .to_string();
+    let username = normalize_stored_input(&settings.exophase_username.unwrap_or_default());
     ExophaseStatus {
         configured: !username.is_empty(),
         username,
@@ -1071,12 +1080,12 @@ pub fn exophase_set_username(
     app: tauri::AppHandle,
     username: String,
 ) -> Result<ExophaseStatus, String> {
-    let trimmed = username.trim().to_string();
+    let normalized = normalize_stored_input(&username);
     let mut settings = crate::load_settings(&app);
-    settings.exophase_username = if trimmed.is_empty() {
+    settings.exophase_username = if normalized.is_empty() {
         None
     } else {
-        Some(trimmed)
+        Some(normalized)
     };
     crate::save_settings(&app, &settings);
     clear_cache(&app);
@@ -1130,6 +1139,17 @@ mod tests {
             parse_input("Efxlve"),
             Input::Username(name) if name == "Efxlve"
         ));
+    }
+
+    #[test]
+    fn a_saved_url_is_stored_as_the_bare_username() {
+        assert_eq!(
+            normalize_stored_input("https://www.exophase.com/user/Efxlve/"),
+            "Efxlve"
+        );
+        assert_eq!(normalize_stored_input(" 2408683 "), "2408683");
+        assert_eq!(normalize_stored_input("Efxlve"), "Efxlve");
+        assert_eq!(normalize_stored_input("   "), "");
     }
 
     #[test]
