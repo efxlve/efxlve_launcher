@@ -8,7 +8,7 @@
  */
 
 import { icon, type IconName } from "../../core/icons";
-import { render } from "../../core/render";
+import { openEpicModal, render } from "../../core/render";
 import { S } from "../../core/state";
 import { achievementCardPalette, syncAchievementCardTheme } from "../../core/achievement-card-theme";
 import { toast } from "../../core/toast";
@@ -40,6 +40,9 @@ import {
 } from "../../core/achievement-edits";
 import { achievementStoreName } from "../drawer/ach-editor";
 import { askConfirm } from "../../core/confirm-dialog";
+import { coverThumb } from "../../core/game-view";
+import { summaryOf } from "../../core/selectors";
+import { setView } from "../store/store-view";
 
 /** Active rarity tier in the interactive stage (0=Bronze, 1=Silver, 2=Gold, 3=Ultra, 4=Platinum). */
 let previewRarityTier = 2;
@@ -493,6 +496,8 @@ export function renderAchievementsSettingsView(): string {
 
   // Launcher-only achievement state, one row per game. The count comes from the
   // stored edit list, so a game whose page was never opened still shows up.
+  // The portrait and the row body are one button: the row opens that game's
+  // achievements tab, while Sync stays its own action.
   const editGames = editedAchievementGames();
   const editRows = editGames
     .map(({ appName, edits }) => {
@@ -505,12 +510,22 @@ export function renderAchievementsSettingsView(): string {
       ]
         .filter(Boolean)
         .join(" · ");
+      const summary = summaryOf(appName);
+      const title = edits.title || summary?.title || appName;
+      // The library's own cover fallback chain: custom cover, Steam resolver,
+      // Epic URL rewrite and a trophy-free placeholder.
+      const thumb = summary
+        ? coverThumb(summary, "ach-edits-thumb")
+        : `<span class="ach-edits-thumb art-thumb-placeholder">${icon("gamepad-2", 16)}</span>`;
       return `
-        <div class="row settings-row">
-          <div class="row-main">
-            <div class="settings-row-title">${esc(edits.title || appName)}</div>
-            <div class="settings-row-desc tabular-nums">${esc(facts)}</div>
-          </div>
+        <div class="row settings-row ach-edits-row">
+          <button type="button" class="ach-edits-open" data-act="ach-edits-open-game" data-id="${esc(appName)}"${summary ? "" : " disabled"} title="${esc(t("drawer.achievements"))}">
+            ${thumb}
+            <span class="row-main">
+              <span class="settings-row-title">${esc(title)}</span>
+              <span class="settings-row-desc tabular-nums">${esc(facts)}</span>
+            </span>
+          </button>
           <div class="settings-row-control">
             <button type="button" class="btn ghost small" data-act="ach-edits-sync-game" data-id="${esc(appName)}">
               ${icon("refresh", 13)}<span>${esc(t("ach.editsSettingsSync"))}</span>
@@ -1299,6 +1314,17 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
         undefined,
         previewAchievementArt(),
       ).catch((e) => toast(String(e), "err"));
+      return true;
+    }
+
+    case "ach-edits-open-game": {
+      const appName = (el.dataset.id || "").trim();
+      if (!appName || !summaryOf(appName)) return true;
+      // The game page lives over the library: any settings re-render would
+      // close a hub opened there. Land on the tab the edits belong to.
+      setView("library");
+      render();
+      openEpicModal(appName, true, true, "achievements");
       return true;
     }
 

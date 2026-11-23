@@ -6,7 +6,7 @@
  * request a re-render without importing `main.ts` (which would create a cycle).
  */
 
-import type { NotifKind } from "./types";
+import type { DrawerTab, NotifKind } from "./types";
 
 let renderImpl: () => void = () => {};
 let scheduleImpl: () => void = () => {};
@@ -28,12 +28,16 @@ export function updateGamepadHud(active?: boolean): void {
   gamepadHudImpl(active);
 }
 
-let openEpicModalImpl: (appName: string, isInitialOpen?: boolean, animateTabContent?: boolean) => void =
-  () => {};
+let openEpicModalImpl: (
+  appName: string,
+  isInitialOpen?: boolean,
+  animateTabContent?: boolean,
+  initialTab?: DrawerTab,
+) => void = () => {};
 
 /** Called once by main.ts to wire the game detail drawer opener. */
 export function registerOpenEpicModal(
-  fn: (appName: string, isInitialOpen?: boolean, animateTabContent?: boolean) => void,
+  fn: (appName: string, isInitialOpen?: boolean, animateTabContent?: boolean, initialTab?: DrawerTab) => void,
 ): void {
   openEpicModalImpl = fn;
 }
@@ -46,11 +50,16 @@ export function registerNavHistoryPush(fn: (item: { view: any; appName?: string 
 }
 
 /** Open (or refresh) the game detail drawer. No-op until registered. */
-export function openEpicModal(appName: string, isInitialOpen = true, animateTabContent = true): void {
+export function openEpicModal(
+  appName: string,
+  isInitialOpen = true,
+  animateTabContent = true,
+  initialTab?: DrawerTab,
+): void {
   if (isInitialOpen) {
     navHistoryPushImpl?.({ view: "library", appName });
   }
-  openEpicModalImpl(appName, isInitialOpen, animateTabContent);
+  openEpicModalImpl(appName, isInitialOpen, animateTabContent, initialTab);
 }
 
 let presenceSyncImpl: () => void = () => {};

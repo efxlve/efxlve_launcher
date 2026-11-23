@@ -579,3 +579,57 @@
   background: var(--surface-2);
 }
 
+/* Launcher-only achievement edits. The portrait and the row body are one
+   button, so the row opens that game's achievements tab; Sync stays its own
+   action in the control column. */
+.ach-edits-open {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ach-edits-open:disabled {
+  cursor: default;
+}
+
+.ach-edits-open:not(:disabled):hover .settings-row-title {
+  color: var(--accent);
+}
+
+.ach-edits-open:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.ach-edits-open .row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ach-edits-thumb {
+  display: block;
+  width: 36px;
+  height: 48px;
+  flex: 0 0 36px;
+  border-radius: var(--r-sm);
+  object-fit: cover;
+  background: var(--surface-3);
+}
+
+.ach-edits-thumb.art-thumb-placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+}
+

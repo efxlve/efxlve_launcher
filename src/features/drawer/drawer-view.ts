@@ -44,6 +44,7 @@ import { recordLiveCritic, recordLiveSteamDetails } from "../../core/game-rating
 import { recordLiveHltb } from "../../core/hltb-times";
 import { setGameSceneArt } from "../../core/game-scene";
 import { S } from "../../core/state";
+import type { DrawerTab } from "../../core/types";
 import { toast } from "../../core/toast";
 import { esc, fmtAchDate, fmtBytes, fmtDecimal1, fmtHours, fmtPlaytime } from "../../core/utils";
 import { checkInstallPathState, epicDetectEos, epicEosLogUnlocks, epicGetAchievements, epicGetCritic, epicGetGameDlcs, epicGetGameSettings, epicGetHltb, epicGetSystemRequirements, epicGetWikiAbout, epicPortrait, getAntiCheat, getThirdPartyLauncher, requiresThirdPartyLauncher, type CriticData, type EpicAchievementItem, type EpicAchievementSummary, type EpicAchievementsData, type EpicSummary, type HltbData, type SystemDetailItem, type ThirdPartyLauncherInfo } from "../../epic";
@@ -1382,7 +1383,12 @@ export function repaintGameHero(appName: string): void {
   updateNavHistoryUi();
 }
 
-export function openEpicModal(appName: string, isInitialOpen = true, _animateTabContent = true): void {
+export function openEpicModal(
+  appName: string,
+  isInitialOpen = true,
+  _animateTabContent = true,
+  initialTab?: DrawerTab,
+): void {
   // EA App is the delegated backend for a title owned on a primary store: open
   // the primary copy so the library never presents the EA install as a second
   // purchase. Ubisoft, Xbox, Battle.net and Riot copies stay their own pages;
@@ -1428,7 +1434,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   S.isVersionDropdownOpen = false;
   S.isGameMoreMenuOpen = false;
   if (isInitialOpen) {
-    S.activeDrawerTab = "overview";
+    S.activeDrawerTab = initialTab ?? "overview";
     S.activeAchFilter = "all";
     S.achTierFilter = "all";
     S.achSearchQuery = "";
@@ -1440,7 +1446,7 @@ export function openEpicModal(appName: string, isInitialOpen = true, _animateTab
   const companion = isCompanionApp(appName);
   // Companion games open on Overview; the rest of the tabs read their own
   // local or store data and are available too.
-  if (companion && isInitialOpen) S.activeDrawerTab = "overview";
+  if (companion && isInitialOpen && !initialTab) S.activeDrawerTab = "overview";
 
   ensureOverviewData(s);
   // IGDB is the page's first metadata source: one cached call per game. The
