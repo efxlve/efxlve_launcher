@@ -101,7 +101,9 @@
    miniature screen, so the picker explains the move without playing it. */
 .ach-motion-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  /* auto-fit, not auto-fill: the seven tiles share the row to its end instead
+     of leaving empty tracks on the right. */
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
   gap: 8px;
   width: 100%;
 }
@@ -112,7 +114,7 @@
   gap: 7px;
   padding: 8px 9px 7px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: var(--r-sm);
   color: var(--text-2);
   font-family: inherit;
@@ -144,7 +146,7 @@
   display: block;
   height: 34px;
   overflow: hidden;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: 4px;
   background: color-mix(in srgb, var(--bg) 55%, var(--surface-1));
 }
@@ -373,7 +375,8 @@
 }
 
 /* The six anchors share one screen: each zone previews a miniature card
-   sitting exactly where the real notification will land. */
+   sitting exactly where the real notification will land. The map spans the
+   whole row, like the preview screen above it. */
 .ach-pos-screen {
   display: grid;
   /* The anchors are physical screen corners, so the map itself never mirrors:
@@ -383,22 +386,19 @@
   grid-template-rows: repeat(2, 1fr);
   gap: 4px;
   width: 100%;
-  max-width: 560px;
   padding: 8px;
   background: color-mix(in srgb, var(--bg) 55%, var(--surface-1));
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: var(--r-md);
 }
 
 .ach-pos-zone {
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 68px;
-  padding: 8px;
+  min-height: 92px;
+  padding: 10px;
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px solid var(--line-strong);
   border-radius: var(--r-sm);
   color: var(--text-3);
   font-family: inherit;
@@ -407,21 +407,43 @@
   transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
 }
 
+.ach-pos-zone.top-left { align-items: flex-start; justify-content: flex-start; }
+.ach-pos-zone.center-top { align-items: flex-start; justify-content: center; }
+.ach-pos-zone.top-right { align-items: flex-start; justify-content: flex-end; text-align: right; }
+.ach-pos-zone.bottom-left { align-items: flex-end; justify-content: flex-start; }
+.ach-pos-zone.center-bottom { align-items: flex-end; justify-content: center; }
+.ach-pos-zone.bottom-right { align-items: flex-end; justify-content: flex-end; text-align: right; }
+
 .ach-pos-zone:hover {
-  background: var(--surface-2);
-  border-color: var(--line);
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+  border-color: color-mix(in srgb, var(--text-2) 55%, transparent);
   color: var(--text-2);
 }
 
 .ach-pos-zone.active {
   background: color-mix(in srgb, var(--accent) 9%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line-strong));
   color: var(--text);
 }
 
 .ach-pos-zone:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* The mini card and its label travel together, so the label names the spot the
+   card is sitting on rather than floating in the middle of the zone. */
+.ach-pos-anchor {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.ach-pos-zone.bottom-left .ach-pos-anchor,
+.ach-pos-zone.center-bottom .ach-pos-anchor,
+.ach-pos-zone.bottom-right .ach-pos-anchor {
+  flex-direction: column-reverse;
 }
 
 .ach-pos-zone-label {
@@ -436,24 +458,23 @@
 
 /* A miniature of the notification card at this anchor. */
 .ach-pos-toast {
-  position: absolute;
   display: flex;
   align-items: center;
-  gap: 3px;
-  width: 40px;
-  height: 14px;
-  padding: 2px 3px;
-  border: 1px solid color-mix(in srgb, var(--text-3) 50%, transparent);
-  border-radius: 3px;
+  gap: 4px;
+  width: 52px;
+  height: 17px;
+  padding: 2px 4px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
   background: color-mix(in srgb, var(--surface-1) 75%, transparent);
   transition: border-color 140ms ease, background 140ms ease;
 }
 
 .ach-pos-toast-tile {
-  width: 7px;
-  height: 8px;
-  flex: 0 0 7px;
-  border-radius: 1px;
+  width: 9px;
+  height: 11px;
+  flex: 0 0 9px;
+  border-radius: 2px;
   background: var(--text-3);
   transition: background 140ms ease;
 }
@@ -477,15 +498,8 @@
   width: 62%;
 }
 
-.ach-pos-zone.top-left .ach-pos-toast { top: 8px; left: 8px; }
-.ach-pos-zone.center-top .ach-pos-toast { top: 8px; left: 50%; transform: translateX(-50%); }
-.ach-pos-zone.top-right .ach-pos-toast { top: 8px; right: 8px; }
-.ach-pos-zone.bottom-left .ach-pos-toast { bottom: 8px; left: 8px; }
-.ach-pos-zone.center-bottom .ach-pos-toast { bottom: 8px; left: 50%; transform: translateX(-50%); }
-.ach-pos-zone.bottom-right .ach-pos-toast { bottom: 8px; right: 8px; }
-
 .ach-pos-zone:hover .ach-pos-toast {
-  border-color: color-mix(in srgb, var(--text-2) 65%, transparent);
+  border-color: color-mix(in srgb, var(--text-2) 60%, transparent);
 }
 
 .ach-pos-zone.active .ach-pos-toast {

@@ -557,11 +557,13 @@ export function renderAchievementsSettingsView(): string {
       const isCurrent = position === p.id;
       return `
       <button type="button" class="ach-pos-zone ${p.id} ${isCurrent ? "active" : ""}" data-act="set-ach-position" data-val="${esc(p.id)}" title="${esc(p.label)}" aria-pressed="${isCurrent}">
-        <span class="ach-pos-toast" aria-hidden="true">
-          <span class="ach-pos-toast-tile"></span>
-          <span class="ach-pos-toast-lines"><i></i><i></i></span>
+        <span class="ach-pos-anchor">
+          <span class="ach-pos-toast" aria-hidden="true">
+            <span class="ach-pos-toast-tile"></span>
+            <span class="ach-pos-toast-lines"><i></i><i></i></span>
+          </span>
+          <span class="ach-pos-zone-label">${esc(p.label)}</span>
         </span>
-        <span class="ach-pos-zone-label">${esc(p.label)}</span>
       </button>
     `;
     })
