@@ -175,7 +175,7 @@ import { patchExophaseGamesGrid } from "../profile/exophase-view";
 import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
 import { closeUnlocksModal, openUnlocksModal } from "../profile/profile-unlocks-modal";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
-import { closeBetaNotice, openBetaNotice } from "../beta-notice/beta-notice-view";
+import { closeBetaNotice, isBetaNoticeOpen, openBetaNotice } from "../beta-notice/beta-notice-view";
 import { closeFeedback, createFeedbackReport, openFeedback, openFeedbackFolder, openFeedbackIssue } from "../feedback/feedback-view";
 import { closeAvatarModal, closeChangeNameModal, openAvatarFilePicker, openChangeNameModal, promptAvatarAction, removeCustomAvatar, saveProfileName } from "../profile/profile-avatar";
 
@@ -508,7 +508,11 @@ document.addEventListener("click", (e) => {
   } else if (act === "open-changelog") {
     openChangelogModal();
   } else if (act === "open-beta-notice") {
-    openBetaNotice();
+    if (isBetaNoticeOpen()) {
+      closeBetaNotice();
+    } else {
+      openBetaNotice();
+    }
   } else if (act === "close-beta-notice") {
     closeBetaNotice();
   } else if (act === "beta-notice-feedback") {

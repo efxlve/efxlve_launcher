@@ -25,6 +25,8 @@ import { watchConnection } from "./core/offline";
 import type { View } from "./core/types";
 import { closeCollectionModal } from "./features/collections/collections-view";
 import { closeChangelogModal } from "./features/changelog/changelog-view";
+import { closeBetaNotice } from "./features/beta-notice/beta-notice-view";
+import { closeFeedback } from "./features/feedback/feedback-view";
 import { closeCustomCoverModal } from "./features/cover/cover-view";
 import { closeMatchModal } from "./features/drawer/match-view";
 import { compactCustomArtStorage } from "./features/cover/cover-storage";
@@ -185,6 +187,8 @@ function render(): void {
     closeNotifPanel();
     closeChangelogModal();
   closeReleaseCalendar();
+  closeBetaNotice();
+  closeFeedback();
   }
 
   if (S.view === "store") {
@@ -282,6 +286,8 @@ function closeAllModals(): void {
   closeLibFilterPanel();
   closeChangelogModal();
   closeReleaseCalendar();
+  closeBetaNotice();
+  closeFeedback();
   if (selectiveRoot) selectiveRoot.innerHTML = "";
   if (playtimeRoot) playtimeRoot.innerHTML = "";
 }

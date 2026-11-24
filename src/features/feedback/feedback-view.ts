@@ -14,6 +14,7 @@ import { t } from "../../i18n";
 import { toast } from "../../core/toast";
 import { epicOpenFolderPath } from "../../epic-commands";
 import { feedbackCreateReport, type FeedbackReport } from "../../feedback";
+import { holdStoreOverlay, releaseStoreOverlay } from "../store/store-view";
 
 const NOTE_MAX = 2000;
 
@@ -171,6 +172,7 @@ function syncNoteCount(note: HTMLTextAreaElement): void {
 }
 
 export function openFeedback(): void {
+  void holdStoreOverlay("feedback");
   generation += 1;
   report = null;
   currentNote = "";
@@ -190,6 +192,7 @@ export function closeFeedback(): void {
   noteError = "";
   createError = "";
   feedbackRoot.innerHTML = "";
+  releaseStoreOverlay("feedback");
 }
 
 export async function createFeedbackReport(): Promise<void> {

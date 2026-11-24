@@ -92,6 +92,8 @@ export const COVERING_ROOT_IDS = [
   "hide-achievements-root",
   "share-modal-root",
   "changelog-root",
+  "feedback-root",
+  "beta-notice-root",
 ] as const;
 
 /**
