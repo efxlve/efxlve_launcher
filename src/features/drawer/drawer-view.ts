@@ -1545,7 +1545,9 @@ export function openEpicModal(
     paintGameHeaderMeta(s, partner);
     paintGameMeta(s);
     paintGameCloud(s);
-    repaintGameHero(appName);
+    // The hero does not depend on the active tab; rebuilding it here re-set the
+    // <img> and made the picture load again on every tab switch. Cover and logo
+    // changes repaint the hero through their own handlers.
     if (S.activeDrawerTab === "specs") {
       void hydrateGameCompatCard(appName);
       void hydrateDeckChip(appName);
