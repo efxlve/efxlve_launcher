@@ -216,13 +216,20 @@
 }
 
 /* Neon Grid: Inputs & Search */
-:root[data-surface="neongrid"] :is(input:not([type="range"], [type="checkbox"], [type="radio"]), select, textarea, .input, .text-input, .search, .page-search, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input) {
+:root[data-surface="neongrid"] :is(input:not([type="range"], [type="checkbox"], [type="radio"], .install-path-input), select, textarea, .input, .text-input, .search, .page-search, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input) {
   background: #08090d;
   border: 1px solid rgba(252, 238, 10, 0.22);
   color: #fefefe;
   border-radius: 2px;
 }
-:root[data-surface="neongrid"] :is(input, select, textarea, .input, .text-input, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input, .install-path-input):focus,
+/* The install path input is borderless inside its own wrapper. Styling the
+   input as well drew a second border and focus ring inside the frame. */
+:root[data-surface="neongrid"] .install-path-input-wrap {
+  background: #08090d;
+  border: 1px solid rgba(252, 238, 10, 0.22);
+  border-radius: 2px;
+}
+:root[data-surface="neongrid"] :is(input:not(.install-path-input), select, textarea, .input, .text-input, .settings-search, .music-input, .music-select, .storage-search-input, .move-path-input):focus,
 :root[data-surface="neongrid"] .search:focus-within,
 :root[data-surface="neongrid"] .page-search:hover,
 :root[data-surface="neongrid"] .install-path-input-wrap:focus-within {
