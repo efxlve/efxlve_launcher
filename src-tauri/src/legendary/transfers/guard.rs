@@ -17,7 +17,7 @@ pub(super) fn plain_folder_name(name: &str) -> bool {
         && !name.contains(['/', '\\', ':', '*', '?', '"', '<', '>', '|'])
 }
 
-pub(crate) fn is_safe_game_dir(path: &Path, default_install: &Path) -> bool {
+pub(crate) fn is_safe_game_dir(path: &Path, install_root: &Path) -> bool {
     if !path.is_absolute() {
         return false;
     }
@@ -32,58 +32,98 @@ pub(crate) fn is_safe_game_dir(path: &Path, default_install: &Path) -> bool {
     if path.components().count() < 3 {
         return false;
     }
-    let s = path.to_string_lossy().to_lowercase();
-    let s = s.trim_start_matches(r"\\?\");
+    // Normalize separators and case once; both the checks and the root compare
+    // must see the same spelling.
+    let owned = path.to_string_lossy().to_lowercase().replace('/', "\\");
+    let s = owned.trim_start_matches(r"\\?\");
+    let s_trimmed = s.trim_end_matches('\\');
 
-    // Must not be the default install root itself
-    if let Ok(canon_def) = default_install.canonicalize() {
-        let def_s = canon_def.to_string_lossy().to_lowercase();
+    // Must not be the default or the configured install root itself. A custom
+    // Epic folder is often on another drive, so the caller passes the active
+    // root rather than only the built-in default.
+    if let Ok(canon_def) = install_root.canonicalize() {
+        let def_s = canon_def
+            .to_string_lossy()
+            .to_lowercase()
+            .replace('/', "\\");
         let def_s = def_s.trim_start_matches(r"\\?\");
-        if s == def_s {
+        if s_trimmed == def_s.trim_end_matches('\\') {
             return false;
         }
     }
-    let def_raw = default_install.to_string_lossy().to_lowercase();
+    let def_raw = install_root
+        .to_string_lossy()
+        .to_lowercase()
+        .replace('/', "\\");
     let def_raw = def_raw.trim_start_matches(r"\\?\");
-    if s == def_raw {
+    if s_trimmed == def_raw.trim_end_matches('\\') {
         return false;
     }
 
-    // Blacklist critical Windows roots
-    let forbidden = [
-        "c:\\",
-        "d:\\",
-        "e:\\",
-        "f:\\",
-        "g:\\",
-        "c:\\windows",
-        "c:\\windows\\system32",
-        "c:\\program files",
-        "c:\\program files (x86)",
-        "c:\\programdata",
-        "c:\\programdata\\epic",
-        "c:\\users",
-    ];
-    for f in forbidden {
-        if s == f || s == format!("{}\\", f.trim_end_matches('\\')) {
-            return false;
-        }
+    // Critical Windows locations are rejected on every drive, not only on C:.
+    // `D:\Program Files` or `E:\ProgramData` is just as destructive to delete.
+    let tail = if s.as_bytes().get(1) == Some(&b':') {
+        &s[2..]
+    } else {
+        s
+    };
+    let compact = tail.trim_end_matches('\\');
+    let forbidden_root = matches!(
+        compact,
+        r"\windows"
+            | r"\program files"
+            | r"\program files (x86)"
+            | r"\programdata"
+            | r"\users"
+            | r"\system volume information"
+            | r"\recovery"
+            | r"\perflogs"
+            | r"\$recycle.bin"
+            | r"\boot"
+            | r"\efi"
+            | r"\windows.old"
+    );
+    if forbidden_root {
+        return false;
     }
 
     // Children of the OS directory, not only the directory itself.
-    let compact = s.trim_end_matches('\\');
-    if compact == r"c:\windows" || compact.starts_with(r"c:\windows\") {
+    if compact == r"\windows" || compact.starts_with(r"\windows\") {
         return false;
+    }
+    // System metadata trees are never a game folder, even below the root.
+    for system_tree in [
+        r"\system volume information\",
+        r"\$recycle.bin\",
+        r"\recovery\",
+        r"\perflogs\",
+        r"\boot\",
+        r"\efi\",
+    ] {
+        if compact.starts_with(system_tree) {
+            return false;
+        }
+    }
+    // Epic's own ProgramData tree holds manifests and install records.
+    if compact == r"\programdata\epic" || compact.starts_with(r"\programdata\epic\") {
+        return false;
+    }
+    // A profile root is a single folder below `\Users`; games below it are
+    // allowed, but the profile itself must never be removed.
+    if let Some(rest) = compact.strip_prefix(r"\users\") {
+        if !rest.is_empty() && !rest.contains('\\') {
+            return false;
+        }
     }
 
     // Must not be user profile or core profile folders
     if let Ok(user_profile) = std::env::var("USERPROFILE") {
-        let up = user_profile.to_lowercase();
-        if s == up
-            || s == format!("{}\\desktop", up)
-            || s == format!("{}\\documents", up)
-            || s == format!("{}\\downloads", up)
-            || s == format!("{}\\appdata", up)
+        let up = user_profile.to_lowercase().replace('/', "\\");
+        if s_trimmed == up.trim_end_matches('\\')
+            || s_trimmed == format!("{}\\desktop", up)
+            || s_trimmed == format!("{}\\documents", up)
+            || s_trimmed == format!("{}\\downloads", up)
+            || s_trimmed == format!("{}\\appdata", up)
         {
             return false;
         }
@@ -91,11 +131,11 @@ pub(crate) fn is_safe_game_dir(path: &Path, default_install: &Path) -> bool {
     // Unix has no USERPROFILE; the home folder and its documents/downloads
     // children are just as destructive to remove.
     if let Ok(home) = std::env::var("HOME") {
-        let h = home.to_lowercase();
-        if s == h
-            || s == format!("{}/desktop", h)
-            || s == format!("{}/documents", h)
-            || s == format!("{}/downloads", h)
+        let h = home.to_lowercase().replace('/', "\\");
+        if s_trimmed == h.trim_end_matches('\\')
+            || s_trimmed == format!("{}\\desktop", h)
+            || s_trimmed == format!("{}\\documents", h)
+            || s_trimmed == format!("{}\\downloads", h)
         {
             return false;
         }
@@ -196,6 +236,45 @@ mod name_tests {
         assert!(!is_safe_game_dir(
             &PathBuf::from(r"C:\Windows\System32"),
             &PathBuf::from(r"C:\Games")
+        ));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn system_roots_are_forbidden_on_every_drive() {
+        let default = PathBuf::from(r"C:\Games\Epic");
+        for path in [
+            r"D:\Windows",
+            r"D:\Windows\System32",
+            r"E:\Program Files",
+            r"E:\Program Files (x86)",
+            r"F:\ProgramData",
+            r"F:\ProgramData\Epic",
+            r"G:\Users",
+            r"G:\Users\Efe",
+            r"H:\System Volume Information",
+            r"H:\$Recycle.Bin",
+        ] {
+            assert!(
+                !is_safe_game_dir(&PathBuf::from(path), &default),
+                "{path} must not be removable"
+            );
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_custom_install_root_is_never_removed() {
+        let root = PathBuf::from(r"D:\Games\Epic");
+        assert!(!is_safe_game_dir(&root, &root));
+        assert!(!is_safe_game_dir(&PathBuf::from(r"D:\Games\Epic\"), &root));
+        assert!(is_safe_game_dir(
+            &PathBuf::from(r"D:\Games\Epic\Game"),
+            &root
+        ));
+        assert!(is_safe_game_dir(
+            &PathBuf::from(r"E:\SteamLibrary\Game"),
+            &root
         ));
     }
 }

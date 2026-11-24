@@ -19,6 +19,11 @@ use tokio::net::{TcpListener, TcpStream};
 
 /// Longest CONNECT header block we accept before giving up.
 const MAX_HEAD: usize = 16 * 1024;
+/// A client that opens a proxy connection and never sends a header must not hold
+/// a task forever.
+const HEAD_TIMEOUT: Duration = Duration::from_secs(30);
+/// DNS or a dead upstream must not leave a request waiting indefinitely.
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 const READ_CHUNK: usize = 16 * 1024;
 /// How many bytes per second one Mbit/s is.
 const BPS_PER_MBPS: f64 = 125_000.0;
@@ -130,7 +135,11 @@ async fn serve(listener: TcpListener) {
 }
 
 async fn handle(mut client: TcpStream) {
-    let Some((head, rest)) = read_head(&mut client).await else {
+    let Some((head, rest)) = tokio::time::timeout(HEAD_TIMEOUT, read_head(&mut client))
+        .await
+        .ok()
+        .flatten()
+    else {
         return;
     };
     let first_line = head.lines().next().unwrap_or("");
@@ -145,9 +154,19 @@ async fn handle(mut client: TcpStream) {
     }
 }
 
+/// Connects to the origin with a hard deadline. `TcpStream::connect` resolves
+/// DNS and can wait on a dead server; without this a stalled target kept the
+/// relay task and both sockets alive.
+async fn connect_upstream(host: &str, port: u16) -> Option<TcpStream> {
+    tokio::time::timeout(CONNECT_TIMEOUT, TcpStream::connect((host, port)))
+        .await
+        .ok()?
+        .ok()
+}
+
 /// Relays one CONNECT tunnel.
 async fn tunnel(mut client: TcpStream, host: &str, port: u16, rest: &[u8]) {
-    let Ok(mut upstream) = TcpStream::connect((host, port)).await else {
+    let Some(mut upstream) = connect_upstream(host, port).await else {
         let _ = client
             .write_all(b"HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\n\r\n")
             .await;
@@ -182,7 +201,7 @@ async fn forward(
     port: u16,
     request_line: &str,
 ) {
-    let Ok(mut upstream) = TcpStream::connect((host, port)).await else {
+    let Some(mut upstream) = connect_upstream(host, port).await else {
         let _ = client
             .write_all(b"HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\n\r\n")
             .await;

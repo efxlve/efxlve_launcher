@@ -405,10 +405,16 @@ fn a_removed_install_folder_asks_for_nothing() {
     std::fs::create_dir_all(dir.join("bin")).unwrap();
     std::fs::write(dir.join("bin").join("game.exe"), b"fake").unwrap();
 
-    assert_eq!(remove_install_folder(&dir), None);
+    assert_eq!(
+        remove_install_folder(&dir, &std::env::temp_dir()),
+        None
+    );
     assert!(!dir.exists());
     // A folder that is already gone is not reported either.
-    assert_eq!(remove_install_folder(&dir), None);
+    assert_eq!(
+        remove_install_folder(&dir, &std::env::temp_dir()),
+        None
+    );
 }
 
 /// The Windows-only case behind the report: an install folder this process may
@@ -431,7 +437,10 @@ fn an_undeletable_install_folder_is_reported_not_forgotten() {
         .open(&locked)
         .unwrap();
 
-    assert_eq!(remove_install_folder(&dir), Some(dir.clone()));
+    assert_eq!(
+        remove_install_folder(&dir, &std::env::temp_dir()),
+        Some(dir.clone())
+    );
     assert!(dir.exists());
 
     drop(handle);
@@ -444,5 +453,8 @@ fn an_undeletable_install_folder_is_reported_not_forgotten() {
 #[test]
 fn a_guard_refused_folder_is_reported() {
     let system = std::path::Path::new(r"C:\Windows\System32");
-    assert_eq!(remove_install_folder(system), Some(system.to_path_buf()));
+    assert_eq!(
+        remove_install_folder(system, std::path::Path::new(r"C:\Games")),
+        Some(system.to_path_buf())
+    );
 }

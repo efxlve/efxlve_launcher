@@ -5,6 +5,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter};
@@ -24,11 +25,39 @@ use crate::legendary::skip::default_config_dir;
 
 static HTTP_CLIENT: OnceLock<Client> = OnceLock::new();
 
+/// Save transfers currently writing to a provider or to the save folder. A
+/// window close or tray quit must keep the process alive while this is non-zero:
+/// killing the socket mid-upload leaves a partial remote archive.
+static TRANSFERS_IN_FLIGHT: AtomicUsize = AtomicUsize::new(0);
+
+struct TransferGuard;
+
+impl TransferGuard {
+    fn begin() -> Self {
+        TRANSFERS_IN_FLIGHT.fetch_add(1, Ordering::SeqCst);
+        Self
+    }
+}
+
+impl Drop for TransferGuard {
+    fn drop(&mut self) {
+        TRANSFERS_IN_FLIGHT.fetch_sub(1, Ordering::SeqCst);
+    }
+}
+
+/// True while an upload, restore or profile transfer is running.
+pub fn is_sync_in_progress() -> bool {
+    TRANSFERS_IN_FLIGHT.load(Ordering::SeqCst) > 0
+}
+
 /// A WebDAV client; the self-signed opt-in is per provider, not global.
 fn webdav_client(settings: &CloudBackupSettings) -> Result<Client, String> {
     Client::builder()
         .danger_accept_invalid_certs(settings.webdav_allow_invalid_cert)
         .connect_timeout(std::time::Duration::from_secs(30))
+        // A stalled socket must not keep the close guard waiting forever. Per
+        // read, not total: a slow upload that keeps making progress still runs.
+        .read_timeout(std::time::Duration::from_secs(60))
         .build()
         .map_err(|error| format!("Could not create the WebDAV client: {error}"))
 }
@@ -37,6 +66,7 @@ fn get_client() -> &'static Client {
     HTTP_CLIENT.get_or_init(|| {
         Client::builder()
             .connect_timeout(std::time::Duration::from_secs(30))
+            .read_timeout(std::time::Duration::from_secs(60))
             .build()
             .unwrap_or_default()
     })
@@ -273,6 +303,7 @@ pub async fn upload_backup(
     app_name: &str,
     backup_id_opt: Option<&str>,
 ) -> Result<CloudBackupEntry, String> {
+    let _transfer = TransferGuard::begin();
     let mut settings = load_settings();
     if !settings.enabled || settings.provider == CloudBackupProvider::None {
         return Err("Cloud backup is not enabled.".to_string());
@@ -786,6 +817,7 @@ pub async fn preview_restore(
 
 /// Applies a preview after re-checking its age and the local save tree.
 pub async fn apply_restore(token: &str) -> Result<String, String> {
+    let _transfer = TransferGuard::begin();
     let pending = {
         let Ok(mut map) = pending_restores().lock() else {
             return Err("The restore queue is unavailable.".to_string());
@@ -906,6 +938,7 @@ pub async fn upload_profile_archive(
     archive: &Path,
     backup_id: &str,
 ) -> Result<CloudBackupEntry, String> {
+    let _transfer = TransferGuard::begin();
     let settings = load_settings();
     if !settings.enabled || settings.provider == CloudBackupProvider::None {
         return Err("Cloud backup is not enabled.".to_string());
@@ -1122,4 +1155,19 @@ pub fn trigger_auto_sync_on_exit(app: AppHandle, app_name: String) {
             Err(_) => {}
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{is_sync_in_progress, TransferGuard};
+
+    #[test]
+    fn a_running_transfer_is_visible_to_the_close_guard() {
+        assert!(!is_sync_in_progress());
+        {
+            let _transfer = TransferGuard::begin();
+            assert!(is_sync_in_progress());
+        }
+        assert!(!is_sync_in_progress());
+    }
 }

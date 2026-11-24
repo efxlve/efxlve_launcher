@@ -498,8 +498,23 @@ export function activeOwnsKey(key: string): boolean {
   }
   if (key.startsWith("steam::")) return S.steamSummariesMap.has(key);
   if (key.startsWith("custom::")) return S.customSummariesMap.has(key);
-  if (S.amazonSummaries.some((item) => item.key === key)) return true;
-  return S.companionSummaries.some((item) => item.key === key);
+  if (keySetOf(S.amazonSummaries).has(key)) return true;
+  return keySetOf(S.companionSummaries).has(key);
+}
+
+/**
+ * Key sets for the two stores that still live in plain arrays. The arrays are
+ * replaced on refresh, never edited in place, so the WeakMap follows the exact
+ * list that a lookup saw and the index is rebuilt on the next refresh.
+ */
+const summaryKeySets = new WeakMap<readonly { key: string }[], Set<string>>();
+function keySetOf(items: readonly { key: string }[]): Set<string> {
+  let keys = summaryKeySets.get(items);
+  if (!keys) {
+    keys = new Set(items.map((item) => item.key));
+    summaryKeySets.set(items, keys);
+  }
+  return keys;
 }
 
 /** Owner of a game that belongs to another saved account (shared library). */

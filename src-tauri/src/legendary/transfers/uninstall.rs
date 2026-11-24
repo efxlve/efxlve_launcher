@@ -12,7 +12,7 @@ use tauri::AppHandle;
 use super::guard::{force_remove_dir_all, is_safe_game_dir};
 use super::launch::epic_stop_game;
 use super::parse::short_error;
-use super::paths::{default_install_dir, resolve_bin};
+use super::paths::resolve_bin;
 
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
@@ -114,11 +114,13 @@ pub async fn epic_uninstall_game(
                 // A Fortnite-sized folder can take minutes to delete; keep the
                 // async runtime free while the file walk runs.
                 let owned = path.to_path_buf();
-                let removed =
-                    tauri::async_runtime::spawn_blocking(move || remove_install_folder(&owned))
-                        .await
-                        .ok()
-                        .flatten();
+                let install_root = super::paths::resolve_base(&app, None);
+                let removed = tauri::async_runtime::spawn_blocking(move || {
+                    remove_install_folder(&owned, &install_root)
+                })
+                .await
+                .ok()
+                .flatten();
                 if let Some(left) = removed {
                     return Err(leftover(&left));
                 }
@@ -152,11 +154,11 @@ pub async fn epic_uninstall_game(
 /// A path that is already gone has nothing left to delete. A folder the guard
 /// refuses is reported as leftover instead of being skipped: the caller must not
 /// claim an uninstall whose files are still there.
-pub(super) fn remove_install_folder(path: &Path) -> Option<PathBuf> {
+pub(super) fn remove_install_folder(path: &Path, install_root: &Path) -> Option<PathBuf> {
     if !path.is_dir() {
         return None;
     }
-    if !is_safe_game_dir(path, &default_install_dir()) {
+    if !is_safe_game_dir(path, install_root) {
         return Some(path.to_path_buf());
     }
     match force_remove_dir_all(path) {

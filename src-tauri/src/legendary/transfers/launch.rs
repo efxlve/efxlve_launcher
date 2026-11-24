@@ -355,7 +355,10 @@ pub fn wake_main_window(app: &AppHandle) {
 
 #[cfg(target_os = "windows")]
 mod win_process {
+    use std::collections::HashMap;
     use std::path::Path;
+    use std::sync::{Mutex, OnceLock};
+    use std::time::{Duration, Instant};
 
     type HANDLE = *mut std::ffi::c_void;
     type BOOL = i32;
@@ -365,6 +368,12 @@ mod win_process {
     const INVALID_HANDLE_VALUE: HANDLE = -1isize as HANDLE;
     const TH32CS_SNAPPROCESS: DWORD = 0x00000002;
     const PROCESS_QUERY_LIMITED_INFORMATION: DWORD = 0x1000;
+    const SYNCHRONIZE: DWORD = 0x0010_0000;
+    const WAIT_TIMEOUT: DWORD = 0x0000_0102;
+    /// How long a matched PID list is trusted before it is rebuilt. PID reuse is
+    /// the only way a stale entry can lie, and Windows does not recycle a PID
+    /// that fast on a normal desktop.
+    const LIVE_CACHE_TTL: Duration = Duration::from_secs(30);
 
     #[repr(C)]
     struct PROCESSENTRY32W {
@@ -387,6 +396,7 @@ mod win_process {
         fn Process32NextW(hSnapshot: HANDLE, lppe: *mut PROCESSENTRY32W) -> BOOL;
         fn CloseHandle(hObject: HANDLE) -> BOOL;
         fn OpenProcess(dwDesiredAccess: DWORD, bInheritHandle: BOOL, dwProcessId: DWORD) -> HANDLE;
+        fn WaitForSingleObject(hHandle: HANDLE, dwMilliseconds: DWORD) -> DWORD;
         fn QueryFullProcessImageNameW(
             hProcess: HANDLE,
             dwFlags: DWORD,
@@ -395,8 +405,93 @@ mod win_process {
         ) -> BOOL;
     }
 
+    /// True while the process object is still signalled as running. Only one
+    /// handle is opened, instead of walking the whole process table.
+    fn process_alive(pid: u32) -> bool {
+        unsafe {
+            let handle = OpenProcess(SYNCHRONIZE, 0, pid);
+            if handle.is_null() {
+                return false;
+            }
+            let alive = WaitForSingleObject(handle, 0) == WAIT_TIMEOUT;
+            CloseHandle(handle);
+            alive
+        }
+    }
+
+    fn live_cache() -> &'static Mutex<HashMap<String, (Vec<u32>, Instant)>> {
+        static CACHE: OnceLock<Mutex<HashMap<String, (Vec<u32>, Instant)>>> = OnceLock::new();
+        CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+    }
+
+    fn live_cache_key(install_path: Option<&Path>, candidate_exes: &[String]) -> String {
+        let root = install_path
+            .map(|path| path.to_string_lossy().to_lowercase())
+            .unwrap_or_default();
+        let mut key = root;
+        for exe in candidate_exes {
+            key.push('\u{1f}');
+            key.push_str(&exe.to_lowercase());
+        }
+        key
+    }
+
+    /// The live PIDs from the previous scan, if any are still running. A hit
+    /// turns a tick into a handful of handle waits instead of a full snapshot.
+    fn cached_live_pids(key: &str) -> Option<Vec<u32>> {
+        let mut cache = live_cache().lock().ok()?;
+        let expired = cache
+            .get(key)
+            .map(|(_, at)| at.elapsed() >= LIVE_CACHE_TTL)
+            .unwrap_or(true);
+        if expired {
+            cache.remove(key);
+            return None;
+        }
+        let live = {
+            let (pids, at) = cache.get_mut(key)?;
+            pids.retain(|pid| process_alive(*pid));
+            *at = Instant::now();
+            pids.clone()
+        };
+        if live.is_empty() {
+            cache.remove(key);
+            None
+        } else {
+            Some(live)
+        }
+    }
+
+    fn remember_live_pids(key: String, pids: &[u32]) {
+        if let Ok(mut cache) = live_cache().lock() {
+            // A watcher only handles a few games; cap the map so a long session
+            // cannot collect an entry for every path ever opened.
+            if cache.len() >= 64 {
+                cache.clear();
+            }
+            cache.insert(key, (pids.to_vec(), Instant::now()));
+        }
+    }
+
+    fn forget_live_pids(key: &str) {
+        if let Ok(mut cache) = live_cache().lock() {
+            cache.remove(key);
+        }
+    }
+
     pub fn is_game_process_running(install_path: Option<&Path>, candidate_exes: &[String]) -> bool {
-        !game_process_pids(install_path, candidate_exes).is_empty()
+        let key = live_cache_key(install_path, candidate_exes);
+        if cached_live_pids(&key).is_some() {
+            return true;
+        }
+        let pids = game_process_pids(install_path, candidate_exes);
+        if pids.is_empty() {
+            forget_live_pids(&key);
+            false
+        } else {
+            remember_live_pids(key, &pids);
+            true
+        }
     }
 
     /// Exe names only. This is the cheap first pass: it walks the same toolhelp
@@ -616,6 +711,21 @@ mod win_process {
             }
         }
         pids
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::{cached_live_pids, forget_live_pids, live_cache_key, remember_live_pids};
+
+        #[test]
+        fn a_live_pid_is_answered_without_a_process_walk() {
+            let key = live_cache_key(None, &["efxlve-cache-test.exe".to_string()]);
+            let pids = vec![std::process::id()];
+            remember_live_pids(key.clone(), &pids);
+            assert_eq!(cached_live_pids(&key), Some(pids));
+            forget_live_pids(&key);
+            assert_eq!(cached_live_pids(&key), None);
+        }
     }
 }
 

@@ -127,6 +127,8 @@ Folder provider rules:
   saves the path and runs the same test; no manual typing is needed.
 - A downloaded/deleted archive must resolve inside `efxlve_saves`; absolute
   paths and `..` components are rejected before any file operation.
+- An upload is copied to a `.part` file and renamed when complete; a crash
+  cannot leave a truncated `.tar.gz` under the final name.
 - The folder is a plain directory. The launcher never talks to the cloud
   client; it only writes files and lets the client sync them.
 
@@ -427,6 +429,8 @@ profile.
   size only.
 - A failed restore snapshot aborts the restore. A failed upload leaves the local
   backup in place.
+- Closing the window or quitting from the tray waits while an upload, restore or
+  profile transfer is in flight, so a save archive is never cut off mid-write.
 
 ---
 

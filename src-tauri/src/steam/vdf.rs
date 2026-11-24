@@ -108,6 +108,30 @@ impl<'a> VdfParser<'a> {
         None
     }
 
+    /// Reads one token: a quoted string (escapes unwrapped) or a bareword.
+    ///
+    /// Valve's own writer quotes every token, but hand-edited files and some
+    /// third-party tools leave numbers and paths unquoted. Stopping at the next
+    /// whitespace or brace keeps the rest of the file readable instead of
+    /// abandoning it on the first bareword.
+    fn token(&mut self) -> Option<String> {
+        match self.peek()? {
+            b'"' => self.string(),
+            b'}' | b'{' => None,
+            _ => {
+                let start = self.pos;
+                while let Some(&b) = self.bytes.get(self.pos) {
+                    if b.is_ascii_whitespace() || b == b'{' || b == b'}' {
+                        break;
+                    }
+                    self.pos += 1;
+                }
+                (self.pos > start)
+                    .then(|| String::from_utf8_lossy(&self.bytes[start..self.pos]).into_owned())
+            }
+        }
+    }
+
     fn object(&mut self) -> Vec<(String, Vdf)> {
         let mut entries = Vec::new();
         loop {
@@ -119,7 +143,15 @@ impl<'a> VdfParser<'a> {
                 }
                 _ => {}
             }
-            let Some(key) = self.string() else { break };
+            let key = if self.depth == 0 {
+                // A real document's root key is quoted. Requiring that here keeps
+                // arbitrary prose from turning into a tree of fake entries.
+                let Some(key) = self.string() else { break };
+                key
+            } else {
+                let Some(key) = self.token() else { break };
+                key
+            };
             match self.peek() {
                 Some(b'{') => {
                     self.pos += 1;
@@ -133,11 +165,11 @@ impl<'a> VdfParser<'a> {
                     self.depth -= 1;
                     entries.push((key, Vdf::Obj(child)));
                 }
-                Some(b'"') => {
-                    let value = self.string().unwrap_or_default();
+                Some(b'}') | None => break,
+                _ => {
+                    let Some(value) = self.token() else { break };
                     entries.push((key, Vdf::Str(value)));
                 }
-                _ => break,
             }
         }
         entries
@@ -147,6 +179,9 @@ impl<'a> VdfParser<'a> {
 /// Parses a KeyValues document (VDF/ACF). Unknown shapes yield an empty tree
 /// instead of an error: a broken file must never take the UI down.
 pub fn parse_vdf(text: &str) -> Vdf {
+    // A UTF-8 BOM is common in files saved by Windows editors; without this
+    // the first token would look like a bareword key with no value.
+    let text = text.strip_prefix('\u{feff}').unwrap_or(text);
     let mut parser = VdfParser::new(text);
     let root = parser.object();
     Vdf::Obj(root)
@@ -236,6 +271,43 @@ mod tests {
         assert_eq!(
             root.get("a").and_then(|n| n.get("path")).and_then(Vdf::as_str),
             Some("http://example.com/x")
+        );
+    }
+
+    /// Files edited by hand or by a third-party tool can carry unquoted keys and
+    /// values. One bareword used to stop the parse and hide every later game.
+    #[test]
+    fn unquoted_tokens_do_not_end_the_document() {
+        let text = r#"
+        "AppState"
+        {
+            appid 440
+            name TeamFortress2
+            "installed" 1
+        }
+        "#;
+        let root = parse_vdf(text);
+        let state = root.get("AppState").expect("object parsed");
+        assert_eq!(state.get("appid").and_then(Vdf::as_str), Some("440"));
+        assert_eq!(
+            state.get("name").and_then(Vdf::as_str),
+            Some("TeamFortress2")
+        );
+        assert_eq!(state.get("installed").and_then(Vdf::as_str), Some("1"));
+    }
+
+    /// Windows editors often write a UTF-8 BOM. It is not a key or a value.
+    #[test]
+    fn a_utf8_bom_is_ignored() {
+        let root = parse_vdf(
+            "\u{feff}\"libraryfolders\"\n{\n\"0\"\n{\n\"path\"\t\t\"C:\\\\Games\"\n}\n}\n",
+        );
+        assert_eq!(
+            root.get("libraryfolders")
+                .and_then(|node| node.get("0"))
+                .and_then(|node| node.get("path"))
+                .and_then(Vdf::as_str),
+            Some(r"C:\Games")
         );
     }
 

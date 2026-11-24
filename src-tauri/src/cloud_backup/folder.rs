@@ -102,7 +102,27 @@ pub fn upload_backup_folder(
     std::fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
     let file_name = format!("{backup_id}.tar.gz");
     let target = dir.join(&file_name);
-    std::fs::copy(archive, &target).map_err(|error| error.to_string())?;
+    // Copy beside the target first: a process that dies mid-copy leaves a
+    // `.part` file that listings ignore, not a truncated archive under the
+    // final name that a later restore would try to unpack.
+    let staging = dir.join(format!("{file_name}.part"));
+    if let Err(error) = std::fs::copy(archive, &staging) {
+        let _ = std::fs::remove_file(&staging);
+        return Err(error.to_string());
+    }
+    if let Err(error) = std::fs::rename(&staging, &target) {
+        // Windows refuses a rename onto an existing file. A retry of the same
+        // backup id is the only case; replace it with the complete copy.
+        if target.is_file() && std::fs::remove_file(&target).is_ok() {
+            if let Err(retry) = std::fs::rename(&staging, &target) {
+                let _ = std::fs::remove_file(&staging);
+                return Err(retry.to_string());
+            }
+        } else {
+            let _ = std::fs::remove_file(&staging);
+            return Err(error.to_string());
+        }
+    }
     let relative = format!("{ROOT}/{}/{}", backup_key(app_name), file_name);
     Ok(relative)
 }

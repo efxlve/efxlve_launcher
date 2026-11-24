@@ -962,10 +962,10 @@ fn set_fullscreen_mode(app: &AppHandle, enabled: bool) -> Result<bool, String> {
         hide_accent_border(&window);
         set_fullscreen_native(&window, true);
         let win = window.clone();
-        std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_millis(60));
+        tauri::async_runtime::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_millis(60)).await;
             set_fullscreen_native(&win, true);
-            std::thread::sleep(std::time::Duration::from_millis(140));
+            tokio::time::sleep(std::time::Duration::from_millis(140)).await;
             set_fullscreen_native(&win, true);
         });
     } else {
@@ -981,8 +981,8 @@ fn set_fullscreen_mode(app: &AppHandle, enabled: bool) -> Result<bool, String> {
         }
 
         let win = window.clone();
-        std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_millis(60));
+        tauri::async_runtime::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_millis(60)).await;
             set_fullscreen_native(&win, false);
         });
     }
@@ -1088,13 +1088,18 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             }
             "overlay" => crate::overlay::overlay_show(app.clone()),
             "quit" => {
-                if has_active_download(app) || has_running_game() {
-                    // Keep the backend monitor, downloads and playtime tracking
-                    // alive while hidden.
+                if has_active_download(app)
+                    || has_running_game()
+                    || cloud_backup::manager::is_sync_in_progress()
+                {
+                    // Keep the backend monitor, downloads, a running game and an
+                    // in-flight save transfer alive while hidden.
                     if let Some(w) = app.get_window("main") {
                         USER_HIDDEN_OR_MINIMIZED
                             .store(true, std::sync::atomic::Ordering::Relaxed);
-                        perf::write_line_global("win: tray quit kept the app hidden for a download or game");
+                        perf::write_line_global(
+                            "win: tray quit kept the app hidden for a download, game or save transfer",
+                        );
                         let _ = w.hide();
                         set_main_view_suspended(app, true);
                     }
@@ -1134,6 +1139,16 @@ fn build_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 /// Set once the app starts shutting down, so a deliberate close during the first
 /// seconds is not mistaken for a failed webview.
 static EXITING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// The last exit request is waiting for an in-flight save transfer. Once the
+/// transfer finishes, this lets the programmatic exit through without asking
+/// the guard again.
+static EXIT_AFTER_SYNC: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+static WAITING_FOR_SYNC: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+/// The longest an exit request may be delayed for a save transfer. A provider
+/// that stops making progress must not trap the process.
+const EXIT_SYNC_WAIT: std::time::Duration = std::time::Duration::from_secs(60);
 /// The user minimized or sent the window to the tray during boot. The 5-second
 /// boot watcher must not undo that deliberate action.
 static USER_HIDDEN_OR_MINIMIZED: std::sync::atomic::AtomicBool =
@@ -2217,6 +2232,7 @@ fn main() {
                     .load(std::sync::atomic::Ordering::Relaxed)
                     || has_active_download(&window.app_handle())
                     || has_running_game()
+                    || cloud_backup::manager::is_sync_in_progress()
                 {
                     USER_HIDDEN_OR_MINIMIZED
                         .store(true, std::sync::atomic::Ordering::Relaxed);
@@ -2892,9 +2908,32 @@ fn main() {
 
     install_crash_logger(&app);
     app.run(|app_handle, event| {
-        if let tauri::RunEvent::ExitRequested { .. } = event {
+        if let tauri::RunEvent::ExitRequested { api, .. } = &event {
             // Windows still exist here; the last drag may not have settled.
             window_state::flush(app_handle);
+            if !EXIT_AFTER_SYNC.load(std::sync::atomic::Ordering::Relaxed)
+                && cloud_backup::manager::is_sync_in_progress()
+            {
+                // The window close already checked, but a game can exit and
+                // start an upload between that check and this event. Keep the
+                // process alive until the transfer (bounded) finishes.
+                api.prevent_exit();
+                if !WAITING_FOR_SYNC.swap(true, std::sync::atomic::Ordering::Relaxed) {
+                    let app = app_handle.clone();
+                    tauri::async_runtime::spawn(async move {
+                        let deadline = tokio::time::Instant::now() + EXIT_SYNC_WAIT;
+                        while cloud_backup::manager::is_sync_in_progress()
+                            && tokio::time::Instant::now() < deadline
+                        {
+                            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                        }
+                        perf::write_line_global("boot: save transfer finished; exiting");
+                        EXIT_AFTER_SYNC.store(true, std::sync::atomic::Ordering::Relaxed);
+                        app.exit(0);
+                    });
+                }
+                return;
+            }
             if !EXITING.swap(true, std::sync::atomic::Ordering::Relaxed) {
                 perf::write_line_global("boot: exit requested");
             }
