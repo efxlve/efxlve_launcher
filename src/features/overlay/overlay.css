@@ -7,11 +7,11 @@
 
 :root {
   --danger: var(--err);
-  /* Soft Black surfaces from launcher design system */
-  --bg: #101014;
-  --surface-1: #18181c;
-  --surface-2: #222228;
-  --surface-3: #2c2c32;
+  /* Modern deep glass surfaces */
+  --bg: #0c0d12;
+  --surface-1: #141620;
+  --surface-2: #1c1f2c;
+  --surface-3: #25293a;
 }
 
 .ov-page {
@@ -29,7 +29,7 @@
   height: 100vh;
 }
 
-/* --- Backdrop: a flat translucent scrim; the game stays clearly visible through it. --- */
+/* --- Backdrop: modern frosted glass scrim with subtle ambient depth --- */
 .ov {
   position: fixed;
   inset: 0;
@@ -40,32 +40,37 @@
   /* Both the scrim and the panel surfaces follow the settings opacity, so a
      low value shows the game through the widgets instead of only around them. */
   --ov-panel-alpha: 1;
-  background: rgba(16, 16, 20, var(--ov-scrim-alpha, 0.45));
-  --surface-1: rgba(24, 24, 28, var(--ov-panel-alpha));
-  --surface-2: rgba(34, 34, 40, var(--ov-panel-alpha));
-  --surface-3: rgba(44, 44, 50, var(--ov-panel-alpha));
+  background: radial-gradient(circle at 50% 15%, rgba(20, 24, 34, calc(var(--ov-scrim-alpha, 0.45) * 0.95)), rgba(8, 10, 16, calc(var(--ov-scrim-alpha, 0.45) * 1.35)));
+  backdrop-filter: blur(14px) saturate(135%);
+  -webkit-backdrop-filter: blur(14px) saturate(135%);
+  --surface-1: rgba(20, 22, 30, calc(0.85 * var(--ov-panel-alpha, 1)));
+  --surface-2: rgba(30, 33, 44, calc(0.85 * var(--ov-panel-alpha, 1)));
+  --surface-3: rgba(42, 46, 60, calc(0.88 * var(--ov-panel-alpha, 1)));
   overflow: hidden;
   animation: fade-in 140ms ease-out;
 }
 
-/* --- Top Floating Widget Bar (Xbox Game Bar style) --- */
+/* --- Top Floating Widget Bar (Modern Glass Command Capsule) --- */
 .ov-topbar {
   position: fixed;
   top: 14px;
   left: 50%;
   transform: translateX(-50%);
-  height: 42px;
-  border-radius: 21px;
-  background: var(--surface-1);
-  border: 1px solid var(--line);
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
+  height: 44px;
+  border-radius: 22px;
+  background: rgba(18, 20, 28, 0.78);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.14);
   display: flex;
   align-items: center;
   padding: 0 8px;
-  gap: 6px;
+  gap: 5px;
   z-index: 1000;
   max-width: calc(100vw - 20px);
   user-select: none;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms ease;
 }
 
 /* --- Game Hub Trigger (Topbar Left) --- */
@@ -80,33 +85,34 @@
   align-items: center;
   gap: 7px;
   height: 32px;
-  padding: 0 10px 0 6px;
+  padding: 0 12px 0 6px;
   border-radius: 16px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--text-2);
   cursor: pointer;
   font: inherit;
   font-size: 12px;
   font-weight: 500;
-  transition: all var(--ease);
+  transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .ov-topbar-game-hub-btn:hover {
-  background: var(--surface-3);
-  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
   color: var(--text);
+  transform: translateY(-0.5px);
 }
 
 .ov-topbar-game-hub-btn.is-playing {
-  background: rgba(30, 215, 96, 0.08);
-  border-color: rgba(30, 215, 96, 0.28);
+  background: rgba(47, 179, 109, 0.14);
+  border-color: rgba(47, 179, 109, 0.38);
   color: var(--text);
 }
 
 .ov-topbar-game-hub-btn.is-playing:hover {
-  background: rgba(30, 215, 96, 0.14);
-  border-color: rgba(30, 215, 96, 0.45);
+  background: rgba(47, 179, 109, 0.22);
+  border-color: rgba(47, 179, 109, 0.55);
 }
 
 .ov-hub-art-wrap {
@@ -117,14 +123,14 @@
 }
 
 .ov-hub-art {
-  width: 20px;
-  height: 26px;
-  border-radius: 4px;
+  width: 22px;
+  height: 28px;
+  border-radius: 6px;
   object-fit: cover;
   background: var(--surface-3);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .ov-hub-art.ov-ph {
@@ -166,11 +172,11 @@
   justify-content: center;
   min-width: 17px;
   height: 17px;
-  padding: 0 5px;
+  padding: 0 6px;
   border-radius: 9px;
-  background: var(--surface-3);
-  border: 1px solid var(--line);
-  color: var(--text-3);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-2);
   font-size: 10px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -188,21 +194,23 @@
   color: var(--text);
 }
 
-/* --- Quick Launch Popover (Bespoke Efxlve UI) --- */
+/* --- Quick Launch Popover (Modern Glass Popover) --- */
 .ov-quick-launch-popover {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
   width: 290px;
-  background: #12141a;
+  background: rgba(18, 20, 27, 0.94);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 14px;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   z-index: 1001;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 7px;
+  padding: 8px;
   animation: ov-pop-in 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -210,9 +218,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 5px 8px 9px 8px;
+  padding: 6px 10px 10px 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  margin-bottom: 4px;
+  margin-bottom: 5px;
 }
 
 .ov-quick-header-title {
@@ -251,20 +259,20 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 5px 7px;
+  padding: 6px 8px;
   border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.025);
-  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 11px;
   color: var(--text);
   cursor: pointer;
   text-align: left;
   font: inherit;
-  transition: all var(--ease);
+  transition: all 140ms ease;
 }
 
 .ov-quick-card:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.14);
   transform: translateY(-1px);
 }
 
@@ -395,43 +403,46 @@
 
 .ov-topbar-divider {
   width: 1px;
-  height: 20px;
-  background: var(--line);
+  height: 18px;
+  background: rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
+  margin: 0 2px;
 }
 
 .ov-topbar-widgets {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }
 
 .ov-topbar-btn {
-  height: 30px;
-  padding: 0 10px;
-  border-radius: 15px;
+  height: 32px;
+  padding: 0 11px;
+  border-radius: 16px;
   background: transparent;
   border: 1px solid transparent;
-  color: var(--text-2);
+  color: rgba(255, 255, 255, 0.65);
   display: inline-flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
   font-size: 12px;
   font-weight: 500;
-  transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+  transition: all 150ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .ov-topbar-btn:hover {
-  background: var(--surface-2);
-  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  transform: translateY(-0.5px);
 }
 
 .ov-topbar-btn.active {
-  background: var(--surface-3);
-  border-color: var(--line-strong);
-  color: var(--text);
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
   font-weight: 600;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .ov-topbar-btn-label {
@@ -439,9 +450,20 @@
   white-space: nowrap;
 }
 
+.ov-topbar-close-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0 !important;
+  justify-content: center;
+  border-radius: 50% !important;
+  color: rgba(255, 255, 255, 0.65);
+  transition: all 150ms ease;
+}
+
 .ov-topbar-close-btn:hover {
-  background: rgba(229, 72, 77, 0.16);
-  color: var(--err);
+  background: rgba(229, 72, 77, 0.22) !important;
+  color: #ff5252 !important;
+  transform: scale(1.06);
 }
 
 .ov-topbar-clock {
@@ -452,6 +474,7 @@
   padding: 0 8px;
   display: flex;
   align-items: baseline;
+  letter-spacing: -0.01em;
 }
 
 .ov-topbar-clock .ov-clock-sec {
@@ -467,17 +490,17 @@
   padding: 0 8px;
   height: 30px;
   border-radius: 15px;
-  color: var(--text-2);
+  color: rgba(255, 255, 255, 0.65);
   font-size: 11.5px;
   font-variant-numeric: tabular-nums;
   font-weight: 500;
   cursor: default;
-  transition: color var(--ease), background var(--ease);
+  transition: all 150ms ease;
 }
 
 .ov-topbar-battery:hover {
-  color: var(--text);
-  background: var(--surface-2);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .ov-battery-icon {
@@ -491,34 +514,37 @@
 }
 
 .ov-topbar-gamepad {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-2);
+  color: rgba(255, 255, 255, 0.65);
   background: transparent;
 }
 
 .ov-topbar-settings-btn {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   padding: 0 !important;
   justify-content: center;
   border-radius: 50% !important;
-  color: var(--text-2);
+  color: rgba(255, 255, 255, 0.65);
+  transition: all 150ms ease;
 }
 
 .ov-topbar-settings-btn:hover {
-  color: var(--text);
-  background: var(--surface-2);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-0.5px);
 }
 
 .ov-topbar-settings-btn.active {
-  background: var(--surface-3);
-  color: var(--text);
-  font-weight: 600;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 @keyframes ov-pop-in {
@@ -546,34 +572,47 @@
   pointer-events: auto;
   display: none;
   flex-direction: column;
-  background: var(--surface-1);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+  background: rgba(18, 20, 27, calc(0.85 * var(--ov-panel-alpha, 1)));
+  backdrop-filter: blur(28px) saturate(175%);
+  -webkit-backdrop-filter: blur(28px) saturate(175%);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 18px;
+  box-shadow: 0 24px 50px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   overflow: hidden;
   user-select: none;
+  transition: box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.ov-widget:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 28px 56px -10px rgba(0, 0, 0, 0.78), 0 0 0 1px rgba(255, 255, 255, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .ov-widget-header {
-  height: 36px;
-  padding: 0 10px 0 14px;
+  height: 40px;
+  padding: 0 10px 0 15px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0%, rgba(255, 255, 255, 0.015) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   cursor: grab;
   flex-shrink: 0;
-  border-radius: var(--r-md) var(--r-md) 0 0;
+  border-radius: 18px 18px 0 0;
 }
 
 .ov-widget-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.ov-widget-title svg {
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .ov-widget-header-actions {
@@ -583,30 +622,31 @@
 }
 
 .ov-widget-tool-btn {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--r-sm);
+  width: 26px;
+  height: 26px;
+  border-radius: 13px;
   border: none;
   background: transparent;
-  color: var(--text-3);
+  color: rgba(255, 255, 255, 0.55);
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: background-color var(--ease), color var(--ease);
+  transition: all 140ms ease;
 }
 
 .ov-widget-tool-btn:hover {
-  background: var(--surface-3);
-  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  transform: scale(1.05);
 }
 
 .ov-widget-tool-btn.is-pinned {
-  color: var(--ok);
-  background: var(--ok-tint);
+  color: #2fb36d;
+  background: rgba(47, 179, 109, 0.18);
 }
 
 .ov-widget-close-btn:hover {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.22);
   color: #ef4444;
 }
 
@@ -647,8 +687,11 @@ body.ov-ghost .ov-widget.is-pinned .ov-widget-resizer {
 
 body.ov-ghost .ov-widget.is-pinned {
   border-color: rgba(255, 255, 255, 0.14);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.38);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   opacity: var(--ghost-opacity, 1);
+  border-radius: 16px;
 }
 
 /* Nothing inside a pinned card can be clicked while the game owns the mouse,
@@ -658,18 +701,18 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
 }
 
 .ov-widget-body {
-  padding: 12px 14px;
+  padding: 14px 16px;
   overflow-y: auto;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
 .ov-widget-body::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 .ov-widget-body::-webkit-scrollbar-track {
@@ -677,12 +720,12 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
 }
 
 .ov-widget-body::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
 }
 
 .ov-widget-body::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 #ov-widget-discord-body,
@@ -788,23 +831,25 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
   position: absolute;
   right: 0;
   bottom: 0;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   cursor: nwse-resize;
   z-index: 40;
   user-select: none;
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
-  padding: 3px;
+  padding: 4px;
+  border-radius: 0 0 18px 0;
 }
 
 .ov-widget-resizer::after {
   content: "";
-  width: 6px;
-  height: 6px;
-  border-right: 2px solid var(--text-3);
-  border-bottom: 2px solid var(--text-3);
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid rgba(255, 255, 255, 0.25);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.25);
+  border-bottom-right-radius: 3px;
   opacity: 0.6;
   transition: opacity var(--ease), border-color var(--ease);
 }
@@ -812,24 +857,24 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
 .ov-widget:hover .ov-widget-resizer::after,
 .ov-widget-resizer:hover::after {
   opacity: 1;
-  border-color: var(--text-2);
+  border-color: rgba(255, 255, 255, 0.65);
 }
 
-/* --- Bespoke Efxlve Telemetry Widget (Flat, Restrained, Native) --- */
+/* --- Bespoke Efxlve Telemetry Widget (Modern Glass, Refined Cards) --- */
 #ov-widget-perf-body {
   height: 100%;
   display: flex;
   flex-direction: column;
   padding: 0;
   overflow: hidden !important;
-  background: var(--surface-1);
+  background: transparent;
 }
 
 .ov-perf {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px 10px;
+  gap: 8px;
+  padding: 10px 12px;
   height: 100%;
   box-sizing: border-box;
   user-select: none;
@@ -838,12 +883,13 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
 
 /* Base Telemetry Card Style */
 .ov-perf-card {
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  padding: 6px 9px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  padding: 7px 11px;
   cursor: pointer;
-  transition: background-color var(--ease), border-color var(--ease);
+  transition: all 140ms ease;
   outline: none;
   text-align: left;
   min-width: 0;
@@ -853,13 +899,15 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
 }
 
 .ov-perf-card:hover {
-  background: var(--surface-3);
-  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.065);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-0.5px);
 }
 
 .ov-perf-card.active {
-  background: var(--surface-3);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.085);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 /* Top FPS Row */
@@ -867,7 +915,8 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
   flex-shrink: 0;
 }
 
@@ -879,9 +928,9 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
 }
 
 .ov-perf-fps-num {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
-  color: var(--text);
+  color: #ffffff;
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
@@ -909,7 +958,7 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
 .ov-perf-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -931,7 +980,7 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
 }
 
 .ov-perf-icon {
-  color: var(--text-2);
+  color: rgba(255, 255, 255, 0.7);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -960,25 +1009,25 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
 .ov-perf-card-num {
   font-size: 17px;
   font-weight: 700;
-  color: var(--text);
+  color: #ffffff;
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
   margin: 2px 0 5px;
 }
 
-/* Progress Bar — Clean, Flat, No Glow */
+/* Progress Bar — Modern rounded pill */
 .ov-perf-bar {
-  height: 3px;
-  background: var(--surface-3);
-  border-radius: 2px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
   overflow: hidden;
   width: 100%;
 }
 
 .ov-perf-bar-fill {
   height: 100%;
-  background: var(--text);
-  border-radius: 2px;
+  background: #ffffff;
+  border-radius: 999px;
   transition: width 0.25s ease-out;
 }
 
@@ -996,10 +1045,11 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
   flex-direction: column;
   flex: 1;
   min-height: 80px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  padding: 6px 10px 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  padding: 8px 12px 6px;
   position: relative;
 }
 
@@ -1371,16 +1421,16 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
 
 .ov-ach-bar {
   flex: 1;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--surface-3);
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
 
 .ov-ach-bar span {
   display: block;
   height: 100%;
-  border-radius: 2px;
+  border-radius: 999px;
   background: var(--accent);
   transition: width 200ms linear;
 }
@@ -1403,21 +1453,23 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-left: 2px solid transparent;
-  border-radius: var(--r-sm);
-  background: var(--surface-1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 3px solid transparent;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: all 140ms ease;
 }
 
 .ov-ach-item.unlocked {
   border-left-color: var(--ok);
-  background: var(--surface-2);
+  background: rgba(255, 255, 255, 0.055);
 }
 
 .ov-ach-thumb {
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
   background: var(--surface-3);
   object-fit: cover;
   flex-shrink: 0;
@@ -2074,9 +2126,9 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
 }
 
 .ov-ach-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--r-sm);
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   background: var(--surface-3);
   object-fit: cover;
   flex-shrink: 0;
@@ -2112,10 +2164,11 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
   height: 26px;
   padding: 0;
   border: none;
-  border-radius: var(--r-sm);
+  border-radius: 50%;
   background: transparent;
   color: var(--text-3);
   cursor: pointer;
+  transition: all 140ms ease;
 }
 
 .ov-ach-refresh:hover { background: var(--surface-3); color: var(--text); }
@@ -2127,15 +2180,15 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
   align-items: center;
   gap: 6px;
   height: 28px;
-  padding: 0 9px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  background: var(--surface-1);
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-2);
   font-family: inherit;
   font-size: 11px;
   cursor: pointer;
-  transition: background-color var(--ease), border-color var(--ease), color var(--ease);
+  transition: all 140ms ease;
 }
 
 .ov-ach-filter svg {
@@ -2145,7 +2198,8 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
 }
 
 .ov-ach-filter:hover {
-  border-color: var(--line-strong);
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text);
 }
 
@@ -2231,11 +2285,11 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
 
 .ov-ach-detail-hero {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   padding: 12px;
-  background: var(--surface-1);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
 }
 
 .ov-ach-detail-art {
@@ -2245,7 +2299,7 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
   display: grid;
   place-items: center;
   overflow: hidden;
-  border-radius: var(--r-sm);
+  border-radius: 12px;
   background: var(--surface-3);
   color: var(--text-3);
 }
@@ -2263,9 +2317,10 @@ body.ov-ghost .ov-widget.is-pinned :is(button, input, select, textarea, a, label
   align-items: center;
   gap: 3px;
   min-height: 20px;
-  padding: 0 6px;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
+  padding: 0 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   color: var(--text-2);
   font-size: 10px;
 }
@@ -2400,10 +2455,11 @@ button.ov-ach-item:hover { background: var(--surface-3); }
 }
 
 .ov-settings-group {
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  padding: 2px 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  padding: 4px 14px;
 }
 
 .ov-settings-group .ov-setting-item {
@@ -2501,7 +2557,7 @@ button.ov-ach-item:hover { background: var(--surface-3); }
 .ov-media-art {
   width: 44px;
   height: 44px;
-  border-radius: var(--r-sm);
+  border-radius: 8px;
   object-fit: cover;
   flex-shrink: 0;
   background: var(--surface-2);
@@ -2512,9 +2568,10 @@ button.ov-ach-item:hover { background: var(--surface-3); }
   flex-direction: column;
   gap: 8px;
   padding: 10px 12px;
-  border-radius: var(--r-md);
-  background: var(--surface-1);
-  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
@@ -2531,11 +2588,12 @@ button.ov-ach-item:hover { background: var(--surface-3); }
 .ov-sp-art {
   width: 50px;
   height: 50px;
-  border-radius: var(--r-sm);
+  border-radius: 10px;
   object-fit: cover;
   background: var(--surface-2);
   flex-shrink: 0;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 .ov-sp-art-spotify {
@@ -2804,18 +2862,18 @@ button.ov-ach-item:hover { background: var(--surface-3); }
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  padding: 2px;
-  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 3px;
+  border-radius: 20px;
 }
 
 .ov-sp-tab-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 9px;
-  border-radius: calc(var(--r-sm) - 2px);
+  padding: 4px 10px;
+  border-radius: 16px;
   border: none;
   background: transparent;
   color: var(--text-2);
@@ -2828,14 +2886,14 @@ button.ov-ach-item:hover { background: var(--surface-3); }
 
 .ov-sp-tab-btn:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .ov-sp-tab-btn.active {
-  color: var(--text);
-  background: var(--surface-3);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
   font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
 .ov-sp-count-pill {
@@ -2866,17 +2924,17 @@ button.ov-ach-item:hover { background: var(--surface-3); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--r-sm);
+  border-radius: 50%;
   color: var(--text-3);
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: color var(--ease), background var(--ease);
+  transition: all var(--ease);
 }
 
 .ov-sp-action-btn:hover {
   color: var(--text);
-  background: var(--surface-2);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .ov-sp-action-btn.active {
@@ -2983,14 +3041,14 @@ button.ov-ach-item:hover { background: var(--surface-3); }
   min-height: 0;
   overflow-y: auto;
   padding: 4px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: var(--surface-1);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
   display: flex;
   flex-direction: column;
   gap: 2px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
 .ov-sp-pane::-webkit-scrollbar {
@@ -2998,8 +3056,8 @@ button.ov-ach-item:hover { background: var(--surface-3); }
 }
 
 .ov-sp-pane::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
 }
 
 .ov-sp-row {
@@ -3009,28 +3067,29 @@ button.ov-ach-item:hover { background: var(--surface-3); }
   width: 100%;
   padding: 6px 8px;
   border: 1px solid transparent;
-  border-radius: var(--r-sm);
+  border-radius: 10px;
   background: transparent;
   color: var(--text);
   cursor: pointer;
   text-align: left;
   font: inherit;
-  transition: background-color var(--ease);
+  transition: all 140ms ease;
 }
 
 .ov-sp-row:hover,
 .ov-sp-row.ov-controller-focus {
-  background: var(--surface-2);
+  background: rgba(255, 255, 255, 0.055);
 }
 
 .ov-sp-pl-row.selected {
-  background: var(--surface-3);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .ov-sp-row-art {
   width: 32px;
   height: 32px;
-  border-radius: 4px;
+  border-radius: 8px;
   object-fit: cover;
   flex-shrink: 0;
   background: var(--surface-2);
@@ -3355,21 +3414,22 @@ button.ov-ach-item:hover { background: var(--surface-3); }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   text-align: center;
-  padding: 26px 16px;
+  padding: 32px 18px;
 }
 
 .ov-empty-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--r-md);
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
   display: grid;
   place-items: center;
-  color: var(--text-3);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  margin-bottom: 2px;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  margin-bottom: 4px;
 }
 
 .ov-empty-title {
@@ -5172,10 +5232,16 @@ body.ov-browser-pip .ov-browser-pipbar {
   flex: 1;
   min-width: 0;
   height: 30px;
-  padding: 0 8px;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  padding: 0 10px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 140ms ease;
+}
+
+.ov-dc-search-box:focus-within {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 .ov-dc-search-ico {
@@ -5216,9 +5282,9 @@ body.ov-browser-pip .ov-browser-pipbar {
   position: relative;
   width: 30px;
   height: 30px;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--text-2);
   cursor: pointer;
   transition: all 0.15s ease;
@@ -5226,8 +5292,9 @@ body.ov-browser-pip .ov-browser-pipbar {
 
 .ov-dc-add-btn:hover,
 .ov-dc-requests-btn:hover {
-  background: var(--surface-3);
-  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
 }
 
 .ov-dc-badge {
@@ -5257,13 +5324,13 @@ body.ov-browser-pip .ov-browser-pipbar {
   display: flex;
   flex-direction: column;
   padding: 4px;
-  gap: 1px;
+  gap: 2px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
 .ov-dc-friends-scroll::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 .ov-dc-friends-scroll::-webkit-scrollbar-track {
@@ -5271,12 +5338,12 @@ body.ov-browser-pip .ov-browser-pipbar {
 }
 
 .ov-dc-friends-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
 }
 
 .ov-dc-friends-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .ov-dc-group-header {
@@ -5292,7 +5359,7 @@ body.ov-browser-pip .ov-browser-pipbar {
 .ov-dc-group-items {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 .ov-dc-channel-group {
@@ -5307,17 +5374,18 @@ body.ov-browser-pip .ov-browser-pipbar {
   height: 38px;
   padding: 0 8px;
   border: 1px solid transparent;
-  border-radius: var(--r-sm);
+  border-radius: 10px;
   background: transparent;
   color: var(--text-2);
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition: all 140ms ease;
 }
 
 .ov-dc-channel-row:hover {
-  background: var(--surface-2);
-  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(255, 255, 255, 0.08);
   color: var(--text);
 }
 
@@ -5349,8 +5417,8 @@ body.ov-browser-pip .ov-browser-pipbar {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 8px;
-  border-radius: var(--r-sm);
+  padding: 7px 10px;
+  border-radius: 11px;
   background: transparent;
   border: 1px solid transparent;
   color: inherit;
@@ -5358,17 +5426,18 @@ body.ov-browser-pip .ov-browser-pipbar {
   text-align: left;
   cursor: pointer;
   width: 100%;
-  transition: all 0.12s ease;
+  transition: all 140ms ease;
 }
 
 .ov-dc-friend-item:hover {
-  background: var(--surface-2);
-  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(255, 255, 255, 0.08);
+  transform: translateX(2px);
 }
 
 .ov-dc-friend-item.is-active {
-  background: var(--surface-3);
-  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 .ov-dc-friend-item.is-offline {
@@ -5795,14 +5864,14 @@ body.ov-browser-pip .ov-browser-pipbar {
   display: flex;
   align-items: flex-end;
   gap: 6px;
-  background: var(--surface-1);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   padding: 4px 6px;
 }
 
 .ov-dc-composer-input-row:focus-within {
-  border-color: var(--accent);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 .ov-dc-composer-input {
@@ -5825,18 +5894,18 @@ body.ov-browser-pip .ov-browser-pipbar {
   place-items: center;
   width: 28px;
   height: 28px;
-  border-radius: var(--r-sm);
+  border-radius: 10px;
   background: var(--accent);
   color: var(--on-accent);
   border: none;
   cursor: pointer;
   flex-shrink: 0;
   margin-bottom: 2px;
-  transition: background-color var(--ease), opacity var(--ease);
+  transition: all var(--ease);
 }
 
 .ov-dc-send-btn:hover:not(:disabled) {
-  background: #4752c4;
+  background: #5865f2;
 }
 
 .ov-dc-send-btn:disabled {
@@ -5855,20 +5924,19 @@ body.ov-browser-pip .ov-browser-pipbar {
   user-select: none;
 }
 
-
 /* --- Notes widget: the shared list, in the panel -------------------------- */
 .ov-notes { display: flex; flex-direction: column; gap: 8px; }
 .ov-notes-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .ov-notes-count { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .ov-notes-list { display: flex; flex-direction: column; gap: 3px; }
 .ov-note-row {
-  display: flex; align-items: center; gap: 8px; padding: 7px 9px; width: 100%;
-  border: 1px solid transparent; border-radius: var(--r-sm); background: transparent;
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px; width: 100%;
+  border: 1px solid transparent; border-radius: 11px; background: transparent;
   color: inherit; font: inherit; text-align: left; cursor: pointer;
-  transition: background-color var(--ease), border-color var(--ease);
+  transition: all 140ms ease;
 }
-.ov-note-row:hover { background: var(--surface-2); border-color: var(--line); }
-.ov-note-bar { width: 3px; align-self: stretch; border-radius: 2px; background: var(--surface-3); flex-shrink: 0; }
+.ov-note-row:hover { background: rgba(255, 255, 255, 0.055); border-color: rgba(255, 255, 255, 0.08); }
+.ov-note-bar { width: 3px; align-self: stretch; border-radius: 999px; background: var(--surface-3); flex-shrink: 0; }
 .ov-note-bar.color-blue { background: var(--accent); }
 .ov-note-bar.color-green { background: var(--ok); }
 .ov-note-bar.color-yellow { background: var(--warn); }
@@ -5881,21 +5949,21 @@ body.ov-browser-pip .ov-browser-pipbar {
 .ov-note-tabs {
   display: flex; align-items: flex-end; gap: 2px;
   overflow-x: auto; padding-bottom: 2px;
-  border-bottom: 1px solid var(--line); scrollbar-width: thin;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08); scrollbar-width: thin;
 }
 .ov-note-tab {
   display: flex; align-items: center; gap: 3px;
-  max-width: 116px; padding: 3px 6px;
+  max-width: 116px; padding: 4px 8px;
   border: 1px solid transparent; border-bottom: none;
-  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  border-radius: 8px 8px 0 0;
   background: transparent; color: var(--text-3);
   font-size: 10.5px; font-weight: 600; white-space: nowrap;
   cursor: pointer; flex: 0 0 auto;
-  transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+  transition: all var(--ease);
 }
 .ov-note-tab span { overflow: hidden; text-overflow: ellipsis; }
-.ov-note-tab:hover { background: var(--surface-2); color: var(--text-2); }
-.ov-note-tab.active { background: var(--surface-2); border-color: var(--line); color: var(--text); }
+.ov-note-tab:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-2); }
+.ov-note-tab.active { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.1); color: var(--text); }
 .ov-note-tab.is-add { justify-content: center; min-width: 22px; color: var(--text-3); }
 .ov-note-tab.is-add:hover { color: var(--text); }
 .ov-notes-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 26px 12px; color: var(--text-3); font-size: 12px; }
@@ -5914,8 +5982,8 @@ body.ov-browser-pip .ov-browser-pipbar {
 .ov-note-image {
   position: relative;
   aspect-ratio: 16 / 10;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
   overflow: hidden;
   background: var(--surface-2);
 }
@@ -5991,7 +6059,15 @@ body.ov-browser-pip .ov-browser-pipbar {
 
 .ov-clip { display: flex; flex-direction: column; gap: 10px; }
 
-.ov-clip-state { display: flex; align-items: center; gap: 8px; }
+.ov-clip-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
 .ov-clip-dot {
   width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
   background: var(--text-3); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04);
@@ -6018,24 +6094,24 @@ body.ov-browser-pip .ov-browser-pipbar {
 
 .ov-clip-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  height: 34px; border-radius: var(--r-sm); cursor: pointer;
-  background: var(--surface-2); border: 1px solid var(--line-strong);
+  height: 34px; border-radius: 10px; cursor: pointer;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12);
   color: var(--text); font-size: 12px; font-weight: 600;
   transition: all var(--ease);
 }
-.ov-clip-btn:hover { background: var(--surface-3); }
+.ov-clip-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
 .ov-clip-btn.is-stop { border-color: var(--err); color: var(--err); }
 
 .ov-clip-hint { font-size: 11px; color: var(--text-3); text-align: center; }
 
 .ov-clip-error {
   font-size: 11px; color: var(--err); background: rgba(255, 80, 80, 0.08);
-  border: 1px solid rgba(255, 80, 80, 0.24); border-radius: var(--r-sm); padding: 7px 9px;
+  border: 1px solid rgba(255, 80, 80, 0.24); border-radius: 10px; padding: 7px 9px;
 }
 
 .ov-clip-last {
   display: flex; flex-direction: column; gap: 2px; padding: 8px 10px;
-  border-radius: var(--r-sm); background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: 12px; background: rgba(255, 255, 255, 0.035); border: 1px solid rgba(255, 255, 255, 0.08);
 }
 .ov-clip-last-name {
   font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -6044,10 +6120,11 @@ body.ov-browser-pip .ov-browser-pipbar {
 
 .ov-clip-folder {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  height: 28px; border-radius: var(--r-sm); cursor: pointer;
-  background: transparent; border: 1px solid var(--line); color: var(--text-2); font-size: 11px;
+  height: 28px; border-radius: 10px; cursor: pointer;
+  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); color: var(--text-2); font-size: 11px;
+  transition: all var(--ease);
 }
-.ov-clip-folder:hover { background: var(--surface-2); color: var(--text); }
+.ov-clip-folder:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
 
 /* The dock button carries the recording dot while the widget is closed. */
 .ov-topbar-btn.is-recording { position: relative; color: var(--err); }
@@ -6086,9 +6163,10 @@ body.ov-browser-pip .ov-browser-pipbar {
   flex-wrap: wrap;
   gap: 6px;
   padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  background: var(--surface-1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .ov-audio-presets-title {
@@ -6104,6 +6182,11 @@ body.ov-browser-pip .ov-browser-pipbar {
 .ov-audio-presets select {
   min-width: 96px;
   max-width: 140px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  padding: 3px 6px;
 }
 
 .ov-audio-range:focus-visible,
@@ -6116,19 +6199,20 @@ body.ov-browser-pip .ov-browser-pipbar {
 }
 
 .ov-audio-refresh {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border: none;
-  border-radius: var(--r-sm);
+  border-radius: 50%;
   background: transparent;
   color: var(--text-3);
   display: grid;
   place-items: center;
   cursor: pointer;
+  transition: all var(--ease);
 }
 
 .ov-audio-refresh:hover {
-  background: var(--surface-3);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text);
 }
 
@@ -6143,8 +6227,10 @@ body.ov-browser-pip .ov-browser-pipbar {
   grid-template-columns: minmax(84px, 1fr) minmax(56px, 1.35fr) 32px 26px;
   align-items: center;
   gap: 6px;
-  padding: 5px 0;
-  border-bottom: 1px solid var(--line);
+  padding: 6px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  transition: background-color var(--ease);
 }
 
 .ov-audio-row:last-child {
@@ -6154,7 +6240,7 @@ body.ov-browser-pip .ov-browser-pipbar {
 .ov-audio-row.is-master {
   padding-bottom: 8px;
   margin-bottom: 2px;
-  border-bottom-color: var(--line-strong);
+  border-bottom-color: rgba(255, 255, 255, 0.12);
 }
 
 .ov-audio-name {
@@ -6169,7 +6255,7 @@ body.ov-browser-pip .ov-browser-pipbar {
   width: 16px;
   height: 16px;
   flex: 0 0 16px;
-  border-radius: 3px;
+  border-radius: 4px;
   object-fit: contain;
 }
 
@@ -6198,28 +6284,35 @@ body.ov-browser-pip .ov-browser-pipbar {
 
 .ov-audio-range {
   width: 100%;
-  height: 4px;
+  height: 5px;
   -webkit-appearance: none;
   appearance: none;
-  background: var(--surface-3);
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
   outline: none;
   cursor: pointer;
+  transition: background var(--ease);
+}
+
+.ov-audio-range:hover {
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .ov-audio-range::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background: var(--text-2);
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
   cursor: pointer;
-  transition: background var(--ease);
+  transition: transform 120ms ease, background var(--ease);
 }
 
 .ov-audio-range::-webkit-slider-thumb:hover {
-  background: var(--text);
+  transform: scale(1.15);
+  background: #ffffff;
 }
 
 .ov-audio-pct {
@@ -6230,10 +6323,10 @@ body.ov-browser-pip .ov-browser-pipbar {
 }
 
 .ov-audio-mute {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border: none;
-  border-radius: var(--r-sm);
+  border-radius: 8px;
   background: transparent;
   color: var(--text-3);
   display: grid;
@@ -6243,13 +6336,13 @@ body.ov-browser-pip .ov-browser-pipbar {
 }
 
 .ov-audio-mute:hover {
-  background: var(--surface-3);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text);
 }
 
 .ov-audio-mute.is-muted {
   color: var(--err);
-  background: rgba(239, 68, 68, 0.12);
+  background: rgba(239, 68, 68, 0.16);
 }
 
 .ov-audio-loading {
