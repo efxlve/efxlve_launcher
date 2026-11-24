@@ -553,7 +553,7 @@ function profileHero(
 
   const storesHtml = summary?.services?.filter((s) => s.games > 0)
     ? `<div class="profile-hero-stores">
-        <button type="button" class="profile-hero-store-chip${selectedService === "all" ? " selected" : ""}" data-act="exophase-service" data-val="all" title="${esc(t("profile.filterAll"))}" aria-pressed="${selectedService === "all"}">
+        <button type="button" class="profile-hero-store-chip${selectedService === "all" ? " selected" : ""}" data-act="exophase-service" data-val="all" aria-pressed="${selectedService === "all"}">
           ${icon("layers", 13, "profile-store-chip-logo")}
           <span class="profile-hero-chip-name">${esc(t("profile.filterAll"))}</span>
           <span class="profile-hero-chip-count tabular-nums">${fmtCount(summary.totalGames)}</span>
@@ -562,7 +562,7 @@ function profileHero(
           .filter((s) => s.games > 0)
           .map(
             (s) => `
-            <button type="button" class="profile-hero-store-chip${selectedService === s.slug ? " selected" : ""}" data-act="exophase-service" data-val="${esc(s.slug)}" title="${esc(heroServiceLabel(s.slug, s.label))}" aria-pressed="${selectedService === s.slug}">
+            <button type="button" class="profile-hero-store-chip${selectedService === s.slug ? " selected" : ""}" data-act="exophase-service" data-val="${esc(s.slug)}" aria-pressed="${selectedService === s.slug}">
               ${platformLogo(s.slug)}
               <span class="profile-hero-chip-name">${esc(heroServiceLabel(s.slug, s.label))}</span>
               <span class="profile-hero-chip-count tabular-nums">${fmtCount(s.games)}</span>
@@ -633,7 +633,6 @@ function gameCard(game: ExophaseGame): string {
   const count = total > 0 ? `${earned} / ${total}` : `${earned}`;
   const playtime = game.playtimeMinutes > 0 ? fmtPlaytime(game.playtimeMinutes * 60) : "";
   const isComplete = percent >= 100 || (total > 0 && earned >= total);
-  const tip = `${game.title} · ${game.platform} · ${percent}%${playtime ? ` · ${playtime}` : ""}`;
   const action = game.url
     ? ` data-act="open-external-url" data-url="${esc(game.url)}"`
     : "";
@@ -645,7 +644,7 @@ function gameCard(game: ExophaseGame): string {
   const artStyle = wide && cover ? ` style="--wide-art:url('${esc(cover)}')"` : "";
 
   return `
-    <div class="profile-ach-card profile-exophase-card${isComplete ? " is-plat" : ""}" role="button" tabindex="0" data-exophase-title="${esc(game.title)}"${action} title="${esc(tip)}">
+    <div class="profile-ach-card profile-exophase-card${isComplete ? " is-plat" : ""}" role="button" tabindex="0" data-exophase-title="${esc(game.title)}"${action}>
       <div class="profile-ach-art${wide ? " is-wide" : ""}"${artStyle}>
         ${wide && cover ? `<span class="profile-ach-art-fill" aria-hidden="true"></span>` : ""}
         ${cover

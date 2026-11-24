@@ -111,25 +111,9 @@ function renderProfileGameGridCards(cardGames: ProfileGameRecord[], chips: boole
     const showRemaining = !isPlat && g.total_achievements > 0 && g.total_unlocked > 0
       && (S.profileFilter === "almost_done" || remaining <= 3);
     const xpUnit = xpUnitFor(g.app_name);
-    const xpText = g.total_xp > 0
-      ? g.total_product_xp > g.total_xp
-        ? `${g.total_xp.toLocaleString()} / ${g.total_product_xp.toLocaleString()} ${xpUnit}`
-        : `${g.total_xp.toLocaleString()} ${xpUnit}`
-      : "";
     const xpShort = g.total_xp > 0 ? `${g.total_xp.toLocaleString()} ${xpUnit}` : "";
-    const trophiesText = g.total_achievements > 0
-      ? `${g.total_unlocked} / ${g.total_achievements} ${t("profile.trophies")}`
-      : g.total_unlocked > 0
-        ? `${g.total_unlocked} ${t("profile.trophies")}`
-        : "";
     const playtimeText = pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "";
     const lastPlayedText = pt && pt.last_played_timestamp ? lastUsedLabel(pt.last_played_timestamp) : "";
-    const meta = [
-      g.set_label || "",
-      trophiesText,
-      xpText,
-      playtimeText,
-    ].filter(Boolean).join(" · ");
     const show = S.profileShowHidden && g.sandbox_id
       ? `<button type="button" class="btn ghost small profile-unhide-btn" data-act="unhide-achievement" data-id="${esc(g.sandbox_id)}">${t("profile.hiddenShow")}</button>`
       : "";
@@ -149,7 +133,7 @@ function renderProfileGameGridCards(cardGames: ProfileGameRecord[], chips: boole
           : playtimeText || xpShort || lastPlayedText;
 
     return `
-      <div class="profile-ach-card${isPlat ? " is-plat" : ""}" role="button" tabindex="0" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" data-tab="achievements" title="${esc(`${g.app_title}${meta ? ` · ${meta}` : ""}`)}">
+      <div class="profile-ach-card${isPlat ? " is-plat" : ""}" role="button" tabindex="0" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" data-tab="achievements">
         <div class="profile-ach-art">
           ${cover ? `<img${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-ach-ph">${icon("gamepad-2", 24)}</span>`}
           ${isPlat
@@ -218,7 +202,7 @@ function renderProfileGameRows(cardGames: ProfileGameRecord[], chips: boolean): 
         : `<div class="profile-badge-pill not-started tabular-nums">—</div>`;
 
     return `
-      <div class="row profile-game-row${isPlat ? " is-plat" : ""}${S.profileShowHidden ? " has-unhide" : ""}" role="button" tabindex="0" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" data-tab="achievements" title="${esc(g.app_title)}">
+      <div class="row profile-game-row${isPlat ? " is-plat" : ""}${S.profileShowHidden ? " has-unhide" : ""}" role="button" tabindex="0" data-act="open-game-from-profile" data-id="${esc(g.app_name)}" data-tab="achievements">
         <div class="profile-col-game">
           ${cover ? `<img class="profile-game-thumb"${steamArtAttrs(g.app_name)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-game-thumb placeholder">${icon("gamepad-2", 18)}</span>`}
           <div class="profile-game-info">
@@ -924,9 +908,8 @@ function renderHeroStoreChips(scope: "all" | StoreKind): string {
   const chip = (val: string, label: string, count: number, connected: boolean, installed: boolean): string => {
     const statusClass = connected ? "connected" : installed ? "installed" : "unlinked";
     const selected = scope === val;
-    const tooltip = `${label}${connected ? " · " + t("accounts.connected") : installed ? " · " + t("accounts.localAccount") : " · " + t("accounts.notConnected")}${count > 0 ? ` (${count})` : ""}`;
     return `
-      <button type="button" class="profile-hero-store-chip ${statusClass}${selected ? " selected" : ""}" data-act="profile-store" data-val="${val}" aria-pressed="${selected}" title="${esc(tooltip)}">
+      <button type="button" class="profile-hero-store-chip ${statusClass}${selected ? " selected" : ""}" data-act="profile-store" data-val="${val}" aria-pressed="${selected}">
         ${val === "all" ? icon("layers", 13) : storeLogo(val, 14, "profile-store-chip-logo")}
         <span class="profile-hero-chip-name">${esc(label)}</span>
         ${count > 0 ? `<span class="profile-hero-chip-count tabular-nums">${count}</span>` : ""}
@@ -1302,9 +1285,8 @@ function renderRecentRow(scope: "all" | StoreKind): string {
     const pt = S.playtimeMap.get(appName);
     const played = pt && pt.total_seconds > 0 ? fmtPlaytime(pt.total_seconds) : "";
     const store = gameStore(appName);
-    const tip = played ? `${title} · ${played}` : title;
     return `
-      <button type="button" class="profile-recent-card" data-act="open-game-from-profile" data-id="${esc(appName)}" title="${esc(tip)}">
+      <button type="button" class="profile-recent-card" data-act="open-game-from-profile" data-id="${esc(appName)}">
         <span class="profile-recent-thumb-wrap">
           ${cover ? `<img class="profile-recent-thumb"${steamArtAttrs(appName)} src="${esc(cover)}" alt="" loading="lazy" decoding="async" />` : `<span class="profile-recent-thumb placeholder">${icon("gamepad-2", 20)}</span>`}
         </span>
