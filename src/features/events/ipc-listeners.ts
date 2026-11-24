@@ -273,9 +273,10 @@ function listenLater<T>(event: string, handler: (event: { payload: T }) => void)
  * order-insensitive, and `undefined`/`null` mean the same "not set".
  */
 function sameAchievementOptions(
-  a: AchievementNotificationOptions,
-  b: AchievementNotificationOptions,
+  a: AchievementNotificationOptions | null | undefined,
+  b: AchievementNotificationOptions | null | undefined,
 ): boolean {
+  if (!a || !b) return a === b;
   const keys = new Set<string>([...Object.keys(a), ...Object.keys(b)]);
   const left = a as unknown as Record<string, unknown>;
   const right = b as unknown as Record<string, unknown>;
@@ -1416,6 +1417,9 @@ export async function initApp(hooks: {
   // The overlay panel can flip the same notification switches. Keep the main
   // window's in-memory copy in step so the next settings render is current.
   listenLater<AchievementNotificationOptions>("achievement-notification-options", (event) => {
+    // A payload that is not an options object is a transport hiccup, not a
+    // settings reset: keep the in-memory copy instead of overwriting it.
+    if (!event.payload || typeof event.payload !== "object") return;
     // The write itself echoes this event back. Repainting on our own echo
     // rebuilt the live preview card in the middle of its entrance (a spring
     // was cut and restarted), so only an actual change from another surface
