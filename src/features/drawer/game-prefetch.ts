@@ -17,7 +17,7 @@
 import { isTauri } from "../../core/constants";
 import { perfMark } from "../../core/perf";
 import { S } from "../../core/state";
-import { summaryOf } from "../../core/selectors";
+import { canonicalGameTitle, summaryOf } from "../../core/selectors";
 import { achSummaryOf } from "../../core/game-view";
 import { fetchAndRenderAchievements, prefetchGamePage } from "./drawer-view";
 
@@ -176,21 +176,42 @@ let achPassRunning = false;
 let achPassTimer = 0;
 let achRetryLeft = 1;
 
+/**
+ * True when a card's achievements are read from the EA App: the card is the EA
+ * copy itself, the launcher linked the EA install to a primary copy, or a
+ * linked EA row carries the same title. EA reports achievements per game, so
+ * these cards never get a row in the bulk summary and have to be asked by name.
+ */
+function eaBackedAchievements(appName: string, eaTitles: ReadonlySet<string>): boolean {
+  if (appName.startsWith("ea::") || S.epicEaSource.has(appName)) return true;
+  const title = summaryOf(appName)?.title;
+  return Boolean(title && eaTitles.has(canonicalGameTitle(title)));
+}
+
 async function runAchievementPass(): Promise<void> {
   if (achPassRunning) return;
   achPassRunning = true;
   try {
     if (S.offlineMode) return;
     const cards = [...document.querySelectorAll<HTMLElement>("#view [data-lib-item]")];
+    const eaTitles = new Set(
+      S.companionSummaries
+        .filter((game) => game.source === "ea")
+        .map((game) => canonicalGameTitle(game.title)),
+    );
     const queue: string[] = [];
     for (const card of cards) {
       const id = card.dataset.libItem ?? "";
       if (!id || achRequested.has(id)) continue;
       const ach = achSummaryOf(id);
+      const knownSet = Boolean(ach?.supported && ach.total_achievements > 0);
       // Metadata alone gave us the set size, not the player's progress. Those
       // are exactly the covers that used to show a false "0 / N" until the
-      // game page was opened.
-      if (!ach?.supported || ach.total_achievements === 0 || ach.progress_known !== false) continue;
+      // game page was opened. A card with no summary at all still has a store
+      // worth asking when that store is the EA App.
+      const needsProgress = knownSet && ach?.progress_known === false;
+      const needsEaAnswer = !knownSet && eaBackedAchievements(id, eaTitles);
+      if (!needsProgress && !needsEaAnswer) continue;
       queue.push(id);
       if (queue.length >= ACH_PREFETCH_GAMES) break;
     }
