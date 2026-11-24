@@ -640,6 +640,34 @@ fn upgrade_cached_titles(config: &Path, prof: &mut EpicPlayerProfile) {
     }
 }
 
+/// A platinum award is proof that every achievement in the set was unlocked, so
+/// the unlocked count is also its size. Epic's metadata for third-party titles
+/// (EA App, Ubisoft) carries no `achievements` block; leaving the total at 0
+/// gave the profile card an empty progress bar and no denominator.
+fn fill_platinum_total(game: &mut ProfileGameRecord) {
+    if game.is_platinum && game.total_achievements == 0 && game.total_unlocked > 0 {
+        game.total_achievements = game.total_unlocked;
+        game.unlocked_percent = 100;
+    }
+}
+
+/// Rewrite cached rows written before a platinum filled its own set size.
+fn upgrade_cached_platinum_totals(config: &Path, prof: &mut EpicPlayerProfile) {
+    let missing = prof
+        .games
+        .iter()
+        .any(|g| g.is_platinum && g.total_achievements == 0 && g.total_unlocked > 0);
+    if !missing {
+        return;
+    }
+    for game in &mut prof.games {
+        fill_platinum_total(game);
+    }
+    if let Ok(serialized) = serde_json::to_string_pretty(prof) {
+        let _ = fs::write(profile_cache_path(config), serialized);
+    }
+}
+
 pub fn profile_cache_path(config: &Path) -> PathBuf {
     config.join("profile_cache.json")
 }
@@ -669,6 +697,7 @@ pub async fn fetch_player_profile(
                 // A cache written with invented totals is refetched once.
                 if same_account && prof.data_revision >= DATA_REVISION {
                     upgrade_cached_titles(config, &mut prof);
+                    upgrade_cached_platinum_totals(config, &mut prof);
                     return Ok(prof);
                 }
             }
@@ -840,7 +869,7 @@ pub async fn fetch_player_profile(
             platinum_count += 1;
         }
 
-        game_records.push(ProfileGameRecord {
+        let mut record = ProfileGameRecord {
             sandbox_id: sb,
             app_name,
             app_title,
@@ -853,7 +882,9 @@ pub async fn fetch_player_profile(
             unlocked_percent: percent,
             last_unlocked_date: last_date,
             set_label,
-        });
+        };
+        fill_platinum_total(&mut record);
+        game_records.push(record);
     }
 
     // Epic Games Store grants a +250 XP bonus for each platinum trophy
@@ -1084,5 +1115,44 @@ mod tests {
         assert!(!identity.matched);
         assert_eq!(identity.app_title, "not-a-game");
         assert_eq!(identity.set_label, "");
+    }
+
+    fn profile_row(unlocked: u32, total: u32, platinum: bool) -> ProfileGameRecord {
+        ProfileGameRecord {
+            sandbox_id: "sandbox".into(),
+            app_name: "game".into(),
+            app_title: "Game".into(),
+            cover: None,
+            total_unlocked: unlocked,
+            total_achievements: total,
+            total_xp: 0,
+            total_product_xp: 0,
+            is_platinum: platinum,
+            unlocked_percent: 0,
+            last_unlocked_date: None,
+            set_label: String::new(),
+        }
+    }
+
+    #[test]
+    fn a_platinum_award_fills_the_unknown_set_size() {
+        // Star Wars Jedi: Fallen Order ("shoebill") is an EA title: Epic keeps
+        // the unlocks and the platinum award, but its metadata has no
+        // achievement total, which left the profile bar empty.
+        let mut shoebill = profile_row(39, 0, true);
+        fill_platinum_total(&mut shoebill);
+        assert_eq!(shoebill.total_achievements, 39);
+        assert_eq!(shoebill.unlocked_percent, 100);
+
+        // Without a platinum, a missing total stays missing: never invent a
+        // denominator for a set Epic did not describe.
+        let mut partial = profile_row(10, 0, false);
+        fill_platinum_total(&mut partial);
+        assert_eq!(partial.total_achievements, 0);
+
+        // A known catalog total is never replaced.
+        let mut known = profile_row(10, 50, false);
+        fill_platinum_total(&mut known);
+        assert_eq!(known.total_achievements, 50);
     }
 }
