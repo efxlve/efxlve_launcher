@@ -4570,5 +4570,17 @@
   "settings.aboutServicesTitle": "خدمات المجتمع والبيانات الوصفية",
   "settings.aboutExophaseNotice": "تكامل Exophase هو مرآة غير رسمية للملفات الشخصية العامة تعرض الإنجازات وإحصائيات وقت اللعب وملخصات المنصات المطلوبة طوعاً من المستخدم عبر اسمه العام. لا يخزن Efxlve Launcher بيانات اعتماد Exophase ولا يكتب بيانات على خوادمها ولا يعدل الملفات الخارجية. Exophase منصة مستقلة وليست تابعة لـ Efxlve Launcher.",
   "settings.aboutPrivacyTitle": "الخصوصية والأمان والنسخ الاحتياطي السحابي",
-  "settings.aboutLicensesTitle": "تراخيص المصدر المفتوح وإخلاء الضمان"
+  "settings.aboutLicensesTitle": "تراخيص المصدر المفتوح وإخلاء الضمان",
+  "betaNotice.btnTip": "إشعار الإصدار التجريبي والشكر",
+  "betaNotice.title": "رحلتنا التجريبية وشكراً لكم",
+  "betaNotice.phaseTag": "نحو الإصدار v1.0",
+  "betaNotice.heartfelt": "نتقدم بجزيل الشكر لكل من جرب مشغل Efxlve أثناء المرحلة التجريبية، وشاركنا ملاحظاته، وأبلغ عن الأخطاء ووقف إلى جانبنا. بفضل دعمكم، يتطور المشغل كل يوم ليصبح أسرع وأكثر استقراراً وقوة.",
+  "betaNotice.roadmap": "سنخرج قريباً جداً من المرحلة التجريبية لنطلق الإصدار المستقر v1.0! قبل الإطلاق النهائي، يُعد الإبلاغ عن أي مشاكل أو اقتراحات أمراً بالغ الأهمية لمساعدتنا في تحسين التجربة.",
+  "betaNotice.reportInAppTitle": "الإبلاغ عن مشكلة من داخل المشغل",
+  "betaNotice.reportInAppDesc": "افتح أداة التشخيص المدمجة لإرفاق معلومات النظام وسجلات التشغيل مباشرة.",
+  "betaNotice.githubTitle": "GitHub Issues",
+  "betaNotice.githubDesc": "افتح تذكرة خطأ أو اقتراح ميزة في مستودعنا مفتوح المصدر.",
+  "betaNotice.discordTitle": "مجتمع Discord",
+  "betaNotice.discordDesc": "انضم إلى خادمنا للدردشة مع المطورين واللاعبين الآخرين.",
+  "betaNotice.understandBtn": "حسناً، فهمت"
 }

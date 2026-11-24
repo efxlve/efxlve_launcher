@@ -4570,5 +4570,17 @@
   "settings.aboutServicesTitle": "社群服務與中繼資料",
   "settings.aboutExophaseNotice": "Exophase 整合是一個非官方的公開個人檔案鏡像，根據使用者自願輸入的公開使用者名稱展示成就、遊戲時數統計及跨平台概覽。Efxlve Launcher 不儲存 Exophase 帳號憑證，不對其伺服器寫入資料，亦不竄改外部檔案。Exophase 為獨立第三方平台，與 Efxlve Launcher 無關。",
   "settings.aboutPrivacyTitle": "隱私、安全與雲端備份",
-  "settings.aboutLicensesTitle": "開源授權與免責聲明"
+  "settings.aboutLicensesTitle": "開源授權與免責聲明",
+  "betaNotice.btnTip": "測試版說明與鳴謝",
+  "betaNotice.title": "測試版歷程與衷心感謝",
+  "betaNotice.phaseTag": "邁向 v1.0",
+  "betaNotice.heartfelt": "衷心感謝在測試期間體驗 Efxlve Launcher、提供寶貴意見、回報錯誤並一路相伴的每一位朋友。正是有你們的支持，啟動器每天都在變得更加快速、穩定與強大。",
+  "betaNotice.roadmap": "我們很快就將告別測試階段，正式推出穩定的 v1.0 版本！在正式推出前，若你發現任何問題或有任何建議，歡迎隨時回報，這對我們完善體驗至關重要。",
+  "betaNotice.reportInAppTitle": "在啟動器內回報問題",
+  "betaNotice.reportInAppDesc": "開啟內建診斷工具，直接打包系統詳細資料與記錄一併回報。",
+  "betaNotice.githubTitle": "GitHub Issues",
+  "betaNotice.githubDesc": "在我們的開源存放庫提交錯誤報告或功能建議。",
+  "betaNotice.discordTitle": "Discord 社群",
+  "betaNotice.discordDesc": "加入我們的伺服器，與開發者及其他玩家一起交流。",
+  "betaNotice.understandBtn": "瞭解"
 }

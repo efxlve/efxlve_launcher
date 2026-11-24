@@ -4570,5 +4570,17 @@
   "settings.aboutServicesTitle": "Topluluk Servisleri & Çevrim İçi Entegrasyonlar",
   "settings.aboutExophaseNotice": "Exophase entegrasyonu, kullanıcının kendi isteğiyle girdiği kullanıcı adı üzerinden herkese açık profil verilerini (başarımlar, oynama süreleri ve platform özetleri) görüntüleyen bağımsız bir yansıtıcıdır (mirror). Efxlve Launcher, Exophase hesap şifrelerini tutmaz, Exophase sunucularına veri yazmaz veya içeriği manipüle etmez. Exophase üçüncü taraf bağımsız bir platformdur ve Efxlve Launcher ile bağlantılı değildir.",
   "settings.aboutPrivacyTitle": "Gizlilik, Güvenlik & Bulut Yedekleme",
-  "settings.aboutLicensesTitle": "Açık Kaynak Lisansları & Sorumluluk Reddi"
+  "settings.aboutLicensesTitle": "Açık Kaynak Lisansları & Sorumluluk Reddi",
+  "betaNotice.btnTip": "Beta Bilgilendirmesi & Teşekkürler",
+  "betaNotice.title": "Beta Yolculuğumuz ve Teşekkürler",
+  "betaNotice.phaseTag": "v1.0 Yolunda",
+  "betaNotice.heartfelt": "Efxlve Launcher'ı beta sürecinde deneyimleyen, geri bildirimlerini paylaşan, hataları bildiren ve bu yolculukta yanımızda olan herkese yürekten teşekkür ederiz. Sizlerin desteği sayesinde launcher her geçen gün daha hızlı, kararlı ve güçlü bir oyun merkezine dönüştü.",
+  "betaNotice.roadmap": "Çok yakında Beta sürecini tamamlayıp kararlı v1.0 sürümüne ulaşıyoruz! Tam sürüme geçmeden önce tespit ettiğiniz sorunları veya eksiklikleri bize bildirmeniz, deneyimi mükemmelleştirmemiz için çok değerli.",
+  "betaNotice.reportInAppTitle": "Launcher Üzerinden Sorun Bildir",
+  "betaNotice.reportInAppDesc": "Yerleşik tanı ve hata raporlama aracını açın; sistem ve log detaylarını ekleyerek bize iletin.",
+  "betaNotice.githubTitle": "GitHub Issues",
+  "betaNotice.githubDesc": "Açık kaynak depomuzda yeni bir hata kaydı veya özellik önerisi oluşturun.",
+  "betaNotice.discordTitle": "Discord Topluluğu",
+  "betaNotice.discordDesc": "Topluluğumuza katılın, geliştiriciyle ve diğer oyuncularla sohbet edin.",
+  "betaNotice.understandBtn": "Harika, Anladım"
 }

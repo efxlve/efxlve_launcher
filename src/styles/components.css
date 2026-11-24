@@ -472,6 +472,192 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
   border: none; border-radius: var(--r-sm); background: transparent; color: var(--text-2); cursor: pointer;
 }
 .manage-head-close:hover { background: var(--surface-2); color: var(--text); }
+/* --- Beta milestone notice dialog --- */
+.beta-notice-layer { z-index: 610; }
+.beta-notice-modal {
+  width: min(580px, calc(100vw - 32px));
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-1);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg, 14px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.beta-notice-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex-shrink: 0;
+  padding: 20px 22px 18px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
+}
+.beta-notice-head-mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--r-md, 10px);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
+  color: var(--text);
+}
+.beta-notice-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.beta-notice-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.beta-notice-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+  padding: 0 6px;
+  background: #ffffff;
+  color: #000000;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  border-radius: 999px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.beta-notice-phase {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent, #6366f1);
+  letter-spacing: 0.02em;
+}
+.beta-notice-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.beta-notice-head .manage-head-close {
+  margin: -4px -6px 0 0;
+}
+.beta-notice-body {
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  max-height: calc(85vh - 150px);
+}
+.beta-notice-message {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md, 10px);
+}
+.beta-notice-p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+.beta-notice-p.beta-notice-heartfelt {
+  color: var(--text);
+}
+.beta-notice-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.beta-notice-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md, 10px);
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 140ms ease, border-color 140ms ease, transform 100ms ease;
+  user-select: none;
+}
+.beta-notice-card:hover {
+  background: var(--surface-3);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
+}
+.beta-notice-card:active {
+  transform: translateY(0);
+}
+.beta-notice-card-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--r-sm, 6px);
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  color: var(--text-2);
+}
+.beta-notice-card-icon.is-feedback {
+  color: #f59e0b;
+}
+.beta-notice-card-icon.is-github {
+  color: var(--text);
+}
+.beta-notice-card-icon.is-discord {
+  color: #5865f2;
+}
+.beta-notice-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.beta-notice-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.beta-notice-card-desc {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+.beta-notice-card-action {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: var(--text-3);
+  transition: color 140ms ease, transform 140ms ease;
+}
+.beta-notice-card:hover .beta-notice-card-action {
+  color: var(--text);
+  transform: translateX(2px);
+}
+.beta-notice-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-1);
+}
 /* --- Confirm dialog (destructive asks): the shared modal frame, text first --- */
 .confirm-layer { position: fixed; inset: 0; z-index: 600; }
 /* The launcher's own structure: thin separators between head, copy and

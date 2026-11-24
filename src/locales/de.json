@@ -4570,5 +4570,17 @@
   "settings.aboutServicesTitle": "Community-Dienste & Metadaten",
   "settings.aboutExophaseNotice": "Die Exophase-Integration ist ein inoffizieller Spiegel öffentlicher Profile, der Errungenschaften, Spielzeitstatistiken und Plattformübersichten anzeigt, die vom Nutzer freiwillig über seinen öffentlichen Benutzernamen angefordert wurden. Efxlve Launcher speichert keine Anmeldedaten für Exophase, schreibt keine Daten auf Exophase-Server und manipuliert keine Profile. Exophase ist eine unabhängige Plattform und nicht mit Efxlve Launcher verbunden.",
   "settings.aboutPrivacyTitle": "Datenschutz, Sicherheit & Cloud-Backups",
-  "settings.aboutLicensesTitle": "Open-Source-Lizenzen & Haftungsausschluss"
+  "settings.aboutLicensesTitle": "Open-Source-Lizenzen & Haftungsausschluss",
+  "betaNotice.btnTip": "Beta-Hinweis & Dankeschön",
+  "betaNotice.title": "Unsere Beta-Reise & Danke",
+  "betaNotice.phaseTag": "Auf dem Weg zu v1.0",
+  "betaNotice.heartfelt": "Ein herzliches Dankeschön an alle, die den Efxlve Launcher während der Beta getestet, Feedback gegeben, Fehler gemeldet und uns unterstützt haben. Dank eurer Hilfe wird der Launcher jeden Tag schneller, stabiler und vielseitiger.",
+  "betaNotice.roadmap": "Schon bald verlassen wir die Beta-Phase und veröffentlichen die finale Version 1.0! Bevor es so weit ist, hilft uns jede Fehlermeldung und Anregung dabei, das Erlebnis abzurunden.",
+  "betaNotice.reportInAppTitle": "Problem im Launcher melden",
+  "betaNotice.reportInAppDesc": "Öffne das integrierte Diagnose-Tool, um Systeminfos und Protokolle direkt zu übermitteln.",
+  "betaNotice.githubTitle": "GitHub Issues",
+  "betaNotice.githubDesc": "Erstelle einen Fehlerbericht oder Vorschlag in unserem Open-Source-Repository.",
+  "betaNotice.discordTitle": "Discord-Community",
+  "betaNotice.discordDesc": "Tritt unserem Server bei, um dich mit Entwicklern und Spielern auszutauschen.",
+  "betaNotice.understandBtn": "Verstanden"
 }

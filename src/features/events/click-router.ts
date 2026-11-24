@@ -175,6 +175,7 @@ import { patchExophaseGamesGrid } from "../profile/exophase-view";
 import { closeProfileBannerModal, openProfileBannerModal, resetProfileBanner, saveProfileBanner } from "../profile/profile-banner";
 import { closeUnlocksModal, openUnlocksModal } from "../profile/profile-unlocks-modal";
 import { closeChangelogModal, openChangelogModal } from "../changelog/changelog-view";
+import { closeBetaNotice, openBetaNotice } from "../beta-notice/beta-notice-view";
 import { closeFeedback, createFeedbackReport, openFeedback, openFeedbackFolder, openFeedbackIssue } from "../feedback/feedback-view";
 import { closeAvatarModal, closeChangeNameModal, openAvatarFilePicker, openChangeNameModal, promptAvatarAction, removeCustomAvatar, saveProfileName } from "../profile/profile-avatar";
 
@@ -506,6 +507,17 @@ document.addEventListener("click", (e) => {
     scrollStoreTabs(dir);
   } else if (act === "open-changelog") {
     openChangelogModal();
+  } else if (act === "open-beta-notice") {
+    openBetaNotice();
+  } else if (act === "close-beta-notice") {
+    closeBetaNotice();
+  } else if (act === "beta-notice-feedback") {
+    closeBetaNotice();
+    openFeedback();
+  } else if (act === "beta-notice-github") {
+    void openUrl("https://github.com/efxlve/efxlve_launcher/issues").catch((error) => toast(String(error), "err"));
+  } else if (act === "beta-notice-discord") {
+    void openUrl("https://discord.gg/3TY8hNTx5M").catch((error) => toast(String(error), "err"));
   } else if (act === "open-feedback") {
     openFeedback();
   } else if (act === "feedback-close") {
