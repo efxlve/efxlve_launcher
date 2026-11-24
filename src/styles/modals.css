@@ -312,6 +312,14 @@
 .install-game-stats { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .install-game-stats strong { color: var(--text); font-weight: 500; }
 .install-game-stats span { display: flex; align-items: center; gap: 8px; min-height: 16px; }
+.install-options { display: flex; flex-direction: column; border-top: 1px solid var(--line); padding-top: 12px; }
+.install-opt-title { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.06em; }
+.install-opt-group { display: flex; flex-direction: column; }
+.install-opt-head { margin: 10px 0 2px; font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+.install-opt-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 13px; cursor: pointer; }
+.install-opt-row.is-installed { cursor: default; opacity: 0.7; }
+.install-opt-label { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.install-opt-right { display: flex; align-items: center; gap: 12px; }
 .install-ea-note {
   display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px;
   border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--warn-tint);

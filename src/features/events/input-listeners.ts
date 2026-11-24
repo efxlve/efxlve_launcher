@@ -74,7 +74,7 @@ import { handleCompatAction } from "../settings/compat-view";
 import { handleGameCompatChange } from "../drawer/game-compat";
 import { handleArchiveChange } from "../archive/archive-actions";
 import { closeSelectiveModal, renderSelectiveModal } from "../dlc/selective-install";
-import { updateInstallFinalPath } from "../install/install-dialog";
+import { renderInstallDialog, updateInstallFinalPath } from "../install/install-dialog";
 import { closeMoveGameModal } from "../move-game/move-game-actions";
 import { updateMoveSpaceBadgeInPlace } from "../move-game/move-game-view";
 import { closeManagePopup, manageSearchOpen, setManageSearchOpen } from "../manage/manage-view";
@@ -1324,7 +1324,8 @@ document.addEventListener("change", (e) => {
       } else {
         S.selectedInstallTags.delete(tag);
       }
-      renderSelectiveModal();
+      if (S.installDialogAppName) renderInstallDialog();
+      else renderSelectiveModal();
     }
   } else if (act === "selective-toggle-dlc") {
     const dlc = t.dataset.dlc;
@@ -1334,7 +1335,8 @@ document.addEventListener("change", (e) => {
       } else {
         S.selectedDlcAppIds.delete(dlc);
       }
-      renderSelectiveModal();
+      if (S.installDialogAppName) renderInstallDialog();
+      else renderSelectiveModal();
     }
   } else if (act === "dlc-toggle-install") {
     const app = t.dataset.app;

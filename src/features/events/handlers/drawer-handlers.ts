@@ -34,6 +34,7 @@ import { refreshLibraryResultsInPlace } from "../../library/library-view";
 import { rememberPreferredVersion } from "../../library/store-filter";
 import { openStoreUrl, storeUrlFor } from "../../store/store-view";
 import { applySelectiveInstall, closeSelectiveModal, renderSelectiveModal } from "../../dlc/selective-install";
+import { renderInstallDialog } from "../../install/install-dialog";
 import { ensureCopyHealth, epicOpenFolder, fetchAndRenderAchievements, fetchAndRenderRequirements, forgetRaProgress, isCompanionApp, refreshAchievementSummary, renderRequirementsBody, repaintAchievementsTab, repaintDlcsTab, renderDrawerAchievements, steamAchSourceCache, createEmulatorAchievements, useLocalAchievementSource, applyStoreSteamAppId, clearStoreSteamAppIdForGame, useStoreDefinitionSource, achievementSteamAppIdFor } from "../../drawer/drawer-view";
 import { refreshSystemFacts } from "../../drawer/system-tab";
 import { steamSetAchievementSource, steamGetAchievementSource } from "../../../steam";
@@ -126,7 +127,8 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
           else S.selectedInstallTags.delete(tag.tag);
         }
       }
-      renderSelectiveModal();
+      if (S.installDialogAppName) renderInstallDialog();
+      else renderSelectiveModal();
       return true;
     }
 

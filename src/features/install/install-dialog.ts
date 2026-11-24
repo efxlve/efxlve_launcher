@@ -33,8 +33,10 @@ import {
   epicSelectFolderDialog,
   getThirdPartyLauncher,
   requiresThirdPartyLauncher,
+  type GameInstallOptions,
+  type InstallOptionTag,
 } from "../../epic";
-import { openSelectiveModal } from "../dlc/selective-install";
+import { applySelectiveInstall, openSelectiveModal } from "../dlc/selective-install";
 import { companionStoreId } from "../library/companion-library";
 
 /** Joins the base folder and the game folder using the platform separator. */
@@ -120,6 +122,9 @@ export async function openInstallDialog(appName: string): Promise<void> {
   S.installDialogHasOptions = false;
   S.installDialogLoading = true;
   S.installDialogDir = S.epicSettingsCache?.install_dir || S.epicDefaultDir || "";
+  S.selectiveInstallOptions = null;
+  S.selectedInstallTags.clear();
+  S.selectedDlcAppIds.clear();
   renderInstallDialog();
 
   const [dirDefault, autoShortcut, pendingDir] = await Promise.all([
@@ -147,18 +152,14 @@ export async function openInstallDialog(appName: string): Promise<void> {
       epicGetGameSettings(appName),
     ]);
     if (S.installDialogAppName !== appName) return;
-    // The options modal starts with the launcher's defaults checked, so the
-    // dialog must show that same total, not just the required core.
-    const defaults = opts.tags.filter((tag) => tag.defaultSelected);
-    const defaultDownload = defaults.reduce((sum, tag) => sum + (tag.downloadSize || tag.size), 0);
-    const defaultDisk = defaults.reduce((sum, tag) => sum + tag.size, 0);
-    const baseDownload = opts.baseDownloadSize || opts.baseSize;
-    if (baseDownload > 0 || defaultDownload > 0) {
-      S.installDialogDownloadSize = baseDownload + defaultDownload;
+    S.selectiveInstallOptions = opts;
+    // Epic preselects Fortnite's modes, and the confirmation shows the same
+    // selection the dialog is about to display.
+    for (const tag of opts.tags) {
+      if (tag.defaultSelected) S.selectedInstallTags.add(tag.tag);
     }
-    if (opts.baseSize > 0 || defaultDisk > 0) {
-      S.installDialogDiskSize = opts.baseSize + defaultDisk;
-    }
+    S.installDialogDownloadSize = opts.baseDownloadSize || opts.baseSize || S.installDialogDownloadSize;
+    S.installDialogDiskSize = opts.baseSize || S.installDialogDiskSize;
     S.installDialogHasOptions = opts.hasOptions;
     S.installDialogAutoUpdate = st.autoUpdate;
   } catch {
@@ -390,6 +391,79 @@ async function openUbiInstallDialog(appName: string): Promise<void> {
   }
 }
 
+/** Options loaded for this dialog's game; null for other stores or stale state. */
+function dialogOptions(appName: string): GameInstallOptions | null {
+  return S.selectiveInstallOptions?.appName === appName ? S.selectiveInstallOptions : null;
+}
+
+/** Required base plus the option rows and DLCs the user has checked. */
+function selectedSizes(opts: GameInstallOptions): { download: number; disk: number } {
+  let download = opts.baseDownloadSize || opts.baseSize;
+  let disk = opts.baseSize;
+  for (const tag of opts.tags) {
+    if (!S.selectedInstallTags.has(tag.tag)) continue;
+    download += tag.downloadSize || tag.size;
+    disk += tag.size;
+  }
+  for (const dlc of opts.dlcs) {
+    if (!S.selectedDlcAppIds.has(dlc.appId)) continue;
+    download += dlc.size;
+    disk += dlc.size;
+  }
+  return { download, disk };
+}
+
+/** One install-option group (modes, extras, languages). */
+function optionSection(label: string, rows: InstallOptionTag[]): string {
+  if (rows.length === 0) return "";
+  return `
+    <div class="install-opt-group">
+      <div class="install-opt-head">${label}</div>
+      ${rows
+        .map(
+          (tag) => `
+        <label class="install-opt-row">
+          <span class="install-opt-label">${esc(localizeMessage(tag.label))}</span>
+          <span class="install-opt-right">
+            <span class="selective-row-size">${fmtBytes(tag.size)}</span>
+            <input type="checkbox" class="selective-checkbox" data-act="selective-toggle-tag" data-tag="${esc(tag.tag)}" ${S.selectedInstallTags.has(tag.tag) ? "checked" : ""} />
+          </span>
+        </label>`,
+        )
+        .join("")}
+    </div>`;
+}
+
+/** The add-on list, with installed packs kept visible but locked. */
+function dlcSection(opts: GameInstallOptions): string {
+  if (opts.dlcs.length === 0) return "";
+  return `
+    <div class="install-opt-group">
+      <div class="install-opt-head">${t("selective.dlcs")}</div>
+      ${opts.dlcs
+        .map((dlc) =>
+          dlc.installed
+            ? `
+        <label class="install-opt-row is-installed">
+          <span class="install-opt-label">${esc(dlc.title)} <span class="chip ok">${t("selective.installed")}</span></span>
+          <span class="install-opt-right">
+            <span class="selective-row-size">${fmtBytes(dlc.size)}</span>
+            <input type="checkbox" class="selective-checkbox" checked disabled />
+          </span>
+        </label>`
+            : `
+        <label class="install-opt-row">
+          <span class="install-opt-label">${esc(dlc.title)}</span>
+          <span class="install-opt-right">
+            <span class="selective-row-size">${fmtBytes(dlc.size)}</span>
+            <input type="checkbox" class="selective-checkbox" data-act="selective-toggle-dlc" data-dlc="${esc(dlc.appId)}" ${S.selectedDlcAppIds.has(dlc.appId) ? "checked" : ""} />
+          </span>
+        </label>`,
+        )
+        .join("")}
+    </div>`;
+}
+
 /** Renders the dialog markup into #install-root. */
 export function renderInstallDialog(): void {
   const appName = S.installDialogAppName;
@@ -409,10 +483,24 @@ export function renderInstallDialog(): void {
 
   const loading = S.installDialogLoading;
   const finalPath = joinPath(S.installDialogDir, S.installDialogFolder);
+  const opts = dialogOptions(appName);
+  const sizes = opts ? selectedSizes(opts) : null;
+  const downloadBytes = sizes?.download ?? S.installDialogDownloadSize;
+  const diskBytes = sizes?.disk ?? S.installDialogDiskSize;
   const sizeValue = (bytes: number) =>
     loading
       ? `<span class="install-size-pending" aria-hidden="true"></span>`
       : `<strong>${fmtBytes(bytes)}</strong>`;
+  const options = opts && opts.hasOptions
+    ? `
+          <div class="install-options">
+            <div class="install-opt-title">${t("selective.options")}</div>
+            ${optionSection(t("selective.gameModes"), opts.tags.filter((tag) => tag.category === "modes"))}
+            ${optionSection(t("selective.extraPacks"), opts.tags.filter((tag) => tag.category === "extras"))}
+            ${optionSection(t("selective.extraLanguages"), opts.tags.filter((tag) => tag.category === "languages"))}
+            ${dlcSection(opts)}
+          </div>`
+    : "";
   installRoot.innerHTML = `
     <div class="selective-overlay" data-act="install-overlay-close">
       <div class="selective-dialog install-dialog">
@@ -426,8 +514,8 @@ export function renderInstallDialog(): void {
             <div class="install-game-info">
               <div class="install-game-title">${esc(s.title)}</div>
               <div class="install-game-stats${loading ? " is-loading" : ""}">
-                <span>${t("selective.downloadSize")}: ${sizeValue(S.installDialogDownloadSize)}</span>
-                <span>${t("selective.storageSize")}: ${sizeValue(S.installDialogDiskSize)}</span>
+                <span>${t("selective.downloadSize")}: ${sizeValue(downloadBytes)}</span>
+                <span>${t("selective.storageSize")}: ${sizeValue(diskBytes)}</span>
               </div>
             </div>
           </div>
@@ -445,6 +533,8 @@ export function renderInstallDialog(): void {
             <button type="button" class="install-browse-btn" data-act="install-browse">${t("common.browse")}</button>
           </div>
           <div class="install-final-path">${t("install.finalPath")}: <span id="install-final-path">${esc(finalPath)}</span></div>
+
+          ${options}
 
           ${isEa || isUbi ? "" : `<label class="install-check-row">
             <input type="checkbox" class="selective-checkbox" data-act="install-toggle-autoupdate" ${S.installDialogAutoUpdate ? "checked" : ""} />
@@ -593,17 +683,35 @@ export async function confirmInstall(): Promise<void> {
   }
   if (IS_WINDOWS && S.installDialogShortcut) S.pendingShortcutApps.add(appName);
   S.selectiveInstallDir = dir;
-  closeInstallDialog();
   if (hasOptions) {
-    await openSelectiveModal(appName);
+    const opts = dialogOptions(appName);
+    if (opts) {
+      // The dialog already holds the selection; applySelectiveInstall reads it
+      // from state before closing the dialog.
+      const tags = Array.from(S.selectedInstallTags);
+      const dlcs = Array.from(S.selectedDlcAppIds);
+      await applySelectiveInstall(appName, tags, dlcs);
+    } else {
+      // Options failed to load after the first check: the standalone modal can
+      // retry them instead of starting an install with an empty selection.
+      closeInstallDialog();
+      await openSelectiveModal(appName);
+      return;
+    }
   } else {
     await epicInstall(appName, dir);
   }
+  closeInstallDialog();
 }
 
 /** Closes the dialog and resets its state. */
 export function closeInstallDialog(): void {
   S.installDialogAppName = null;
   S.installDialogLoading = false;
+  S.installDialogHasOptions = false;
+  S.selectiveInstallOptions = null;
+  S.selectiveInstallDir = null;
+  S.selectedInstallTags.clear();
+  S.selectedDlcAppIds.clear();
   if (installRoot) installRoot.innerHTML = "";
 }
