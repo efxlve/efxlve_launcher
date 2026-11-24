@@ -15,6 +15,9 @@ import { S } from "./state";
 /** A measurement stays fresh for this long; a later view re-measures it. */
 const MEASURE_TTL = 10 * 60 * 1000;
 
+/** Games with a folder walk already running, so a second view shares the result. */
+const pendingSizes = new Map<string, Promise<number | null>>();
+
 /** Fresh real folder size for a library key, or null when unknown. */
 export function measuredSize(key: string): number | null {
   const hit = S.measuredSizes.get(key);
@@ -25,6 +28,36 @@ export function measuredSize(key: string): number | null {
 function measurable(path: string | null | undefined): path is string {
   if (!path || path.length < 4) return false;
   return !/^[a-zA-Z]:[\\/]?$/.test(path);
+}
+
+/**
+ * Measures one game folder and stores the result for every view. Steam sizes
+ * come from the client manifest, so they are skipped. A second caller joins the
+ * walk already running instead of starting another. Resolves to the byte count,
+ * or null when the path is unknown or unreadable.
+ */
+export function ensureMeasuredSize(
+  key: string,
+  path: string | null | undefined,
+): Promise<number | null> {
+  const hit = measuredSize(key);
+  if (hit !== null) return Promise.resolve(hit);
+  if (!measurable(path) || key.startsWith("steam::")) return Promise.resolve(null);
+  const running = pendingSizes.get(key);
+  if (running) return running;
+  const job = (async () => {
+    try {
+      const bytes = await invoke<number>("storage_path_size", { path });
+      if (bytes <= 0) return null;
+      S.measuredSizes.set(key, { bytes, at: Date.now() });
+      scheduleSave();
+      return bytes;
+    } catch {
+      return null;
+    }
+  })().finally(() => pendingSizes.delete(key));
+  pendingSizes.set(key, job);
+  return job;
 }
 
 /** Persists the measurement map, coalescing bursts into one write. */
@@ -57,17 +90,9 @@ export async function measureFolders(
   for (const game of games) {
     if (shouldStop?.()) return changed;
     if (measuredSize(game.key) !== null) continue;
-    if (!measurable(game.path) || game.key.startsWith("steam::")) continue;
-    let bytes = 0;
-    try {
-      bytes = await invoke<number>("storage_path_size", { path: game.path });
-    } catch {
-      bytes = 0;
-    }
+    const bytes = await ensureMeasuredSize(game.key, game.path);
     if (shouldStop?.()) return changed;
-    if (bytes <= 0) continue;
-    S.measuredSizes.set(game.key, { bytes, at: Date.now() });
-    scheduleSave();
+    if (bytes === null) continue;
     changed = true;
     onHit(game.key, bytes);
   }

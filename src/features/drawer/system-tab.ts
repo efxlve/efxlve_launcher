@@ -7,6 +7,7 @@
  * used to compete with the table for the same grid.
  */
 
+import { ensureMeasuredSize, measuredSize } from "../../core/folder-size";
 import { emptyPanel, icon, loadingState } from "../../core/icons";
 import { isCompanionKey, rawOf, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
@@ -68,6 +69,29 @@ function paintCopyDrive(appName: string): void {
   el.textContent = installDriveLabel(s.installPath);
 }
 
+/**
+ * Store metadata carries no size for a companion install (Xbox packages, EA
+ * App folders), so the copy card starts the same background folder walk the
+ * library uses and repaints itself when the number lands.
+ */
+function ensureCopySize(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): void {
+  if (!s.installed || !s.installPath) return;
+  const known = measuredSize(s.appName) ?? s.installSize;
+  if (known && known > 0) return;
+  void ensureMeasuredSize(s.appName, s.installPath).then((bytes) => {
+    if (!bytes || S.currentModalAppName !== s.appName) return;
+    const body = document.getElementById("sys-copy-body");
+    const fresh = summaryOf(s.appName);
+    if (!body || !fresh) return;
+    body.innerHTML = renderInstalledCopyFacts(
+      fresh,
+      partner,
+      S.copyPathStates.get(s.appName),
+      installDriveLabel(fresh.installPath),
+    );
+  });
+}
+
 /** Hardware refresh: drop the cached facts and paint the loading state again. */
 export function refreshSystemFacts(appName: string): void {
   resetPcFacts();
@@ -89,6 +113,7 @@ export function renderSystemTab(
   requirementsHtml: string,
 ): string {
   queueSystemRepaint(s.appName);
+  ensureCopySize(s, partner);
   const g = rawOf(s.appName);
   const reqData = S.loadedRequirements.get(s.appName);
   const features = renderGameFeatures(

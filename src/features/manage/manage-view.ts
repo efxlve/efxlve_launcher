@@ -4,6 +4,7 @@
  */
 
 import { manageRoot } from "../../core/dom";
+import { ensureMeasuredSize, measuredSize } from "../../core/folder-size";
 import { installPathIssue } from "../../core/game-view";
 import { icon, type IconName } from "../../core/icons";
 import { IS_WINDOWS } from "../../core/platform";
@@ -73,12 +74,13 @@ function dangerGroup(body: string): string {
 }
 
 /** Disk size of the installed copy, shown with the files it describes. */
-function installSizeRow(size: number, installed: boolean): string {
-  if (!installed || !size || size <= 0) return "";
+function installSizeRow(size: number, installed: boolean, key = ""): string {
+  const bytes = (key ? measuredSize(key) : null) ?? size;
+  if (!installed || !bytes || bytes <= 0) return "";
   return row(
     t("feat.installedSize"),
     "",
-    `<span class="mg-size-value tabular-nums">${esc(fmtBytes(size))}</span>`,
+    `<span class="mg-size-value tabular-nums">${esc(fmtBytes(bytes))}</span>`,
   );
 }
 
@@ -311,6 +313,30 @@ export function closeManagePopup(): void {
   document.querySelectorAll(".manage-overlay").forEach((el) => el.remove());
 }
 
+/**
+ * The size row exists only once the folder is measured. Store records for a
+ * companion install (Xbox packages, EA App folders) carry no size at all, so the
+ * popup starts the same background walk the library uses and inserts the row
+ * when the number lands. The install path row is the insertion point because
+ * the files group is one list.
+ */
+function ensureManageInstallSize(appName: string): void {
+  const s = summaryOf(appName);
+  if (!s || !s.installed || !s.installPath) return;
+  const known = measuredSize(appName) ?? s.installSize;
+  if (known && known > 0) return;
+  void ensureMeasuredSize(appName, s.installPath).then((bytes) => {
+    if (!bytes || openManageAppName !== appName) return;
+    const value = manageRoot?.querySelector<HTMLElement>(".mg-size-value");
+    if (value) {
+      value.textContent = fmtBytes(bytes);
+      return;
+    }
+    const pathRow = manageRoot?.querySelector<HTMLElement>("#manage-install-path")?.closest(".row");
+    if (pathRow) pathRow.insertAdjacentHTML("afterend", installSizeRow(bytes, true));
+  });
+}
+
 /** Opens manage settings in a dialog so the game page stays on its current tab. */
 export function openManagePopup(appName: string): void {
   if (!manageRoot) return;
@@ -436,6 +462,7 @@ export function openManagePopup(appName: string): void {
     wireManageNavKeys(nav);
   }
   setManageTab(sections[0]?.dataset.tab ?? "");
+  ensureManageInstallSize(appName);
 
   // Ensure cloud settings and backups are hydrated when the popup opens.
   // Companion games have no cloud saves here, so the fetch is skipped.
@@ -623,7 +650,7 @@ function companionManageBody(s: EpicSummary, source: GameSource): string {
       );
   return `
     <div class="manage-tab-content">
-      ${group("files", "folder", t("manage.groupFiles"), `${files}${verify}${eaContent}${launchMode}${adopt}${move}${updates}${s.installed ? archiveManageRow(s) : ""}${installSizeRow(s.installSize, s.installed)}`)}
+      ${group("files", "folder", t("manage.groupFiles"), `${files}${verify}${eaContent}${launchMode}${adopt}${move}${updates}${s.installed ? archiveManageRow(s) : ""}${installSizeRow(s.installSize, s.installed, s.appName)}`)}
       ${saves}
       ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
@@ -744,7 +771,7 @@ function amazonManageBody(s: EpicSummary): string {
     : "";
   return `
     <div class="manage-tab-content">
-      ${group("files", "folder", t("manage.groupFiles"), `${files}${s.installed ? archiveManageRow(s) : ""}${installSizeRow(st.installSize || s.installSize, s.installed)}`)}
+      ${group("files", "folder", t("manage.groupFiles"), `${files}${s.installed ? archiveManageRow(s) : ""}${installSizeRow(st.installSize || s.installSize, s.installed, s.appName)}`)}
       ${saves}
       ${group("cover", "image", t("manage.groupCover"), row(t("manage.coverTitle"), t("manage.coverDesc"),
         `<button class="btn ghost small" data-act="open-custom-cover" data-target="cover" data-id="${s.appName}">${icon("image", 13)} ${t("manage.coverChange")}</button>`))}
@@ -847,7 +874,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           ${row(t("steam.managedBy"), t("steam.managedByDesc"), "")}
           ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || t("manage.unspecified"))}</span>`,
             `<button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`)}
-          ${installSizeRow(s.installSize, s.installed)}
+          ${installSizeRow(s.installSize, s.installed, s.appName)}
           ${row(t("manage.verifyTitle"), t("steam.verifyDesc"),
             `<button class="btn ghost small" data-act="steam-action" data-id="${steamId}" data-mode="validate">${icon("shield", 13)} ${t("steam.validate")}</button>`)}
           ${archiveManageRow(s)}
@@ -889,7 +916,7 @@ export function renderDrawerManage(s: EpicSummary): string {
           ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || t("manage.unspecified"))}</span>`,
             `<button class="btn ghost small" data-act="epic-open-folder" data-id="${s.appName}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`,
             gogCopyMissing ? `<div class="mg-note is-err">${icon("alert-triangle", 12)} ${t("sys.copyHealthTip")}</div>` : "")}
-          ${installSizeRow(s.installSize, s.installed)}
+          ${installSizeRow(s.installSize, s.installed, s.appName)}
           ${s.installed ? row(t("manage.verifyTitle"), t("manage.verifyDesc"),
             `<button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${s.appName}">${icon("shield", 13)} ${t("manage.verify")}</button>`,
             `<div id="manage-verify-box-container"></div>`) : ""}
@@ -975,7 +1002,7 @@ export function renderDrawerManage(s: EpicSummary): string {
         ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || st.installPath || t("manage.unspecified"))}</span>`,
           `${moveBtn}<button class="btn ghost small" data-act="epic-open-folder" data-id="${id}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`,
           `${copyIssueNote}${blockedMove ? `<div class="mg-note">${icon("info", 12)} ${t("manage.moveThirdPartyWarning", { name: esc(partner!.name) })}</div>` : ""}`)}
-        ${installSizeRow(st.installSize || s.installSize, s.installed)}
+        ${installSizeRow(st.installSize || s.installSize, s.installed, s.appName)}
         ${IS_WINDOWS
           ? row(t("manage.shortcutTitle"), t("manage.shortcutDesc"),
               `<button class="btn ghost small" data-act="manage-create-shortcut" data-id="${id}">${t("manage.createShortcut")}</button>`)
