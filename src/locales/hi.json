@@ -1451,6 +1451,7 @@
   "selective.installed": "इंस्टॉल है",
   "selective.note": "वैकल्पिक सामग्री को बाद में प्रबंधन टैब से बदला जा सकता है।",
   "install.title": "इंस्टॉल स्थान चुनें",
+  "install.titleWithGame": "{game} इंस्टॉल करें",
   "install.pathLabel": "फ़ोल्डर",
   "install.finalPath": "फ़ाइल पथ",
   "install.autoUpdate": "इस फ़ोल्डर के गेम स्वचालित रूप से अपडेट करें",

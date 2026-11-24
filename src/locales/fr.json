@@ -1378,6 +1378,7 @@
   "selective.installed": "Installé",
   "selective.note": "Le contenu facultatif peut être modifié plus tard depuis l’onglet Gérer.",
   "install.title": "Choisir l'emplacement d'installation",
+  "install.titleWithGame": "Installer {game}",
   "install.pathLabel": "Dossier",
   "install.finalPath": "Chemin du fichier",
   "install.autoUpdate": "Mettre à jour automatiquement les jeux de ce dossier",

@@ -1378,6 +1378,7 @@
   "selective.installed": "مثبّت",
   "selective.note": "يمكن تغيير المحتوى الاختياري لاحقًا من علامة التبويب إدارة.",
   "install.title": "اختيار موقع التثبيت",
+  "install.titleWithGame": "تثبيت {game}",
   "install.pathLabel": "المجلد",
   "install.finalPath": "مسار الملف",
   "install.autoUpdate": "تحديث الألعاب في هذا المجلد تلقائيًا",

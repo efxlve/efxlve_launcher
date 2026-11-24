@@ -1378,6 +1378,7 @@
   "selective.installed": "已安装",
   "selective.note": "可选内容之后可在管理选项卡中更改。",
   "install.title": "选择安装位置",
+  "install.titleWithGame": "安装 {game}",
   "install.pathLabel": "文件夹",
   "install.finalPath": "文件路径",
   "install.autoUpdate": "自动更新此文件夹中的游戏",

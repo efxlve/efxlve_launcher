@@ -1378,6 +1378,7 @@
   "selective.installed": "Instalado",
   "selective.note": "El contenido opcional se puede cambiar más tarde desde la pestaña Gestionar.",
   "install.title": "Elegir ubicación de instalación",
+  "install.titleWithGame": "Instalar {game}",
   "install.pathLabel": "Carpeta",
   "install.finalPath": "Ruta del archivo",
   "install.autoUpdate": "Actualizar automáticamente los juegos de esta carpeta",

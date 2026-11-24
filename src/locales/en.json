@@ -1451,6 +1451,7 @@
   "selective.installed": "Installed",
   "selective.note": "Optional content can be changed later from the Manage tab.",
   "install.title": "Choose Install Location",
+  "install.titleWithGame": "Install {game}",
   "install.pathLabel": "Folder",
   "install.finalPath": "File path",
   "install.autoUpdate": "Automatically update games in this folder",

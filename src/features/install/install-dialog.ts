@@ -414,53 +414,69 @@ function selectedSizes(opts: GameInstallOptions): { download: number; disk: numb
 }
 
 /** One install-option group (modes, extras, languages). */
-function optionSection(label: string, rows: InstallOptionTag[]): string {
+function optionSection(label: string, rows: InstallOptionTag[], grid = false, leading = ""): string {
   if (rows.length === 0) return "";
+  const selected = rows.filter((tag) => S.selectedInstallTags.has(tag.tag)).length;
   return `
     <div class="install-opt-group">
-      <div class="install-opt-head">${label}</div>
-      ${rows
-        .map(
-          (tag) => `
+      <div class="install-opt-head"><span>${label}</span><span class="install-opt-count">${selected}/${rows.length}</span></div>
+      ${leading}
+      <div class="install-opt-list${grid ? " is-grid" : ""}">
+        ${rows
+          .map(
+            (tag) => `
         <label class="install-opt-row">
+          <input type="checkbox" class="selective-checkbox" data-act="selective-toggle-tag" data-tag="${esc(tag.tag)}" ${S.selectedInstallTags.has(tag.tag) ? "checked" : ""} />
           <span class="install-opt-label">${esc(localizeMessage(tag.label))}</span>
-          <span class="install-opt-right">
-            <span class="selective-row-size">${fmtBytes(tag.size)}</span>
-            <input type="checkbox" class="selective-checkbox" data-act="selective-toggle-tag" data-tag="${esc(tag.tag)}" ${S.selectedInstallTags.has(tag.tag) ? "checked" : ""} />
-          </span>
+          <span class="install-opt-size">${fmtBytes(tag.size)}</span>
         </label>`,
-        )
-        .join("")}
+          )
+          .join("")}
+      </div>
     </div>`;
 }
 
-/** The add-on list, with installed packs kept visible but locked. */
+/** The required core row: always installed, never optional. */
+function baseRow(opts: GameInstallOptions): string {
+  if (opts.baseSize === 0) return "";
+  return `
+    <label class="install-opt-row is-installed">
+      <input type="checkbox" class="selective-checkbox" checked disabled />
+      <span class="install-opt-label">${esc(opts.title)} <span class="muted-sub">${t("selective.required")}</span></span>
+      <span class="install-opt-size">${fmtBytes(opts.baseSize)}</span>
+    </label>`;
+}
+
+/**
+ * The add-on list. Rows without a size are separate catalog entries (often a
+ * mode that is already in the list above), not something legendary can install
+ * here; the old modal keeps the full list for account-bound records.
+ */
 function dlcSection(opts: GameInstallOptions): string {
-  if (opts.dlcs.length === 0) return "";
+  const rows = opts.dlcs.filter((dlc) => dlc.size > 0);
+  if (rows.length === 0) return "";
   return `
     <div class="install-opt-group">
-      <div class="install-opt-head">${t("selective.dlcs")}</div>
-      ${opts.dlcs
-        .map((dlc) =>
-          dlc.installed
-            ? `
+      <div class="install-opt-head"><span>${t("selective.dlcs")}</span></div>
+      <div class="install-opt-list">
+        ${rows
+          .map((dlc) =>
+            dlc.installed
+              ? `
         <label class="install-opt-row is-installed">
+          <input type="checkbox" class="selective-checkbox" checked disabled />
           <span class="install-opt-label">${esc(dlc.title)} <span class="chip ok">${t("selective.installed")}</span></span>
-          <span class="install-opt-right">
-            <span class="selective-row-size">${fmtBytes(dlc.size)}</span>
-            <input type="checkbox" class="selective-checkbox" checked disabled />
-          </span>
+          <span class="install-opt-size">${fmtBytes(dlc.size)}</span>
         </label>`
-            : `
+              : `
         <label class="install-opt-row">
+          <input type="checkbox" class="selective-checkbox" data-act="selective-toggle-dlc" data-dlc="${esc(dlc.appId)}" ${S.selectedDlcAppIds.has(dlc.appId) ? "checked" : ""} />
           <span class="install-opt-label">${esc(dlc.title)}</span>
-          <span class="install-opt-right">
-            <span class="selective-row-size">${fmtBytes(dlc.size)}</span>
-            <input type="checkbox" class="selective-checkbox" data-act="selective-toggle-dlc" data-dlc="${esc(dlc.appId)}" ${S.selectedDlcAppIds.has(dlc.appId) ? "checked" : ""} />
-          </span>
+          <span class="install-opt-size">${fmtBytes(dlc.size)}</span>
         </label>`,
-        )
-        .join("")}
+          )
+          .join("")}
+      </div>
     </div>`;
 }
 
@@ -491,21 +507,20 @@ export function renderInstallDialog(): void {
     loading
       ? `<span class="install-size-pending" aria-hidden="true"></span>`
       : `<strong>${fmtBytes(bytes)}</strong>`;
-  const options = opts && opts.hasOptions
-    ? `
-          <div class="install-options">
-            <div class="install-opt-title">${t("selective.options")}</div>
-            ${optionSection(t("selective.gameModes"), opts.tags.filter((tag) => tag.category === "modes"))}
-            ${optionSection(t("selective.extraPacks"), opts.tags.filter((tag) => tag.category === "extras"))}
-            ${optionSection(t("selective.extraLanguages"), opts.tags.filter((tag) => tag.category === "languages"))}
-            ${dlcSection(opts)}
-          </div>`
+  const sections = opts && opts.hasOptions
+    ? [
+        optionSection(t("selective.gameModes"), opts.tags.filter((tag) => tag.category === "modes"), true, baseRow(opts)),
+        optionSection(t("selective.extraPacks"), opts.tags.filter((tag) => tag.category === "extras")),
+        optionSection(t("selective.extraLanguages"), opts.tags.filter((tag) => tag.category === "languages"), true),
+        dlcSection(opts),
+      ].join("")
     : "";
+  const options = sections ? `<div class="install-options">${sections}</div>` : "";
   installRoot.innerHTML = `
     <div class="selective-overlay" data-act="install-overlay-close">
       <div class="selective-dialog install-dialog">
         <div class="selective-header">
-          <h2>${t("install.title")}</h2>
+          <h2>${opts?.hasOptions ? esc(t("install.titleWithGame", { game: s.title })) : t("install.title")}</h2>
           <button class="manage-head-close" data-act="install-cancel" title="${t("common.close")}">${icon("x", 16)}</button>
         </div>
         <div class="install-body">
@@ -536,16 +551,18 @@ export function renderInstallDialog(): void {
 
           ${options}
 
-          ${isEa || isUbi ? "" : `<label class="install-check-row">
-            <input type="checkbox" class="selective-checkbox" data-act="install-toggle-autoupdate" ${S.installDialogAutoUpdate ? "checked" : ""} />
-            <span>${t("install.autoUpdate")}</span>
-          </label>`}
-          ${IS_WINDOWS && !isEa && !isUbi
-            ? `<label class="install-check-row">
-            <input type="checkbox" class="selective-checkbox" data-act="install-toggle-shortcut" ${S.installDialogShortcut ? "checked" : ""} />
-            <span>${t("manage.createShortcut")}</span>
-          </label>`
-            : ""}
+          ${isEa || isUbi ? "" : `<div class="install-prefs">
+            <label class="install-check-row">
+              <input type="checkbox" class="selective-checkbox" data-act="install-toggle-autoupdate" ${S.installDialogAutoUpdate ? "checked" : ""} />
+              <span>${t("install.autoUpdate")}</span>
+            </label>
+            ${IS_WINDOWS
+              ? `<label class="install-check-row">
+                <input type="checkbox" class="selective-checkbox" data-act="install-toggle-shortcut" ${S.installDialogShortcut ? "checked" : ""} />
+                <span>${t("manage.createShortcut")}</span>
+              </label>`
+              : ""}
+          </div>`}
         </div>
         <div class="install-footer">
           ${isGog ? `<button type="button" class="btn ghost small" data-act="gog-import-existing" data-id="${esc(appName)}">${t("settings.importInstalled")}</button>` : ""}

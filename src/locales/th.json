@@ -1378,6 +1378,7 @@
   "selective.installed": "ติดตั้งแล้ว",
   "selective.note": "เนื้อหาเสริมสามารถเปลี่ยนได้ภายหลังในแท็บจัดการ",
   "install.title": "เลือกตำแหน่งติดตั้ง",
+  "install.titleWithGame": "ติดตั้ง {game}",
   "install.pathLabel": "โฟลเดอร์",
   "install.finalPath": "เส้นทางไฟล์",
   "install.autoUpdate": "อัปเดตเกมในโฟลเดอร์นี้อัตโนมัติ",
