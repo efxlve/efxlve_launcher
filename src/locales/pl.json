@@ -1215,6 +1215,7 @@
   "dl.timeoutError": "Serwer Epic Games nie odpowiedział na czas (przekroczenie czasu odczytu). Sprawdź połączenie i spróbuj ponownie.",
   "dl.permissionDenied": "Odmowa zapisu w folderze instalacji.",
   "dl.sessionExpired": "Sesja Epic Games wygasła. Zaloguj się ponownie w Ustawieniach.",
+  "dl.epicBusy": "Inne pobieranie Legendary już trwa. Jeśli go nie widzisz, uruchom launcher ponownie.",
   "manage.shortcutFailed": "Nie udało się utworzyć skrótu: {msg}",
   "manage.argsSaved": "Zapisano parametry uruchamiania",
   "manage.argsSaveFailed": "Błąd zapisu: {msg}",

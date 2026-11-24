@@ -297,6 +297,9 @@ fn is_routine_context(line: &str) -> bool {
 }
 
 pub(crate) fn short_error(err_text: &str) -> String {    let low = err_text.to_lowercase();
+    if low.contains("failed to acquire installed data lock") {
+        return "@t:dl.epicBusy".to_string();
+    }
     if low.contains("429") || low.contains("too many requests") {
         return "@t:dl.rateLimited".to_string();
     }

@@ -1215,6 +1215,7 @@
   "dl.timeoutError": "Epic Games 伺服器未及時回應（讀取逾時）。請檢查網際網路連線並再試一次。",
   "dl.permissionDenied": "安裝資料夾的寫入權限被拒絕。",
   "dl.sessionExpired": "Epic Games 工作階段已過期。請在設定中重新登入。",
+  "dl.epicBusy": "另一個 Legendary 下載已在執行中。如果看不到它，請重新啟動啟動器。",
   "manage.shortcutFailed": "無法建立捷徑：{msg}",
   "manage.argsSaved": "已儲存啟動參數",
   "manage.argsSaveFailed": "儲存錯誤：{msg}",

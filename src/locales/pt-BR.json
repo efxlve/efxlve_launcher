@@ -1215,6 +1215,7 @@
   "dl.timeoutError": "O servidor da Epic Games não respondeu a tempo (tempo de leitura esgotado). Verifique a conexão e tente de novo.",
   "dl.permissionDenied": "Permissão de gravação negada para a pasta de instalação.",
   "dl.sessionExpired": "A sessão da Epic Games expirou. Entre de novo em Configurações.",
+  "dl.epicBusy": "Outro download do Legendary já está em andamento. Se não estiver visível, reinicie o launcher.",
   "manage.shortcutFailed": "Não foi possível criar o atalho: {msg}",
   "manage.argsSaved": "Parâmetros de inicialização salvos",
   "manage.argsSaveFailed": "Erro ao salvar: {msg}",

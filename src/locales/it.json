@@ -1215,6 +1215,7 @@
   "dl.timeoutError": "Il server Epic Games non ha risposto in tempo (timeout di lettura). Controlla la connessione e riprova.",
   "dl.permissionDenied": "Permesso di scrittura negato per la cartella di installazione.",
   "dl.sessionExpired": "La sessione Epic Games è scaduta. Accedi di nuovo da Impostazioni.",
+  "dl.epicBusy": "Un altro download di Legendary è già in corso. Se non lo vedi, riavvia il launcher.",
   "manage.shortcutFailed": "Impossibile creare il collegamento: {msg}",
   "manage.argsSaved": "Parametri di avvio salvati",
   "manage.argsSaveFailed": "Errore di salvataggio: {msg}",

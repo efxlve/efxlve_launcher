@@ -1215,6 +1215,7 @@
   "dl.timeoutError": "Le serveur Epic Games n'a pas répondu à temps (délai de lecture). Vérifie ta connexion internet et réessaie.",
   "dl.permissionDenied": "Droit d'écriture refusé pour le dossier d'installation.",
   "dl.sessionExpired": "La session Epic Games a expiré. Reconnecte-toi depuis les Paramètres.",
+  "dl.epicBusy": "Un autre téléchargement Legendary est déjà en cours. S'il n'est pas visible, redémarrez le lanceur.",
   "manage.shortcutFailed": "Impossible de créer le raccourci : {msg}",
   "manage.argsSaved": "Paramètres de lancement enregistrés",
   "manage.argsSaveFailed": "Erreur d'enregistrement : {msg}",

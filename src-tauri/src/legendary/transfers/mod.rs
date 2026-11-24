@@ -9,6 +9,7 @@
 //! | `paths.rs` | install root and `legendary.exe` |
 //! | `guard.rs` | folders that may be deleted |
 //! | `queue.rs` | the one-at-a-time queue and its monitor |
+//! | `tree.rs` | the install process tree and leftovers from earlier runs |
 //! | `launch.rs` | start and stop a running game |
 //! | `uninstall.rs` | `legendary uninstall` plus a guarded folder delete |
 
@@ -17,6 +18,7 @@ mod launch;
 mod parse;
 mod paths;
 mod queue;
+mod tree;
 mod uninstall;
 
 // guard.rs: delete-safety checks shared with the GOG uninstall.
@@ -41,7 +43,11 @@ pub use paths::*;
 // queue.rs: EpicDlState, DlProgress, DlPaused, DlQueueStatus, emit_progress_full, epic_install_game, epic_install_with_options, epic_resume_pending_download, epic_cancel_download, epic_pause_download, epic_resume_download, epic_reorder_queue, epic_get_queue
 #[allow(unused_imports)]
 pub use queue::*;
-pub(crate) use queue::transfer_active;
+pub(crate) use queue::{stop_transfer_on_exit, transfer_active};
+
+// tree.rs: legendary downloads die with the launcher and a boot sweep ends
+// leftovers from an earlier run that still hold installed.json.lock.
+pub(crate) use tree::kill_stale_transfers;
 
 // uninstall.rs: epic_uninstall_game
 #[allow(unused_imports)]

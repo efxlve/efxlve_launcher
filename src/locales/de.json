@@ -1215,6 +1215,7 @@
   "dl.timeoutError": "Der Epic Games-Server hat nicht rechtzeitig geantwortet (Lese-Zeitüberschreitung). Prüfe deine Internetverbindung und versuch es erneut.",
   "dl.permissionDenied": "Schreibrecht für den Installationsordner verweigert.",
   "dl.sessionExpired": "Die Epic Games-Sitzung ist abgelaufen. Melde dich in den Einstellungen erneut an.",
+  "dl.epicBusy": "Ein weiterer Legendary-Download läuft bereits. Wenn er nicht sichtbar ist, starte den Launcher neu.",
   "manage.shortcutFailed": "Verknüpfung konnte nicht erstellt werden: {msg}",
   "manage.argsSaved": "Startparameter gespeichert",
   "manage.argsSaveFailed": "Speicherfehler: {msg}",

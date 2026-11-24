@@ -254,6 +254,16 @@ fn debug_noise_does_not_hide_the_cloud_sync_failure() {
     );
 }
 
+#[test]
+fn a_legendary_install_lock_names_the_other_transfer() {
+    assert_eq!(
+        short_error(
+            "[cli] CRITICAL: Failed to acquire installed data lock, only one instance of Legendary may install/import/move applications at a time."
+        ),
+        "@t:dl.epicBusy"
+    );
+}
+
 #[tokio::test]
 async fn crlf_lines_splits_on_carriage_return() {
     // Legendary overwrites progress with `\r`; the reader must split on both \r and \n.

@@ -92,6 +92,22 @@ pub(super) async fn kill_download_tree(pid: u32) {
     }
 }
 
+/// Ends a running transfer as the launcher exits. The window close and the
+/// tray quit keep the process alive while a download is active, so this only
+/// runs for a real quit, the updater's restart or a forced exit.
+pub(crate) fn stop_transfer_on_exit(app: &AppHandle) {
+    let pid = app
+        .state::<AppState>()
+        .epic_dl
+        .lock()
+        .ok()
+        .and_then(|slot| slot.pid);
+    if let Some(pid) = pid {
+        kill_download_tree_blocking(pid);
+    }
+    super::tree::terminate();
+}
+
 pub struct EpicDlState {
     pub active: Option<String>,
     pub pid: Option<u32>,
@@ -818,7 +834,15 @@ pub(super) fn spawn_install_with_tags(
         use std::os::unix::process::CommandExt;
         cmd.as_std_mut().process_group(0);
     }
-    cmd.spawn()
+    let child = cmd.spawn()?;
+    // legendary's manager and download workers are grandchildren. The job
+    // keeps them inside the launcher's lifetime; `kill_on_drop` would only
+    // signal this one process.
+    #[cfg(windows)]
+    if let Some(pid) = child.id() {
+        super::tree::contain(pid);
+    }
+    Ok(child)
 }
 
 /// Drains the stdout pipe in the background (a full pipe would deadlock the process!).
@@ -1395,6 +1419,34 @@ pub(super) async fn monitor_download(
     };
     let log_lines: Vec<String> = log_lines.into_iter().collect();
     crate::download_log::append(&app, &app_name, &result, &log_lines);
+    // The workers are separate processes. A failed attempt must not keep
+    // writing into the game folder or hold installed.json.lock against the
+    // next start, so end the whole tree before releasing the slot. The pid is
+    // read from the slot because the restart paths replace the child; it is
+    // only killed while this generation still owns the slot.
+    if result.is_err() {
+        let pid = app.state::<AppState>().epic_dl.lock().ok().and_then(|slot| {
+            if slot.active_generation == Some(generation) {
+                slot.pid
+            } else {
+                None
+            }
+        });
+        if let Some(pid) = pid {
+            kill_download_tree(pid).await;
+        }
+    }
+    // The job is shared, so only its current owner may empty it. A newer
+    // generation taking over mid-monitor keeps its own tree.
+    let owns_slot = app
+        .state::<AppState>()
+        .epic_dl
+        .lock()
+        .map(|slot| slot.active_generation == Some(generation))
+        .unwrap_or(false);
+    if owns_slot {
+        super::tree::terminate();
+    }
 
     // Release the slot only after this monitor has seen the child exit.
     // An older monitor must not delete a newer transfer's files or resume record.

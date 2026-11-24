@@ -1215,6 +1215,7 @@
   "dl.timeoutError": "Epic Games のサーバーが時間内に応答しませんでした（読み取りタイムアウト）。インターネット接続を確認して、再試行してください。",
   "dl.permissionDenied": "インストールフォルダーへの書き込みが拒否されました。",
   "dl.sessionExpired": "Epic Games のセッションの期限が切れました。設定から再度サインインしてください。",
+  "dl.epicBusy": "別の Legendary ダウンロードが既に実行中です。表示されない場合はランチャーを再起動してください。",
   "manage.shortcutFailed": "ショートカットを作成できませんでした: {msg}",
   "manage.argsSaved": "起動パラメーターを保存しました",
   "manage.argsSaveFailed": "保存エラー: {msg}",

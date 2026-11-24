@@ -1215,6 +1215,7 @@
   "dl.timeoutError": "Epic Games 服务器未及时响应（读取超时）。请检查互联网连接并重试。",
   "dl.permissionDenied": "安装文件夹的写入权限被拒绝。",
   "dl.sessionExpired": "Epic Games 会话已过期。请在设置中重新登录。",
+  "dl.epicBusy": "另一个 Legendary 下载已在运行。如果看不到它，请重启启动器。",
   "manage.shortcutFailed": "无法创建快捷方式：{msg}",
   "manage.argsSaved": "已保存启动参数",
   "manage.argsSaveFailed": "保存错误：{msg}",

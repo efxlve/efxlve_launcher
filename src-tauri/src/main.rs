@@ -2061,6 +2061,17 @@ fn main() {
                 heartbeat::init(dir);
                 perf::start_session();
             }
+            // A legendary transfer cannot be adopted by a new launcher
+            // process: it still holds installed.json.lock and would fail every
+            // update. Only this installation's own binary is matched, so
+            // Heroic's or a system legendary is never touched.
+            let legendary_bin = legendary::paths::downloaded_binary(app.handle());
+            let stale = legendary::transfers::kill_stale_transfers(&legendary_bin);
+            if stale > 0 {
+                perf::write_line_global(&format!(
+                    "boot: ended {stale} legendary process(es) left by an earlier run"
+                ));
+            }
             // Bind the download cap listener once; it stays idle at 0 Mbit/s.
             let limit_settings = load_settings(app.handle());
             download_limit::init(limit_settings.download_limit_mbps.unwrap_or(0.0));
@@ -2943,6 +2954,9 @@ fn main() {
             // The last geometry must be on disk even when a tray quit skips
             // the window close event.
             window_state::stop(app_handle);
+            // A transfer must not outlive the launcher: its workers would keep
+            // writing and hold legendary's install lock for the next run.
+            legendary::transfers::stop_transfer_on_exit(app_handle);
             // The last line of a run. Without it a log cannot tell a clean quit
             // from a process that died between two boots.
             perf::write_line_global("boot: exit");

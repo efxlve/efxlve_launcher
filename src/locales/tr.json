@@ -1287,6 +1287,7 @@
   "dl.timeoutError": "Epic Games sunucusu yanıt vermedi (Zaman aşımı). Lütfen internet bağlantınızı kontrol edip tekrar deneyin.",
   "dl.permissionDenied": "Kurulum klasörüne dosya yazma izni reddedildi.",
   "dl.sessionExpired": "Epic Games oturum süresi doldu. Lütfen Ayarlar'dan tekrar giriş yapın.",
+  "dl.epicBusy": "Başka bir Legendary indirmesi zaten çalışıyor. Görünmüyorsa başlatıcıyı yeniden açın.",
   "manage.shortcutFailed": "Kısayol oluşturulamadı: {msg}",
   "manage.argsSaved": "Başlatma parametreleri kaydedildi",
   "manage.argsSaveFailed": "Kayıt hatası: {msg}",

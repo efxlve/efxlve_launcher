@@ -1287,6 +1287,7 @@
   "dl.timeoutError": "Epic Games server did not respond in time (Read timeout). Please check your internet connection and try again.",
   "dl.permissionDenied": "Write permission denied for the installation folder.",
   "dl.sessionExpired": "Epic Games session has expired. Please sign in again from Settings.",
+  "dl.epicBusy": "Another Legendary download is already running. If it is not visible, restart the launcher.",
   "manage.shortcutFailed": "Could not create shortcut: {msg}",
   "manage.argsSaved": "Launch parameters saved",
   "manage.argsSaveFailed": "Save error: {msg}",

@@ -134,7 +134,7 @@ docs: commit every completed change without asking
 - One file, one job. Past about 1,500 lines, split along a one-way dependency.
   Do not cut a state machine in half if the two halves call each other.
 - Rust folders: `legendary/transfers/` (`parse`, `paths`, `guard`, `queue`,
-  `launch`, `uninstall`), `legendary/commands/` (one file per job), `steam/`,
+  `tree`, `launch`, `uninstall`), `legendary/commands/` (one file per job), `steam/`,
   `steam_auth/` (`wire`, `vault`, `session`).
 - `store_extension.js` is injected into the store webview; `store_host.rs` only
   places and sizes that webview.

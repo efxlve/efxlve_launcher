@@ -1215,6 +1215,7 @@
   "dl.timeoutError": "لم يستجب خادم Epic Games في الوقت المناسب (مهلة القراءة). يرجى التحقق من اتصال الإنترنت وإعادة المحاولة.",
   "dl.permissionDenied": "رُفض إذن الكتابة لمجلد التثبيت.",
   "dl.sessionExpired": "انتهت جلسة Epic Games. يرجى تسجيل الدخول مرة أخرى من الإعدادات.",
+  "dl.epicBusy": "هناك تنزيل Legendary آخر قيد التشغيل بالفعل. إذا لم يكن ظاهرًا، فأعد تشغيل المشغّل.",
   "manage.shortcutFailed": "تعذر إنشاء الاختصار: {msg}",
   "manage.argsSaved": "حُفظت معلمات التشغيل",
   "manage.argsSaveFailed": "خطأ في الحفظ: {msg}",
