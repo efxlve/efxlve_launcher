@@ -1308,8 +1308,15 @@ export function paintIgdbHeroArt(appName: string): void {
   const s = summaryOf(appName);
   if (!s || epicWideArt(s)) return;
   const art = igdbHeroArt(appName);
+  if (!art) return;
   const heroEl = modalRoot.querySelector<HTMLImageElement>(".gp-hero-img");
-  if (!art || !heroEl || heroEl.dataset.imgUrl !== (s.cover || "")) return;
+  if (!heroEl) {
+    // The page opened before any picture existed, so the hero rendered with no
+    // image slot at all. Repaint it now that key art has landed.
+    if (!s.cover) repaintGameHero(appName);
+    return;
+  }
+  if (heroEl.dataset.imgUrl !== (s.cover || "")) return;
   heroEl.dataset.imgUrl = art;
   heroEl.dataset.imgWidth = String(IMAGE_HERO_WIDTH);
   heroEl.src = cachedImage(art, IMAGE_HERO_WIDTH);
