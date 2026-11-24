@@ -63,7 +63,7 @@ the window is hidden.
 | Download chart | Stops sampling and drawing while the window is hidden | A minimized launcher does not run a per-second canvas/DOM pass for a Steam or Epic transfer |
 | Mini player | Polls and paints only while the launcher is visible | Spotify state checks and sidebar repaints no longer run behind a hidden window |
 | Effects | Global reduced-effects class: no animation, no transition, no backdrop blur; focus ring preserved; spinner exempt | Removes continuous compositing on weak GPUs without moving or hiding controls |
-| Neon Grid game page | The scene paints on a fixed plane behind the scrolling sheet, and the near-opaque panels drop their backdrop blur | The fixed background and every card blur were redone on each scroll frame; both now paint once |
+| Neon Grid game page | The scrolling sheet is transparent over the body scene, and the near-opaque panels drop their backdrop blur | The fixed background and every card blur were redone on each scroll frame; both now paint once, and a fixed scene plane no longer covers the scrollbar |
 | Theme gallery | Starts with 48 cards; a sentinel appends the next batch 600 px before it, and search re-batches its matches | Opening Appearance parsed and laid out all 250 preview mockups before the first paint |
 | Image cache clear | Also clears the in-memory map and request set | The Settings button actually releases RAM, not only disk |
 | Media Studio scan | The newest 300 captures are chosen before any thumbnail is built, and the thumbnails are spread over four workers with a progress event | The first scan decoded a preview for every file on disk in one blocking response, so the tab stayed empty with no sign of work |

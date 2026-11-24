@@ -11,20 +11,10 @@
 :root[data-surface="neongrid"] #view { background: transparent; }
 /* The game page scrolls inside this fixed sheet. A viewport-fixed background
    on the scroller makes WebView2 repaint the full-size SVG on every scroll
-   frame, so paint the scene on a fixed plane and keep the sheet itself
-   opaque (the library must not show through). */
-:root[data-surface="neongrid"] .overlay { background: var(--bg); }
-:root[data-surface="neongrid"] .overlay::before {
-  content: "";
-  position: fixed;
-  top: var(--winbar-h);
-  left: var(--sidebar-w);
-  right: 0;
-  bottom: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: var(--scene-bg);
-}
+   frame, so let the body scene show through the transparent sheet instead.
+   A fixed pseudo-element here would paint over the scrollbar; the library is
+   already hidden while the page is open. */
+:root[data-surface="neongrid"] .overlay { background: transparent; }
 
 /* Neon Grid (Cyberpunk) Custom Visible High-Tech Scrollbars */
 :root[data-surface="neongrid"] ::-webkit-scrollbar-thumb {
