@@ -2579,6 +2579,19 @@ function localEmulatorEligible(appName: string): boolean {
   return source === "epic" || source === "gog" || source === "amazon";
 }
 
+/**
+ * Cheap local answer for the library's idle pass: whether this installed store
+ * copy has an achievement source the page reads without the player asking.
+ * That is a local emulator file, a manually enabled Steam definition list, or
+ * the EOS SDK (Steam definitions plus the game's own unlock log). A Steamworks
+ * game with no emulator still needs the setup card, so it stays out.
+ */
+export async function hasLocalAchievementSource(appName: string): Promise<boolean> {
+  if (!localEmulatorEligible(appName) || !storeInstallDir(appName)) return false;
+  const probe = await ensureAchievementProbe(appName);
+  return Boolean(probe.emulator) || storeDefinitionSourceEnabled(appName) || (probe.eos && !probe.steamworks);
+}
+
 function storeInstallDir(appName: string): string | null {
   return summaryOf(appName)?.installPath ?? null;
 }

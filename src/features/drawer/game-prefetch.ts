@@ -19,7 +19,7 @@ import { perfMark } from "../../core/perf";
 import { S } from "../../core/state";
 import { canonicalGameTitle, summaryOf } from "../../core/selectors";
 import { achSummaryOf } from "../../core/game-view";
-import { fetchAndRenderAchievements, prefetchGamePage } from "./drawer-view";
+import { fetchAndRenderAchievements, hasLocalAchievementSource, prefetchGamePage } from "./drawer-view";
 
 /** Games per pass. Enough to cover the shelf, small enough to stay quiet. */
 const PREFETCH_GAMES = 6;
@@ -208,10 +208,13 @@ async function runAchievementPass(): Promise<void> {
       // Metadata alone gave us the set size, not the player's progress. Those
       // are exactly the covers that used to show a false "0 / N" until the
       // game page was opened. A card with no summary at all still has a store
-      // worth asking when that store is the EA App.
+      // worth asking when that store is the EA App or the installed copy keeps
+      // its set locally (EOS log or a Steam API emulator).
       const needsProgress = knownSet && ach?.progress_known === false;
       const needsEaAnswer = !knownSet && eaBackedAchievements(id, eaTitles);
-      if (!needsProgress && !needsEaAnswer) continue;
+      const needsLocalAnswer =
+        !knownSet && !needsEaAnswer && (await hasLocalAchievementSource(id));
+      if (!needsProgress && !needsEaAnswer && !needsLocalAnswer) continue;
       queue.push(id);
       if (queue.length >= ACH_PREFETCH_GAMES) break;
     }
