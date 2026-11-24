@@ -327,7 +327,7 @@ export function unifiedPlayerHtml(m: OverlayMediaModel): string {
 
       <div class="ov-sp-extras">
         ${m.volumePercent != null ? `
-          <div class="ov-sp-volume" title="Volume">
+          <div class="ov-sp-volume" title="${esc(t("mini.volume"))}">
             ${icon("volume-2", 13)}
             <input type="range" id="ov-sp-volume" min="0" max="100" value="${m.volumePercent}" />
           </div>` : `<span></span>`}
@@ -370,7 +370,7 @@ export function libraryTabsHtml(): string {
       <div class="ov-sp-search-box">
         ${icon("search", 12)}
         <input type="text" id="ov-sp-search-input" placeholder="${esc(t("lib.searchPlaceholder"))}" value="${esc(spotifySearchQuery)}" />
-        ${spotifySearchQuery ? `<button class="ov-sp-search-clear" data-ov="sp-clear-search" title="Clear">${icon("x", 12)}</button>` : ""}
+        ${spotifySearchQuery ? `<button class="ov-sp-search-clear" data-ov="sp-clear-search" title="${esc(t("common.clear"))}">${icon("x", 12)}</button>` : ""}
       </div>` : ""}`;
 }
 

@@ -265,7 +265,7 @@ function chromeHtml(): string {
       <span class="ov-browser-omni-icon">${icon("search", 13)}</span>
       <input id="ov-browser-input" class="ov-browser-input" spellcheck="false"
         placeholder="${esc(t("overlay.browserAddress"))}" />
-      <button class="ov-browser-omni-clear" id="ov-browser-clear-btn" title="Temizle" style="display:none">
+      <button class="ov-browser-omni-clear" id="ov-browser-clear-btn" title="${esc(t("common.clear"))}" style="display:none">
         ${icon("x", 12)}
       </button>
     </div>`;
