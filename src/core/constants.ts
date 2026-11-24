@@ -348,6 +348,8 @@ export const RECENT_KEY = "efxlve-recent";
 export const PALETTE_HISTORY_KEY = "efxlve-palette-history";
 /** Fired after any library setter rebuilds the cross-store maps. */
 export const LIBRARY_DATA_EVENT = "efxlve:library-data";
+/** The library grid rebuilt its card set (tab, filter, sort or next page). */
+export const LIBRARY_RESULTS_EVENT = "efxlve:library-results";
 /** Recently installed and updated game ids. */
 export const RECENT_INSTALLS_KEY = "efxlve-recent-installs";
 /** Initial number of library cards rendered before progressive chunking kicks in. */

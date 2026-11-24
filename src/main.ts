@@ -66,7 +66,7 @@ import { applyWinbarAppIcon } from "./core/app-icon";
 import { applyUiScale } from "./core/game-status";
 import { applyCrosshairConfig, loadCrosshair, setCrosshairVisible } from "./core/crosshair";
 import { applyGameScene, initGameSceneHover } from "./core/game-scene";
-import { isSteamDeckDevice } from "./core/constants";
+import { LIBRARY_RESULTS_EVENT, isSteamDeckDevice } from "./core/constants";
 
 applySurface(S.surface, false);
 // Wallpapers live in IndexedDB. Repaint once they are in the synchronous cache,
@@ -229,6 +229,7 @@ function render(): void {
         : renderSettings();
   if (S.view === "library") {
     setupLibScrollObserver();
+    window.dispatchEvent(new CustomEvent(LIBRARY_RESULTS_EVENT));
     if (S.isColDropdownOpen) positionColDropdownMenu();
     if (libStripScroll > 0) {
       const strip = document.querySelector<HTMLElement>(".lib-filters");

@@ -14,7 +14,7 @@
  * player always wins over the prefetch.
  */
 
-import { isTauri } from "../../core/constants";
+import { LIBRARY_RESULTS_EVENT, isTauri } from "../../core/constants";
 import { perfMark } from "../../core/perf";
 import { S } from "../../core/state";
 import { canonicalGameTitle, summaryOf } from "../../core/selectors";
@@ -173,8 +173,10 @@ const ACH_PREFETCH_GAMES = 12;
 const ACH_PREFETCH_GAP_MS = 900;
 
 let achPassRunning = false;
+let achPassQueued = false;
 let achPassTimer = 0;
 let achRetryLeft = 1;
+let libraryResultsListening = false;
 
 /**
  * True when a card's achievements are read from the EA App: the card is the EA
@@ -189,7 +191,12 @@ function eaBackedAchievements(appName: string, eaTitles: ReadonlySet<string>): b
 }
 
 async function runAchievementPass(): Promise<void> {
-  if (achPassRunning) return;
+  if (achPassRunning) {
+    // A filter or sort changed the grid while the last card was still being
+    // fetched: run once more when this pass finishes instead of dropping it.
+    achPassQueued = true;
+    return;
+  }
   achPassRunning = true;
   try {
     if (S.offlineMode) return;
@@ -235,6 +242,10 @@ async function runAchievementPass(): Promise<void> {
     perfMark(`prefetch:achievements:${queue.length}`);
   } finally {
     achPassRunning = false;
+    if (achPassQueued) {
+      achPassQueued = false;
+      window.setTimeout(() => void runAchievementPass(), 800);
+    }
   }
 }
 
@@ -245,10 +256,17 @@ async function runAchievementPass(): Promise<void> {
  * window is idle. Every launch starts from the first card, so already-known
  * games are skipped and the next page is reached on the next run.
  */
-export function prefetchVisibleAchievements(): void {
-  if (!isTauri || achPassTimer) return;
+export function prefetchVisibleAchievements(delayMs = 4000): void {
+  if (!isTauri) return;
+  if (!libraryResultsListening) {
+    libraryResultsListening = true;
+    // A tab, filter or sort rebuilds the grid; the old cards are gone and the
+    // new ones need the same first pass without waiting for a restart.
+    window.addEventListener(LIBRARY_RESULTS_EVENT, () => prefetchVisibleAchievements(1200));
+  }
+  if (achPassTimer) return;
   achPassTimer = window.setTimeout(() => {
     achPassTimer = 0;
     idleRun(() => void runAchievementPass());
-  }, 4000);
+  }, delayMs);
 }

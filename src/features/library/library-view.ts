@@ -6,7 +6,7 @@
  * Full-page innerHTML of a grown 500-card chunk is treated as a bug.
  */
 
-import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, MORE_CARD_CHUNK, PREFETCH_COVERS, isTauri } from "../../core/constants";
+import { INITIAL_CARD_CHUNK, LIB_PAGE_SIZES, LIBRARY_RESULTS_EVENT, MORE_CARD_CHUNK, PREFETCH_COVERS, isTauri } from "../../core/constants";
 import { viewEl } from "../../core/dom";
 import { measureFolders, measuredSize } from "../../core/folder-size";
 import { formatGenreLabel, genreSearchTokens } from "../../core/genres";
@@ -842,6 +842,7 @@ export function jumpToLibraryLetter(index: number, instant = false): void {
       } else {
         container.insertAdjacentHTML("beforeend", html);
       }
+      notifyLibraryResultsRendered();
       prefetchNextCovers(visible, S.renderedCardCount);
     } else {
       S.renderedCardCount = nextCount;
@@ -1225,6 +1226,7 @@ export function setupLibScrollObserver(): void {
     S.libScrollObserver?.disconnect();
     S.renderedCardCount += nextSlice.length;
     sentinel.insertAdjacentHTML("beforebegin", nextSlice.map(renderItem).join(""));
+    notifyLibraryResultsRendered();
     if (viewEl.scrollHeight <= before || S.renderedCardCount >= visible.length) {
       stop();
       return;
@@ -1263,6 +1265,13 @@ export function syncLibraryHeadingCount(): void {
   el.hidden = !show;
 }
 
+/** The grid mounted a different card set; the idle passes can look at it now. */
+function notifyLibraryResultsRendered(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(LIBRARY_RESULTS_EVENT));
+  }
+}
+
 export function refreshLibraryResultsInPlace(): boolean {
   if (S.view !== "library") return false;
   const resultsEl = document.getElementById("lib-results");
@@ -1271,6 +1280,7 @@ export function refreshLibraryResultsInPlace(): boolean {
   resultsEl.innerHTML = renderEpicItems();
   setupLibScrollObserver();
   syncLibraryHeadingCount();
+  notifyLibraryResultsRendered();
   return true;
 }
 
@@ -1704,6 +1714,7 @@ export function updateLibraryFilterInPlace(): boolean {
   invalidateLibraryVisibleCache();
   resultsEl.innerHTML = renderEpicItems();
   setupLibScrollObserver();
+  notifyLibraryResultsRendered();
 
   // The sort order is per tab, so arriving on a tab can change it without a
   // full render: keep the toolbar label and the menu's check in step. The sort
