@@ -26,15 +26,12 @@ function renderBetaNotice(): void {
       <div class="modal-backdrop" data-act="close-beta-notice">
         <div class="modal beta-notice-modal" role="dialog" aria-modal="true" aria-labelledby="beta-notice-title" data-act="prevent-modal-close">
           <div class="beta-notice-head">
-            <div class="beta-notice-head-mark">
-              ${icon("sparkles", 20)}
-            </div>
+            <span class="beta-notice-head-mark">
+              ${icon("heart", 18)}
+            </span>
             <div class="beta-notice-head-text">
-              <div class="beta-notice-badge-row">
-                <span class="beta-notice-chip">BETA</span>
-                <span class="beta-notice-phase">${esc(t("betaNotice.phaseTag"))}</span>
-              </div>
               <h3 class="beta-notice-title" id="beta-notice-title">${esc(t("betaNotice.title"))}</h3>
+              <p class="beta-notice-sub">${esc(t("betaNotice.phaseTag"))}</p>
             </div>
             <button type="button" class="manage-head-close" data-act="close-beta-notice" title="${esc(t("common.close"))}">
               ${icon("x", 16)}
@@ -49,20 +46,20 @@ function renderBetaNotice(): void {
 
             <div class="beta-notice-cards">
               <div class="beta-notice-card" data-act="beta-notice-feedback">
-                <div class="beta-notice-card-icon is-feedback">
-                  ${icon("alert-triangle", 18)}
-                </div>
+                <span class="beta-notice-card-icon">
+                  ${icon("alert-triangle", 16)}
+                </span>
                 <div class="beta-notice-card-content">
                   <span class="beta-notice-card-title">${esc(t("betaNotice.reportInAppTitle"))}</span>
                   <span class="beta-notice-card-desc">${esc(t("betaNotice.reportInAppDesc"))}</span>
                 </div>
-                <span class="beta-notice-card-action">${icon("arrow-right", 15)}</span>
+                <span class="beta-notice-card-action">${icon("arrow-right", 14)}</span>
               </div>
 
               <div class="beta-notice-card" data-act="beta-notice-github">
-                <div class="beta-notice-card-icon is-github">
-                  ${icon("github", 18)}
-                </div>
+                <span class="beta-notice-card-icon">
+                  ${icon("github", 16)}
+                </span>
                 <div class="beta-notice-card-content">
                   <span class="beta-notice-card-title">${esc(t("betaNotice.githubTitle"))}</span>
                   <span class="beta-notice-card-desc">${esc(t("betaNotice.githubDesc"))}</span>
@@ -71,9 +68,9 @@ function renderBetaNotice(): void {
               </div>
 
               <div class="beta-notice-card" data-act="beta-notice-discord">
-                <div class="beta-notice-card-icon is-discord">
-                  ${icon("discord", 18)}
-                </div>
+                <span class="beta-notice-card-icon">
+                  ${icon("discord", 16)}
+                </span>
                 <div class="beta-notice-card-content">
                   <span class="beta-notice-card-title">${esc(t("betaNotice.discordTitle"))}</span>
                   <span class="beta-notice-card-desc">${esc(t("betaNotice.discordDesc"))}</span>

@@ -475,99 +475,80 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
 /* --- Beta milestone notice dialog --- */
 .beta-notice-layer { z-index: 610; }
 .beta-notice-modal {
-  width: min(580px, calc(100vw - 32px));
+  width: min(560px, calc(100vw - 32px));
   padding: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   background: var(--surface-1);
   border: 1px solid var(--line-strong);
-  border-radius: var(--r-lg, 14px);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-pop);
 }
 .beta-notice-head {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
+  gap: 12px;
   flex-shrink: 0;
-  padding: 20px 22px 18px;
+  padding: 18px 20px 16px;
   border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
 }
 .beta-notice-head-mark {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: var(--r-md, 10px);
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
-  color: var(--text);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
 }
 .beta-notice-head-text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
   flex: 1;
-}
-.beta-notice-badge-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.beta-notice-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 16px;
-  padding: 0 6px;
-  background: #ffffff;
-  color: #000000;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  border-radius: 999px;
-  text-transform: uppercase;
-  line-height: 1;
-}
-.beta-notice-phase {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--accent, #6366f1);
-  letter-spacing: 0.02em;
+  padding-top: 1px;
 }
 .beta-notice-title {
   margin: 0;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--text);
+}
+.beta-notice-sub {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-2);
 }
 .beta-notice-head .manage-head-close {
   margin: -4px -6px 0 0;
 }
 .beta-notice-body {
-  padding: 20px 22px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
+  min-height: 0;
+  padding: 16px 20px 18px;
   overflow-y: auto;
-  max-height: calc(85vh - 150px);
+  max-height: calc(85vh - 140px);
 }
 .beta-notice-message {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px 16px;
+  gap: 8px;
+  padding: 12px 14px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: var(--r-md, 10px);
+  border-radius: var(--r-sm);
 }
 .beta-notice-p {
   margin: 0;
-  font-size: 12.5px;
+  font-size: 12px;
   line-height: 1.55;
   color: var(--text-2);
 }
@@ -583,43 +564,37 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 11px 13px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: var(--r-md, 10px);
+  border-radius: var(--r-sm);
   cursor: pointer;
   text-decoration: none;
   color: inherit;
-  transition: background-color 140ms ease, border-color 140ms ease, transform 100ms ease;
+  transition: background-color var(--ease), border-color var(--ease);
   user-select: none;
 }
 .beta-notice-card:hover {
   background: var(--surface-3);
-  border-color: rgba(255, 255, 255, 0.16);
-  transform: translateY(-1px);
+  border-color: var(--line-strong);
 }
 .beta-notice-card:active {
-  transform: translateY(0);
+  transform: none;
 }
 .beta-notice-card-icon {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
-  border-radius: var(--r-sm, 6px);
+  border-radius: var(--r-sm);
   background: var(--surface-1);
   border: 1px solid var(--line);
   color: var(--text-2);
+  transition: color var(--ease);
 }
-.beta-notice-card-icon.is-feedback {
-  color: #f59e0b;
-}
-.beta-notice-card-icon.is-github {
+.beta-notice-card:hover .beta-notice-card-icon {
   color: var(--text);
-}
-.beta-notice-card-icon.is-discord {
-  color: #5865f2;
 }
 .beta-notice-card-content {
   display: flex;
@@ -630,7 +605,7 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
 }
 .beta-notice-card-title {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text);
 }
 .beta-notice-card-desc {
@@ -641,22 +616,23 @@ button.chip:hover { background: var(--surface-3); color: var(--text); }
 .beta-notice-card-action {
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
   color: var(--text-3);
-  transition: color 140ms ease, transform 140ms ease;
+  transition: color var(--ease);
 }
 .beta-notice-card:hover .beta-notice-card-action {
   color: var(--text);
-  transform: translateX(2px);
 }
 .beta-notice-foot {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  padding: 14px 22px 18px;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 12px 20px;
   border-top: 1px solid var(--line);
-  background: var(--surface-1);
 }
 /* --- Confirm dialog (destructive asks): the shared modal frame, text first --- */
 .confirm-layer { position: fixed; inset: 0; z-index: 600; }
