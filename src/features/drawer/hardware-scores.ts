@@ -170,6 +170,37 @@ function cpuFamilyOf(key: string): string | null {
   return family;
 }
 
+/**
+ * A bare tier row ("Intel Core i3", "AMD Ryzen 5") names a class, not a model,
+ * so the weakest table entry of that class is the floor the row implies. A
+ * model number keeps the row out of this fallback: an unlisted model stays
+ * manual instead of passing on its tier alone.
+ */
+const CPU_TIER_ROWS: Array<{ pattern: RegExp; prefix: string }> = [
+  { pattern: /\b(?:intel\s+)?core\s+i3\b(?!\s*[- ]?\d)/, prefix: "i3-" },
+  { pattern: /\b(?:intel\s+)?core\s+i5\b(?!\s*[- ]?\d)/, prefix: "i5-" },
+  { pattern: /\b(?:intel\s+)?core\s+i7\b(?!\s*[- ]?\d)/, prefix: "i7-" },
+  { pattern: /\b(?:intel\s+)?core\s+i9\b(?!\s*[- ]?\d)/, prefix: "i9-" },
+  { pattern: /\bryzen\s+3\b(?!\s*(?:pro\s+)?[- ]?\d)/, prefix: "ryzen 3 " },
+  { pattern: /\bryzen\s+5\b(?!\s*(?:pro\s+)?[- ]?\d)/, prefix: "ryzen 5 " },
+  { pattern: /\bryzen\s+7\b(?!\s*(?:pro\s+)?[- ]?\d)/, prefix: "ryzen 7 " },
+  { pattern: /\bryzen\s+9\b(?!\s*(?:pro\s+)?[- ]?\d)/, prefix: "ryzen 9 " },
+];
+
+function cpuTierFloor(text: string): number | null {
+  const n = normalize(text);
+  for (const row of CPU_TIER_ROWS) {
+    if (!row.pattern.test(n)) continue;
+    let floor: number | null = null;
+    for (const [key, score] of TABLES.cpu) {
+      if (!key.startsWith(row.prefix)) continue;
+      if (floor === null || score < floor) floor = score;
+    }
+    return floor;
+  }
+  return null;
+}
+
 /** Table score for a device name, or null when the model is not listed. */
 export function hardwareScore(kind: HardwareKind, name: string): number | null {
   if (!name) return null;
@@ -218,7 +249,7 @@ export function compareHardwareScore(
   const detected = hardwareScore(kind, detectedName);
   if (detected === null) return null;
   const alternatives = requirementChunks(requiredText)
-    .map((chunk) => hardwareScore(kind, chunk))
+    .map((chunk) => hardwareScore(kind, chunk) ?? (kind === "cpu" ? cpuTierFloor(chunk) : null))
     .filter((score): score is number => score !== null && score > 0);
   if (alternatives.length === 0) return null;
   const required = Math.min(...alternatives);
