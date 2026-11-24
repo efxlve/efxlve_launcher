@@ -126,11 +126,10 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
     `;
   }
 
-  if (
-    !critic ||
-    !critic.supported ||
-    (!critic.opencritic_score && !critic.metacritic_score && igdbScore == null)
-  ) {
+  // The IGDB community score stands on its own: the critic services have no
+  // entry for some titles, and that used to hide a rating the launcher already
+  // had. A failed lookup is not "still loading" either.
+  if (!critic?.opencritic_score && !critic?.metacritic_score && igdbScore == null) {
     return "";
   }
 
@@ -173,7 +172,7 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
           score: igdbScore,
           title: i18nT("critic.igdbCommunity"),
         }) : ""}
-        ${critic.opencritic_score ? row({
+        ${critic?.opencritic_score ? row({
           name: "OpenCritic",
           sub: i18nT("critic.topCritic"),
           score: critic.opencritic_score,
@@ -181,7 +180,7 @@ export function renderCriticCard(critic?: CriticData, isLoading = false, igdbRat
           url: critic.opencritic_url,
           title: i18nT("critic.openCriticPage"),
         }) : ""}
-        ${critic.metacritic_score ? row({
+        ${critic?.metacritic_score ? row({
           name: "Metacritic",
           sub: i18nT("critic.metascore"),
           score: critic.metacritic_score,

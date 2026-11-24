@@ -1122,7 +1122,11 @@ function ensureOverviewData(s: EpicSummary): void {
         if (S.currentModalAppName === appName) updateHltbUI(appName, data);
       })
       .catch(() => {
-        if (S.currentModalAppName === appName) updateHltbUI(appName, undefined);
+        // A failed lookup is not "still loading": remember an empty answer so
+        // the card hides itself instead of keeping placeholder rows.
+        const empty: HltbData = { app_name: appName, title: lookupTitle, supported: false };
+        S.loadedHltb.set(appName, empty);
+        if (S.currentModalAppName === appName) updateHltbUI(appName, empty);
       })
       .finally(() => { S.loadingHltbFor.delete(appName); });
   }
@@ -1135,7 +1139,11 @@ function ensureOverviewData(s: EpicSummary): void {
         recordLiveCritic(appName, lookupTitle, merged);
         if (S.currentModalAppName === appName) updateCriticUI(appName, merged);
       })
-      .catch(() => {})
+      .catch(() => {
+        // No scores from the critic services: clear the pending body so the
+        // card hides unless IGDB has its own rating to show.
+        if (S.currentModalAppName === appName) updateCriticUI(appName);
+      })
       .finally(() => { S.loadingCriticFor.delete(appName); });
   }
 
@@ -1647,7 +1655,7 @@ function syncScoresCardVisibility(): void {
   }
 }
 
-export function updateCriticUI(appName: string, data: CriticData): void {
+export function updateCriticUI(appName: string, data?: CriticData): void {
   if (S.currentModalAppName !== appName) return;
   const container = document.getElementById("drawer-critic-container");
   if (container) container.innerHTML = renderCriticCard(data, false, igdbGameFor(appName)?.rating ?? null);
