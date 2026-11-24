@@ -16,6 +16,7 @@ import { epicPortrait } from "../../epic-model";
 import { currentLanguage, t } from "../../i18n";
 import { igdbCovers, igdbImage } from "../../igdb";
 import { storeLogo } from "../store/store-logos";
+import { unlockPopoverAlign, unlockPopoverHtml, unlockRowCapacity } from "./unlock-cards";
 import { EXOPHASE_SITE, type ExophaseAward, type ExophaseData, type ExophaseGame, type ExophaseSummary } from "../../exophase";
 
 function fmtCount(value: number): string {
@@ -768,7 +769,7 @@ function gamesSection(data: ExophaseData, selected: string): string {
   </section>`;
 }
 
-function awardCard(award: ExophaseAward): string {
+function awardCard(award: ExophaseAward, index: number, columns: number): string {
   const isRare = award.rarity != null && award.rarity < 5;
   const rarityText = award.rarity != null
     ? (currentLanguage() === "tr" ? `%${fmtDecimal1(award.rarity)}` : `${fmtDecimal1(award.rarity)}%`)
@@ -782,12 +783,9 @@ function awardCard(award: ExophaseAward): string {
   const rarityBadge = rarityText
     ? `<span class="profile-unlock-badge${isRare ? " is-rare" : ""} tabular-nums">${isRare ? icon("trophy", 10) : ""}<span>${rarityText}</span></span>`
     : "";
-  const tip = [award.name, award.game, award.earned, rarityText, award.description]
-    .filter(Boolean)
-    .join(" · ");
   const earned = shortEarned(award.earned);
 
-  return `<button type="button" class="profile-unlock-card${isRare ? " is-rare-card" : ""}"${action} title="${esc(tip)}">
+  return `<button type="button" class="profile-unlock-card${isRare ? " is-rare-card" : ""}"${action}>
     <div class="profile-unlock-art-wrap">${art}</div>
     <div class="profile-unlock-main">
       <div class="profile-unlock-top">
@@ -799,11 +797,24 @@ function awardCard(award: ExophaseAward): string {
       </div>
     </div>
     ${rarityBadge}
+    ${unlockPopoverHtml({
+      title: award.name,
+      game: award.game,
+      date: earned,
+      rarity: rarityText,
+      rare: isRare,
+      manual: false,
+      description: award.description || "",
+      shot: false,
+      art: award.icon,
+      align: unlockPopoverAlign(index, columns),
+    })}
   </button>`;
 }
 
 function awardsSection(data: ExophaseData): string {
   if (data.awards.length === 0) return "";
+  const cols = unlockRowCapacity();
   return `<section class="profile-row profile-exophase-awards">
     <div class="profile-row-head">
       <div class="profile-row-title-group">
@@ -811,7 +822,7 @@ function awardsSection(data: ExophaseData): string {
         <span class="profile-row-count tabular-nums">${data.awards.length}</span>
       </div>
     </div>
-    <div class="profile-unlock-row">${data.awards.map(awardCard).join("")}</div>
+    <div class="profile-unlock-row">${data.awards.map((award, idx) => awardCard(award, idx, cols)).join("")}</div>
   </section>`;
 }
 

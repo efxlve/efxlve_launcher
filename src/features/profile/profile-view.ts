@@ -26,6 +26,7 @@ import { epicPortrait, type ProfileGameRecord } from "../../epic";
 import { storeLogo } from "../store/store-logos";
 import { renderExophaseTab } from "./exophase-view";
 import { renderPlayActivity } from "./play-activity";
+import { unlockPopoverAlign, unlockPopoverHtml, unlockRowCapacity } from "./unlock-cards";
 import { STORE_LABELS } from "../store/store-view";
 
 export function coverOf(appName: string, fallback = ""): string {
@@ -1128,7 +1129,7 @@ function renderShowcase(): string {
         : "";
       return `
         <div class="profile-showcase-card" data-tier="${esc(pin.tier || "")}">
-          <button type="button" class="profile-showcase-main" data-act="open-pinned-achievement" data-id="${esc(pin.appName)}" data-ach="${esc(pin.name)}" title="${esc(pin.title)} · ${esc(pin.game)}">
+          <button type="button" class="profile-showcase-main" data-act="open-pinned-achievement" data-id="${esc(pin.appName)}" data-ach="${esc(pin.name)}">
             <span class="profile-showcase-art">${pin.icon ? `<img src="${esc(pin.icon)}" alt="" loading="lazy" decoding="async" />` : icon("trophy", 22)}</span>
             <span class="profile-showcase-body">
               ${tierLabel || meta ? `
@@ -1161,17 +1162,6 @@ function renderShowcase(): string {
     </section>`;
 }
 
-function unlockRowCapacity(): number {
-  if (typeof window === "undefined") return 5;
-  const view = document.getElementById("view");
-  // Available row width inside .profile-page (max-width: 1560px, padding: 28px each side)
-  const available = (view?.clientWidth || window.innerWidth - 64) - 56;
-  const rowWidth = Math.max(300, Math.min(1560, available));
-  const minCardWidth = 280;
-  const gap = 12;
-  return Math.max(1, Math.floor((rowWidth + gap) / (minCardWidth + gap)));
-}
-
 /**
  * Recent unlocks across every store, newest first. The strip is the one place
  * the launcher's own history is visible: the bell forgets after a day and a
@@ -1192,23 +1182,17 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
   const shown = entries.slice(0, capacity);
   const showStore = showStoreChips();
   const cards = shown
-    .map((entry) => {
+    .map((entry, idx) => {
       const dateIso = entry.date || (entry.seenAt ? new Date(entry.seenAt).toISOString() : "");
       const date = dateIso ? fmtAchDate(dateIso) : "";
       const rarity = entry.rarity != null ? `%${fmtDecimal1(entry.rarity)}` : "";
       const isUltraRare = entry.rarity != null && entry.rarity < 5;
-      const fullMeta = [date, rarity, entry.manual ? t("profile.unlockManual") : ""].filter(Boolean).join(" · ");
       const shot = entry.shot
-        ? `<span class="profile-unlock-shot" title="${esc(t("profile.unlockShot"))}">${icon("camera", 11)}</span>`
+        ? `<span class="profile-unlock-shot">${icon("camera", 11)}</span>`
         : "";
       const storeMark = showStore && entry.store
         ? storeLogo(entry.store, 12, "profile-unlock-store-logo")
         : "";
-      const tip = [
-        `${entry.title} — ${entry.game}`,
-        fullMeta,
-        entry.description || "",
-      ].filter(Boolean).join(" · ");
 
       const art = entry.icon
         ? `<img class="profile-unlock-art" src="${esc(entry.icon)}" alt="" loading="lazy" decoding="async" />`
@@ -1224,7 +1208,7 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
       }
 
       return `
-        <button type="button" class="profile-unlock-card${isUltraRare ? " is-rare-card" : ""}" data-act="open-pinned-achievement" data-id="${esc(entry.appName)}" data-ach="${esc(entry.name)}" title="${esc(tip)}">
+        <button type="button" class="profile-unlock-card${isUltraRare ? " is-rare-card" : ""}" data-act="open-pinned-achievement" data-id="${esc(entry.appName)}" data-ach="${esc(entry.name)}">
           <div class="profile-unlock-art-wrap">
             ${art}
           </div>
@@ -1240,6 +1224,19 @@ function renderUnlockRow(scope: "all" | StoreKind): string {
             </div>
           </div>
           ${rarityBadge}
+          ${unlockPopoverHtml({
+            title: entry.title,
+            game: entry.game,
+            date,
+            rarity,
+            rare: isUltraRare,
+            manual: entry.manual,
+            description: entry.description,
+            shot: Boolean(entry.shot),
+            art: entry.icon,
+            storeMark,
+            align: unlockPopoverAlign(idx, cols),
+          })}
         </button>`;
     })
     .join("");

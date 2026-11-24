@@ -52,15 +52,8 @@ function renderCard(entry: AchievementHistoryEntry): string {
     rarityBadge = `<span class="profile-unlocks-badge is-manual">${esc(t("profile.unlockManual"))}</span>`;
   }
 
-  const tip = [
-    `${entry.title} — ${entry.game}`,
-    date,
-    rarityText,
-    entry.description || "",
-  ].filter(Boolean).join(" · ");
-
   return `
-    <button type="button" class="profile-unlocks-card${isUltraRare ? " is-rare-card" : ""}" data-act="open-pinned-achievement" data-id="${esc(entry.appName)}" data-ach="${esc(entry.name)}" title="${esc(tip)}">
+    <button type="button" class="profile-unlocks-card${isUltraRare ? " is-rare-card" : ""}" data-act="open-pinned-achievement" data-id="${esc(entry.appName)}" data-ach="${esc(entry.name)}">
       <div class="profile-unlocks-card-art">
         ${art}
       </div>
