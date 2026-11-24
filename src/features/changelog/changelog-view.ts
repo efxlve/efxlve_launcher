@@ -30,6 +30,32 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.67",
+    date: "2026-11-25",
+    added: [
+      {
+        en: "Recent achievements on the profile open a hover card with the achievement art, its description and the unlock date.",
+        tr: "Profildeki son başarımlar; başarım görselini, açıklamasını ve açıldığı tarihi gösteren bir kartla açılıyor.",
+      },
+    ],
+    improved: [
+      {
+        en: "Install options for size, language and game modes now sit together in one compact panel inside the install dialog.",
+        tr: "Boyut, dil ve oyun modu seçenekleri artık kurulum penceresindeki tek ve derli toplu bir panelde yer alıyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Fortnite shows its real download size and lets you choose game modes before installing, and Neon Grid keeps the game page scrollbar visible with the install path field in a single frame.",
+        tr: "Fortnite gerçek indirme boyutunu gösteriyor ve kurulumdan önce oyun modu seçilebiliyor; Neon Grid'de oyun sayfasının kaydırma çubuğu görünür kalıyor ve kurulum yolu alanı tek çerçevede duruyor.",
+      },
+      {
+        en: "Profile game cards no longer show the browser's own tooltip on top of the custom hover card.",
+        tr: "Profil oyun kartları artık özel kartın üzerinde tarayıcının kendi ipucunu göstermiyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.66",
     date: "2026-11-24",
     improved: [
