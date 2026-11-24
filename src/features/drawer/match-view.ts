@@ -34,7 +34,7 @@ import {
   type GameMatchChoice,
   type IgdbSearchHit,
 } from "../../igdb";
-import { gameReleaseYear, paintGameMeta, repaintIgdbBlocks, updateHltbUI } from "./drawer-view";
+import { gameReleaseYear, paintGameMeta, paintIgdbHeroArt, repaintIgdbBlocks, updateHltbUI } from "./drawer-view";
 import { ensureIgdbOverview, forgetIgdbGame, igdbGameFor, setIgdbGameFor } from "./igdb-view";
 
 interface MatchState {
@@ -348,6 +348,7 @@ export async function restoreAutomaticIgdb(): Promise<void> {
     if (s) {
       const year = gameReleaseYear(s);
       ensureIgdbOverview(s, year, () => {
+        paintIgdbHeroArt(appName);
         paintGameMeta(s);
         repaintIgdbBlocks(appName);
       });

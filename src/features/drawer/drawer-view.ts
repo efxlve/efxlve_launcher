@@ -1283,6 +1283,37 @@ function shortAnchorLabel(anchor: (typeof LOGO_ANCHOR_ORDER)[number]): string {
   }
 }
 
+/** IGDB key art for one game, when the entry has a wide picture. */
+function igdbHeroArt(appName: string): string {
+  const artwork = igdbGameFor(appName)?.artworks?.[0];
+  return artwork ? igdbImage(artwork, "1080p") : "";
+}
+
+/**
+ * A store page with no wide banner fell back to its portrait box art, which the
+ * hero can only show as a boxed strip. When the IGDB answer lands with key art,
+ * replace that fallback in place; a store, Steam or GOG banner that already
+ * landed stays, and a custom hero is never touched.
+ */
+export function paintIgdbHeroArt(appName: string): void {
+  if (S.currentModalAppName !== appName || S.customHeroes[appName]) return;
+  const s = summaryOf(appName);
+  if (!s || epicWideArt(s)) return;
+  const art = igdbHeroArt(appName);
+  const heroEl = modalRoot.querySelector<HTMLImageElement>(".gp-hero-img");
+  if (!art || !heroEl || heroEl.dataset.imgUrl !== (s.cover || "")) return;
+  heroEl.dataset.imgUrl = art;
+  heroEl.dataset.imgWidth = String(IMAGE_HERO_WIDTH);
+  heroEl.src = cachedImage(art, IMAGE_HERO_WIDTH);
+  const bgEl = modalRoot.querySelector<HTMLElement>(".gp-hero-backdrop");
+  if (bgEl) {
+    bgEl.dataset.imgUrl = art;
+    bgEl.dataset.imgWidth = String(IMAGE_HERO_WIDTH);
+    bgEl.style.backgroundImage = `url('${cachedImage(art, IMAGE_HERO_WIDTH)}')`;
+  }
+  warmImages([art], IMAGE_HERO_WIDTH);
+}
+
 function renderGameHeroInnerHtml(
   s: EpicSummary,
   partner: ThirdPartyLauncherInfo | null,
@@ -1290,7 +1321,7 @@ function renderGameHeroInnerHtml(
 ): string {
   const appName = s.appName;
   const g = rawOf(appName);
-  const art = epicWideArt(s) || s.cover || (g ? epicPortrait(g) : null);
+  const art = epicWideArt(s) || igdbHeroArt(appName) || s.cover || (g ? epicPortrait(g) : null);
   const customLogo = customLogoOf(appName, s.title);
   // The logo is a transparent PNG from SteamGridDB, not a store picture: cache
   // the original bytes so the title art survives a blocked or slow CDN, and
@@ -1308,7 +1339,7 @@ function renderGameHeroInnerHtml(
           ${
             art
               ? `<div class="gp-hero-backdrop" data-img-url="${esc(art)}" data-img-width="${IMAGE_HERO_WIDTH}" style="background-image:url('${esc(cachedImage(art, IMAGE_HERO_WIDTH))}');"></div>
-          <img class="gp-hero-img" src="${esc(cachedImage(art, IMAGE_HERO_WIDTH))}" data-img-url="${esc(art)}" data-img-width="${IMAGE_HERO_WIDTH}" alt="" decoding="async" onload="this.classList.remove('is-broken');this.classList.toggle('is-portrait', this.naturalWidth/this.naturalHeight < 1.3)" onerror="this.classList.add('is-broken')" />`
+          <img class="gp-hero-img" src="${esc(cachedImage(art, IMAGE_HERO_WIDTH))}" data-img-url="${esc(art)}" data-img-width="${IMAGE_HERO_WIDTH}" alt="" decoding="async" onload="this.classList.remove('is-broken');this.classList.toggle('is-portrait', this.naturalWidth/this.naturalHeight < 1.3);this.classList.add('is-ready')" onerror="this.classList.add('is-broken')" />`
               : ""
           }
           <div class="gp-hero-scrim"></div>
@@ -1457,6 +1488,7 @@ export function openEpicModal(
   ensureIgdbTransport(() => {
     if (S.currentModalAppName !== appName) return;
     ensureIgdbOverview(s, gameReleaseYear(s), () => {
+      paintIgdbHeroArt(appName);
       paintGameMeta(s);
       // Only the blocks IGDB feeds are rebuilt: a full repaint of the tab reset
       // the reader's scroll position and rebuilt every strip on the page.
@@ -4423,7 +4455,7 @@ export async function prefetchGamePage(appName: string): Promise<void> {
   // similar-game covers) is warmed once the IGDB answer lands. The transparent
   // logo is warmed only when the page actually paints it: a full-size PNG over
   // IPC is too heavy for an idle or hover prefetch of a page nobody opened.
-  warmImages([epicWideArt(s) || s.cover], IMAGE_HERO_WIDTH);
+  warmImages([epicWideArt(s) || igdbHeroArt(s.appName) || s.cover], IMAGE_HERO_WIDTH);
 
   // News is Steam's feed. Asking for a Steam store search on every Epic game
   // would cost a request for nothing, so only titles with a Steam copy do it.
@@ -4442,6 +4474,9 @@ export async function prefetchGamePage(appName: string): Promise<void> {
         game.screenshots.map((id) => igdbImage(id, "screenshot_big")),
         IMAGE_SHOT_WIDTH,
       );
+      if (game.artworks[0]) {
+        warmImages([igdbImage(game.artworks[0], "1080p")], IMAGE_HERO_WIDTH);
+      }
       warmImages(
         game.similar.map((hit) => (hit.coverId ? igdbImage(hit.coverId, "cover_big") : null)),
         IMAGE_COVER_WIDTH,

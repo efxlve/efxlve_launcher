@@ -40,6 +40,8 @@ export interface IgdbGame {
   franchises: string[];
   coverId: string;
   screenshots: string[];
+  /** Wide key art; the game page uses the first one when the store has no banner. */
+  artworks: string[];
   similar: IgdbSearchHit[];
   /** Add-ons IGDB lists; the store's own DLC list stays the install surface. */
   dlcs?: IgdbSearchHit[];

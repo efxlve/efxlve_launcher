@@ -79,7 +79,12 @@ body.sb-resizing .overlay {
 .gp-hero-img {
   position: absolute; inset: 0; width: 100%; height: 100%;
   object-fit: cover; object-position: center center;
+  /* The orientation class only exists once the file is decoded, so the image
+     stays hidden until onload marks it ready: a portrait cover used to paint
+     cover-cropped first and jump to contained a moment later. */
+  opacity: 0;
 }
+.gp-hero-img.is-ready { opacity: 1; }
 .gp-hero-img.is-portrait {
   object-fit: contain;
   object-position: center center;

@@ -33,6 +33,8 @@ const MIN_REQUEST_GAP: Duration = Duration::from_millis(260);
 /// How many screenshots / similar games a game page shows.
 const MAX_SCREENSHOTS: usize = 6;
 const MAX_SIMILAR: usize = 6;
+/// Key art for the hero; four is more than a page ever cycles through.
+const MAX_ARTWORKS: usize = 4;
 /// DLC/expansion names IGDB returns; the page filters and caps them again.
 const MAX_EXTRAS: usize = 40;
 
@@ -343,6 +345,36 @@ fn search_query(title: &str, limit: usize) -> String {
     )
 }
 
+/// Store catalogs append a platform or launcher to a game's name ("Minecraft
+/// for Windows", "Minecraft Launcher"). IGDB indexes the plain title and its
+/// ranked search returns nothing for the longer string, so the lookup gets one
+/// more try with the suffix removed. A real edition name ("Java Edition") is
+/// not in the list and keeps the exact search.
+fn base_store_title(title: &str) -> Option<String> {
+    const SUFFIXES: &[&str] = &[
+        " for windows",
+        " for pc",
+        " launcher",
+        " - windows edition",
+        " windows edition",
+        " - windows 10 edition",
+        " windows 10 edition",
+        " (windows)",
+    ];
+    let text = title.trim();
+    let lower = text.to_lowercase();
+    for suffix in SUFFIXES {
+        if !lower.ends_with(suffix) {
+            continue;
+        }
+        let base = text[..text.len() - suffix.len()].trim();
+        if !base.is_empty() {
+            return Some(base.to_string());
+        }
+    }
+    None
+}
+
 /// The substring question, asked when the ranked search comes back with a bare
 /// duplicate or only DLC chapters. IGDB's `search` ranks those above the game
 /// itself (Dead by Daylight is the poster child), while `name ~` finds the entry
@@ -363,7 +395,7 @@ const MATCH_FIELDS: &str = "fields name, first_release_date, cover.image_id, rat
 const FULL_GAME_FIELDS: &str = "fields name, summary, url, first_release_date, rating, rating_count, aggregated_rating, \
      genres.name, themes.name, game_modes.name, player_perspectives.name, \
      involved_companies.company.name, involved_companies.developer, involved_companies.publisher, \
-     franchises.name, collection.name, cover.image_id, screenshots.image_id, \
+     franchises.name, collection.name, cover.image_id, screenshots.image_id, artworks.image_id, \
      similar_games.name, similar_games.first_release_date, similar_games.cover.image_id, \
      similar_games.slug, \
      dlcs.name, dlcs.first_release_date, dlcs.cover.image_id, dlcs.slug, \
@@ -617,6 +649,9 @@ pub struct IgdbGame {
     pub cover_id: String,
     /// `images.igdb.com` image ids for the size templates.
     pub screenshots: Vec<String>,
+    /// Wide key art, used as the hero when the store has no banner of its own.
+    #[serde(default)]
+    pub artworks: Vec<String>,
     pub similar: Vec<IgdbSearchHit>,
     /// Add-ons IGDB knows under `dlcs` / `expansions`. The store's own DLC list
     /// is the installation surface; these names fill the gaps it leaves.
@@ -732,6 +767,19 @@ fn map_game(value: &serde_json::Value, age_tables: &AgeTables) -> IgdbGame {
                 .iter()
                 .filter_map(|item| item.get("image_id").and_then(serde_json::Value::as_str))
                 .take(MAX_SCREENSHOTS)
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default();
+
+    let artworks = value
+        .get("artworks")
+        .and_then(serde_json::Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| item.get("image_id").and_then(serde_json::Value::as_str))
+                .take(MAX_ARTWORKS)
                 .map(str::to_string)
                 .collect()
         })
@@ -863,6 +911,7 @@ fn map_game(value: &serde_json::Value, age_tables: &AgeTables) -> IgdbGame {
             .map(|cover| string_field(cover, "image_id"))
             .unwrap_or_default(),
         screenshots,
+        artworks,
         similar,
         dlcs,
         expansions,
@@ -1005,8 +1054,10 @@ fn write_lookup(app: &AppHandle, lookup: &serde_json::Map<String, serde_json::Va
 }
 
 /// Title lookups IGDB had no match for, with the epoch second of the miss.
+/// `-v3`: v2 held the misses left by the plain search returning nothing for a
+/// store title with a platform suffix ("Minecraft for Windows").
 fn misses_path(app: &AppHandle) -> Option<PathBuf> {
-    igdb_dir(app).map(|dir| dir.join("misses-v2.json"))
+    igdb_dir(app).map(|dir| dir.join("misses-v3.json"))
 }
 
 fn read_misses(app: &AppHandle) -> serde_json::Map<String, serde_json::Value> {
@@ -1049,7 +1100,12 @@ fn write_map(path: Option<PathBuf>, map: &serde_json::Map<String, serde_json::Va
 
 /// Bumped whenever `IgdbGame` gains a field: entries written by an older build
 /// are fetched again instead of showing up half empty.
-const CACHE_SCHEMA: u32 = 5;
+const CACHE_SCHEMA: u32 = 6;
+
+/// The library summary reads name, rating, year, genres and companies, which
+/// every cache from this schema on carries. Accepting it means a schema bump
+/// only refetches the page that is opened, not the whole library's ratings.
+const SUMMARY_MIN_SCHEMA: u32 = 5;
 
 /// Bumped when `IgdbSearchHit` / `IgdbCoverHit` change shape.
 /// Bumped when the cached hit shape changes. Version 2 added full release
@@ -1905,6 +1961,15 @@ pub async fn igdb_enrich(
             }
             id = pick_best_match(&hits, &title, year).or(id);
         }
+        // A platform/launcher suffix keeps IGDB's ranked search empty, so the
+        // plain title gets one more try before the miss is recorded.
+        if id.is_none() {
+            if let Some(base) = base_store_title(&title) {
+                let value = api_post(&app, "games", &search_query(&base, 20)).await?;
+                let more = value.as_array().cloned().unwrap_or_default();
+                id = pick_best_match(&more, &base, year);
+            }
+        }
     }
 
     if let Some(found) = id {
@@ -2047,7 +2112,7 @@ fn read_cached_library_dir(dir: &Path) -> Vec<IgdbCachedSummary> {
         let Ok(cached) = serde_json::from_str::<CachedGame>(&data) else {
             continue;
         };
-        if cached.schema != CACHE_SCHEMA {
+        if cached.schema < SUMMARY_MIN_SCHEMA {
             continue;
         }
         let id = cached.game.id;
@@ -2339,6 +2404,27 @@ mod tests {
     }
 
     #[test]
+    fn a_platform_or_launcher_suffix_falls_back_to_the_plain_title() {
+        // IGDB's search returns nothing for these store names, while the game
+        // itself is indexed as "Minecraft".
+        assert_eq!(
+            base_store_title("Minecraft for Windows").as_deref(),
+            Some("Minecraft")
+        );
+        assert_eq!(
+            base_store_title("Minecraft Launcher").as_deref(),
+            Some("Minecraft")
+        );
+        assert_eq!(
+            base_store_title("Cities: Skylines - Windows 10 Edition").as_deref(),
+            Some("Cities: Skylines")
+        );
+        // A real edition name is part of the IGDB title and must not be cut.
+        assert_eq!(base_store_title("Minecraft: Java Edition"), None);
+        assert_eq!(base_store_title("No Man's Sky"), None);
+    }
+
+    #[test]
     fn the_pc_release_date_wins_over_a_console_first_release() {
         // Spider-Man Remastered: PS5 in 2020, PC in 2022.
         let sample = serde_json::json!({
@@ -2410,6 +2496,7 @@ mod tests {
             ],
             "collection": { "name": "The Witcher" },
             "cover": { "image_id": "coa1" },
+            "artworks": [{ "image_id": "ar1" }, { "image_id": "ar2" }],
             "screenshots": [
                 { "image_id": "s1" }, { "image_id": "s2" }, { "image_id": "s3" },
                 { "image_id": "s4" }, { "image_id": "s5" }, { "image_id": "s6" }, { "image_id": "s7" }
@@ -2433,6 +2520,8 @@ mod tests {
         assert_eq!(game.publisher, "CD Projekt");
         assert_eq!(game.release_year, Some(2015));
         assert_eq!(game.release_date, "2015-05-19");
+        assert_eq!(game.cover_id, "coa1");
+        assert_eq!(game.artworks, vec!["ar1".to_string(), "ar2".to_string()]);
         assert_eq!(game.screenshots.len(), MAX_SCREENSHOTS);
         assert_eq!(game.similar.len(), 1);
         assert_eq!(game.similar[0].name, "Skyrim");
