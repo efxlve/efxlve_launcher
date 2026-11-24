@@ -756,6 +756,17 @@ fn metadata_candidates(config: &Path) -> Vec<(String, String, Option<Value>)> {
     out
 }
 
+/// The install tags legendary recorded for one game. A cheap read for callers
+/// that only need the selection (a download start must not scan the catalog).
+pub fn installed_install_tags(config: &Path, app_name: &str) -> Vec<String> {
+    std::fs::read_to_string(config.join("installed.json"))
+        .ok()
+        .and_then(|text| serde_json::from_str::<HashMap<String, InstalledGame>>(&text).ok())
+        .and_then(|mut map| map.remove(app_name))
+        .map(|game| game.install_tags)
+        .unwrap_or_default()
+}
+
 /// Read installed games: installed.json + EGL manifests + third-party registry.
 pub fn read_installed(config: &Path) -> Vec<InstalledGame> {
     // Third-party detection wants the catalog, and the snapshot is the consolidated
@@ -1211,6 +1222,26 @@ mod tests {
         let text = std::fs::read_to_string(&json_path).unwrap();
         assert!(!text.contains("ReadyOrNot"));
         assert!(text.contains("Cyberpunk"));
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn installed_install_tags_reads_only_the_record() {
+        let dir = std::env::temp_dir().join(format!("efxlve_test_tags_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("installed.json"),
+            r#"{"Fortnite": {"app_name": "Fortnite", "install_tags": ["", "FortniteBR"]}}"#,
+        )
+        .unwrap();
+
+        assert_eq!(
+            installed_install_tags(&dir, "Fortnite"),
+            vec!["".to_string(), "FortniteBR".to_string()]
+        );
+        assert!(installed_install_tags(&dir, "Missing").is_empty());
 
         let _ = std::fs::remove_dir_all(&dir);
     }

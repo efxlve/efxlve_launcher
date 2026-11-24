@@ -5,10 +5,15 @@
 //! the install dialog can offer the groups instead of Fortnite's internal
 //! chunk names, and so a selected group never drops the required tags.
 //!
+//! Epic's launcher goes further than the API for Fortnite: its game modes are
+//! checkboxes, not required content. `with_launcher_groups` keeps those roots
+//! selectable while leaving them out of the default required set.
+//!
 //! `--install-tag` filters the manifest to files carrying one of the listed
 //! tags. A selection that leaves out `""` and `__required` therefore installs
 //! only the optional packs and no playable game.
 
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -17,6 +22,65 @@ use serde_json::Value;
 const SDL_API: &str = "https://api.legendary.gl/v1/sdl";
 /// The groups are a small JSON file; a slow API must not hold the dialog.
 const FETCH_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// One install group the Epic launcher offers but legendary's SDL data does
+/// not separate.
+struct LauncherGroup {
+    key: &'static str,
+    name: &'static str,
+    category: &'static str,
+    default: bool,
+    tags: &'static [&'static str],
+}
+
+/// Fortnite's modes are checkboxes in Epic's launcher, but legendary keeps
+/// their root tags in `__required`, so every launcher built on the SDL API
+/// installs all of them. `GFP_JunoRoot` is LEGO Fortnite, `GFP_Sparks` is
+/// Festival, `GFP_BlitzRoot` is Rocket Racing.
+const FORTNITE_GROUPS: &[LauncherGroup] = &[
+    LauncherGroup {
+        key: "lego_fortnite",
+        name: "LEGO Fortnite",
+        category: "modes",
+        default: true,
+        tags: &["GFP_JunoRoot", "GFP_JunoRootOptional"],
+    },
+    LauncherGroup {
+        key: "fortnite_festival",
+        name: "Fortnite Festival",
+        category: "modes",
+        default: true,
+        tags: &["GFP_Sparks", "GFP_SparksOptional"],
+    },
+    LauncherGroup {
+        key: "rocket_racing",
+        name: "Rocket Racing",
+        category: "modes",
+        default: true,
+        tags: &["GFP_BlitzRoot", "GFP_BlitzRootOptional"],
+    },
+    LauncherGroup {
+        key: "creative",
+        name: "Creative",
+        category: "modes",
+        default: true,
+        tags: &["GFP_CreativeRoot", "GFP_CreativeRootOptional"],
+    },
+    LauncherGroup {
+        key: "save_the_world",
+        name: "Save the World",
+        category: "modes",
+        default: true,
+        tags: &["GFP_SaveTheWorldRoot", "GFP_SaveTheWorldRootOptional"],
+    },
+    LauncherGroup {
+        key: "high_quality_assets",
+        name: "High Quality Assets",
+        category: "extras",
+        default: false,
+        tags: &["FortniteBRHighOptionalInstall", "FortniteBRHighOnDemand"],
+    },
+];
 
 fn cache_path(config: &Path, app_name: &str) -> PathBuf {
     config.join("tmp").join(format!("{app_name}.json"))
@@ -108,6 +172,57 @@ pub(crate) fn group_name(groups: &Value, key: &str) -> String {
         .to_string()
 }
 
+/// Splits Fortnite's required mode roots into selectable groups and leaves the
+/// rest of the SDL data untouched. Games without launcher-only groups come back
+/// as they are.
+pub(crate) fn with_launcher_groups(app_name: &str, groups: &Value) -> Value {
+    let Some(mut out) = groups.as_object().cloned() else {
+        return groups.clone();
+    };
+    if !app_name.eq_ignore_ascii_case("Fortnite") {
+        return Value::Object(out);
+    }
+    let movable: HashSet<&str> = FORTNITE_GROUPS
+        .iter()
+        .flat_map(|group| group.tags.iter().copied())
+        .collect();
+    if let Some(required) = out.get_mut("__required").and_then(Value::as_object_mut) {
+        if let Some(tags) = required.get_mut("tags").and_then(Value::as_array_mut) {
+            tags.retain(|tag| tag.as_str().map_or(true, |tag| !movable.contains(tag)));
+        }
+    }
+    for group in FORTNITE_GROUPS {
+        out.entry(group.key.to_string()).or_insert_with(|| {
+            serde_json::json!({
+                "name": group.name,
+                "tags": group.tags,
+                "category": group.category,
+                "default": group.default,
+            })
+        });
+    }
+    Value::Object(out)
+}
+
+/// Groups the launcher preselects when the user opens the install options.
+fn default_group_keys(groups: &Value) -> Vec<String> {
+    groups
+        .as_object()
+        .map(|map| {
+            map.iter()
+                .filter(|(key, group)| {
+                    key.as_str() != "__required"
+                        && group
+                            .get("default")
+                            .and_then(Value::as_bool)
+                            .unwrap_or(false)
+                })
+                .map(|(key, _)| key.clone())
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 /// Required tags plus every selected group, always with the untagged set.
 /// Sorted and deduplicated so a group that repeats a required tag is not
 /// counted twice.
@@ -118,7 +233,15 @@ pub(crate) fn expanded_tags(groups: &Value, selected: &[String]) -> Vec<String> 
             .into_iter()
             .map(str::to_string),
     );
-    for key in selected {
+    // An empty selection is a legacy record or an update: it keeps the packs
+    // the launcher preselects. The dialog sends the untagged tag for an
+    // explicit "required content only".
+    let keys = if selected.is_empty() {
+        default_group_keys(groups)
+    } else {
+        selected.to_vec()
+    };
+    for key in &keys {
         let group = group_tags(groups, key);
         if group.is_empty() {
             // A raw manifest tag from an older dialog (or a legacy resume
@@ -143,12 +266,31 @@ pub(crate) fn fallback_groups(app_name: &str) -> Option<Value> {
     serde_json::from_str(include_str!("sdl_fortnite.json")).ok()
 }
 
+/// Loads the groups for the install options: cache first, then the API, then
+/// the bundled Fortnite data. Launcher-only groups are added on top.
+pub(crate) async fn load_groups(config: &Path, app_name: &str) -> Option<Value> {
+    let groups = match read_groups(config, app_name) {
+        Some(groups) => groups,
+        None => {
+            let fetched = fetch_groups(app_name).await;
+            if let Some(data) = fetched.as_ref() {
+                let version = sdl_version(config, app_name);
+                save_groups(config, app_name, data, version);
+            }
+            fetched.or_else(|| fallback_groups(app_name))?
+        }
+    };
+    Some(with_launcher_groups(app_name, &groups))
+}
+
 /// Expands a selection against the app's SDL groups. The required and untagged
 /// tags are always included, even with an empty selection, so the install never
 /// depends on legendary's own (possibly stale) fallback.
 pub(crate) fn expand_selected(app_name: &str, selected: Vec<String>) -> Vec<String> {
     let config = crate::legendary::skip::default_config_dir();
-    let groups = read_groups(&config, app_name).or_else(|| fallback_groups(app_name));
+    let groups = read_groups(&config, app_name)
+        .or_else(|| fallback_groups(app_name))
+        .map(|groups| with_launcher_groups(app_name, &groups));
     match groups {
         Some(groups) => expanded_tags(&groups, &selected),
         None => selected,
@@ -220,5 +362,54 @@ mod tests {
             tags.iter().filter(|tag| tag.as_str() == "Shared").count(),
             1
         );
+    }
+
+    #[test]
+    fn fortnite_modes_leave_the_required_set_but_stay_selectable() {
+        let groups = with_launcher_groups(
+            "Fortnite",
+            &fallback_groups("Fortnite").expect("Fortnite fallback data"),
+        );
+        let required = group_tags(&groups, "__required");
+        assert!(!required.contains(&"GFP_JunoRoot"));
+        assert!(!required.contains(&"GFP_SaveTheWorldRoot"));
+        assert!(required.contains(&"FortniteBR"));
+        assert_eq!(
+            group_tags(&groups, "lego_fortnite"),
+            vec!["GFP_JunoRoot", "GFP_JunoRootOptional"]
+        );
+        assert_eq!(groups["lego_fortnite"]["category"], "modes");
+        assert_eq!(groups["lego_fortnite"]["default"], true);
+    }
+
+    #[test]
+    fn a_new_or_updated_fortnite_install_keeps_the_default_modes() {
+        let groups = with_launcher_groups(
+            "Fortnite",
+            &fallback_groups("Fortnite").expect("Fortnite fallback data"),
+        );
+        let tags = expanded_tags(&groups, &[]);
+        assert!(tags.iter().any(|tag| tag == "GFP_JunoRoot"));
+        assert!(tags.iter().any(|tag| tag == "GFP_SaveTheWorldRoot"));
+        assert!(tags.iter().any(|tag| tag == "FortniteBR"));
+    }
+
+    #[test]
+    fn an_explicit_empty_fortnite_selection_drops_the_modes() {
+        let groups = with_launcher_groups(
+            "Fortnite",
+            &fallback_groups("Fortnite").expect("Fortnite fallback data"),
+        );
+        // The dialog sends the untagged tag when the user unchecks every mode.
+        let tags = expanded_tags(&groups, &[String::new()]);
+        assert!(!tags.iter().any(|tag| tag == "GFP_JunoRoot"));
+        assert!(!tags.iter().any(|tag| tag == "GFP_SaveTheWorldRoot"));
+        assert!(tags.iter().any(|tag| tag == "FortniteBR"));
+    }
+
+    #[test]
+    fn launcher_groups_do_not_touch_other_games() {
+        let groups = sample_groups();
+        assert_eq!(with_launcher_groups("SomeOtherGame", &groups), groups);
     }
 }

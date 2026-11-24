@@ -1363,6 +1363,7 @@
   "selective.checking": "Проверка параметров установки…",
   "selective.starting": "Запуск выборочной установки…",
   "selective.startFailed": "Не удалось начать установку: {msg}",
+  "selective.gameModes": "Режимы игры",
   "selective.extraLanguages": "Дополнительные языки",
   "selective.extraPacks": "Дополнительные наборы и текстуры",
   "selective.dlcs": "Дополнения и DLC",

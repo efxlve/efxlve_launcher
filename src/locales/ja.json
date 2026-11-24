@@ -1363,6 +1363,7 @@
   "selective.checking": "インストールオプションを確認中…",
   "selective.starting": "選択インストールを開始中…",
   "selective.startFailed": "インストールを開始できませんでした: {msg}",
+  "selective.gameModes": "ゲームモード",
   "selective.extraLanguages": "追加言語",
   "selective.extraPacks": "追加パックとテクスチャ",
   "selective.dlcs": "アドオンと DLC",

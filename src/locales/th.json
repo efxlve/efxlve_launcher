@@ -1363,6 +1363,7 @@
   "selective.checking": "กำลังตรวจสอบตัวเลือกการติดตั้ง…",
   "selective.starting": "กำลังเริ่มติดตั้งแบบเลือกส่วน…",
   "selective.startFailed": "เริ่มติดตั้งไม่ได้: {msg}",
+  "selective.gameModes": "โหมดเกม",
   "selective.extraLanguages": "ภาษาเพิ่มเติม",
   "selective.extraPacks": "แพ็กและเท็กซ์เจอร์เพิ่มเติม",
   "selective.dlcs": "ส่วนเสริมและ DLC",

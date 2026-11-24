@@ -521,6 +521,8 @@ export interface InstallOptionTag {
   size: number;
   downloadSize: number;
   category: string;
+  /** Selected when the options modal opens (Epic preselects Fortnite modes). */
+  defaultSelected?: boolean;
   /** Raw manifest tags behind this row. Empty for the legacy one-tag rows. */
   tags?: string[];
 }

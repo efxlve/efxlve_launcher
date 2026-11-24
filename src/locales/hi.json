@@ -1436,6 +1436,7 @@
   "selective.checking": "इंस्टॉल विकल्प जाँचे जा रहे हैं…",
   "selective.starting": "चयनात्मक इंस्टॉलेशन शुरू हो रहा है…",
   "selective.startFailed": "इंस्टॉल शुरू नहीं किया जा सका: {msg}",
+  "selective.gameModes": "गेम मोड",
   "selective.extraLanguages": "अतिरिक्त भाषाएं",
   "selective.extraPacks": "अतिरिक्त पैक और टेक्सचर",
   "selective.dlcs": "ऐड-ऑन और DLC",

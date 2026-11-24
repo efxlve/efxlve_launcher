@@ -480,10 +480,19 @@ pub(super) fn start_download_request(
         &request.app_name,
     );
     let resuming = saved.is_some();
-    let merged = pending_from_record(crate::legendary::download_resume::merge_resume(
+    let mut merged = pending_from_record(crate::legendary::download_resume::merge_resume(
         saved.as_ref(),
         record_from_pending(&request),
     ));
+    // An installed copy keeps the selection it was installed with. A bare
+    // update carries no tags, and expanding that as a fresh install would
+    // re-add every default pack the user left out.
+    if merged.install_tags.is_empty() {
+        merged.install_tags = crate::legendary::cache::installed_install_tags(
+            &crate::legendary::skip::default_config_dir(),
+            &merged.app_name,
+        );
+    }
     // Persist the resolved folder, not a later settings default. A retry that
     // omits the path would otherwise install into an empty directory.
     let base = resolve_base(app, merged.install_dir.clone());

@@ -34,6 +34,11 @@ export async function openSelectiveModal(appName: string): Promise<void> {
     }
     S.selectiveInstallOptions = opts;
     S.selectedInstallTags.clear();
+    // Epic preselects Fortnite's modes; the backend uses the same defaults for
+    // an update that carries no selection.
+    for (const tag of opts.tags) {
+      if (tag.defaultSelected) S.selectedInstallTags.add(tag.tag);
+    }
     S.selectedDlcAppIds.clear();
     renderSelectiveModal();
   } catch (_err) {
@@ -52,6 +57,10 @@ export async function applySelectiveInstall(appName: string, tags: string[], dlc
     const row = options?.tags.find((tag) => tag.tag === key);
     return row?.tags && row.tags.length > 0 ? row.tags : [key];
   });
+  // An empty list means "no selection given" to legendary, which the backend
+  // treats as an update and fills with the default modes. The untagged tag is
+  // the explicit "required content only" choice.
+  if (installTags.length === 0) installTags.push("");
   closeSelectiveModal();
   S.downloads.set(appName, { progress: 0, done: false, title });
   if (!S.activeDlMetrics || S.activeDlMetrics.done) {
@@ -126,6 +135,7 @@ export function renderSelectiveModal(): void {
   const existingBody = selectiveRoot.querySelector(".selective-body") as HTMLElement | null;
   const scrollPos = existingBody ? existingBody.scrollTop : 0;
 
+  const modeTags = opts.tags.filter((tag) => tag.category === "modes");
   const langTags = opts.tags.filter((tag) => tag.category === "languages");
   const extraTags = opts.tags.filter((tag) => tag.category === "extras");
   const summary = summaryOf(opts.appName);
@@ -224,6 +234,7 @@ export function renderSelectiveModal(): void {
             </div>
           </div>
 
+          ${tagSection("selective.gameModes", "modes", modeTags)}
           ${tagSection("selective.extraLanguages", "languages", langTags)}
           ${tagSection("selective.extraPacks", "extras", extraTags)}
           ${dlcsHtml}

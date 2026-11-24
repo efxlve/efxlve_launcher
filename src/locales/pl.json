@@ -1363,6 +1363,7 @@
   "selective.checking": "Sprawdzanie opcji instalacji…",
   "selective.starting": "Uruchamianie instalacji wybiórczej…",
   "selective.startFailed": "Nie udało się rozpocząć instalacji: {msg}",
+  "selective.gameModes": "Tryby gry",
   "selective.extraLanguages": "Dodatkowe języki",
   "selective.extraPacks": "Dodatkowe pakiety i tekstury",
   "selective.dlcs": "Dodatki i DLC",

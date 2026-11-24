@@ -1363,6 +1363,7 @@
   "selective.checking": "正在检查安装选项…",
   "selective.starting": "正在开始选择性安装…",
   "selective.startFailed": "无法开始安装：{msg}",
+  "selective.gameModes": "游戏模式",
   "selective.extraLanguages": "其他语言",
   "selective.extraPacks": "额外包与纹理",
   "selective.dlcs": "附加内容与 DLC",

@@ -1363,6 +1363,7 @@
   "selective.checking": "Comprobando opciones de instalación…",
   "selective.starting": "Iniciando instalación selectiva…",
   "selective.startFailed": "No se pudo iniciar la instalación: {msg}",
+  "selective.gameModes": "Modos de juego",
   "selective.extraLanguages": "Idiomas adicionales",
   "selective.extraPacks": "Paquetes extra y texturas",
   "selective.dlcs": "Complementos y DLC",

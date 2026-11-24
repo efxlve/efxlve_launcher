@@ -1436,6 +1436,7 @@
   "selective.checking": "Kurulum seçenekleri denetleniyor…",
   "selective.starting": "Seçici kurulum başlatılıyor…",
   "selective.startFailed": "Kurulum başlatılamadı: {msg}",
+  "selective.gameModes": "Oyun Modları",
   "selective.extraLanguages": "Ek Diller",
   "selective.extraPacks": "Ek Paketler & Dokular",
   "selective.dlcs": "Eklentiler & DLC",

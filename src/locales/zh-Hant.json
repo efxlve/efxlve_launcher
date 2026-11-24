@@ -1363,6 +1363,7 @@
   "selective.checking": "正在檢查安裝選項…",
   "selective.starting": "正在開始選擇性安裝…",
   "selective.startFailed": "無法開始安裝：{msg}",
+  "selective.gameModes": "遊戲模式",
   "selective.extraLanguages": "其他語言",
   "selective.extraPacks": "額外套件與材質",
   "selective.dlcs": "附加內容與 DLC",

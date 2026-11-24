@@ -1363,6 +1363,7 @@
   "selective.checking": "جارٍ التحقق من خيارات التثبيت…",
   "selective.starting": "جارٍ بدء التثبيت الانتقائي…",
   "selective.startFailed": "تعذر بدء التثبيت: {msg}",
+  "selective.gameModes": "أوضاع اللعب",
   "selective.extraLanguages": "لغات إضافية",
   "selective.extraPacks": "حزم وخامات إضافية",
   "selective.dlcs": "الإضافات وDLC",

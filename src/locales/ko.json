@@ -1363,6 +1363,7 @@
   "selective.checking": "설치 옵션 확인 중…",
   "selective.starting": "선택 설치 시작 중…",
   "selective.startFailed": "설치를 시작할 수 없습니다: {msg}",
+  "selective.gameModes": "게임 모드",
   "selective.extraLanguages": "추가 언어",
   "selective.extraPacks": "추가 팩 및 텍스처",
   "selective.dlcs": "애드온 및 DLC",

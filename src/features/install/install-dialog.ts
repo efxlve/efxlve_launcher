@@ -147,8 +147,18 @@ export async function openInstallDialog(appName: string): Promise<void> {
       epicGetGameSettings(appName),
     ]);
     if (S.installDialogAppName !== appName) return;
-    S.installDialogDownloadSize = opts.baseDownloadSize || opts.baseSize || S.installDialogDownloadSize;
-    S.installDialogDiskSize = opts.baseSize || S.installDialogDiskSize;
+    // The options modal starts with the launcher's defaults checked, so the
+    // dialog must show that same total, not just the required core.
+    const defaults = opts.tags.filter((tag) => tag.defaultSelected);
+    const defaultDownload = defaults.reduce((sum, tag) => sum + (tag.downloadSize || tag.size), 0);
+    const defaultDisk = defaults.reduce((sum, tag) => sum + tag.size, 0);
+    const baseDownload = opts.baseDownloadSize || opts.baseSize;
+    if (baseDownload > 0 || defaultDownload > 0) {
+      S.installDialogDownloadSize = baseDownload + defaultDownload;
+    }
+    if (opts.baseSize > 0 || defaultDisk > 0) {
+      S.installDialogDiskSize = opts.baseSize + defaultDisk;
+    }
     S.installDialogHasOptions = opts.hasOptions;
     S.installDialogAutoUpdate = st.autoUpdate;
   } catch {

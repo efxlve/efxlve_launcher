@@ -949,6 +949,9 @@ pub struct InstallOptionTag {
     pub size: u64,
     pub download_size: u64,
     pub category: String,
+    /// Selected when the install options open (Epic preselects Fortnite modes).
+    #[serde(default)]
+    pub default_selected: bool,
     /// Raw manifest tags behind this row. Empty for the legacy one-tag rows.
     #[serde(default)]
     pub tags: Vec<String>,
@@ -971,6 +974,12 @@ fn json_u64(v: &serde_json::Value) -> u64 {
         .or_else(|| v.as_i64().and_then(|n| u64::try_from(n).ok()))
         .or_else(|| v.as_f64().map(|n| n as u64))
         .unwrap_or(0)
+}
+
+/// The manifest behind an `info --json` reply. Legendary writes `null` when
+/// its cached manifest is missing, which is not a usable manifest.
+fn manifest_of(info: &serde_json::Value) -> Option<&serde_json::Value> {
+    info.get("manifest").filter(|value| !value.is_null())
 }
 
 /// Base install/download bytes plus optional tag rows.
@@ -1012,6 +1021,7 @@ fn sizes_from_manifest(manifest: &serde_json::Value) -> (u64, u64, Vec<InstallOp
                     size,
                     download_size: dl_size,
                     category: category.to_string(),
+                    default_selected: false,
                     tags: Vec::new(),
                 });
             }
@@ -1124,16 +1134,30 @@ fn sdl_options(
                 continue;
             }
             let name = crate::legendary::sdl::group_name(groups, key);
+            let category = groups
+                .get(key)
+                .and_then(|group| group.get("category"))
+                .and_then(|value| value.as_str())
+                .map(str::to_string)
+                .unwrap_or_else(|| {
+                    if is_language_group(key, &name) {
+                        "languages".to_string()
+                    } else {
+                        "extras".to_string()
+                    }
+                });
+            let default_selected = groups
+                .get(key)
+                .and_then(|group| group.get("default"))
+                .and_then(|value| value.as_bool())
+                .unwrap_or(false);
             rows.push(InstallOptionTag {
                 tag: key.clone(),
                 label: name.clone(),
                 size,
                 download_size,
-                category: if is_language_group(key, &name) {
-                    "languages".to_string()
-                } else {
-                    "extras".to_string()
-                },
+                category,
+                default_selected,
                 tags: tags.into_iter().map(str::to_string).collect(),
             });
         }
@@ -1153,79 +1177,54 @@ pub async fn epic_get_install_options(
     let mut base_download_size = 0u64;
     let mut tags = Vec::new();
 
-    // Offline first. One online call only when the cached manifest has no sizes.
-    let mut used_online = false;
-    let info = match client::run_json::<serde_json::Value>(
+    // Offline first. Another store or a newer build can leave legendary's
+    // cached manifest behind the current version, and `info --offline` then
+    // answers with `manifest: null`. Keep whichever manifest actually has
+    // sizes: the SDL step below must read the online one, not the null reply.
+    let mut manifest = client::run_json::<serde_json::Value>(
         &bin,
         &["info", &app_name, "--offline", "--json"],
     )
     .await
-    {
-        Ok(val) => Some(val),
-        Err(_) => {
-            used_online = true;
+    .ok()
+    .and_then(|val| manifest_of(&val).cloned());
+    if manifest.is_none() {
+        manifest =
             client::run_json::<serde_json::Value>(&bin, &["info", &app_name, "--json"])
                 .await
                 .ok()
-        }
-    };
-    if let Some(val) = info.as_ref() {
-        if let Some(manifest) = val.get("manifest") {
-            let parsed = sizes_from_manifest(manifest);
-            base_size = parsed.0;
-            base_download_size = parsed.1;
-            tags = parsed.2;
-        }
+                .and_then(|val| manifest_of(&val).cloned());
     }
-    if !used_online && base_size == 0 && base_download_size == 0 {
-        if let Ok(val) =
-            client::run_json::<serde_json::Value>(&bin, &["info", &app_name, "--json"]).await
-        {
-            if let Some(manifest) = val.get("manifest") {
-                let parsed = sizes_from_manifest(manifest);
-                base_size = parsed.0;
-                base_download_size = parsed.1;
-                tags = parsed.2;
-            }
-        }
+    if let Some(manifest) = manifest.as_ref() {
+        let parsed = sizes_from_manifest(manifest);
+        base_size = parsed.0;
+        base_download_size = parsed.1;
+        tags = parsed.2;
     }
 
-    // SDL groups turn Fortnite's internal chunk names into one optional pack
+    // SDL groups turn the manifest's internal chunk names into user choices
     // and, more importantly, define the real base (required) size. Only games
     // whose manifest carries tags can have groups, so a game without tags
     // never pays for the extra request.
     if !tags.is_empty() {
-        let config = skip::default_config_dir();
-        let groups = match crate::legendary::sdl::read_groups(&config, &app_name) {
-            Some(groups) => Some(groups),
-            None => {
-                let fetched = crate::legendary::sdl::fetch_groups(&app_name).await;
-                if let Some(data) = fetched.as_ref() {
-                    let version = crate::legendary::sdl::sdl_version(&config, &app_name);
-                    crate::legendary::sdl::save_groups(&config, &app_name, data, version);
+        if let Some(manifest) = manifest.as_ref() {
+            let config = skip::default_config_dir();
+            match crate::legendary::sdl::load_groups(&config, &app_name).await {
+                Some(groups) => {
+                    let (sdl_base, sdl_download, sdl_tags) = sdl_options(manifest, &groups);
+                    if sdl_base > 0 || sdl_download > 0 {
+                        base_size = sdl_base;
+                        base_download_size = sdl_download;
+                    }
+                    // Only the base exists; raw manifest tags are internal
+                    // names, not selectable packs.
+                    tags = sdl_tags;
                 }
-                fetched
-            }
-        };
-        let groups = groups.or_else(|| crate::legendary::sdl::fallback_groups(&app_name));
-        match (
-            groups.as_ref(),
-            info.as_ref().and_then(|value| value.get("manifest")),
-        ) {
-            (Some(groups), Some(manifest)) => {
-                let (sdl_base, sdl_download, sdl_tags) = sdl_options(manifest, groups);
-                if sdl_base > 0 || sdl_download > 0 {
-                    base_size = sdl_base;
-                    base_download_size = sdl_download;
+                None => {
+                    // No SDL groups for this title: the manifest tag names are
+                    // internal chunk ids, so they must not become checkboxes.
+                    tags.clear();
                 }
-                // Only the base exists; raw manifest tags are internal names,
-                // not selectable packs.
-                tags = sdl_tags;
-            }
-            _ => {
-                // No SDL groups for this title: the manifest tag names are
-                // internal chunk ids, so they must not become checkboxes.
-                tags.clear();
             }
         }
     }
@@ -1293,6 +1292,13 @@ mod tests {
             "[cli] INFO: Save path for this title has not been set, skipping due to --yes"
         ));
         assert!(!sync_skipped("[cli] INFO: Uploading local savegame..."));
+    }
+
+    #[test]
+    fn a_null_manifest_is_not_used_for_sizes() {
+        assert!(manifest_of(&serde_json::json!({"manifest": null})).is_none());
+        let info = serde_json::json!({"manifest": {"disk_size": 1u64}});
+        assert_eq!(manifest_of(&info).unwrap()["disk_size"], 1);
     }
 
     #[test]
@@ -1383,6 +1389,43 @@ mod tests {
         assert_eq!(rows[0].download_size, 300);
         assert_eq!(rows[0].tags, vec!["AssetsChunk".to_string()]);
         assert_eq!(rows[0].category, "extras");
+    }
+
+    #[test]
+    fn fortnite_modes_are_rows_outside_the_required_base() {
+        let manifest = serde_json::json!({
+            "tag_disk_size": [
+                {"tag": "", "size": 100u64},
+                {"tag": "FortniteBR", "size": 900u64},
+                {"tag": "GFP_JunoRoot", "size": 400u64},
+                {"tag": "GFP_SaveTheWorldRoot", "size": 300u64}
+            ],
+            "tag_download_size": [
+                {"tag": "", "size": 80u64},
+                {"tag": "FortniteBR", "size": 800u64},
+                {"tag": "GFP_JunoRoot", "size": 350u64},
+                {"tag": "GFP_SaveTheWorldRoot", "size": 250u64}
+            ]
+        });
+        let groups = crate::legendary::sdl::with_launcher_groups(
+            "Fortnite",
+            &crate::legendary::sdl::fallback_groups("Fortnite").expect("Fortnite groups"),
+        );
+        let (base, base_download, rows) = sdl_options(&manifest, &groups);
+        assert_eq!(base, 1_000);
+        assert_eq!(base_download, 880);
+        let lego = rows
+            .iter()
+            .find(|row| row.tag == "lego_fortnite")
+            .expect("LEGO row");
+        assert_eq!(lego.size, 400);
+        assert_eq!(lego.category, "modes");
+        assert!(lego.default_selected);
+        let stw = rows
+            .iter()
+            .find(|row| row.tag == "save_the_world")
+            .expect("Save the World row");
+        assert_eq!(stw.size, 300);
     }
 
     #[test]
