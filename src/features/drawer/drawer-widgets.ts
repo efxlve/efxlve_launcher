@@ -17,6 +17,7 @@ import { isCompanionSource, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import { cleanDisplayVersion, esc, fmtAchDate, fmtBytes, fmtDecimal1, fmtHours, fmtPlaytime } from "../../core/utils";
 import { currentLanguage, formatSyncStamp, t as i18nT } from "../../i18n";
+import { storeVersionLabel } from "./external-versions";
 import { igdbGameFor } from "./igdb-view";
 import { sideCard } from "./side-widgets";
 import { sessionSummaryFor, sessionWhen } from "../../core/session-summary";
@@ -1206,7 +1207,7 @@ export function renderInstalledCopyFacts(
         ? i18nT("sys.copyPathMissing")
         : "";
   const source = sourceOfKey(s.appName);
-  const storeLabel = source === "steam" ? "Steam" : source === "gog" ? "GOG" : source === "epic" ? "Epic Games" : source === "amazon" ? "Amazon" : (source || "—");
+  const storeLabel = storeVersionLabel(source);
   const versionInfo = cleanDisplayVersion(s.installedVersion || s.version);
   const rawDisplay = versionInfo.display.trim();
   const isBogusVersion =
