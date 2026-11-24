@@ -6,7 +6,7 @@
  * feature.
  */
 
-import { epicPortrait, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicSummary } from "../epic";
+import { epicPortrait, getThirdPartyLauncher, requiresThirdPartyLauncher, type EpicAchievementSummary, type EpicSummary } from "../epic";
 import { cachedSteamCover, steamCdnPortrait } from "./steam-art-cache";
 import { t } from "../i18n";
 import { FAV_KEY } from "./constants";
@@ -17,26 +17,57 @@ import { S } from "./state";
 import type { LibraryItem } from "./types";
 import { esc, fmtPlaytime } from "./utils";
 
+/** A row that carries a real set, not just the definition list. */
+function hasRealSet(summary: EpicAchievementSummary | undefined): boolean {
+  return Boolean(summary?.supported && (summary.total_achievements ?? 0) > 0);
+}
+
+/** A real set whose unlocked count is known, not a metadata-only row. */
+function hasKnownProgress(summary: EpicAchievementSummary | undefined): boolean {
+  return hasRealSet(summary) && summary?.progress_known !== false;
+}
+
+/**
+ * The best real answer wins. A metadata-only or unsupported row must not hide
+ * the same game's known progress from another store, the EA/EOS answer, or the
+ * last persisted result.
+ */
+function pickSummary(
+  ...summaries: Array<EpicAchievementSummary | undefined>
+): EpicAchievementSummary | undefined {
+  return summaries.find(hasKnownProgress) ?? summaries.find(hasRealSet) ?? summaries.find(Boolean);
+}
+
 /** O(1) achievement lookup supporting both composite (`gog::id`) and raw (`id`) keys. */
 export function achSummaryOf(appName: string) {
+  const cached = S.cachedAchSummaries;
   if (appName.startsWith("custom::")) {
     // A custom game owns its achievement file; the Steam client summary is
     // only a fallback until that game's own page has loaded. Preferring Steam
     // first showed a different (older) count on the card.
-    const own = S.epicAchSummaries[appName];
-    if (own) return own;
     const custom = S.customGames.find((g) => g.id === appName);
-    if (custom?.steamAppId) {
-      const steamSum = S.epicAchSummaries[`steam::${custom.steamAppId}`] || S.epicAchSummaries[custom.steamAppId];
-      if (steamSum) return steamSum;
-    }
+    const steamKeys = custom?.steamAppId
+      ? [`steam::${custom.steamAppId}`, custom.steamAppId]
+      : [];
+    const own = pickSummary(
+      S.epicAchSummaries[appName],
+      ...steamKeys.map((key) => S.epicAchSummaries[key]),
+      cached[appName],
+      ...steamKeys.map((key) => cached[key]),
+    );
+    if (own) return own;
   }
   const backend = S.epicBackendLaunch.get(appName);
-  return (
-    S.epicAchSummaries[appName] ||
-    S.companionAchSummaries[appName] ||
-    (backend ? S.companionAchSummaries[backend] || S.epicAchSummaries[backend] : undefined) ||
-    (appName.startsWith("gog::") ? S.epicAchSummaries[appName.slice(5)] : S.epicAchSummaries[`gog::${appName}`])
+  const gogKeys = appName.startsWith("gog::") ? [appName.slice(5)] : [`gog::${appName}`];
+  return pickSummary(
+    S.epicAchSummaries[appName],
+    S.companionAchSummaries[appName],
+    backend ? S.companionAchSummaries[backend] : undefined,
+    backend ? S.epicAchSummaries[backend] : undefined,
+    ...gogKeys.map((key) => S.epicAchSummaries[key]),
+    cached[appName],
+    backend ? cached[backend] : undefined,
+    ...gogKeys.map((key) => cached[key]),
   );
 }
 

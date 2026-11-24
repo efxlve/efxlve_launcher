@@ -10,6 +10,7 @@ import { loadSharedLibrary } from "../library/shared-library";
 import { toast } from "../../core/toast";
 import { t } from "../../i18n";
 import { setGogSummaries } from "../../core/selectors";
+import { clearAchievementSummaryCache } from "../../core/achievement-cache";
 
 export async function loadSavedGogAccounts(): Promise<SavedGogAccount[]> {
   try {
@@ -37,6 +38,7 @@ export async function switchGogAccount(userId: string): Promise<void> {
     // Clear GOG state for fresh hydration
     setGogSummaries([]);
     S.epicAchSummaries = {};
+    clearAchievementSummaryCache();
 
     await loadSavedGogAccounts();
     render();

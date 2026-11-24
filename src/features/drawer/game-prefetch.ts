@@ -212,6 +212,9 @@ async function runAchievementPass(): Promise<void> {
       if (!id || achRequested.has(id)) continue;
       const ach = achSummaryOf(id);
       const knownSet = Boolean(ach?.supported && ach.total_achievements > 0);
+      // The last session's answer paints the card immediately; ask once more
+      // in the background so a stale count cannot survive the whole session.
+      const needsCacheRefresh = Boolean(ach && S.cachedAchSummaries[id] === ach);
       // Metadata alone gave us the set size, not the player's progress. Those
       // are exactly the covers that used to show a false "0 / N" until the
       // game page was opened. A card with no summary at all still has a store
@@ -220,8 +223,11 @@ async function runAchievementPass(): Promise<void> {
       const needsProgress = knownSet && ach?.progress_known === false;
       const needsEaAnswer = !knownSet && eaBackedAchievements(id, eaTitles);
       const needsLocalAnswer =
-        !knownSet && !needsEaAnswer && (await hasLocalAchievementSource(id));
-      if (!needsProgress && !needsEaAnswer && !needsLocalAnswer) continue;
+        !knownSet &&
+        !needsEaAnswer &&
+        !needsCacheRefresh &&
+        (await hasLocalAchievementSource(id));
+      if (!needsProgress && !needsEaAnswer && !needsLocalAnswer && !needsCacheRefresh) continue;
       queue.push(id);
       if (queue.length >= ACH_PREFETCH_GAMES) break;
     }

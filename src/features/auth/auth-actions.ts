@@ -8,6 +8,7 @@
 import { isTauri } from "../../core/constants";
 import { refreshUpdates } from "../../core/epic-actions";
 import { loadEpicAchSummaries } from "../../core/achievement-summaries";
+import { clearAchievementSummaryCache } from "../../core/achievement-cache";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { pruneRecent } from "../../core/recent";
 import { closeAllModals, render, scheduleRender } from "../../core/render";
@@ -287,6 +288,7 @@ export async function runProgressiveAuth(
     S.playerProfileData = null;
     S.profileError = "";
     S.epicAchSummaries = {};
+    clearAchievementSummaryCache();
     S.authProgress = 42;
     updateAuthProgressUi();
 
@@ -405,6 +407,7 @@ export async function epicDoLogout(): Promise<void> {
   setEpicSummaries([]);
   setEpicGamesRaw([]);
   S.epicSkippedCount = 0;
+  clearAchievementSummaryCache();
   S.view = "library";
   S.epicPhase = "login";
   closeAllModals();

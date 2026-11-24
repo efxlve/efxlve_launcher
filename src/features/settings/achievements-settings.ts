@@ -39,6 +39,7 @@ import {
   editedAchievementGames,
   revertAchievementEditsFromSummaries,
 } from "../../core/achievement-edits";
+import { refreshCachedAchievementSummaries } from "../../core/achievement-cache";
 import { achievementStoreName } from "../drawer/ach-editor";
 import { askConfirm } from "../../core/confirm-dialog";
 import { coverThumb } from "../../core/game-view";
@@ -1477,5 +1478,6 @@ export function handleAchievementsSettingsAction(act: string | undefined, el: HT
 function dropLocalEdits(appName: string): void {
   revertAchievementEditsFromSummaries(appName, S.epicAchSummaries);
   clearAchievementEdits(appName);
+  refreshCachedAchievementSummaries();
   S.loadedAchievements.delete(appName);
 }

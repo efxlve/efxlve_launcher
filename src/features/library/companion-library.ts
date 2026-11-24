@@ -11,6 +11,7 @@ import { clearWideArtCache, rebuildAllGamesMap } from "../../core/selectors";
 import { scheduleRender, render, openEpicModal } from "../../core/render";
 import { setView, hideStore } from "../store/store-view";
 import { loadEpicAchSummaries } from "../../core/achievement-summaries";
+import { clearAchievementSummaryCache, rememberAchievementSummary } from "../../core/achievement-cache";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { currentLanguage } from "../../i18n";
@@ -45,6 +46,9 @@ function bindCompanionLogin(): void {
   if (loginBound) return;
   loginBound = true;
   void listen("companion-signed-in", () => {
+    // The previous session's per-game counts belong to the old account.
+    clearAchievementSummaryCache();
+    S.companionAchSummaries = {};
     void loadCompanionLibrary().then(() => {
       setView("library");
       render();
@@ -120,6 +124,14 @@ async function loadCompanionLibraryOnce(): Promise<void> {
     for (const g of games) {
       if (g.achievementsTotal > 0) {
         const key = `${g.store}::${g.id}`;
+        const previous = S.companionAchSummaries[key];
+        // The title history reports a zero unlocked count once a title has
+        // progress. Keep the last service-backed row instead of persisting a
+        // false zero; the paged pass below replaces it with the live answer.
+        if (previous && previous.user_unlocked > 0 && g.achievementsUnlocked === 0) {
+          summaries[key] = previous;
+          continue;
+        }
         summaries[key] = {
           app_name: key,
           user_unlocked: g.achievementsUnlocked,
@@ -128,6 +140,9 @@ async function loadCompanionLibraryOnce(): Promise<void> {
           total_xp: g.achievementsTotalXp,
           is_platinum: g.achievementsUnlocked >= g.achievementsTotal,
           supported: true,
+          // The title history zeroes the unlocked count once a title has
+          // progress. A zero is not trustworthy until the paged pass answers.
+          progress_known: g.achievementsUnlocked > 0,
         };
       }
     }
@@ -215,11 +230,13 @@ async function fillXboxAchievements(): Promise<void> {
         current.user_unlocked === row.user_unlocked &&
         current.total_achievements === row.total_achievements &&
         current.user_xp === row.user_xp &&
-        current.total_xp === row.total_xp
+        current.total_xp === row.total_xp &&
+        current.progress_known === row.progress_known
       ) {
         continue;
       }
       S.companionAchSummaries[key] = row;
+      rememberAchievementSummary(key, row);
       changed = true;
     }
     if (changed) {

@@ -91,7 +91,8 @@ import { renderRequirementPanel, renderSystemTab, repaintSystemRequirements } fr
 import { installDriveLabel } from "./system-check";
 import { achievementProgress, achievementStats, estimateRemainingHours, isAchievementUnlocked, nextAchievements, syncAchievementIcon } from "../../core/achievements";
 import { storeAchievementAnswer } from "../../core/achievement-answer";
-import { applyAchievementEdits } from "../../core/achievement-edits";
+import { applyAchievementEdits, stripAchievementEdits } from "../../core/achievement-edits";
+import { achievementSummaryFrom, refreshCachedAchievementSummaries, rememberAchievementSummary } from "../../core/achievement-cache";
 import { recordAchievementUnlocks, attachAchievementScreenshot } from "../../core/achievement-history";
 import { raGameFor } from "../../core/ra-games";
 import { raGameProgress } from "../../retroachievements";
@@ -2978,6 +2979,8 @@ async function refreshEosLogUnlocks(appName: string, title: string): Promise<voi
     game: summaryOf(appName)?.title || appName,
     store: sourceOfKey(appName),
   });
+  const summary = achievementSummaryFrom(appName, data);
+  rememberAchievementSummary(appName, stripAchievementEdits(appName, summary));
   refreshAchievementSummary(appName);
   checkAndEmitNewStoreUnlocks(appName);
   recordSessionSummary(appName, { unlocked: added, at: Date.now() });
@@ -3979,6 +3982,7 @@ export async function fetchAndRenderAchievements(
       S.epicAchSummaries[rawId] = summary;
       S.epicAchSummaries[`gog::${rawId}`] = summary;
     }
+    rememberAchievementSummary(appName, stripAchievementEdits(appName, summary));
     patchLibraryCardDom(appName);
     if (isGog) patchLibraryCardDom(rawId);
     invalidateLibraryVisibleCache();
@@ -4070,6 +4074,7 @@ export function refreshAchievementSummary(appName: string): void {
   }
   patchLibraryCardDom(appName);
   invalidateLibraryVisibleCache();
+  refreshCachedAchievementSummaries();
   repaintAchievementSummary(appName, true);
 }
 

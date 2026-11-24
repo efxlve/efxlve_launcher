@@ -114,6 +114,7 @@ import { gameStatusOf, setGameStatus, type GameStatus } from "../library/game-st
 import { hideGameIds, openHideGamesModal, unhideGameIds } from "../library/hide-games";
 import { openHideAchievementsModal, unhideAchievement } from "../profile/hide-achievements";
 import { clearAchievementHistory } from "../../core/achievement-history";
+import { clearAchievementSummaryCache } from "../../core/achievement-cache";
 import { moveAchievementPin, removeAchievementPin } from "../../core/achievement-pins";
 import {
   consumeCollectionDragClick,
@@ -1079,6 +1080,7 @@ document.addEventListener("click", (e) => {
       });
   } else if (act === "companion-unlink" && id) {
     const store = id as CompanionStore;
+    clearAchievementSummaryCache();
     void companionUnlink(store)
       .then(() => loadCompanionLibrary())
       .then(() => render())

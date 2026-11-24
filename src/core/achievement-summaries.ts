@@ -9,6 +9,7 @@
  */
 
 import { applyAchievementEditsToSummaries } from "./achievement-edits";
+import { refreshCachedAchievementSummaries } from "./achievement-cache";
 import { isTauri } from "./constants";
 import { scheduleRender } from "./render";
 import { S } from "./state";
@@ -54,6 +55,7 @@ export function loadEpicAchSummaries(force = false, repaint = true): Promise<voi
       // Local edits survive a restart as a count delta, so covers and the
       // profile agree with the game page before it is opened again.
       applyAchievementEditsToSummaries(S.epicAchSummaries);
+      refreshCachedAchievementSummaries();
       summariesAt = Date.now();
       S.libraryDataRev++;
       if (repaint && (S.view === "library" || S.view === "profile")) scheduleRender();

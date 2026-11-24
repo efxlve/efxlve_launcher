@@ -350,6 +350,8 @@ export const PALETTE_HISTORY_KEY = "efxlve-palette-history";
 export const LIBRARY_DATA_EVENT = "efxlve:library-data";
 /** The library grid rebuilt its card set (tab, filter, sort or next page). */
 export const LIBRARY_RESULTS_EVENT = "efxlve:library-results";
+/** Last known per-game achievement summaries (EA, EOS/definitions, Xbox). */
+export const ACH_SUMMARY_CACHE_KEY = "ach-summary-cache-v2";
 /** Recently installed and updated game ids. */
 export const RECENT_INSTALLS_KEY = "efxlve-recent-installs";
 /** Initial number of library cards rendered before progressive chunking kicks in. */

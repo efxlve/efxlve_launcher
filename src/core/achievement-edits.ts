@@ -386,6 +386,44 @@ export function applyAchievementEditsToSummaries(
   }
 }
 
+/** One stored summary with this game's launcher-only delta folded in. */
+export function applyAchievementEditsToSummary(
+  appName: string,
+  summary: EpicAchievementSummary,
+): EpicAchievementSummary {
+  const record = achievementEditsOf(appName);
+  if (!record || (record.delta.unlocked === 0 && record.delta.xp === 0)) return summary;
+  const copy = { ...summary };
+  applyDeltaToSummaries(appName, { [appName]: copy }, record.delta);
+  return copy;
+}
+
+/**
+ * The store answer behind a summary that already has the local delta folded
+ * in. The persistent card cache stores this, so loading it applies the delta
+ * once instead of stacking it again.
+ */
+export function stripAchievementEdits(
+  appName: string,
+  summary: EpicAchievementSummary,
+): EpicAchievementSummary {
+  const record = achievementEditsOf(appName);
+  if (!record || (record.delta.unlocked === 0 && record.delta.xp === 0)) {
+    return { ...summary };
+  }
+  const total = summary.total_achievements ?? 0;
+  const unlocked = summary.user_unlocked - record.delta.unlocked;
+  const xp = summary.user_xp - record.delta.xp;
+  const user_unlocked = total > 0 ? Math.max(0, Math.min(total, unlocked)) : Math.max(0, unlocked);
+  const user_xp = Math.max(0, xp);
+  return {
+    ...summary,
+    user_unlocked,
+    user_xp,
+    is_platinum: total > 0 && user_unlocked >= total,
+  };
+}
+
 /** Takes one game's stored delta back out of an in-memory summary map. */
 export function revertAchievementEditsFromSummaries(
   appName: string,

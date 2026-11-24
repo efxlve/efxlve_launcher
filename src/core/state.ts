@@ -530,6 +530,8 @@ export const S = {
   epicSort: initialLibConfig.sort,
   epicViewMode: (localStorage.getItem("efxlve-view-mode") === "list" ? "list" : "grid") as EpicViewMode,
   epicAchSummaries: ({}) as Record<string, EpicAchievementSummary>,
+  /** Last per-game answers (EA, EOS/Steam definitions, Xbox) kept across restarts. */
+  cachedAchSummaries: ({}) as Record<string, EpicAchievementSummary>,
   loadedAchievements: (new Map()) as Map<string, EpicAchievementsData>,
   loadingAchFor: new Set<string>(),
   screenshotHotkey: (Number(localStorage.getItem(SS_HOTKEY_KEY)) || 0x7B) as number,

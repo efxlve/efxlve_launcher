@@ -79,6 +79,7 @@ import { onArchiveProgress, onXtoolProgress } from "../archive/archive-actions";
 import type { ArchiveProgress, XtoolProgress } from "../../archive";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
 import { patchLibraryCardDom, refreshGameActionUi } from "../../core/game-view";
+import { loadCachedAchievementSummaries } from "../../core/achievement-cache";
 import { recordAchievementUnlocks, attachAchievementScreenshot } from "../../core/achievement-history";
 import { raStatus } from "../../retroachievements";
 import { exophaseStatus } from "../../exophase";
@@ -339,7 +340,9 @@ export async function initApp(hooks: {
   refreshSidebarToggle();
 
   // FIRST PAINT: paint the shell (skeleton) before any slow IPC so the window is
-  // never blank on startup.
+  // never blank on startup. The per-game achievement answers are read first so
+  // their covers keep the last count until the idle pass refreshes it.
+  loadCachedAchievementSummaries();
   hooks.render();
   perfMark("paint:shell");
   // The rating sort reads the game page's disk cache; the scan is local and
