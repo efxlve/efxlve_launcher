@@ -94,7 +94,9 @@ export function achTagParts(
 /** The card itself. No stage, no position: both callers place it. */
 export function achCardHtml(m: AchCardModel): string {
   const hintClass = m.hint ? " is-hint" : "";
-  const statusText = !m.hint ? (m.statusLabel ?? t("ach.unlockedToast")) : "";
+  // "Hide rarity tag" asks for a clean line above the title, so the unlock
+  // label leaves with the rarity and the progress counter.
+  const statusText = !m.hint && !m.hideTag ? (m.statusLabel ?? t("ach.unlockedToast")) : "";
   const statusHtml = statusText ? `<span class="ach-hud-tag-status">${esc(statusText)}</span>` : "";
   const tierHtml = !m.hideTag && m.tagLabel ? `<span class="ach-hud-tag-tier">${esc(m.tagLabel)}</span>` : "";
   const metaHtml = !m.hideTag && m.tagMeta ? `<span class="ach-hud-tag-meta">${esc(m.tagMeta)}</span>` : "";
