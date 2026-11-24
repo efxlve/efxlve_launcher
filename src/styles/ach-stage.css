@@ -86,7 +86,7 @@
   border-radius: var(--r-md);
   border: 1px solid var(--line);
   overflow: hidden;
-  background: #050506;
+  background: var(--surface-2);
   display: flex;
 }
 
@@ -113,27 +113,28 @@
   flex-direction: column;
   gap: 7px;
   padding: 8px 9px 7px;
-  background: var(--surface-2);
-  border: 1px solid var(--line-strong);
+  background: var(--surface-1);
+  border: 1px solid var(--line);
   border-radius: var(--r-sm);
   color: var(--text-2);
   font-family: inherit;
   text-align: start;
   cursor: pointer;
   user-select: none;
-  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
 }
 
 .ach-motion-tile:hover {
-  background: var(--surface-3);
+  background: var(--surface-2);
   border-color: var(--line-strong);
   color: var(--text);
 }
 
 .ach-motion-tile.active {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-1));
   border-color: var(--accent);
   color: var(--text);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .ach-motion-tile:focus-visible {
@@ -146,9 +147,20 @@
   display: block;
   height: 34px;
   overflow: hidden;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line);
   border-radius: 4px;
-  background: color-mix(in srgb, var(--bg) 55%, var(--surface-1));
+  background: var(--surface-2);
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.ach-motion-tile:hover .ach-motion-figure {
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+}
+
+.ach-motion-tile.active .ach-motion-figure {
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-2));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
 }
 
 /* The solid bar is the card at rest; the two ghosts are where it starts and
@@ -166,8 +178,8 @@
 
 .ach-motion-ghost {
   background: var(--text-3);
-  opacity: var(--go, 0.3);
-  transition: background 140ms ease;
+  opacity: var(--go, 0.45);
+  transition: background 140ms ease, opacity 140ms ease;
 }
 
 .ach-motion-bar {
@@ -177,6 +189,10 @@
 
 .ach-motion-tile:hover .ach-motion-bar {
   background: var(--text);
+}
+
+.ach-motion-tile:hover .ach-motion-ghost {
+  background: var(--text-2);
 }
 
 .ach-motion-tile.active .ach-motion-bar,
@@ -384,46 +400,47 @@
   direction: ltr;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(2, 1fr);
-  gap: 4px;
+  gap: 6px;
   width: 100%;
   padding: 8px;
-  background: color-mix(in srgb, var(--bg) 55%, var(--surface-1));
-  border: 1px solid var(--line-strong);
+  background: var(--surface-1);
+  border: 1px solid var(--line);
   border-radius: var(--r-md);
 }
 
 .ach-pos-zone {
   position: relative;
   display: flex;
-  min-height: 92px;
-  padding: 10px;
-  background: transparent;
-  border: 1px solid var(--line-strong);
+  min-height: 86px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   border-radius: var(--r-sm);
-  color: var(--text-3);
+  color: var(--text-2);
   font-family: inherit;
   cursor: pointer;
   user-select: none;
-  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
 }
 
 .ach-pos-zone.top-left { align-items: flex-start; justify-content: flex-start; }
-.ach-pos-zone.center-top { align-items: flex-start; justify-content: center; }
+.ach-pos-zone.center-top { align-items: flex-start; justify-content: center; text-align: center; }
 .ach-pos-zone.top-right { align-items: flex-start; justify-content: flex-end; text-align: right; }
 .ach-pos-zone.bottom-left { align-items: flex-end; justify-content: flex-start; }
-.ach-pos-zone.center-bottom { align-items: flex-end; justify-content: center; }
+.ach-pos-zone.center-bottom { align-items: flex-end; justify-content: center; text-align: center; }
 .ach-pos-zone.bottom-right { align-items: flex-end; justify-content: flex-end; text-align: right; }
 
 .ach-pos-zone:hover {
-  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
-  border-color: color-mix(in srgb, var(--text-2) 55%, transparent);
-  color: var(--text-2);
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+  color: var(--text);
 }
 
 .ach-pos-zone.active {
-  background: color-mix(in srgb, var(--accent) 9%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--line-strong));
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
+  border-color: var(--accent);
   color: var(--text);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .ach-pos-zone:focus-visible {
@@ -438,6 +455,16 @@
   flex-direction: column;
   gap: 7px;
   min-width: 0;
+}
+
+.ach-pos-zone.center-top .ach-pos-anchor,
+.ach-pos-zone.center-bottom .ach-pos-anchor {
+  align-items: center;
+}
+
+.ach-pos-zone.top-right .ach-pos-anchor,
+.ach-pos-zone.bottom-right .ach-pos-anchor {
+  align-items: flex-end;
 }
 
 .ach-pos-zone.bottom-left .ach-pos-anchor,
@@ -462,11 +489,12 @@
   align-items: center;
   gap: 4px;
   width: 52px;
-  height: 17px;
-  padding: 2px 4px;
-  border: 1px solid var(--line-strong);
+  height: 18px;
+  padding: 2px 5px;
+  border: 1px solid var(--line);
   border-radius: 4px;
-  background: color-mix(in srgb, var(--surface-1) 75%, transparent);
+  background: var(--surface-1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   transition: border-color 140ms ease, background 140ms ease;
 }
 
@@ -491,7 +519,8 @@
   display: block;
   height: 2px;
   border-radius: 1px;
-  background: color-mix(in srgb, var(--text-3) 55%, transparent);
+  background: var(--line-strong);
+  transition: background 140ms ease;
 }
 
 .ach-pos-toast-lines i:last-child {
@@ -499,12 +528,21 @@
 }
 
 .ach-pos-zone:hover .ach-pos-toast {
-  border-color: color-mix(in srgb, var(--text-2) 60%, transparent);
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+}
+
+.ach-pos-zone:hover .ach-pos-toast-tile {
+  background: var(--text-2);
+}
+
+.ach-pos-zone:hover .ach-pos-toast-lines i {
+  background: var(--text-3);
 }
 
 .ach-pos-zone.active .ach-pos-toast {
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface-1));
 }
 
 .ach-pos-zone.active .ach-pos-toast-tile {
@@ -512,7 +550,7 @@
 }
 
 .ach-pos-zone.active .ach-pos-toast-lines i {
-  background: color-mix(in srgb, var(--accent) 65%, transparent);
+  background: color-mix(in srgb, var(--accent) 70%, var(--text));
 }
 
 .ach-sound-control-wrap {
