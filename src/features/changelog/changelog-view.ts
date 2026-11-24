@@ -30,6 +30,34 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.66",
+    date: "2026-11-24",
+    improved: [
+      {
+        en: "The in-game overlay has a new look: rounded glass cards, cleaner chrome and smoother scrolling, with less GPU work behind it.",
+        tr: "Oyun içi katman yeni bir görünüme kavuştu: yuvarlatılmış cam kartlar, daha temiz bir çerçeve ve daha akıcı kaydırma; arkasında daha az GPU yükü var.",
+      },
+      {
+        en: "Achievement notifications show the game cover and unlock icon, the animation and position pickers explain their choices, and library cards keep per-game achievement counts across restarts.",
+        tr: "Başarım bildirimleri oyunun kapağını ve açılan başarımın simgesini gösteriyor; animasyon ve konum seçicileri ne yaptıklarını açıklıyor ve kitaplık kartları oyun başına başarım sayılarını yeniden başlatmadan sonra da koruyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Epic updates no longer fail with an installed-data lock after an earlier session left a download running; the launcher now ends its download processes with it, and a stopped download resumes from its saved point.",
+        tr: "Önceki bir oturum indirme bıraktığı için Epic güncellemeleri artık \"installed data lock\" hatasıyla düşmüyor; başlatıcı indirme süreçlerini kendisiyle birlikte kapatıyor ve duran indirme kaydedilen noktadan devam ediyor.",
+      },
+      {
+        en: "Epic save uploads finish before the launcher closes, uninstalls stay inside the configured game folder, and the library stays responsive while a game is running.",
+        tr: "Epic kayıt yüklemeleri başlatıcı kapanmadan tamamlanıyor, kaldırmalar yapılandırılmış oyun klasörünün içinde kalıyor ve bir oyun çalışırken kitaplık akıcı kalıyor.",
+      },
+      {
+        en: "Overlay browser and music controls that stayed in English now follow the selected language.",
+        tr: "İngilizce kalan katman tarayıcısı ve müzik kontrolleri artık seçilen dili izliyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.65",
     date: "2026-11-23",
     added: [
