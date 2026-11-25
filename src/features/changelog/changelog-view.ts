@@ -30,6 +30,22 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.68",
+    date: "2026-11-25",
+    added: [
+      {
+        en: "Library games can be renamed from the right-click menu or the game page. The new name follows the game across the launcher, while store files, saves and achievements keep the real title.",
+        tr: "Kitaplıktaki oyunlar sağ tık menüsünden veya oyun sayfasından yeniden adlandırılabiliyor. Yeni ad oyunu launcher genelinde takip ediyor; mağaza dosyaları, kayıtlar ve başarımlar gerçek adı kullanmaya devam ediyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Closing an EA game now frees its LSX port, so the EA App can start again without the EC:10701 error.",
+        tr: "Bir EA oyunu kapatıldığında LSX portu artık serbest bırakılıyor; EA App, EC:10701 hatası olmadan yeniden başlayabiliyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.67",
     date: "2026-11-25",
     added: [
