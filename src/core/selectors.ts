@@ -28,6 +28,35 @@ export function clearWideArtCache(appName?: string): void {
   else wideArtCache.clear();
 }
 
+/** Custom display name set on `appName` (or a merged sibling store copy). */
+export function customTitleOf(appName: string, title?: string): string {
+  const direct = S.customTitles[appName]?.trim();
+  if (direct) return direct;
+  if (!S.separateCopies && title) {
+    for (const key of storeKeysForTitle(title)) {
+      const alias = S.customTitles[key]?.trim();
+      if (alias) return alias;
+    }
+  }
+  return "";
+}
+
+/** Visible title for a game, falling back to its store title. */
+export function displayTitleOf(appName: string, title: string): string {
+  return customTitleOf(appName, title) || title;
+}
+
+/**
+ * Copy of a summary with its player-chosen display name applied. `originalTitle`
+ * keeps store-side matching (versions, collections, metadata lookups) on the
+ * real title behind the alias.
+ */
+export function applyCustomTitle(s: EpicSummary): EpicSummary {
+  const title = customTitleOf(s.appName, s.title);
+  if (!title || title === s.title) return s;
+  return { ...s, title, originalTitle: s.originalTitle || s.title };
+}
+
 /**
  * Maps the canonical stored "last played" values to translation keys. The stored
  * values are kept as-is for backward compatibility; only the displayed label is
@@ -109,20 +138,29 @@ function rememberCanon(
   store: string,
   key: string,
 ): void {
+  const add = (canon: string): void => {
+    let set = storeSets.get(canon);
+    if (!set) {
+      set = new Set();
+      storeSets.set(canon, set);
+    }
+    set.add(store);
+    let keys = keySets.get(canon);
+    if (!keys) {
+      keys = [];
+      keySets.set(canon, keys);
+    }
+    keys.push(key);
+  };
   const c = canonicalGameTitle(title);
   if (!c) return;
-  let set = storeSets.get(c);
-  if (!set) {
-    set = new Set();
-    storeSets.set(c, set);
+  add(c);
+  // A renamed copy still answers sibling lookups under its visible title.
+  const custom = S.customTitles[key]?.trim();
+  if (custom) {
+    const alias = canonicalGameTitle(custom);
+    if (alias && alias !== c) add(alias);
   }
-  set.add(store);
-  let keys = keySets.get(c);
-  if (!keys) {
-    keys = [];
-    keySets.set(c, keys);
-  }
-  keys.push(key);
 }
 
 /** O(1) store copies of a title (`epic appName`, `gog::id`, `steam::id`). */
@@ -432,7 +470,7 @@ export function pendingGameUpdates(): EpicSummary[] {
     // Steam owns the transfer: a downloading game has a job, not a pending update.
     if (g.installed && g.updateAvailable && !g.downloading) out.push(libraryItemToSummary(g));
   }
-  return out;
+  return out.map(applyCustomTitle);
 }
 
 /** Returns all games across all stores as EpicSummary items. */
@@ -445,8 +483,10 @@ export function allStoreSummaries(): EpicSummary[] {
   // union: the palette, collections and hidden-games search all use this list.
   const companion = S.companionSummaries.length > 0 ? S.companionSummaries.map(libraryItemToSummary) : [];
   const custom = S.customSummaries.length > 0 ? S.customSummaries.map(libraryItemToSummary) : [];
-  if (gog.length === 0 && amazon.length === 0 && steam.length === 0 && companion.length === 0 && custom.length === 0) return items;
-  return [...items, ...gog, ...amazon, ...steam, ...companion, ...custom];
+  if (gog.length === 0 && amazon.length === 0 && steam.length === 0 && companion.length === 0 && custom.length === 0) {
+    return items.map(applyCustomTitle);
+  }
+  return [...items, ...gog, ...amazon, ...steam, ...companion, ...custom].map(applyCustomTitle);
 }
 
 /** Apply the EA-backed installed facts to a primary-store copy. */
@@ -456,33 +496,37 @@ function withCopyOverride(appName: string, summary: EpicSummary | undefined): Ep
   return override ? { ...summary, ...override } : summary;
 }
 
+function summaryWithTitle(summary: EpicSummary | undefined): EpicSummary | undefined {
+  return summary ? applyCustomTitle(summary) : undefined;
+}
+
 /** O(1) summary lookup by app name (Epic or GOG or Steam). */
 export function summaryOf(appName: string): EpicSummary | undefined {
   if (appName.startsWith("gog::")) {
     const cleanId = appName.slice(5);
     const g = S.gogSummariesMap.get(cleanId) || S.gogSummariesMap.get(appName);
-    if (g) return withCopyOverride(appName, gogToEpicSummary(g));
+    if (g) return summaryWithTitle(withCopyOverride(appName, gogToEpicSummary(g)));
   }
   if (appName.startsWith("steam::")) {
     const item = S.steamSummariesMap.get(appName);
-    if (item) return withCopyOverride(appName, libraryItemToSummary(item));
+    if (item) return summaryWithTitle(withCopyOverride(appName, libraryItemToSummary(item)));
   }
   if (appName.startsWith("custom::")) {
     const item = S.customSummariesMap.get(appName);
-    if (item) return libraryItemToSummary(item);
+    if (item) return summaryWithTitle(libraryItemToSummary(item));
   }
   const own = S.epicSummariesMap.get(appName);
-  if (own) return withCopyOverride(appName, own);
+  if (own) return summaryWithTitle(withCopyOverride(appName, own));
   // Companion launcher games (EA, Ubisoft, Xbox, Battle.net) and Amazon Games
   // live in the unified map under `<store>::<id>`.
   const unified = S.allGamesMap.get(appName);
   if (unified && (isCompanionKey(unified.key) || unified.source === "amazon")) {
-    return withCopyOverride(appName, libraryItemToSummary(unified));
+    return summaryWithTitle(withCopyOverride(appName, libraryItemToSummary(unified)));
   }
   // Games that only another saved account owns resolve to a shared entry so the
   // detail page can show the owner and offer the account switch.
   const shared = sharedOwnerOf(appName);
-  if (shared) return sharedToSummary(shared);
+  if (shared) return summaryWithTitle(sharedToSummary(shared));
   return undefined;
 }
 
@@ -567,15 +611,21 @@ export function sharedToSummary(g: import("../epic").SharedGame): EpicSummary {
   };
 }
 
+function itemWithCustomTitle(item: LibraryItem | undefined): LibraryItem | undefined {
+  if (!item) return undefined;
+  const title = customTitleOf(item.key, item.title);
+  return title && title !== item.title ? { ...item, title } : item;
+}
+
 /** O(1) unified lookup of any library item by composite key (`source::id`) or plain id. */
 export function libraryItemOf(keyOrId: string, source?: GameSource): LibraryItem | undefined {
   if (keyOrId.includes("::")) {
-    return S.allGamesMap.get(keyOrId);
+    return itemWithCustomTitle(S.allGamesMap.get(keyOrId));
   }
   if (source) {
-    return S.allGamesMap.get(`${source}::${keyOrId}`);
+    return itemWithCustomTitle(S.allGamesMap.get(`${source}::${keyOrId}`));
   }
-  return (
+  return itemWithCustomTitle(
     S.allGamesMap.get(keyOrId) ||
     S.allGamesMap.get(`epic::${keyOrId}`) ||
     S.allGamesMap.get(`gog::${keyOrId}`) ||
@@ -655,7 +705,8 @@ function pickStoreMatch<T>(
 /** Finds all available store versions (e.g. Epic and GOG) of a given game. */
 export function gameVersionsOf(appNameOrTitle: string): GameVersion[] {
   const current = summaryOf(appNameOrTitle);
-  const title = current?.title || appNameOrTitle;
+  // Store copies still match on the real title, not a player-chosen display name.
+  const title = current?.originalTitle || current?.title || appNameOrTitle;
   const canon = canonicalGameTitle(title);
   if (!canon) return [];
 

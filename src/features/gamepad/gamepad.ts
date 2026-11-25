@@ -796,6 +796,7 @@ export function initGamepadSupport(): void {
     "share-modal-root",
     "custom-game-root",
     "sort-name-root",
+    "rename-game-root",
     "changelog-root",
     "feedback-root",
     "couch-root",

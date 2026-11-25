@@ -312,6 +312,8 @@ export const CUSTOM_LOGO_SIZES_KEY = "efxlve-custom-logo-sizes";
 export const CUSTOM_LOGO_LAYOUTS_KEY = "efxlve-custom-logo-layouts";
 /** Custom per-game sorting titles ("Sort As") keyed by app name. */
 export const CUSTOM_SORT_NAMES_KEY = "efxlve-custom-sort-names";
+/** Custom visible game names keyed by library app name. */
+export const CUSTOM_TITLES_KEY = "efxlve-custom-titles";
 /** Library group-by mode ("none" | "status" | "rating" | "year" | "store" | "playtime" | "genre"). */
 export const LIB_GROUP_BY_KEY = "efxlve-lib-group-by";
 /** Collapsed library group headers (`<groupBy>:<groupId>`). */

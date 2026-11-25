@@ -60,6 +60,7 @@ import {
 import { readCoverFile } from "../cover/cover-file";
 import { setLogoScale, stopLogoHeroAdjust } from "../cover/logo-layout";
 import { closeSortNameModal } from "../library/sort-name";
+import { closeRenameGameModal } from "../library/game-title";
 import { closeLibFilterPanel } from "../library/library-filters";
 import { couchBack } from "../gamepad/couch-shell";
 import { setFullscreenMode } from "../gamepad/fullscreen-mode";
@@ -356,6 +357,10 @@ document.addEventListener("keydown", (e) => {
     const changelogRoot = document.getElementById("changelog-root");
     if (changelogRoot && changelogRoot.innerHTML.trim()) {
       closeChangelogModal();
+      return;
+    }
+    if (S.renameModalAppName) {
+      closeRenameGameModal();
       return;
     }
     if (S.sortNameModalAppName) {

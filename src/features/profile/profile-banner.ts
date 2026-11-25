@@ -7,7 +7,7 @@
 import { CUSTOM_PROFILE_BANNERS_KEY } from "../../core/constants";
 import { icon } from "../../core/icons";
 import { render } from "../../core/render";
-import { canonicalGameTitle, epicWideArt, summaryOf } from "../../core/selectors";
+import { canonicalGameTitle, displayTitleOf, epicWideArt, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
 import { esc, isOpaqueId } from "../../core/utils";
@@ -48,8 +48,9 @@ function collectBannerCandidates(): BannerGameCandidate[] {
 
   const add = (appName: string, title: string) => {
     if (!appName || seen.has(appName) || S.hiddenGames.has(appName) || isOpaqueId(title)) return;
+    const visibleTitle = displayTitleOf(appName, title);
     // One tile per title: a game can hold several store/edition keys and would
-    // otherwise show up twice.
+    // otherwise show up twice. Dedupe on the store title, not the alias.
     const canon = canonicalGameTitle(title) || title.trim().toLowerCase();
     if (seen.has(canon)) return;
     seen.add(appName);
@@ -57,7 +58,7 @@ function collectBannerCandidates(): BannerGameCandidate[] {
     const art = getGameBannerArt(appName);
     games.push({
       appName,
-      title,
+      title: visibleTitle,
       art,
       store: gameStore(appName),
     });

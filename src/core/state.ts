@@ -38,6 +38,7 @@ import {
   CUSTOM_LOGO_SIZES_KEY,
   CUSTOM_LOGO_LAYOUTS_KEY,
   CUSTOM_SORT_NAMES_KEY,
+  CUSTOM_TITLES_KEY,
   LIB_GROUP_BY_KEY,
   LIB_COLLAPSED_GROUPS_KEY,
   GAME_SCENE_KEY,
@@ -452,8 +453,12 @@ export const S = {
   isAdjustingLogo: false,
   /** Custom per-game sort titles ("Sort As") keyed by library appName. */
   customSortNames: loadJsonRecord(CUSTOM_SORT_NAMES_KEY),
+  /** Custom visible game names keyed by library appName. */
+  customTitles: loadJsonRecord(CUSTOM_TITLES_KEY),
   /** App name whose "Edit Sort Name" modal is open, or null. */
   sortNameModalAppName: (null) as string | null,
+  /** App name whose "Edit Game Name" modal is open, or null. */
+  renameModalAppName: (null) as string | null,
   /** Active library grouping dimension ("none" = flat). */
   libGroupBy: normalizeLibGroupBy(localStorage.getItem(LIB_GROUP_BY_KEY)),
   /** Collapsed group keys formatted as `${groupBy}:${groupId}`. */

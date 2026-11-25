@@ -158,11 +158,11 @@ function gamePartner(s: EpicSummary, g: ReturnType<typeof rawOf>): ThirdPartyLau
     default: break;
   }
   const notice = S.steamDetails.get(s.appName)?.extUserAccountNotice || "";
-  return partnerFromSteamNotice(notice) || getThirdPartyLauncher(g, s.title, steamStudioHints(s.appName));
+  return partnerFromSteamNotice(notice) || getThirdPartyLauncher(g, s.originalTitle || s.title, steamStudioHints(s.appName));
 }
 
 function gameAntiCheat(s: EpicSummary, g: ReturnType<typeof rawOf>): string | null {
-  const named = getAntiCheat(g, s.title, s.appName);
+  const named = getAntiCheat(g, s.originalTitle || s.title, s.appName);
   if (named) return named;
   const drm = (S.steamDetails.get(s.appName)?.drmNotice || "").toLowerCase();
   if (drm.includes("easy anti-cheat") || drm.includes("easyanticheat")) return "Easy Anti-Cheat";
@@ -649,7 +649,7 @@ const eaAchSource = new Set<string>();
 
 /** The Ubisoft copy of an Epic title, matched by canonical name. */
 function ubisoftCompanionFor(s: EpicSummary): import("../../core/types").LibraryItem | undefined {
-  const canon = canonicalGameTitle(s.title);
+  const canon = canonicalGameTitle(s.originalTitle || s.title);
   if (!canon) return undefined;
   return S.companionSummaries.find((g) => g.source === "ubisoft" && canonicalGameTitle(g.title) === canon);
 }
@@ -661,7 +661,7 @@ function eaCompanionFor(s: EpicSummary): import("../../core/types").LibraryItem 
     const exact = S.companionSummaries.find((g) => g.key === linked);
     if (exact) return exact;
   }
-  const canon = canonicalGameTitle(s.title);
+  const canon = canonicalGameTitle(s.originalTitle || s.title);
   if (!canon) return undefined;
   return S.companionSummaries.find((g) => g.source === "ea" && canonicalGameTitle(g.title) === canon);
 }
@@ -817,7 +817,7 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
     const store = sourceOfKey(s.appName);
     const ubiKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "");
     const direct = store === "ubisoft"
-      ? S.ubiDirect?.games.find((game) => ubiKey(game.name) === ubiKey(s.title))
+      ? S.ubiDirect?.games.find((game) => ubiKey(game.name) === ubiKey(s.originalTitle || s.title))
       : undefined;
     const directProgress = direct ? S.ubiDirectProgress[direct.productId] : undefined;
     // Xbox titles the Store library does not own offer a purchase or a new
@@ -994,7 +994,7 @@ function igdbAboutText(s: EpicSummary): string {
 
 /** True when the text is the game's own real blurb, not a store placeholder. */
 function isRealDescription(s: EpicSummary, text: string): boolean {
-  return Boolean(text && text !== NO_DESC && text !== s.title);
+  return Boolean(text && text !== NO_DESC && text !== (s.originalTitle || s.title));
 }
 
 /** Epic's catalog description (raw or from the store data); empty when unusable. */
@@ -1045,7 +1045,7 @@ function maybeLoadWikiAbout(s: EpicSummary): void {
 
 async function loadWikiAbout(s: EpicSummary): Promise<void> {
   try {
-    const wiki = await epicGetWikiAbout(s.title, s.appName, currentLanguage());
+    const wiki = await epicGetWikiAbout(s.originalTitle || s.title, s.appName, currentLanguage());
     aboutCache.set(aboutKey(s.appName), wiki.description?.trim() || "");
   } catch (err) {
     console.warn("Wiki about could not be loaded:", err);
@@ -1371,6 +1371,7 @@ function renderGameHeroInnerHtml(
               <button class="icon-btn gp-hero-tool" id="gp-nav-back" data-act="page-back" data-i18n-title="nav.historyBack" title="${t("nav.historyBack")}">${icon("arrow-left", 16)}</button>
             </div>
             <div class="gp-hero-actions">
+              <button class="icon-btn gp-hero-tool" data-act="open-rename-game-modal" data-id="${esc(appName)}" title="${esc(t("lib.renameTitle"))}" aria-label="${esc(t("lib.renameTitle"))}">${icon("edit", 16)}</button>
               ${
                 customLogo
                   ? `<button class="icon-btn gp-hero-tool${adjusting ? " active" : ""}" data-act="${adjusting ? "finish-logo-hero-adjust" : "start-logo-hero-adjust"}" data-id="${esc(appName)}" title="${esc(t("cover.logoAdjustOnHero"))}">${icon("crosshair", 16)}</button>`
@@ -1414,7 +1415,7 @@ export function repaintGameHero(appName: string): void {
   if (openApp !== appName) {
     if (S.separateCopies) return;
     const sCheck = summaryOf(openApp);
-    if (!sCheck || !storeKeysForTitle(sCheck.title).includes(appName)) return;
+    if (!sCheck || !storeKeysForTitle(sCheck.originalTitle || sCheck.title).includes(appName)) return;
   }
   const s = summaryOf(openApp);
   const heroEl = modalRoot.querySelector<HTMLElement>(".gp-hero");
@@ -1514,14 +1515,14 @@ export function openEpicModal(
   if (companion) {
     // The client catalog often ships its own description; Wikipedia is only
     // the fallback, so the store text does not flash and get replaced.
-    if (!S.loadedRequirements.has(appName) && !S.loadingReqFor.has(appName)) void fetchAndRenderRequirements(appName, s.title);
-    if (!S.loadedScreenshots.has(appName) && !S.loadingScreenshotsFor.has(appName)) void fetchAndRenderScreenshots(appName, s.title);
+    if (!S.loadedRequirements.has(appName) && !S.loadingReqFor.has(appName)) void fetchAndRenderRequirements(appName, s.originalTitle || s.title);
+    if (!S.loadedScreenshots.has(appName) && !S.loadingScreenshotsFor.has(appName)) void fetchAndRenderScreenshots(appName, s.originalTitle || s.title);
     if (!S.loadedAchievements.has(appName) && !S.loadingAchFor.has(appName)) void fetchAndRenderAchievements(appName);
   } else {
     ensureCloudSyncStamp(s);
     // GOG's details call carries the requirements; `ensureOverviewData` owns it.
-    if (!appName.startsWith("gog::") && !S.loadedRequirements.has(appName) && !S.loadingReqFor.has(appName)) void fetchAndRenderRequirements(appName, s.title);
-    if (!S.loadedScreenshots.has(appName) && !S.loadingScreenshotsFor.has(appName)) void fetchAndRenderScreenshots(appName, s.title);
+    if (!appName.startsWith("gog::") && !S.loadedRequirements.has(appName) && !S.loadingReqFor.has(appName)) void fetchAndRenderRequirements(appName, s.originalTitle || s.title);
+    if (!S.loadedScreenshots.has(appName) && !S.loadingScreenshotsFor.has(appName)) void fetchAndRenderScreenshots(appName, s.originalTitle || s.title);
     if (!S.loadedAchievements.has(appName) && !S.loadingAchFor.has(appName)) void fetchAndRenderAchievements(appName);
     ensureEosSupport(appName);
     ensureCopyHealth(appName);
@@ -1709,8 +1710,8 @@ function renderAboutSection(s: EpicSummary): string {
 
   // Anti-cheat titles keep the overlay off unless the reader opts in here.
   const antiCheat = gameAntiCheat(s, rawOf(s.appName));
-  const antiCheatAllowed = overlayAntiCheatOverride(s.appName, s.title);
-  const antiCheatNotifications = achGameNotificationsEnabled(s.appName, s.title);
+  const antiCheatAllowed = overlayAntiCheatOverride(s.appName, s.originalTitle || s.title);
+  const antiCheatNotifications = achGameNotificationsEnabled(s.appName, s.originalTitle || s.title);
   const antiCheatCard = antiCheat
     ? `
     <section class="gp-ac-notice${antiCheatAllowed ? " is-on" : ""}" id="gp-ac-notice">
@@ -1860,7 +1861,7 @@ async function resolveNewsAppId(s: EpicSummary): Promise<string> {
   const steamCopy = gameVersionsOf(s.appName).find((v) => v.appName.startsWith("steam::"));
   if (steamCopy) return steamCopy.appName.slice(7);
   try {
-    const hit = await steamFindStoreApp(s.title, "english");
+    const hit = await steamFindStoreApp(s.originalTitle || s.title, "english");
     return hit?.appId ?? "";
   } catch {
     return "";
@@ -2166,7 +2167,8 @@ const STEAM_CAT_WORKSHOP = 30;
 
 /** The rows inside the link card; repainted when Steam details arrive late. */
 function gameLinkRows(s: EpicSummary): string {
-  const query = encodeURIComponent(s.title.trim());
+  const storeTitle = s.originalTitle || s.title;
+  const query = encodeURIComponent(storeTitle.trim());
   const steamApp = s.appName.startsWith("steam::") ? s.appName.slice(7) : "";
   const steamUrl = /^\d+$/.test(steamApp)
     ? `https://steamdb.info/app/${steamApp}/`
@@ -2177,7 +2179,7 @@ function gameLinkRows(s: EpicSummary): string {
   // the store category is the only signal that says the workshop exists.
   const categories = S.steamDetails.get(s.appName)?.categories ?? [];
   const modRows = modSourceLinks({
-    title: s.title,
+    title: storeTitle,
     steamAppId: steamApp,
     hasWorkshop: categories.includes(STEAM_CAT_WORKSHOP),
   }).map((link) => ({ label: link.label, url: link.url }));
@@ -2283,7 +2285,7 @@ export function renderDrawerDlcs(s: EpicSummary): string {
   if (isCompanionApp(s.appName)) {
     const details = S.steamDetails.get(s.appName);
     if (!details && !S.loadingReqFor.has(s.appName)) {
-      void fetchAndRenderRequirements(s.appName, s.title);
+      void fetchAndRenderRequirements(s.appName, s.originalTitle || s.title);
       return loadingState(t("dlc.scanning"));
     }
     const count = details?.dlc.length ?? 0;
@@ -2309,7 +2311,7 @@ export function renderDrawerDlcs(s: EpicSummary): string {
   if (s.appName.startsWith("steam::")) {
     const details = S.steamDetails.get(s.appName);
     if (!details && !S.loadingReqFor.has(s.appName)) {
-      void fetchAndRenderRequirements(s.appName, s.title);
+      void fetchAndRenderRequirements(s.appName, s.originalTitle || s.title);
       return loadingState(t("dlc.scanning"));
     }
     const count = details?.dlc.length ?? 0;
@@ -3195,7 +3197,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
     !isAchievementUnlocked(a) &&
     !S.revealedAchievements.has(`${s.appName}:${a.name}`);
 
-  ensurePowerPyxGuide(s.appName, s.title);
+  ensurePowerPyxGuide(s.appName, s.originalTitle || s.title);
   const hasDlc = data.achievements.some((a) => !a.is_base);
   const effectiveUnlocked = data.user_unlocked;
   const effectiveXp = data.user_xp;
@@ -3413,7 +3415,7 @@ export function renderDrawerAchievements(s: EpicSummary): string {
       })
     : renderAchSidePanel({ summary: s, data, steamAppId: targetSteamAppId });
 
-  const notifEnabled = achGameNotificationsEnabled(s.appName, s.title);
+  const notifEnabled = achGameNotificationsEnabled(s.appName, s.originalTitle || s.title);
   const sourceLabel = achievementSourceLabel(s, data);
   const defaultManageTab: AchievementManageTab = canManageSource
     ? "source"
@@ -4087,7 +4089,7 @@ export function refreshAchievementSummary(appName: string): void {
  */
 export function renderRequirementsBody(s: EpicSummary): string {
   if (!S.loadedRequirements.has(s.appName) && !S.loadingReqFor.has(s.appName)) {
-    void fetchAndRenderRequirements(s.appName, s.title);
+    void fetchAndRenderRequirements(s.appName, s.originalTitle || s.title);
   }
   return renderRequirementPanel(s);
 }
@@ -4257,13 +4259,13 @@ async function loadCompanionStoreDetails(appName: string, title: string, force =
     }
     const details = await steamGetGameDetails(hitApp, language, force);
     S.steamDetails.set(appName, details);
-    recordLiveSteamDetails(appName, s.title, details);
+    recordLiveSteamDetails(appName, s.originalTitle || s.title, details);
     S.loadedRequirements.set(appName, buildSteamRequirements(appName, details));
     const item = S.allGamesMap.get(appName);
     if (item) item.dlcCount = details.dlc.length;
     // The client catalog text always wins; Steam only fills the gap.
     const desc = s.description?.trim();
-    if (!desc || desc === NO_DESC || desc === s.title || desc.length <= 25) {
+    if (!desc || desc === NO_DESC || desc === (s.originalTitle || s.title) || desc.length <= 25) {
       s.description = details.description || details.shortDescription;
     }
     if (S.currentModalAppName === appName) {
@@ -4360,7 +4362,7 @@ async function loadSteamDetails(appName: string, force = false): Promise<void> {
   try {
     const details = await steamGetGameDetails(appName.slice(7), steamLanguage(S.appLanguage), force);
     S.steamDetails.set(appName, details);
-    recordLiveSteamDetails(appName, s.title, details);
+    recordLiveSteamDetails(appName, s.originalTitle || s.title, details);
     S.loadedRequirements.set(appName, buildSteamRequirements(appName, details));
     // Family-shared games have no local appinfo, so their release year only
     // arrives here: redo the lookups that ran without one, or they keep the
@@ -4470,7 +4472,7 @@ export async function prefetchGamePage(appName: string): Promise<void> {
     );
   }
   if (!S.loadedRequirements.has(appName)) {
-    jobs.push(fetchAndRenderRequirements(appName, s.title).catch(() => undefined));
+    jobs.push(fetchAndRenderRequirements(appName, s.originalTitle || s.title).catch(() => undefined));
   }
   if (!S.loadedAchievements.has(appName)) {
     jobs.push(fetchAndRenderAchievements(appName).catch(() => undefined));
@@ -4484,7 +4486,7 @@ export async function prefetchGamePage(appName: string): Promise<void> {
   }
   if (s.installed && !S.loadedScreenshots.has(appName)) {
     // Local folder scan; it paints in its own time and has no promise to await.
-    fetchAndRenderScreenshots(appName, s.title);
+    fetchAndRenderScreenshots(appName, s.originalTitle || s.title);
   }
   // The hero is the one picture the page waits for; the rest (IGDB screenshots,
   // similar-game covers) is warmed once the IGDB answer lands. The transparent

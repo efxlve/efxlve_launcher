@@ -10,7 +10,7 @@
 import { CUSTOM_SORT_NAMES_KEY } from "../../core/constants";
 import { icon } from "../../core/icons";
 import { notify, scheduleRender } from "../../core/render";
-import { storeKeysForTitle, summaryOf } from "../../core/selectors";
+import { displayTitleOf, storeKeysForTitle, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc } from "../../core/utils";
 import { t } from "../../i18n";
@@ -46,7 +46,7 @@ export function customSortNameOf(appName: string, title?: string): string {
 
 /** Effective title used by alphabetical, series and alphabet-rail ordering. */
 export function effectiveSortTitle(item: { appName: string; title: string }): string {
-  return customSortNameOf(item.appName, item.title) || item.title;
+  return customSortNameOf(item.appName, item.title) || displayTitleOf(item.appName, item.title);
 }
 
 /** Saves or clears a custom sort title and refreshes the library order. */

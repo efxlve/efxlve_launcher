@@ -14,7 +14,7 @@ import { achSummaryOf, epicActionButtons, epicArt, epicArtUrl, epicDlProgress, i
 import { emptyState, icon } from "../../core/icons";
 import { collectionGames, collectionMatch, matchCollectionGame, type CollectionMatch } from "../../core/game-collections";
 import { isCollectionPinned, pinnedCollectionsForTabs, reorderPinnedCollections } from "../../core/collection-pins";
-import { allStoreSummaries, canonicalGameTitle, compareLibraryRecent, libraryItemToSummary, libraryPlaytime, rawOf, sourceOfKey, storeKeysForTitle, summaryOf, totalLibraryGamesCount } from "../../core/selectors";
+import { allStoreSummaries, applyCustomTitle, canonicalGameTitle, compareLibraryRecent, displayTitleOf, libraryItemToSummary, libraryPlaytime, rawOf, sourceOfKey, storeKeysForTitle, summaryOf, totalLibraryGamesCount } from "../../core/selectors";
 import { collectionMarker, isCollectionIcon } from "../../core/collection-icons";
 import { ensureGameRatingsLoaded, gameRatingOf } from "../../core/game-ratings";
 import { hltbStoryHoursOf } from "../../core/hltb-times";
@@ -172,9 +172,10 @@ export function libraryFilteredList(): EpicSummary[] {
     }
 
     const title = s.title.toLowerCase();
+    const visibleTitle = displayTitleOf(s.appName, s.title).toLowerCase();
     const sortName = customSortNameOf(s.appName, s.title).toLowerCase();
     for (const term of query.terms) {
-      if (!title.includes(term) && !studio.includes(term) && (!sortName || !sortName.includes(term))) return false;
+      if (!title.includes(term) && !visibleTitle.includes(term) && !studio.includes(term) && (!sortName || !sortName.includes(term))) return false;
     }
     return true;
   });
@@ -280,6 +281,7 @@ export function epicVisibleSummaries(): EpicSummary[] {
       result = [...list].sort(compareLibraryRecent);
   }
 
+  result = result.map(applyCustomTitle);
   visibleCache = result;
   visibleCacheSig = sig;
   S.libraryVisibleCount = result.length;

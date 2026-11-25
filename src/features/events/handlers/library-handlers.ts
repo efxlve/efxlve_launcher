@@ -14,6 +14,12 @@ import {
   resetSortNameModal,
   saveSortNameModal,
 } from "../../library/sort-name";
+import {
+  closeRenameGameModal,
+  openRenameGameModal,
+  resetRenameGameModal,
+  saveRenameGameModal,
+} from "../../library/game-title";
 
 export function handleLibraryFeatureAction(
   act: string | undefined,
@@ -44,6 +50,28 @@ export function handleLibraryFeatureAction(
       }
       return true;
     }
+
+    case "open-rename-game-modal": {
+      const appName = id || t.dataset.id || S.currentModalAppName || "";
+      if (appName) openRenameGameModal(appName);
+      return true;
+    }
+
+    case "close-rename-game-backdrop":
+      if (targetEl === t) closeRenameGameModal();
+      return true;
+
+    case "close-rename-game-modal":
+      closeRenameGameModal();
+      return true;
+
+    case "save-rename-game-modal":
+      saveRenameGameModal();
+      return true;
+
+    case "reset-rename-game-modal":
+      resetRenameGameModal();
+      return true;
 
     case "open-sort-name-modal": {
       const appName = id || t.dataset.id || S.currentModalAppName || "";

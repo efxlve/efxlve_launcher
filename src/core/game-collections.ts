@@ -35,7 +35,7 @@ export function collectionGames(col: GameCollection): string[] {
   const order: string[] = [];
   for (const name of col.app_names) {
     const summary = summaryOf(name);
-    const title = summary?.title;
+    const title = summary?.originalTitle || summary?.title;
     const canon = title ? canonicalGameTitle(title) : "";
     const id = canon || `key:${name.toLowerCase()}`;
     let key = name;
@@ -67,11 +67,13 @@ export function collectionGameCount(col: GameCollection): number {
 /** True when the collection contains this game through any store copy. */
 export function collectionHasGame(col: GameCollection, appName: string, title?: string): boolean {
   const keys = new Set(gameStoreKeys(appName, title).map((key) => key.toLowerCase()));
-  const canon = canonicalGameTitle(title ?? summaryOf(appName)?.title ?? "");
+  const own = summaryOf(appName);
+  const canon = canonicalGameTitle(title ?? own?.originalTitle ?? own?.title ?? "");
   for (const name of col.app_names) {
     if (keys.has(name.toLowerCase())) return true;
     if (!canon) continue;
-    const other = summaryOf(name)?.title;
+    const otherSummary = summaryOf(name);
+    const other = otherSummary?.originalTitle || otherSummary?.title;
     if (other && canonicalGameTitle(other) === canon) return true;
   }
   return false;
@@ -88,7 +90,8 @@ export function collectionMatch(col: GameCollection): CollectionMatch {
   const titles = new Set<string>();
   for (const name of col.app_names) {
     keys.add(name.toLowerCase());
-    const title = summaryOf(name)?.title;
+    const summary = summaryOf(name);
+    const title = summary?.originalTitle || summary?.title;
     if (!title) continue;
     const canon = canonicalGameTitle(title);
     if (canon) titles.add(canon);
@@ -99,12 +102,12 @@ export function collectionMatch(col: GameCollection): CollectionMatch {
 /** True when a library card belongs to the collection through any store copy. */
 export function matchCollectionGame(
   match: CollectionMatch,
-  game: { appName: string; title: string },
+  game: { appName: string; title: string; originalTitle?: string },
 ): boolean {
   if (match.keys.has(game.appName.toLowerCase())) return true;
-  const canon = canonicalGameTitle(game.title);
+  const canon = canonicalGameTitle(game.originalTitle || game.title);
   if (canon && match.titles.has(canon)) return true;
-  for (const key of storeKeysForTitle(game.title)) {
+  for (const key of storeKeysForTitle(game.originalTitle || game.title)) {
     if (match.keys.has(key.toLowerCase())) return true;
   }
   return false;

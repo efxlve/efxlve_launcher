@@ -211,12 +211,15 @@ function renderResults(query: string, force = false): void {
       for (const s of pool) {
         if (S.hiddenGames.has(s.appName)) continue;
         if (typeof s.title !== "string" || !s.title) continue;
-        const baseScore = scorePreparedSearch(searchTextOf(s.title), queryText);
+        const baseScore = Math.max(
+          scorePreparedSearch(searchTextOf(s.title), queryText),
+          s.originalTitle ? scorePreparedSearch(searchTextOf(s.originalTitle), queryText) : 0,
+        );
         if (baseScore === 0) continue;
         // Hand-added games are easier to lose under a big store catalogue;
         // lift their matching results so a custom GTA 6 stays visible.
         const score = baseScore + (s.appName.startsWith("custom::") ? 300 : 0);
-        const canon = canonicalGameTitle(s.title);
+        const canon = canonicalGameTitle(s.originalTitle || s.title);
         ranked.push({
           summary: s,
           score,
@@ -247,8 +250,9 @@ function renderResults(query: string, force = false): void {
       const seen = new Set<string>();
       for (const s of pool) {
         if (S.hiddenGames.has(s.appName)) continue;
-        if (typeof s.title !== "string" || !s.title.toLowerCase().includes(q)) continue;
-        const canon = canonicalGameTitle(s.title);
+        const searchable = `${s.title} ${s.originalTitle || ""}`.toLowerCase();
+        if (typeof s.title !== "string" || !searchable.includes(q)) continue;
+        const canon = canonicalGameTitle(s.originalTitle || s.title);
         const key = canon || s.appName;
         if (seen.has(key)) continue;
         seen.add(key);
@@ -264,7 +268,7 @@ function renderResults(query: string, force = false): void {
       if (S.hiddenGames.has(entry.id)) continue;
       const summary = summaryOf(entry.id) ?? pool.find((s) => s.appName === entry.id);
       if (!summary) continue;
-      const key = canonicalGameTitle(summary.title) || summary.appName;
+      const key = canonicalGameTitle(summary.originalTitle || summary.title) || summary.appName;
       if (seen.has(key)) continue;
       seen.add(key);
       history.push(gameItem(summary.appName, summary.title, summary.installed, idx++));
@@ -272,7 +276,7 @@ function renderResults(query: string, force = false): void {
     for (const id of S.epicRecent.slice(0, 5)) {
       const s = summaryOf(id);
       if (!s || S.hiddenGames.has(s.appName)) continue;
-      const key = canonicalGameTitle(s.title) || s.appName;
+      const key = canonicalGameTitle(s.originalTitle || s.title) || s.appName;
       if (seen.has(key)) continue;
       seen.add(key);
       games.push(gameItem(s.appName, s.title, s.installed, idx++));

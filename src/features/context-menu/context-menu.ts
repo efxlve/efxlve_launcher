@@ -142,6 +142,7 @@ const isRiot = source === "riot";
     ${!shared ? item("manage-game-collections", t("ctx.addToCollection"), "layers") : ""}
     ${triggerHtml}
     ${!isRiot && !isAmazon && !isCustom ? item("epic-store-page", t("ctx.storePage"), "globe") : ""}
+    ${item("open-rename-game-modal", t("ctx.rename"), "edit")}
     ${item("open-sort-name-modal", t("ctx.sortName"), "arrow-down-a-z")}
     ${item("hide-game", t("ctx.hide"), "eye-off")}
     ${!shared && (installed || isCustom)

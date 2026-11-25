@@ -572,6 +572,8 @@ export function getAntiCheat(
 export interface EpicSummary {
   appName: string;
   title: string;
+  /** Store title behind a player-chosen display name, when one is set. */
+  originalTitle?: string;
   version: string;
   cover: string | null;
   description: string;

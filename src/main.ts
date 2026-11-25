@@ -45,6 +45,7 @@ import { closeHideGamesModal } from "./features/library/hide-games";
 import { closeReleaseCalendar } from "./features/library/release-calendar";
 import { hideLibraryAlphaRail } from "./features/library/library-alpha";
 import { closeSortNameModal } from "./features/library/sort-name";
+import { closeRenameGameModal } from "./features/library/game-title";
 import { closeLibFilterPanel } from "./features/library/library-filters";
 import { closeHideAchievementsModal } from "./features/profile/hide-achievements";
 import { patchLibraryGridInPlace, positionColDropdownMenu, renderEpic, setupLibScrollObserver } from "./features/library/library-view";
@@ -283,6 +284,7 @@ function closeAllModals(): void {
   closeAddCustomGameModal();
   closeManagePopup();
   closeSortNameModal();
+  closeRenameGameModal();
   closeLibFilterPanel();
   closeChangelogModal();
   closeReleaseCalendar();

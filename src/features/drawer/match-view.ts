@@ -135,14 +135,15 @@ function resultsHtml(loading: boolean, error: string, rows: string): string {
 export function openMatchModal(appName: string): void {
   const s = summaryOf(appName);
   if (!s) return;
+  const storeTitle = s.originalTitle || s.title;
   state = {
     appName,
     choice: {},
-    igdbQuery: s.title,
+    igdbQuery: storeTitle,
     igdbHits: [],
     igdbLoading: true,
     igdbError: "",
-    hltbQuery: s.title,
+    hltbQuery: storeTitle,
     hltbHits: [],
     hltbLoading: true,
     hltbError: "",
@@ -155,8 +156,8 @@ export function openMatchModal(appName: string): void {
       renderMatchModal();
     })
     .catch(() => undefined);
-  void runIgdbSearch(s.title);
-  void runHltbSearch(s.title);
+  void runIgdbSearch(storeTitle);
+  void runHltbSearch(storeTitle);
 }
 
 export function closeMatchModal(): void {
@@ -307,7 +308,7 @@ export async function useIgdbHit(id: number): Promise<void> {
   try {
     const game = await igdbChooseMatch(appName, id);
     setIgdbGameFor(appName, game);
-    recordLiveIgdbGame(appName, s.title, game);
+    recordLiveIgdbGame(appName, s.originalTitle || s.title, game);
     paintGameMeta(s);
     repaintIgdbBlocks(appName);
     scheduleRender();
@@ -326,9 +327,9 @@ export async function useHltbHit(index: number): Promise<void> {
   const s = summaryOf(appName);
   if (!s) return;
   try {
-    const data = await epicSetHltbMatch(appName, s.title, hit);
+    const data = await epicSetHltbMatch(appName, s.originalTitle || s.title, hit);
     S.loadedHltb.set(appName, data);
-    recordLiveHltb(appName, s.title, data);
+    recordLiveHltb(appName, s.originalTitle || s.title, data);
     updateHltbUI(appName, data);
     scheduleRender();
     toast(t("match.savedHltb"), "ok");
@@ -369,9 +370,9 @@ export async function restoreAutomaticHltb(): Promise<void> {
     await epicClearHltbMatch(appName);
     S.loadedHltb.delete(appName);
     if (s) {
-      const data = await epicGetHltb(s.title, appName, true, gameReleaseYear(s));
+      const data = await epicGetHltb(s.originalTitle || s.title, appName, true, gameReleaseYear(s));
       S.loadedHltb.set(appName, data);
-      recordLiveHltb(appName, s.title, data);
+      recordLiveHltb(appName, s.originalTitle || s.title, data);
       updateHltbUI(appName, data);
       scheduleRender();
     }

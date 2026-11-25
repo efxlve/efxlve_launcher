@@ -12,7 +12,7 @@ import { storageRoot } from "../../core/dom";
 import { measureFolders, measuredSize } from "../../core/folder-size";
 import { icon, type IconName } from "../../core/icons";
 import { IS_WINDOWS } from "../../core/platform";
-import { rawOf, sourceOfKey } from "../../core/selectors";
+import { displayTitleOf, rawOf, sourceOfKey } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtBytes } from "../../core/utils";
 import type { GameSource } from "../../core/types";
@@ -81,7 +81,7 @@ function shownSize(g: StorageGame): number {
 function collectInstalled(): StorageGame[] {
   const out: StorageGame[] = [];
   const push = (key: string, title: string, path: string | null, size: number): void => {
-    out.push({ key, title, cover: coverOf(key), path, meta: size || 0, source: sourceOfKey(key) });
+    out.push({ key, title: displayTitleOf(key, title), cover: coverOf(key), path, meta: size || 0, source: sourceOfKey(key) });
   };
   for (const s of S.epicSummaries) if (s.installed) push(s.appName, s.title, s.installPath, s.installSize);
   for (const g of S.gogSummaries) if (g.installed) push(g.key, g.title, g.installPath, g.installSize);

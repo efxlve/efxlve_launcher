@@ -8,7 +8,7 @@ import { ensureMeasuredSize, measuredSize } from "../../core/folder-size";
 import { installPathIssue } from "../../core/game-view";
 import { icon, type IconName } from "../../core/icons";
 import { IS_WINDOWS } from "../../core/platform";
-import { lastPlayedLabel, rawOf, sourceOfKey, storeKeysForTitle, summaryOf } from "../../core/selectors";
+import { customTitleOf, displayTitleOf, lastPlayedLabel, rawOf, sourceOfKey, storeKeysForTitle, summaryOf } from "../../core/selectors";
 import { S } from "../../core/state";
 import { esc, fmtBytes, fmtPlaytime } from "../../core/utils";
 import { formatSyncStamp, t } from "../../i18n";
@@ -84,8 +84,12 @@ function installSizeRow(size: number, installed: boolean, key = ""): string {
   );
 }
 
-/** Shared Library section in Manage: custom Sort Name + Hide from Library. */
+/** Shared Library section in Manage: visible name, custom Sort Name + Hide from Library. */
 function libraryManageGroup(appName: string, title: string): string {
+  const customName = customTitleOf(appName, title);
+  const nameDesc = customName
+    ? `${esc(t("manage.nameActive"))}: <strong>${esc(customName)}</strong>`
+    : t("manage.nameDesc");
   const customSort = customSortNameOf(appName, title);
   const sortDesc = customSort
     ? `${esc(t("manage.sortNameActive"))}: <strong>${esc(customSort)}</strong>`
@@ -95,6 +99,10 @@ function libraryManageGroup(appName: string, title: string): string {
     "eye-off",
     t("nav.library"),
     `${row(
+      t("manage.nameTitle"),
+      `<span id="manage-name-desc" data-app="${esc(appName)}">${nameDesc}</span>`,
+      `<button class="btn ghost small" data-act="open-rename-game-modal" data-id="${esc(appName)}">${icon("edit", 13)} ${t("manage.nameEdit")}</button>`,
+    )}${row(
       t("manage.sortNameTitle"),
       `<span id="manage-sort-name-desc" data-app="${esc(appName)}">${sortDesc}</span>`,
       `<button class="btn ghost small" data-act="open-sort-name-modal" data-id="${esc(appName)}">${icon("arrow-down-a-z", 13)} ${t("manage.sortNameEdit")}</button>`,
@@ -349,10 +357,10 @@ export function openManagePopup(appName: string): void {
   wireManageSearch();
   manageRoot.innerHTML = `
     <div class="manage-overlay" data-act="manage-overlay-close">
-      <div class="manage-dialog" role="dialog" aria-modal="true" aria-label="${esc(t("drawer.manage"))}: ${esc(s.title)}">
+      <div class="manage-dialog" role="dialog" aria-modal="true" aria-label="${esc(t("drawer.manage"))}: ${esc(displayTitleOf(s.appName, s.title))}">
         <aside class="manage-side">
           <div class="manage-side-head">
-            <div class="manage-side-title" id="manage-side-title">${esc(s.title)}</div>
+            <div class="manage-side-title" id="manage-side-title">${esc(displayTitleOf(s.appName, s.title))}</div>
             <div class="manage-side-sub">
               <span>${esc(storeVersionLabel(source))}</span>
               <span class="manage-side-state${copyMissing ? " is-missing" : s.installed ? " is-installed" : ""}"${copyMissing ? ` title="${esc(t("sys.copyHealthTip"))}"` : ""}>

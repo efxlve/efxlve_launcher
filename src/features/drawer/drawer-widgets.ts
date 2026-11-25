@@ -208,7 +208,7 @@ export function detectControllerSupport(
   g?: EpicGame,
   reqData?: GameRequirementsResponse,
 ): { label: string; tooltip: string; iconName: "gamepad-2" | "keyboard"; className: string } {
-  const titleLower = s.title.toLowerCase();
+  const titleLower = (s.originalTitle || s.title).toLowerCase();
   const igdb = igdbGameFor(s.appName);
   const devRaw = (g?.metadata as { developer?: unknown } | undefined)?.developer;
   const devLower = [
@@ -373,7 +373,7 @@ export function isOnlineOnlyGame(
   _g?: EpicGame,
   reqData?: GameRequirementsResponse,
 ): boolean {
-  const titleLower = s.title.toLowerCase();
+  const titleLower = (s.originalTitle || s.title).toLowerCase();
   const appLower = s.appName.toLowerCase();
   const cats = steamCategories(s.appName);
   if (cats.length > 0) {
@@ -477,7 +477,7 @@ function modeFromFlags(single: boolean, multi: boolean, coop: boolean): GameMode
  * no real evidence, so the page never guesses "Single-player".
  */
 export function detectGameMode(s: EpicSummary, reqData?: GameRequirementsResponse): GameMode | null {
-  const titleLower = s.title.toLowerCase();
+  const titleLower = (s.originalTitle || s.title).toLowerCase();
   if (s.appName.toLowerCase() === "brill" || titleLower.includes("dead by daylight")) return "multi4v1";
 
   const cats = steamCategories(s.appName);
@@ -487,7 +487,7 @@ export function detectGameMode(s: EpicSummary, reqData?: GameRequirementsRespons
     return modeFromFlags(has(STEAM_CAT_SINGLE), has(STEAM_CAT_MULTI), has(STEAM_CAT_COOP));
   }
 
-  const gameCols = S.epicCollections.filter((c) => collectionHasGame(c, s.appName, s.title));
+  const gameCols = S.epicCollections.filter((c) => collectionHasGame(c, s.appName, s.originalTitle || s.title));
   // Hyphens are dropped so "Multi-player" / "Single-player" / "Co-op" match too.
   const text = [
     ...(reqData?.tags || []),

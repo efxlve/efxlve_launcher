@@ -89,7 +89,7 @@ function filteredColSummaries() {
   for (const id of order) {
     const s = byGame.get(id);
     if (!s) continue;
-    if (q && !s.title.toLowerCase().includes(q)) continue;
+    if (q && !`${s.title} ${s.originalTitle || ""}`.toLowerCase().includes(q)) continue;
     if (S.colModalTabFilter === "selected" && !collectionSelectionHasGame(s.appName)) continue;
     if (S.colModalTabFilter === "installed" && !s.installed) continue;
     out.push(s);
