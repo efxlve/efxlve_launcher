@@ -30,6 +30,26 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.69",
+    date: "2026-11-25",
+    improved: [
+      {
+        en: "Removing a large Ubisoft game no longer freezes the launcher while the folder is deleted.",
+        tr: "Büyük bir Ubisoft oyunu kaldırılırken klasör silinene kadar launcher artık donmuyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "An interrupted Epic download survives a launcher restart: the Downloads page shows how far it got, its downloaded size and a Resume button, and the game card offers Resume too.",
+        tr: "Yarıda kalan Epic indirmeleri launcher yeniden açıldığında kaybolmuyor: İndirmeler sayfası ne kadarının indiğini, boyutunu ve Devam Et düğmesini gösteriyor; oyun kartında da Devam Et çıkıyor.",
+      },
+      {
+        en: "Uninstalling an Amazon, Ubisoft or GOG game now deletes the game folder itself instead of trusting the store record. If a file keeps the folder locked, the launcher names the folder and keeps the game listed so you can retry.",
+        tr: "Amazon, Ubisoft veya GOG oyunlarını kaldırmak artık mağaza kaydına güvenmek yerine oyun klasörünü doğrudan siliyor. Bir dosya klasörü kilitli tutuyorsa launcher klasörün yolunu gösteriyor ve tekrar deneyebilmen için oyunu listede bırakıyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.68",
     date: "2026-11-25",
     added: [
