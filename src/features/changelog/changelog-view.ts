@@ -30,6 +30,20 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.71",
+    date: "2026-11-25",
+    fixed: [
+      {
+        en: "A game's install size now shows the whole folder after an Epic download was resumed, instead of only the part that downloaded last.",
+        tr: "Bir oyunun kurulum boyutu, Epic indirmesi devam ettirildikten sonra artık yalnızca son indirilen kısmı değil tüm klasörü gösteriyor.",
+      },
+      {
+        en: "EA games started from the launcher report your own account identity, so existing saves load, and the EA App no longer shows the port 3216 error after the game closes.",
+        tr: "Launcher'dan başlatılan EA oyunları kendi hesap kimliğini görüyor; mevcut kayıtlar açılıyor ve oyun kapandıktan sonra EA App artık 3216 portu hatası göstermiyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.70",
     date: "2026-11-25",
     fixed: [
