@@ -26,6 +26,8 @@ const CHALLENGE_VERSION: &str = "10,5,30,15625";
 const CHALLENGE_KEY: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
 static ACCESS_TOKEN: Mutex<Option<String>> = Mutex::new(None);
+/// Account ids the running launch reports in `GetProfile`.
+static IDENTITY: Mutex<Option<super::ea_login::EaIdentity>> = Mutex::new(None);
 /// Set before a release joins the accept loop.
 static STOP: AtomicBool = AtomicBool::new(false);
 /// Direct launches that still need the listener; zero releases the port.
@@ -95,9 +97,16 @@ impl Drop for Lease {
 /// every launch in this process, and the returned lease holds it open. A port
 /// that another process already owns is an error, so the caller can fall back
 /// to the EA app instead of starting a game that cannot reach its client.
-pub(crate) fn ensure_started(port: u16, access: &str) -> Result<Lease, String> {
+pub(crate) fn ensure_started(
+    port: u16,
+    access: &str,
+    identity: super::ea_login::EaIdentity,
+) -> Result<Lease, String> {
     if let Ok(mut slot) = ACCESS_TOKEN.lock() {
         *slot = Some(access.to_string());
+    }
+    if let Ok(mut slot) = IDENTITY.lock() {
+        *slot = Some(identity);
     }
     let mut listener = LISTENER
         .lock()
@@ -258,6 +267,47 @@ fn send_encrypted(stream: &mut TcpStream, message: &str, key: &[u8; 16]) -> Resu
     stream.write_all(&bytes).map_err(|e| e.to_string())
 }
 
+/// The `GetProfileResponse` for one account.
+///
+/// `UserId` and `PersonaId` are different account values. A game that binds
+/// its save to the profile treats a wrong pair as another player, so the
+/// account service values win; the JWT persona id is only the fallback when
+/// that lookup did not run.
+fn profile_response(
+    recipient: &str,
+    id: &str,
+    identity: &super::ea_login::EaIdentity,
+    fallback_persona: &str,
+) -> String {
+    let persona = if identity.name.trim().is_empty() {
+        super::ea_vault::load()
+            .map(|tokens| tokens.name)
+            .filter(|name| !name.trim().is_empty())
+            .unwrap_or_else(|| "Player".to_string())
+    } else {
+        identity.name.trim().to_string()
+    };
+    let mut persona_id = if identity.persona_id.is_empty() {
+        fallback_persona.to_string()
+    } else {
+        identity.persona_id.clone()
+    };
+    let mut user_id = if identity.player_id.is_empty() {
+        persona_id.clone()
+    } else {
+        identity.player_id.clone()
+    };
+    if user_id.is_empty() {
+        user_id = "0".to_string();
+    }
+    if persona_id.is_empty() {
+        persona_id = user_id.clone();
+    }
+    format!(
+        r#"<LSX><Response sender="{recipient}" id="{id}"><GetProfileResponse Persona="{persona}" SubscriberLevel="0" CommerceCurrency="USD" IsTrialSubscriber="false" Country="US" UserId="{user_id}" GeoCountry="US" AvatarId="" IsSubscriber="false" IsSteamSubscriber="false" PersonaId="{persona_id}" IsUnderAge="false" UserIndex="0"/></Response></LSX>"#
+    )
+}
+
 /// The request envelope: recipient, id, inner tag name and start tag.
 fn request_parts(message: &str) -> Option<(String, String, String, String)> {
     let request_tag = tag(message, "Request")?;
@@ -292,20 +342,18 @@ fn handle_request(message: &str, content_id: &str) -> Option<String> {
             Some(xml)
         }
         "GetProfile" => {
-            let persona = super::ea_vault::load()
-                .map(|tokens| tokens.name)
-                .filter(|name| !name.trim().is_empty())
-                .unwrap_or_else(|| "Player".to_string());
-            let user_id = ACCESS_TOKEN
+            let identity = IDENTITY
+                .lock()
+                .ok()
+                .and_then(|slot| slot.clone())
+                .unwrap_or_default();
+            let fallback = ACCESS_TOKEN
                 .lock()
                 .ok()
                 .and_then(|slot| slot.clone())
                 .and_then(|token| super::ea_login::persona_id(&token))
-                .and_then(|value| value.parse::<u64>().ok())
-                .unwrap_or(0);
-            Some(format!(
-                r#"<LSX><Response sender="{recipient}" id="{id}"><GetProfileResponse Persona="{persona}" SubscriberLevel="0" CommerceCurrency="USD" IsTrialSubscriber="false" Country="US" UserId="{user_id}" GeoCountry="US" AvatarId="" IsSubscriber="false" IsSteamSubscriber="true" PersonaId="{user_id}" IsUnderAge="false" UserIndex="0"/></Response></LSX>"#
-            ))
+                .unwrap_or_default();
+            Some(profile_response(&recipient, &id, &identity, &fallback))
         }
         "GetSetting" => {
             let key = attribute(&inner, "SettingId").unwrap_or_default();
@@ -561,8 +609,10 @@ mod tests {
             let probe = TcpListener::bind(("127.0.0.1", 0)).expect("probe bind");
             probe.local_addr().expect("probe addr").port()
         };
-        let first = ensure_started(port, "first").expect("listener");
-        let second = ensure_started(port, "second").expect("second lease");
+        let first = ensure_started(port, "first", super::super::ea_login::EaIdentity::default())
+            .expect("listener");
+        let second = ensure_started(port, "second", super::super::ea_login::EaIdentity::default())
+            .expect("second lease");
         assert!(
             TcpListener::bind(("127.0.0.1", port)).is_err(),
             "the listener owns the port while a game runs"
@@ -574,5 +624,26 @@ mod tests {
         );
         drop(second);
         TcpListener::bind(("127.0.0.1", port)).expect("the port is free after the last game");
+    }
+
+    #[test]
+    fn the_profile_reports_the_account_and_persona_ids_separately() {
+        let identity = super::super::ea_login::EaIdentity {
+            name: "PlayerOne".into(),
+            player_id: "1001".into(),
+            persona_id: "1002".into(),
+        };
+        let response = profile_response("EALS", "4", &identity, "");
+        assert!(response.contains(r#"Persona="PlayerOne""#), "{response}");
+        assert!(response.contains(r#"UserId="1001""#), "{response}");
+        assert!(response.contains(r#"PersonaId="1002""#), "{response}");
+    }
+
+    #[test]
+    fn the_profile_falls_back_to_the_token_persona() {
+        let identity = super::super::ea_login::EaIdentity::default();
+        let response = profile_response("EALS", "4", &identity, "1003");
+        assert!(response.contains(r#"UserId="1003""#), "{response}");
+        assert!(response.contains(r#"PersonaId="1003""#), "{response}");
     }
 }

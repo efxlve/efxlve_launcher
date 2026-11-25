@@ -432,7 +432,10 @@ async fn import(code: &str) -> Result<usize, String> {
         .take()
         .ok_or_else(|| "@t:accounts.eaLoginFailed".to_string())?;
     let tokens = exchange(code, &verifier).await?;
-    let name = identity(&tokens.access).await.unwrap_or_default();
+    let name = identity(&tokens.access)
+        .await
+        .map(|identity| identity.name)
+        .unwrap_or_default();
     let owned = fetch_owned(&tokens.access).await?;
     let stored = EaTokens {
         access: tokens.access,
@@ -572,15 +575,49 @@ fn encode_query(query: &str) -> String {
     out
 }
 
-async fn identity(access: &str) -> Result<String, String> {
-    let value = graphql(access, "query{me{player{pd psd displayName}}}").await?;
-    let name = value
-        .pointer("/data/me/player/displayName")
-        .and_then(|v| v.as_str())
+/// The account ids the EA client reports to a running game.
+///
+/// `pd` and `psd` are separate values: a game that binds its save and its
+/// entitlements to the profile ids treats a wrong pair as another player.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct EaIdentity {
+    pub name: String,
+    /// Account-side player id (`player.pd`), the LSX `UserId`.
+    pub player_id: String,
+    /// Persona id (`player.psd`), the LSX `PersonaId`.
+    pub persona_id: String,
+}
+
+/// Reads the display name and the two ids from the account service.
+pub(crate) async fn identity(access: &str) -> Result<EaIdentity, String> {
+    let value = graphql(access, "query{me{pd player{pd psd displayName}}}").await?;
+    let player = value.pointer("/data/me/player");
+    let name = player
+        .and_then(|player| player.get("displayName"))
+        .and_then(|value| value.as_str())
         .unwrap_or("")
         .trim()
         .to_string();
-    Ok(name)
+    let player_id = json_id(value.pointer("/data/me/pd"))
+        .or_else(|| json_id(player.and_then(|player| player.get("pd"))))
+        .unwrap_or_default();
+    let persona_id = json_id(player.and_then(|player| player.get("psd"))).unwrap_or_default();
+    Ok(EaIdentity {
+        name,
+        player_id,
+        persona_id,
+    })
+}
+
+/// An id arrives as a JSON string or number depending on the service.
+fn json_id(value: Option<&serde_json::Value>) -> Option<String> {
+    match value? {
+        serde_json::Value::Number(number) => Some(number.to_string()),
+        serde_json::Value::String(text) if !text.trim().is_empty() => {
+            Some(text.trim().to_string())
+        }
+        _ => None,
+    }
 }
 
 /// Every owned product, with the product details the library shows.
@@ -1153,6 +1190,18 @@ mod tests {
         assert_eq!(persona_id(&token).as_deref(), Some("1005725578979"));
         assert_eq!(persona_id("no-dots"), None);
         assert_eq!(persona_id("a.b.c"), None);
+    }
+
+    #[test]
+    fn account_ids_arrive_as_numbers_or_strings() {
+        assert_eq!(json_id(Some(&serde_json::json!(1001))), Some("1001".into()));
+        assert_eq!(
+            json_id(Some(&serde_json::json!("1002"))),
+            Some("1002".into())
+        );
+        assert_eq!(json_id(Some(&serde_json::json!(""))), None);
+        assert_eq!(json_id(Some(&serde_json::json!(null))), None);
+        assert_eq!(json_id(None), None);
     }
 
     #[test]

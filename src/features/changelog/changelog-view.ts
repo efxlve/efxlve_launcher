@@ -41,6 +41,14 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "Pressing Resume on a download that is already running shows its live progress instead of an \"another download is active\" error.",
         tr: "Zaten çalışan bir indirmede Devam Et'e basmak artık \"başka bir aktif indirme var\" hatası yerine gerçek ilerlemeyi gösteriyor.",
       },
+      {
+        en: "EA games started without the EA App now report your own account identity, so existing saves load instead of being reported as corrupt.",
+        tr: "EA App olmadan başlatılan EA oyunları artık kendi hesap kimliğini görüyor; mevcut kayıtlar bozuk denmek yerine açılıyor.",
+      },
+      {
+        en: "The EA App no longer shows the port 3216 connection error after a game started from the launcher has closed.",
+        tr: "Launcher'dan başlatılan bir oyun kapandıktan sonra EA App artık 3216 portu bağlantı hatası göstermiyor.",
+      },
     ],
   },
   {

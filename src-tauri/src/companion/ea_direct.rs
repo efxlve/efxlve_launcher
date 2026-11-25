@@ -166,15 +166,17 @@ pub(crate) fn plan(install_path: &str, store_id: &str) -> Result<LaunchPlan, Pla
 /// Builds the environment the EA app sets before it starts a game.
 ///
 /// The values follow the EA client's own launch block. `EALicenseToken` is the
-/// game's own offer id and `EASecureLaunchTokenTemp` the signed-in user, so a
-/// game never receives another title's id; the account token is what the game
-/// and EA's backend use for entitlement and presence. No value is logged.
+/// game's own offer id and `EASecureLaunchTokenTemp` the account-side player
+/// id, so a game never receives another title's or player's identity; the
+/// account token is what the game and EA's backend use for entitlement and
+/// presence. No value is logged.
 pub(crate) fn environment(
     access: &str,
     launch_token: &str,
     player: &str,
     locale: &str,
     plan: &LaunchPlan,
+    identity: &super::ea_login::EaIdentity,
 ) -> Vec<(String, String)> {
     let player = if player.trim().is_empty() {
         "Player"
@@ -190,7 +192,11 @@ pub(crate) fn environment(
     // identity that is still right when the catalog has no row for the copy.
     let license_token = super::ea_login::offer_for_content(&plan.content_id)
         .unwrap_or_else(|| plan.content_id.clone());
-    let user_id = super::ea_login::persona_id(access).unwrap_or_default();
+    let secure_launch = if !identity.player_id.is_empty() {
+        identity.player_id.clone()
+    } else {
+        identity.persona_id.clone()
+    };
 
     vec![
         ("EAAuthCode".into(), "NeedsAFreshAuthCode".into()),
@@ -211,7 +217,7 @@ pub(crate) fn environment(
         ("EALicenseToken".into(), license_token),
         ("EALsxPort".into(), "3216".into()),
         ("EARtPLaunchCode".into(), rtp_handshake().to_string()),
-        ("EASecureLaunchTokenTemp".into(), user_id),
+        ("EASecureLaunchTokenTemp".into(), secure_launch),
         ("EASteamProxyIpcPort".into(), "1704".into()),
         ("EAUseIGOAPI".into(), "1".into()),
         ("ContentId".into(), plan.content_id.clone()),
@@ -371,11 +377,25 @@ async fn launch_plan(plan: LaunchPlan) -> Result<u32, String> {
     let launch_token = super::ea_login::launch_token(&access)
         .await
         .unwrap_or_else(|_| access.clone());
-    let player = super::ea_vault::load()
-        .map(|tokens| tokens.name)
-        .unwrap_or_default();
-    let env = environment(&access, &launch_token, &player, "en_US", &plan);
-    let lease = super::ea_lsx::ensure_started(3216, &access)?;
+    // The profile the game reads over LSX and the environment carry the same
+    // account ids; a wrong pair makes the game treat its save as another
+    // player's and refuse to load it.
+    let identity = super::ea_login::identity(&access)
+        .await
+        .unwrap_or_else(|_| super::ea_login::EaIdentity {
+            name: String::new(),
+            player_id: String::new(),
+            persona_id: super::ea_login::persona_id(&access).unwrap_or_default(),
+        });
+    let player = if identity.name.is_empty() {
+        super::ea_vault::load()
+            .map(|tokens| tokens.name)
+            .unwrap_or_default()
+    } else {
+        identity.name.clone()
+    };
+    let env = environment(&access, &launch_token, &player, "en_US", &plan, &identity);
+    let lease = super::ea_lsx::ensure_started(3216, &access, identity)?;
 
     // The game asks the EA background service first; with it stopped it uses
     // the LSX port we just opened. The service is put back when the game exits.
@@ -486,10 +506,17 @@ pub(crate) fn probe(game: &FoundGame) -> EaDirectProbe {
                 ooa: plan.ooa,
                 mode: mode.into(),
                 args: plan.args.clone(),
-                env: environment("", "", "", "en_US", &plan)
-                    .into_iter()
-                    .map(|(key, _)| key)
-                    .collect(),
+                env: environment(
+                    "",
+                    "",
+                    "",
+                    "en_US",
+                    &plan,
+                    &super::ea_login::EaIdentity::default(),
+                )
+                .into_iter()
+                .map(|(key, _)| key)
+                .collect(),
             }
         }
         Err(err) => {
@@ -1104,8 +1131,6 @@ mod tests {
 
     #[test]
     fn the_environment_carries_the_token_and_content_id() {
-        use base64::Engine;
-
         let plan = LaunchPlan {
             exe: PathBuf::from(r"C:\Games\ItTakesTwo\ItTakesTwo.exe"),
             work_dir: PathBuf::from(r"C:\Games\ItTakesTwo"),
@@ -1114,21 +1139,23 @@ mod tests {
             eaac: false,
             ooa: false,
         };
-        let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD
-            .encode(br#"{"nexus":{"psid":1005725578979}}"#);
-        let access = format!("header.{payload}.signature");
-        let env = environment(&access, "short-value", "Efe", "tr_TR", &plan);
+        let identity = super::super::ea_login::EaIdentity {
+            name: "Efe".into(),
+            player_id: "1001006949032".into(),
+            persona_id: "1005725578979".into(),
+        };
+        let env = environment("token-value", "short-value", "Efe", "tr_TR", &plan, &identity);
         let map: std::collections::HashMap<&str, &str> = env
             .iter()
             .map(|(key, value)| (key.as_str(), value.as_str()))
             .collect();
         assert_eq!(map["EALaunchUserAuthToken"], "short-value");
-        assert_eq!(map["EAGenericAuthToken"], access);
+        assert_eq!(map["EAGenericAuthToken"], "token-value");
         assert_eq!(map["EALaunchEAID"], "Efe");
         assert_eq!(map["EAGameLocale"], "tr_TR");
+        assert_eq!(map["EASecureLaunchTokenTemp"], "1001006949032");
         assert_eq!(map["ContentId"], "194814");
         assert_eq!(map["EAConnectionId"], "194814");
-        assert_eq!(map["EASecureLaunchTokenTemp"], "1005725578979");
         assert_eq!(map["EALaunchOfflineMode"], "false");
         assert!(!map.contains_key("EALicenseFile"));
     }
