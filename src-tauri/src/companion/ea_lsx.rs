@@ -14,7 +14,7 @@
 
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Mutex;
 use std::time::Duration;
 
@@ -25,8 +25,13 @@ const CHALLENGE_VERSION: &str = "10,5,30,15625";
 /// The fixed key the challenge response is encrypted with.
 const CHALLENGE_KEY: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
-static STARTED: AtomicBool = AtomicBool::new(false);
 static ACCESS_TOKEN: Mutex<Option<String>> = Mutex::new(None);
+/// Set before a release joins the accept loop.
+static STOP: AtomicBool = AtomicBool::new(false);
+/// Direct launches that still need the listener; zero releases the port.
+static SESSIONS: AtomicU32 = AtomicU32::new(0);
+/// The running accept loop. `None` means the port is free.
+static LISTENER: Mutex<Option<std::thread::JoinHandle<()>>> = Mutex::new(None);
 
 type Aes128EcbEnc = ecb::Encryptor<aes::Aes128>;
 type Aes128EcbDec = ecb::Decryptor<aes::Aes128>;
@@ -69,40 +74,91 @@ const SERVICES: &[(&str, &str)] = &[
     ("EbisuSDK", "CONTENT"),
 ];
 
-/// Starts the listener once for this process.
+/// Keeps the listener alive for one direct launch.
+///
+/// The port is only ours while a game we started is running. An EA App started
+/// later binds the same port, and a listener left behind in a background
+/// launcher makes it fail with `EC:10701`, so the last lease releases the port.
+pub(crate) struct Lease(());
+
+impl Drop for Lease {
+    fn drop(&mut self) {
+        if SESSIONS.fetch_sub(1, Ordering::SeqCst) == 1 {
+            release();
+        }
+    }
+}
+
+/// Starts or joins the listener for one direct launch.
 ///
 /// The game connects to `EALsxPort` (3216) while it runs. One listener serves
-/// every launch in this process; a second call is a no-op. A port that another
-/// process already owns is an error, so the caller can fall back to the EA app
-/// instead of starting a game that cannot reach its client.
-pub(crate) fn ensure_started(port: u16, access: &str) -> Result<(), String> {
+/// every launch in this process, and the returned lease holds it open. A port
+/// that another process already owns is an error, so the caller can fall back
+/// to the EA app instead of starting a game that cannot reach its client.
+pub(crate) fn ensure_started(port: u16, access: &str) -> Result<Lease, String> {
     if let Ok(mut slot) = ACCESS_TOKEN.lock() {
         *slot = Some(access.to_string());
     }
-    if STARTED.load(Ordering::SeqCst) {
-        return Ok(());
+    let mut listener = LISTENER
+        .lock()
+        .map_err(|_| "LSX listener state is poisoned".to_string())?;
+    if listener.is_none() {
+        STOP.store(false, Ordering::SeqCst);
+        let thread = start(port).map_err(|err| format!("LSX listener on {port}: {err}"))?;
+        *listener = Some(thread);
     }
-    start(port).map_err(|err| format!("LSX listener on {port}: {err}"))?;
-    STARTED.store(true, Ordering::SeqCst);
-    Ok(())
+    SESSIONS.fetch_add(1, Ordering::SeqCst);
+    Ok(Lease(()))
+}
+
+/// Stops the accept loop and frees the port.
+///
+/// The accept loop never touches `LISTENER`, so holding the lock while it
+/// joins cannot deadlock; a later launch waits here and then binds fresh.
+fn release() {
+    let Ok(mut listener) = LISTENER.lock() else {
+        return;
+    };
+    // A launch can join between this lease's decrement and the lock; the
+    // increment happens under the same lock, so this check is the decision.
+    if SESSIONS.load(Ordering::SeqCst) > 0 {
+        return;
+    }
+    let Some(thread) = listener.take() else {
+        return;
+    };
+    STOP.store(true, Ordering::SeqCst);
+    let _ = thread.join();
+    eprintln!("LSX listener released");
 }
 
 /// Starts the listener on `127.0.0.1:<port>` and returns its thread.
 pub(crate) fn start(port: u16) -> std::io::Result<std::thread::JoinHandle<()>> {
     let listener = TcpListener::bind(("127.0.0.1", port))?;
+    // A blocking accept cannot notice a release; a short poll keeps the port
+    // free within a moment of the last game exiting.
+    listener.set_nonblocking(true)?;
     eprintln!("LSX listening on 127.0.0.1:{port}");
-    Ok(std::thread::spawn(move || {
-        for stream in listener.incoming() {
-            match stream {
-                Ok(stream) => {
-                    eprintln!("LSX connect: {:?}", stream.peer_addr());
-                    std::thread::spawn(move || {
-                        if let Err(err) = serve(stream) {
-                            eprintln!("LSX: {err}");
-                        }
-                    });
-                }
-                Err(err) => eprintln!("LSX accept: {err}"),
+    Ok(std::thread::spawn(move || loop {
+        if STOP.load(Ordering::SeqCst) {
+            break;
+        }
+        match listener.accept() {
+            Ok((stream, _)) => {
+                let _ = stream.set_nonblocking(false);
+                eprintln!("LSX connect: {:?}", stream.peer_addr());
+                std::thread::spawn(move || {
+                    if let Err(err) = serve(stream) {
+                        eprintln!("LSX: {err}");
+                    }
+                });
+            }
+            Err(err) if err.kind() == std::io::ErrorKind::WouldBlock => {
+                std::thread::sleep(Duration::from_millis(100));
+            }
+            Err(err) => {
+                eprintln!("LSX accept: {err}");
+                std::thread::sleep(Duration::from_millis(250));
             }
         }
     }))
@@ -492,5 +548,26 @@ mod tests {
         let second = random.next();
         assert_eq!(first, 61);
         assert_eq!(second, 50_190);
+    }
+
+    #[test]
+    fn the_last_lease_releases_the_port() {
+        let port = {
+            let probe = TcpListener::bind(("127.0.0.1", 0)).expect("probe bind");
+            probe.local_addr().expect("probe addr").port()
+        };
+        let first = ensure_started(port, "first").expect("listener");
+        let second = ensure_started(port, "second").expect("second lease");
+        assert!(
+            TcpListener::bind(("127.0.0.1", port)).is_err(),
+            "the listener owns the port while a game runs"
+        );
+        drop(first);
+        assert!(
+            TcpListener::bind(("127.0.0.1", port)).is_err(),
+            "one running game keeps the listener open"
+        );
+        drop(second);
+        TcpListener::bind(("127.0.0.1", port)).expect("the port is free after the last game");
     }
 }

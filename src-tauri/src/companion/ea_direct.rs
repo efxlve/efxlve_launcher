@@ -369,7 +369,7 @@ async fn launch_plan(plan: LaunchPlan) -> Result<u32, String> {
         .map(|tokens| tokens.name)
         .unwrap_or_default();
     let env = environment(&access, &launch_token, &player, "en_US", &plan);
-    super::ea_lsx::ensure_started(3216, &access)?;
+    let lease = super::ea_lsx::ensure_started(3216, &access)?;
 
     // The game asks the EA background service first; with it stopped it uses
     // the LSX port we just opened. The service is put back when the game exits.
@@ -381,6 +381,7 @@ async fn launch_plan(plan: LaunchPlan) -> Result<u32, String> {
     let mut child = match spawn(&plan, &env) {
         Ok(child) => child,
         Err(err) => {
+            drop(lease);
             if service_was_running {
                 start_service();
             }
@@ -388,12 +389,16 @@ async fn launch_plan(plan: LaunchPlan) -> Result<u32, String> {
         }
     };
     let pid = child.id();
-    if service_was_running {
-        std::thread::spawn(move || {
-            let _ = child.wait();
+    // The port belongs to the game, not to this process: it is released before
+    // the service returns, so an EA App started later binds 3216 itself instead
+    // of failing with EC:10701.
+    std::thread::spawn(move || {
+        let _ = child.wait();
+        drop(lease);
+        if service_was_running {
             start_service();
-        });
-    }
+        }
+    });
     clear_error();
     Ok(pid)
 }
