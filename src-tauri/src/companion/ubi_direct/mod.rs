@@ -295,8 +295,11 @@ pub(crate) async fn launch_game(product_id: u32, shim_enabled: bool) -> Result<(
 
 /// Remove a direct install and, when asked, its folder. Never touches a folder
 /// that no longer contains the recorded executable.
-pub(crate) fn uninstall_game(product_id: u32, delete_files: bool) -> Result<(), String> {
-    manage::uninstall(product_id, delete_files)
+pub(crate) async fn uninstall_game(product_id: u32, delete_files: bool) -> Result<(), String> {
+    // A full game folder takes minutes to walk; keep the async runtime free.
+    tauri::async_runtime::spawn_blocking(move || manage::uninstall(product_id, delete_files))
+        .await
+        .map_err(|error| error.to_string())?
 }
 
 /// Ask a running direct install to stop after the current slice. The part file
@@ -735,10 +738,10 @@ mod tests {
         println!("Anno 1404 launched from the moved install");
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "deletes the adopted Anno 1404 install"]
-    fn live_uninstall_anno_removes_the_moved_install() {
-        uninstall_game(16232, true).expect("uninstall");
+    async fn live_uninstall_anno_removes_the_moved_install() {
+        uninstall_game(16232, true).await.expect("uninstall");
         assert!(!std::path::Path::new(
             r"C:\Users\Efe\Games\Ubisoft\Anno 1404 - History Edition"
         )

@@ -49,9 +49,11 @@ pub(crate) use queue::{stop_transfer_on_exit, transfer_active};
 // leftovers from an earlier run that still hold installed.json.lock.
 pub(crate) use tree::kill_stale_transfers;
 
-// uninstall.rs: epic_uninstall_game
+// uninstall.rs: epic_uninstall_game, plus the guarded folder delete shared with
+// the Amazon and Ubisoft uninstalls.
 #[allow(unused_imports)]
 pub use uninstall::*;
+pub(crate) use uninstall::remove_install_folder;
 
 #[cfg(test)]
 mod tests;

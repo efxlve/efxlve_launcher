@@ -154,7 +154,10 @@ pub async fn epic_uninstall_game(
 /// A path that is already gone has nothing left to delete. A folder the guard
 /// refuses is reported as leftover instead of being skipped: the caller must not
 /// claim an uninstall whose files are still there.
-pub(super) fn remove_install_folder(path: &Path, install_root: &Path) -> Option<PathBuf> {
+///
+/// Shared with the Amazon and Ubisoft uninstalls, so every launcher-owned store
+/// treats a folder that survives the same way.
+pub(crate) fn remove_install_folder(path: &Path, install_root: &Path) -> Option<PathBuf> {
     if !path.is_dir() {
         return None;
     }

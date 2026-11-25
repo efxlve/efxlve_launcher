@@ -15,18 +15,24 @@ pub(crate) fn uninstall(product_id: u32, delete_files: bool) -> Result<(), Strin
     if delete_files {
         let directory = Path::new(&game.install_dir);
         if directory.exists() && !safe_to_delete(directory, &game.exe) {
-            return Err(format!(
-                "refusing to delete {}: it no longer looks like the recorded install",
-                directory.display()
-            ));
+            return Err(leftover(directory));
         }
         if directory.exists() {
-            std::fs::remove_dir_all(directory)
+            crate::legendary::transfers::force_remove_dir_all(directory)
                 .map_err(|error| format!("deleting {}: {error}", directory.display()))?;
+            // A folder that survived keeps its record: the game stays visible
+            // and the player can retry, instead of an orphan no store lists.
+            if directory.exists() {
+                return Err(leftover(directory));
+            }
         }
     }
     ubi_installs::remove(product_id);
     Ok(())
+}
+
+fn leftover(directory: &Path) -> String {
+    format!("@t:dl.uninstallLeftFiles\u{1f}{}", directory.display())
 }
 
 /// A destructive delete needs an absolute path with a root, at least one folder
@@ -100,6 +106,36 @@ mod tests {
         uninstall(999, true).expect("uninstall");
         assert!(!game.exists());
         assert!(ubi_installs::find(999).is_none());
+        match previous {
+            Some(value) => std::env::set_var("EFXLVE_UBI_INSTALLS_FILE", value),
+            None => std::env::remove_var("EFXLVE_UBI_INSTALLS_FILE"),
+        }
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_folder_that_is_not_the_recorded_install_keeps_the_record() {
+        let _guard = ubi_installs::test_lock().lock().unwrap();
+        let root = std::env::temp_dir().join(format!("efxlve-ubi-refuse-{}", std::process::id()));
+        let game = root.join("Ubisoft").join("Moved Game");
+        std::fs::create_dir_all(&game).unwrap();
+        std::fs::write(game.join("other.exe"), b"exe").unwrap();
+        let record_file = root.join("installs.json");
+        let previous = std::env::var_os("EFXLVE_UBI_INSTALLS_FILE");
+        std::env::set_var("EFXLVE_UBI_INSTALLS_FILE", &record_file);
+        ubi_installs::save(&ubi_installs::InstalledGame {
+            product_id: 998,
+            name: "Moved Game".into(),
+            install_dir: game.display().to_string(),
+            exe: "Missing.exe".into(),
+            installed_at: 1,
+            ..Default::default()
+        });
+        let error = uninstall(998, true).expect_err("the folder is not the recorded install");
+        assert!(error.contains("uninstallLeftFiles"), "{error}");
+        // The files are still there, so the game must stay retryable.
+        assert!(ubi_installs::find(998).is_some());
+        assert!(game.exists());
         match previous {
             Some(value) => std::env::set_var("EFXLVE_UBI_INSTALLS_FILE", value),
             None => std::env::remove_var("EFXLVE_UBI_INSTALLS_FILE"),

@@ -887,8 +887,8 @@ pub fn ubi_direct_forget(product_id: u32) {
 
 /// Remove a direct install and optionally its folder.
 #[tauri::command]
-pub fn ubi_direct_uninstall(product_id: u32, delete_files: bool) -> Result<(), String> {
-    ubi_direct::uninstall_game(product_id, delete_files)
+pub async fn ubi_direct_uninstall(product_id: u32, delete_files: bool) -> Result<(), String> {
+    ubi_direct::uninstall_game(product_id, delete_files).await
 }
 
 /// Ask a running direct install to stop; the partial file is kept for resume.
@@ -2204,7 +2204,7 @@ pub async fn companion_game_action(app: tauri::AppHandle, store: String, id: Str
             .into_iter()
             .find(|row| row.install_dir.eq_ignore_ascii_case(&game.install_path))
         {
-            return ubi_direct::uninstall_game(installed.product_id, true);
+            return ubi_direct::uninstall_game(installed.product_id, true).await;
         }
     }
     // A catalog-only row has no numeric launch/install id, so the generic match

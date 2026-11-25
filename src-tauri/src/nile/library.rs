@@ -127,15 +127,19 @@ fn pick_release_year(product: &Value) -> Option<u32> {
     (1970..=2100).contains(&year).then_some(year)
 }
 
-fn installed_index(app: &AppHandle) -> HashMap<String, Value> {
+/// Every record Nile holds, folder or not. The uninstall needs a record whose
+/// folder is already gone so it can still drop the entry.
+fn installed_records(app: &AppHandle) -> Vec<Value> {
     let path = cli::config_dir(app).join("installed.json");
     let Ok(text) = std::fs::read_to_string(path) else {
-        return HashMap::new();
+        return Vec::new();
     };
-    let Ok(list) = serde_json::from_str::<Vec<Value>>(&text) else {
-        return HashMap::new();
-    };
-    list.into_iter()
+    serde_json::from_str(&text).unwrap_or_default()
+}
+
+fn installed_index(app: &AppHandle) -> HashMap<String, Value> {
+    installed_records(app)
+        .into_iter()
         .filter_map(|game| {
             let id = game.get("id").and_then(|v| v.as_str())?.to_string();
             // A recorded entry whose folder is gone is not an install: the
@@ -223,6 +227,46 @@ pub fn installed_game(app: &AppHandle, id: &str) -> Option<InstalledGame> {
         return None;
     }
     Some(InstalledGame { path })
+}
+
+/// The folder Nile recorded for this game, even when it is no longer on disk.
+/// The uninstall needs it after a damaged manifest, and a missing folder still
+/// has a record to drop.
+pub fn installed_path(app: &AppHandle, id: &str) -> Option<String> {
+    installed_records(app).into_iter().find_map(|game| {
+        if game.get("id").and_then(|v| v.as_str()) != Some(id) {
+            return None;
+        }
+        game.get("path")
+            .and_then(|v| v.as_str())
+            .map(str::to_string)
+            .filter(|path| !path.trim().is_empty())
+    })
+}
+
+/// Drops the installed record and the stored manifest for one product.
+///
+/// Nile compares stored manifests instead of the files on disk, and its saved
+/// path lookup keys on the entitlement id while the record uses the product
+/// id, so a moved or deleted folder still reads as "up to date" forever.
+pub fn forget_installed(app: &AppHandle, id: &str) {
+    let dir = cli::config_dir(app);
+    let path = dir.join("installed.json");
+    if let Ok(text) = std::fs::read_to_string(&path) {
+        if let Ok(list) = serde_json::from_str::<Vec<Value>>(&text) {
+            let before = list.len();
+            let kept: Vec<Value> = list
+                .into_iter()
+                .filter(|game| game.get("id").and_then(|v| v.as_str()) != Some(id))
+                .collect();
+            if kept.len() < before {
+                if let Ok(serialized) = serde_json::to_string(&kept) {
+                    let _ = std::fs::write(&path, serialized);
+                }
+            }
+        }
+    }
+    let _ = std::fs::remove_file(dir.join("manifests").join(format!("{id}.raw")));
 }
 
 /// Full installed record for one product id (path, version and size).

@@ -3,9 +3,11 @@
 //! Nile logs its download progress to stderr once per second; `run_streaming`
 //! parses those lines and forwards them as `nile-progress` events. Launching
 //! blocks inside Nile until the game exits, which is exactly what the playtime
-//! session needs.
+//! session needs. Uninstall deletes the recorded folder itself: Nile only
+//! removes the files its stored manifest still names.
 
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
 
@@ -228,28 +230,6 @@ fn progress_emitter(app: AppHandle, event_id: String) -> impl FnMut(&str) + Send
     }
 }
 
-/// Drops the installed record and the stored manifest for one product.
-///
-/// Nile compares stored manifests instead of the files on disk, and its saved
-/// path lookup keys on the entitlement id while the record uses the product
-/// id, so a moved or deleted folder still reads as "up to date" forever.
-fn reset_install_record(app: &AppHandle, id: &str) {
-    let dir = cli::config_dir(app);
-    let path = dir.join("installed.json");
-    if let Ok(text) = std::fs::read_to_string(&path) {
-        if let Ok(list) = serde_json::from_str::<Vec<serde_json::Value>>(&text) {
-            let kept: Vec<serde_json::Value> = list
-                .into_iter()
-                .filter(|game| game.get("id").and_then(|v| v.as_str()) != Some(id))
-                .collect();
-            if let Ok(serialized) = serde_json::to_string(&kept) {
-                let _ = std::fs::write(&path, serialized);
-            }
-        }
-    }
-    let _ = std::fs::remove_file(dir.join("manifests").join(format!("{id}.raw")));
-}
-
 /// Installs (or updates) one Amazon game. Progress arrives as `nile-progress`
 /// events with the composite id the library uses.
 #[tauri::command]
@@ -338,7 +318,7 @@ pub async fn nile_install(
             crate::download_log::append(&app, &event_id, &Err(message.clone()), &out_lines);
             return Err(message);
         }
-        reset_install_record(&app, &id);
+        super::library::forget_installed(&app, &id);
         let retry = run_install_attempt(&app, &args, &event_id, &id, generation).await;
         let healed = retry.as_ref().map(|v| v.status.success()).unwrap_or(false)
             && super::library::installed_game(&app, &id).is_some();
@@ -465,26 +445,54 @@ pub async fn nile_install_info(app: AppHandle, id: String) -> Result<u64, String
 }
 
 /// Removes one installed game and its files.
+///
+/// Nile's own uninstaller deletes only the files its stored manifest still
+/// names and drops the record even when the folder survives, so a manifest
+/// that no longer matches the install orphans the files. The launcher deletes
+/// the recorded folder itself and drops the record afterwards: a folder that
+/// cannot be removed keeps the game installed, and the next attempt retries.
 #[tauri::command]
 pub async fn nile_uninstall(app: AppHandle, id: String) -> Result<(), String> {
     if install_in_flight() {
         return Err("@t:dl.anotherActive".to_string());
     }
-    // The title is needed after the uninstall to drop the desktop shortcut.
+    // The title is needed after the files are gone to drop the desktop shortcut.
     let title = super::library::game_title(&app, &id).unwrap_or_else(|| id.clone());
-    let out = cli::run(&app, &["uninstall", &id], 300).await?;
-    if !out.status.success() {
-        return Err(cli::failure_message(&out));
+    let recorded = super::library::installed_path(&app, &id)
+        .ok_or_else(|| "@t:dl.notInstalled".to_string())?;
+    let folder = PathBuf::from(recorded.trim());
+    if folder.is_dir() {
+        // A path without a base (a bare drive or `C:\Games`) is not a game
+        // folder; report it instead of deleting something shared.
+        let base = install_base(&folder).ok_or_else(|| leftover_path(&folder))?;
+        let removed = tauri::async_runtime::spawn_blocking(move || {
+            crate::legendary::transfers::remove_install_folder(&folder, &base)
+        })
+        .await
+        .ok()
+        .flatten();
+        if let Some(left) = removed {
+            return Err(leftover_path(&left));
+        }
     }
-    // Nile compares its stored manifest, so a reinstall would report "Game is
-    // up to date" and need the reset-and-retry path. Start clean instead.
-    let _ = std::fs::remove_file(
-        cli::config_dir(&app)
-            .join("manifests")
-            .join(format!("{id}.raw")),
-    );
+    // The folder is gone (or was already); the record and the manifest can
+    // follow.
+    super::library::forget_installed(&app, &id);
     super::manage::remove_shortcut_for_title(&title);
     Ok(())
+}
+
+fn leftover_path(path: &Path) -> String {
+    format!("@t:dl.uninstallLeftFiles\u{1f}{}", path.display())
+}
+
+/// The base Nile appended the game title to. Requiring two folders below the
+/// drive keeps a bare base such as `C:\Games` out of a recursive delete.
+fn install_base(folder: &Path) -> Option<PathBuf> {
+    if !folder.is_absolute() || folder.components().count() < 4 {
+        return None;
+    }
+    folder.parent().map(Path::to_path_buf)
 }
 
 /// Launches one installed game and tracks the session until it exits.
@@ -650,5 +658,22 @@ mod tests {
 
         assert!(parse_progress_line("INFO [DOWNLOAD]:\t Download complete").is_none());
         assert!(parse_speed_line("INFO [PROGRESS]:\t = Progress: 1.0 1/2").is_none());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn an_install_folder_keeps_its_base_out_of_the_delete() {
+        assert_eq!(
+            install_base(Path::new(r"C:\Users\Efe\Games\nile\3 Count Bout")),
+            Some(PathBuf::from(r"C:\Users\Efe\Games\nile"))
+        );
+        assert_eq!(
+            install_base(Path::new(r"D:\Games\My Game")),
+            Some(PathBuf::from(r"D:\Games"))
+        );
+        // A bare base or a drive is shared with other files, not a game folder.
+        assert!(install_base(Path::new(r"C:\Games")).is_none());
+        assert!(install_base(Path::new(r"C:\")).is_none());
+        assert!(install_base(Path::new(r"relative\Game")).is_none());
     }
 }

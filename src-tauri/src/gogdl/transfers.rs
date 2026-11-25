@@ -989,6 +989,10 @@ pub fn find_fallback_exe(dir: &Path) -> Option<String> {
 
 /// Uninstalls an installed GOG game. Stops any running instance, removes the
 /// folder, and removes the game entry from `installed.json`.
+///
+/// A folder that survives the delete keeps its record: the game stays visible
+/// and the next attempt can retry, instead of leaving orphaned files no store
+/// lists any more.
 #[command]
 pub async fn gog_uninstall_game(app: AppHandle, game_id: String) -> Result<String, String> {
     let clean_id = game_id.trim().trim_start_matches("gog::").to_string();
@@ -1014,31 +1018,30 @@ pub async fn gog_uninstall_game(app: AppHandle, game_id: String) -> Result<Strin
 
     let recorded = PathBuf::from(info.install_path.trim());
     let target = locate_game_folder(&recorded, &clean_id).unwrap_or_else(|| recorded.clone());
-    let owns_info = target.join(format!("goggame-{clean_id}.info")).is_file();
-    if owns_info
-        && target.is_dir()
-        && crate::legendary::transfers::is_safe_game_dir(&target, &default_install_base(&app))
-    {
+    let leftover = || format!("@t:dl.uninstallLeftFiles\u{1f}{}", target.display());
+    if target.is_dir() {
+        // The game's own marker proves the folder belongs to this id. Deleting
+        // one without it could remove a shared base directory; leave the
+        // record alone so the player is told where the files are.
+        let owns_info = target.join(format!("goggame-{clean_id}.info")).is_file();
+        if !owns_info
+            || !crate::legendary::transfers::is_safe_game_dir(&target, &default_install_base(&app))
+        {
+            return Err(leftover());
+        }
         let target_clone = target.clone();
         let removed = tokio::task::spawn_blocking(move || {
             crate::legendary::transfers::force_remove_dir_all(&target_clone).is_ok()
         })
         .await
         .unwrap_or(false);
-        if !removed {
-            eprintln!("Could not delete GOG install dir '{}'", target.display());
+        if !removed || target.exists() {
+            return Err(leftover());
         }
         if target != recorded {
             // A legacy record pointed at the parent; drop it when empty.
             let _ = std::fs::remove_dir(&recorded);
         }
-    } else if target.is_dir() {
-        // Deleting a folder without the game's own marker could remove a
-        // shared base directory; leave it and drop only the record.
-        eprintln!(
-            "Not removing GOG install dir '{}': goggame-{clean_id}.info is missing",
-            target.display()
-        );
     }
 
     // Without the manifest a reinstall downloads every file; with it gogdl
