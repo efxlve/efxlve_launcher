@@ -2694,13 +2694,10 @@ function ensureAchievementProbe(
   if (cached && !force) return Promise.resolve(cached);
   const pending = achievementProbePending.get(appName);
   if (pending) return pending;
+  // An uninstalled game has no folder to read, but the probe remembers what it
+  // found there, so the page keeps naming the real source.
   const installDir = storeInstallDir(appName);
-  if (!installDir) {
-    const empty = emptyAchievementProbe();
-    achievementProbeCache.set(appName, empty);
-    return Promise.resolve(empty);
-  }
-  const job = steamAchievementProbe("", installDir)
+  const job = steamAchievementProbe("", installDir, appName)
     .catch(() => emptyAchievementProbe())
     .then((probe) => {
       achievementProbeCache.set(appName, probe);
@@ -2766,7 +2763,7 @@ async function localEmulatorAchievements(
   if (!steamAppId) return null;
   if (!probe.emulator && steamAppId !== probe.appId) {
     // The AppID may name a global emulator save the first probe could not.
-    probe = await steamAchievementProbe(steamAppId, installDir)
+    probe = await steamAchievementProbe(steamAppId, installDir, appName)
       .then((found) => {
         achievementProbeCache.set(appName, found);
         return found;
@@ -2841,7 +2838,6 @@ async function storeDefinitionAchievements(
   force: boolean,
 ): Promise<EpicAchievementsData | null> {
   const installDir = storeInstallDir(appName);
-  if (!installDir) return null;
   const current = S.loadedAchievements.get(appName);
   // Definitions do not change during a session; only a manual refresh asks
   // the community page again.
@@ -2853,9 +2849,18 @@ async function storeDefinitionAchievements(
     return current;
   }
   const probe = await ensureAchievementProbe(appName, force);
+  // The game's own EOS log outlives the install: a title that recorded even one
+  // unlock is an EOS title with its folder gone. That log is also what names
+  // the unlocks below, so it is read once here.
+  const title = summaryOf(appName)?.title ?? "";
+  const log = title ? await epicEosLogUnlocks(appName, title).catch(() => null) : null;
+  const logUnlocks = log?.unlocks ?? {};
+  const eos = probe.eos || Object.keys(logUnlocks).length > 0;
   // Automatically this list serves EOS-only titles. A Steamworks game gets it
-  // when the player explicitly chose the manual definition source.
-  if (!storeDefinitionSourceEnabled(appName) && (!probe.eos || probe.steamworks)) {
+  // when the player explicitly chose the manual definition source. The list is
+  // read from Steam, not from the install folder, so an uninstalled game keeps
+  // its page instead of falling back to an empty state.
+  if (!storeDefinitionSourceEnabled(appName) && (!eos || probe.steamworks)) {
     return null;
   }
   const steamAppId = await resolveStoreSteamAppId(appName, probe);
@@ -2866,7 +2871,7 @@ async function storeDefinitionAchievements(
   const definitions = await steamGetEmulatorAchievements(
     steamAppId,
     force,
-    installDir,
+    installDir ?? undefined,
     currentLanguage(),
   ).catch(() => null);
   if (!definitions || definitions.achievements.length === 0) return null;
@@ -2874,16 +2879,10 @@ async function storeDefinitionAchievements(
   // EOS-only titles have no store API to answer with progress. Their game log
   // names the unlocks, and the Rust cache keeps earlier sessions after the log
   // is replaced on the next launch.
-  if (probe.eos && !probe.steamworks) {
-    const title = summaryOf(appName)?.title ?? "";
-    if (title) {
-      const log = await epicEosLogUnlocks(appName, title).catch(() => null);
-      if (log) {
-        applyEosLogUnlocks(definitions, log.unlocks);
-        if (log.logPath || Object.keys(log.unlocks).length > 0) {
-          eosLogSource.set(appName, title);
-        }
-      }
+  if (eos && !probe.steamworks && log) {
+    applyEosLogUnlocks(definitions, logUnlocks);
+    if (log.logPath || Object.keys(logUnlocks).length > 0) {
+      eosLogSource.set(appName, title);
     }
   }
   return definitions;

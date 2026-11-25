@@ -2198,7 +2198,7 @@ fn normalize_install_root(install_dir: Option<&Path>) -> Option<PathBuf> {
 /// What an install folder says about Steam achievements without a Steam login:
 /// whether it imports the Steamworks DLL and whether a local emulator already
 /// left an achievement file on disk. Read-only; it never starts the game.
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AchievementProbe {
     /// Steam AppID named by `steam_appid.txt` or an emulator ini; empty when
@@ -2255,19 +2255,84 @@ fn probe_installation(app_id: Option<&str>, install_dir: Option<&Path>) -> Achie
     }
 }
 
+/// Where one game's probe answer is remembered. The definition list comes from
+/// Steam, not from the install folder, so an uninstalled title only has to keep
+/// the identity the folder once named.
+fn probe_cache_file_in(dir: &Path, app_name: &str) -> Option<PathBuf> {
+    if app_name.is_empty()
+        || !app_name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+    {
+        return None;
+    }
+    Some(dir.join("probes").join(format!("{app_name}.json")))
+}
+
+fn remember_achievement_probe(app: &tauri::AppHandle, app_name: &str, probe: &AchievementProbe) {
+    let Some(path) = probe_cache_file_in(&achievements_cache_dir(app), app_name) else {
+        return;
+    };
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    if let Ok(text) = serde_json::to_string(probe) {
+        let _ = std::fs::write(path, text);
+    }
+}
+
+fn load_remembered_probe(app: &tauri::AppHandle, app_name: &str) -> Option<AchievementProbe> {
+    let path = probe_cache_file_in(&achievements_cache_dir(app), app_name)?;
+    let text = std::fs::read_to_string(path).ok()?;
+    serde_json::from_str(&text).ok()
+}
+
+/// A remembered probe outlives the folder it was read from. The SDK flags stay
+/// (they describe the game, not the install), but a path that no longer exists
+/// is dropped so no caller offers a file that is gone.
+fn prune_remembered_probe(mut probe: AchievementProbe) -> AchievementProbe {
+    for path in [&mut probe.dll, &mut probe.eos_dll, &mut probe.emulator] {
+        if path
+            .as_deref()
+            .map(|value| !Path::new(value).is_file())
+            .unwrap_or(false)
+        {
+            *path = None;
+        }
+    }
+    probe
+}
+
 /// Tells the game page whether an achievement source exists for an installed
-/// store game: the Steamworks DLL it imports and any local emulator file.
+/// store game: the Steamworks DLL it imports and any local emulator file. The
+/// answer is remembered per game so an uninstalled title keeps its source.
 #[tauri::command]
 pub fn steam_achievement_probe(
+    app: tauri::AppHandle,
     app_id: Option<String>,
     install_dir: Option<String>,
+    app_name: Option<String>,
 ) -> AchievementProbe {
     let install = install_dir
         .as_deref()
         .map(str::trim)
         .filter(|dir| !dir.is_empty())
         .map(Path::new);
-    probe_installation(app_id.as_deref(), install)
+    let probe = probe_installation(app_id.as_deref(), install);
+    let name = app_name.as_deref().map(str::trim).unwrap_or("");
+    if name.is_empty() {
+        return probe;
+    }
+    if normalize_install_root(install).is_none() {
+        return load_remembered_probe(&app, name)
+            .map(prune_remembered_probe)
+            .unwrap_or(probe);
+    }
+    // A folder answer is the truth; only a real signal is worth keeping.
+    if probe.steamworks || probe.eos || probe.emulator.is_some() || !probe.app_id.is_empty() {
+        remember_achievement_probe(&app, name, &probe);
+    }
+    probe
 }
 
 /// Writes `steam_settings/achievements.json` for a Goldberg-style emulator from
@@ -4765,6 +4830,40 @@ mod tests {
                 sets
             );
         }
+    }
+
+    #[test]
+    fn remembered_probe_keeps_the_identity_but_drops_missing_paths() {
+        let base = std::env::temp_dir().join(format!("efxlve-probe-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(&base).unwrap();
+        let dll = base.join("EOSSDK-Win64-Shipping.dll");
+        std::fs::write(&dll, b"x").unwrap();
+        let probe = AchievementProbe {
+            app_id: "1817070".to_string(),
+            steamworks: false,
+            dll: Some(base.join("steam_api64.dll").to_string_lossy().to_string()),
+            eos: true,
+            eos_dll: Some(dll.to_string_lossy().to_string()),
+            emulator: Some(base.join("gone.json").to_string_lossy().to_string()),
+        };
+
+        let pruned = prune_remembered_probe(probe.clone());
+        assert!(pruned.eos, "the SDK flag describes the game, not the folder");
+        assert_eq!(pruned.eos_dll, probe.eos_dll);
+        assert_eq!(pruned.emulator, None);
+        assert_eq!(pruned.dll, None);
+        assert_eq!(pruned.app_id, "1817070");
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn probe_cache_names_reject_path_traversal() {
+        let dir = std::env::temp_dir();
+        assert!(probe_cache_file_in(&dir, "").is_none());
+        assert!(probe_cache_file_in(&dir, "../evil").is_none());
+        assert!(probe_cache_file_in(&dir, "be23672deb69402781cd47cc2919caf4").is_some());
     }
 
     #[test]

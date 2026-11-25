@@ -251,11 +251,17 @@ export interface SteamAchievementProbe {
   emulator: string | null;
 }
 
-/** Read-only probe: the Steamworks DLL and any emulator achievement file. */
-export const steamAchievementProbe = (appId: string, installDir?: string | null) =>
+/** Read-only probe: the Steamworks DLL and any emulator achievement file.
+ *  `appName` makes the answer stick, so an uninstalled game keeps its source. */
+export const steamAchievementProbe = (
+  appId: string,
+  installDir?: string | null,
+  appName?: string | null,
+) =>
   invoke<SteamAchievementProbe>("steam_achievement_probe", {
     appId: appId || null,
     installDir: installDir ?? null,
+    appName: appName || null,
   });
 
 /**

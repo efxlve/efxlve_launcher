@@ -615,7 +615,7 @@ async function loadEosAchievements(
   const installed = await epicListInstalled().catch(() => []);
   const entry = installed.find((game) => game.app_name === appName);
   if (!entry?.install_path) return null;
-  const probe = await steamAchievementProbe("", entry.install_path).catch(() => null);
+  const probe = await steamAchievementProbe("", entry.install_path, appName).catch(() => null);
   if (!probe?.eos || probe.steamworks) return null;
   const log = await epicEosLogUnlocks(appName, title).catch(() => null);
   if (!log || (!log.logPath && Object.keys(log.unlocks).length === 0)) return null;
