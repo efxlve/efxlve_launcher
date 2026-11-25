@@ -444,6 +444,7 @@
   "downloads.completedRemove": "Listeden kaldır",
   "downloads.pause": "Duraklat",
   "downloads.resume": "Devam Et",
+  "downloads.resumableTitle": "Yarım kalan indirmeler",
   "downloads.settingsTitle": "İndirme Ayarları",
   "downloads.cdnLabel": "İndirme sunucusu",
   "downloads.cdnAuto": "Otomatik",

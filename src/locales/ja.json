@@ -426,6 +426,7 @@
   "downloads.completedRemove": "リストから削除",
   "downloads.pause": "一時停止",
   "downloads.resume": "再開",
+  "downloads.resumableTitle": "中断されたダウンロード",
   "downloads.settingsTitle": "ダウンロード設定",
   "downloads.cdnLabel": "ダウンロードサーバー",
   "downloads.cdnAuto": "自動",

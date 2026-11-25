@@ -426,6 +426,7 @@
   "downloads.completedRemove": "Quitar de la lista",
   "downloads.pause": "Pausar",
   "downloads.resume": "Reanudar",
+  "downloads.resumableTitle": "Descargas interrumpidas",
   "downloads.settingsTitle": "Ajustes de descarga",
   "downloads.cdnLabel": "Servidor de descarga",
   "downloads.cdnAuto": "Automático",

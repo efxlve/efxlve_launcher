@@ -426,6 +426,7 @@
   "downloads.completedRemove": "从列表移除",
   "downloads.pause": "暂停",
   "downloads.resume": "继续",
+  "downloads.resumableTitle": "已中断的下载",
   "downloads.settingsTitle": "下载设置",
   "downloads.cdnLabel": "下载服务器",
   "downloads.cdnAuto": "自动",

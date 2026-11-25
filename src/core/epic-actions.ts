@@ -19,6 +19,7 @@ import {
   epicStopGame,
   epicListInstalled,
   epicListSkipped,
+  epicResumableDownloads,
   epicUninstallGame,
   getThirdPartyLauncher,
   requiresThirdPartyLauncher,
@@ -425,6 +426,34 @@ export async function epicUninstall(appName: string): Promise<void> {
   closeManagePopup();
   if (S.view === "library") patchLibraryCardDom(appName);
   if (S.view === "downloads") render();
+}
+
+/**
+ * Loads unfinished installs from disk. A transfer that was paused, failed or
+ * was cut off by a launcher exit keeps its partial files and its resume record;
+ * without this the game card fell back to "Install" and the download looked
+ * lost after the next launch.
+ */
+export async function loadEpicResumableDownloads(): Promise<void> {
+  if (!isTauri) return;
+  try {
+    const rows = await epicResumableDownloads();
+    const running = new Set<string>(
+      [...S.downloads.entries()].filter(([, d]) => !d.done).map(([id]) => id),
+    );
+    if (S.dlQueueStatus.active) running.add(S.dlQueueStatus.active);
+    for (const id of S.dlQueueStatus.queue) running.add(id);
+    S.epicResumable = new Map(
+      rows.filter((row) => !running.has(row.appName)).map((row) => [row.appName, row]),
+    );
+    updateBadge();
+    if (S.view === "downloads") render();
+    else if (S.view === "library") {
+      for (const id of S.epicResumable.keys()) patchLibraryCardDom(id);
+    }
+  } catch {
+    // The list is an enhancement; a read failure must not block boot.
+  }
 }
 
 /** Re-read the installed list from Legendary and refresh the UI. */

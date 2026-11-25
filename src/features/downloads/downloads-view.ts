@@ -493,6 +493,29 @@ export function renderDownloads(): string {
   // that is already transferring (or queued) is on the active card, so it must
   // not be offered again below it.
   const busyIds = new Set<string>([...(active ? [active.id] : []), ...S.dlQueueStatus.queue]);
+  // Unfinished installs read from disk after a restart. They are not running,
+  // so they get their own rows instead of the active card.
+  const resumable = [...S.epicResumable.values()].filter(
+    (row) => !busyIds.has(row.appName) && !summaryOf(row.appName)?.installed,
+  );
+  const resumableRows = resumable
+    .map((row) => {
+      const size =
+        row.totalBytes > 0
+          ? `${fmtBytes(row.downloadedBytes)} / ${fmtBytes(row.totalBytes)}`
+          : "";
+      const meta = [t("dl.statusPaused"), row.progress > 0 ? `%${row.progress}` : "", size]
+        .filter(Boolean)
+        .join(" · ");
+      return gameRow(
+        summaryOf(row.appName),
+        row.appName,
+        meta,
+        `<button class="btn primary small" data-act="dl-resume" data-id="${esc(row.appName)}">${icon("play", 13)} ${t("downloads.resume")}</button>
+         <button class="icon-btn danger" data-act="epic-cancel" data-id="${esc(row.appName)}" title="${t("common.cancel")}">${icon("x", 16)}</button>`,
+      );
+    })
+    .join("");
   const gogUpdates = S.gogSummaries
     .filter((g) => g.installed && g.updateAvailable && !g.downloading)
     .map(gogToEpicSummary);
@@ -695,7 +718,7 @@ export function renderDownloads(): string {
     })
     .join("");
 
-  const idle = !active && queueApps.length === 0 && updates.length === 0 && steamDownloading.length === 0 && ubiJobs.length === 0 && ubiClientDownloading.length === 0 && eaJobs.length === 0 && xboxWaiting.length === 0
+  const idle = !active && resumable.length === 0 && queueApps.length === 0 && updates.length === 0 && steamDownloading.length === 0 && ubiJobs.length === 0 && ubiClientDownloading.length === 0 && eaJobs.length === 0 && xboxWaiting.length === 0
     ? emptyState("download", t("downloads.emptyTitle"), t("downloads.emptyDesc"), `<button class="btn" data-act="goto-library">${t("downloads.goLibrary")}</button>`)
     : "";
 
@@ -708,6 +731,7 @@ export function renderDownloads(): string {
         </div>
       </div>
       ${active ? renderActiveCard(active) : steamCardGame ? renderSteamActiveCard(steamCardGame) : idle}
+      ${resumableRows ? section(t("downloads.resumableTitle"), resumable.length, resumableRows) : ""}
       ${queueRows ? section(t("dl.queueTitle"), queueApps.length, queueRows) : ""}
       ${steamRows ? section(t("steam.downloading"), steamDownloading.length - (steamCardGame ? 1 : 0), steamRows) : ""}
       ${ubiRows ? section(t("external.ubisoftTitle"), ubiJobs.length, ubiRows) : ""}

@@ -204,6 +204,11 @@ export function isAppDownloading(appName: string): boolean {
 export function libraryInstalledIcon(appName: string, installed: boolean): string {
   if (!S.showInstalledIcon) return "";
 
+  if (S.epicResumable.has(appName)) {
+    const label = t("downloads.resume");
+    return `<button type="button" class="pcard-play-btn is-downloading" data-act="dl-resume" data-id="${esc(appName)}" aria-label="${esc(label)}" title="${esc(label)}">${icon("download", 9)}</button>`;
+  }
+
   if (isAppDownloading(appName)) {
     const p = epicDlProgress(appName);
     const label = p !== null ? t("common.downloading", { p }) : t("steam.downloading");
@@ -667,6 +672,14 @@ export function epicActionButtons(
       return `<button class="btn ghost${btn}" data-act="pick-custom-exe-for" data-id="${s.appName}" title="${esc(t("customGames.setExeHint"))}">${icon("folder", 14)} ${esc(t("customGames.setExe"))}</button>`;
     }
     return `<button class="btn play${btn}" data-act="epic-play" data-id="${s.appName}">${icon("play", 14)} ${t("common.play")}</button>`;
+  }
+  const resumable = S.epicResumable.get(s.appName);
+  if (resumable) {
+    const pct = resumable.progress > 0 ? ` %${resumable.progress}` : "";
+    const main = `<button class="btn primary${btn}" data-act="dl-resume" data-id="${esc(s.appName)}" title="${esc(t("downloads.resume"))}">${icon("play", 14)} ${t("downloads.resume")}${pct}</button>`;
+    if (opts.primaryOnly) return main;
+    return `${main}
+      <button class="btn danger small" data-act="epic-cancel" data-id="${esc(s.appName)}">${t("common.cancelShort")}</button>`;
   }
   if (isAppDownloading(s.appName)) {
     const p = epicDlProgress(s.appName);

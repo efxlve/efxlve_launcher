@@ -30,6 +30,10 @@ const STDERR_POLL: std::time::Duration = std::time::Duration::from_millis(500);
 /// lingers past this grace is reaped instead of leaving the row at 100%.
 const COMPLETION_GRACE: std::time::Duration = std::time::Duration::from_secs(20);
 
+/// How often the resume record is refreshed while bytes move. The Downloads
+/// page reads it after a restart to show how far the partial install got.
+const RESUME_PROGRESS_INTERVAL: std::time::Duration = std::time::Duration::from_secs(15);
+
 /// Legendary's download manager logs once a second even while the disk is the
 /// bottleneck. Five minutes of complete silence after progress started means
 /// the worker queue deadlocked (upstream legendary issue #574), not a slow disk.
@@ -207,6 +211,9 @@ pub(super) fn record_from_pending(
         install_tags: pending.install_tags.clone(),
         install_dir: pending.install_dir.clone(),
         repair: pending.repair,
+        progress: 0,
+        downloaded_bytes: 0,
+        total_bytes: 0,
     }
 }
 
@@ -917,6 +924,7 @@ pub(super) async fn monitor_download(
     let mut current_eta_seconds: Option<u64> = None;
     let mut last_pct: i32 = -1;
     let mut last_emit = std::time::Instant::now();
+    let mut last_resume_save = std::time::Instant::now();
     let mut net_rate: Option<(f64, std::time::Instant)> = None;
     let mut disk_rate: Option<(f64, std::time::Instant)> = None;
     let mut explicit_net = false;
@@ -1099,6 +1107,20 @@ pub(super) async fn monitor_download(
                                 dl_bytes,
                                 tot_bytes,
                             );
+                            // Keep the on-disk resume record close to the live
+                            // percentage with a slow, bounded write rate.
+                            if last_pct >= 0
+                                && last_resume_save.elapsed() >= RESUME_PROGRESS_INTERVAL
+                            {
+                                last_resume_save = std::time::Instant::now();
+                                crate::legendary::download_resume::save_progress(
+                                    &crate::legendary::download_resume::resumes_path(),
+                                    &app_name,
+                                    last_pct as u8,
+                                    dl_bytes.unwrap_or(0),
+                                    tot_bytes.unwrap_or(0),
+                                );
+                            }
                         }
                         // The download manager can keep logging the same
                         // percentage and counters forever when its worker queue
@@ -1499,6 +1521,16 @@ pub(super) async fn monitor_download(
     } else {
         crate::legendary::download_resume::DownloadStop::Failure
     };
+    // The final percentage is the one the Downloads page shows after a restart.
+    if last_pct >= 0 {
+        crate::legendary::download_resume::save_progress(
+            &crate::legendary::download_resume::resumes_path(),
+            &app_name,
+            last_pct as u8,
+            (downloaded_mib * 1024.0 * 1024.0) as u64,
+            (total_mib * 1024.0 * 1024.0) as u64,
+        );
+    }
     // Failure and pause keep the partial folder and the resume record.
     // Only a user cancel of a never-installed game removes them.
     finish_stop(&app, &app_name, stop);
@@ -1723,6 +1755,54 @@ pub async fn epic_install_with_options(
     }
 
     start_download_with_tags(&app, app_name, install_tags, install_dir)
+}
+
+/// An unfinished install that still has files on disk.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResumableDownload {
+    pub app_name: String,
+    pub install_dir: String,
+    pub install_tags: Vec<String>,
+    pub repair: bool,
+    /// Last percentage legendary reported before the transfer stopped.
+    pub progress: u8,
+    pub downloaded_bytes: u64,
+    pub total_bytes: u64,
+}
+
+/// Unfinished installs to show after a launcher restart, when the in-memory
+/// queue is gone. An installed game is never listed, even if an old record
+/// survived a crash between the commit line and the final cleanup.
+#[tauri::command]
+pub fn epic_resumable_downloads() -> Vec<ResumableDownload> {
+    let config = crate::legendary::skip::default_config_dir();
+    let installed: std::collections::HashSet<String> =
+        crate::legendary::cache::read_installed(&config)
+            .into_iter()
+            .map(|game| game.app_name)
+            .collect();
+    crate::legendary::download_resume::load_all(
+        &crate::legendary::download_resume::resumes_path(),
+    )
+    .into_values()
+    .filter(|record| !installed.contains(&record.app_name))
+    .filter_map(|record| {
+        let install_dir = record.install_dir?;
+        if install_dir.trim().is_empty() {
+            return None;
+        }
+        Some(ResumableDownload {
+            app_name: record.app_name,
+            install_dir,
+            install_tags: record.install_tags,
+            repair: record.repair,
+            progress: record.progress,
+            downloaded_bytes: record.downloaded_bytes,
+            total_bytes: record.total_bytes,
+        })
+    })
+    .collect()
 }
 
 /// The folder a paused/crashed transfer already writes to. The install dialog

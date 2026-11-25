@@ -444,6 +444,7 @@
   "downloads.completedRemove": "सूची से हटाएँ",
   "downloads.pause": "रोकें",
   "downloads.resume": "फिर से शुरू करें",
+  "downloads.resumableTitle": "रुके हुए डाउनलोड",
   "downloads.settingsTitle": "डाउनलोड सेटिंग्स",
   "downloads.cdnLabel": "डाउनलोड सर्वर",
   "downloads.cdnAuto": "स्वचालित",

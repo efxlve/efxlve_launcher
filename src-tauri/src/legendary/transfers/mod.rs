@@ -40,7 +40,7 @@ pub(crate) use parse::short_error;
 #[allow(unused_imports)]
 pub use paths::*;
 
-// queue.rs: EpicDlState, DlProgress, DlPaused, DlQueueStatus, emit_progress_full, epic_install_game, epic_install_with_options, epic_resume_pending_download, epic_cancel_download, epic_pause_download, epic_resume_download, epic_reorder_queue, epic_get_queue
+// queue.rs: EpicDlState, DlProgress, DlPaused, DlQueueStatus, ResumableDownload, emit_progress_full, epic_install_game, epic_install_with_options, epic_resumable_downloads, epic_resume_pending_download, epic_cancel_download, epic_pause_download, epic_resume_download, epic_reorder_queue, epic_get_queue
 #[allow(unused_imports)]
 pub use queue::*;
 pub(crate) use queue::{stop_transfer_on_exit, transfer_active};

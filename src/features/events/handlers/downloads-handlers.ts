@@ -218,8 +218,11 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
         epicResumeDownload(id)
           .then((msg) => {
             S.dlQueueStatus.isPaused = false;
+            // A restored resumable row is now a live transfer.
+            S.epicResumable.delete(id);
             toast(msg, "");
             if (S.view === "downloads") render();
+            else if (S.view === "library") patchLibraryCardDom(id);
           })
           .catch((err) => toast(String(err), "err"));
       }

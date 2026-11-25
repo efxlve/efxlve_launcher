@@ -69,7 +69,7 @@ import {
   steamLoginAccounts,
   type AchievementNotificationOptions,
 } from "../../steam";
-import { clearLaunchStatus, refreshEpicInstalled, epicPlay, updateLaunchStatus } from "../../core/epic-actions";
+import { clearLaunchStatus, loadEpicResumableDownloads, refreshEpicInstalled, epicPlay, updateLaunchStatus } from "../../core/epic-actions";
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadSteamLibrary, refreshSteamInstalled, startSteamLibraryWatch } from "../library/steam-library";
 import { syncInstalledWatch } from "../library/installed-watch";
@@ -657,6 +657,8 @@ export async function initApp(hooks: {
     listenLater<DlProgressEvent>("download-progress", (event) => {
       const { id, progress, done, speed, speedBytes, diskSpeed, diskBytes, eta, downloadedBytes, totalBytes } = event.payload;
       noteDownloadActivity();
+      // The transfer is live again, so its paused row must not stay behind.
+      S.epicResumable.delete(id);
       if (id.startsWith("gog::") && done) S.gogDlPaused = false;
       if (id.startsWith("gog::") && progress === 0 && !done) S.gogDlPaused = false;
       const title = libraryItemOf(id)?.title ?? S.epicSummariesMap.get(id)?.title ?? id;
@@ -805,8 +807,10 @@ export async function initApp(hooks: {
     listenLater<{ id: string }>("download-resumed", (event) => {
       if (event.payload.id.startsWith("gog::")) S.gogDlPaused = false;
       else S.dlQueueStatus.isPaused = false;
+      S.epicResumable.delete(event.payload.id);
       noteDownloadActivity();
       if (S.view === "downloads") render();
+      else if (S.view === "library") patchLibraryCardDom(event.payload.id);
     });
     listenLater<DownloadFailedEvent>("download-failed", (event) => {
       noteDownloadInterrupted();
@@ -838,6 +842,9 @@ export async function initApp(hooks: {
           if (S.view === "library") patchLibraryCardDom(event.payload.id);
         });
       }
+      // A failed attempt keeps its partial files and resume record, so the game
+      // must stay visible as resumable instead of falling back to "Install".
+      void loadEpicResumableDownloads();
     });
     listenLater<DownloadCancelledEvent>("download-cancelled", (event) => {
       noteDownloadInterrupted();
@@ -846,6 +853,7 @@ export async function initApp(hooks: {
       // release it or the sign-in screen stays blocked.
       if (event.payload.id.startsWith("amazon::")) S.amazonProgress.delete(event.payload.id);
       S.downloads.delete(event.payload.id);
+      S.epicResumable.delete(event.payload.id);
       if (S.activeDlMetrics?.id === event.payload.id) S.activeDlMetrics = null;
       S.speedHistory.fill(0);
       S.diskHistory.fill(0);

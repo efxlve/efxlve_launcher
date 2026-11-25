@@ -426,6 +426,7 @@
   "downloads.completedRemove": "นำออกจากรายการ",
   "downloads.pause": "หยุดชั่วคราว",
   "downloads.resume": "ทำต่อ",
+  "downloads.resumableTitle": "การดาวน์โหลดที่ถูกหยุด",
   "downloads.settingsTitle": "การตั้งค่าการดาวน์โหลด",
   "downloads.cdnLabel": "เซิร์ฟเวอร์ดาวน์โหลด",
   "downloads.cdnAuto": "อัตโนมัติ",

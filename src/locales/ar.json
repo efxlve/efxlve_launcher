@@ -426,6 +426,7 @@
   "downloads.completedRemove": "إزالة من القائمة",
   "downloads.pause": "إيقاف مؤقت",
   "downloads.resume": "استئناف",
+  "downloads.resumableTitle": "التنزيلات المتوقفة",
   "downloads.settingsTitle": "إعدادات التنزيل",
   "downloads.cdnLabel": "خادم التنزيل",
   "downloads.cdnAuto": "تلقائي",

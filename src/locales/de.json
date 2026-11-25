@@ -426,6 +426,7 @@
   "downloads.completedRemove": "Aus Liste entfernen",
   "downloads.pause": "Pausieren",
   "downloads.resume": "Fortsetzen",
+  "downloads.resumableTitle": "Unterbrochene Downloads",
   "downloads.settingsTitle": "Download-Einstellungen",
   "downloads.cdnLabel": "Downloadserver",
   "downloads.cdnAuto": "Automatisch",

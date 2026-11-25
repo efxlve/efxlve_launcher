@@ -444,6 +444,7 @@
   "downloads.completedRemove": "Remove from list",
   "downloads.pause": "Pause",
   "downloads.resume": "Resume",
+  "downloads.resumableTitle": "Interrupted downloads",
   "downloads.settingsTitle": "Download Settings",
   "downloads.cdnLabel": "Download server",
   "downloads.cdnAuto": "Automatic",

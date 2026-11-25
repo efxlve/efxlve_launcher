@@ -426,6 +426,7 @@
   "downloads.completedRemove": "Убрать из списка",
   "downloads.pause": "Пауза",
   "downloads.resume": "Продолжить",
+  "downloads.resumableTitle": "Прерванные загрузки",
   "downloads.settingsTitle": "Параметры загрузки",
   "downloads.cdnLabel": "Сервер загрузки",
   "downloads.cdnAuto": "Автоматически",

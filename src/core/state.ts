@@ -132,7 +132,7 @@ import { loadGameStatus, loadUiScale } from "./game-status";
 import { readCustomCss } from "./custom-css";
 import { normalizeSurface } from "./themes";
 import type { StartupTab, AppNotification, AppUpdateStatus, ControllerKind, CustomLogoLayout, CustomLogoSize, DlMetrics, DownloadFinishAction, DrawerTab, EpicCopyOverride, EpicFilter, EpicPhase, EpicSort, EpicViewMode, GameSource, GogPhase, LibGroupBy, LibraryItem, LogoAnchor, NotifTab, SavedAccount, SettingsSection, View } from "./types";
-import type { CriticData, ConnectedController, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
+import type { CriticData, ConnectedController, ControllerSupportStatus, DlQueueStatus, EglDetectedGame, EosOverlayStatus, EpicAchievementSummary, EpicAchievementsData, EpicGame, EpicPlayerProfile, EpicResumableDownload, EpicSettings, EpicSummary, GameCollection, GameDlcResponse, GameInstallOptions, GameLocalSettings, GameRequirementsResponse, GameScreenshotItem, GameUpdateInfo, HltbData, MoveGameProgress, PlaytimeRecord, SaveBackupInfo, SetupStatus, SteamGridGame, SteamGridImage, SystemDriveInfo } from "../epic";
 
 
 const ALL_STORES: readonly GameSource[] = ["epic", "gog", "amazon", "steam", "ea", "ubisoft", "xbox", "battlenet", "riot", "custom"];
@@ -725,6 +725,8 @@ export const S = {
   storeDestroyTimer: (null) as number | null,
   query: "",
   downloads: new Map<string, { progress: number; done: boolean; title: string }>(),
+  /** Unfinished installs read from disk at boot, offered as "Resume". */
+  epicResumable: new Map<string, EpicResumableDownload>(),
   installDialogAppName: (null) as string | null,
   installDialogDir: "",
   installDialogFolder: "",

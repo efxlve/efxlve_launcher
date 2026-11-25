@@ -18,6 +18,14 @@ pub struct ResumeRecord {
     /// The interrupted attempt was a repair, not an install/update.
     #[serde(default)]
     pub repair: bool,
+    /// Last progress seen while the download was running. Written periodically
+    /// so a restart can show the partial install instead of an empty page.
+    #[serde(default)]
+    pub progress: u8,
+    #[serde(default)]
+    pub downloaded_bytes: u64,
+    #[serde(default)]
+    pub total_bytes: u64,
 }
 
 /// Why the legendary process is no longer the active download.
@@ -93,6 +101,12 @@ pub fn merge_resume(saved: Option<&ResumeRecord>, requested: ResumeRecord) -> Re
     if saved.app_name != requested.app_name {
         return requested;
     }
+    // A new folder starts from zero; only the same base keeps the old
+    // percentage for the row that is about to be replaced by live progress.
+    let same_dir = requested
+        .install_dir
+        .as_deref()
+        .is_none_or(|dir| saved.install_dir.as_deref() == Some(dir));
     ResumeRecord {
         app_name: requested.app_name,
         install_tags: if requested.install_tags.is_empty() {
@@ -102,6 +116,9 @@ pub fn merge_resume(saved: Option<&ResumeRecord>, requested: ResumeRecord) -> Re
         },
         install_dir: requested.install_dir.or_else(|| saved.install_dir.clone()),
         repair: requested.repair,
+        progress: if same_dir { saved.progress } else { 0 },
+        downloaded_bytes: if same_dir { saved.downloaded_bytes } else { 0 },
+        total_bytes: if same_dir { saved.total_bytes } else { 0 },
     }
 }
 
@@ -115,6 +132,31 @@ pub fn save_one(path: &Path, record: &ResumeRecord) {
     write_all(path, &all);
 }
 
+/// Records the last transfer figures without creating a record that does not
+/// exist: only a started install keeps its resume entry.
+pub fn save_progress(
+    path: &Path,
+    app_name: &str,
+    progress: u8,
+    downloaded_bytes: u64,
+    total_bytes: u64,
+) {
+    let Some(mut record) = load_one(path, app_name) else {
+        return;
+    };
+    let progress = progress.min(100);
+    if record.progress == progress
+        && record.downloaded_bytes == downloaded_bytes
+        && record.total_bytes == total_bytes
+    {
+        return;
+    }
+    record.progress = progress;
+    record.downloaded_bytes = downloaded_bytes;
+    record.total_bytes = total_bytes;
+    save_one(path, &record);
+}
+
 pub fn remove_resume(path: &Path, app_name: &str) {
     let mut all = load_all(path);
     if all.remove(app_name).is_some() {
@@ -122,7 +164,7 @@ pub fn remove_resume(path: &Path, app_name: &str) {
     }
 }
 
-fn load_all(path: &Path) -> BTreeMap<String, ResumeRecord> {
+pub(crate) fn load_all(path: &Path) -> BTreeMap<String, ResumeRecord> {
     std::fs::read_to_string(path)
         .ok()
         .and_then(|text| serde_json::from_str(&text).ok())
@@ -152,6 +194,9 @@ mod tests {
             install_tags: vec!["en".into()],
             install_dir: Some(dir.into()),
             repair: false,
+            progress: 0,
+            downloaded_bytes: 0,
+            total_bytes: 0,
         }
     }
 
@@ -183,6 +228,32 @@ mod tests {
     }
 
     #[test]
+    fn progress_is_saved_for_an_existing_record_only() {
+        let path = temp_store("progress");
+        save_progress(&path, "fortnite", 50, 1_000, 2_000);
+        assert!(load_one(&path, "fortnite").is_none());
+
+        save_one(&path, &sample(r"D:\Games"));
+        save_progress(&path, "fortnite", 74, 13_360, 25_000);
+        let record = load_one(&path, "fortnite").expect("record");
+        assert_eq!(record.progress, 74);
+        assert_eq!(record.downloaded_bytes, 13_360);
+        assert_eq!(record.total_bytes, 25_000);
+
+        save_progress(&path, "fortnite", 140, 0, 0);
+        assert_eq!(load_one(&path, "fortnite").unwrap().progress, 100);
+
+        // A retry keeps the last percentage until the new attempt reports one.
+        let merged = merge_resume(Some(&record), sample(r"D:\Games"));
+        assert_eq!(merged.progress, 74);
+        // A different folder cannot reuse those bytes, so it starts at zero.
+        let moved = merge_resume(Some(&record), sample(r"E:\Games"));
+        assert_eq!(moved.progress, 0);
+
+        let _ = std::fs::remove_dir_all(path.parent().unwrap());
+    }
+
+    #[test]
     fn user_cancel_of_unfinished_install_may_cleanup_and_drops_the_record() {
         let path = temp_store("cancel");
         save_one(&path, &sample(r"D:\Games"));
@@ -194,6 +265,9 @@ mod tests {
                 install_tags: Vec::new(),
                 install_dir: Some(r"E:\Games".into()),
                 repair: false,
+                progress: 0,
+                downloaded_bytes: 0,
+                total_bytes: 0,
             },
         );
 
@@ -232,6 +306,9 @@ mod tests {
             install_tags: Vec::new(),
             install_dir: Some(r"C:\Users\Efe\Games".into()),
             repair: false,
+            progress: 0,
+            downloaded_bytes: 0,
+            total_bytes: 0,
         };
         let merged = merge_resume(Some(&saved), requested);
         assert_eq!(merged.install_dir.as_deref(), Some(r"C:\Users\Efe\Games"));
@@ -246,6 +323,9 @@ mod tests {
                 install_tags: Vec::new(),
                 install_dir: None,
                 repair: false,
+                progress: 0,
+                downloaded_bytes: 0,
+                total_bytes: 0,
             },
         );
         assert_eq!(resumed.install_dir.as_deref(), Some(r"D:\Games"));
@@ -258,6 +338,9 @@ mod tests {
                 install_tags: vec!["fr".into()],
                 install_dir: None,
                 repair: false,
+                progress: 0,
+                downloaded_bytes: 0,
+                total_bytes: 0,
             },
         );
         assert_eq!(replaced.install_tags, vec!["fr".to_string()]);
@@ -269,6 +352,9 @@ mod tests {
                 install_tags: vec!["fr".into()],
                 install_dir: Some(r"C:\Games".into()),
                 repair: false,
+                progress: 0,
+                downloaded_bytes: 0,
+                total_bytes: 0,
             },
         );
         assert_eq!(fresh.install_dir.as_deref(), Some(r"C:\Games"));

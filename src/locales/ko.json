@@ -426,6 +426,7 @@
   "downloads.completedRemove": "목록에서 제거",
   "downloads.pause": "일시 중지",
   "downloads.resume": "다시 시작",
+  "downloads.resumableTitle": "중단된 다운로드",
   "downloads.settingsTitle": "다운로드 설정",
   "downloads.cdnLabel": "다운로드 서버",
   "downloads.cdnAuto": "자동",

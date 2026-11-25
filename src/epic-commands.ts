@@ -73,6 +73,22 @@ export const epicInstallGame = (appName: string, installDir?: string) =>
 /** Folder a paused/crashed transfer already writes to, if any. */
 export const epicPendingInstallDir = (appName: string) =>
   invoke<string | null>("epic_pending_install_dir", { appName });
+
+/** An unfinished install whose partial files are still on disk. */
+export interface EpicResumableDownload {
+  appName: string;
+  installDir: string;
+  installTags: string[];
+  repair: boolean;
+  /** Last percentage legendary reported, 0 when the transfer never started. */
+  progress: number;
+  downloadedBytes: number;
+  totalBytes: number;
+}
+
+/** Unfinished installs to offer after a launcher restart. */
+export const epicResumableDownloads = () =>
+  invoke<EpicResumableDownload[]>("epic_resumable_downloads");
 export const epicResumePendingDownload = () =>
   invoke<string>("epic_resume_pending_download");
 /** Verifies the installed files and redownloads the missing/corrupt ones. */

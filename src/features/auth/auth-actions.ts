@@ -6,7 +6,7 @@
  */
 
 import { isTauri } from "../../core/constants";
-import { refreshUpdates } from "../../core/epic-actions";
+import { loadEpicResumableDownloads, refreshUpdates } from "../../core/epic-actions";
 import { loadEpicAchSummaries } from "../../core/achievement-summaries";
 import { clearAchievementSummaryCache } from "../../core/achievement-cache";
 import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
@@ -106,6 +106,8 @@ export async function refreshEpic(forceSync = false): Promise<void> {
     void refreshUpdates();
     void syncEpicServerPlaytimes();
     void syncEpicLibrary(false, forceSync);
+    // The partial-file records are local, so they load even offline.
+    void loadEpicResumableDownloads();
     // Resuming a download needs the network; offline mode leaves it paused.
     if (!S.offlineMode) void epicResumePendingDownload().catch(() => {});
   } catch (e) {
@@ -344,6 +346,7 @@ export async function runProgressiveAuth(
     void syncEpicLibrary(false, true);
     void loadPlayerProfile(true);
     void loadSharedLibrary();
+    void loadEpicResumableDownloads();
     void epicResumePendingDownload().catch(() => {});
   } catch (e) {
     if (timer) clearInterval(timer);
@@ -407,6 +410,7 @@ export async function epicDoLogout(): Promise<void> {
   setEpicSummaries([]);
   setEpicGamesRaw([]);
   S.epicSkippedCount = 0;
+  S.epicResumable.clear();
   clearAchievementSummaryCache();
   S.view = "library";
   S.epicPhase = "login";
