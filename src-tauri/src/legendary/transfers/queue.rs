@@ -1560,6 +1560,15 @@ pub(super) async fn monitor_download(
             } else {
                 None
             };
+            // legendary records the bytes this transfer fetched, so a resumed
+            // or delta install reports only that part as the installed size.
+            // Measure the folder first: the EGL manifest below copies the value.
+            let config = crate::legendary::skip::default_config_dir();
+            let sized_app = app_name.clone();
+            let _ = tauri::async_runtime::spawn_blocking(move || {
+                crate::legendary::cache::refresh_installed_size(&config, &sized_app);
+            })
+            .await;
             // Keep the Epic Games Launcher's own `.item` version in step with the
             // files legendary just wrote; otherwise EGL re-offers the update.
             crate::legendary::cache::sync_egl_manifest_version(

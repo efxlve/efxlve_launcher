@@ -706,7 +706,7 @@ fn repair_move_record(config_dir: &Path, journal: &MoveJournal) {
                 "install_path".to_string(),
                 serde_json::Value::String(journal.target.clone()),
             );
-            if let Ok(updated) = serde_json::to_string_pretty(&map) {
+            if let Some(updated) = super::cache::ascii_json_pretty(&map) {
                 let _ = std::fs::write(&installed_file, updated);
             }
         }

@@ -283,6 +283,13 @@ pub async fn epic_verify_game(app: AppHandle, app_name: String) -> Result<String
     }
 
     if status.success() && critical_error.is_none() {
+        // Verification proves the files are intact; it also gives an old
+        // delta-sized record a chance to pick up the real folder size.
+        let sized_app = app_name.clone();
+        let _ = tauri::async_runtime::spawn_blocking(move || {
+            cache::refresh_installed_size(&config_dir, &sized_app);
+        })
+        .await;
         let msg = "@t:verify.successDetail".to_string();
         let _ = app.emit(
             "verify-complete",

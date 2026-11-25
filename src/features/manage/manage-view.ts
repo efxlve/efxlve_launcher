@@ -322,17 +322,17 @@ export function closeManagePopup(): void {
 }
 
 /**
- * The size row exists only once the folder is measured. Store records for a
- * companion install (Xbox packages, EA App folders) carry no size at all, so the
- * popup starts the same background walk the library uses and inserts the row
- * when the number lands. The install path row is the insertion point because
- * the files group is one list.
+ * The size row starts on the store record and is corrected by the same
+ * background folder walk the library uses. A store record can be a delta
+ * (Epic records only the resumed part of a download) or missing entirely
+ * (Xbox packages, EA App folders), so every install is measured regardless of
+ * the record. The install path row is the insertion point because the files
+ * group is one list.
  */
 function ensureManageInstallSize(appName: string): void {
   const s = summaryOf(appName);
   if (!s || !s.installed || !s.installPath) return;
-  const known = measuredSize(appName) ?? s.installSize;
-  if (known && known > 0) return;
+  if (measuredSize(appName) !== null) return;
   void ensureMeasuredSize(appName, s.installPath).then((bytes) => {
     if (!bytes || openManageAppName !== appName) return;
     const value = manageRoot?.querySelector<HTMLElement>(".mg-size-value");

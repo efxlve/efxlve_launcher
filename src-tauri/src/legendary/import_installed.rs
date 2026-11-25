@@ -353,7 +353,7 @@ pub async fn import_installed_folder(
 
     if dirty {
         let file = config.join("installed.json");
-        if let Ok(text) = serde_json::to_string_pretty(&map) {
+        if let Some(text) = super::cache::ascii_json_pretty(&map) {
             std::fs::write(file, text).map_err(|e| e.to_string())?;
         }
     }

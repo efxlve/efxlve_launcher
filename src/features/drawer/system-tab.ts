@@ -70,14 +70,14 @@ function paintCopyDrive(appName: string): void {
 }
 
 /**
- * Store metadata carries no size for a companion install (Xbox packages, EA
- * App folders), so the copy card starts the same background folder walk the
- * library uses and repaints itself when the number lands.
+ * Store metadata can be a delta (Epic records only the resumed part of a
+ * download) or carry no size at all (Xbox packages, EA App folders), so the
+ * copy card starts the same background folder walk the library uses and
+ * repaints itself when the number lands.
  */
 function ensureCopySize(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): void {
   if (!s.installed || !s.installPath) return;
-  const known = measuredSize(s.appName) ?? s.installSize;
-  if (known && known > 0) return;
+  if (measuredSize(s.appName) !== null) return;
   void ensureMeasuredSize(s.appName, s.installPath).then((bytes) => {
     if (!bytes || S.currentModalAppName !== s.appName) return;
     const body = document.getElementById("sys-copy-body");

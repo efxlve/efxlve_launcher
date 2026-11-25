@@ -321,7 +321,7 @@ pub fn remove_game_from_installed_json(config: &Path, app_name: &str) {
             let before_len = map.len();
             map.retain(|k, _| !k.eq_ignore_ascii_case(app_name));
             if map.len() != before_len {
-                if let Ok(json_str) = serde_json::to_string_pretty(&map) {
+                if let Some(json_str) = ascii_json_pretty(&map) {
                     let _ = std::fs::write(&installed_file, json_str);
                 }
             }
@@ -805,13 +805,40 @@ pub(crate) fn write_installed_map_if_unchanged(
     true
 }
 
+/// Serializes a store file the way legendary's Python writer does: ASCII only,
+/// with every non-ASCII character escaped.
+///
+/// Python opens `installed.json` with the system code page. On a Turkish
+/// Windows the page is cp1254, where a literal "™" from a title makes the whole
+/// file undecodable and legendary reports zero installed games. Its own writer
+/// avoids this with `json.dump(..., ensure_ascii=True)`, so match that.
+pub(crate) fn ascii_json_pretty<T: Serialize>(value: &T) -> Option<String> {
+    let text = serde_json::to_string_pretty(value).ok()?;
+    Some(escape_non_ascii(&text))
+}
+
+fn escape_non_ascii(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for ch in text.chars() {
+        if (ch as u32) < 0x80 {
+            out.push(ch);
+            continue;
+        }
+        let mut units = [0u16; 2];
+        for unit in ch.encode_utf16(&mut units) {
+            out.push_str(&format!("\\u{unit:04x}"));
+        }
+    }
+    out
+}
+
 /// Writes installed.json through a temporary file and keeps the previous
 /// contents as `installed.json.bak`.
 ///
 /// A reader never sees a half-written map, and a truncated file can be
 /// recovered from the backup on the next read.
 pub(crate) fn write_installed_map(config: &Path, map: &HashMap<String, InstalledGame>) {
-    let Ok(json) = serde_json::to_string_pretty(map) else {
+    let Some(json) = ascii_json_pretty(map) else {
         return;
     };
     let path = config.join("installed.json");
@@ -960,6 +987,44 @@ pub fn read_installed_with_catalog(
     v.extend(extra_tp);
     v.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
     v
+}
+
+/// Rewrites `installed.json`'s `install_size` from the files on disk.
+///
+/// legendary records the byte count of the last operation, not the size of the
+/// whole install: an update or a paused-then-resumed download reports only the
+/// remaining bytes. The manage panel labels the number as the installed disk
+/// size, so measure the folder instead of trusting that delta.
+pub fn refresh_installed_size(config: &Path, app_name: &str) -> bool {
+    let installed_file = config.join("installed.json");
+    let stamp = installed_stamp(config);
+    let Ok(text) = std::fs::read_to_string(&installed_file) else {
+        return false;
+    };
+    let Ok(mut map) =
+        serde_json::from_str::<std::collections::HashMap<String, InstalledGame>>(&text)
+    else {
+        return false;
+    };
+    let Some(key) = map
+        .keys()
+        .find(|key| key.eq_ignore_ascii_case(app_name))
+        .cloned()
+    else {
+        return false;
+    };
+    let Some(entry) = map.get_mut(&key) else {
+        return false;
+    };
+    if entry.install_path.trim().is_empty() {
+        return false;
+    }
+    let bytes = crate::storage_usage::dir_size(Path::new(&entry.install_path), 0);
+    if bytes == 0 || bytes == entry.install_size {
+        return false;
+    }
+    entry.install_size = bytes;
+    write_installed_map_if_unchanged(config, stamp, &map)
 }
 
 /// Copies legendary's freshly installed version and size into the Epic Games
@@ -1242,6 +1307,57 @@ mod tests {
             vec!["".to_string(), "FortniteBR".to_string()]
         );
         assert!(installed_install_tags(&dir, "Missing").is_empty());
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Python's `json.load` uses the system code page, so a literal "™" in a
+    /// title made installed.json unreadable on a Turkish Windows and legendary
+    /// reported every game as not installed. Keep the file ASCII-only.
+    #[test]
+    fn installed_json_stays_ascii_for_legendarys_python_reader() {
+        let dir = std::env::temp_dir().join(format!("efxlve_test_ascii_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let game_dir = dir.join("UNCHARTED");
+        std::fs::create_dir_all(&game_dir).unwrap();
+
+        let mut record = installed_record("1.0", game_dir.to_str().unwrap());
+        record.title = "UNCHARTED™ – Legacy".to_string();
+        let mut map = HashMap::new();
+        map.insert("Fortnite".to_string(), record);
+        write_installed_map(&dir, &map);
+
+        let text = std::fs::read_to_string(dir.join("installed.json")).unwrap();
+        assert!(text.is_ascii(), "legendary cannot decode non-ASCII bytes");
+        assert!(text.contains("\\u2122"));
+        let parsed: HashMap<String, InstalledGame> = serde_json::from_str(&text).unwrap();
+        assert_eq!(parsed["Fortnite"].title, "UNCHARTED™ – Legacy");
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A resumed download records only the bytes it still had to fetch. The
+    /// manage panel must show the folder it describes, not that delta.
+    #[test]
+    fn a_resumed_install_size_is_remeasured_from_disk() {
+        let dir = std::env::temp_dir().join(format!("efxlve_test_size_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let game_dir = dir.join("Fortnite");
+        std::fs::create_dir_all(game_dir.join("Paks")).unwrap();
+        std::fs::write(game_dir.join("game.bin"), vec![0u8; 100]).unwrap();
+        std::fs::write(game_dir.join("Paks").join("pak.bin"), vec![0u8; 250]).unwrap();
+
+        let mut map = HashMap::new();
+        map.insert(
+            "Fortnite".to_string(),
+            installed_record("1.0", game_dir.to_str().unwrap()),
+        );
+        write_installed_map(&dir, &map);
+
+        assert!(refresh_installed_size(&dir, "fortnite"));
+        let text = std::fs::read_to_string(dir.join("installed.json")).unwrap();
+        let map: HashMap<String, InstalledGame> = serde_json::from_str(&text).unwrap();
+        assert_eq!(map["Fortnite"].install_size, 350);
 
         let _ = std::fs::remove_dir_all(&dir);
     }
