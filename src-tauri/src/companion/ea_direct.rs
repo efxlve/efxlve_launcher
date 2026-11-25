@@ -418,15 +418,37 @@ async fn launch_plan(plan: LaunchPlan) -> Result<u32, String> {
     // The port belongs to the game, not to this process: it is released before
     // the service returns, so an EA App started later binds 3216 itself instead
     // of failing with EC:10701.
+    let mut lease = Some(lease);
     std::thread::spawn(move || {
+        // A game can start the EA App itself, mid-session (NFS Heat does for
+        // its online layer). Once the game already has its LSX connection the
+        // App can take the port; the game keeps the socket it established.
+        while child.try_wait().map(|status| status.is_none()).unwrap_or(false) {
+            if super::ea_lsx::has_connection() && ea_app_running() {
+                drop(lease.take());
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(500));
+        }
         let _ = child.wait();
-        drop(lease);
+        drop(lease.take());
         if service_was_running {
             start_service();
         }
     });
     clear_error();
     Ok(pid)
+}
+
+/// `EADesktop.exe` is the EA App, the other process that wants port 3216.
+#[cfg(windows)]
+fn ea_app_running() -> bool {
+    crate::legendary::transfers::is_game_process_running(None, &["eadesktop.exe".to_string()])
+}
+
+#[cfg(not(windows))]
+fn ea_app_running() -> bool {
+    false
 }
 
 /// `EABackgroundService` is the EA client service the game looks for first.

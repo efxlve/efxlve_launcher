@@ -32,6 +32,8 @@ static IDENTITY: Mutex<Option<super::ea_login::EaIdentity>> = Mutex::new(None);
 static STOP: AtomicBool = AtomicBool::new(false);
 /// Direct launches that still need the listener; zero releases the port.
 static SESSIONS: AtomicU32 = AtomicU32::new(0);
+/// At least one game has opened its LSX connection on this listener.
+static CONNECTED: AtomicBool = AtomicBool::new(false);
 /// The running accept loop. `None` means the port is free.
 static LISTENER: Mutex<Option<std::thread::JoinHandle<()>>> = Mutex::new(None);
 
@@ -91,6 +93,11 @@ impl Drop for Lease {
     }
 }
 
+/// True once a game has opened its LSX connection on the current listener.
+pub(crate) fn has_connection() -> bool {
+    CONNECTED.load(Ordering::SeqCst)
+}
+
 /// Starts or joins the listener for one direct launch.
 ///
 /// The game connects to `EALsxPort` (3216) while it runs. One listener serves
@@ -147,6 +154,7 @@ pub(crate) fn start(port: u16) -> std::io::Result<std::thread::JoinHandle<()>> {
     // A blocking accept cannot notice a release; a short poll keeps the port
     // free within a moment of the last game exiting.
     listener.set_nonblocking(true)?;
+    CONNECTED.store(false, Ordering::SeqCst);
     eprintln!("LSX listening on 127.0.0.1:{port}");
     Ok(std::thread::spawn(move || loop {
         if STOP.load(Ordering::SeqCst) {
@@ -155,6 +163,7 @@ pub(crate) fn start(port: u16) -> std::io::Result<std::thread::JoinHandle<()>> {
         match listener.accept() {
             Ok((stream, _)) => {
                 let _ = stream.set_nonblocking(false);
+                CONNECTED.store(true, Ordering::SeqCst);
                 eprintln!("LSX connect: {:?}", stream.peer_addr());
                 std::thread::spawn(move || {
                     if let Err(err) = serve(stream) {
