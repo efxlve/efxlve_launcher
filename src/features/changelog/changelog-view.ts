@@ -30,6 +30,20 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.70",
+    date: "2026-11-25",
+    fixed: [
+      {
+        en: "Starting or resuming an Epic download shows the transfer immediately, so the game no longer disappears while the launcher prepares it.",
+        tr: "Bir Epic indirmesi başlatıldığında veya devam ettirildiğinde indirme hemen görünüyor; hazırlanırken oyun artık kaybolmuyor.",
+      },
+      {
+        en: "Pressing Resume on a download that is already running shows its live progress instead of an \"another download is active\" error.",
+        tr: "Zaten çalışan bir indirmede Devam Et'e basmak artık \"başka bir aktif indirme var\" hatası yerine gerçek ilerlemeyi gösteriyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.69",
     date: "2026-11-25",
     improved: [
