@@ -30,6 +30,26 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.73",
+    date: "2026-11-25",
+    added: [
+      {
+        en: "Paste a list of achievement names into the achievement editor to mark them as earned in one go.",
+        tr: "Başarım düzenleyicisine bir başarım adları listesi yapıştırarak hepsini tek seferde kazanılmış olarak işaretleyin.",
+      },
+    ],
+    fixed: [
+      {
+        en: "EOS achievements stay on the game after it is uninstalled instead of disappearing with the install.",
+        tr: "EOS başarımları oyun kaldırıldıktan sonra kurulumla birlikte kaybolmak yerine oyunda kalıyor.",
+      },
+      {
+        en: "The EA App no longer reports the port 3216 error when a game started from the launcher opens it for online play.",
+        tr: "Launcher'dan başlatılan bir oyun online oynamak için EA App'i açtığında EA App artık 3216 portu hatası vermiyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.72",
     date: "2026-11-25",
     fixed: [
