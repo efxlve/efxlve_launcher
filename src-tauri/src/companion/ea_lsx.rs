@@ -468,7 +468,13 @@ fn handle_request(message: &str, content_id: &str) -> Option<String> {
                 r#"<LSX><Response sender="{recipient}" id="{id}"><AuthCode value="{code}"/></Response></LSX>"#
             ))
         }
-        "SetPresence" | "ShowIGOWindow" | "SetDownloaderUtilization" | "GetVoipStatus" => None,
+        "SetPresence" => Some(format!(
+            r#"<LSX><Response sender="{recipient}" id="{id}"><ErrorSuccess Code="0" Description=""/></Response></LSX>"#
+        )),
+        "GetVoipStatus" => Some(format!(
+            r#"<LSX><Response sender="{recipient}" id="{id}"><GetVoipStatusResponse Available="false" Active="false"/></Response></LSX>"#
+        )),
+        "ShowIGOWindow" | "SetDownloaderUtilization" => None,
         _ => {
             eprintln!("LSX unhandled request: {name}");
             None
@@ -645,5 +651,17 @@ mod tests {
         let response = profile_response("EALS", "4", &identity, "1003");
         assert!(response.contains(r#"UserId="1003""#), "{response}");
         assert!(response.contains(r#"PersonaId="1003""#), "{response}");
+    }
+
+    #[test]
+    fn presence_and_voice_requests_are_answered() {
+        let presence =
+            r#"<LSX><Request recipient="XMPP" id="9"><SetPresence UserId="1" Presence="ONLINE"/></Request></LSX>"#;
+        let response = handle_request(presence, "1026480").expect("presence response");
+        assert!(response.contains("ErrorSuccess"), "{response}");
+        let voip =
+            r#"<LSX><Request recipient="EALS" id="10"><GetVoipStatus/></Request></LSX>"#;
+        let response = handle_request(voip, "1026480").expect("voip response");
+        assert!(response.contains(r#"Available="false""#), "{response}");
     }
 }

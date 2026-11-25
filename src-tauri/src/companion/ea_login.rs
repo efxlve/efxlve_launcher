@@ -212,24 +212,7 @@ pub(crate) async fn auth_code(access: &str, client_id: &str) -> Result<String, S
     let pc_sign = tokio::task::spawn_blocking(pcsign::generate)
         .await
         .map_err(|e| e.to_string())??;
-    let verifier = new_verifier();
-    let code_challenge = challenge(&verifier);
-    let nonce = rand::random::<i32>().to_string();
-
-    let mut url = url::Url::parse(AUTH_URL).map_err(|e| e.to_string())?;
-    {
-        let mut query = url.query_pairs_mut();
-        query
-            .append_pair("client_id", client_id)
-            .append_pair("sbiod_enabled", "false")
-            .append_pair("response_type", "code")
-            .append_pair("locale", "en_US")
-            .append_pair("pc_sign", &pc_sign)
-            .append_pair("nonce", &nonce)
-            .append_pair("code_challenge_method", "S256")
-            .append_pair("code_challenge", &code_challenge)
-            .append_pair("access_token", access);
-    }
+    let url = auth_code_url(access, client_id, &pc_sign)?;
 
     let client = reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
@@ -244,13 +227,20 @@ pub(crate) async fn auth_code(access: &str, client_id: &str) -> Result<String, S
         .get("location")
         .and_then(|value| value.to_str().ok())
         .ok_or_else(|| "EA auth code: no redirect".to_string())?;
-    let location = if location.starts_with("qrc") {
+    let was_qrc = location.starts_with("qrc");
+    let location = if was_qrc {
         location.replace("qrc:/html", "http://127.0.0.1")
     } else {
         location.to_string()
     };
     let parsed = url::Url::parse(&location).map_err(|e| e.to_string())?;
-    let query = parsed.fragment().or_else(|| parsed.query()).unwrap_or("");
+    // The account client answers in the qrc fragment; a game client uses the
+    // query of its own redirect URI.
+    let query = if was_qrc {
+        parsed.fragment().or_else(|| parsed.query()).unwrap_or("")
+    } else {
+        parsed.query().unwrap_or("")
+    };
     for pair in query.split('&') {
         let (key, value) = pair.split_once('=').unwrap_or((pair, ""));
         if key == "code" {
@@ -258,6 +248,34 @@ pub(crate) async fn auth_code(access: &str, client_id: &str) -> Result<String, S
         }
     }
     Err("EA auth code: code missing".into())
+}
+
+/// The authorization URL for one client.
+///
+/// PKCE belongs to the account client, which exchanges this code itself. A
+/// game client owns its own redirect and rejects the extra challenge.
+fn auth_code_url(access: &str, client_id: &str, pc_sign: &str) -> Result<url::Url, String> {
+    let nonce = rand::random::<i32>().to_string();
+    let mut url = url::Url::parse(AUTH_URL).map_err(|e| e.to_string())?;
+    {
+        let mut query = url.query_pairs_mut();
+        query
+            .append_pair("client_id", client_id)
+            .append_pair("sbiod_enabled", "false")
+            .append_pair("response_type", "code")
+            .append_pair("locale", "en_US")
+            .append_pair("pc_sign", pc_sign)
+            .append_pair("nonce", &nonce);
+        if client_id == CLIENT_ID {
+            let verifier = new_verifier();
+            let code_challenge = challenge(&verifier);
+            query
+                .append_pair("code_challenge_method", "S256")
+                .append_pair("code_challenge", &code_challenge);
+        }
+        query.append_pair("access_token", access);
+    }
+    Ok(url)
 }
 
 /* ---------- Sign-in window ---------- */
@@ -1131,6 +1149,19 @@ mod tests {
         assert!(url.contains("code_challenge_method=S256"));
         // The redirect must stay a custom scheme.
         assert!(url.contains("redirect_uri=qrc%3A%2F%2F%2Fhtml%2Flogin_successful.html"));
+    }
+
+    #[test]
+    fn only_the_account_client_gets_a_pkce_challenge() {
+        let game = auth_code_url("token", "NFSHEAT_PC_CLIENT", "payload.sig").expect("game url");
+        let game_query = game.query().unwrap_or("");
+        assert!(!game_query.contains("code_challenge"), "{game_query}");
+        assert!(game_query.contains("access_token=token"), "{game_query}");
+
+        let account = auth_code_url("token", CLIENT_ID, "payload.sig").expect("account url");
+        let account_query = account.query().unwrap_or("");
+        assert!(account_query.contains("code_challenge_method=S256"), "{account_query}");
+        assert!(account_query.contains("code_challenge="), "{account_query}");
     }
 
     #[test]
