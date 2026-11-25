@@ -312,6 +312,9 @@ fn handle_request(message: &str, content_id: &str) -> Option<String> {
             let value = match key.as_str() {
                 "IS_IGO_ENABLED" | "IS_IGO_AVAILABLE" => "false",
                 "ENVIRONMENT" => "production",
+                // NFS Heat asks for the installed language as a setting
+                // instead of only through `GetGameInfo`.
+                "LANGUAGE" => "en_US",
                 _ => "",
             };
             Some(format!(
@@ -322,6 +325,8 @@ fn handle_request(message: &str, content_id: &str) -> Option<String> {
             let key = attribute(&inner, "GameInfoId").unwrap_or_default();
             let value = match key.as_str() {
                 "FREETRIAL" => "false",
+                // NFS Heat checks ownership before it leaves its boot screen.
+                "FULLGAME_PURCHASED" => "true",
                 "LANGUAGES" => "ar_SA,de_DE,en_US,es_ES,es_MX,fr_FR,it_IT,ja_JP,ko_KR,pl_PL,pt_BR,ru_RU,zh_CN,zh_TW",
                 "INSTALLED_LANGUAGE" => "en_US",
                 _ => "",

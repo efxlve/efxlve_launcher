@@ -166,8 +166,9 @@ pub(crate) fn plan(install_path: &str, store_id: &str) -> Result<LaunchPlan, Pla
 /// Builds the environment the EA app sets before it starts a game.
 ///
 /// The values follow the EA client's own launch block. `EALicenseToken` is the
-/// app's offline placeholder; the account token is what the game and EA's
-/// backend use for entitlement and presence. No value is logged.
+/// game's own offer id and `EASecureLaunchTokenTemp` the signed-in user, so a
+/// game never receives another title's id; the account token is what the game
+/// and EA's backend use for entitlement and presence. No value is logged.
 pub(crate) fn environment(
     access: &str,
     launch_token: &str,
@@ -185,6 +186,11 @@ pub(crate) fn environment(
     } else {
         locale.trim()
     };
+    // The owned catalog keys offers by content id; the content id is the only
+    // identity that is still right when the catalog has no row for the copy.
+    let license_token = super::ea_login::offer_for_content(&plan.content_id)
+        .unwrap_or_else(|| plan.content_id.clone());
+    let user_id = super::ea_login::persona_id(access).unwrap_or_default();
 
     vec![
         ("EAAuthCode".into(), "NeedsAFreshAuthCode".into()),
@@ -202,10 +208,10 @@ pub(crate) fn environment(
         ("EALaunchOfflineMode".into(), "false".into()),
         ("EALaunchOwner".into(), "EA".into()),
         ("EALaunchUserAuthToken".into(), launch_token.into()),
-        ("EALicenseToken".into(), "Origin.OFR.50.0000721".into()),
+        ("EALicenseToken".into(), license_token),
         ("EALsxPort".into(), "3216".into()),
         ("EARtPLaunchCode".into(), rtp_handshake().to_string()),
-        ("EASecureLaunchTokenTemp".into(), "1001006949032".into()),
+        ("EASecureLaunchTokenTemp".into(), user_id),
         ("EASteamProxyIpcPort".into(), "1704".into()),
         ("EAUseIGOAPI".into(), "1".into()),
         ("ContentId".into(), plan.content_id.clone()),
@@ -1098,6 +1104,8 @@ mod tests {
 
     #[test]
     fn the_environment_carries_the_token_and_content_id() {
+        use base64::Engine;
+
         let plan = LaunchPlan {
             exe: PathBuf::from(r"C:\Games\ItTakesTwo\ItTakesTwo.exe"),
             work_dir: PathBuf::from(r"C:\Games\ItTakesTwo"),
@@ -1106,17 +1114,21 @@ mod tests {
             eaac: false,
             ooa: false,
         };
-        let env = environment("token-value", "short-value", "Efe", "tr_TR", &plan);
+        let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .encode(br#"{"nexus":{"psid":1005725578979}}"#);
+        let access = format!("header.{payload}.signature");
+        let env = environment(&access, "short-value", "Efe", "tr_TR", &plan);
         let map: std::collections::HashMap<&str, &str> = env
             .iter()
             .map(|(key, value)| (key.as_str(), value.as_str()))
             .collect();
         assert_eq!(map["EALaunchUserAuthToken"], "short-value");
-        assert_eq!(map["EAGenericAuthToken"], "token-value");
+        assert_eq!(map["EAGenericAuthToken"], access);
         assert_eq!(map["EALaunchEAID"], "Efe");
         assert_eq!(map["EAGameLocale"], "tr_TR");
         assert_eq!(map["ContentId"], "194814");
         assert_eq!(map["EAConnectionId"], "194814");
+        assert_eq!(map["EASecureLaunchTokenTemp"], "1005725578979");
         assert_eq!(map["EALaunchOfflineMode"], "false");
         assert!(!map.contains_key("EALicenseFile"));
     }

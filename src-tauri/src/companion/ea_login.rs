@@ -749,6 +749,25 @@ pub(crate) fn owned_for_slug(slug: &str) -> Option<OwnedGame> {
     cached_owned().into_iter().find(|game| game.slug == slug)
 }
 
+/// The Origin offer id for a content id, from the cached owned catalog.
+///
+/// The EA client hands a game its own offer id at launch; a game launched from
+/// another title's constant checks the wrong entitlement during activation.
+pub(crate) fn offer_for_content(content_id: &str) -> Option<String> {
+    let wanted = content_id.trim();
+    if wanted.is_empty() {
+        return None;
+    }
+    cached_owned()
+        .into_iter()
+        .find(|row| {
+            (!row.content_id.is_empty() && row.content_id.eq_ignore_ascii_case(wanted))
+                || row.id.eq_ignore_ascii_case(wanted)
+        })
+        .map(|row| row.id)
+        .filter(|id| !id.is_empty())
+}
+
 /// The legacy `executePathOverride` and its arguments for a pre-DiP row.
 pub(crate) fn legacy_launch_for(game: &FoundGame) -> Option<(String, String)> {
     let wanted = ea::normalize_title(&game.name);
