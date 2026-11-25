@@ -62,20 +62,24 @@ export async function applySelectiveInstall(appName: string, tags: string[], dlc
   // the explicit "required content only" choice.
   if (installTags.length === 0) installTags.push("");
   closeSelectiveModal();
-  S.downloads.set(appName, { progress: 0, done: false, title });
+  // Resuming a partial install keeps its percentage and drops the resume row.
+  const resume = S.epicResumable.get(appName);
+  const startProgress = resume?.progress ?? 0;
+  S.downloads.set(appName, { progress: startProgress, done: false, title });
+  S.epicResumable.delete(appName);
   if (!S.activeDlMetrics || S.activeDlMetrics.done) {
     S.activeDlMetrics = {
       id: appName,
       title,
-      progress: 0,
+      progress: startProgress,
       done: false,
       speed: t("dl.starting"),
       speedBytes: 0,
       diskSpeed: "—",
       diskBytes: 0,
       eta: t("dl.calculating"),
-      downloadedBytes: 0,
-      totalBytes: 0,
+      downloadedBytes: resume?.downloadedBytes ?? 0,
+      totalBytes: resume?.totalBytes ?? 0,
       phase: "starting",
     };
   }

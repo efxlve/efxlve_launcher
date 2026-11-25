@@ -486,11 +486,15 @@ pub(super) fn start_download_request(
         &crate::legendary::download_resume::resumes_path(),
         &request.app_name,
     );
-    let resuming = saved.is_some();
-    let mut merged = pending_from_record(crate::legendary::download_resume::merge_resume(
+    let merged_record = crate::legendary::download_resume::merge_resume(
         saved.as_ref(),
         record_from_pending(&request),
-    ));
+    );
+    // Captured before the pending request drops the display-only fields.
+    let start_progress = merged_record.progress;
+    let start_downloaded = merged_record.downloaded_bytes;
+    let start_total = merged_record.total_bytes;
+    let mut merged = pending_from_record(merged_record);
     // An installed copy keeps the selection it was installed with. A bare
     // update carries no tags, and expanding that as a fresh install would
     // re-add every default pack the user left out.
@@ -625,11 +629,24 @@ pub(super) fn start_download_request(
     let stdout = child.stdout.take();
     let stderr = child.stderr.take();
     persist_resume(&request);
-    // A resumed install must not flash 0%. Legendary's own progress line is the
-    // first percent we publish. A brand-new install still starts at 0.
-    if !resuming {
-        emit_progress(app, &request.app_name, 0, false);
-    }
+    // Publish the row before legendary reaches its first progress line: the
+    // analysis phase can stay silent for minutes on a large install, and the UI
+    // must not drop the game while it waits. A resume keeps its last percentage.
+    emit_progress_full(
+        app,
+        &request.app_name,
+        start_progress,
+        false,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        (start_downloaded > 0).then_some(start_downloaded),
+        (start_total > 0).then_some(start_total),
+    );
+    emit_phase(app, &request.app_name, "starting");
     let app2 = app.clone();
     tauri::async_runtime::spawn(async move {
         // A queued transfer keeps the machine awake from spawn to exit.
@@ -730,12 +747,6 @@ pub fn emit_progress_full(
             downloaded_bytes,
             total_bytes,
         },
-    );
-}
-
-pub(super) fn emit_progress(app: &AppHandle, id: &str, progress: u8, done: bool) {
-    emit_progress_full(
-        app, id, progress, done, None, None, None, None, None, None, None, None,
     );
 }
 
