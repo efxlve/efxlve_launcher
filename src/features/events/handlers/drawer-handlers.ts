@@ -18,6 +18,10 @@ import {
   type AchievementEditMeta,
 } from "../../../core/achievement-edits";
 import { recordAchievementUnlocks } from "../../../core/achievement-history";
+import {
+  matchAchievementImport,
+  parseAchievementImport,
+} from "../../../core/achievement-import";
 import { toggleAchievementPin } from "../../../core/achievement-pins";
 import { addAchievementGuide, deleteAchievementNote, flushAchievementNoteSave, removeAchievementGuide } from "../../drawer/ach-notes";
 import { setRaGame } from "../../../core/ra-games";
@@ -776,6 +780,41 @@ export function handleDrawerAction(act: string | undefined, t: HTMLElement, id?:
         setAchievementEdit(appName, achievementEditMeta(appName), item.name, "locked", facts.date);
       }
       applyAchievementEditsNow(appName);
+      return true;
+    }
+
+    case "ach-edit-bulk-mark": {
+      const appName = id ?? S.currentModalAppName;
+      const data = appName ? S.loadedAchievements.get(appName) : undefined;
+      if (!appName || !data) return true;
+      const input = document.getElementById("ach-bulk-input") as HTMLTextAreaElement | null;
+      // A pasted list is one entry per line, but a comma-separated row and the
+      // quotes a JSON copy leaves behind are just as common.
+      const tokens = parseAchievementImport(input?.value ?? "");
+      if (tokens.length === 0) {
+        toast(i18n("ach.editorBulkEmpty"), "err");
+        return true;
+      }
+      const { matched, missed } = matchAchievementImport(tokens, data.achievements);
+      // Only the achievements the store has not reported yet become edits; a
+      // mark the store already agrees with would add an empty edit, and an
+      // existing mark keeps the day it was made.
+      let added = 0;
+      for (const item of matched) {
+        if (storeFactsOf(item).unlocked || item.user_state === "unlocked") continue;
+        setAchievementEdit(appName, achievementEditMeta(appName), item.name, "unlocked");
+        added += 1;
+      }
+      if (added > 0) applyAchievementEditsNow(appName);
+      if (added > 0 && missed > 0) {
+        toast(i18n("ach.editorBulkResult", { n: added, missed }), "ok");
+      } else if (added > 0) {
+        toast(i18n("ach.editorBulkDone", { n: added }), "ok");
+      } else if (missed > 0) {
+        toast(i18n("ach.editorBulkResult", { n: 0, missed }), "err");
+      } else {
+        toast(i18n("ach.editorBulkNone"), "ok");
+      }
       return true;
     }
 

@@ -3664,6 +3664,26 @@ details[open] > .ach-detail-section-summary .ach-detail-section-chevron {
 }
 .ach-edit-count.is-marked { color: var(--ok); }
 .ach-edit-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.ach-edit-bulk { display: flex; flex-direction: column; gap: 7px; padding-top: 10px; border-top: 1px solid var(--line); }
+.ach-edit-bulk-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.ach-edit-bulk-title { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font-size: 12px; font-weight: 600; }
+.ach-edit-bulk-hint { color: var(--text-3); font-size: 11px; }
+.ach-edit-bulk-input {
+  width: 100%;
+  min-height: 64px;
+  padding: 8px 10px;
+  resize: vertical;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.ach-edit-bulk-input::placeholder { color: var(--text-3); }
+.ach-edit-bulk-input:focus { outline: none; border-color: var(--line-strong); }
+.ach-edit-bulk-row { display: flex; justify-content: flex-end; }
 .ach-edit-list { display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow-y: auto; scrollbar-width: thin; }
 .ach-edit-list-title { padding: 2px 0 6px; color: var(--text-3); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
 .ach-edit-empty { display: flex; align-items: center; gap: 7px; padding: 4px 0; color: var(--text-3); font-size: 11.5px; }

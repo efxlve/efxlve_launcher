@@ -85,6 +85,16 @@ export function renderAchievementEditorCard(
           ? ""
           : `<button type="button" class="btn ghost small" data-act="ach-edit-sync" data-id="${esc(appName)}">${icon("refresh", 12)}<span>${esc(t("ach.editorSync", { store }))}</span></button>`}
       </div>
+      <div class="ach-edit-bulk">
+        <div class="ach-edit-bulk-head">
+          <span class="ach-edit-bulk-title">${icon("list", 13)}<span>${esc(t("ach.editorBulkTitle"))}</span></span>
+          <span class="ach-edit-bulk-hint">${esc(t("ach.editorBulkHint"))}</span>
+        </div>
+        <textarea id="ach-bulk-input" class="ach-edit-bulk-input" rows="3" spellcheck="false" aria-label="${esc(t("ach.editorBulkTitle"))}" placeholder="${esc(t("ach.editorBulkPlaceholder"))}"></textarea>
+        <div class="ach-edit-bulk-row">
+          <button type="button" class="btn ghost small" data-act="ach-edit-bulk-mark" data-id="${esc(appName)}">${icon("unlock", 12)}<span>${esc(t("ach.editorBulkButton"))}</span></button>
+        </div>
+      </div>
       <div class="ach-edit-list">
         ${
           edited.length > 0
