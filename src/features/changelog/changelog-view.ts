@@ -30,6 +30,20 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.72",
+    date: "2026-11-25",
+    fixed: [
+      {
+        en: "Online services in EA games started without the EA App now sign in correctly instead of reporting online functions as unavailable.",
+        tr: "EA App olmadan başlatılan EA oyunlarında çevrimiçi servisler artık \"çevrimiçi işlevler kullanılamıyor\" demek yerine doğru şekilde oturum açıyor.",
+      },
+      {
+        en: "The presence and voice-status requests EA games send to the client are answered, so they no longer wait on a missing reply.",
+        tr: "EA oyunlarının istemciye gönderdiği durum ve ses durumu istekleri artık cevaplanıyor; eksik yanıtı beklemiyorlar.",
+      },
+    ],
+  },
+  {
     version: "0.1.71",
     date: "2026-11-25",
     fixed: [
