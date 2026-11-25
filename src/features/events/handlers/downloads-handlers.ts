@@ -46,6 +46,7 @@ import {
 import { toggleIgnoreUpdate } from "../../downloads/downloads-view";
 import {
   epicCleanupCache,
+  epicGetQueue,
   epicImportInstalledFolder,
   epicMeasureCdns,
   epicPauseDownload,
@@ -221,10 +222,29 @@ export function handleDownloadsAction(act: string | undefined, t: HTMLElement, i
             // A restored resumable row is now a live transfer.
             S.epicResumable.delete(id);
             toast(msg, "");
-            if (S.view === "downloads") render();
-            else if (S.view === "library") patchLibraryCardDom(id);
+            void epicGetQueue()
+              .then((q) => {
+                S.dlQueueStatus = q;
+                if (S.view === "downloads") render();
+                else if (S.view === "library") patchLibraryCardDom(id);
+              })
+              .catch(() => {
+                if (S.view === "downloads") render();
+                else if (S.view === "library") patchLibraryCardDom(id);
+              });
           })
-          .catch((err) => toast(String(err), "err"));
+          .catch((err) => {
+            toast(String(err), "err");
+            // The refusal usually means another transfer already owns the
+            // backend. Refresh the queue so its card replaces the stale page.
+            void epicGetQueue()
+              .then((q) => {
+                S.dlQueueStatus = q;
+                if (S.view === "downloads") render();
+                else if (S.view === "library") patchLibraryCardDom(id);
+              })
+              .catch(() => {});
+          });
       }
       return true;
 

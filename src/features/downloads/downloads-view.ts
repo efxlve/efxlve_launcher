@@ -307,6 +307,25 @@ function activeDownload(): DlMetrics | null {
     if (d && !d.done) {
       return { id, title: d.title, progress: d.progress, done: false, speed: "—", speedBytes: 0, diskSpeed: "—", diskBytes: 0, eta: t("common.calculating"), downloadedBytes: 0, totalBytes: 0 };
     }
+    // The backend says this transfer is active but its first progress event has
+    // not reached the page yet. Show a starting card instead of an empty page
+    // while legendary analyses the install.
+    if (S.dlQueueStatus.active === id) {
+      return {
+        id,
+        title: summaryOf(id)?.title || id,
+        progress: 0,
+        done: false,
+        speed: t("dl.starting"),
+        speedBytes: 0,
+        diskSpeed: "—",
+        diskBytes: 0,
+        eta: t("common.calculating"),
+        downloadedBytes: 0,
+        totalBytes: 0,
+        phase: "starting",
+      };
+    }
   }
   return null;
 }

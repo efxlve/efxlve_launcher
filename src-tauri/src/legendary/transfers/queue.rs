@@ -1941,7 +1941,13 @@ pub async fn epic_resume_download(
 
     {
         let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
-        if s.active.is_some() {
+        if let Some(active) = s.active.as_deref() {
+            // The same game is already starting or running: the click is a
+            // duplicate from a row that has not heard the first progress event
+            // yet, not a reason to refuse.
+            if active == app_name.as_str() {
+                return Ok("@t:dl.alreadyQueued".into());
+            }
             return Err("@t:dl.anotherActive".into());
         }
         s.paused = false;
