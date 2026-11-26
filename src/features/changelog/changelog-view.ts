@@ -50,12 +50,8 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
     ],
     fixed: [
       {
-        en: "Settings > Launchers rescans when you open it and now has a Rescan button, so a client installed after the last visit appears without restarting.",
-        tr: "Ayarlar > Başlatıcılar sayfası açıldığında yeniden tarıyor ve artık bir Yeniden Tara düğmesi var; son ziyaretten sonra kurulan istemci uygulamayı yeniden başlatmadan görünüyor.",
-      },
-      {
-        en: "The Epic Games Launcher is found in its new per-user install folder, and the optional handoff has its own labelled row instead of an unexplained switch.",
-        tr: "Epic Games Launcher yeni kullanıcıya özel kurulum klasöründe bulunuyor; isteğe bağlı devretme de artık açıklamasız bir anahtar yerine kendi etiketli satırında.",
+        en: "Settings > Launchers rescans when you open it and has a Rescan button, and the Epic Games Launcher is found in its new per-user install folder.",
+        tr: "Ayarlar > Başlatıcılar sayfası açıldığında yeniden tarıyor ve bir Yeniden Tara düğmesi var; Epic Games Launcher yeni kullanıcıya özel kurulum klasöründe bulunuyor.",
       },
       {
         en: "With the handoff switch on, starting a new Epic or GOG download opens the official client instead of downloading inside Efxlve.",
