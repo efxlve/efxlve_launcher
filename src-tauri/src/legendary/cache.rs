@@ -689,7 +689,15 @@ pub fn refresh_installed_from_egl(config: &Path, app_name: &str) -> bool {
     let Ok(mut map) = serde_json::from_str::<HashMap<String, InstalledGame>>(&text) else {
         return false;
     };
-    if merge_egl_record(&mut map, &egl) == EglMerge::Unchanged {
+    // The catalog version is only needed when the two records disagree; it lets
+    // a version this launcher installed win over an EGL record it never touched.
+    let version_differs = map
+        .get(&egl.app_name)
+        .is_some_and(|game| game.version.trim() != egl.version.trim());
+    let latest = version_differs
+        .then(|| catalog_build_version(config, None, &egl.app_name))
+        .flatten();
+    if merge_egl_record(&mut map, &egl, latest.as_deref()) == EglMerge::Unchanged {
         return false;
     }
     if crate::legendary::transfers::transfer_active() {
@@ -750,22 +758,38 @@ fn same_install_path(left: &str, right: &str) -> bool {
     !left.is_empty() && left == right
 }
 
-/// Whether EGL's `.item` build should replace the version in installed.json.
+/// Whether EGL's record should replace the version in installed.json.
 ///
 /// EGL writes its manifest when it installs or updates a game, so its record
-/// describes the files on disk and is the only safe diff base for legendary.
-/// The catalog build version is used to prompt for an update, never to decide
-/// which on-disk record to trust.
-fn egl_version_wins(installed: &str, egl: &str) -> bool {
+/// normally describes the files on disk. The exception is a version this
+/// launcher just installed: legendary rewrites installed.json but the EGL v2
+/// transaction log keeps the build it saw before. There the installed record
+/// already names the catalog's latest build and EGL is the stale side. Adopting
+/// it would put the phantom update back and hand legendary a diff base the
+/// files on disk never matched.
+fn egl_version_wins(installed: &str, egl: &str, latest: Option<&str>) -> bool {
     let egl = egl.trim();
-    !egl.is_empty() && installed.trim() != egl
+    if egl.is_empty() {
+        return false;
+    }
+    let installed = installed.trim();
+    if installed == egl {
+        return false;
+    }
+    let installed_is_latest = latest.is_some_and(|latest| {
+        let latest = display_version(latest);
+        !latest.is_empty() && display_version(installed) == latest
+    });
+    !installed_is_latest
 }
 
-/// Applies one EGL manifest to the installed map: imports the game when it is
-/// unknown, otherwise follows EGL's version.
+/// Applies one EGL record to the installed map: imports the game when it is
+/// unknown, otherwise follows EGL's version unless installed.json already names
+/// the catalog's latest build.
 pub fn merge_egl_record(
     map: &mut HashMap<String, InstalledGame>,
     egl: &EglDetectedGame,
+    latest: Option<&str>,
 ) -> EglMerge {
     let Some(existing) = map.get_mut(&egl.app_name) else {
         map.insert(
@@ -797,7 +821,7 @@ pub fn merge_egl_record(
     };
     // A different folder is a second copy; legendary's record still owns its own.
     if !same_install_path(&existing.install_path, &egl.install_path)
-        || !egl_version_wins(&existing.version, &egl.version)
+        || !egl_version_wins(&existing.version, &egl.version, latest)
     {
         return EglMerge::Unchanged;
     }
@@ -806,6 +830,46 @@ pub fn merge_egl_record(
         existing.install_size = egl.install_size;
     }
     EglMerge::Updated
+}
+
+/// Build version the catalog currently offers for `app_name`.
+///
+/// The metadata file wins over the library snapshot: legendary rewrites it
+/// during an install, while the snapshot can still name the old build. The
+/// snapshot is the fallback for a game whose metadata file has not been cached.
+pub fn catalog_build_version(
+    config: &Path,
+    catalog: Option<&[LegendaryGame]>,
+    app_name: &str,
+) -> Option<String> {
+    let from_metadata = {
+        let path = config.join("metadata").join(format!("{app_name}.json"));
+        std::fs::read_to_string(path)
+            .ok()
+            .and_then(|text| serde_json::from_str::<Value>(&text).ok())
+            .and_then(|val| {
+                val.pointer("/asset_infos/Windows/build_version")
+                    .and_then(|v| v.as_str())
+                    .or_else(|| {
+                        val.pointer("/metadata/customAttributes/BuildVersion/value")
+                            .and_then(|v| v.as_str())
+                    })
+                    .map(|v| v.trim().to_string())
+            })
+            .filter(|v| !v.is_empty())
+    };
+    if from_metadata.is_some() {
+        return from_metadata;
+    }
+    catalog
+        .and_then(|games| {
+            games
+                .iter()
+                .find(|g| g.app_name.eq_ignore_ascii_case(app_name))
+        })
+        .and_then(|game| game.asset_infos.get("Windows"))
+        .map(|asset| asset.build_version.trim().to_string())
+        .filter(|v| !v.is_empty())
 }
 
 #[cfg(windows)]
@@ -1224,7 +1288,17 @@ pub fn read_installed_with_catalog(
             &egl.version,
             "Windows",
         );
-        if merge_egl_record(&mut map, &egl) != EglMerge::Unchanged {
+        // A different EGL version normally means EGL installed or updated the
+        // game. When installed.json already names the catalog build, EGL's
+        // record is the stale side: legendary updated the files but the EGL v2
+        // transaction log still describes the old build.
+        let version_differs = map
+            .get(&egl.app_name)
+            .is_some_and(|game| game.version.trim() != egl.version.trim());
+        let latest = version_differs
+            .then(|| catalog_build_version(config, catalog, &egl.app_name))
+            .flatten();
+        if merge_egl_record(&mut map, &egl, latest.as_deref()) != EglMerge::Unchanged {
             changed = true;
         }
     }
@@ -1297,6 +1371,10 @@ pub fn refresh_installed_size(config: &Path, app_name: &str) -> bool {
 /// with the catalog. legendary rewrites `installed.json` but never touches the
 /// `.item`, so without this sync the official launcher offers the very same
 /// update again right after this launcher already installed it.
+///
+/// The rebuilt launcher keeps no `.item` files. Its transaction log is only
+/// read here; `merge_egl_record` refuses to roll installed.json back to the
+/// build that log still names after this launcher installed a newer one.
 pub fn sync_egl_manifest_version(config: &Path, app_name: &str) {
     let dir = egl_manifests_dir();
     if !dir.is_dir() {
@@ -1952,22 +2030,112 @@ mod tests {
             "Fortnite".to_string(),
             installed_record("1.0", "C:\\Games\\Fortnite"),
         )]);
-        let merge = merge_egl_record(&mut map, &egl_game("2.0", "C:\\Games\\Fortnite"));
+        let merge = merge_egl_record(
+            &mut map,
+            &egl_game("2.0", "C:\\Games\\Fortnite"),
+            Some("2.0"),
+        );
         assert_eq!(merge, EglMerge::Updated);
         assert_eq!(map["Fortnite"].version, "2.0");
     }
 
-    /// EGL's `.item` describes the manifest on disk. It stays the diff base even
-    /// when the catalog still names another build; the catalog only decides
-    /// whether an update is offered.
+    /// The reported phantom update: legendary installed the catalog build and
+    /// the EGL record never changed. That record must not roll installed.json
+    /// back, or every refresh offers the same update again.
     #[test]
-    fn a_live_egl_record_owns_the_diff_base() {
+    fn a_stale_egl_record_does_not_roll_back_the_catalog_build() {
         let mut map = HashMap::from([(
             "Fortnite".to_string(),
             installed_record("2.0", "C:\\Games\\Fortnite"),
         )]);
         assert_eq!(
-            merge_egl_record(&mut map, &egl_game("1.0", "C:\\Games\\Fortnite")),
+            merge_egl_record(
+                &mut map,
+                &egl_game("1.0", "C:\\Games\\Fortnite"),
+                Some("2.0")
+            ),
+            EglMerge::Unchanged
+        );
+        assert_eq!(map["Fortnite"].version, "2.0");
+    }
+
+    /// The platform suffix EGL appends names the same build as the catalog.
+    #[test]
+    fn a_platform_suffix_is_not_a_stale_egl_record() {
+        let mut map = HashMap::from([(
+            "Fortnite".to_string(),
+            installed_record(
+                "++Fortnite+Release-43.11-CL-60803671-Windows",
+                "C:\\Games\\Fortnite",
+            ),
+        )]);
+        assert_eq!(
+            merge_egl_record(
+                &mut map,
+                &egl_game(
+                    "++Fortnite+Release-42.00-CL-50000000-Windows",
+                    "C:\\Games\\Fortnite"
+                ),
+                Some("++Fortnite+Release-43.11-CL-60803671"),
+            ),
+            EglMerge::Unchanged
+        );
+        assert_eq!(
+            map["Fortnite"].version,
+            "++Fortnite+Release-43.11-CL-60803671-Windows"
+        );
+    }
+
+    #[test]
+    fn the_catalog_build_version_prefers_the_metadata_file() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve-catalog-version-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("metadata")).unwrap();
+        std::fs::write(
+            root.join("metadata").join("Fortnite.json"),
+            r#"{"asset_infos":{"Windows":{"build_version":"42.0"}}}"#,
+        )
+        .unwrap();
+
+        let snapshot: LegendaryGame = serde_json::from_value(serde_json::json!({
+            "app_name": "Fortnite",
+            "asset_infos": {"Windows": {"build_version": "43.0"}}
+        }))
+        .unwrap();
+        // legendary rewrites the metadata during an install, the snapshot can lag.
+        assert_eq!(
+            catalog_build_version(&root, Some(std::slice::from_ref(&snapshot)), "Fortnite")
+                .as_deref(),
+            Some("42.0")
+        );
+        std::fs::remove_file(root.join("metadata").join("Fortnite.json")).unwrap();
+        assert_eq!(
+            catalog_build_version(&root, Some(std::slice::from_ref(&snapshot)), "Fortnite")
+                .as_deref(),
+            Some("43.0")
+        );
+        assert_eq!(catalog_build_version(&root, None, "Missing"), None);
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    /// Without a catalog build there is nothing to prove EGL is the stale side,
+    /// so the existing live-record rule still applies.
+    #[test]
+    fn a_live_egl_record_owns_the_diff_base_without_a_catalog_build() {
+        let mut map = HashMap::from([(
+            "Fortnite".to_string(),
+            installed_record("2.0", "C:\\Games\\Fortnite"),
+        )]);
+        assert_eq!(
+            merge_egl_record(
+                &mut map,
+                &egl_game("1.0", "C:\\Games\\Fortnite"),
+                None
+            ),
             EglMerge::Updated
         );
         assert_eq!(map["Fortnite"].version, "1.0");
@@ -1980,14 +2148,19 @@ mod tests {
             installed_record("1.0", "c:/games/fortnite/"),
         )]);
         assert_eq!(
-            merge_egl_record(&mut map, &egl_game("2.0", "C:\\Games\\Fortnite")),
+            merge_egl_record(
+                &mut map,
+                &egl_game("2.0", "C:\\Games\\Fortnite"),
+                None
+            ),
             EglMerge::Updated
         );
         // EGL writes artifact names for some games; the on-disk build wins.
         assert_eq!(
             merge_egl_record(
                 &mut map,
-                &egl_game("Some_Build_2.0", "C:\\Games\\Fortnite")
+                &egl_game("Some_Build_2.0", "C:\\Games\\Fortnite"),
+                None
             ),
             EglMerge::Updated
         );
@@ -2001,7 +2174,11 @@ mod tests {
             installed_record("1.0", "C:\\Games\\Fortnite"),
         )]);
         assert_eq!(
-            merge_egl_record(&mut map, &egl_game("2.0", "D:\\Other\\Fortnite")),
+            merge_egl_record(
+                &mut map,
+                &egl_game("2.0", "D:\\Other\\Fortnite"),
+                Some("2.0")
+            ),
             EglMerge::Unchanged
         );
         assert_eq!(map["Fortnite"].install_path, "C:\\Games\\Fortnite");
@@ -2011,8 +2188,8 @@ mod tests {
     fn an_untracked_egl_game_is_added_once() {
         let mut map = HashMap::new();
         let egl = egl_game("2.0", "C:\\Games\\Fortnite");
-        assert_eq!(merge_egl_record(&mut map, &egl), EglMerge::Added);
-        assert_eq!(merge_egl_record(&mut map, &egl), EglMerge::Unchanged);
+        assert_eq!(merge_egl_record(&mut map, &egl, None), EglMerge::Added);
+        assert_eq!(merge_egl_record(&mut map, &egl, None), EglMerge::Unchanged);
         assert_eq!(map.len(), 1);
     }
 

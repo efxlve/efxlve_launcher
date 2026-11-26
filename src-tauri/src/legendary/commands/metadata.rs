@@ -520,7 +520,8 @@ pub fn sync_egl_installed() -> Result<u32, String> {
             &egl.version,
             "Windows",
         );
-        match cache::merge_egl_record(&mut map, &egl) {
+        let latest = cache::catalog_build_version(&config, None, &egl.app_name);
+        match cache::merge_egl_record(&mut map, &egl, latest.as_deref()) {
             cache::EglMerge::Added => {
                 imported_count += 1;
                 changed = true;

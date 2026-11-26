@@ -31,8 +31,11 @@ fn check_updates_blocking() -> Result<Vec<GameUpdateInfo>, String> {
         serde_json::from_str(&installed_raw).map_err(|e| e.to_string())?;
     // Follow a live Epic Games Launcher update without waiting for the next
     // library refresh. This is a read-only merge; the download path writes it.
+    // The catalog build is read first so an EGL record left behind by an update
+    // this launcher installed cannot roll the record back.
     for egl in cache::read_egl_installed_games() {
-        cache::merge_egl_record(&mut installed_map, &egl);
+        let latest = cache::catalog_build_version(&config, None, &egl.app_name);
+        cache::merge_egl_record(&mut installed_map, &egl, latest.as_deref());
     }
     let meta_dir = config.join("metadata");
     let mut updates = Vec::new();
