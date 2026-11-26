@@ -34,15 +34,23 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
     date: "2026-11-26",
     added: [
       {
+        en: "Installed Epic games now show their optional packs in Manage, so game modes and high-resolution textures can be added without reinstalling the game.",
+        tr: "Kurulu Epic oyunları isteğe bağlı paketlerini artık Yönet ekranında gösteriyor; oyun modları ve yüksek çözünürlüklü dokular oyun yeniden kurulmadan eklenebiliyor.",
+      },
+      {
         en: "An optional \"Use official client\" switch for Epic Games and GOG: games installed by the Epic Games Launcher or GOG Galaxy can start, update and uninstall through that client.",
         tr: "Epic Games ve GOG için isteğe bağlı \"Resmî istemciyi kullan\" anahtarı: Epic Games Launcher veya GOG Galaxy'nin kurduğu oyunlar o istemci üzerinden başlatılabilir, güncellenebilir ve kaldırılabilir.",
       },
-      {
-        en: "The switch sits on Settings > Launchers and only appears while the matching client is installed.",
-        tr: "Anahtar Ayarlar > Launcher'lar sayfasında; yalnızca ilgili istemci kuruluysa görünür.",
-      },
     ],
     fixed: [
+      {
+        en: "A resumed Epic download shows the size of the whole installed folder instead of only the files fetched in the last session.",
+        tr: "Devam ettirilen bir Epic indirmesi, yalnızca son oturumda indirilen dosyaların değil tüm kurulu klasörün boyutunu gösteriyor.",
+      },
+      {
+        en: "An Epic install record with a non-ASCII title no longer makes legendary report every game as not installed.",
+        tr: "ASCII dışı bir başlık içeren Epic kurulum kaydı, legendary'nin tüm oyunları kurulu değil olarak görmesine neden olmuyor.",
+      },
       {
         en: "Games installed by the rebuilt Epic Games Launcher are detected and imported again; its install records moved out of the old ProgramData folder.",
         tr: "Yenilenen Epic Games Launcher'ın kurduğu oyunlar yeniden algılanıyor ve içe aktarılıyor; kurulum kayıtları eski ProgramData klasöründen taşınmıştı.",
