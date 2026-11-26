@@ -41,6 +41,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "The Epic Games Launcher is found in its new per-user install folder, and the optional handoff has its own labelled row instead of an unexplained switch.",
         tr: "Epic Games Launcher yeni kullanıcıya özel kurulum klasöründe bulunuyor; isteğe bağlı devretme de artık açıklamasız bir anahtar yerine kendi etiketli satırında.",
       },
+      {
+        en: "With the handoff switch on, starting a new Epic or GOG download opens the official client instead of downloading inside Efxlve.",
+        tr: "Devretme anahtarı açıkken yeni bir Epic veya GOG indirmesi başlatmak, Efxlve içinde indirmek yerine resmî istemciyi açıyor.",
+      },
     ],
   },
   {

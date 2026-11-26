@@ -9,8 +9,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { isTauri } from "./constants";
 import { S } from "./state";
+import type { ClientStore } from "./client-delegation-plan";
 
-export type ClientStore = "epic" | "gog";
+export type { ClientStore };
+export { installHandoffAction } from "./client-delegation-plan";
 
 export function delegateEnabled(store: ClientStore): boolean {
   return store === "epic" ? S.delegateEpic : S.delegateGog;
@@ -34,7 +36,7 @@ export function delegatedStoreOf(key: string): ClientStore | null {
 export async function delegateClientAction(
   store: ClientStore,
   gameId: string,
-  action: "launch" | "open" | "check",
+  action: "launch" | "open" | "install" | "check",
 ): Promise<boolean> {
   if (!isTauri) return false;
   return invoke<boolean>("launcher_delegate", { store, gameId, action });

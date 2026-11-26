@@ -32,7 +32,7 @@ import { isRestoreSnapshotBackup } from "./backup-utils";
 import { closeModal } from "./dom";
 import { closeManagePopup } from "../features/manage/manage-view";
 import { t, currentLanguage, localizeMessage } from "../i18n";
-import { clientName, delegateClientAction, delegateEnabled, delegatedStoreOf } from "./client-delegation";
+import { clientName, delegateClientAction, delegateEnabled, delegatedStoreOf, installHandoffAction } from "./client-delegation";
 import { askConfirm } from "./confirm-dialog";
 import { gogLaunchGame, gogStopGame, gogUninstallGame } from "../gog";
 import { steamGameAction } from "../steam";
@@ -319,16 +319,26 @@ export async function epicInstall(
 ): Promise<void> {
   const s = S.epicSummariesMap.get(appName);
   if (!s || epicDlProgress(appName) !== null) return;
-  // An install or update of a copy the official client owns stays with it. A
-  // scheduled pass must not open a client window at the configured time.
+  // A new game belongs to the official client as soon as the switch is on: it
+  // has no copy to check yet, so open its page there. An update is only handed
+  // over when the client owns the existing copy; a scheduled pass must not open
+  // a client window at the configured time.
   if (delegateEnabled("epic")) {
+    const handoff = installHandoffAction(true, Boolean(s.installed));
     try {
-      if (await delegateClientAction("epic", appName, "check")) {
-        if (!options.auto) {
-          await delegateClientAction("epic", appName, "open");
-          toast(t("launchers.delegateOpened", { a1: clientName("epic") }), "ok");
+      if (handoff === "install") {
+        if (await delegateClientAction("epic", appName, "install")) {
+          toast(t("launchers.delegateInstallOpened", { a1: clientName("epic") }), "ok");
+          return;
         }
-        return;
+      } else if (handoff === "check") {
+        if (await delegateClientAction("epic", appName, "check")) {
+          if (!options.auto) {
+            await delegateClientAction("epic", appName, "open");
+            toast(t("launchers.delegateOpened", { a1: clientName("epic") }), "ok");
+          }
+          return;
+        }
       }
     } catch (e) {
       toast(localizeMessage(String(e)), "err");

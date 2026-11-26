@@ -337,12 +337,36 @@ fn watch_delegated_session(app: AppHandle, key: String, game: ClientGame) {
     });
 }
 
-/// Optional hand-off for games the official Epic/GOG client installed.
+/// Client arguments for one handoff action. `install` opens the game page for a
+/// game the client does not have installed yet; `open` shows the page of a copy
+/// the client owns; `launch` starts that copy.
+fn client_args(store: &str, game_id: &str, action: &str) -> Option<Vec<String>> {
+    match (store, action) {
+        ("epic", "launch") => Some(vec![epic_uri(game_id, true)]),
+        ("epic", "open" | "install") => Some(vec![epic_uri(game_id, false)]),
+        ("gog", "launch") => Some(
+            gog_args(game_id, "runGame")
+                .iter()
+                .map(|arg| (*arg).to_string())
+                .collect(),
+        ),
+        ("gog", "open" | "install") => Some(
+            gog_args(game_id, "launch")
+                .iter()
+                .map(|arg| (*arg).to_string())
+                .collect(),
+        ),
+        _ => None,
+    }
+}
+
+/// Optional hand-off to the official Epic/GOG client.
 ///
-/// `action` is `launch` (start the game through the client), `open` (show the
-/// game page for install/update/uninstall) or `check` (only report whether the
-/// client owns this copy). Returns `false` for a launcher-owned install, so the
-/// caller keeps using the direct legendary/gogdl path.
+/// `action` is `launch` (start a game the client installed), `install` (open a
+/// new game in the client), `open` (show an installed game's page for update or
+/// uninstall) or `check` (only report whether the client owns this copy).
+/// Returns `false` when the client is missing or a launcher-owned copy was
+/// asked to launch/open, so the caller keeps using the direct path.
 #[tauri::command]
 pub async fn launcher_delegate(
     app: AppHandle,
@@ -360,41 +384,34 @@ pub async fn launcher_delegate(
     let Some(exe) = exe else {
         return Ok(false);
     };
-    let Some(game) = client_game(&store, &game_id) else {
+    if action == "check" {
+        return Ok(client_game(&store, &game_id).is_some());
+    }
+    let Some(args) = client_args(&store, &game_id, &action) else {
         return Ok(false);
     };
-    match action.as_str() {
-        "check" => Ok(true),
-        "launch" => {
-            match store.as_str() {
-                "epic" => {
-                    let uri = epic_uri(&game_id, true);
-                    spawn_client(&exe, &[uri.as_str()])?;
-                }
-                "gog" => spawn_client(&exe, &gog_args(&game_id, "runGame"))?,
-                _ => return Ok(false),
-            }
+    // A new install has no client record yet; launch/open need that record.
+    let game = if action == "install" {
+        None
+    } else {
+        match client_game(&store, &game_id) {
+            Some(game) => Some(game),
+            None => return Ok(false),
+        }
+    };
+    let arg_refs: Vec<&str> = args.iter().map(String::as_str).collect();
+    spawn_client(&exe, &arg_refs)?;
+    if action == "launch" {
+        if let Some(game) = game {
             let key = if store == "gog" {
                 format!("gog::{game_id}")
             } else {
                 game_id
             };
             watch_delegated_session(app, key, game);
-            Ok(true)
         }
-        "open" => {
-            match store.as_str() {
-                "epic" => {
-                    let uri = epic_uri(&game_id, false);
-                    spawn_client(&exe, &[uri.as_str()])?;
-                }
-                "gog" => spawn_client(&exe, &gog_args(&game_id, "launch"))?,
-                _ => return Ok(false),
-            }
-            Ok(true)
-        }
-        _ => Ok(false),
     }
+    Ok(true)
 }
 
 #[cfg(test)]
@@ -443,5 +460,24 @@ mod tests {
             gog_args("1207658924", "runGame"),
             ["/gameid", "1207658924", "/command", "runGame"]
         );
+    }
+
+    #[test]
+    fn a_new_install_opens_the_client_page() {
+        assert_eq!(
+            client_args("epic", "Witcher4", "install"),
+            Some(vec!["com.epicgames.launcher://apps/Witcher4".to_string()])
+        );
+        assert_eq!(
+            client_args("gog", "1207658924", "install"),
+            Some(vec![
+                "/gameid".to_string(),
+                "1207658924".to_string(),
+                "/command".to_string(),
+                "launch".to_string(),
+            ])
+        );
+        assert_eq!(client_args("epic", "Witcher4", "check"), None);
+        assert_eq!(client_args("steam", "123", "install"), None);
     }
 }

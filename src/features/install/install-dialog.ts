@@ -8,7 +8,7 @@
  */
 
 import { epicInstall, epicPlay } from "../../core/epic-actions";
-import { clientName, delegateClientAction, delegateEnabled } from "../../core/client-delegation";
+import { clientName, delegateClientAction, delegateEnabled, delegatedStoreOf, installHandoffAction } from "../../core/client-delegation";
 import { installRoot } from "../../core/dom";
 import { epicArt, epicDlProgress } from "../../core/game-view";
 import { icon } from "../../core/icons";
@@ -69,13 +69,33 @@ export async function openInstallDialog(appName: string): Promise<void> {
   const s = summaryOf(appName);
   if (!s || epicDlProgress(appName) !== null) return;
 
-  // A Galaxy-owned copy installs and updates through Galaxy. Launcher-owned
+  // A new game belongs to the official client as soon as the switch is on; an
+  // existing copy is only handed over when the client owns it. Launcher-owned
   // copies answer `false` and keep the dialog below.
   if (isGog && delegateEnabled("gog")) {
+    const handoff = installHandoffAction(true, Boolean(s.installed));
     try {
-      if (await delegateClientAction("gog", appName.slice(5), "check")) {
-        await delegateClientAction("gog", appName.slice(5), "open");
-        toast(t("launchers.delegateOpened", { a1: clientName("gog") }), "ok");
+      if (handoff === "install") {
+        if (await delegateClientAction("gog", appName.slice(5), "install")) {
+          toast(t("launchers.delegateInstallOpened", { a1: clientName("gog") }), "ok");
+          return;
+        }
+      } else if (handoff === "check") {
+        if (await delegateClientAction("gog", appName.slice(5), "check")) {
+          await delegateClientAction("gog", appName.slice(5), "open");
+          toast(t("launchers.delegateOpened", { a1: clientName("gog") }), "ok");
+          return;
+        }
+      }
+    } catch (e) {
+      toast(localizeMessage(String(e)), "err");
+      return;
+    }
+  }
+  if (delegatedStoreOf(appName) === "epic" && !s.installed && delegateEnabled("epic")) {
+    try {
+      if (await delegateClientAction("epic", appName, "install")) {
+        toast(t("launchers.delegateInstallOpened", { a1: clientName("epic") }), "ok");
         return;
       }
     } catch (e) {
