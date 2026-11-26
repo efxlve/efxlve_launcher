@@ -187,10 +187,20 @@ fn is_game_manifest(val: &serde_json::Value) -> bool {
     !(title.starts_with("unreal engine") || title == "fab ue plugin" || title.starts_with("quixel"))
 }
 
-/// One manifest pass. Alongside the games it reports the tool and asset app
-/// names, so rows older releases already imported can be pruned.
-fn scan_egl_manifests() -> (Vec<EglDetectedGame>, Vec<String>) {
-    let dir = egl_manifests_dir();
+/// One detection source with the time its record was written. A game usually
+/// has more than one source (a manifest plus the v2 transaction log); the newer
+/// record owns the build path and version, while the first real display name
+/// wins over the folder-name fallback.
+struct EglCandidate {
+    game: EglDetectedGame,
+    written: Option<std::time::SystemTime>,
+    /// The source carries a display name (a manifest), not just a folder name.
+    named: bool,
+}
+
+/// One manifest directory pass. Alongside the games it reports the tool and
+/// asset app names, so rows older releases already imported can be pruned.
+fn scan_manifest_dir(dir: &Path) -> (Vec<EglCandidate>, Vec<String>) {
     if !dir.is_dir() {
         return (Vec::new(), Vec::new());
     }
@@ -257,19 +267,272 @@ fn scan_egl_manifests() -> (Vec<EglDetectedGame>, Vec<String>) {
                 let install_size = val.get("InstallSize").and_then(|v| v.as_u64()).unwrap_or(0);
 
                 if !app_name.is_empty() && !title.is_empty() {
-                    out.push(EglDetectedGame {
-                        app_name: app_name.to_string(),
-                        title: title.to_string(),
-                        install_path: install_loc.to_string(),
-                        executable: executable.to_string(),
-                        version: version.to_string(),
-                        install_size,
+                    out.push(EglCandidate {
+                        game: EglDetectedGame {
+                            app_name: app_name.to_string(),
+                            title: title.to_string(),
+                            install_path: install_loc.to_string(),
+                            executable: executable.to_string(),
+                            version: version.to_string(),
+                            install_size,
+                        },
+                        written: std::fs::metadata(&path)
+                            .and_then(|meta| meta.modified())
+                            .ok(),
+                        named: true,
                     });
                 }
             }
         }
     }
     (out, tools)
+}
+
+/// Per-user data folder of the rebuilt Epic Games Launcher (v2).
+fn egl_v2_dir() -> Option<std::path::PathBuf> {
+    let base = std::env::var_os("LOCALAPPDATA")?;
+    let dir = std::path::PathBuf::from(base).join("com.epicgames.eglv2");
+    dir.is_dir().then_some(dir)
+}
+
+/// One installation record from the v2 `installations.jsonl` transaction log.
+/// The first line only carries the log version, a later line for the same
+/// installation replaces the earlier one, and a write can land mid-line.
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct EglV2Installation {
+    #[serde(default)]
+    installation_id: String,
+    #[serde(default)]
+    dir: String,
+    #[serde(default)]
+    namespace: String,
+    #[serde(default)]
+    artifact_id: String,
+    #[serde(default)]
+    version: String,
+    #[serde(default)]
+    launch_executable: String,
+    #[serde(default)]
+    parent_installation_id: String,
+}
+
+/// The v2 launcher's measured install sizes, keyed by app name.
+#[derive(Debug, Default, Deserialize)]
+struct EglV2SizeCache {
+    #[serde(default)]
+    entries: Vec<EglV2SizeEntry>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct EglV2SizeEntry {
+    #[serde(default)]
+    app_id: EglV2SizeApp,
+    #[serde(default)]
+    bytes: f64,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct EglV2SizeApp {
+    #[serde(default)]
+    app_name: String,
+}
+
+fn egl_v2_sizes(dir: &Path) -> HashMap<String, u64> {
+    let path = dir.join("cache").join("disk-size-cache.json");
+    let Ok(text) = std::fs::read_to_string(path) else {
+        return HashMap::new();
+    };
+    let Ok(cache) = serde_json::from_str::<EglV2SizeCache>(&text) else {
+        return HashMap::new();
+    };
+    cache
+        .entries
+        .into_iter()
+        .filter(|entry| !entry.app_id.app_name.is_empty() && entry.bytes > 0.0)
+        .map(|entry| {
+            (
+                entry.app_id.app_name.to_ascii_lowercase(),
+                entry.bytes as u64,
+            )
+        })
+        .collect()
+}
+
+/// Games the rebuilt Epic Games Launcher records as installed. It stopped
+/// writing the old `ProgramData/.../Manifests` folder, so without this pass the
+/// launcher is detected while its games look like nothing to import.
+fn read_egl_v2_installations(dir: &Path) -> (Vec<EglCandidate>, Vec<String>) {
+    let path = ["installations.jsonl", "installations.jsonl.prev"]
+        .into_iter()
+        .map(|name| dir.join(name))
+        .find(|path| path.is_file());
+    let Some(path) = path else {
+        return (Vec::new(), Vec::new());
+    };
+    let Ok(text) = std::fs::read_to_string(&path) else {
+        return (Vec::new(), Vec::new());
+    };
+    let written = std::fs::metadata(&path)
+        .and_then(|meta| meta.modified())
+        .ok();
+    let mut records: HashMap<String, EglV2Installation> = HashMap::new();
+    for line in text.lines() {
+        let Ok(record) = serde_json::from_str::<EglV2Installation>(line) else {
+            continue;
+        };
+        if !record.installation_id.is_empty() {
+            records.insert(record.installation_id.clone(), record);
+        }
+    }
+    let sizes = egl_v2_sizes(dir);
+    let mut games = Vec::new();
+    let mut tools = Vec::new();
+    for record in records.into_values() {
+        // Add-ons share the main game's folder and must not become rows.
+        if !record.parent_installation_id.is_empty() {
+            continue;
+        }
+        if record.namespace.eq_ignore_ascii_case("ue") {
+            if !record.artifact_id.is_empty() {
+                tools.push(record.artifact_id.clone());
+            }
+            continue;
+        }
+        let install = record.dir.trim();
+        let app_name = record.artifact_id.trim();
+        if install.is_empty() || app_name.is_empty() || !Path::new(install).is_dir() {
+            continue;
+        }
+        let executable = record.launch_executable.trim();
+        // A record survives a manual folder move; only a folder that still holds
+        // the build is importable.
+        if !executable.is_empty() && !Path::new(install).join(executable).is_file() {
+            continue;
+        }
+        if executable.is_empty() && !Path::new(install).join(".egstore").is_dir() {
+            continue;
+        }
+        let title = Path::new(install)
+            .file_name()
+            .and_then(|name| name.to_str())
+            .filter(|name| !name.is_empty())
+            .unwrap_or(app_name);
+        games.push(EglCandidate {
+            game: EglDetectedGame {
+                app_name: app_name.to_string(),
+                title: title.to_string(),
+                install_path: install.to_string(),
+                executable: executable.to_string(),
+                version: record.version.trim().to_string(),
+                install_size: sizes
+                    .get(&app_name.to_ascii_lowercase())
+                    .copied()
+                    .unwrap_or(0),
+            },
+            written,
+            named: false,
+        });
+    }
+    (games, tools)
+}
+
+/// Folds one sighting into the app's row. The first real display name wins;
+/// the newest record owns the install path and version.
+fn merge_egl_candidate(
+    out: &mut Vec<EglCandidate>,
+    seen: &mut HashMap<String, usize>,
+    candidate: EglCandidate,
+) {
+    let key = candidate.game.app_name.to_ascii_lowercase();
+    let Some(&position) = seen.get(&key) else {
+        seen.insert(key, out.len());
+        out.push(candidate);
+        return;
+    };
+    let existing = &mut out[position];
+    let newer = match (candidate.written, existing.written) {
+        (Some(new), Some(old)) => new > old,
+        (Some(_), None) => true,
+        _ => false,
+    };
+    if candidate.named && !existing.named {
+        existing.game.title = candidate.game.title;
+        existing.named = true;
+    } else if existing.game.title.is_empty() {
+        existing.game.title = candidate.game.title;
+        existing.named |= candidate.named;
+    }
+    if newer {
+        if !candidate.game.install_path.is_empty() {
+            existing.game.install_path = candidate.game.install_path;
+        }
+        if !candidate.game.executable.is_empty() {
+            existing.game.executable = candidate.game.executable;
+        }
+        if !candidate.game.version.is_empty() {
+            existing.game.version = candidate.game.version;
+        }
+        if candidate.game.install_size > 0 {
+            existing.game.install_size = candidate.game.install_size;
+        }
+        existing.written = candidate.written;
+    } else {
+        if existing.game.install_path.is_empty() && !candidate.game.install_path.is_empty() {
+            existing.game.install_path = candidate.game.install_path;
+        }
+        if existing.game.executable.is_empty() && !candidate.game.executable.is_empty() {
+            existing.game.executable = candidate.game.executable;
+        }
+        if existing.game.version.is_empty() && !candidate.game.version.is_empty() {
+            existing.game.version = candidate.game.version;
+        }
+        if existing.game.install_size == 0 && candidate.game.install_size > 0 {
+            existing.game.install_size = candidate.game.install_size;
+        }
+    }
+}
+
+/// Every game the official Epic Games Launcher has installed, across the legacy
+/// `ProgramData` manifests and the rebuilt launcher's per-user records.
+fn scan_egl_manifests() -> (Vec<EglDetectedGame>, Vec<String>) {
+    let mut candidates = Vec::new();
+    let mut seen = HashMap::new();
+    let mut tools = Vec::new();
+
+    // The rebuilt launcher keeps its own manifests (when it writes them), the
+    // v1 .item files it archived during import, and the live transaction log.
+    // The log has no display name, so the manifest passes run first.
+    if let Some(dir) = egl_v2_dir() {
+        for manifests in [
+            dir.join("manifests"),
+            dir.join("import-scan").join("v1-items"),
+        ] {
+            let (found, found_tools) = scan_manifest_dir(&manifests);
+            for candidate in found {
+                merge_egl_candidate(&mut candidates, &mut seen, candidate);
+            }
+            tools.extend(found_tools);
+        }
+        let (found, found_tools) = read_egl_v2_installations(&dir);
+        for candidate in found {
+            merge_egl_candidate(&mut candidates, &mut seen, candidate);
+        }
+        tools.extend(found_tools);
+    }
+
+    // Releases before the rebuild still write here.
+    let (found, found_tools) = scan_manifest_dir(&egl_manifests_dir());
+    for candidate in found {
+        merge_egl_candidate(&mut candidates, &mut seen, candidate);
+    }
+    tools.extend(found_tools);
+
+    (
+        candidates.into_iter().map(|candidate| candidate.game).collect(),
+        tools,
+    )
 }
 
 /// Scans main games installed in the Epic Games Launcher and present on disk.
@@ -1182,6 +1445,171 @@ mod tests {
             "CatalogNamespace": "cb2077"
         });
         assert!(is_game_manifest(&game));
+    }
+
+    /// The rebuilt launcher keeps its installs in a per-user transaction log;
+    /// the last record for an installation wins and DLC/tools must not become
+    /// library rows.
+    #[test]
+    fn egl_v2_log_reads_the_current_installation_records() {
+        let root = std::env::temp_dir().join(format!("efxlve-eglv2-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let game_dir = root.join("SomeGame");
+        std::fs::create_dir_all(game_dir.join(".egstore")).unwrap();
+        std::fs::write(game_dir.join("Game.exe"), b"").unwrap();
+        std::fs::create_dir_all(root.join("cache")).unwrap();
+        std::fs::write(
+            root.join("cache").join("disk-size-cache.json"),
+            r#"{"entries":[{"app_id":{"appName":"gameA"},"bytes":12345.0}]}"#,
+        )
+        .unwrap();
+
+        let target = game_dir.to_string_lossy().to_string();
+        let records = [
+            serde_json::json!({"version": 1, "writtenAt": "2026-10-02T15:09:59Z"}),
+            serde_json::json!({
+                "installationId": "same",
+                "dir": target,
+                "namespace": "ns",
+                "artifactId": "gameA",
+                "version": "1.0",
+                "launchExecutable": "Game.exe"
+            }),
+            serde_json::json!({
+                "installationId": "same",
+                "dir": target,
+                "namespace": "ns",
+                "artifactId": "gameA",
+                "version": "2.0",
+                "launchExecutable": "Game.exe"
+            }),
+            serde_json::json!({
+                "installationId": "dlc",
+                "dir": target,
+                "namespace": "ns",
+                "artifactId": "dlcA",
+                "parentInstallationId": "same"
+            }),
+            serde_json::json!({
+                "installationId": "tool",
+                "dir": target,
+                "namespace": "ue",
+                "artifactId": "UE_5"
+            }),
+            serde_json::json!({
+                "installationId": "gone",
+                "dir": root.join("Gone").to_string_lossy().to_string(),
+                "namespace": "ns",
+                "artifactId": "goneGame",
+                "launchExecutable": "Gone.exe"
+            }),
+        ];
+        let log = records
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<_>>()
+            .join("\n");
+        std::fs::write(root.join("installations.jsonl"), log).unwrap();
+
+        let (games, tools) = read_egl_v2_installations(&root);
+        assert_eq!(games.len(), 1);
+        assert_eq!(games[0].game.app_name, "gameA");
+        assert_eq!(games[0].game.version, "2.0");
+        assert_eq!(games[0].game.title, "SomeGame");
+        assert_eq!(games[0].game.install_size, 12345);
+        assert_eq!(tools, vec!["UE_5".to_string()]);
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn egl_v2_log_falls_back_to_the_previous_copy() {
+        let root = std::env::temp_dir().join(format!("efxlve-eglv2-prev-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let game_dir = root.join("PrevGame");
+        std::fs::create_dir_all(game_dir.join(".egstore")).unwrap();
+        let log = format!(
+            "{}\n{}",
+            serde_json::json!({"version": 1}),
+            serde_json::json!({
+                "installationId": "prev",
+                "dir": game_dir.to_string_lossy().to_string(),
+                "namespace": "ns",
+                "artifactId": "prevGame",
+                "launchExecutable": ""
+            })
+        );
+        std::fs::write(root.join("installations.jsonl.prev"), log).unwrap();
+
+        let (games, _) = read_egl_v2_installations(&root);
+        assert_eq!(games.len(), 1);
+        assert_eq!(games[0].game.app_name, "prevGame");
+        assert_eq!(games[0].game.executable, "");
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    /// A real display name wins over the v2 folder-name fallback, while the
+    /// newest record still supplies the path and version.
+    #[test]
+    fn egl_candidates_keep_the_display_name_and_the_newest_build() {
+        let base = EglDetectedGame {
+            app_name: "Ginger".into(),
+            title: "Cyberpunk2077".into(),
+            install_path: r"C:\Games\Cyberpunk2077".into(),
+            executable: "Cyberpunk2077.exe".into(),
+            version: "1.0".into(),
+            install_size: 0,
+        };
+        let at = |secs| Some(std::time::UNIX_EPOCH + std::time::Duration::from_secs(secs));
+        let mut out = Vec::new();
+        let mut seen = HashMap::new();
+        merge_egl_candidate(
+            &mut out,
+            &mut seen,
+            EglCandidate {
+                game: EglDetectedGame {
+                    version: "0.9".into(),
+                    ..base.clone()
+                },
+                written: at(1),
+                named: false,
+            },
+        );
+        merge_egl_candidate(
+            &mut out,
+            &mut seen,
+            EglCandidate {
+                game: EglDetectedGame {
+                    title: "Cyberpunk 2077".into(),
+                    version: "2.0".into(),
+                    install_size: 100,
+                    ..base.clone()
+                },
+                written: at(2),
+                named: true,
+            },
+        );
+        assert_eq!(out[0].game.title, "Cyberpunk 2077");
+        assert_eq!(out[0].game.version, "2.0");
+        assert_eq!(out[0].game.install_size, 100);
+
+        merge_egl_candidate(
+            &mut out,
+            &mut seen,
+            EglCandidate {
+                game: EglDetectedGame {
+                    executable: "New.exe".into(),
+                    version: "3.0".into(),
+                    ..base
+                },
+                written: at(3),
+                named: false,
+            },
+        );
+        assert_eq!(out[0].game.title, "Cyberpunk 2077");
+        assert_eq!(out[0].game.executable, "New.exe");
+        assert_eq!(out[0].game.version, "3.0");
     }
 
     #[test]
