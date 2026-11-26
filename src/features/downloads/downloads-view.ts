@@ -559,7 +559,9 @@ export function renderDownloads(): string {
 
   const queueRows = queueApps.map((id, idx) => {
     const s = S.epicSummariesMap.get(id);
-    return gameRow(s, id, s?.installSize ? fmtBytes(s.installSize) : t("dl.queued"), `
+    // A queued transfer has no total yet: legendary reports the real download
+    // size with its first progress line. The installed size on disk is not it.
+    return gameRow(s, id, t("dl.queued"), `
       <button class="icon-btn" data-act="dl-reorder-up" data-id="${id}" title="${t("dl.moveUp")}" ${idx === 0 ? "disabled" : ""}>${icon("chevron-up", 16)}</button>
       <button class="icon-btn" data-act="dl-reorder-down" data-id="${id}" title="${t("dl.moveDown")}" ${idx === queueApps.length - 1 ? "disabled" : ""}>${icon("chevron-down", 16)}</button>
       <button class="btn small" data-act="dl-reorder-now" data-id="${id}">${t("dl.downloadNow")}</button>
