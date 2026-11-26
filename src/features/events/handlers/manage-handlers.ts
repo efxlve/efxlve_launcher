@@ -11,6 +11,7 @@ import { rawOf, summaryOf } from "../../../core/selectors";
 import { openEpicModal, scheduleRender } from "../../../core/render";
 import { netMtuFix } from "../../../net-diag";
 import { checkMtuAfterSyncFailure } from "../../manage/mtu-guard";
+import { openInstalledOptions } from "../../dlc/selective-install";
 import { gogVerifyGame } from "../../../gog";
 import { nileCreateDesktopShortcut, nileVerify } from "../../../nile";
 import {
@@ -177,6 +178,11 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
           });
         }
       }
+      return true;
+
+    case "manage-install-options":
+      // An installed copy keeps its files; the picker only adds packs on top.
+      if (id && !id.includes("::")) void openInstalledOptions(id);
       return true;
 
     case "manage-repair":

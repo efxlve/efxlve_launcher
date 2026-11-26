@@ -4608,5 +4608,15 @@
   "betaNotice.githubDesc": "हमारे ओपन-सोर्स रिपॉजिटरी पर बग रिपोर्ट या सुझाव सबमिट करें।",
   "betaNotice.discordTitle": "Discord समुदाय",
   "betaNotice.discordDesc": "डेवलपर्स और साथी खिलाड़ियों से बातचीत करने के लिए हमारे सर्वर से जुड़ें।",
-  "betaNotice.understandBtn": "समझ गया"
+  "betaNotice.understandBtn": "समझ गया",
+  "manage.installOptionsTitle": "Optional Content",
+  "manage.installOptionsDesc": "Add optional packs such as game modes and high-resolution textures without reinstalling the game.",
+  "manage.installOptions": "Manage Packs",
+  "selective.addContent": "Add Selected",
+  "selective.installedNote": "Installed content stays on disk. Only the newly ticked packs are downloaded.",
+  "selective.newSelected": "{count} new items selected",
+  "selective.addedDownload": "Added Download",
+  "selective.addedStorage": "Added Storage",
+  "selective.none": "This game has no optional content.",
+  "selective.checkFailed": "Could not load install options: {msg}"
 }

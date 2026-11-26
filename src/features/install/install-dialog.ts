@@ -139,6 +139,7 @@ export async function openInstallDialog(appName: string): Promise<void> {
   S.installDialogLoading = true;
   S.installDialogDir = S.epicSettingsCache?.install_dir || S.epicDefaultDir || "";
   S.selectiveInstallOptions = null;
+  S.selectiveInstalled = false;
   S.selectedInstallTags.clear();
   S.selectedDlcAppIds.clear();
   renderInstallDialog();

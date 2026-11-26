@@ -4608,5 +4608,15 @@
   "betaNotice.githubDesc": "在我們的開源存放庫提交錯誤報告或功能建議。",
   "betaNotice.discordTitle": "Discord 社群",
   "betaNotice.discordDesc": "加入我們的伺服器，與開發者及其他玩家一起交流。",
-  "betaNotice.understandBtn": "瞭解"
+  "betaNotice.understandBtn": "瞭解",
+  "manage.installOptionsTitle": "Optional Content",
+  "manage.installOptionsDesc": "Add optional packs such as game modes and high-resolution textures without reinstalling the game.",
+  "manage.installOptions": "Manage Packs",
+  "selective.addContent": "Add Selected",
+  "selective.installedNote": "Installed content stays on disk. Only the newly ticked packs are downloaded.",
+  "selective.newSelected": "{count} new items selected",
+  "selective.addedDownload": "Added Download",
+  "selective.addedStorage": "Added Storage",
+  "selective.none": "This game has no optional content.",
+  "selective.checkFailed": "Could not load install options: {msg}"
 }

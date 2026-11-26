@@ -1006,6 +1006,8 @@ export function renderDrawerManage(s: EpicSummary): string {
           `<button id="manage-verify-btn" class="btn ghost small" data-act="manage-verify" data-id="${id}" ${v ? "disabled" : ""}>${v ? t("manage.verifying") : t("manage.verify")}</button>
            <button class="btn ghost small" data-act="manage-repair" data-id="${id}" title="${esc(t("manage.verifyDesc"))}">${icon("refresh", 13)} ${t("manage.eaContentRepair")}</button>`,
           `<div id="manage-verify-box-container">${v ? verifyBox(v.percent, v.detail || `${v.current}/${v.total}`, v.speed) : ""}</div>`)}
+        ${row(t("manage.installOptionsTitle"), t("manage.installOptionsDesc"),
+          `<button class="btn ghost small" data-act="manage-install-options" data-id="${id}">${icon("download", 13)} ${t("manage.installOptions")}</button>`)}
         ${archiveManageRow(s)}
         ${row(t("manage.installLocation"), `<span id="manage-install-path" class="mg-path">${esc(s.installPath || st.installPath || t("manage.unspecified"))}</span>`,
           `${moveBtn}<button class="btn ghost small" data-act="epic-open-folder" data-id="${id}">${icon("folder", 13)} ${t("manage.openFolder")}</button>`,

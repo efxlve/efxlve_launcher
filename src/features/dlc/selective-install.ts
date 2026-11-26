@@ -19,6 +19,7 @@ import { localizeMessage, t } from "../../i18n";
 import { epicGetInstallOptions, epicGetQueue, epicInstallWithOptions } from "../../epic";
 import { summaryOf } from "../../core/selectors";
 export async function openSelectiveModal(appName: string): Promise<void> {
+  S.selectiveInstalled = false;
   const s = summaryOf(appName);
   if (s?.installed) {
     // Installed game: run update/repair directly.
@@ -46,21 +47,68 @@ export async function openSelectiveModal(appName: string): Promise<void> {
   }
 }
 
+/**
+ * Re-opens the same pack picker for an installed copy from Manage. Installed
+ * rows stay checked and disabled, and applying adds the new rows to the real
+ * installed tag set, so the base install is never replaced by the fresh-install
+ * defaults.
+ */
+export async function openInstalledOptions(appName: string): Promise<void> {
+  const s = summaryOf(appName);
+  if (!s?.installed) {
+    await openSelectiveModal(appName);
+    return;
+  }
+  toast(t("selective.checking"), "");
+  try {
+    const opts = await epicGetInstallOptions(appName);
+    if (!opts.hasOptions) {
+      toast(t("selective.none"), "");
+      return;
+    }
+    S.selectiveInstallOptions = opts;
+    S.selectedInstallTags.clear();
+    // The manage picker starts on what is actually on disk. New rows are the
+    // only ones that change the download size.
+    for (const tag of opts.tags) {
+      if (tag.installed) S.selectedInstallTags.add(tag.tag);
+    }
+    S.selectedDlcAppIds.clear();
+    S.selectiveInstalled = true;
+    S.selectiveInstallDir = null;
+    renderSelectiveModal();
+  } catch (err) {
+    toast(t("selective.checkFailed", { msg: String(err) }), "err");
+  }
+}
+
 export async function applySelectiveInstall(appName: string, tags: string[], dlcs: string[]): Promise<void> {
   const s = summaryOf(appName);
   const title = s ? s.title : appName;
-  const installDir = S.selectiveInstallDir;
   // A row is an SDL group; legendary filters on the raw tags, so flatten the
   // selected groups before closing the modal that holds them.
   const options = S.selectiveInstallOptions;
-  const installTags = tags.flatMap((key) => {
+  const installedMode = S.selectiveInstalled;
+  let installTags = tags.flatMap((key) => {
     const row = options?.tags.find((tag) => tag.tag === key);
     return row?.tags && row.tags.length > 0 ? row.tags : [key];
   });
+  // Adding packs to an installed copy must never feed legendary a smaller
+  // selection than the files on disk: it would treat them as removed.
+  if (installedMode) {
+    installTags = Array.from(new Set([...(options?.installedTags ?? []), ...installTags]));
+  }
   // An empty list means "no selection given" to legendary, which the backend
   // treats as an update and fills with the default modes. The untagged tag is
   // the explicit "required content only" choice.
   if (installTags.length === 0) installTags.push("");
+  // The installed path is already on disk: reuse its parent as the base folder
+  // instead of the fresh-install dialog's default drive.
+  const installDir = installedMode
+    ? s?.installPath
+      ? s.installPath.replace(/[\\/][^\\/]+$/, "")
+      : null
+    : S.selectiveInstallDir;
   closeSelectiveModal();
   // Resuming a partial install keeps its percentage and drops the resume row.
   const resume = S.epicResumable.get(appName);
@@ -104,6 +152,7 @@ export async function applySelectiveInstall(appName: string, tags: string[], dlc
 export function closeSelectiveModal(): void {
   S.selectiveInstallOptions = null;
   S.selectiveInstallDir = null;
+  S.selectiveInstalled = false;
   S.selectedInstallTags.clear();
   S.selectedDlcAppIds.clear();
   if (selectiveRoot) selectiveRoot.innerHTML = "";
@@ -143,25 +192,29 @@ export function renderSelectiveModal(): void {
   const langTags = opts.tags.filter((tag) => tag.category === "languages");
   const extraTags = opts.tags.filter((tag) => tag.category === "extras");
   const summary = summaryOf(opts.appName);
+  const installedMode = S.selectiveInstalled;
 
-  let totalDl = opts.baseDownloadSize || opts.baseSize;
-  let totalDisk = opts.baseSize;
+  let totalDl = installedMode ? 0 : opts.baseDownloadSize || opts.baseSize;
+  let totalDisk = installedMode ? 0 : opts.baseSize;
 
   for (const tag of opts.tags) {
-    if (S.selectedInstallTags.has(tag.tag)) {
+    if (S.selectedInstallTags.has(tag.tag) && !(installedMode && tag.installed)) {
       totalDl += tag.downloadSize || tag.size;
       totalDisk += tag.size;
     }
   }
 
   for (const dlc of opts.dlcs) {
-    if (S.selectedDlcAppIds.has(dlc.appId)) {
+    if (S.selectedDlcAppIds.has(dlc.appId) && !(installedMode && dlc.installed)) {
       totalDl += dlc.size;
       totalDisk += dlc.size;
     }
   }
 
-  const selectedCount = S.selectedInstallTags.size + S.selectedDlcAppIds.size;
+  const selectedCount = installedMode
+    ? opts.tags.filter((tag) => !tag.installed && S.selectedInstallTags.has(tag.tag)).length +
+      opts.dlcs.filter((dlc) => !dlc.installed && S.selectedDlcAppIds.has(dlc.appId)).length
+    : S.selectedInstallTags.size + S.selectedDlcAppIds.size;
 
   const tagSection = (labelKey: string, group: string, tags: typeof opts.tags): string => {
     if (tags.length === 0) return "";
@@ -173,13 +226,14 @@ export function renderSelectiveModal(): void {
         </div>
         <div class="selective-accordion-list">
           ${tags
-            .map((tag) =>
-              selectiveRow(
-                esc(localizeMessage(tag.label)),
-                tag.size,
-                `<input type="checkbox" class="selective-checkbox" data-act="selective-toggle-tag" data-tag="${esc(tag.tag)}" ${S.selectedInstallTags.has(tag.tag) ? "checked" : ""} />`,
-              ),
-            )
+            .map((tag) => {
+              const installed = Boolean(tag.installed);
+              const label = `${esc(localizeMessage(tag.label))}${installed ? ` <span class="chip ok">${t("selective.installed")}</span>` : ""}`;
+              const control = installed
+                ? `<input type="checkbox" class="selective-checkbox" checked disabled />`
+                : `<input type="checkbox" class="selective-checkbox" data-act="selective-toggle-tag" data-tag="${esc(tag.tag)}" ${S.selectedInstallTags.has(tag.tag) ? "checked" : ""} />`;
+              return selectiveRow(label, tag.size, control, installed ? " installed" : "");
+            })
             .join("")}
         </div>
       </div>
@@ -218,7 +272,7 @@ export function renderSelectiveModal(): void {
     `;
 
   selectiveRoot.innerHTML = `
-    <div class="selective-overlay" data-act="selective-overlay-close">
+    <div class="selective-overlay${installedMode ? " over-manage" : ""}" data-act="selective-overlay-close">
       <div class="selective-dialog">
         <div class="selective-header">
           <div class="selective-head-group">
@@ -243,17 +297,17 @@ export function renderSelectiveModal(): void {
           ${tagSection("selective.extraPacks", "extras", extraTags)}
           ${dlcsHtml}
 
-          <p class="selective-note">${t("selective.note")}</p>
+          <p class="selective-note">${installedMode ? t("selective.installedNote") : t("selective.note")}</p>
         </div>
 
         <div class="selective-footer">
           <div class="selective-footer-stats">
-            <span>${t("selective.selectedCount", { count: selectedCount })}</span>
-            <span>${t("selective.downloadSize")}: <strong>${fmtBytes(totalDl)}</strong></span>
-            <span>${t("selective.storageSize")}: <strong>${fmtBytes(totalDisk)}</strong></span>
+            <span>${t(installedMode ? "selective.newSelected" : "selective.selectedCount", { count: selectedCount })}</span>
+            <span>${t(installedMode ? "selective.addedDownload" : "selective.downloadSize")}: <strong>${fmtBytes(totalDl)}</strong></span>
+            <span>${t(installedMode ? "selective.addedStorage" : "selective.storageSize")}: <strong>${fmtBytes(totalDisk)}</strong></span>
           </div>
-          <button class="selective-apply-btn" data-act="selective-apply" data-id="${esc(opts.appName)}">
-            ${t("selective.apply")}
+          <button class="selective-apply-btn" data-act="selective-apply" data-id="${esc(opts.appName)}" ${installedMode && selectedCount === 0 ? "disabled" : ""}>
+            ${t(installedMode ? "selective.addContent" : "selective.apply")}
           </button>
         </div>
       </div>

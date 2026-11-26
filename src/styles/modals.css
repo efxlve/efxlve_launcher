@@ -6,6 +6,9 @@
 @import "./changelog.css";
 
 /* --- Shared frame --- */
+/* Opened from Manage: the picker must sit above the manage dialog, which is a
+   sibling overlay at the same base z-index. */
+.selective-overlay.over-manage { z-index: 340; }
 .selective-overlay, .playtime-overlay, .cover-overlay, .col-modal-backdrop,
 .move-modal-backdrop, .ss-share-backdrop, .modal-backdrop {
   position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center;

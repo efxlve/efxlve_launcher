@@ -759,6 +759,8 @@ export const S = {
   selectiveInstallOptions: (null) as GameInstallOptions | null,
   selectedInstallTags: new Set<string>(),
   selectedDlcAppIds: new Set<string>(),
+  /** Re-opened from Manage: add packs to an installed copy, never drop one. */
+  selectiveInstalled: false,
   availableUpdates: new Map<string, GameUpdateInfo>(),
   /** Bumped when summaries / updates change so the library filter cache misses. */
   libraryDataRev: 0,

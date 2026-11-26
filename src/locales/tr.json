@@ -4608,5 +4608,15 @@
   "betaNotice.githubDesc": "Açık kaynak depomuzda yeni bir hata kaydı veya özellik önerisi oluşturun.",
   "betaNotice.discordTitle": "Discord Topluluğu",
   "betaNotice.discordDesc": "Topluluğumuza katılın, geliştiriciyle ve diğer oyuncularla sohbet edin.",
-  "betaNotice.understandBtn": "Harika, Anladım"
+  "betaNotice.understandBtn": "Harika, Anladım",
+  "manage.installOptionsTitle": "İsteğe Bağlı İçerik",
+  "manage.installOptionsDesc": "Oyunu yeniden kurmadan oyun modları ve yüksek çözünürlüklü dokular gibi isteğe bağlı paketleri ekle.",
+  "manage.installOptions": "Paketleri Yönet",
+  "selective.addContent": "Seçilenleri Ekle",
+  "selective.installedNote": "Kurulu içerik diskte kalır. Yalnızca yeni işaretlenen paketler indirilir.",
+  "selective.newSelected": "{count} yeni öğe seçildi",
+  "selective.addedDownload": "Eklenecek İndirme",
+  "selective.addedStorage": "Eklenecek Alan",
+  "selective.none": "Bu oyunda isteğe bağlı içerik yok.",
+  "selective.checkFailed": "Kurulum seçenekleri yüklenemedi: {msg}"
 }

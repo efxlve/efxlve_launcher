@@ -4608,5 +4608,15 @@
   "betaNotice.githubDesc": "オープンソースリポジトリでバグ報告や機能提案を投稿できます。",
   "betaNotice.discordTitle": "Discord コミュニティ",
   "betaNotice.discordDesc": "公式サーバーに参加して開発者や他のプレイヤーと交流しましょう。",
-  "betaNotice.understandBtn": "了解"
+  "betaNotice.understandBtn": "了解",
+  "manage.installOptionsTitle": "Optional Content",
+  "manage.installOptionsDesc": "Add optional packs such as game modes and high-resolution textures without reinstalling the game.",
+  "manage.installOptions": "Manage Packs",
+  "selective.addContent": "Add Selected",
+  "selective.installedNote": "Installed content stays on disk. Only the newly ticked packs are downloaded.",
+  "selective.newSelected": "{count} new items selected",
+  "selective.addedDownload": "Added Download",
+  "selective.addedStorage": "Added Storage",
+  "selective.none": "This game has no optional content.",
+  "selective.checkFailed": "Could not load install options: {msg}"
 }

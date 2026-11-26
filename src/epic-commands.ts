@@ -539,6 +539,8 @@ export interface InstallOptionTag {
   category: string;
   /** Selected when the options modal opens (Epic preselects Fortnite modes). */
   defaultSelected?: boolean;
+  /** This row is already on disk; adding content keeps it checked. */
+  installed?: boolean;
   /** Raw manifest tags behind this row. Empty for the legacy one-tag rows. */
   tags?: string[];
 }
@@ -551,6 +553,8 @@ export interface GameInstallOptions {
   tags: InstallOptionTag[];
   dlcs: GameDlcItem[];
   hasOptions: boolean;
+  /** Raw tags of the installed copy, used to add packs without dropping one. */
+  installedTags?: string[];
 }
 
 export const epicGetInstallOptions = (appName: string) =>

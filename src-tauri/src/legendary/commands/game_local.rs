@@ -952,6 +952,10 @@ pub struct InstallOptionTag {
     /// Selected when the install options open (Epic preselects Fortnite modes).
     #[serde(default)]
     pub default_selected: bool,
+    /// This row is part of the installed copy. The manage dialog keeps it
+    /// checked and adds new rows on top instead of reinstalling the base.
+    #[serde(default)]
+    pub installed: bool,
     /// Raw manifest tags behind this row. Empty for the legacy one-tag rows.
     #[serde(default)]
     pub tags: Vec<String>,
@@ -967,6 +971,10 @@ pub struct GameInstallOptions {
     pub tags: Vec<InstallOptionTag>,
     pub dlcs: Vec<GameDlcItem>,
     pub has_options: bool,
+    /// Raw tags of the installed copy. The manage dialog unions these with the
+    /// user's new selection so adding a pack never drops an installed one.
+    #[serde(default)]
+    pub installed_tags: Vec<String>,
 }
 
 fn json_u64(v: &serde_json::Value) -> u64 {
@@ -1022,6 +1030,7 @@ fn sizes_from_manifest(manifest: &serde_json::Value) -> (u64, u64, Vec<InstallOp
                     download_size: dl_size,
                     category: category.to_string(),
                     default_selected: false,
+                    installed: false,
                     tags: Vec::new(),
                 });
             }
@@ -1158,6 +1167,7 @@ fn sdl_options(
                 download_size,
                 category,
                 default_selected,
+                installed: false,
                 tags: tags.into_iter().map(str::to_string).collect(),
             });
         }
@@ -1234,6 +1244,22 @@ pub async fn epic_get_install_options(
         .into_iter()
         .filter(|d| d.downloadable)
         .collect();
+    // The manage dialog re-opens the same rows for an installed copy. Mark the
+    // rows the copy already has so adding a new pack starts from the real
+    // selection instead of the fresh-install defaults.
+    let installed_tags = crate::legendary::cache::installed_install_tags(
+        &skip::default_config_dir(),
+        &app_name,
+    );
+    let installed_set: std::collections::HashSet<&str> =
+        installed_tags.iter().map(String::as_str).collect();
+    for tag in &mut tags {
+        tag.installed = if tag.tags.is_empty() {
+            installed_set.contains(tag.tag.as_str())
+        } else {
+            tag.tags.iter().any(|raw| installed_set.contains(raw.as_str()))
+        };
+    }
     let has_options = !tags.is_empty() || !dlcs.is_empty();
 
     Ok(GameInstallOptions {
@@ -1244,6 +1270,7 @@ pub async fn epic_get_install_options(
         tags,
         dlcs,
         has_options,
+        installed_tags,
     })
 }
 

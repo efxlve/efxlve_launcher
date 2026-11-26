@@ -4608,5 +4608,15 @@
   "betaNotice.githubDesc": "Zgłoś błąd lub zaproponuj nową funkcję w naszym repozytorium open source.",
   "betaNotice.discordTitle": "Społeczność Discord",
   "betaNotice.discordDesc": "Dołącz do naszego serwera, aby porozmawiać z twórcami i innymi graczami.",
-  "betaNotice.understandBtn": "Rozumiem"
+  "betaNotice.understandBtn": "Rozumiem",
+  "manage.installOptionsTitle": "Optional Content",
+  "manage.installOptionsDesc": "Add optional packs such as game modes and high-resolution textures without reinstalling the game.",
+  "manage.installOptions": "Manage Packs",
+  "selective.addContent": "Add Selected",
+  "selective.installedNote": "Installed content stays on disk. Only the newly ticked packs are downloaded.",
+  "selective.newSelected": "{count} new items selected",
+  "selective.addedDownload": "Added Download",
+  "selective.addedStorage": "Added Storage",
+  "selective.none": "This game has no optional content.",
+  "selective.checkFailed": "Could not load install options: {msg}"
 }

@@ -4608,5 +4608,15 @@
   "betaNotice.githubDesc": "Создайте отчет об ошибке или предложение в нашем открытом репозитории.",
   "betaNotice.discordTitle": "Сообщество Discord",
   "betaNotice.discordDesc": "Присоединяйтесь к серверу, чтобы пообщаться с разработчиками и игроками.",
-  "betaNotice.understandBtn": "Понятно"
+  "betaNotice.understandBtn": "Понятно",
+  "manage.installOptionsTitle": "Optional Content",
+  "manage.installOptionsDesc": "Add optional packs such as game modes and high-resolution textures without reinstalling the game.",
+  "manage.installOptions": "Manage Packs",
+  "selective.addContent": "Add Selected",
+  "selective.installedNote": "Installed content stays on disk. Only the newly ticked packs are downloaded.",
+  "selective.newSelected": "{count} new items selected",
+  "selective.addedDownload": "Added Download",
+  "selective.addedStorage": "Added Storage",
+  "selective.none": "This game has no optional content.",
+  "selective.checkFailed": "Could not load install options: {msg}"
 }
