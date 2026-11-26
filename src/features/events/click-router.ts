@@ -23,6 +23,8 @@ import {
   REDUCE_EFFECTS_KEY,
   PAUSE_ON_PLAY_KEY,
   STEAM_EXIT_AFTER_PLAY_KEY,
+  DELEGATE_EPIC_KEY,
+  DELEGATE_GOG_KEY,
   PROFILE_VIEW_MODE_KEY,
   SPEED_BITS_KEY,
   SS_COMPRESS_KEY,
@@ -1956,6 +1958,18 @@ document.addEventListener("click", (e) => {
   } else if (act === "toggle-steam-exit-after-play") {
     S.steamExitAfterPlay = !S.steamExitAfterPlay;
     localStorage.setItem(STEAM_EXIT_AFTER_PLAY_KEY, String(S.steamExitAfterPlay));
+    render();
+  } else if (act === "toggle-delegate-store") {
+    // Settings > Launchers: hand the official client's installs back to it.
+    const store = t.dataset.store;
+    const enabled = (t as HTMLInputElement).checked;
+    if (store === "epic") {
+      S.delegateEpic = enabled;
+      localStorage.setItem(DELEGATE_EPIC_KEY, String(enabled));
+    } else if (store === "gog") {
+      S.delegateGog = enabled;
+      localStorage.setItem(DELEGATE_GOG_KEY, String(enabled));
+    }
     render();
   } else if (act === "toggle-client-exit") {
     // Companion clients: the Rust watcher reads this from its settings file.

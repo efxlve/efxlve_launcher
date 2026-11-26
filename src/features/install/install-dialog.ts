@@ -8,6 +8,7 @@
  */
 
 import { epicInstall, epicPlay } from "../../core/epic-actions";
+import { clientName, delegateClientAction, delegateEnabled } from "../../core/client-delegation";
 import { installRoot } from "../../core/dom";
 import { epicArt, epicDlProgress } from "../../core/game-view";
 import { icon } from "../../core/icons";
@@ -67,6 +68,21 @@ export async function openInstallDialog(appName: string): Promise<void> {
   const isGog = appName.startsWith("gog::");
   const s = summaryOf(appName);
   if (!s || epicDlProgress(appName) !== null) return;
+
+  // A Galaxy-owned copy installs and updates through Galaxy. Launcher-owned
+  // copies answer `false` and keep the dialog below.
+  if (isGog && delegateEnabled("gog")) {
+    try {
+      if (await delegateClientAction("gog", appName.slice(5), "check")) {
+        await delegateClientAction("gog", appName.slice(5), "open");
+        toast(t("launchers.delegateOpened", { a1: clientName("gog") }), "ok");
+        return;
+      }
+    } catch (e) {
+      toast(localizeMessage(String(e)), "err");
+      return;
+    }
+  }
 
   if (appName.startsWith("ea::")) {
     await openEaInstallDialog(appName);

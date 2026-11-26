@@ -506,7 +506,7 @@ pub fn epic_launcher_executable() -> Option<PathBuf> {
 
 /// The executable inside a shell `open` command (`"C:\...\Launcher.exe" %1`).
 /// Only existing files are returned, so a deleted install cannot be used.
-fn exe_from_open_command(command: &str) -> Option<PathBuf> {
+pub(crate) fn exe_from_open_command(command: &str) -> Option<PathBuf> {
     let command = command.trim();
     if command.is_empty() {
         return None;

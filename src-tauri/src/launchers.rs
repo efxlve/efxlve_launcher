@@ -9,6 +9,7 @@
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
+use tauri::AppHandle;
 
 /// One row of the Settings > Launchers list.
 #[derive(Debug, Clone, Serialize)]
@@ -49,6 +50,19 @@ fn first_file(candidates: &[&str]) -> Option<PathBuf> {
 }
 
 fn gog_galaxy() -> Option<PathBuf> {
+    // The URI handler also finds a Galaxy installed outside Program Files.
+    for key in [
+        r"HKCU\Software\Classes\goggalaxy\shell\open\command",
+        r"HKLM\SOFTWARE\Classes\goggalaxy\shell\open\command",
+        r"HKLM\SOFTWARE\WOW6432Node\Classes\goggalaxy\shell\open\command",
+    ] {
+        if let Some(output) = crate::winreg::query(key, None) {
+            let command = crate::winreg::parse_reg_sz(&output);
+            if let Some(path) = crate::legendary::import_installed::exe_from_open_command(&command) {
+                return Some(path);
+            }
+        }
+    }
     first_file(&[
         r"C:\Program Files (x86)\GOG Galaxy\GalaxyClient.exe",
         r"C:\Program Files\GOG Galaxy\GalaxyClient.exe",
@@ -173,6 +187,202 @@ pub fn launchers_status() -> Vec<LauncherStatus> {
         .collect()
 }
 
+/// A game the official store client installed and still has on disk.
+struct ClientGame {
+    install_path: PathBuf,
+    title: String,
+    executable: String,
+}
+
+/// Finds the store's own install record for this game. Only a copy the client
+/// installed is delegated; a launcher-owned install keeps the direct path.
+fn client_game(store: &str, game_id: &str) -> Option<ClientGame> {
+    match store {
+        "epic" => crate::legendary::cache::read_egl_installed_games()
+            .into_iter()
+            .find(|game| game.app_name.eq_ignore_ascii_case(game_id))
+            .map(|game| ClientGame {
+                install_path: PathBuf::from(game.install_path),
+                title: game.title,
+                executable: game.executable,
+            }),
+        "gog" => crate::gogdl::galaxy::detect_galaxy_games()
+            .into_iter()
+            .find(|game| game.game_id == game_id)
+            .map(|game| ClientGame {
+                install_path: PathBuf::from(game.install_path),
+                title: if game.title.is_empty() {
+                    game_id.to_string()
+                } else {
+                    game.title
+                },
+                executable: game.executable,
+            }),
+        _ => None,
+    }
+}
+
+/// Starts a client executable without a console window.
+fn spawn_client(exe: &Path, args: &[&str]) -> Result<(), String> {
+    let mut cmd = std::process::Command::new(exe);
+    cmd.args(args);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    cmd.spawn().map(|_| ()).map_err(|e| e.to_string())
+}
+
+fn epic_uri(game_id: &str, launch: bool) -> String {
+    if launch {
+        format!("com.epicgames.launcher://apps/{game_id}?action=launch&silent=true")
+    } else {
+        format!("com.epicgames.launcher://apps/{game_id}")
+    }
+}
+
+fn gog_args<'a>(game_id: &'a str, command: &'static str) -> [&'a str; 4] {
+    ["/gameid", game_id, "/command", command]
+}
+
+/// Watches a game the client started and closes the session when it exits.
+/// The client protocol returns before the game window exists, so the loop waits
+/// for a process under the install folder first.
+fn watch_delegated_session(app: AppHandle, key: String, game: ClientGame) {
+    tauri::async_runtime::spawn(async move {
+        use tauri::Emitter;
+        let candidates = crate::legendary::transfers::discover_game_executables(
+            &game.install_path,
+            (!game.executable.trim().is_empty()).then_some(game.executable.as_str()),
+        );
+        let started = std::time::Instant::now();
+        let mut detected_at: Option<std::time::Instant> = None;
+        let mut missing = 0u32;
+        let mut last_heartbeat = std::time::Instant::now();
+        loop {
+            if crate::legendary::transfers::is_game_process_running(
+                Some(&game.install_path),
+                &candidates,
+            ) {
+                if detected_at.is_none() {
+                    detected_at = Some(std::time::Instant::now());
+                    crate::legendary::screenshots::set_active_running_game(
+                        &key,
+                        &game.title,
+                        Some(game.install_path.clone()),
+                        candidates.clone(),
+                    );
+                    crate::legendary::playtime_session::begin(&key);
+                    let _ = app.emit(
+                        "game-status",
+                        serde_json::json!({ "id": key, "running": true }),
+                    );
+                }
+                if last_heartbeat.elapsed() >= std::time::Duration::from_secs(15) {
+                    crate::legendary::playtime_session::heartbeat();
+                    last_heartbeat = std::time::Instant::now();
+                }
+                missing = 0;
+            } else if detected_at.is_some() {
+                missing += 1;
+                if missing >= 3 {
+                    break;
+                }
+            } else if started.elapsed() > std::time::Duration::from_secs(300) {
+                // The client only opened a page or an install prompt.
+                return;
+            }
+            tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+        }
+        let elapsed = detected_at
+            .map(|at| at.elapsed().as_secs())
+            .unwrap_or(0);
+        crate::legendary::screenshots::clear_active_running_game(&key);
+        let record = if elapsed >= 5 {
+            crate::legendary::playtime::record_session(&key, elapsed).ok()
+        } else {
+            None
+        };
+        crate::legendary::playtime_session::finish();
+        let payload = match record {
+            Some(record) => serde_json::json!({
+                "id": key,
+                "running": false,
+                "sessionSeconds": elapsed,
+                "totalSeconds": record.total_seconds,
+                "sessionCount": record.session_count,
+                "lastPlayed": record.last_played,
+                "lastPlayedTimestamp": record.last_played_timestamp,
+            }),
+            None => serde_json::json!({ "id": key, "running": false }),
+        };
+        let _ = app.emit("game-status", payload);
+        crate::legendary::transfers::wake_main_window(&app);
+    });
+}
+
+/// Optional hand-off for games the official Epic/GOG client installed.
+///
+/// `action` is `launch` (start the game through the client), `open` (show the
+/// game page for install/update/uninstall) or `check` (only report whether the
+/// client owns this copy). Returns `false` for a launcher-owned install, so the
+/// caller keeps using the direct legendary/gogdl path.
+#[tauri::command]
+pub async fn launcher_delegate(
+    app: AppHandle,
+    store: String,
+    game_id: String,
+    action: String,
+) -> Result<bool, String> {
+    // A client removed after the switch was enabled must fall back to the
+    // direct path, not fail because its old install records are still around.
+    let exe = match store.as_str() {
+        "epic" => crate::legendary::import_installed::epic_launcher_executable(),
+        "gog" => gog_galaxy(),
+        _ => None,
+    };
+    let Some(exe) = exe else {
+        return Ok(false);
+    };
+    let Some(game) = client_game(&store, &game_id) else {
+        return Ok(false);
+    };
+    match action.as_str() {
+        "check" => Ok(true),
+        "launch" => {
+            match store.as_str() {
+                "epic" => {
+                    let uri = epic_uri(&game_id, true);
+                    spawn_client(&exe, &[uri.as_str()])?;
+                }
+                "gog" => spawn_client(&exe, &gog_args(&game_id, "runGame"))?,
+                _ => return Ok(false),
+            }
+            let key = if store == "gog" {
+                format!("gog::{game_id}")
+            } else {
+                game_id
+            };
+            watch_delegated_session(app, key, game);
+            Ok(true)
+        }
+        "open" => {
+            match store.as_str() {
+                "epic" => {
+                    let uri = epic_uri(&game_id, false);
+                    spawn_client(&exe, &[uri.as_str()])?;
+                }
+                "gog" => spawn_client(&exe, &gog_args(&game_id, "launch"))?,
+                _ => return Ok(false),
+            }
+            Ok(true)
+        }
+        _ => Ok(false),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -203,5 +413,21 @@ mod tests {
         std::fs::write(dir.join("Amazon Games.exe"), b"").unwrap();
         assert_eq!(amazon_app_exe(&dir), Some(dir.join("Amazon Games.exe")));
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn delegate_commands_carry_the_game_id() {
+        assert_eq!(
+            epic_uri("Ginger", true),
+            "com.epicgames.launcher://apps/Ginger?action=launch&silent=true"
+        );
+        assert_eq!(
+            epic_uri("Ginger", false),
+            "com.epicgames.launcher://apps/Ginger"
+        );
+        assert_eq!(
+            gog_args("1207658924", "runGame"),
+            ["/gameid", "1207658924", "/command", "runGame"]
+        );
     }
 }

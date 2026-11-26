@@ -2336,6 +2336,7 @@ fn main() {
             perf::perf_mark,
             app_set_autostart,
             launchers::launchers_status,
+            launchers::launcher_delegate,
             app_toggle_maximize,
             app_is_maximized,
             app_set_background_color,

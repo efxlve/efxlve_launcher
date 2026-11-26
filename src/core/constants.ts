@@ -81,6 +81,10 @@ export function normalizeDownloadFinishAction(value: string | null): DownloadFin
 }
 /** Hide the Steam window on launch and quit Steam when the game closes. Default off. */
 export const STEAM_EXIT_AFTER_PLAY_KEY = "efxlve-steam-exit-after-play";
+/** Hand games installed by the official Epic Games Launcher back to it. */
+export const DELEGATE_EPIC_KEY = "efxlve-delegate-epic";
+/** Hand games installed by the official GOG Galaxy client back to it. */
+export const DELEGATE_GOG_KEY = "efxlve-delegate-gog";
 
 /** Settings > Controller: PlayStation pads are mapped to a virtual Xbox pad. */
 export const CONTROLLER_BRIDGE_KEY = "efxlve-controller-bridge";

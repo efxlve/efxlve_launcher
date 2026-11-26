@@ -62,6 +62,8 @@ import {
   DOWNLOAD_FINISH_ACTION_KEY,
   normalizeDownloadFinishAction,
   STEAM_EXIT_AFTER_PLAY_KEY,
+  DELEGATE_EPIC_KEY,
+  DELEGATE_GOG_KEY,
   PROFILE_CARD_CHUNK,
   PROFILE_VIEW_MODE_KEY,
   RECENT_KEY,
@@ -781,6 +783,9 @@ export const S = {
   pauseOnPlay: (localStorage.getItem(PAUSE_ON_PLAY_KEY) !== "false") as boolean,
   downloadFinishAction: normalizeDownloadFinishAction(localStorage.getItem(DOWNLOAD_FINISH_ACTION_KEY)),
   steamExitAfterPlay: (localStorage.getItem(STEAM_EXIT_AFTER_PLAY_KEY) === "true") as boolean,
+  /** Games installed by the official client are handed back to it. */
+  delegateEpic: (localStorage.getItem(DELEGATE_EPIC_KEY) === "true") as boolean,
+  delegateGog: (localStorage.getItem(DELEGATE_GOG_KEY) === "true") as boolean,
   autoDesktopShortcut: (localStorage.getItem(AUTO_SHORTCUT_KEY) !== "false") as boolean,
   autoPausedDl: (null) as string | null,
   speedHistory: (new Array(60).fill(0)) as number[],

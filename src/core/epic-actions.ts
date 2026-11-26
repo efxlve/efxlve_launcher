@@ -31,7 +31,8 @@ import { isTauri, IGNORED_UPDATES_KEY, CLOUD_PRELAUNCH_SKIP_KEY } from "./consta
 import { isRestoreSnapshotBackup } from "./backup-utils";
 import { closeModal } from "./dom";
 import { closeManagePopup } from "../features/manage/manage-view";
-import { t, currentLanguage } from "../i18n";
+import { t, currentLanguage, localizeMessage } from "../i18n";
+import { clientName, delegateClientAction, delegateEnabled, delegatedStoreOf } from "./client-delegation";
 import { askConfirm } from "./confirm-dialog";
 import { gogLaunchGame, gogStopGame, gogUninstallGame } from "../gog";
 import { steamGameAction } from "../steam";
@@ -267,6 +268,20 @@ export async function epicPlay(appName: string): Promise<void> {
     }
     return;
   }
+  const delegatedStore = delegatedStoreOf(appName);
+  if (delegatedStore && delegateEnabled(delegatedStore)) {
+    const gameId = delegatedStore === "gog" ? appName.slice(5) : appName;
+    try {
+      if (await delegateClientAction(delegatedStore, gameId, "launch")) {
+        pushRecent(appName);
+        toast(t("dl.launching"), "");
+        return;
+      }
+    } catch (e) {
+      toast(localizeMessage(String(e)), "err");
+      return;
+    }
+  }
   pushRecent(appName);
   if (appName.startsWith("gog::")) {
     await launchWithStatus(appName, () => gogLaunchGame(appName));
@@ -297,9 +312,29 @@ export async function epicPlay(appName: string): Promise<void> {
 }
 
 /** Start (or update) a game installation, wiring up the download metrics. */
-export async function epicInstall(appName: string, installDir?: string | null): Promise<void> {
+export async function epicInstall(
+  appName: string,
+  installDir?: string | null,
+  options: { auto?: boolean } = {},
+): Promise<void> {
   const s = S.epicSummariesMap.get(appName);
   if (!s || epicDlProgress(appName) !== null) return;
+  // An install or update of a copy the official client owns stays with it. A
+  // scheduled pass must not open a client window at the configured time.
+  if (delegateEnabled("epic")) {
+    try {
+      if (await delegateClientAction("epic", appName, "check")) {
+        if (!options.auto) {
+          await delegateClientAction("epic", appName, "open");
+          toast(t("launchers.delegateOpened", { a1: clientName("epic") }), "ok");
+        }
+        return;
+      }
+    } catch (e) {
+      toast(localizeMessage(String(e)), "err");
+      return;
+    }
+  }
   // Downloads need the network; offline mode says no before any UI spins up.
   if (blockedOffline(t("net.whatDownload"))) return;
   const g = rawOf(appName);
@@ -375,6 +410,24 @@ export async function epicCancel(appName: string): Promise<void> {
 
 /** Uninstall a game, close the drawer and refresh installed state. */
 export async function epicUninstall(appName: string): Promise<void> {
+  // The official client owns the copies it installed; removing them here would
+  // leave its library pointing at a deleted folder.
+  const delegatedStore = delegatedStoreOf(appName);
+  if (delegatedStore && delegateEnabled(delegatedStore)) {
+    const gameId = delegatedStore === "gog" ? appName.slice(5) : appName;
+    try {
+      if (await delegateClientAction(delegatedStore, gameId, "check")) {
+        await delegateClientAction(delegatedStore, gameId, "open");
+        toast(t("launchers.delegateOpened", { a1: clientName(delegatedStore) }), "ok");
+        closeManagePopup();
+        closeModal();
+        return;
+      }
+    } catch (e) {
+      toast(localizeMessage(String(e)), "err");
+      return;
+    }
+  }
   // Close before the command returns so the dialog cannot be clicked again.
   closeManagePopup();
   closeModal();

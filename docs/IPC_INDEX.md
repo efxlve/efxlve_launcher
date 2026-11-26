@@ -374,6 +374,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `igdb_status` | `igdbStatus({ ... })` | `src-tauri/src/igdb.rs` |
 | `igdb_test` | `igdbTest({ ... })` | `src-tauri/src/igdb.rs` |
 | `image_cache_size` | `imageCacheSize({ ... })` | `src-tauri/src/image_cache.rs` |
+| `launcher_delegate` | `launcherDelegate({ ... })` | `src-tauri/src/launchers.rs` |
 | `launchers_status` | `launchersStatus({ ... })` | `src-tauri/src/launchers.rs` |
 | `library_dir` | `libraryDir({ ... })` | `src-tauri/src/main.rs` |
 | `move_notif_overlay` | `moveNotifOverlay({ ... })` | `src-tauri/src/notif_overlay.rs` |

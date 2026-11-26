@@ -552,6 +552,15 @@ function renderLaunchers(): string {
         : l.id === "amazon"
           ? t("launchers.amazonNote")
           : "";
+    // Optional: give the official client the games it installed back. Only
+    // those games are handed over; launcher-owned installs keep the direct path.
+    const delegateOn = l.id === "epic" ? S.delegateEpic : l.id === "gog" ? S.delegateGog : false;
+    const delegate = l.installed && (l.id === "epic" || l.id === "gog")
+      ? `<label class="switch" title="${esc(t("launchers.delegate"))}"><input type="checkbox" data-act="toggle-delegate-store" data-store="${l.id}" ${delegateOn ? "checked" : ""} /><span class="track"></span></label>`
+      : "";
+    const delegateNote = delegate
+      ? `<div class="settings-row-desc">${t("launchers.delegateDesc")}</div>`
+      : "";
     const rowHtml = `
       <div class="row settings-row">
         <span class="acc-store-mark">${storeLogo(l.id, 24) || icon("layers", 24)}</span>
@@ -559,8 +568,9 @@ function renderLaunchers(): string {
           <div class="settings-row-title">${esc(l.name)}</div>
           ${l.path ? `<div class="settings-row-desc"><code>${esc(l.path)}</code></div>` : ""}
           ${note ? `<div class="settings-row-desc">${note}</div>` : ""}
+          ${delegateNote}
         </div>
-        <div class="settings-row-control">${chip}${openBtn}${downloadBtn}</div>
+        <div class="settings-row-control">${chip}${delegate}${openBtn}${downloadBtn}</div>
       </div>`;
     // Epic, GOG and Amazon Games are managed here; Steam and the companion
     // clients own the play.

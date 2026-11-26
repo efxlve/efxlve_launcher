@@ -30,6 +30,26 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.74",
+    date: "2026-11-26",
+    added: [
+      {
+        en: "An optional \"Use official client\" switch for Epic Games and GOG: games installed by the Epic Games Launcher or GOG Galaxy can start, update and uninstall through that client.",
+        tr: "Epic Games ve GOG için isteğe bağlı \"Resmî istemciyi kullan\" anahtarı: Epic Games Launcher veya GOG Galaxy'nin kurduğu oyunlar o istemci üzerinden başlatılabilir, güncellenebilir ve kaldırılabilir.",
+      },
+      {
+        en: "The switch sits on Settings > Launchers and only appears while the matching client is installed.",
+        tr: "Anahtar Ayarlar > Launcher'lar sayfasında; yalnızca ilgili istemci kuruluysa görünür.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Games installed by the rebuilt Epic Games Launcher are detected and imported again; its install records moved out of the old ProgramData folder.",
+        tr: "Yenilenen Epic Games Launcher'ın kurduğu oyunlar yeniden algılanıyor ve içe aktarılıyor; kurulum kayıtları eski ProgramData klasöründen taşınmıştı.",
+      },
+    ],
+  },
+  {
     version: "0.1.73",
     date: "2026-11-25",
     added: [

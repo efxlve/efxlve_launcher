@@ -8,6 +8,7 @@
  */
 
 import { epicInstall } from "../../core/epic-actions";
+import { delegateClientAction, delegateEnabled } from "../../core/client-delegation";
 import { gogInstallGame } from "../../gog";
 import { installAmazonGame } from "../auth/amazon-auth-actions";
 import { S } from "../../core/state";
@@ -65,13 +66,18 @@ async function runAutoUpdate(): Promise<void> {
   pushNotification({ kind: "info", title: t("sched.starting", { n }) });
   for (const u of epicUpdates) {
     try {
-      await epicInstall(u.appName);
+      await epicInstall(u.appName, undefined, { auto: true });
     } catch {
       // Queue conflicts (another active download) are expected and harmless.
     }
   }
   for (const g of gogUpdates) {
     try {
+      // A Galaxy-owned copy updates through Galaxy; do not start a second
+      // download behind its back.
+      if (delegateEnabled("gog") && (await delegateClientAction("gog", g.id, "check"))) {
+        continue;
+      }
       // Reuse the recorded folder: without it gogdl falls back to the default
       // root and overwrites the install record with a second copy.
       await gogInstallGame(`gog::${g.id}`, g.installPath ?? undefined);
