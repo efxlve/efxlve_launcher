@@ -377,9 +377,9 @@ pub struct EpicSettings {
     #[serde(default)]
     pub gog_comet_enabled: Option<bool>,
     /// Start, install and update eligible EA games directly with the account
-    /// token instead of handing them to the EA app. On by default; the EA app
-    /// remains the fallback for anti-cheat and legacy titles. `None` means the
-    /// default was never changed.
+    /// token instead of handing them to the EA app. Experimental and off by
+    /// default; the EA app remains the fallback for anti-cheat and legacy
+    /// titles. `None` means the default was never changed.
     #[serde(default)]
     pub ea_direct_launch: Option<bool>,
     /// Base folder for EA installs (empty = `<home>/Games/EA`).
@@ -390,8 +390,9 @@ pub struct EpicSettings {
     /// the Connect client to be running.
     #[serde(default)]
     pub ubi_direct_shim: Option<bool>,
-    /// Install and launch eligible Ubisoft games without Ubisoft Connect. On by
-    /// default; online, anti-cheat and Connect-only titles remain client-only.
+    /// Install and launch eligible Ubisoft games without Ubisoft Connect.
+    /// Experimental and off by default; online, anti-cheat and Connect-only
+    /// titles remain client-only.
     #[serde(default)]
     pub ubi_direct_enabled: Option<bool>,
     /// Base folder for Ubisoft direct installs (empty = `<home>/Games/Ubisoft`).

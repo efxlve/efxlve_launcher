@@ -3829,6 +3829,7 @@
   "settings.ubiDirectTitle": "Używaj gier Ubisoft bez Ubisoft Connect",
   "settings.eaDirectFailed": "Ostatnie uruchomienie bezpośrednie nie powiodło się: {error}",
   "settings.eaDirectGroup": "EA App",
+  "settings.experimentalTag": "(Eksperymentalne)",
   "downloads.eaDirectTitle": "EA",
   "ea.installing": "Instalowanie…",
   "manage.eaContentTitle": "Zawartość i aktualizacje EA",

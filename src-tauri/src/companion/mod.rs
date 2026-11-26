@@ -622,10 +622,10 @@ pub fn companion_open_client(store: String) -> Result<(), String> {
     launch::open_client(&store)
 }
 
-/// Direct EA launch/install is the default; only an explicit `false` turns it
-/// off. `None` is the untouched setting from an older profile.
+/// Direct EA launch/install is experimental and starts off; only an explicit
+/// `true` turns it on. `None` is the untouched setting from an older profile.
 fn ea_direct_enabled(value: Option<bool>) -> bool {
-    value.unwrap_or(true)
+    value.unwrap_or(false)
 }
 
 #[tauri::command]
@@ -728,10 +728,11 @@ pub async fn companion_launch(app: tauri::AppHandle, store: String, id: String) 
 /// Native Ubisoft probe: owned base games and their manifest ids straight from
 /// Demux, with no Ubisoft Connect process involved. This is the first step of
 /// the direct install path; it changes nothing on disk.
-/// Direct Ubisoft install/launch is the default; only an explicit `false`
-/// turns it off. `None` is an untouched setting from an older profile.
+/// Direct Ubisoft install/launch is experimental and starts off; only an
+/// explicit `true` turns it on. `None` is an untouched setting from an older
+/// profile.
 fn ubi_direct_enabled(value: Option<bool>) -> bool {
-    value.unwrap_or(true)
+    value.unwrap_or(false)
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -2544,15 +2545,15 @@ mod tests {
     }
 
     #[test]
-    fn ea_direct_is_on_unless_explicitly_disabled() {
-        assert!(ea_direct_enabled(None));
+    fn ea_direct_is_off_unless_explicitly_enabled() {
+        assert!(!ea_direct_enabled(None));
         assert!(ea_direct_enabled(Some(true)));
         assert!(!ea_direct_enabled(Some(false)));
     }
 
     #[test]
-    fn direct_ubisoft_installs_are_on_by_default() {
-        assert!(ubi_direct_enabled(None));
+    fn direct_ubisoft_installs_are_off_by_default() {
+        assert!(!ubi_direct_enabled(None));
         assert!(ubi_direct_enabled(Some(true)));
         assert!(!ubi_direct_enabled(Some(false)));
     }

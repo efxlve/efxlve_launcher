@@ -1069,14 +1069,14 @@ export const S = {
   companionBusy: "",
   /** Per-store "close the client after playing" toggles (Integrations page). */
   companionCloseAfterPlay: {} as Record<string, boolean>,
-  /** Opt-in direct EA launch (Integrations page). On unless explicitly turned off. */
-  eaDirectEnabled: true,
+  /** Opt-in direct EA launch (Integrations page). Experimental; off unless explicitly turned on. */
+  eaDirectEnabled: false,
   eaDirectLastError: "",
   /** EA base install folder from Settings > Downloads (empty = default). */
   eaInstallDir: "",
   eaDefaultDir: "",
-  /** Direct Ubisoft installs (Integrations page). On unless explicitly turned off. */
-  ubiDirectEnabled: true,
+  /** Direct Ubisoft installs (Integrations page). Experimental; off unless explicitly turned on. */
+  ubiDirectEnabled: false,
   /** Ubisoft base install folder from Settings > Downloads (empty = default). */
   ubiInstallDir: "",
   ubiDefaultDir: "",

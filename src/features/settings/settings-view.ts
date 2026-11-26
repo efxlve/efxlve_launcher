@@ -613,7 +613,7 @@ function renderUbiDirect(): string {
       ? ""
       : `<button class="btn ghost small" data-view="accounts">${icon("user", 13)} ${t("settings.nileAccount")}</button>`;
   return row(
-    t("settings.ubiDirectTitle"),
+    `${t("settings.ubiDirectTitle")} <span class="settings-row-tag">${t("settings.experimentalTag")}</span>`,
     `${t("settings.ubiDirectDesc")}${account}`,
     `${accountAction}${toggle("toggle-ubi-direct", S.ubiDirectEnabled)}`,
   );
@@ -768,7 +768,7 @@ function renderIntegrations(): string {
   // service is stopped only for the session, then restored.
   const eaDirectGroup = group(
     row(
-      t("settings.eaDirectTitle"),
+      `${t("settings.eaDirectTitle")} <span class="settings-row-tag">${t("settings.experimentalTag")}</span>`,
       `${t("settings.eaDirectDesc")}${S.eaDirectLastError ? ` <span class="row-meta">${esc(t("settings.eaDirectFailed", { error: S.eaDirectLastError }))}</span>` : ""}`,
       toggle("toggle-ea-direct", S.eaDirectEnabled),
     ),
@@ -2902,7 +2902,7 @@ export async function loadIntegrationsView(force = false): Promise<void> {
     S.gogGalaxyDetected = galaxyList ?? [];
     S.steamStatus = steamState;
     S.companionCloseAfterPlay = clientSettings?.closeAfterPlay ?? {};
-    S.ubiDirectEnabled = ubiDirectState?.enabled ?? true;
+    S.ubiDirectEnabled = ubiDirectState?.enabled ?? false;
     S.eaDirectEnabled = eaDirect?.enabled ?? false;
     S.eaDirectLastError = eaDirect?.lastError ?? "";
     syncEosNotice();

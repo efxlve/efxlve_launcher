@@ -32,6 +32,12 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
     version: "0.1.75",
     date: "2026-11-26",
+    improved: [
+      {
+        en: "The direct EA and Ubisoft install switches now start off and are labelled experimental, so nothing skips the official client until you turn them on.",
+        tr: "EA ve Ubisoft için doğrudan kurulum anahtarları artık kapalı başlıyor ve deneysel olarak işaretli; sen açana kadar hiçbir şey resmî istemciyi atlamıyor.",
+      },
+    ],
     fixed: [
       {
         en: "Settings > Launchers rescans when you open it and now has a Rescan button, so a client installed after the last visit appears without restarting.",

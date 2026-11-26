@@ -189,6 +189,9 @@
 .settings-row.stacked .settings-row-control { flex: 0 0 auto; justify-content: flex-start; }
 .settings-row .row-main { flex: 1 1 220px; min-width: min(220px, 100%); }
 .settings-row-title { font-size: 13px; font-weight: 500; overflow-wrap: break-word; }
+/* "(Experimental)" suffix on a settings row title: it qualifies the feature,
+   not its state, so it stays plain muted text instead of a state chip. */
+.settings-row-tag { margin-left: 4px; color: var(--text-2); font-size: 11px; font-weight: 500; white-space: nowrap; }
 /* Store mark inside a settings row title (Settings > Appearance > Store tabs). */
 .settings-store-logo { display: inline-block; vertical-align: -4px; margin-right: 8px; object-fit: contain; transition: filter var(--ease), opacity var(--ease); }
 /* Store rows: the user store's own actions sit next to the name, keeping the

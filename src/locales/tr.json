@@ -3829,6 +3829,7 @@
   "settings.ubiDirectTitle": "Ubisoft oyunlarını Ubisoft Connect olmadan kullan",
   "settings.eaDirectFailed": "Son doğrudan başlatma başarısız: {error}",
   "settings.eaDirectGroup": "EA App",
+  "settings.experimentalTag": "(Deneysel)",
   "downloads.eaDirectTitle": "EA",
   "ea.installing": "Yükleniyor…",
   "manage.eaContentTitle": "EA içeriği ve güncellemeler",

@@ -3829,6 +3829,7 @@
   "settings.ubiDirectTitle": "เล่นเกม Ubisoft โดยไม่ใช้ Ubisoft Connect",
   "settings.eaDirectFailed": "การเปิดเกมโดยตรงครั้งล่าสุดล้มเหลว: {error}",
   "settings.eaDirectGroup": "EA App",
+  "settings.experimentalTag": "(ทดลอง)",
   "downloads.eaDirectTitle": "EA",
   "ea.installing": "กำลังติดตั้ง…",
   "manage.eaContentTitle": "เนื้อหาและการอัปเดต EA",

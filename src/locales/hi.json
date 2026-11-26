@@ -3829,6 +3829,7 @@
   "settings.ubiDirectTitle": "Ubisoft Connect के बिना Ubisoft गेम्स चलाएँ",
   "settings.eaDirectFailed": "पिछला डायरेक्ट लॉन्च विफल रहा: {error}",
   "settings.eaDirectGroup": "EA App",
+  "settings.experimentalTag": "(प्रयोगात्मक)",
   "downloads.eaDirectTitle": "EA",
   "ea.installing": "इंस्टॉल हो रहा है…",
   "manage.eaContentTitle": "EA सामग्री और अपडेट",

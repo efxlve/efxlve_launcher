@@ -3829,6 +3829,7 @@
   "settings.ubiDirectTitle": "無需 Ubisoft Connect 使用 Ubisoft 遊戲",
   "settings.eaDirectFailed": "上次直接啟動失敗：{error}",
   "settings.eaDirectGroup": "EA App",
+  "settings.experimentalTag": "(實驗性)",
   "downloads.eaDirectTitle": "EA",
   "ea.installing": "正在安裝…",
   "manage.eaContentTitle": "EA 內容與更新",
