@@ -85,6 +85,8 @@ export const STEAM_EXIT_AFTER_PLAY_KEY = "efxlve-steam-exit-after-play";
 export const DELEGATE_EPIC_KEY = "efxlve-delegate-epic";
 /** Hand games installed by the official GOG Galaxy client back to it. */
 export const DELEGATE_GOG_KEY = "efxlve-delegate-gog";
+/** Hand games installed by the official Amazon Games App back to it. */
+export const DELEGATE_AMAZON_KEY = "efxlve-delegate-amazon";
 
 /** Settings > Controller: PlayStation pads are mapped to a virtual Xbox pad. */
 export const CONTROLLER_BRIDGE_KEY = "efxlve-controller-bridge";

@@ -571,8 +571,12 @@ function renderLaunchers(): string {
     else delegated.push(rowHtml);
     // The optional handoff gets its own labelled row: a bare switch in the
     // store row did not say what it would do.
-    if (l.installed && (l.id === "epic" || l.id === "gog")) {
-      const on = l.id === "epic" ? S.delegateEpic : S.delegateGog;
+    if (l.installed && (l.id === "epic" || l.id === "gog" || l.id === "amazon")) {
+      const on = l.id === "epic"
+        ? S.delegateEpic
+        : l.id === "gog"
+          ? S.delegateGog
+          : S.delegateAmazon;
       handoff.push(`
         <div class="row settings-row">
           <span class="acc-store-mark">${storeLogo(l.id, 24) || icon("layers", 24)}</span>

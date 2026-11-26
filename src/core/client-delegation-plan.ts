@@ -1,5 +1,5 @@
 /** Which client call an install action should make. */
-export type ClientStore = "epic" | "gog";
+export type ClientStore = "epic" | "gog" | "amazon";
 
 /**
  * A new game has no copy for the client to check yet, so it must be opened in

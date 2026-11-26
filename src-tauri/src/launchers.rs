@@ -162,6 +162,37 @@ fn amazon_games() -> Option<PathBuf> {
         .next()
 }
 
+/// Executable Windows starts for `amazon-games://` links. The installed-game
+/// shortcut uses this scheme, so it is also the only way to start one through
+/// the app.
+fn amazon_uri_handler() -> Option<PathBuf> {
+    for key in [
+        r"HKCU\Software\Classes\amazon-games\shell\open\command",
+        r"HKLM\SOFTWARE\Classes\amazon-games\shell\open\command",
+        r"HKLM\SOFTWARE\WOW6432Node\Classes\amazon-games\shell\open\command",
+    ] {
+        if let Some(output) = crate::winreg::query(key, None) {
+            let command = crate::winreg::parse_reg_sz(&output);
+            if let Some(path) = crate::legendary::import_installed::exe_from_open_command(&command) {
+                return Some(path);
+            }
+        }
+    }
+    None
+}
+
+/// The Amazon Games App keeps its games under a folder named `Amazon Games`;
+/// the launcher's own default is `<home>\Games\Amazon`, so the component is
+/// what separates a client-installed copy from a Nile one.
+fn is_amazon_client_path(path: &Path) -> bool {
+    path.components().any(|component| {
+        component
+            .as_os_str()
+            .to_string_lossy()
+            .eq_ignore_ascii_case("Amazon Games")
+    })
+}
+
 /// Installation state and path of one client.
 fn state(id: &str) -> (bool, String) {
     // The Xbox app ships as a Store package and has no single path.
@@ -173,7 +204,7 @@ fn state(id: &str) -> (bool, String) {
         // outlives an uninstall and must not make a missing launcher look installed.
         "epic" => crate::legendary::import_installed::epic_launcher_executable(),
         "gog" => gog_galaxy().or_else(gog_storage),
-        "amazon" => amazon_games(),
+        "amazon" => amazon_games().or_else(amazon_uri_handler),
         "steam" => crate::steam::steam_install_path(),
         _ => crate::companion::client_path(id),
     };
@@ -210,7 +241,7 @@ struct ClientGame {
 
 /// Finds the store's own install record for this game. Only a copy the client
 /// installed is delegated; a launcher-owned install keeps the direct path.
-fn client_game(store: &str, game_id: &str) -> Option<ClientGame> {
+fn client_game(app: &AppHandle, store: &str, game_id: &str) -> Option<ClientGame> {
     match store {
         "epic" => crate::legendary::cache::read_egl_installed_games()
             .into_iter()
@@ -232,6 +263,24 @@ fn client_game(store: &str, game_id: &str) -> Option<ClientGame> {
                 },
                 executable: game.executable,
             }),
+        "amazon" => {
+            let installed = crate::nile::library::installed_game(app, game_id)?;
+            let install_path = PathBuf::from(installed.path);
+            if !install_path.is_dir() || !is_amazon_client_path(&install_path) {
+                return None;
+            }
+            let title = install_path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .filter(|name| !name.is_empty())
+                .unwrap_or(game_id)
+                .to_string();
+            Some(ClientGame {
+                install_path,
+                title,
+                executable: String::new(),
+            })
+        }
         _ => None,
     }
 }
@@ -361,11 +410,15 @@ fn client_args(store: &str, game_id: &str, action: &str) -> Option<Vec<String>> 
                 .map(|arg| (*arg).to_string())
                 .collect(),
         ),
+        // The Amazon shortcut carries this exact link; the app has no page
+        // link, so install/open only starts the client.
+        ("amazon", "launch") => Some(vec![format!("amazon-games://play/{game_id}")]),
+        ("amazon", "open" | "install") => Some(Vec::new()),
         _ => None,
     }
 }
 
-/// Optional hand-off to the official Epic/GOG client.
+/// Optional hand-off to the official Epic/GOG/Amazon client.
 ///
 /// `action` is `launch` (start a game the client installed), `install` (open a
 /// new game in the client), `open` (show an installed game's page for update or
@@ -384,13 +437,15 @@ pub async fn launcher_delegate(
     let exe = match store.as_str() {
         "epic" => crate::legendary::import_installed::epic_launcher_executable(),
         "gog" => gog_galaxy(),
+        "amazon" if action == "launch" => amazon_uri_handler().or_else(amazon_games),
+        "amazon" => amazon_games(),
         _ => None,
     };
     let Some(exe) = exe else {
         return Ok(false);
     };
     if action == "check" {
-        return Ok(client_game(&store, &game_id).is_some());
+        return Ok(client_game(&app, &store, &game_id).is_some());
     }
     let Some(args) = client_args(&store, &game_id, &action) else {
         return Ok(false);
@@ -399,7 +454,7 @@ pub async fn launcher_delegate(
     let game = if action == "install" {
         None
     } else {
-        match client_game(&store, &game_id) {
+        match client_game(&app, &store, &game_id) {
             Some(game) => Some(game),
             None => return Ok(false),
         }
@@ -408,10 +463,10 @@ pub async fn launcher_delegate(
     spawn_client(&exe, &arg_refs)?;
     if action == "launch" {
         if let Some(game) = game {
-            let key = if store == "gog" {
-                format!("gog::{game_id}")
-            } else {
-                game_id
+            let key = match store.as_str() {
+                "gog" => format!("gog::{game_id}"),
+                "amazon" => format!("amazon::{game_id}"),
+                _ => game_id,
             };
             watch_delegated_session(app, store.clone(), key, game);
         }
@@ -481,6 +536,14 @@ mod tests {
                 "/command".to_string(),
                 "launch".to_string(),
             ])
+        );
+        assert_eq!(
+            client_args("amazon", "amzn1.adg.product.123", "launch"),
+            Some(vec!["amazon-games://play/amzn1.adg.product.123".to_string()])
+        );
+        assert_eq!(
+            client_args("amazon", "amzn1.adg.product.123", "install"),
+            Some(Vec::new())
         );
         assert_eq!(client_args("epic", "Witcher4", "check"), None);
         assert_eq!(client_args("steam", "123", "install"), None);

@@ -37,6 +37,10 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
         en: "The After playing section now covers Epic Games Launcher, GOG Galaxy and Amazon Games, so each client can close when its game ends.",
         tr: "Oyun Sonrası bölümü artık Epic Games Launcher, GOG Galaxy ve Amazon Games'i de kapsıyor; her istemci oyunu bitince kapanabiliyor.",
       },
+      {
+        en: "Amazon Games joins the optional official-client handoff: new downloads open the Amazon Games App, and App-installed games launch through it.",
+        tr: "Amazon Games de isteğe bağlı resmî istemci devrine katıldı: yeni indirmeler Amazon Games App'te açılıyor, App'in kurduğu oyunlar onun üzerinden başlatılıyor.",
+      },
     ],
     improved: [
       {

@@ -87,6 +87,10 @@ async function runAutoUpdate(): Promise<void> {
   }
   for (const g of amazonUpdates) {
     try {
+      // An Amazon Games App copy updates through the app.
+      if (delegateEnabled("amazon") && (await delegateClientAction("amazon", g.id, "check"))) {
+        continue;
+      }
       await installAmazonGame(g.id);
     } catch {
       /* same: another active download is expected */

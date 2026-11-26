@@ -25,6 +25,7 @@ import {
   STEAM_EXIT_AFTER_PLAY_KEY,
   DELEGATE_EPIC_KEY,
   DELEGATE_GOG_KEY,
+  DELEGATE_AMAZON_KEY,
   PROFILE_VIEW_MODE_KEY,
   SPEED_BITS_KEY,
   SS_COMPRESS_KEY,
@@ -1972,6 +1973,9 @@ document.addEventListener("click", (e) => {
     } else if (store === "gog") {
       S.delegateGog = enabled;
       localStorage.setItem(DELEGATE_GOG_KEY, String(enabled));
+    } else if (store === "amazon") {
+      S.delegateAmazon = enabled;
+      localStorage.setItem(DELEGATE_AMAZON_KEY, String(enabled));
     }
     render();
   } else if (act === "toggle-client-exit") {

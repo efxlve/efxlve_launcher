@@ -8,6 +8,7 @@
  */
 
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { clientName, delegateClientAction, delegateEnabled, installHandoffAction } from "../../core/client-delegation";
 import { isTauri } from "../../core/constants";
 import { updateBadge } from "../../core/nav";
 import { blockedOffline } from "../../core/offline";
@@ -397,6 +398,24 @@ export async function installAmazonGame(id: string): Promise<void> {
     toast(t("dl.alreadyQueued"), "");
     return;
   }
+  if (delegateEnabled("amazon")) {
+    const installed = Boolean(S.amazonGames.find((g) => g.id === id)?.installed);
+    const handoff = installHandoffAction(true, installed);
+    try {
+      if (handoff === "install" && await delegateClientAction("amazon", id, "install")) {
+        toast(t("launchers.delegateInstallOpened", { a1: clientName("amazon") }), "ok");
+        return;
+      }
+      if (handoff === "check" && await delegateClientAction("amazon", id, "check")) {
+        await delegateClientAction("amazon", id, "open");
+        toast(t("launchers.delegateOpened", { a1: clientName("amazon") }), "ok");
+        return;
+      }
+    } catch (err) {
+      toast(localizeMessage(String(err)), "err");
+      return;
+    }
+  }
   const title = S.amazonGames.find((g) => g.id === id)?.title || id;
   S.amazonProgress.set(key, { percent: 0, speed: 0 });
   // The Downloads page picks the first unfinished entry as the active card.
@@ -504,6 +523,18 @@ export async function stopAmazonGame(id: string): Promise<void> {
 
 /** Removes one installed game and refreshes the installed state. */
 export async function uninstallAmazonGame(id: string): Promise<void> {
+  if (delegateEnabled("amazon")) {
+    try {
+      if (await delegateClientAction("amazon", id, "check")) {
+        await delegateClientAction("amazon", id, "open");
+        toast(t("launchers.delegateOpened", { a1: clientName("amazon") }), "ok");
+        return;
+      }
+    } catch (err) {
+      toast(localizeMessage(String(err)), "err");
+      return;
+    }
+  }
   try {
     // Nile cannot replace files a running game still has open.
     if (S.runningGames.has(amazonKey(id))) {

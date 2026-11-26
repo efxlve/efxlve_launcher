@@ -110,7 +110,12 @@ export async function epicStop(appName: string): Promise<void> {
       return;
     }
     if (appName.startsWith("amazon::")) {
-      const msg = await nileStop(appName.slice(8));
+      // A delegated session runs under the Amazon Games App; its process tree
+      // is still inside the install folder, so stop it by path.
+      const summary = summaryOf(appName);
+      const msg = delegateEnabled("amazon") && summary?.installPath
+        ? await stopGameAtPath(appName, summary.installPath)
+        : await nileStop(appName.slice(8));
       S.runningGames.delete(appName);
       toast(msg, "ok");
       refreshGameActionUi(appName);
@@ -237,10 +242,24 @@ export async function epicPlay(appName: string): Promise<void> {
       }
     }
   }
-  // Amazon Games is installed and launched by the launcher through Nile.
+  // Amazon Games is installed and launched by the launcher through Nile; a
+  // game the Amazon Games App installed can start through the app instead.
   if (appName.startsWith("amazon::")) {
+    const amazonId = appName.slice(8);
+    if (delegateEnabled("amazon")) {
+      try {
+        if (await delegateClientAction("amazon", amazonId, "launch")) {
+          pushRecent(appName);
+          toast(t("dl.launching"), "");
+          return;
+        }
+      } catch (e) {
+        toast(localizeMessage(String(e)), "err");
+        return;
+      }
+    }
     pushRecent(appName);
-    await launchWithStatus(appName, () => nileLaunch(appName.slice(8)));
+    await launchWithStatus(appName, () => nileLaunch(amazonId));
     return;
   }
   // Steam games belong to the Steam client: hand the launch over to it.
@@ -270,7 +289,11 @@ export async function epicPlay(appName: string): Promise<void> {
   }
   const delegatedStore = delegatedStoreOf(appName);
   if (delegatedStore && delegateEnabled(delegatedStore)) {
-    const gameId = delegatedStore === "gog" ? appName.slice(5) : appName;
+    const gameId = delegatedStore === "gog"
+      ? appName.slice(5)
+      : delegatedStore === "amazon"
+        ? appName.slice(8)
+        : appName;
     try {
       if (await delegateClientAction(delegatedStore, gameId, "launch")) {
         pushRecent(appName);
@@ -424,7 +447,11 @@ export async function epicUninstall(appName: string): Promise<void> {
   // leave its library pointing at a deleted folder.
   const delegatedStore = delegatedStoreOf(appName);
   if (delegatedStore && delegateEnabled(delegatedStore)) {
-    const gameId = delegatedStore === "gog" ? appName.slice(5) : appName;
+    const gameId = delegatedStore === "gog"
+      ? appName.slice(5)
+      : delegatedStore === "amazon"
+        ? appName.slice(8)
+        : appName;
     try {
       if (await delegateClientAction(delegatedStore, gameId, "check")) {
         await delegateClientAction(delegatedStore, gameId, "open");

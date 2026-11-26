@@ -15,16 +15,21 @@ export type { ClientStore };
 export { installHandoffAction } from "./client-delegation-plan";
 
 export function delegateEnabled(store: ClientStore): boolean {
-  return store === "epic" ? S.delegateEpic : S.delegateGog;
+  if (store === "epic") return S.delegateEpic;
+  if (store === "gog") return S.delegateGog;
+  return S.delegateAmazon;
 }
 
 export function clientName(store: ClientStore): string {
-  return store === "epic" ? "Epic Games Launcher" : "GOG Galaxy";
+  if (store === "epic") return "Epic Games Launcher";
+  if (store === "gog") return "GOG Galaxy";
+  return "Amazon Games";
 }
 
-/** `epic` or `gog` for a library key; `null` for other stores/custom games. */
+/** The client store for a library key; `null` for other stores/custom games. */
 export function delegatedStoreOf(key: string): ClientStore | null {
   if (key.startsWith("gog::")) return "gog";
+  if (key.startsWith("amazon::")) return "amazon";
   if (key.includes("::")) return null;
   return "epic";
 }
