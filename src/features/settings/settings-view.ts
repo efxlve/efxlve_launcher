@@ -628,9 +628,19 @@ function renderIntegrations(): string {
     return `<div class="empty-state"><span class="spinner"></span><p>${t("settings.scanning")}</p></div>`;
   }
   const egl = S.eglDetectedList ?? [];
+  // The sync writes install records to installed.json; the library grid comes
+  // from the signed-in account's owned catalog. Without that catalog the button
+  // can only report "already synced" into an empty library, so the row offers
+  // the account step instead.
+  const epicReady = S.epicPhase === "library" && Boolean(S.epicAccount);
   const eglAction = egl.length > 0
-    ? `<button class="btn primary small" data-act="epic-sync-egl" ${S.eglSyncing ? "disabled" : ""}>${S.eglSyncing ? t("settings.eglSyncing") : t("settings.eglSync")}</button>`
+    ? epicReady
+      ? `<button class="btn primary small" data-act="epic-sync-egl" ${S.eglSyncing ? "disabled" : ""}>${S.eglSyncing ? t("settings.eglSyncing") : t("settings.eglSync")}</button>`
+      : `<button class="btn primary small" data-view="accounts">${icon("user", 13)} ${t("accounts.connectCta")}</button>`
     : `<button class="btn ghost small" data-act="epic-refresh-egl">${t("settings.rescan")}</button>`;
+  const eglDesc = egl.length > 0 && !epicReady
+    ? `${t("settings.eglDesc")} ${t("settings.eglNeedsEpic")}`
+    : t("settings.eglDesc");
   const eglRows = egl.map((g: EglDetectedGame) => `
     <div class="row">
       <div class="row-main"><div class="row-title">${esc(g.title)}</div><div class="row-meta" title="${esc(g.installPath)}">${esc(g.installPath)}</div></div>
@@ -638,7 +648,7 @@ function renderIntegrations(): string {
     </div>`).join("");
 
   const eglGroup =
-    row(egl.length > 0 ? `${egl.length} ${t("settings.eglDetected")}` : t("settings.eglNone"), t("settings.eglDesc"), eglAction) +
+    row(egl.length > 0 ? `${egl.length} ${t("settings.eglDetected")}` : t("settings.eglNone"), eglDesc, eglAction) +
     eglRows +
     // Epic's own uninstaller deletes the games together with the launcher; this
     // removes only launcher-owned files and migrates the games into Legendary first.
