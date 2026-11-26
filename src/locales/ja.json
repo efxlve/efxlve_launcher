@@ -111,6 +111,8 @@
   "launchers.infoDelegated": "その他のプラットフォーム（Steam、Xbox、EA App、Ubisoft Connect、Battle.net、Riot Client）のゲームは各クライアントに引き継がれます。プレイするにはクライアントのインストールが必要です。",
   "launchers.delegate": "公式クライアントを使用",
   "launchers.delegateDesc": "このクライアントでインストールしたゲームは、起動・更新・アンインストールもこのクライアントで行います。",
+  "launchers.handoffTitle": "公式クライアントへの引き継ぎ",
+  "launchers.handoffInfo": "任意。公式クライアントでインストールしたゲームのみを引き継ぎます。Efxlve でインストールしたゲームは引き続きここで管理されます。",
   "launchers.delegateOpened": "{a1} で開きました。",
   "launchers.detected": "検出済み",
   "launchers.missing": "未インストール",

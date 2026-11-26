@@ -111,6 +111,8 @@
   "launchers.infoDelegated": "Los juegos de otras plataformas (Steam, Xbox, EA App, Ubisoft Connect, Battle.net, Riot Client) se delegan a sus clientes; deben estar instalados para poder jugar.",
   "launchers.delegate": "Usar el cliente oficial",
   "launchers.delegateDesc": "Los juegos instalados por este cliente se inician, actualizan y desinstalan desde él.",
+  "launchers.handoffTitle": "Entrega al cliente oficial",
+  "launchers.handoffInfo": "Opcional. Solo se entregan los juegos instalados por el cliente oficial; los instalados por Efxlve siguen gestionándose aquí.",
   "launchers.delegateOpened": "Abierto en {a1}.",
   "launchers.detected": "Detectado",
   "launchers.missing": "No instalado",

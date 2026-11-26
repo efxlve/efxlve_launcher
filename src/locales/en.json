@@ -126,6 +126,8 @@
   "launchers.infoDelegated": "Other platforms (Steam, Xbox, EA App, Ubisoft Connect, Battle.net, Riot Client) hand games back to their clients; those clients must be installed to play them.",
   "launchers.delegate": "Use official client",
   "launchers.delegateDesc": "Games installed by this client start, update and uninstall through it.",
+  "launchers.handoffTitle": "Official client handoff",
+  "launchers.handoffInfo": "Optional. Only games installed by the official client are handed over; games installed by Efxlve stay managed here.",
   "launchers.delegateOpened": "Opened in {a1}.",
   "launchers.detected": "Detected",
   "launchers.missing": "Not installed",

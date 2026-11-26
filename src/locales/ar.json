@@ -111,6 +111,8 @@
   "launchers.infoDelegated": "ألعاب المنصات الأخرى (Steam وXbox وEA App وUbisoft Connect وBattle.net وRiot Client) يتم إسنادها إلى عملائها؛ ويجب تثبيت العميل المعني للعبها.",
   "launchers.delegate": "استخدام العميل الرسمي",
   "launchers.delegateDesc": "الألعاب التي ثبّتها هذا العميل تبدأ وتتحدّث وتُزال من خلاله.",
+  "launchers.handoffTitle": "التسليم إلى العميل الرسمي",
+  "launchers.handoffInfo": "اختياري. يتم تسليم الألعاب التي ثبّتها العميل الرسمي فقط؛ أما الألعاب التي ثبّتها Efxlve فتبقى تُدار هنا.",
   "launchers.delegateOpened": "تم الفتح في {a1}.",
   "launchers.detected": "تم العثور عليه",
   "launchers.missing": "غير مثبّت",

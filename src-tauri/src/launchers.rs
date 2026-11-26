@@ -45,10 +45,6 @@ const LAUNCHERS: [(&str, &str, &str); 10] = [
     ("riot", "Riot Client", "https://www.leagueoflegends.com/download/"),
 ];
 
-fn first_file(candidates: &[&str]) -> Option<PathBuf> {
-    candidates.iter().map(PathBuf::from).find(|path| path.is_file())
-}
-
 fn gog_galaxy() -> Option<PathBuf> {
     // The URI handler also finds a Galaxy installed outside Program Files.
     for key in [
@@ -63,10 +59,28 @@ fn gog_galaxy() -> Option<PathBuf> {
             }
         }
     }
-    first_file(&[
-        r"C:\Program Files (x86)\GOG Galaxy\GalaxyClient.exe",
-        r"C:\Program Files\GOG Galaxy\GalaxyClient.exe",
-    ])
+    let mut candidates = vec![
+        PathBuf::from(r"C:\Program Files (x86)\GOG Galaxy\GalaxyClient.exe"),
+        PathBuf::from(r"C:\Program Files\GOG Galaxy\GalaxyClient.exe"),
+    ];
+    if let Some(local) = std::env::var_os("LOCALAPPDATA") {
+        let local = PathBuf::from(local);
+        candidates.push(local.join("GOG Galaxy").join("GalaxyClient.exe"));
+        candidates.push(
+            local
+                .join("Programs")
+                .join("GOG Galaxy")
+                .join("GalaxyClient.exe"),
+        );
+        candidates.push(
+            local
+                .join("Programs")
+                .join("GOG.com")
+                .join("Galaxy")
+                .join("GalaxyClient.exe"),
+        );
+    }
+    candidates.into_iter().find(|path| path.is_file())
 }
 
 /// `<ProgramData>/GOG.com/Galaxy` exists once Galaxy has run.

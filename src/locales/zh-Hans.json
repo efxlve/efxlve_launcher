@@ -111,6 +111,8 @@
   "launchers.infoDelegated": "其他平台（Steam、Xbox、EA App、Ubisoft Connect、Battle.net、Riot Client）的游戏会交由对应客户端运行；必须安装相应客户端才能游玩。",
   "launchers.delegate": "使用官方客户端",
   "launchers.delegateDesc": "由此客户端安装的游戏将通过它启动、更新和卸载。",
+  "launchers.handoffTitle": "交给官方客户端",
+  "launchers.handoffInfo": "可选。仅移交由官方客户端安装的游戏；由 Efxlve 安装的游戏仍在此管理。",
   "launchers.delegateOpened": "已在 {a1} 中打开。",
   "launchers.detected": "已检测",
   "launchers.missing": "未安装",

@@ -1612,8 +1612,11 @@ document.addEventListener("click", (e) => {
     viewEl.scrollTop = 0;
     if (S.settingsSection === "integrations") void loadIntegrationsView();
     if (S.settingsSection === "controller") void loadControllerView(true);
-    if (S.settingsSection === "launchers") void loadLaunchersView();
+    // A client may have been installed since the last visit; always re-scan.
+    if (S.settingsSection === "launchers") void loadLaunchersView(true);
     if (S.settingsSection === "compat") void loadCompatView();
+  } else if (act === "refresh-launchers") {
+    void loadLaunchersView(true);
   } else if (act === "controller-refresh") {
     void loadControllerView(true);
   } else if (act === "toggle-controller-bridge") {

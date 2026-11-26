@@ -525,13 +525,16 @@ function launcherInfoBox(): string {
  * where to get the missing ones. The launcher never installs a client itself.
  */
 function renderLaunchers(): string {
+  const refresh = `<button type="button" class="btn ghost small" data-act="refresh-launchers" ${S.launchersLoading ? "disabled" : ""}>${icon("refresh", 13)} ${S.launchersLoading ? t("settings.scanning") : t("settings.rescan")}</button>`;
   if (S.launchers.length === 0) {
     return S.launchersLoading
       ? `<div class="empty-state"><span class="spinner"></span></div>`
-      : launcherInfoBox();
+      : `<div class="settings-section-head"><h3 class="section-title">${t("launchers.managedTitle")}</h3>${refresh}</div>` +
+        launcherInfoBox();
   }
   const managed: string[] = [];
   const delegated: string[] = [];
+  const handoff: string[] = [];
   for (const l of S.launchers) {
     const open = LAUNCHER_OPEN[l.id];
     const chip = l.installed
@@ -552,15 +555,6 @@ function renderLaunchers(): string {
         : l.id === "amazon"
           ? t("launchers.amazonNote")
           : "";
-    // Optional: give the official client the games it installed back. Only
-    // those games are handed over; launcher-owned installs keep the direct path.
-    const delegateOn = l.id === "epic" ? S.delegateEpic : l.id === "gog" ? S.delegateGog : false;
-    const delegate = l.installed && (l.id === "epic" || l.id === "gog")
-      ? `<label class="switch" title="${esc(t("launchers.delegate"))}"><input type="checkbox" data-act="toggle-delegate-store" data-store="${l.id}" ${delegateOn ? "checked" : ""} /><span class="track"></span></label>`
-      : "";
-    const delegateNote = delegate
-      ? `<div class="settings-row-desc">${t("launchers.delegateDesc")}</div>`
-      : "";
     const rowHtml = `
       <div class="row settings-row">
         <span class="acc-store-mark">${storeLogo(l.id, 24) || icon("layers", 24)}</span>
@@ -568,17 +562,39 @@ function renderLaunchers(): string {
           <div class="settings-row-title">${esc(l.name)}</div>
           ${l.path ? `<div class="settings-row-desc"><code>${esc(l.path)}</code></div>` : ""}
           ${note ? `<div class="settings-row-desc">${note}</div>` : ""}
-          ${delegateNote}
         </div>
-        <div class="settings-row-control">${chip}${delegate}${openBtn}${downloadBtn}</div>
+        <div class="settings-row-control">${chip}${openBtn}${downloadBtn}</div>
       </div>`;
     // Epic, GOG and Amazon Games are managed here; Steam and the companion
     // clients own the play.
     if (l.id === "epic" || l.id === "gog" || l.id === "amazon") managed.push(rowHtml);
     else delegated.push(rowHtml);
+    // The optional handoff gets its own labelled row: a bare switch in the
+    // store row did not say what it would do.
+    if (l.installed && (l.id === "epic" || l.id === "gog")) {
+      const on = l.id === "epic" ? S.delegateEpic : S.delegateGog;
+      handoff.push(`
+        <div class="row settings-row">
+          <span class="acc-store-mark">${storeLogo(l.id, 24) || icon("layers", 24)}</span>
+          <div class="row-main">
+            <div class="settings-row-title">${esc(l.name)}</div>
+            <div class="settings-row-desc">${t("launchers.delegateDesc")}</div>
+          </div>
+          <div class="settings-row-control">
+            <span class="settings-value">${t("launchers.delegate")}</span>
+            <label class="switch"><input type="checkbox" data-act="toggle-delegate-store" data-store="${l.id}" ${on ? "checked" : ""} /><span class="track"></span></label>
+          </div>
+        </div>`);
+    }
   }
+  const managedHead = `<div class="settings-section-head"><h3 class="section-title">${t("launchers.managedTitle")}</h3>${refresh}</div>`;
   return (
-    group(managed.join(""), t("launchers.managedTitle"), infoBox("launchers.infoManaged")) +
+    managedHead +
+    infoBox("launchers.infoManaged") +
+    `<div class="list settings-group">${managed.join("")}</div>` +
+    (handoff.length > 0
+      ? group(handoff.join(""), t("launchers.handoffTitle"), infoBox("launchers.handoffInfo"))
+      : "") +
     group(delegated.join(""), t("launchers.delegatedTitle"), infoBox("launchers.infoDelegated"))
   );
 }
@@ -2740,7 +2756,7 @@ export async function loadSettingsView(): Promise<void> {
   applySettingsSearch(settingsQuery);
   if (S.settingsSection === "integrations") void loadIntegrationsView();
   if (S.settingsSection === "controller") void loadControllerView(true);
-  if (S.settingsSection === "launchers") void loadLaunchersView();
+  if (S.settingsSection === "launchers") void loadLaunchersView(true);
   if (S.settingsSection === "compat") void loadCompatView();
 }
 

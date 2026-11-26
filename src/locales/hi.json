@@ -126,6 +126,8 @@
   "launchers.infoDelegated": "अन्य प्लेटफ़ॉर्म (Steam, Xbox, EA App, Ubisoft Connect, Battle.net, Riot Client) गेम को उनके अपने क्लाइंट को सौंपते हैं; उन्हें खेलने के लिए वे क्लाइंट इंस्टॉल होने चाहिए।",
   "launchers.delegate": "आधिकारिक क्लाइंट का उपयोग करें",
   "launchers.delegateDesc": "इस क्लाइंट से इंस्टॉल किए गए गेम इसी से लॉन्च, अपडेट और अनइंस्टॉल होंगे।",
+  "launchers.handoffTitle": "आधिकारिक क्लाइंट को सौंपें",
+  "launchers.handoffInfo": "वैकल्पिक। केवल आधिकारिक क्लाइंट से इंस्टॉल किए गए गेम सौंपे जाते हैं; Efxlve से इंस्टॉल किए गए गेम यहीं प्रबंधित रहते हैं।",
   "launchers.delegateOpened": "{a1} में खोला गया।",
   "launchers.detected": "पाया गया",
   "launchers.missing": "इंस्टॉल नहीं है",

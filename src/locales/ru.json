@@ -111,6 +111,8 @@
   "launchers.infoDelegated": "Игры с других платформ (Steam, Xbox, EA App, Ubisoft Connect, Battle.net, Riot Client) передаются этим клиентам; они должны быть установлены для запуска.",
   "launchers.delegate": "Использовать официальный клиент",
   "launchers.delegateDesc": "Игры, установленные этим клиентом, запускаются, обновляются и удаляются через него.",
+  "launchers.handoffTitle": "Передача официальному клиенту",
+  "launchers.handoffInfo": "Необязательно. Передаются только игры, установленные официальным клиентом; игры, установленные Efxlve, остаются здесь.",
   "launchers.delegateOpened": "Открыто в {a1}.",
   "launchers.detected": "Найден",
   "launchers.missing": "Не установлен",

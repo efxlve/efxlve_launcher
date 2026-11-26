@@ -111,6 +111,8 @@
   "launchers.infoDelegated": "기타 플랫폼(Steam, Xbox, EA App, Ubisoft Connect, Battle.net, Riot Client)의 게임은 해당 클라이언트에 실행을 위임하며, 플레이하려면 해당 클라이언트가 설치되어 있어야 합니다.",
   "launchers.delegate": "공식 클라이언트 사용",
   "launchers.delegateDesc": "이 클라이언트로 설치한 게임은 실행, 업데이트, 제거도 이 클라이언트에서 처리합니다.",
+  "launchers.handoffTitle": "공식 클라이언트로 넘기기",
+  "launchers.handoffInfo": "선택 사항입니다. 공식 클라이언트로 설치한 게임만 넘기며, Efxlve로 설치한 게임은 계속 여기에서 관리합니다.",
   "launchers.delegateOpened": "{a1}에서 열었습니다.",
   "launchers.detected": "감지됨",
   "launchers.missing": "설치되지 않음",

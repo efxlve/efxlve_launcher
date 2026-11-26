@@ -493,15 +493,39 @@ pub fn epic_launcher_executable() -> Option<PathBuf> {
             }
         }
     }
-    let candidates = [
-        r"C:\Program Files\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe",
-        r"C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe",
-        r"C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win32\EpicGamesLauncher.exe",
+    let mut candidates = vec![
+        PathBuf::from(r"C:\Program Files\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe"),
+        PathBuf::from(r"C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe"),
+        PathBuf::from(r"C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win32\EpicGamesLauncher.exe"),
+        // The rebuilt launcher installs per user by default.
+        PathBuf::from(r"C:\Program Files\Epic Games\Launcher\EpicGamesLauncher.exe"),
+        PathBuf::from(r"C:\Program Files (x86)\Epic Games\Launcher\EpicGamesLauncher.exe"),
     ];
-    candidates
-        .into_iter()
-        .map(PathBuf::from)
-        .find(|p| p.is_file())
+    for var in ["LOCALAPPDATA", "ProgramFiles", "ProgramFiles(x86)"] {
+        let Some(base) = std::env::var_os(var) else {
+            continue;
+        };
+        let base = PathBuf::from(base);
+        candidates.push(base.join("Epic Games").join("Launcher").join("EpicGamesLauncher.exe"));
+        candidates.push(
+            base.join("Epic Games")
+                .join("Launcher")
+                .join("Portal")
+                .join("Binaries")
+                .join("Win64")
+                .join("EpicGamesLauncher.exe"),
+        );
+    }
+    if let Some(local) = std::env::var_os("LOCALAPPDATA") {
+        candidates.push(
+            PathBuf::from(local)
+                .join("Programs")
+                .join("Epic Games")
+                .join("Launcher")
+                .join("EpicGamesLauncher.exe"),
+        );
+    }
+    candidates.into_iter().find(|p| p.is_file())
 }
 
 /// The executable inside a shell `open` command (`"C:\...\Launcher.exe" %1`).

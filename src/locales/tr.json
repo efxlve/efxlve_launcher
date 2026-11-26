@@ -126,6 +126,8 @@
   "launchers.infoDelegated": "Steam, Xbox, EA App, Ubisoft Connect, Battle.net ve Riot Client gibi diğer platformlar oyunu bu istemcilere devreder; oynamak için ilgili istemcilerin kurulu olması gerekir.",
   "launchers.delegate": "Resmî istemciyi kullan",
   "launchers.delegateDesc": "Bu istemcinin kurduğu oyunlar başlatma, güncelleme ve kaldırma için onu kullanır.",
+  "launchers.handoffTitle": "Resmî istemciye devret",
+  "launchers.handoffInfo": "İsteğe bağlı. Yalnızca resmî istemcinin kurduğu oyunlar devredilir; Efxlve'in kurduğu oyunlar burada yönetilmeye devam eder.",
   "launchers.delegateOpened": "{a1} içinde açıldı.",
   "launchers.detected": "Bulundu",
   "launchers.missing": "Kurulu değil",

@@ -111,6 +111,8 @@
   "launchers.infoDelegated": "เกมจากแพลตฟอร์มอื่น (Steam, Xbox, EA App, Ubisoft Connect, Battle.net, Riot Client) จะส่งต่อไปยังไคลเอนต์เหล่านั้น คุณต้องติดตั้งไคลเอนต์ที่เกี่ยวข้องเพื่อเล่น",
   "launchers.delegate": "ใช้ไคลเอนต์อย่างเป็นทางการ",
   "launchers.delegateDesc": "เกมที่ติดตั้งโดยไคลเอนต์นี้จะเปิด อัปเดต และถอนการติดตั้งผ่านไคลเอนต์นี้",
+  "launchers.handoffTitle": "ส่งต่อให้ไคลเอนต์อย่างเป็นทางการ",
+  "launchers.handoffInfo": "ไม่บังคับ ส่งต่อเฉพาะเกมที่ติดตั้งโดยไคลเอนต์อย่างเป็นทางการเท่านั้น เกมที่ติดตั้งโดย Efxlve จะยังคงจัดการที่นี่",
   "launchers.delegateOpened": "เปิดใน {a1} แล้ว",
   "launchers.detected": "ตรวจพบ",
   "launchers.missing": "ยังไม่ได้ติดตั้ง",
