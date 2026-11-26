@@ -440,6 +440,11 @@ async fn launch_plan(plan: LaunchPlan) -> Result<u32, String> {
     Ok(pid)
 }
 
+/// True when the EA App itself is running and owns the client connection.
+pub(crate) fn ea_app_open() -> bool {
+    ea_app_running()
+}
+
 /// `EADesktop.exe` is the EA App, the other process that wants port 3216.
 #[cfg(windows)]
 fn ea_app_running() -> bool {

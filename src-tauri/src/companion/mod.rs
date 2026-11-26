@@ -666,18 +666,23 @@ pub async fn companion_launch(app: tauri::AppHandle, store: String, id: String) 
     // with the account token. The watcher above already covers the session; a
     // missing fact falls back to the client handoff below.
     if direct {
-        match ea_direct::launch(&game).await {
-            Ok(_) => return Ok(()),
-            Err(err) => {
-                ea_direct::remember_error(&err);
-                // A launcher-owned install is not registered with the EA App.
-                // Silently handing it to origin2:// would make the EA App
-                // download a second copy; show the direct failure instead.
-                let eaac = err.to_lowercase().contains("anti-cheat");
-                if !eaac
-                    && ea_install::managed_root(std::path::Path::new(&game.install_path))
-                {
-                    return Err(err);
+        // A running EA App already owns the client connection; a direct launch
+        // would only fight it for port 3216 and leave the game on a black
+        // screen. The game goes to the App instead, except for a launcher-owned
+        // copy the App may not know about.
+        let managed = ea_install::managed_root(std::path::Path::new(&game.install_path));
+        if !ea_direct::ea_app_open() || managed {
+            match ea_direct::launch(&game).await {
+                Ok(_) => return Ok(()),
+                Err(err) => {
+                    ea_direct::remember_error(&err);
+                    // A launcher-owned install is not registered with the EA App.
+                    // Silently handing it to origin2:// would make the EA App
+                    // download a second copy; show the direct failure instead.
+                    let eaac = err.to_lowercase().contains("anti-cheat");
+                    if !eaac && managed {
+                        return Err(err);
+                    }
                 }
             }
         }
