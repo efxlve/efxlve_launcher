@@ -1637,6 +1637,13 @@ fn close_after_play_enabled(store: &str) -> bool {
         .unwrap_or(false)
 }
 
+/// Stores that can be quit once their game closes. The companion clients live
+/// in `accounts::is_store`; the managed stores (Epic, GOG, Amazon) are not
+/// linked accounts here, they only carry this behavior toggle.
+fn is_close_after_play_store(store: &str) -> bool {
+    accounts::is_store(store) || matches!(store, "epic" | "gog" | "amazon")
+}
+
 /// Quits a store client by image name. The clients expose no quit command, so
 /// this is a forced tree kill; it only runs when the user opted in.
 fn close_client(store: &str) {
@@ -1645,6 +1652,9 @@ fn close_client(store: &str) {
         "ubisoft" => &["UbisoftConnect.exe"],
         "battlenet" => &["Battle.net.exe"],
         "riot" => &["RiotClientServices.exe", "RiotClient.exe"],
+        "epic" => &["EpicGamesLauncher.exe"],
+        "gog" => &["GalaxyClient.exe"],
+        "amazon" => &["Amazon Games.exe", "AmazonGames.exe"],
         _ => return,
     };
     for image in images {
@@ -1659,7 +1669,10 @@ fn close_client(store: &str) {
     }
 }
 
-fn close_client_if_enabled(store: &str) {
+/// Called by the session watchers of every store. Epic, GOG and Amazon run
+/// games directly, so their launches end here too instead of in a companion
+/// watcher.
+pub(crate) fn close_client_if_enabled(store: &str) {
     if close_after_play_enabled(store) {
         close_client(store);
     }
@@ -1673,7 +1686,7 @@ pub fn companion_get_client_settings() -> CompanionClientSettings {
 
 #[tauri::command]
 pub fn companion_set_close_after_play(store: String, enabled: bool) -> Result<(), String> {
-    if !accounts::is_store(&store) {
+    if !is_close_after_play_store(&store) {
         return Err("Unknown store".into());
     }
     let mut settings = load_client_settings();
@@ -2268,6 +2281,18 @@ pub async fn companion_game_action(app: tauri::AppHandle, store: String, id: Str
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn close_after_play_covers_companion_and_managed_stores() {
+        for store in ["ea", "ubisoft", "battlenet", "riot", "epic", "gog", "amazon"] {
+            assert!(is_close_after_play_store(store), "{store} should be accepted");
+        }
+        // `xbox` is a companion store even though it has no close row.
+        assert!(is_close_after_play_store("xbox"));
+        for store in ["", "steam", "rockstar"] {
+            assert!(!is_close_after_play_store(store), "{store} should be rejected");
+        }
+    }
 
     #[test]
     fn an_xbox_title_is_owned_or_needs_a_purchase() {

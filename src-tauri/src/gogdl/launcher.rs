@@ -161,6 +161,8 @@ pub async fn gog_launch_game(app: AppHandle, game_id: String) -> Result<String, 
 
         let elapsed = started.elapsed().as_secs();
         crate::legendary::screenshots::clear_active_running_game(&comp_id_clone);
+        // Opt-in: quit GOG Galaxy now that its game closed.
+        crate::companion::close_client_if_enabled("gog");
         let _ = crate::legendary::playtime::record_session(&comp_id_clone, elapsed);
         crate::legendary::playtime_session::finish();
         crate::comet::stop();

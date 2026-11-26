@@ -264,7 +264,7 @@ fn gog_args<'a>(game_id: &'a str, command: &'static str) -> [&'a str; 4] {
 /// Watches a game the client started and closes the session when it exits.
 /// The client protocol returns before the game window exists, so the loop waits
 /// for a process under the install folder first.
-fn watch_delegated_session(app: AppHandle, key: String, game: ClientGame) {
+fn watch_delegated_session(app: AppHandle, store: String, key: String, game: ClientGame) {
     tauri::async_runtime::spawn(async move {
         use tauri::Emitter;
         let candidates = crate::legendary::transfers::discover_game_executables(
@@ -314,6 +314,11 @@ fn watch_delegated_session(app: AppHandle, key: String, game: ClientGame) {
             .map(|at| at.elapsed().as_secs())
             .unwrap_or(0);
         crate::legendary::screenshots::clear_active_running_game(&key);
+        // Opt-in: the session went through the official client, so it can be
+        // quit along with the game.
+        if detected_at.is_some() {
+            crate::companion::close_client_if_enabled(&store);
+        }
         let record = if elapsed >= 5 {
             crate::legendary::playtime::record_session(&key, elapsed).ok()
         } else {
@@ -408,7 +413,7 @@ pub async fn launcher_delegate(
             } else {
                 game_id
             };
-            watch_delegated_session(app, key, game);
+            watch_delegated_session(app, store.clone(), key, game);
         }
     }
     Ok(true)

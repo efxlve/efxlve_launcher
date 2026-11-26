@@ -32,6 +32,12 @@ export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
     version: "0.1.75",
     date: "2026-11-26",
+    added: [
+      {
+        en: "The After playing section now covers Epic Games Launcher, GOG Galaxy and Amazon Games, so each client can close when its game ends.",
+        tr: "Oyun Sonrası bölümü artık Epic Games Launcher, GOG Galaxy ve Amazon Games'i de kapsıyor; her istemci oyunu bitince kapanabiliyor.",
+      },
+    ],
     improved: [
       {
         en: "The direct EA and Ubisoft install switches now start off and are labelled experimental, so nothing skips the official client until you turn them on.",

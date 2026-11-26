@@ -138,7 +138,7 @@ import { handleLibraryOptionAction, syncDensityControl, syncDensityMenu } from "
 import { loadSharedLibrary } from "../library/shared-library";
 import { loadCompanionLibrary } from "../library/companion-library";
 import { syncHltbLengths } from "../library/hltb-lengths";
-import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaContentCancel, eaContentPlan, eaContentUninstall, eaContentVerify, eaDirectSetEnabled, eaLoginOpen, isTransientUbisoftError, ubiDirectAdopt, ubiDirectCancel, ubiDirectCloudSaves, ubiDirectImportSaves, ubiDirectMove, ubiDirectRelease, ubiDirectSetEnabled, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, ubiStoreSignin, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxOpenGamePass, xboxOpenStore, xboxUninstall, type CompanionStore } from "../../companion";
+import { companionGameAction, companionLink, companionOpenClient, companionSetCloseAfterPlay, companionUnlink, eaContentCancel, eaContentPlan, eaContentUninstall, eaContentVerify, eaDirectSetEnabled, eaLoginOpen, isTransientUbisoftError, ubiDirectAdopt, ubiDirectCancel, ubiDirectCloudSaves, ubiDirectImportSaves, ubiDirectMove, ubiDirectRelease, ubiDirectSetEnabled, ubiDirectUpdateCheck, ubiDirectVerify, ubiOpenSaves, ubiSavePath, ubiStoreSignin, xboxInstall, xboxInstallCancel, xboxLoginOpen, xboxOpenGamePass, xboxOpenStore, xboxUninstall, type CloseAfterPlayStore, type CompanionStore } from "../../companion";
 import { applyStoreFilter } from "../library/store-filter";
 import { collectionGames } from "../../core/game-collections";
 import { allStoreSummaries, rebuildAllGamesMap, summaryOf } from "../../core/selectors";
@@ -1975,8 +1975,9 @@ document.addEventListener("click", (e) => {
     }
     render();
   } else if (act === "toggle-client-exit") {
-    // Companion clients: the Rust watcher reads this from its settings file.
-    const store = t.dataset.store as CompanionStore | undefined;
+    // Companion clients and the managed store clients: the Rust watcher reads
+    // this from its settings file.
+    const store = t.dataset.store as CloseAfterPlayStore | undefined;
     const enabled = (t as HTMLInputElement).checked;
     if (store) {
       S.companionCloseAfterPlay = { ...S.companionCloseAfterPlay, [store]: enabled };

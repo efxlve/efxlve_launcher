@@ -1230,6 +1230,10 @@ pub(super) async fn spawn_launched(
 
         // --- OYUN SONLANDI ---
         crate::legendary::screenshots::clear_active_running_game(&app_name_bg);
+        // Opt-in: quit the Epic Games Launcher now that its session ended.
+        if game_detected {
+            crate::companion::close_client_if_enabled("epic");
+        }
         let elapsed = start_time.elapsed().as_secs();
         let rec = if game_detected && elapsed >= 5 {
             match crate::legendary::playtime::record_session(&app_name_bg, elapsed) {

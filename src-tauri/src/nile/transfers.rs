@@ -550,6 +550,8 @@ pub async fn nile_launch(app: AppHandle, id: String) -> Result<String, String> {
         let started = std::time::Instant::now();
         let _ = child.wait().await;
         let elapsed = started.elapsed().as_secs();
+        // Opt-in: quit the Amazon Games app now that its game closed.
+        crate::companion::close_client_if_enabled("amazon");
         let _ = crate::legendary::playtime::record_session(&comp_id, elapsed);
         crate::legendary::playtime_session::finish();
         with_pids(|pids| pids.remove(&comp_id));

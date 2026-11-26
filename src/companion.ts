@@ -437,10 +437,13 @@ export interface CompanionClientSettings {
   closeAfterPlay: Record<string, boolean>;
 }
 
+/** Companion clients plus the managed stores that carry only this behavior. */
+export type CloseAfterPlayStore = CompanionStore | "epic" | "gog" | "amazon";
+
 export const companionGetClientSettings = () =>
   invoke<CompanionClientSettings>("companion_get_client_settings");
 
-export const companionSetCloseAfterPlay = (store: CompanionStore, enabled: boolean) =>
+export const companionSetCloseAfterPlay = (store: CloseAfterPlayStore, enabled: boolean) =>
   invoke<void>("companion_set_close_after_play", { store, enabled });
 
 /** Opt-in direct EA launch: no EA app, our LSX server answers the game. */

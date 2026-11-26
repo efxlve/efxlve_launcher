@@ -752,11 +752,15 @@ function renderIntegrations(): string {
   );
 
   // Opt-in per client: quit it once the game it launched closes. Steam keeps
-  // its own localStorage toggle; the companion clients read the Rust settings.
+  // its own localStorage toggle; Epic, GOG, Amazon and the companion clients
+  // read the Rust settings.
   const exitToggle = (store: string) =>
     `<label class="switch"><input type="checkbox" data-act="toggle-client-exit" data-store="${store}" ${S.companionCloseAfterPlay[store] ? "checked" : ""} /><span class="track"></span></label>`;
   const afterPlaying = group(
     row(t("settings.steamExitAfterPlay"), t("settings.steamExitAfterPlayDesc"), toggle("toggle-steam-exit-after-play", S.steamExitAfterPlay)) +
+    row(t("settings.epicExitAfterPlay"), t("settings.clientExitAfterPlayDesc"), exitToggle("epic")) +
+    row(t("settings.gogExitAfterPlay"), t("settings.clientExitAfterPlayDesc"), exitToggle("gog")) +
+    row(t("settings.amazonExitAfterPlay"), t("settings.clientExitAfterPlayDesc"), exitToggle("amazon")) +
     row(t("settings.eaExitAfterPlay"), t("settings.clientExitAfterPlayDesc"), exitToggle("ea")) +
     row(t("settings.ubiExitAfterPlay"), t("settings.clientExitAfterPlayDesc"), exitToggle("ubisoft")) +
     row(t("settings.bnetExitAfterPlay"), t("settings.clientExitAfterPlayDesc"), exitToggle("battlenet")) +
