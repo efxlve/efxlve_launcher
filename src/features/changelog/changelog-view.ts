@@ -30,6 +30,26 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.76",
+    date: "2026-11-27",
+    improved: [
+      {
+        en: "Long detected-game lists in Settings stay behind one disclosure and scroll in place, so the page stays short.",
+        tr: "Ayarlar'daki uzun algılanan oyun listeleri tek bir açılır bölümde kalıyor ve kendi içinde kaydırılıyor; sayfa kısa kalıyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "An Epic update that finishes no longer keeps offering the same update; a stale Epic Games Launcher record can no longer overwrite the build Efxlve installed.",
+        tr: "Bitmiş bir Epic güncellemesi artık aynı güncellemeyi tekrar sunmuyor; eski bir Epic Games Launcher kaydı, Efxlve'nin kurduğu sürümün üzerine yazamıyor.",
+      },
+      {
+        en: "The Epic Games Launcher sync now shows the sign-in step when the Epic account is not connected, instead of finishing with nothing.",
+        tr: "Epic hesabı bağlı değilken Epic Games Launcher eşitlemesi artık hiçbir şey yapmadan bitti demek yerine giriş adımını gösteriyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.75",
     date: "2026-11-26",
     added: [
