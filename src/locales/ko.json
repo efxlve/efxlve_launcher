@@ -1508,6 +1508,7 @@
   "settings.eglTitle": "Epic Games Launcher 연동",
   "settings.eglDesc": "공식 Epic Games Launcher로 설치한 게임을 찾습니다.",
   "settings.eglNeedsEpic": "이 게임을 라이브러리에서 보려면 Epic을 연결하세요.",
+  "settings.detectedGames": "감지된 게임",
   "settings.gogGalaxyTitle": "GOG Galaxy",
   "settings.gogGalaxyDesc": "공식 GOG Galaxy 클라이언트로 설치한 게임을 런처의 모든 기능과 함께 가져올 수 있습니다.",
   "settings.cometTitle": "게임 내 도전 과제 (Comet)",

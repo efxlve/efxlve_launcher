@@ -1508,6 +1508,7 @@
   "settings.eglTitle": "Epic Games Launcher 連携",
   "settings.eglDesc": "公式 Epic Games Launcher でインストールされたゲームを検出します。",
   "settings.eglNeedsEpic": "これらのゲームをライブラリに表示するには Epic を接続してください。",
+  "settings.detectedGames": "検出されたゲーム",
   "settings.gogGalaxyTitle": "GOG Galaxy",
   "settings.gogGalaxyDesc": "公式 GOG Galaxy クライアントでインストールしたゲームを、ランチャーの全機能付きでインポートできます。",
   "settings.cometTitle": "ゲーム内実績 (Comet)",

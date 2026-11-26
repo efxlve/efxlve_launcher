@@ -1508,6 +1508,7 @@
   "settings.eglTitle": "การเชื่อมต่อ Epic Games Launcher",
   "settings.eglDesc": "ตรวจหาเกมที่ติดตั้งโดย Epic Games Launcher อย่างเป็นทางการ",
   "settings.eglNeedsEpic": "เชื่อมต่อ Epic เพื่อดูเกมเหล่านี้ในคลังของคุณ",
+  "settings.detectedGames": "เกมที่ตรวจพบ",
   "settings.gogGalaxyTitle": "GOG Galaxy",
   "settings.gogGalaxyDesc": "เกมที่ติดตั้งด้วยไคลเอนต์ GOG Galaxy อย่างเป็นทางการสามารถนำเข้าได้พร้อมการสนับสนุนเต็มรูปแบบ",
   "settings.cometTitle": "ความสำเร็จในเกม (Comet)",

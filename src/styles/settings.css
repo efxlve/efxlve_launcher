@@ -322,6 +322,9 @@
 }
 .settings-details[open] > summary::after { transform: rotate(-135deg); }
 .settings-details-body { display: flex; flex-direction: column; gap: 10px; padding: 0 14px 14px; }
+/* Settings > Integrations: a full PC can report hundreds of detected games.
+   The disclosure keeps the page short; the open list scrolls in place. */
+.settings-detected-games { max-height: min(320px, 50vh); overflow-y: auto; scrollbar-width: thin; }
 /* Collections page: the "merge into" target list opened under a collection row. */
 .col-merge-panel { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 0 14px 12px; }
 .col-merge-panel .settings-row-desc { margin: 0; }

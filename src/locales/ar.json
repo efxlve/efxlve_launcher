@@ -1508,6 +1508,7 @@
   "settings.eglTitle": "تكامل Epic Games Launcher",
   "settings.eglDesc": "يكتشف الألعاب التي ثبّتها Epic Games Launcher الرسمي.",
   "settings.eglNeedsEpic": "اربط Epic لتظهر هذه الألعاب في مكتبتك.",
+  "settings.detectedGames": "الألعاب المكتشفة",
   "settings.gogGalaxyTitle": "GOG Galaxy",
   "settings.gogGalaxyDesc": "يمكن استيراد الألعاب المثبتة عبر عميل GOG Galaxy الرسمي مع دعم كامل من المشغّل.",
   "settings.cometTitle": "الإنجازات داخل اللعبة (Comet)",

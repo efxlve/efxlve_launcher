@@ -1637,6 +1637,7 @@
   "settings.eglTitle": "Epic Games Launcher Integration",
   "settings.eglDesc": "Detects games installed by the official Epic Games Launcher.",
   "settings.eglNeedsEpic": "Connect Epic to show these games in your library.",
+  "settings.detectedGames": "Detected games",
   "settings.gogGalaxyTitle": "GOG Galaxy",
   "settings.gogGalaxyDesc": "Games installed by the official GOG Galaxy client can be imported with full launcher support.",
   "settings.cometTitle": "In-game achievements (Comet)",

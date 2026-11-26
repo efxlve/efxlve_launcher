@@ -1508,6 +1508,7 @@
   "settings.eglTitle": "Epic Games Launcher 集成",
   "settings.eglDesc": "检测由官方 Epic Games Launcher 安装的游戏。",
   "settings.eglNeedsEpic": "连接 Epic 后，这些游戏会显示在游戏库中。",
+  "settings.detectedGames": "检测到的游戏",
   "settings.gogGalaxyTitle": "GOG Galaxy",
   "settings.gogGalaxyDesc": "可导入由官方 GOG Galaxy 客户端安装的游戏，并享有完整启动器支持。",
   "settings.cometTitle": "游戏内成就 (Comet)",

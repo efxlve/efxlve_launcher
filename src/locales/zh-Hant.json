@@ -1508,6 +1508,7 @@
   "settings.eglTitle": "Epic Games Launcher 整合",
   "settings.eglDesc": "偵測由官方 Epic Games Launcher 安裝的遊戲。",
   "settings.eglNeedsEpic": "連線 Epic 後，這些遊戲會顯示在媒體庫中。",
+  "settings.detectedGames": "偵測到的遊戲",
   "settings.gogGalaxyTitle": "GOG Galaxy",
   "settings.gogGalaxyDesc": "可匯入由官方 GOG Galaxy 用戶端安裝的遊戲，並享有完整啟動器支援。",
   "settings.cometTitle": "遊戲內成就 (Comet)",

@@ -1637,6 +1637,7 @@
   "settings.eglTitle": "Epic Games Launcher Entegrasyonu",
   "settings.eglDesc": "Resmi Epic Games Launcher tarafından yüklenmiş oyunları algılar.",
   "settings.eglNeedsEpic": "Bu oyunları kütüphanenizde görmek için Epic hesabınızı bağlayın.",
+  "settings.detectedGames": "Algılanan oyunlar",
   "settings.gogGalaxyTitle": "GOG Galaxy",
   "settings.gogGalaxyDesc": "Resmî GOG Galaxy istemcisiyle kurulan oyunlar, tam başlatıcı desteğiyle içe aktarılabilir.",
   "settings.cometTitle": "Oyun içi başarımlar (Comet)",

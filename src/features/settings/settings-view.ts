@@ -623,6 +623,23 @@ function renderUbiDirect(): string {
   );
 }
 
+/**
+ * Detection lists can hold every game on the PC (a full EGL install reports
+ * hundreds), so their rows stay behind one disclosure instead of stretching the
+ * settings page. The body scrolls in place once it grows past a few rows.
+ */
+function detectedGamesDetails(key: string, count: number, rows: string): string {
+  if (!rows) return "";
+  return `
+    <details class="settings-details" data-details-key="${esc(key)}">
+      <summary>
+        <span class="settings-details-main"><span class="settings-row-title">${esc(t("settings.detectedGames"))}</span></span>
+        <span class="chip tabular-nums">${count}</span>
+      </summary>
+      <div class="settings-details-body"><div class="list settings-detected-games">${rows}</div></div>
+    </details>`;
+}
+
 function renderIntegrations(): string {
   if (S.settingsIntegrationsLoading && !S.settingsIntegrationsLoaded) {
     return `<div class="empty-state"><span class="spinner"></span><p>${t("settings.scanning")}</p></div>`;
@@ -649,7 +666,7 @@ function renderIntegrations(): string {
 
   const eglGroup =
     row(egl.length > 0 ? `${egl.length} ${t("settings.eglDetected")}` : t("settings.eglNone"), eglDesc, eglAction) +
-    eglRows +
+    detectedGamesDetails("egl-games", egl.length, eglRows) +
     // Epic's own uninstaller deletes the games together with the launcher; this
     // removes only launcher-owned files and migrates the games into Legendary first.
     // The button is hidden when the launcher is not installed, with a rescan in
@@ -676,7 +693,7 @@ function renderIntegrations(): string {
       galaxy.length > 0 ? t("settings.gogGalaxyFound", { count: galaxy.length }) : t("settings.gogGalaxyNone"),
       t("settings.gogGalaxyDesc"),
       galaxyAction,
-    ) + galaxyRows +
+    ) + detectedGamesDetails("gog-galaxy-games", galaxy.length, galaxyRows) +
     // Comet stands in for Galaxy's Communication Service while a GOG game
     // plays, so in-game achievements unlock without the official client.
     row(t("settings.cometTitle"), t("settings.cometDesc"), toggle("toggle-gog-comet", S.gogCometEnabled));
