@@ -450,14 +450,13 @@ function selectedSizes(opts: GameInstallOptions): { download: number; disk: numb
   return { download, disk };
 }
 
-/** One install-option group (modes, extras, languages). */
-function optionSection(label: string, rows: InstallOptionTag[], grid = false, leading = ""): string {
+/** One install-option group (extras, languages). */
+function optionSection(label: string, rows: InstallOptionTag[], grid = false): string {
   if (rows.length === 0) return "";
   const selected = rows.filter((tag) => S.selectedInstallTags.has(tag.tag)).length;
   return `
     <div class="install-opt-group">
       <div class="install-opt-head"><span>${label}</span><span class="install-opt-count">${selected}/${rows.length}</span></div>
-      ${leading}
       <div class="install-opt-list${grid ? " is-grid" : ""}">
         ${rows
           .map(
@@ -544,9 +543,12 @@ export function renderInstallDialog(): void {
     loading
       ? `<span class="install-size-pending" aria-hidden="true"></span>`
       : `<strong>${fmtBytes(bytes)}</strong>`;
+  const requiredSection = opts && opts.hasOptions && opts.baseSize > 0
+    ? `<div class="install-opt-group"><div class="install-opt-list">${baseRow(opts)}</div></div>`
+    : "";
   const sections = opts && opts.hasOptions
     ? [
-        optionSection(t("selective.gameModes"), opts.tags.filter((tag) => tag.category === "modes"), true, baseRow(opts)),
+        requiredSection,
         optionSection(t("selective.extraPacks"), opts.tags.filter((tag) => tag.category === "extras")),
         optionSection(t("selective.extraLanguages"), opts.tags.filter((tag) => tag.category === "languages"), true),
         dlcSection(opts),

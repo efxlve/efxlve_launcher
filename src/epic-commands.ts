@@ -556,6 +556,8 @@ export interface GameInstallOptions {
   hasOptions: boolean;
   /** Raw tags of the installed copy, used to add packs without dropping one. */
   installedTags?: string[];
+  /** Some required files are missing or the wrong size; run Repair. */
+  needsRepair?: boolean;
 }
 
 export const epicGetInstallOptions = (appName: string) =>

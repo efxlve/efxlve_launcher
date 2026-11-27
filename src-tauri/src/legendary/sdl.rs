@@ -5,15 +5,16 @@
 //! the install dialog can offer the groups instead of Fortnite's internal
 //! chunk names, and so a selected group never drops the required tags.
 //!
-//! Epic's launcher goes further than the API for Fortnite: its game modes are
-//! checkboxes, not required content. `with_launcher_groups` keeps those roots
-//! selectable while leaving them out of the default required set.
+//! Epic's launcher goes further than the API for Fortnite: its optional
+//! add-on groups are checkboxes. `with_launcher_groups` adds the launcher-only
+//! groups on top of Epic's data. Fortnite's five game-mode roots stay in
+//! `__required`: removing them makes the game load shared mode assets that are
+//! no longer on disk and crash.
 //!
 //! `--install-tag` filters the manifest to files carrying one of the listed
 //! tags. A selection that leaves out `""` and `__required` therefore installs
 //! only the optional packs and no playable game.
 
-use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -33,54 +34,17 @@ struct LauncherGroup {
     tags: &'static [&'static str],
 }
 
-/// Fortnite's modes are checkboxes in Epic's launcher, but legendary keeps
-/// their root tags in `__required`, so every launcher built on the SDL API
-/// installs all of them. `GFP_JunoRoot` is LEGO Fortnite, `GFP_Sparks` is
-/// Festival, `GFP_BlitzRoot` is Rocket Racing.
-const FORTNITE_GROUPS: &[LauncherGroup] = &[
-    LauncherGroup {
-        key: "lego_fortnite",
-        name: "LEGO Fortnite",
-        category: "modes",
-        default: true,
-        tags: &["GFP_JunoRoot", "GFP_JunoRootOptional"],
-    },
-    LauncherGroup {
-        key: "fortnite_festival",
-        name: "Fortnite Festival",
-        category: "modes",
-        default: true,
-        tags: &["GFP_Sparks", "GFP_SparksOptional"],
-    },
-    LauncherGroup {
-        key: "rocket_racing",
-        name: "Rocket Racing",
-        category: "modes",
-        default: true,
-        tags: &["GFP_BlitzRoot", "GFP_BlitzRootOptional"],
-    },
-    LauncherGroup {
-        key: "creative",
-        name: "Creative",
-        category: "modes",
-        default: true,
-        tags: &["GFP_CreativeRoot", "GFP_CreativeRootOptional"],
-    },
-    LauncherGroup {
-        key: "save_the_world",
-        name: "Save the World",
-        category: "modes",
-        default: true,
-        tags: &["GFP_SaveTheWorldRoot", "GFP_SaveTheWorldRootOptional"],
-    },
-    LauncherGroup {
-        key: "high_quality_assets",
-        name: "High Quality Assets",
-        category: "extras",
-        default: false,
-        tags: &["FortniteBRHighOptionalInstall", "FortniteBRHighOnDemand"],
-    },
-];
+/// Launcher-only groups on top of Epic's SDL data. Fortnite's five mode roots
+/// are *not* here: Epic lists them under `__required`, and a missing mode pack
+/// leaves the game unable to load shared seasonal assets. Only the optional
+/// high-quality asset pack is a separate choice.
+const FORTNITE_GROUPS: &[LauncherGroup] = &[LauncherGroup {
+    key: "high_quality_assets",
+    name: "High Quality Assets",
+    category: "extras",
+    default: false,
+    tags: &["FortniteBRHighOptionalInstall", "FortniteBRHighOnDemand"],
+}];
 
 fn cache_path(config: &Path, app_name: &str) -> PathBuf {
     config.join("tmp").join(format!("{app_name}.json"))
@@ -172,24 +136,14 @@ pub(crate) fn group_name(groups: &Value, key: &str) -> String {
         .to_string()
 }
 
-/// Splits Fortnite's required mode roots into selectable groups and leaves the
-/// rest of the SDL data untouched. Games without launcher-only groups come back
-/// as they are.
+/// Adds the launcher-only groups to Epic's SDL data. Games without
+/// launcher-only groups come back as they are.
 pub(crate) fn with_launcher_groups(app_name: &str, groups: &Value) -> Value {
     let Some(mut out) = groups.as_object().cloned() else {
         return groups.clone();
     };
     if !app_name.eq_ignore_ascii_case("Fortnite") {
         return Value::Object(out);
-    }
-    let movable: HashSet<&str> = FORTNITE_GROUPS
-        .iter()
-        .flat_map(|group| group.tags.iter().copied())
-        .collect();
-    if let Some(required) = out.get_mut("__required").and_then(Value::as_object_mut) {
-        if let Some(tags) = required.get_mut("tags").and_then(Value::as_array_mut) {
-            tags.retain(|tag| tag.as_str().map_or(true, |tag| !movable.contains(tag)));
-        }
     }
     for group in FORTNITE_GROUPS {
         out.entry(group.key.to_string()).or_insert_with(|| {
@@ -283,15 +237,20 @@ pub(crate) async fn load_groups(config: &Path, app_name: &str) -> Option<Value> 
     Some(with_launcher_groups(app_name, &groups))
 }
 
+/// Cached SDL groups without a network fetch. Update and repair paths use this:
+/// a missing cache must not add an API round trip before a download starts.
+pub(crate) fn cached_groups(config: &Path, app_name: &str) -> Option<Value> {
+    read_groups(config, app_name)
+        .or_else(|| fallback_groups(app_name))
+        .map(|groups| with_launcher_groups(app_name, &groups))
+}
+
 /// Expands a selection against the app's SDL groups. The required and untagged
 /// tags are always included, even with an empty selection, so the install never
 /// depends on legendary's own (possibly stale) fallback.
 pub(crate) fn expand_selected(app_name: &str, selected: Vec<String>) -> Vec<String> {
     let config = crate::legendary::skip::default_config_dir();
-    let groups = read_groups(&config, app_name)
-        .or_else(|| fallback_groups(app_name))
-        .map(|groups| with_launcher_groups(app_name, &groups));
-    match groups {
+    match cached_groups(&config, app_name) {
         Some(groups) => expanded_tags(&groups, &selected),
         None => selected,
     }
@@ -340,6 +299,17 @@ mod tests {
         let required = group_tags(&groups, "__required");
         assert!(required.contains(&"Startup"));
         assert!(required.contains(&"FortniteBR"));
+        // Every game mode is part of Epic's required set. Removing one leaves
+        // shared seasonal content unreadable and the game crashes.
+        for mode in [
+            "GFP_CreativeRoot",
+            "GFP_JunoRoot",
+            "GFP_Sparks",
+            "GFP_BlitzRoot",
+            "GFP_SaveTheWorldRoot",
+        ] {
+            assert!(required.contains(&mode), "{mode} must stay required");
+        }
         assert!(required.iter().any(|tag| tag.is_empty()));
         assert!(fallback_groups("SomeOtherGame").is_none());
     }
@@ -365,21 +335,19 @@ mod tests {
     }
 
     #[test]
-    fn fortnite_modes_leave_the_required_set_but_stay_selectable() {
+    fn fortnite_modes_stay_in_the_required_set() {
         let groups = with_launcher_groups(
             "Fortnite",
             &fallback_groups("Fortnite").expect("Fortnite fallback data"),
         );
         let required = group_tags(&groups, "__required");
-        assert!(!required.contains(&"GFP_JunoRoot"));
-        assert!(!required.contains(&"GFP_SaveTheWorldRoot"));
+        assert!(required.contains(&"GFP_JunoRoot"));
+        assert!(required.contains(&"GFP_SaveTheWorldRoot"));
+        assert!(required.contains(&"GFP_CreativeRoot"));
         assert!(required.contains(&"FortniteBR"));
-        assert_eq!(
-            group_tags(&groups, "lego_fortnite"),
-            vec!["GFP_JunoRoot", "GFP_JunoRootOptional"]
-        );
-        assert_eq!(groups["lego_fortnite"]["category"], "modes");
-        assert_eq!(groups["lego_fortnite"]["default"], true);
+        // The mode roots are no longer optional rows of their own.
+        assert!(group_tags(&groups, "lego_fortnite").is_empty());
+        assert!(group_tags(&groups, "creative").is_empty());
     }
 
     #[test]
@@ -392,19 +360,34 @@ mod tests {
         assert!(tags.iter().any(|tag| tag == "GFP_JunoRoot"));
         assert!(tags.iter().any(|tag| tag == "GFP_SaveTheWorldRoot"));
         assert!(tags.iter().any(|tag| tag == "FortniteBR"));
+        // Nothing optional is preselected: quality assets stay a choice.
+        assert!(!tags.iter().any(|tag| tag == "FortniteBREpicOptionalInstall"));
     }
 
     #[test]
-    fn an_explicit_empty_fortnite_selection_drops_the_modes() {
+    fn an_empty_fortnite_selection_still_keeps_the_modes() {
         let groups = with_launcher_groups(
             "Fortnite",
             &fallback_groups("Fortnite").expect("Fortnite fallback data"),
         );
-        // The dialog sends the untagged tag when the user unchecks every mode.
+        // The dialog sends the untagged tag when the user unchecks every extra.
         let tags = expanded_tags(&groups, &[String::new()]);
-        assert!(!tags.iter().any(|tag| tag == "GFP_JunoRoot"));
-        assert!(!tags.iter().any(|tag| tag == "GFP_SaveTheWorldRoot"));
+        assert!(tags.iter().any(|tag| tag == "GFP_JunoRoot"));
+        assert!(tags.iter().any(|tag| tag == "GFP_SaveTheWorldRoot"));
+        assert!(tags.iter().any(|tag| tag == "GFP_CreativeRoot"));
         assert!(tags.iter().any(|tag| tag == "FortniteBR"));
+    }
+
+    #[test]
+    fn selecting_quality_assets_keeps_the_required_modes() {
+        let groups = with_launcher_groups(
+            "Fortnite",
+            &fallback_groups("Fortnite").expect("Fortnite fallback data"),
+        );
+        let tags = expanded_tags(&groups, &["epic_assets".to_string()]);
+        assert!(tags.iter().any(|tag| tag == "GFP_JunoRoot"));
+        assert!(tags.iter().any(|tag| tag == "GFP_SaveTheWorldRoot"));
+        assert!(tags.iter().any(|tag| tag == "FortniteBREpicOptionalInstall"));
     }
 
     #[test]

@@ -35,8 +35,8 @@ export async function openSelectiveModal(appName: string): Promise<void> {
     }
     S.selectiveInstallOptions = opts;
     S.selectedInstallTags.clear();
-    // Epic preselects Fortnite's modes; the backend uses the same defaults for
-    // an update that carries no selection.
+    // Preselect only the groups Epic marks as default. Fortnite's modes are
+    // part of the backend's required set and no longer appear as rows.
     for (const tag of opts.tags) {
       if (tag.defaultSelected) S.selectedInstallTags.add(tag.tag);
     }
@@ -93,8 +93,9 @@ export async function applySelectiveInstall(appName: string, tags: string[], dlc
     const row = options?.tags.find((tag) => tag.tag === key);
     return row?.tags && row.tags.length > 0 ? row.tags : [key];
   });
-  // Adding packs to an installed copy must never feed legendary a smaller
-  // selection than the files on disk: it would treat them as removed.
+  // Adding packs to an installed copy must keep every pack that is actually on
+  // disk. `installedTags` is already filtered to those groups; a stale tag left
+  // by an interrupted download must not be sent again.
   if (installedMode) {
     installTags = Array.from(new Set([...(options?.installedTags ?? []), ...installTags]));
   }
@@ -193,6 +194,9 @@ export function renderSelectiveModal(): void {
   const extraTags = opts.tags.filter((tag) => tag.category === "extras");
   const summary = summaryOf(opts.appName);
   const installedMode = S.selectiveInstalled;
+  const repairNote = opts.needsRepair
+    ? `<div class="install-ea-note">${icon("alert-triangle", 14)}<span>${esc(t("verify.problem"))} ${esc(t("manage.verifyDesc"))}</span></div>`
+    : "";
 
   let totalDl = installedMode ? 0 : opts.baseDownloadSize || opts.baseSize;
   let totalDisk = installedMode ? 0 : opts.baseSize;
@@ -291,6 +295,8 @@ export function renderSelectiveModal(): void {
               <input type="checkbox" class="selective-checkbox" checked disabled />
             </div>
           </div>
+
+          ${repairNote}
 
           ${tagSection("selective.gameModes", "modes", modeTags)}
           ${tagSection("selective.extraLanguages", "languages", langTags)}

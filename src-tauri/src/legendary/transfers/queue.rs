@@ -535,7 +535,9 @@ pub(super) fn start_download_request(
     let mut merged = pending_from_record(merged_record);
     // An installed copy keeps the selection it was installed with. A bare
     // update carries no tags, and expanding that as a fresh install would
-    // re-add every default pack the user left out.
+    // re-add every default pack the user left out. The command handlers that
+    // can await the manifest check pre-filter this tag set; a queue entry
+    // carries the filtered tags it was created with.
     if merged.install_tags.is_empty() {
         merged.install_tags = crate::legendary::cache::installed_install_tags(
             &crate::legendary::skip::default_config_dir(),
@@ -929,15 +931,23 @@ pub(super) fn spawn_drain(
     })
 }
 
-/// Starts the download (must NOT be called while holding a lock!). Sets up the monitor task on success.
-pub(super) fn start_download(
-    app: &AppHandle,
-    app_name: String,
-    override_dir: Option<String>,
-) -> Result<String, String> {
-    start_download_with_tags(app, app_name, Vec::new(), override_dir)
+/// A repair may have been paused before the manifest check existed. Drop the
+/// optional tags whose files are not on disk before it resumes.
+async fn filter_repair_request(app: &AppHandle, request: &mut PendingDownload) {
+    if !request.repair || request.install_tags.is_empty() {
+        return;
+    }
+    let Ok(bin) = resolve_bin(app) else {
+        return;
+    };
+    if let Some(tags) =
+        crate::legendary::commands::filter_installed_tags(&bin, &request.app_name).await
+    {
+        request.install_tags = crate::legendary::sdl::expand_selected(&request.app_name, tags);
+    }
 }
 
+/// Starts the download (must NOT be called while holding a lock!). Sets up the monitor task on success.
 pub(super) fn start_download_with_tags(
     app: &AppHandle,
     app_name: String,
@@ -1689,6 +1699,16 @@ pub async fn epic_install_game(
     if app_name.is_empty() {
         return Err("@t:dl.nameEmpty".into());
     }
+    // A saved tag is not proof that its files are on disk. Filter the inherited
+    // set before it becomes a queue entry, so an interrupted optional download
+    // cannot make this update fetch it again.
+    let bin = resolve_bin(&app)?;
+    let config = crate::legendary::skip::default_config_dir();
+    let install_tags = match crate::legendary::commands::filter_installed_tags(&bin, &app_name).await
+    {
+        Some(tags) => tags,
+        None => crate::legendary::cache::installed_install_tags(&config, &app_name),
+    };
     {
         let s = state.epic_dl.lock().map_err(|e| e.to_string())?;
         if s.active.as_ref().is_some_and(|a| a == &app_name)
@@ -1701,7 +1721,7 @@ pub async fn epic_install_game(
             let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
             s.queue.push_back(PendingDownload {
                 app_name: app_name.clone(),
-                install_tags: Vec::new(),
+                install_tags: install_tags.clone(),
                 install_dir: install_dir.clone(),
                 repair: false,
             });
@@ -1713,7 +1733,7 @@ pub async fn epic_install_game(
             return Ok("@t:dl.queuedActive".into());
         }
     }
-    start_download(&app, app_name, install_dir)
+    start_download_with_tags(&app, app_name, install_tags, install_dir)
 }
 
 #[tauri::command]
@@ -1734,9 +1754,13 @@ pub async fn epic_repair_game(app: AppHandle, app_name: String) -> Result<String
     };
     // Repair the tags this install actually has, plus the required set: a
     // broken selective install then gains its missing core files instead of
-    // repairing only the optional packs.
-    let install_tags =
-        crate::legendary::sdl::expand_selected(&app_name, installed.install_tags.clone());
+    // repairing only the optional packs. Tags whose group is not on disk are
+    // dropped, so a stale optional pack is not downloaded again by a repair.
+    let bin = resolve_bin(&app)?;
+    let selected = crate::legendary::commands::filter_installed_tags(&bin, &app_name)
+        .await
+        .unwrap_or_else(|| installed.install_tags.clone());
+    let install_tags = crate::legendary::sdl::expand_selected(&app_name, selected);
     let base = std::path::Path::new(installed.install_path.trim())
         .parent()
         .map(|path| path.to_string_lossy().to_string());
@@ -1900,7 +1924,7 @@ pub async fn epic_resume_pending_download(app: AppHandle) -> Result<String, Stri
     let pending = std::fs::read_to_string(&path)
         .ok()
         .and_then(|text| serde_json::from_str::<PendingDownload>(&text).ok());
-    {
+    let next = {
         let state = app.state::<AppState>();
         let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
         if s.queue.is_empty() {
@@ -1912,14 +1936,23 @@ pub async fn epic_resume_pending_download(app: AppHandle) -> Result<String, Stri
         if pending.is_none() {
             let next = s.queue.pop_front();
             write_queue_snapshot(&s.queue);
-            drop(s);
-            return match next {
-                Some(request) => start_download_request(&app, request),
-                None => Ok("@t:dl.noPending".into()),
-            };
+            next
+        } else {
+            None
         }
+    };
+    if pending.is_none() {
+        return match next {
+            Some(mut request) => {
+                filter_repair_request(&app, &mut request).await;
+                start_download_request(&app, request)
+            }
+            None => Ok("@t:dl.noPending".into()),
+        };
     }
-    start_download_request(&app, pending.unwrap())
+    let mut request = pending.unwrap();
+    filter_repair_request(&app, &mut request).await;
+    start_download_request(&app, request)
 }
 
 #[tauri::command]
@@ -1990,7 +2023,8 @@ pub async fn epic_resume_download(
     state: tauri::State<'_, AppState>,
     app_name: String,
 ) -> Result<String, String> {
-    let request = remembered_request(&app_name, None);
+    let mut request = remembered_request(&app_name, None);
+    filter_repair_request(&app, &mut request).await;
     // Pause terminates the child asynchronously. Wait for its monitor to
     // release the active slot before starting the replacement process.
     for _ in 0..40 {

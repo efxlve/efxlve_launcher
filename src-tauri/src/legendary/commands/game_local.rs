@@ -948,7 +948,7 @@ pub struct InstallOptionTag {
     pub size: u64,
     pub download_size: u64,
     pub category: String,
-    /// Selected when the install options open (Epic preselects Fortnite modes).
+    /// Selected when the install options open (a group Epic marks as default).
     #[serde(default)]
     pub default_selected: bool,
     /// This row is part of the installed copy. The manage dialog keeps it
@@ -972,8 +972,13 @@ pub struct GameInstallOptions {
     pub has_options: bool,
     /// Raw tags of the installed copy. The manage dialog unions these with the
     /// user's new selection so adding a pack never drops an installed one.
+    /// Groups whose files are missing are left out, so a stale tag cannot make
+    /// an update download an optional pack the player never selected.
     #[serde(default)]
     pub installed_tags: Vec<String>,
+    /// At least one file of the required set is missing or the wrong size.
+    #[serde(default)]
+    pub needs_repair: bool,
 }
 
 fn json_u64(v: &serde_json::Value) -> u64 {
@@ -1174,6 +1179,229 @@ fn sdl_options(
     (base_size, base_download_size, rows)
 }
 
+/// One row from `legendary list-files --json`. Only the fields needed to prove
+/// that a pack is on disk are read.
+#[derive(Debug, serde::Deserialize)]
+struct ListedFile {
+    filename: String,
+    #[serde(default)]
+    install_tags: Vec<String>,
+    #[serde(default)]
+    file_size: u64,
+}
+
+/// What the manifest and the disk say about an installed copy.
+#[derive(Debug, Default)]
+pub(crate) struct InstalledPackState {
+    /// Installed tags with the tags of missing optional groups filtered out.
+    pub tags: Vec<String>,
+    /// SDL group key -> every file carrying one of its tags is on disk.
+    pub groups: std::collections::HashMap<String, bool>,
+    /// Every file of the required plus untagged set is on disk.
+    pub base_complete: bool,
+    /// The manifest file list was read. False means the tag-only fallback ran,
+    /// so `tags` and `base_complete` must not be trusted as disk evidence.
+    pub checked: bool,
+}
+
+/// A manifest file exists at the recorded size.
+fn manifest_file_ok(root: &Path, file: &ListedFile) -> bool {
+    std::fs::metadata(root.join(&file.filename))
+        .map(|meta| meta.is_file() && meta.len() == file.file_size)
+        .unwrap_or(false)
+}
+
+/// Every manifest file that belongs to `tags` is present. Untagged files belong
+/// only to the required set; an optional group must match at least one file, or
+/// a tag with no rows would look installed.
+fn group_files_present(
+    files: &[ListedFile],
+    present: &std::collections::HashSet<&str>,
+    tags: &[&str],
+    untagged: bool,
+) -> bool {
+    let wanted: std::collections::HashSet<&str> =
+        tags.iter().copied().filter(|tag| !tag.is_empty()).collect();
+    if wanted.is_empty() && !untagged {
+        return false;
+    }
+    let mut matched = false;
+    for file in files {
+        let belongs = if file.install_tags.is_empty() {
+            untagged
+        } else {
+            file.install_tags
+                .iter()
+                .any(|tag| wanted.contains(tag.as_str()))
+        };
+        if !belongs {
+            continue;
+        }
+        matched = true;
+        if !present.contains(file.filename.as_str()) {
+            return false;
+        }
+    }
+    matched
+}
+
+/// Tag-only fallback when the manifest file list cannot be read: a group is
+/// installed only when every one of its raw tags is on record.
+fn tag_only_group_states(
+    installed: &[String],
+    groups: &serde_json::Value,
+) -> std::collections::HashMap<String, bool> {
+    let set: std::collections::HashSet<&str> =
+        installed.iter().map(String::as_str).collect();
+    let mut out = std::collections::HashMap::new();
+    if let Some(map) = groups.as_object() {
+        for key in map.keys() {
+            if key == "__required" {
+                continue;
+            }
+            let tags = crate::legendary::sdl::group_tags(groups, key);
+            if tags.is_empty() {
+                continue;
+            }
+            out.insert(
+                key.clone(),
+                tags.iter().all(|tag| set.contains(tag)),
+            );
+        }
+    }
+    out
+}
+
+/// Drops the raw tags of groups that are not fully on disk. Required tags are
+/// always kept: they are what a repair has to fetch.
+fn tags_after_group_check(
+    installed: &[String],
+    groups: &serde_json::Value,
+    group_states: &std::collections::HashMap<String, bool>,
+) -> Vec<String> {
+    let required: std::collections::HashSet<&str> =
+        crate::legendary::sdl::group_tags(groups, "__required")
+            .into_iter()
+            .collect();
+    let mut drop_tags = std::collections::HashSet::new();
+    for (key, installed_ok) in group_states {
+        if *installed_ok {
+            continue;
+        }
+        for tag in crate::legendary::sdl::group_tags(groups, key) {
+            if !required.contains(tag) {
+                drop_tags.insert(tag.to_string());
+            }
+        }
+    }
+    installed
+        .iter()
+        .filter(|tag| !drop_tags.contains(tag.as_str()))
+        .cloned()
+        .collect()
+}
+
+/// The cached manifest for this exact build. Passing it to `list-files`
+/// skips the API manifest lookup, which is the difference between a two-second
+/// check and a twenty-second one.
+fn local_manifest_path(config: &Path, installed: &InstalledGame) -> Option<PathBuf> {
+    if !installed.manifest_path.trim().is_empty() {
+        let path = PathBuf::from(installed.manifest_path.trim());
+        if path.is_file() {
+            return Some(path);
+        }
+    }
+    let platform = installed.platform.trim();
+    let version = installed.version.trim();
+    if platform.is_empty() || version.is_empty() {
+        return None;
+    }
+    let path = config
+        .join("manifests")
+        .join(format!("{}_{}_{}.manifest", installed.app_name, platform, version));
+    path.is_file().then_some(path)
+}
+
+/// Cross-checks the installed tags against the manifest file list. This is the
+/// difference between "legendary saved this tag once" and "the pack is actually
+/// on disk": a tag survives an interrupted download and otherwise makes an
+/// update fetch a pack the player never got.
+pub(crate) async fn installed_pack_state(
+    bin: &Path,
+    config: &Path,
+    app_name: &str,
+    groups: &serde_json::Value,
+    installed: &InstalledGame,
+) -> InstalledPackState {
+    let mut state = InstalledPackState {
+        tags: installed.install_tags.clone(),
+        ..Default::default()
+    };
+    let root = Path::new(installed.install_path.trim());
+    if !root.is_dir() || installed.install_tags.is_empty() {
+        return state;
+    }
+    let Some(manifest) = local_manifest_path(config, installed) else {
+        state.groups = tag_only_group_states(&installed.install_tags, groups);
+        return state;
+    };
+    let Some(manifest) = manifest.to_str() else {
+        state.groups = tag_only_group_states(&installed.install_tags, groups);
+        return state;
+    };
+    let args = vec!["list-files", app_name, "--json", "--manifest", manifest];
+    let Ok(files) = client::run_json::<Vec<ListedFile>>(bin, &args).await else {
+        state.groups = tag_only_group_states(&installed.install_tags, groups);
+        return state;
+    };
+    let present: std::collections::HashSet<&str> = files
+        .iter()
+        .filter(|file| manifest_file_ok(root, file))
+        .map(|file| file.filename.as_str())
+        .collect();
+
+    let mut required = crate::legendary::sdl::group_tags(groups, "__required");
+    required.push("");
+    state.base_complete = group_files_present(&files, &present, &required, true);
+
+    if let Some(map) = groups.as_object() {
+        for key in map.keys() {
+            if key == "__required" {
+                continue;
+            }
+            let tags = crate::legendary::sdl::group_tags(groups, key);
+            if tags.is_empty() {
+                continue;
+            }
+            let ok = group_files_present(&files, &present, &tags, false);
+            state.groups.insert(key.clone(), ok);
+        }
+    }
+    state.tags = tags_after_group_check(&installed.install_tags, groups, &state.groups);
+    state.checked = true;
+    state
+}
+
+/// Installed tags for update and repair paths. `None` means the tag set could
+/// not be checked (no SDL groups, or the manifest list failed); callers then
+/// keep legendary's raw record.
+pub(crate) async fn filter_installed_tags(bin: &Path, app_name: &str) -> Option<Vec<String>> {
+    let config = skip::default_config_dir();
+    let installed = cache::read_installed(&config)
+        .into_iter()
+        .find(|game| game.app_name == app_name)?;
+    if installed.install_tags.is_empty() {
+        return None;
+    }
+    let groups = crate::legendary::sdl::cached_groups(&config, app_name)?;
+    let state = installed_pack_state(bin, &config, app_name, &groups, &installed).await;
+    if state.checked && !state.tags.is_empty() {
+        Some(state.tags)
+    } else {
+        None
+    }
+}
+
 #[tauri::command]
 pub async fn epic_get_install_options(
     app: AppHandle,
@@ -1215,6 +1443,7 @@ pub async fn epic_get_install_options(
     // and, more importantly, define the real base (required) size. Only games
     // whose manifest carries tags can have groups, so a game without tags
     // never pays for the extra request.
+    let mut sdl_groups: Option<serde_json::Value> = None;
     if !tags.is_empty() {
         if let Some(manifest) = manifest.as_ref() {
             let config = skip::default_config_dir();
@@ -1228,6 +1457,7 @@ pub async fn epic_get_install_options(
                     // Only the base exists; raw manifest tags are internal
                     // names, not selectable packs.
                     tags = sdl_tags;
+                    sdl_groups = Some(groups);
                 }
                 None => {
                     // No SDL groups for this title: the manifest tag names are
@@ -1243,21 +1473,44 @@ pub async fn epic_get_install_options(
         .into_iter()
         .filter(|d| d.downloadable)
         .collect();
-    // The manage dialog re-opens the same rows for an installed copy. Mark the
-    // rows the copy already has so adding a new pack starts from the real
-    // selection instead of the fresh-install defaults.
-    let installed_tags = crate::legendary::cache::installed_install_tags(
-        &skip::default_config_dir(),
-        &app_name,
-    );
-    let installed_set: std::collections::HashSet<&str> =
-        installed_tags.iter().map(String::as_str).collect();
-    for tag in &mut tags {
-        tag.installed = if tag.tags.is_empty() {
-            installed_set.contains(tag.tag.as_str())
-        } else {
-            tag.tags.iter().any(|raw| installed_set.contains(raw.as_str()))
-        };
+    // A saved tag is not proof that its files are on disk: an interrupted
+    // download leaves the tag behind. The manage dialog and the update/repair
+    // paths therefore read the manifest file list and keep only the groups
+    // whose files are actually present.
+    let config = skip::default_config_dir();
+    let installed = cache::read_installed(&config)
+        .into_iter()
+        .find(|game| game.app_name == app_name);
+    let mut installed_tags = installed
+        .as_ref()
+        .map(|entry| entry.install_tags.clone())
+        .unwrap_or_default();
+    let mut needs_repair = false;
+    if let (Some(entry), Some(groups)) = (installed.as_ref(), sdl_groups.as_ref()) {
+        let state = installed_pack_state(&bin, &config, &app_name, groups, entry).await;
+        for row in &mut tags {
+            row.installed = if row.tags.is_empty() {
+                installed_tags.iter().any(|tag| tag == &row.tag)
+            } else {
+                state.groups.get(&row.tag).copied().unwrap_or(false)
+            };
+        }
+        if state.checked {
+            installed_tags = state.tags;
+            needs_repair = !state.base_complete;
+        }
+    } else {
+        let installed_set: std::collections::HashSet<&str> =
+            installed_tags.iter().map(String::as_str).collect();
+        for row in &mut tags {
+            row.installed = if row.tags.is_empty() {
+                installed_set.contains(row.tag.as_str())
+            } else {
+                row.tags
+                    .iter()
+                    .all(|raw| installed_set.contains(raw.as_str()))
+            };
+        }
     }
     let has_options = !tags.is_empty() || !dlcs.is_empty();
 
@@ -1270,6 +1523,7 @@ pub async fn epic_get_install_options(
         dlcs,
         has_options,
         installed_tags,
+        needs_repair,
     })
 }
 
@@ -1325,6 +1579,100 @@ mod tests {
         assert!(manifest_of(&serde_json::json!({"manifest": null})).is_none());
         let info = serde_json::json!({"manifest": {"disk_size": 1u64}});
         assert_eq!(manifest_of(&info).unwrap()["disk_size"], 1);
+    }
+
+    #[test]
+    fn a_group_needs_every_manifest_file_on_disk() {
+        let dir = std::env::temp_dir().join(format!(
+            "efxlve-pack-state-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("a.pak"), b"abc").unwrap();
+        std::fs::write(dir.join("b.ucas"), b"12345").unwrap();
+        let files = vec![
+            ListedFile {
+                filename: "a.pak".into(),
+                install_tags: vec!["Mode".into()],
+                file_size: 3,
+            },
+            ListedFile {
+                filename: "b.ucas".into(),
+                install_tags: vec!["Mode".into()],
+                file_size: 5,
+            },
+        ];
+        let present: std::collections::HashSet<&str> = files
+            .iter()
+            .filter(|file| manifest_file_ok(&dir, file))
+            .map(|file| file.filename.as_str())
+            .collect();
+        assert!(group_files_present(&files, &present, &["Mode"], false));
+
+        // A split chunk with the wrong length is a partial download, not an
+        // installed pack.
+        std::fs::write(dir.join("b.ucas"), b"1234").unwrap();
+        let present: std::collections::HashSet<&str> = files
+            .iter()
+            .filter(|file| manifest_file_ok(&dir, file))
+            .map(|file| file.filename.as_str())
+            .collect();
+        assert!(!group_files_present(&files, &present, &["Mode"], false));
+        // A tag that matches no manifest row cannot look installed.
+        assert!(!group_files_present(&files, &present, &["Missing"], false));
+
+        // Untagged files are part of the required set, not of an optional group.
+        let base = vec![ListedFile {
+            filename: "a.pak".into(),
+            install_tags: Vec::new(),
+            file_size: 3,
+        }];
+        let present: std::collections::HashSet<&str> = base
+            .iter()
+            .filter(|file| manifest_file_ok(&dir, file))
+            .map(|file| file.filename.as_str())
+            .collect();
+        assert!(group_files_present(&base, &present, &[], true));
+        assert!(!group_files_present(&base, &present, &[], false));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_missing_group_drops_its_tags_but_keeps_required_ones() {
+        let groups = serde_json::json!({
+            "__required": { "tags": ["Base", "Mode", ""] },
+            "quality": { "tags": ["Quality"] },
+            "owned": { "tags": ["Owned"] }
+        });
+        let installed = vec![
+            "Base".to_string(),
+            "Mode".to_string(),
+            "Quality".to_string(),
+            "Owned".to_string(),
+        ];
+        let mut states = std::collections::HashMap::new();
+        states.insert("quality".to_string(), false);
+        states.insert("owned".to_string(), true);
+        let out = tags_after_group_check(&installed, &groups, &states);
+        assert!(out.contains(&"Base".to_string()));
+        assert!(out.contains(&"Mode".to_string()));
+        assert!(!out.contains(&"Quality".to_string()));
+        assert!(out.contains(&"Owned".to_string()));
+    }
+
+    #[test]
+    fn the_tag_fallback_requires_every_group_tag() {
+        let groups = serde_json::json!({
+            "__required": { "tags": ["Base"] },
+            "assets": { "tags": ["A", "B"] }
+        });
+        let partial = vec!["Base".to_string(), "A".to_string()];
+        let states = tag_only_group_states(&partial, &groups);
+        assert_eq!(states.get("assets"), Some(&false));
+        let complete = vec!["Base".to_string(), "A".to_string(), "B".to_string()];
+        let states = tag_only_group_states(&complete, &groups);
+        assert_eq!(states.get("assets"), Some(&true));
     }
 
     #[test]
@@ -1418,7 +1766,7 @@ mod tests {
     }
 
     #[test]
-    fn fortnite_modes_are_rows_outside_the_required_base() {
+    fn fortnite_modes_are_in_the_required_base() {
         let manifest = serde_json::json!({
             "tag_disk_size": [
                 {"tag": "", "size": 100u64},
@@ -1438,20 +1786,11 @@ mod tests {
             &crate::legendary::sdl::fallback_groups("Fortnite").expect("Fortnite groups"),
         );
         let (base, base_download, rows) = sdl_options(&manifest, &groups);
-        assert_eq!(base, 1_000);
-        assert_eq!(base_download, 880);
-        let lego = rows
-            .iter()
-            .find(|row| row.tag == "lego_fortnite")
-            .expect("LEGO row");
-        assert_eq!(lego.size, 400);
-        assert_eq!(lego.category, "modes");
-        assert!(lego.default_selected);
-        let stw = rows
-            .iter()
-            .find(|row| row.tag == "save_the_world")
-            .expect("Save the World row");
-        assert_eq!(stw.size, 300);
+        // The mode roots are part of Epic's required set, so the base carries
+        // their bytes and they are not optional rows.
+        assert_eq!(base, 1_700);
+        assert_eq!(base_download, 1_480);
+        assert!(rows.iter().all(|row| row.category != "modes"));
     }
 
     #[test]
