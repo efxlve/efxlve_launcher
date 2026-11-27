@@ -415,6 +415,26 @@ pub(super) fn clear_app_temp_files(config: &std::path::Path, app_name: &str) {
     }
 }
 
+/// True when a selective install asks for a different pack set than the one on
+/// record. legendary's resume list belongs to the old set; continuing from it
+/// after a pack change can skip the newly selected files.
+pub(super) fn install_tags_changed(installed: &[String], requested: &[String]) -> bool {
+    if installed.is_empty() {
+        return false;
+    }
+    fn normalized(tags: &[String]) -> Vec<&str> {
+        let mut tags: Vec<&str> = tags
+            .iter()
+            .map(|tag| tag.trim())
+            .filter(|tag| !tag.is_empty())
+            .collect();
+        tags.sort_unstable();
+        tags.dedup();
+        tags
+    }
+    normalized(installed) != normalized(requested)
+}
+
 impl Default for EpicDlState {
     fn default() -> Self {
         Self {
@@ -512,6 +532,15 @@ pub(super) fn start_download_request(
     // a resume record saved by an older release with a raw tag set.
     let install_tags =
         crate::legendary::sdl::expand_selected(&merged.app_name, merged.install_tags);
+    let config = crate::legendary::skip::default_config_dir();
+    let installed_tags = crate::legendary::cache::installed_install_tags(&config, &merged.app_name);
+    // legendary keeps one resume list per app, written for the pack set that
+    // was selected when the download stopped. Replaying it after the player
+    // changes the packs, or after asking for a repair, can log "0 files
+    // remaining" and save the new tags without fetching the files they name.
+    if merged.repair || install_tags_changed(&installed_tags, &install_tags) {
+        clear_app_temp_files(&config, &merged.app_name);
+    }
     let request = PendingDownload {
         app_name: merged.app_name,
         install_tags,
@@ -521,10 +550,7 @@ pub(super) fn start_download_request(
 
     // EGL may have updated this game since the library last read its manifests.
     // Record that version before legendary picks the diff base.
-    {
-        let config = crate::legendary::skip::default_config_dir();
-        crate::legendary::cache::refresh_installed_from_egl(&config, &request.app_name);
-    }
+    crate::legendary::cache::refresh_installed_from_egl(&config, &request.app_name);
 
     // Claim the slot before spawn so a second caller cannot start another
     // legendary install against the same .egstore.

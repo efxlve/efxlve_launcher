@@ -392,6 +392,36 @@ fn cancelling_one_game_keeps_another_games_resume_marker() {
 }
 
 #[test]
+fn a_changed_pack_selection_restarts_without_the_old_resume_list() {
+    let base = vec!["FortniteBR".to_string(), "GFP_JunoRoot".to_string()];
+    let with_festival = vec![
+        "FortniteBR".to_string(),
+        "GFP_JunoRoot".to_string(),
+        "GFP_Sparks".to_string(),
+    ];
+
+    // A first install has no saved set to compare against.
+    assert!(!install_tags_changed(&[], &with_festival));
+    // An update or a plain resume keeps the same set.
+    assert!(!install_tags_changed(&base, &base));
+    // Adding or removing a pack invalidates the saved resume list.
+    assert!(install_tags_changed(&base, &with_festival));
+    assert!(install_tags_changed(&with_festival, &base));
+    // legendary's config keeps a leading empty tag; order and repeats do not count.
+    let saved = vec![
+        "".to_string(),
+        "GFP_Sparks".to_string(),
+        "FortniteBR".to_string(),
+    ];
+    let requested = vec![
+        "FortniteBR".to_string(),
+        "FortniteBR".to_string(),
+        "GFP_Sparks".to_string(),
+    ];
+    assert!(!install_tags_changed(&saved, &requested));
+}
+
+#[test]
 fn test_force_remove_dir_all_handles_readonly() {
     let temp_dir =
         std::env::temp_dir().join(format!("efxlve_test_uninstall_{}", std::process::id()));
