@@ -162,10 +162,15 @@ pub fn write_seed(
 
 /// legendary default config dir (fallback when the status command fails).
 pub fn default_config_dir() -> PathBuf {
-    // Portable builds point this at a folder next to the executable.
-    if let Ok(path) = std::env::var("EFXLVE_CONFIG_DIR") {
-        if !path.trim().is_empty() {
-            return PathBuf::from(path);
+    // Portable builds point this at a folder next to the executable. Legendary's
+    // own override comes next: when a player sets LEGENDARY_CONFIG_PATH, the CLI
+    // reads that folder, so the launcher must read the same one or it serves an
+    // empty library while legendary installs into another directory.
+    for key in ["EFXLVE_CONFIG_DIR", "LEGENDARY_CONFIG_PATH"] {
+        if let Ok(path) = std::env::var(key) {
+            if !path.trim().is_empty() {
+                return PathBuf::from(path);
+            }
         }
     }
     #[cfg(windows)]
