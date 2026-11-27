@@ -85,6 +85,7 @@ export async function switchAccount(accountId: string): Promise<void> {
     S.epicSummaries = [];
     S.epicGamesRawMap.clear();
     S.epicSummariesMap.clear();
+    S.epicLibraryRead = false;
     S.epicPhase = "library";
     S.epicSyncing = true;
 

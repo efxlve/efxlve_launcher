@@ -132,7 +132,16 @@ export async function syncEpicLibrary(manual: boolean, force = false): Promise<v
     S.epicSyncNote = t("lib.offlineMode");
     return;
   }
-  if (S.epicSyncing && !force) return;
+  if (S.epicSyncing && !force) {
+    // The first read after connecting fetches the owned list and every game's
+    // metadata. It can run for minutes, and this guard used to answer the
+    // refresh button with silence, which reads as a dead button.
+    if (manual) {
+      toast(t("lib.syncRunning"), "ok");
+      if (S.view === "library") render();
+    }
+    return;
+  }
   const gen = ++librarySyncGen;
   S.epicSyncing = true;
   if (manual) {
@@ -150,6 +159,7 @@ export async function syncEpicLibrary(manual: boolean, force = false): Promise<v
     pruneRecent();
     setEpicGamesRaw(egames);
     S.epicSkippedCount = eskipped.length;
+    S.epicLibraryRead = true;
     S.epicSyncNote = "";
     S.epicBusyMsg = "";
     void loadEpicAchSummaries(manual);
@@ -287,6 +297,9 @@ export async function runProgressiveAuth(
     const account = await authCall();
     if (timer) clearInterval(timer);
     S.epicAccount = account;
+    // A new session has not read the library yet; the empty state must wait for
+    // the first list before it calls the account empty.
+    S.epicLibraryRead = false;
     S.playerProfileData = null;
     S.profileError = "";
     S.epicAchSummaries = {};
@@ -410,6 +423,7 @@ export async function epicDoLogout(): Promise<void> {
   setEpicSummaries([]);
   setEpicGamesRaw([]);
   S.epicSkippedCount = 0;
+  S.epicLibraryRead = false;
   S.epicResumable.clear();
   clearAchievementSummaryCache();
   S.view = "library";

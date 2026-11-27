@@ -375,6 +375,8 @@ export const S = {
   setupMessage: "",
   epicBusyMsg: "",
   epicSyncing: false,
+  /** A full library read finished in this session, so an empty result is real. */
+  epicLibraryRead: false,
   epicSyncNote: "",
   epicGamesRaw: ([]) as EpicGame[],
   epicGamesRawMap: (new Map()) as Map<string, EpicGame>,

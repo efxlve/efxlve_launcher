@@ -914,6 +914,27 @@ export function renderEpicItems(): string {
         `<button class="btn primary" data-act="quick-tab" data-tab="all">${t("lib.favEmptyCta")}</button>`,
       );
     }
+    // The first read after connecting Epic fetches the owned list and a metadata
+    // record for every game, which can take minutes on a large account. A plain
+    // "No games found" during that pass reads as an empty library.
+    if (S.epicSyncing) {
+      return `${activeChipsHtml}<div class="empty-state">
+        <span class="spinner"></span>
+        <h3>${esc(t("lib.epicReading"))}</h3>
+        <p>${esc(S.epicBusyMsg || t("lib.epicReadingHint"))}</p>
+      </div>`;
+    }
+    // Connected, read finished, and the account still reports nothing owned.
+    // Naming the account makes a wrong or second Epic account easy to spot.
+    if (S.epicAccount && S.epicLibraryRead && !S.epicSyncNote) {
+      return `${activeChipsHtml}${emptyState(
+        "user",
+        esc(t("lib.epicEmptyTitle")),
+        t("lib.epicEmptyHint", { name: esc(S.epicAccount) }),
+        `<button class="btn primary" data-act="epic-refresh">${icon("refresh", 14)} ${esc(t("lib.refreshTip"))}</button>
+         <button class="btn ghost" data-view="accounts">${esc(t("accounts.title"))}</button>`,
+      )}`;
+    }
     return emptyState(
       "gamepad-2",
       t("lib.noGames"),

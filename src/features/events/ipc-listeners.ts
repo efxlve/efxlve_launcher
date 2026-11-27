@@ -435,6 +435,9 @@ export async function initApp(hooks: {
     });
     listenLater<LibraryEvent>("legendary-library", (event) => {
       S.epicBusyMsg = localizeMessage(event.payload.message);
+      // The first Epic read reports skips and retries here; without a repaint
+      // the library keeps showing the initial "reading" line.
+      if (S.view === "library") hooks.scheduleRender();
     });
     // Amazon installs stream their own progress lines; feed the same active
     // download metrics the Epic/GOG path uses, then patch the card in place.
