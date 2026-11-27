@@ -414,6 +414,7 @@
   "store.inLibrary": "已在遊戲庫",
   "store.tabsPrev": "上一個商店",
   "store.tabsNext": "下一個商店",
+  "store.openClient": "開啟啟動器",
   "common.play": "開始遊戲",
   "common.install": "安裝",
   "common.manage": "內容與管理",

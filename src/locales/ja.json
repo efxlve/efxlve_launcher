@@ -414,6 +414,7 @@
   "store.inLibrary": "ライブラリ内",
   "store.tabsPrev": "前のストア",
   "store.tabsNext": "次のストア",
+  "store.openClient": "ランチャーを開く",
   "common.play": "プレイ",
   "common.install": "インストール",
   "common.manage": "プロパティと管理",

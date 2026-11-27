@@ -432,6 +432,7 @@
   "store.inLibrary": "In Library",
   "store.tabsPrev": "Previous stores",
   "store.tabsNext": "Next stores",
+  "store.openClient": "Open launcher",
   "common.play": "Play",
   "common.install": "Install",
   "common.manage": "Properties & Manage",

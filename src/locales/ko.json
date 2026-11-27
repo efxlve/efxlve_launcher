@@ -414,6 +414,7 @@
   "store.inLibrary": "라이브러리에 있음",
   "store.tabsPrev": "이전 스토어",
   "store.tabsNext": "다음 스토어",
+  "store.openClient": "런처 열기",
   "common.play": "플레이",
   "common.install": "설치",
   "common.manage": "속성 및 관리",

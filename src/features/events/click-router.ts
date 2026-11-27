@@ -153,7 +153,7 @@ import { closeControllerKeyboard, controllerKeyboardPress } from "../gamepad/on-
 import { applyPresenceSettings } from "../presence/presence";
 import { checkForAppUpdate, downloadAppUpdate, installAppUpdate, setAppAutoUpdate } from "../updates/update-manager";
 import { closeStorageMenus } from "../storage/storage-view";
-import { BATTLENET_ACCOUNT_URL, MAX_CUSTOM_STORES, MAX_VISIBLE_STORE_TABS, addCustomStore, loadPlayerProfile, moveStoreOrder, openStore, openStoreUrl, playerProfileStale, purgeStoreViews, removeCustomStore, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, storeEpicAssistantEnabled, setStoreEpicAssistant, storeSteamCurrencyEnabled, setStoreSteamCurrency, storeUrlFor, visibleHeaderStores } from "../store/store-view";
+import { BATTLENET_ACCOUNT_URL, MAX_CUSTOM_STORES, MAX_VISIBLE_STORE_TABS, addCustomStore, loadPlayerProfile, moveStoreOrder, openStore, openStoreClient, openStoreUrl, playerProfileStale, purgeStoreViews, removeCustomStore, resetStoreOrder, scrollStoreTabs, setStoreHidden, setStorePrewarm, setView, storePrewarmEnabled, storeEpicAssistantEnabled, setStoreEpicAssistant, storeSteamCurrencyEnabled, setStoreSteamCurrency, storeUrlFor, visibleHeaderStores } from "../store/store-view";
 import { applyStoreIcon, closeStoreIconPicker, openStoreIconPicker, pickStoreIconFile, useStoreSiteIcon } from "../store/store-icon";
 import {
   clearNotifications,
@@ -505,6 +505,8 @@ document.addEventListener("click", (e) => {
     }
     pushNavHistory({ view: "store" });
     void openStore(store);
+  } else if (act === "open-store-client") {
+    void openStoreClient(S.activeStore).catch((e: unknown) => toast(localizeMessage(String(e)), "err"));
   } else if (act === "store-tabs-scroll") {
     const dir = Number(t.dataset.dir) || 1;
     scrollStoreTabs(dir);

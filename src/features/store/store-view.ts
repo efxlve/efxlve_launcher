@@ -657,6 +657,19 @@ export async function openStore(store: string = "epic"): Promise<void> {
 }
 
 /**
+ * Every built-in storefront tab has an official client; a custom tab points at
+ * an arbitrary site, so it has none. The client itself is opened in Rust.
+ */
+export function storeHasClient(id: string): boolean {
+  return (DEFAULT_HEADER_STORES as string[]).includes(id);
+}
+
+/** Starts the official client behind one storefront tab. */
+export function openStoreClient(store: string): Promise<void> {
+  return invoke<void>("launcher_client_open", { store });
+}
+
+/**
  * After this long away from the store, its webviews are destroyed to free RAM.
  * Long enough that coming back from a game session or the library usually finds
  * the storefront still warm; the disk cache covers the rest.

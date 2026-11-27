@@ -21,7 +21,7 @@ import { esc } from "./utils";
 import { icon } from "./icons";
 import { t } from "../i18n";
 import { epicGetQueue, epicPortrait } from "../epic";
-import { openStoreUrl, setView, syncStoreTabsPill, updateStoreTabsArrows } from "../features/store/store-view";
+import { openStoreUrl, setView, storeHasClient, syncStoreTabsPill, updateStoreTabsArrows } from "../features/store/store-view";
 import { loadSettingsView } from "../features/settings/settings-view";
 import { loadNotesView } from "../features/notes/notes-view";
 import { loadScreenshotsPage } from "../features/screenshots/screenshots-page";
@@ -151,6 +151,8 @@ export function updatePageHeader(): void {
     if (bar) bar.hidden = !showTabs;
     const calBtn = document.getElementById("store-calendar-btn");
     if (calBtn) calBtn.hidden = !showTabs;
+    const launcherBtn = document.getElementById("store-launcher-btn");
+    if (launcherBtn) launcherBtn.hidden = !showTabs || !storeHasClient(S.activeStore);
     if (showTabs) {
       switcher.querySelectorAll<HTMLElement>("[data-store]").forEach((btn) => {
         const active = (btn.dataset.store || "epic") === (S.activeStore || "epic");
@@ -268,6 +270,9 @@ function sidebarGames(): SidebarGame[] {
     if (g.source === "ea" && primaryTitles.has(canonicalGameTitle(g.title))) continue;
     add(g.key, g.title, g.coverUrl);
   }
+  for (const g of S.customSummaries) {
+    if (g.installed) add(g.key, g.title, g.coverUrl);
+  }
   return out;
 }
 
@@ -307,6 +312,9 @@ export function updateSidebarGames(): void {
       .filter((g) => g.installed && !S.hiddenGames.has(g.key))
       .map((g) => g.key),
     ...S.companionSummaries
+      .filter((g) => g.installed && !S.hiddenGames.has(g.key))
+      .map((g) => g.key),
+    ...S.customSummaries
       .filter((g) => g.installed && !S.hiddenGames.has(g.key))
       .map((g) => g.key),
   ].join("\n");

@@ -35,6 +35,7 @@ export function syncRecentGamesCache(): void {
         ...S.gogSummaries.map((s) => ({ appName: s.key, title: s.title, installed: s.installed, cover: s.coverUrl })),
         ...S.amazonSummaries.map((s) => ({ appName: s.key, title: s.title, installed: s.installed, cover: s.coverUrl })),
         ...S.companionSummaries.map((s) => ({ appName: s.key, title: s.title, installed: s.installed, cover: s.coverUrl })),
+        ...S.customSummaries.map((s) => ({ appName: s.key, title: s.title, installed: s.installed, cover: s.coverUrl })),
       ];
       for (const item of all) {
         if (list.length >= 5) break;

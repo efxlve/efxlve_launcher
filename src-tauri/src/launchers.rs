@@ -418,6 +418,39 @@ fn client_args(store: &str, game_id: &str, action: &str) -> Option<Vec<String>> 
     }
 }
 
+/// Managed stores start their client executable directly; the client owns its
+/// own window and keeps running after the launcher closes.
+fn managed_client_executable(store: &str) -> Option<PathBuf> {
+    match store {
+        "epic" => crate::legendary::import_installed::epic_launcher_executable(),
+        "gog" => gog_galaxy(),
+        // The Amazon storefront is Amazon Games, and its app is the only client.
+        "amazon" | "luna" => amazon_games(),
+        _ => None,
+    }
+}
+
+/// Opens the official store client for one storefront tab.
+///
+/// Custom storefront tabs point at an arbitrary site and have no client, so
+/// they are not in this map and return the same missing-client error Settings
+/// shows for an uninstalled launcher.
+#[tauri::command]
+pub fn launcher_client_open(store: String) -> Result<(), String> {
+    match store.as_str() {
+        "steam" => crate::steam::steam_open_client(),
+        "xbox" | "battlenet" | "ubisoft" | "ea" | "rockstar" | "riot" => {
+            crate::companion::companion_open_client(store.clone())
+        }
+        _ => {
+            let Some(path) = managed_client_executable(&store) else {
+                return Err("@t:accounts.clientMissing".into());
+            };
+            spawn_client(&path, &[])
+        }
+    }
+}
+
 /// Optional hand-off to the official Epic/GOG/Amazon client.
 ///
 /// `action` is `launch` (start a game the client installed), `install` (open a
@@ -504,6 +537,14 @@ mod tests {
         std::fs::write(dir.join("Amazon Games.exe"), b"").unwrap();
         assert_eq!(amazon_app_exe(&dir), Some(dir.join("Amazon Games.exe")));
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn unknown_storefronts_have_no_client_to_open() {
+        assert_eq!(
+            launcher_client_open("custom-example".into()).unwrap_err(),
+            "@t:accounts.clientMissing"
+        );
     }
 
     #[test]

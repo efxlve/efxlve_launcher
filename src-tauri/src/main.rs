@@ -2338,6 +2338,7 @@ fn main() {
             app_set_autostart,
             launchers::launchers_status,
             launchers::launcher_delegate,
+            launchers::launcher_client_open,
             app_toggle_maximize,
             app_is_maximized,
             app_set_background_color,
