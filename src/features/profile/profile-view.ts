@@ -619,6 +619,67 @@ function buildAmazonProfileGames(): ProfileGameRecord[] {
   return games;
 }
 
+/** Epic achievement rows combining the Epic GraphQL profile and local summaries/edits. */
+function buildEpicProfileGames(): ProfileGameRecord[] {
+  const out: ProfileGameRecord[] = [];
+  const seenBase = new Map<string, number>();
+
+  for (const raw of S.playerProfileData?.games || []) {
+    const copy: ProfileGameRecord = { ...raw };
+    if (!copy.set_label) {
+      const key = copy.app_name.toLowerCase();
+      const ach = achSummaryOf(copy.app_name);
+      if (ach && ach.supported && (ach.progress_known !== false || ach.user_unlocked > 0 || ach.is_platinum)) {
+        const totalAch = copy.total_achievements > 0 ? copy.total_achievements : (ach.total_achievements || 0);
+        const unlocked = Math.max(copy.total_unlocked, ach.user_unlocked || 0);
+        const totalProductXp = copy.total_product_xp > 0 ? copy.total_product_xp : (ach.total_xp || 0);
+        const totalXp = Math.max(copy.total_xp, ach.user_xp || 0);
+        const isPlat = copy.is_platinum || Boolean(ach.is_platinum) || (totalAch > 0 && unlocked >= totalAch);
+        const effectiveTotal = totalAch > 0 ? totalAch : (isPlat && unlocked > 0 ? unlocked : 0);
+        const pct = effectiveTotal > 0 ? Math.min(100, Math.round((unlocked / effectiveTotal) * 100)) : copy.unlocked_percent;
+        copy.total_achievements = effectiveTotal;
+        copy.total_unlocked = unlocked;
+        copy.total_product_xp = totalProductXp;
+        copy.total_xp = totalXp;
+        copy.is_platinum = isPlat;
+        copy.unlocked_percent = pct;
+      }
+      seenBase.set(key, out.length);
+    }
+    out.push(copy);
+  }
+
+  for (const s of S.epicSummaries) {
+    const key = s.appName.toLowerCase();
+    if (seenBase.has(key)) continue;
+    const ach = achSummaryOf(s.appName);
+    if (!ach || !ach.supported) continue;
+    if (ach.progress_known === false && ach.user_unlocked <= 0 && !ach.is_platinum) continue;
+    const totalAch = ach.total_achievements || 0;
+    const userUnlocked = ach.user_unlocked || 0;
+    const isPlat = Boolean(ach.is_platinum) || (totalAch > 0 && userUnlocked >= totalAch);
+    const effectiveTotal = totalAch > 0 ? totalAch : (isPlat && userUnlocked > 0 ? userUnlocked : 0);
+    const pct = effectiveTotal > 0 ? Math.min(100, Math.round((userUnlocked / effectiveTotal) * 100)) : 0;
+    const raw = rawOf(s.appName);
+    const ns = typeof raw?.metadata?.namespace === "string" ? raw.metadata.namespace : "";
+    out.push({
+      sandbox_id: ns || s.appName,
+      app_name: s.appName,
+      app_title: s.title,
+      cover: s.cover || null,
+      total_unlocked: userUnlocked,
+      total_achievements: effectiveTotal,
+      total_xp: ach.user_xp || 0,
+      total_product_xp: ach.total_xp || 0,
+      is_platinum: isPlat,
+      unlocked_percent: pct,
+      last_unlocked_date: null,
+    });
+  }
+
+  return out;
+}
+
 /** Stores that currently have a signed-in session or a local library. */
 export function overviewStores(): StoreKind[] {
   const linkedCompanion = new Set(
@@ -723,7 +784,7 @@ export function profileListGames(targetScope?: "all" | StoreKind): ProfileGameRe
   const selection = profileSelection();
   if (selection.mode === "account") {
     if (!selection.account.active) return [];
-    if (selection.account.kind === "epic") return S.epicAccount ? (S.playerProfileData?.games || []) : [];
+    if (selection.account.kind === "epic") return (S.epicAccount || totalEpicGames() > 0) ? buildEpicProfileGames() : [];
     if (selection.account.kind === "gog") return buildGogProfileGames();
     if (selection.account.kind === "steam") return buildSteamProfileGames();
     if (selection.account.kind === "amazon") return buildAmazonProfileGames();
@@ -732,7 +793,7 @@ export function profileListGames(targetScope?: "all" | StoreKind): ProfileGameRe
   }
   const scope = targetScope || storeScope();
   const games: ProfileGameRecord[] = [];
-  if ((scope === "all" || scope === "epic") && S.epicAccount) games.push(...(S.playerProfileData?.games || []));
+  if ((scope === "all" || scope === "epic") && (S.epicAccount || totalEpicGames() > 0)) games.push(...buildEpicProfileGames());
   if ((scope === "all" || scope === "gog") && (S.gogAccount || S.gogSummaries.length > 0)) games.push(...buildGogProfileGames());
   if ((scope === "all" || scope === "steam") && S.steamSummaries.length > 0) games.push(...buildSteamProfileGames());
   if ((scope === "all" || scope === "amazon") && S.amazonSummaries.length > 0) games.push(...buildAmazonProfileGames());
@@ -1370,7 +1431,8 @@ export function renderProfile(): string {
     return `<div class="page profile-page">${profileTabPanel(renderExophaseTab())}</div>`;
   }
 
-  const hasAnyData = S.playerProfileData || S.gogSummaries.length > 0 || steamConnected() || S.amazonSummaries.length > 0 || S.companionSummaries.length > 0;
+  const epicHasAny = Boolean(S.playerProfileData) || buildEpicProfileGames().some(trackedGame);
+  const hasAnyData = epicHasAny || S.gogSummaries.length > 0 || steamConnected() || S.amazonSummaries.length > 0 || S.companionSummaries.length > 0;
   if (S.profileLoading && !hasAnyData) {
     const loading = `<div class="empty-state"><span class="spinner"></span><h3>${t("profile.loadingTitle")}</h3><p>${t("profile.loadingDesc")}</p></div>`;
     return `<div class="page profile-page">${profileTabPanel(loading)}</div>`;
@@ -1422,8 +1484,13 @@ export function renderProfile(): string {
       sub: platSub,
     });
     // XP is Epic-only currency and only shown when the scope is Epic itself.
-    if (scope === "epic" && S.playerProfileData) {
-      stats.push({ value: S.playerProfileData.total_xp.toLocaleString(), label: "XP", icon: "xp" });
+    if (scope === "epic") {
+      const epicXp = S.playerProfileData
+        ? Math.max(S.playerProfileData.total_xp, totals.xp + totals.completed * 250)
+        : (totals.trackedSets > 0 ? totals.xp + totals.completed * 250 : 0);
+      if (S.playerProfileData || epicXp > 0) {
+        stats.push({ value: epicXp.toLocaleString(), label: "XP", icon: "xp" });
+      }
     }
     // Xbox reports gamerscore, the same number the console profile shows.
     if (scope === "xbox") {

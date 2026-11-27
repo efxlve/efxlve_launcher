@@ -425,10 +425,17 @@ pub async fn epic_import_egl_collections(
 /// Fetches the user profile and achievements from the official Epic Games GraphQL API
 #[tauri::command]
 pub async fn epic_get_player_profile(
+    app: AppHandle,
     force_refresh: Option<bool>,
 ) -> Result<crate::legendary::profile::EpicPlayerProfile, String> {
     let config = skip::default_config_dir();
-    crate::legendary::profile::fetch_player_profile(&config, force_refresh.unwrap_or(false)).await
+    let cache_dir = app.path().app_data_dir().ok().map(|d| d.join("achievements"));
+    crate::legendary::profile::fetch_player_profile(
+        &config,
+        cache_dir.as_deref(),
+        force_refresh.unwrap_or(false),
+    )
+    .await
 }
 
 // -------------------------------------------------------------

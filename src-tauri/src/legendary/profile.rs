@@ -7,9 +7,12 @@ use std::time::Duration;
 /// Bumped when cached achievement titles are rewritten from library metadata.
 const TITLE_REVISION: u32 = 1;
 
-/// Bumped when cached totals must be recomputed from the source instead of
-/// carrying values written by an older fallback.
-const DATA_REVISION: u32 = 1;
+/// Bumped when cached totals or completion rules change and caches should refresh once.
+const DATA_REVISION: u32 = 2;
+
+const EPIC_OAUTH_URL: &str = "https://account-public-service-prod03.ol.epicgames.com/account/api/oauth/token";
+const EPIC_CLIENT_ID: &str = "34a02cf8f4414e29b15921876da36f9a";
+const EPIC_CLIENT_SECRET: &str = "daafbccc737745039dffe53d94fc76cf";
 
 /// Trailing product kinds Epic uses for split achievement catalogs.
 /// Longer suffixes are listed first so "digital soundtrack" wins over "soundtrack".
@@ -70,12 +73,12 @@ struct GqlPlayerAward {
 struct GqlAchievementSet {
     #[serde(rename = "achievementSetId")]
     _achievement_set_id: Option<String>,
-    #[serde(rename = "isBase")]
-    _is_base: Option<bool>,
-    #[serde(rename = "totalUnlocked")]
-    _total_unlocked: Option<u32>,
-    #[serde(rename = "totalXP")]
-    _total_xp: Option<u32>,
+    #[serde(rename = "isBase", alias = "is_base")]
+    is_base: Option<bool>,
+    #[serde(rename = "totalUnlocked", alias = "total_unlocked")]
+    total_unlocked: Option<u32>,
+    #[serde(rename = "totalXP", alias = "total_xp")]
+    total_xp: Option<u32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -89,7 +92,7 @@ struct GqlGameRecord {
     #[serde(rename = "playerAwards", default)]
     player_awards: Vec<GqlPlayerAward>,
     #[serde(rename = "achievementSets", default)]
-    _achievement_sets: Vec<GqlAchievementSet>,
+    achievement_sets: Vec<GqlAchievementSet>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -122,6 +125,7 @@ struct CatalogEntry {
     app_title: String,
     cover: Option<String>,
     total_achievements: u32,
+    base_achievements: u32,
     total_product_xp: u32,
     /// Lowercased achievement namespace shared by a game and its extras.
     namespace: String,
@@ -145,8 +149,10 @@ struct AchievementIdentity {
     app_name: String,
     app_title: String,
     set_label: String,
+    sandbox_id: String,
     cover: Option<String>,
     total_achievements: u32,
+    base_achievements: u32,
     total_product_xp: u32,
     matched: bool,
 }
@@ -350,17 +356,25 @@ fn choose_set_label(
         .unwrap_or_default()
 }
 
-fn totals_for(idxs: &[usize], preferred: usize, entries: &[CatalogEntry]) -> (u32, u32) {
+fn totals_for(idxs: &[usize], preferred: usize, entries: &[CatalogEntry]) -> (u32, u32, u32) {
     let preferred = &entries[preferred];
     if preferred.total_achievements > 0 {
-        return (preferred.total_achievements, preferred.total_product_xp);
+        return (
+            preferred.total_achievements,
+            preferred.total_product_xp,
+            preferred.base_achievements,
+        );
     }
     for &i in idxs {
         if entries[i].total_achievements > 0 {
-            return (entries[i].total_achievements, entries[i].total_product_xp);
+            return (
+                entries[i].total_achievements,
+                entries[i].total_product_xp,
+                entries[i].base_achievements,
+            );
         }
     }
-    (0, 0)
+    (0, 0, 0)
 }
 
 /// Map one achievement sandbox to the owned library game.
@@ -371,8 +385,10 @@ fn resolve_achievement_identity(sandbox: &str, index: &CatalogIndex) -> Achievem
         app_name: sandbox.to_string(),
         app_title: sandbox.to_string(),
         set_label: String::new(),
+        sandbox_id: sandbox.to_string(),
         cover: None,
         total_achievements: 0,
+        base_achievements: 0,
         total_product_xp: 0,
         matched: false,
     };
@@ -385,14 +401,21 @@ fn resolve_achievement_identity(sandbox: &str, index: &CatalogIndex) -> Achievem
     }
     if let Some(base_idx) = best_base(sandbox, &idxs, &index.entries) {
         let set_label = choose_set_label(sandbox, base_idx, &idxs, &index.entries);
-        let (ach, xp) = totals_for(&idxs, base_idx, &index.entries);
+        let (ach, xp, base_ach) = totals_for(&idxs, base_idx, &index.entries);
         let base = &index.entries[base_idx];
+        let sandbox_id = if !base.namespace.is_empty() {
+            base.namespace.clone()
+        } else {
+            sandbox.to_string()
+        };
         return AchievementIdentity {
             app_name: base.app_name.clone(),
             app_title: base.app_title.clone(),
             set_label,
+            sandbox_id,
             cover: base.cover.clone(),
             total_achievements: ach,
+            base_achievements: base_ach,
             total_product_xp: xp,
             matched: true,
         };
@@ -411,12 +434,19 @@ fn resolve_achievement_identity(sandbox: &str, index: &CatalogIndex) -> Achievem
     } else {
         entry.app_title.clone()
     };
+    let sandbox_id = if !entry.namespace.is_empty() {
+        entry.namespace.clone()
+    } else {
+        sandbox.to_string()
+    };
     AchievementIdentity {
         app_name: entry.app_name.clone(),
         app_title: title,
         set_label: String::new(),
+        sandbox_id,
         cover: entry.cover.clone(),
         total_achievements: entry.total_achievements,
+        base_achievements: entry.base_achievements,
         total_product_xp: entry.total_product_xp,
         matched: true,
     }
@@ -553,6 +583,7 @@ fn catalog_entry_from_meta(val: &serde_json::Value) -> Option<CatalogEntry> {
         .any(|c| c == "digitalextras" || c == "addons" || c.starts_with("addons/"));
 
     let mut total_ach = 0u32;
+    let mut base_ach = 0u32;
     let mut total_xp = 0u32;
     if let Some(ach) = val.get("achievements") {
         total_ach = ach
@@ -565,6 +596,27 @@ fn catalog_entry_from_meta(val: &serde_json::Value) -> Option<CatalogEntry> {
             .or_else(|| ach.get("totalProductXP"))
             .and_then(|v| v.as_u64())
             .unwrap_or(0) as u32;
+        if let Some(sets) = ach
+            .get("achievement_sets")
+            .or_else(|| ach.get("achievementSets"))
+            .and_then(|s| s.as_array())
+        {
+            for set in sets {
+                let is_base = set
+                    .get("isBase")
+                    .or_else(|| set.get("is_base"))
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                if is_base {
+                    let count = set
+                        .get("totalAchievements")
+                        .or_else(|| set.get("total_achievements"))
+                        .and_then(|v| v.as_u64())
+                        .unwrap_or(0) as u32;
+                    base_ach = base_ach.saturating_add(count);
+                }
+            }
+        }
     }
 
     Some(CatalogEntry {
@@ -572,6 +624,7 @@ fn catalog_entry_from_meta(val: &serde_json::Value) -> Option<CatalogEntry> {
         app_title,
         cover: pick_best_cover(val),
         total_achievements: total_ach,
+        base_achievements: base_ach,
         total_product_xp: total_xp,
         namespace,
         own_ids,
@@ -672,68 +725,135 @@ pub fn profile_cache_path(config: &Path) -> PathBuf {
     config.join("profile_cache.json")
 }
 
-/// Fetches user profile and achievement data from the official Epic Games GraphQL API
-pub async fn fetch_player_profile(
-    config: &Path,
-    force_refresh: bool,
-) -> Result<EpicPlayerProfile, String> {
-    let cache_file = profile_cache_path(config);
+fn now_epoch_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
 
-    // 1. Cache check. Ignore a file left by a different Epic account.
-    let active_account = fs::read_to_string(config.join("user.json"))
-        .ok()
-        .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
-        .and_then(|user| {
-            user.get("account_id")
-                .and_then(|v| v.as_str())
-                .map(|id| id.to_string())
-        });
-    if !force_refresh && cache_file.is_file() {
-        if let Ok(content) = fs::read_to_string(&cache_file) {
-            if let Ok(mut prof) = serde_json::from_str::<EpicPlayerProfile>(&content) {
-                let same_account = active_account
-                    .as_deref()
-                    .is_some_and(|id| id == prof.account_id);
-                // A cache written with invented totals is refetched once.
-                if same_account && prof.data_revision >= DATA_REVISION {
-                    upgrade_cached_titles(config, &mut prof);
-                    upgrade_cached_platinum_totals(config, &mut prof);
-                    return Ok(prof);
-                }
-            }
+fn days_from_civil(y: i64, m: i64, d: i64) -> i64 {
+    let y = y - if m <= 2 { 1 } else { 0 };
+    let era = if y >= 0 { y } else { y - 399 } / 400;
+    let yoe = y - era * 400;
+    let doy = (153 * (m + if m > 2 { -3 } else { 9 }) + 2) / 5 + d - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    era * 146097 + doe - 719468
+}
+
+/// Parses an ISO-8601 UTC timestamp (`YYYY-MM-DDTHH:MM:SS(.fff)?(Z|+00:00)`) into UNIX seconds.
+fn parse_iso_utc_secs(ts: &str) -> Option<u64> {
+    let trimmed = ts.trim();
+    let rest = if let Some(s) = trimmed.strip_suffix('Z') {
+        s
+    } else if let Some(s) = trimmed
+        .strip_suffix("+00:00")
+        .or_else(|| trimmed.strip_suffix("-00:00"))
+    {
+        s
+    } else {
+        return None;
+    };
+    let (date_part, time_part) = rest.split_once('T')?;
+    let mut dp = date_part.split('-');
+    let year: i64 = dp.next()?.parse().ok()?;
+    let month: i64 = dp.next()?.parse().ok()?;
+    let day: i64 = dp.next()?.parse().ok()?;
+    if dp.next().is_some() || !(1..=12).contains(&month) || !(1..=31).contains(&day) {
+        return None;
+    }
+    let time_core = time_part.split('.').next().unwrap_or(time_part);
+    let mut tp = time_core.split(':');
+    let hour: i64 = tp.next()?.parse().ok()?;
+    let min: i64 = tp.next()?.parse().ok()?;
+    let sec: i64 = tp.next()?.parse().ok()?;
+    if tp.next().is_some() || hour > 23 || min > 59 || sec > 59 {
+        return None;
+    }
+    let days = days_from_civil(year, month, day);
+    let secs = days * 86_400 + hour * 3_600 + min * 60 + sec;
+    u64::try_from(secs).ok()
+}
+
+fn token_needs_refresh(user_json: &serde_json::Value, now_secs: u64) -> bool {
+    match user_json.get("expires_at").and_then(|v| v.as_str()) {
+        Some(ts) => parse_iso_utc_secs(ts).is_some_and(|exp| exp <= now_secs + 60),
+        None => false,
+    }
+}
+
+async fn refresh_epic_access_token(
+    client: &reqwest::Client,
+    config: &Path,
+    user_file: &Path,
+    user_json: &mut serde_json::Value,
+) -> Option<String> {
+    let refresh_token = user_json
+        .get("refresh_token")
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())?
+        .to_string();
+
+    let resp = client
+        .post(EPIC_OAUTH_URL)
+        .basic_auth(EPIC_CLIENT_ID, Some(EPIC_CLIENT_SECRET))
+        .header(
+            "User-Agent",
+            "EpicGamesLauncher/14.0.8-22004686+++Portal+Release-Live",
+        )
+        .form(&[
+            ("grant_type", "refresh_token"),
+            ("refresh_token", refresh_token.as_str()),
+            ("token_type", "eg1"),
+        ])
+        .send()
+        .await
+        .ok()?;
+
+    if !resp.status().is_success() {
+        return None;
+    }
+
+    let oauth: serde_json::Value = resp.json().await.ok()?;
+    let new_token = oauth
+        .get("access_token")
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())?
+        .to_string();
+
+    if let (Some(dst), Some(src)) = (user_json.as_object_mut(), oauth.as_object()) {
+        for (k, v) in src {
+            dst.insert(k.clone(), v.clone());
+        }
+        if let Ok(serialized) = serde_json::to_string_pretty(&user_json) {
+            let _ = fs::write(user_file, serialized);
+            super::accounts::archive_active_sidecars(config);
         }
     }
 
-    // 2. Read the signed-in account from user.json. Do not spawn legendary for this.
-    let user_file = config.join("user.json");
-    if !user_file.is_file() {
-        return Err("@t:profile.notLoggedIn".into());
+    Some(new_token)
+}
+
+enum GqlFetchError {
+    Http(u16, String),
+    Other(String),
+}
+
+impl GqlFetchError {
+    fn into_message(self) -> String {
+        match self {
+            Self::Http(_, msg) | Self::Other(msg) => msg,
+        }
     }
+}
 
-    let user_content = fs::read_to_string(&user_file)
-        .map_err(|e| format!("@t:profile.userReadFailed\u{1f}{e}"))?;
-    let user_json: serde_json::Value = serde_json::from_str(&user_content)
-        .map_err(|e| format!("@t:profile.userInvalid\u{1f}{e}"))?;
-
-    let account_id = user_json
-        .get("account_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| "@t:profile.noAccountId".to_string())?
-        .to_string();
-
-    let display_name = user_json
-        .get("displayName")
-        .or_else(|| user_json.get("display_name"))
-        .and_then(|v| v.as_str())
-        .unwrap_or(&account_id)
-        .to_string();
-
-    let access_token = user_json
-        .get("access_token")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| "@t:profile.noAccessToken".to_string())?;
-
-    // 3. Prepare the GraphQL query
+async fn post_profile_graphql(
+    client: &reqwest::Client,
+    access_token: &str,
+    account_id: &str,
+) -> Result<GqlResponse, GqlFetchError> {
     let query = r#"
         query PlayerGameAchievementProgress($epicAccountId: String!) {
           PlayerAchievement {
@@ -768,14 +888,8 @@ pub async fn fetch_player_profile(
         }
     });
 
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(12))
-        .build()
-        .map_err(|e| format!("@t:profile.httpClientFailed\u{1f}{e}"))?;
-
-    let url = "https://launcher.store.epicgames.com/graphql";
     let resp = client
-        .post(url)
+        .post("https://launcher.store.epicgames.com/graphql")
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {}", access_token))
         .header(
@@ -785,106 +899,228 @@ pub async fn fetch_player_profile(
         .body(payload.to_string())
         .send()
         .await
-        .map_err(|e| format!("@t:profile.graphqlConnectFailed\u{1f}{e}"))?;
+        .map_err(|e| GqlFetchError::Other(format!("@t:profile.graphqlConnectFailed\u{1f}{e}")))?;
 
     let status = resp.status();
     if !status.is_success() {
-        if status.as_u16() == 401 {
-            return Err("@t:profile.tokenExpired".into());
-        }
-        return Err(format!(
-            "@t:profile.graphqlError\u{1f}{}\u{1f}{}",
-            status.as_u16(),
-            status.canonical_reason().unwrap_or("Bilinmeyen hata")
-        ));
+        let code = status.as_u16();
+        let msg = if code == 401 {
+            "@t:profile.tokenExpired".into()
+        } else {
+            format!(
+                "@t:profile.graphqlError\u{1f}{}\u{1f}{}",
+                code,
+                status.canonical_reason().unwrap_or("Bilinmeyen hata")
+            )
+        };
+        return Err(GqlFetchError::Http(code, msg));
     }
 
     let text = resp
         .text()
         .await
-        .map_err(|e| format!("@t:profile.graphqlReadFailed\u{1f}{e}"))?;
+        .map_err(|e| GqlFetchError::Other(format!("@t:profile.graphqlReadFailed\u{1f}{e}")))?;
 
-    let gql_resp: GqlResponse = serde_json::from_str(&text)
-        .map_err(|e| format!("@t:profile.graphqlParseFailed\u{1f}{e}"))?;
+    serde_json::from_str::<GqlResponse>(&text)
+        .map_err(|e| GqlFetchError::Other(format!("@t:profile.graphqlParseFailed\u{1f}{e}")))
+}
 
-    let records = gql_resp
-        .data
-        .and_then(|d| d.player_achievement)
-        .and_then(|p| p.player_achievement_game_records)
-        .and_then(|r| r.records)
-        .unwrap_or_default();
+fn gql_error_looks_auth(errors: &[serde_json::Value]) -> bool {
+    errors.iter().any(|err| {
+        let s = err.to_string().to_lowercase();
+        s.contains("unauth")
+            || s.contains("token")
+            || s.contains("expired")
+            || s.contains("forbidden")
+            || s.contains("401")
+    })
+}
 
-    // 4. Match each sandbox to library metadata by app name, namespace, or catalog id.
-    let catalog = scan_catalog_index(config);
+fn recompute_record_progress(record: &mut ProfileGameRecord) {
+    if record.total_achievements > 0 && record.total_unlocked >= record.total_achievements {
+        record.is_platinum = true;
+    }
+    fill_platinum_total(record);
+    record.unlocked_percent = if record.total_achievements > 0 {
+        let pct = ((record.total_unlocked as f64 / record.total_achievements as f64) * 100.0)
+            .round() as u32;
+        pct.min(100)
+    } else {
+        0
+    };
+    if record.is_platinum && record.unlocked_percent < 100 {
+        record.unlocked_percent = 100;
+    }
+}
 
-    let mut game_records: Vec<ProfileGameRecord> = Vec::new();
+fn record_from_gql(r: GqlGameRecord, catalog: &CatalogIndex) -> ProfileGameRecord {
+    let sb = r.sandbox_id;
+    let identity = resolve_achievement_identity(&sb, catalog);
+
+    let unl = r.total_unlocked.unwrap_or_else(|| {
+        r.achievement_sets
+            .iter()
+            .filter_map(|s| s.total_unlocked)
+            .sum()
+    });
+    let xp = r.total_xp.unwrap_or_else(|| {
+        r.achievement_sets
+            .iter()
+            .filter_map(|s| s.total_xp)
+            .sum()
+    });
+
+    let has_plat_award = r.player_awards.iter().any(|a| {
+        a.award_type
+            .as_deref()
+            .unwrap_or("")
+            .eq_ignore_ascii_case("PLATINUM")
+    });
+    let base_unlocked: u32 = r
+        .achievement_sets
+        .iter()
+        .filter(|s| s.is_base.unwrap_or(false))
+        .filter_map(|s| s.total_unlocked)
+        .sum();
+    let base_plat = identity.base_achievements > 0 && base_unlocked >= identity.base_achievements;
+    let all_plat = identity.total_achievements > 0 && unl >= identity.total_achievements;
+    let is_plat = has_plat_award || base_plat || all_plat;
+
+    let last_date = r
+        .player_awards
+        .iter()
+        .filter_map(|a| a.unlocked_date_time.as_ref())
+        .next()
+        .cloned();
+
+    let mut record = ProfileGameRecord {
+        sandbox_id: sb,
+        app_name: identity.app_name,
+        app_title: identity.app_title,
+        cover: identity.cover,
+        total_unlocked: unl,
+        total_achievements: identity.total_achievements,
+        total_xp: xp,
+        total_product_xp: identity.total_product_xp,
+        is_platinum: is_plat,
+        unlocked_percent: 0,
+        last_unlocked_date: last_date,
+        set_label: identity.set_label,
+    };
+    recompute_record_progress(&mut record);
+    record
+}
+
+fn build_record_from_summary(
+    app_name: &str,
+    sum: &super::models::GameAchievementSummary,
+    catalog: &CatalogIndex,
+) -> ProfileGameRecord {
+    let identity = resolve_achievement_identity(app_name, catalog);
+    let total_achievements = if identity.total_achievements > 0 {
+        identity.total_achievements
+    } else {
+        sum.total_achievements
+    };
+    let total_product_xp = if identity.total_product_xp > 0 {
+        identity.total_product_xp
+    } else {
+        sum.total_xp
+    };
+    let base_plat =
+        identity.base_achievements > 0 && sum.base_unlocked >= identity.base_achievements;
+    let mut record = ProfileGameRecord {
+        sandbox_id: identity.sandbox_id,
+        app_name: if identity.matched {
+            identity.app_name
+        } else {
+            app_name.to_string()
+        },
+        app_title: identity.app_title,
+        cover: identity.cover,
+        total_unlocked: sum.user_unlocked,
+        total_achievements,
+        total_xp: sum.user_xp,
+        total_product_xp,
+        is_platinum: sum.is_platinum || base_plat,
+        unlocked_percent: 0,
+        last_unlocked_date: None,
+        set_label: identity.set_label,
+    };
+    recompute_record_progress(&mut record);
+    record
+}
+
+fn merge_local_summaries(
+    config: &Path,
+    ach_cache_dir: Option<&Path>,
+    catalog: &CatalogIndex,
+    game_records: &mut Vec<ProfileGameRecord>,
+) {
+    let summaries = super::commands::scan_achievements_summary(
+        config,
+        ach_cache_dir.unwrap_or_else(|| Path::new("")),
+    );
+    if summaries.is_empty() {
+        return;
+    }
+
+    let mut base_index: HashMap<String, usize> = HashMap::new();
+    for (idx, g) in game_records.iter().enumerate() {
+        if g.set_label.is_empty() {
+            base_index
+                .entry(g.app_name.to_lowercase())
+                .or_insert(idx);
+        }
+    }
+
+    for (app_name, sum) in summaries {
+        if !sum.supported || (!sum.progress_known && sum.user_unlocked == 0 && !sum.is_platinum) {
+            continue;
+        }
+        let key = app_name.to_lowercase();
+        if let Some(&idx) = base_index.get(&key) {
+            let game = &mut game_records[idx];
+            if game.total_achievements == 0 && sum.total_achievements > 0 {
+                game.total_achievements = sum.total_achievements;
+            }
+            if game.total_product_xp == 0 && sum.total_xp > 0 {
+                game.total_product_xp = sum.total_xp;
+            }
+            if sum.user_unlocked > game.total_unlocked {
+                game.total_unlocked = sum.user_unlocked;
+            }
+            if sum.user_xp > game.total_xp {
+                game.total_xp = sum.user_xp;
+            }
+            if sum.is_platinum {
+                game.is_platinum = true;
+            }
+            recompute_record_progress(game);
+        } else {
+            let record = build_record_from_summary(&app_name, &sum, catalog);
+            base_index.insert(record.app_name.to_lowercase(), game_records.len());
+            game_records.push(record);
+        }
+    }
+}
+
+fn finalize_profile(
+    account_id: String,
+    display_name: String,
+    mut game_records: Vec<ProfileGameRecord>,
+) -> EpicPlayerProfile {
     let mut total_unlocked = 0u32;
     let mut platinum_count = 0u32;
     let mut base_xp = 0u32;
 
-    for r in records {
-        let sb = r.sandbox_id.clone();
-        let identity = resolve_achievement_identity(&sb, &catalog);
-
-        let app_name = identity.app_name.clone();
-        let app_title = identity.app_title.clone();
-        let set_label = identity.set_label.clone();
-        let cover = identity.cover.clone();
-
-        let unl = r.total_unlocked.unwrap_or(0);
-        let xp = r.total_xp.unwrap_or(0);
-
-        let is_plat = r.player_awards.iter().any(|a| {
-            a.award_type
-                .as_deref()
-                .unwrap_or("")
-                .eq_ignore_ascii_case("PLATINUM")
-        });
-
-        let last_date = r
-            .player_awards
-            .iter()
-            .filter_map(|a| a.unlocked_date_time.as_ref())
-            .next()
-            .cloned();
-
-        // Never invent totals: a missing catalog count stays 0 so the UI shows
-        // the unlocked count without a fake denominator or a fake 100%.
-        let total_ach = identity.total_achievements;
-        let total_prod_xp = identity.total_product_xp;
-
-        let mut percent = if total_ach > 0 {
-            ((unl as f64 / total_ach as f64) * 100.0).round() as u32
-        } else {
-            0
-        };
-
-        if is_plat && percent < 100 {
-            percent = 100;
-        }
-
-        total_unlocked += unl;
-        base_xp += xp;
-        if is_plat {
+    for game in &mut game_records {
+        recompute_record_progress(game);
+        total_unlocked += game.total_unlocked;
+        base_xp += game.total_xp;
+        if game.is_platinum {
             platinum_count += 1;
         }
-
-        let mut record = ProfileGameRecord {
-            sandbox_id: sb,
-            app_name,
-            app_title,
-            cover,
-            total_unlocked: unl,
-            total_achievements: total_ach,
-            total_xp: xp,
-            total_product_xp: total_prod_xp,
-            is_platinum: is_plat,
-            unlocked_percent: percent,
-            last_unlocked_date: last_date,
-            set_label,
-        };
-        fill_platinum_total(&mut record);
-        game_records.push(record);
     }
 
     // Epic Games Store grants a +250 XP bonus for each platinum trophy
@@ -900,12 +1136,7 @@ pub async fn fetch_player_profile(
             .then_with(|| a.set_label.cmp(&b.set_label))
     });
 
-    let now_epoch = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
-
-    let profile = EpicPlayerProfile {
+    EpicPlayerProfile {
         account_id,
         display_name,
         total_xp,
@@ -913,10 +1144,203 @@ pub async fn fetch_player_profile(
         platinum_count,
         games_count: game_records.len(),
         games: game_records,
-        last_updated: now_epoch,
+        last_updated: now_epoch_secs(),
         title_revision: TITLE_REVISION,
         data_revision: DATA_REVISION,
+    }
+}
+
+fn recover_profile_fallback(
+    config: &Path,
+    ach_cache_dir: Option<&Path>,
+    account_id: &str,
+    display_name: &str,
+    fallback_cached: Option<EpicPlayerProfile>,
+    catalog: &CatalogIndex,
+) -> Option<EpicPlayerProfile> {
+    let mut games = match fallback_cached {
+        Some(mut prof) => {
+            if prof.title_revision < TITLE_REVISION {
+                upgrade_cached_titles(config, &mut prof);
+            }
+            prof.games
+        }
+        None => Vec::new(),
     };
+
+    merge_local_summaries(config, ach_cache_dir, catalog, &mut games);
+    if games.is_empty() {
+        return None;
+    }
+
+    Some(finalize_profile(
+        account_id.to_string(),
+        display_name.to_string(),
+        games,
+    ))
+}
+
+/// Fetches user profile and achievement data from the Epic Games GraphQL API,
+/// refreshing expired OAuth tokens and falling back to cached/local achievement
+/// records when offline or when Epic withholds records.
+pub async fn fetch_player_profile(
+    config: &Path,
+    ach_cache_dir: Option<&Path>,
+    force_refresh: bool,
+) -> Result<EpicPlayerProfile, String> {
+    let cache_file = profile_cache_path(config);
+
+    // 1. Read user.json early so we always know the active account id.
+    let user_file = config.join("user.json");
+    let user_raw = fs::read_to_string(&user_file);
+    let user_parsed = user_raw
+        .as_ref()
+        .ok()
+        .and_then(|text| serde_json::from_str::<serde_json::Value>(text).ok());
+    let active_account = user_parsed
+        .as_ref()
+        .and_then(|user| user.get("account_id").and_then(|v| v.as_str()))
+        .map(|id| id.to_string());
+
+    // Keep any valid same-account cache as a fallback if refresh fails or offline.
+    let mut fallback_cached: Option<EpicPlayerProfile> = None;
+    if cache_file.is_file() {
+        if let Ok(content) = fs::read_to_string(&cache_file) {
+            if let Ok(mut prof) = serde_json::from_str::<EpicPlayerProfile>(&content) {
+                let same_account = active_account
+                    .as_deref()
+                    .is_some_and(|id| id == prof.account_id);
+                if same_account {
+                    if !force_refresh && prof.data_revision >= DATA_REVISION {
+                        upgrade_cached_titles(config, &mut prof);
+                        upgrade_cached_platinum_totals(config, &mut prof);
+                        return Ok(prof);
+                    }
+                    fallback_cached = Some(prof);
+                }
+            }
+        }
+    }
+
+    // 2. Read the signed-in account from user.json. Do not spawn legendary for this.
+    if !user_file.is_file() {
+        return Err("@t:profile.notLoggedIn".into());
+    }
+    let user_content = user_raw.map_err(|e| format!("@t:profile.userReadFailed\u{1f}{e}"))?;
+    let mut user_json: serde_json::Value = serde_json::from_str(&user_content)
+        .map_err(|e| format!("@t:profile.userInvalid\u{1f}{e}"))?;
+
+    let account_id = user_json
+        .get("account_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| "@t:profile.noAccountId".to_string())?
+        .to_string();
+
+    let display_name = user_json
+        .get("displayName")
+        .or_else(|| user_json.get("display_name"))
+        .and_then(|v| v.as_str())
+        .unwrap_or(&account_id)
+        .to_string();
+
+    let mut access_token = user_json
+        .get("access_token")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| "@t:profile.noAccessToken".to_string())?
+        .to_string();
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(12))
+        .build()
+        .map_err(|e| format!("@t:profile.httpClientFailed\u{1f}{e}"))?;
+
+    // 3. Refresh expired OAuth tokens before calling Epic GraphQL (which returns HTTP 500 on expired tokens).
+    let mut refreshed = false;
+    if token_needs_refresh(&user_json, now_epoch_secs()) {
+        if let Some(new_token) =
+            refresh_epic_access_token(&client, config, &user_file, &mut user_json).await
+        {
+            access_token = new_token;
+            refreshed = true;
+        }
+    }
+
+    let mut gql_result = post_profile_graphql(&client, &access_token, &account_id).await;
+    let should_retry_auth = match &gql_result {
+        Err(GqlFetchError::Http(code, _)) => !refreshed && matches!(code, 401 | 403 | 500),
+        Ok(resp) => {
+            !refreshed
+                && resp
+                    .data
+                    .as_ref()
+                    .and_then(|d| d.player_achievement.as_ref())
+                    .and_then(|p| p.player_achievement_game_records.as_ref())
+                    .and_then(|r| r.records.as_ref())
+                    .is_none()
+                && resp
+                    .errors
+                    .as_deref()
+                    .is_some_and(gql_error_looks_auth)
+        }
+        Err(_) => false,
+    };
+    if should_retry_auth {
+        if let Some(new_token) =
+            refresh_epic_access_token(&client, config, &user_file, &mut user_json).await
+        {
+            access_token = new_token;
+            gql_result = post_profile_graphql(&client, &access_token, &account_id).await;
+        }
+    }
+
+    let catalog = scan_catalog_index(config);
+
+    let gql_resp = match gql_result {
+        Ok(resp) => resp,
+        Err(err) => {
+            if let Some(recovered) = recover_profile_fallback(
+                config,
+                ach_cache_dir,
+                &account_id,
+                &display_name,
+                fallback_cached,
+                &catalog,
+            ) {
+                return Ok(recovered);
+            }
+            return Err(err.into_message());
+        }
+    };
+
+    let records_opt = gql_resp
+        .data
+        .and_then(|d| d.player_achievement)
+        .and_then(|p| p.player_achievement_game_records)
+        .and_then(|r| r.records);
+
+    // 4. When Epic returns records: null (e.g. private profile or partial GraphQL error),
+    // preserve any cached records and merge local achievement caches instead of writing an empty file.
+    let Some(records) = records_opt else {
+        if let Some(recovered) = recover_profile_fallback(
+            config,
+            ach_cache_dir,
+            &account_id,
+            &display_name,
+            fallback_cached,
+            &catalog,
+        ) {
+            return Ok(recovered);
+        }
+        return Ok(finalize_profile(account_id, display_name, Vec::new()));
+    };
+
+    let mut game_records: Vec<ProfileGameRecord> = records
+        .into_iter()
+        .map(|r| record_from_gql(r, &catalog))
+        .collect();
+
+    merge_local_summaries(config, ach_cache_dir, &catalog, &mut game_records);
+    let profile = finalize_profile(account_id, display_name, game_records);
 
     // 5. Cache to disk and keep a copy in this account's archive.
     if let Ok(serialized) = serde_json::to_string_pretty(&profile) {
@@ -1003,6 +1427,7 @@ mod tests {
             app_title: title.to_string(),
             cover: None,
             total_achievements: 63,
+            base_achievements: 0,
             total_product_xp: 1000,
             namespace: namespace.to_string(),
             own_ids: vec![app_name.to_lowercase()],
@@ -1154,5 +1579,140 @@ mod tests {
         let mut known = profile_row(10, 50, false);
         fill_platinum_total(&mut known);
         assert_eq!(known.total_achievements, 50);
+    }
+
+    #[test]
+    fn iso_utc_timestamp_parses_and_checks_expiry() {
+        assert_eq!(parse_iso_utc_secs("1970-01-01T00:00:00Z"), Some(0));
+        assert_eq!(
+            parse_iso_utc_secs("2026-01-01T00:00:00.123Z"),
+            Some(1767225600)
+        );
+        assert_eq!(
+            parse_iso_utc_secs("2026-01-01T00:00:00+00:00"),
+            Some(1767225600)
+        );
+        assert_eq!(parse_iso_utc_secs("2026-01-01T00:00:00+03:00"), None);
+
+        let stale = serde_json::json!({ "expires_at": "2026-01-01T00:01:00Z" });
+        assert!(token_needs_refresh(&stale, 1767225600));
+        let fresh = serde_json::json!({ "expires_at": "2026-01-01T05:00:00Z" });
+        assert!(!token_needs_refresh(&fresh, 1767225600));
+    }
+
+    #[test]
+    fn base_achievement_set_marks_platinum_without_award() {
+        let meta = serde_json::json!({
+            "app_name": "Brill",
+            "app_title": "Dead by Daylight",
+            "metadata": {
+                "id": "dbd-id",
+                "namespace": "611482b8586142cda48a0786eb8a127c",
+                "categories": [{"path": "games"}]
+            },
+            "achievements": {
+                "total_achievements": 280,
+                "total_product_xp": 3000,
+                "achievement_sets": [
+                    { "achievementSetId": "bdmlp8o", "isBase": true, "totalAchievements": 56 },
+                    { "achievementSetId": "16jml5b", "isBase": false, "totalAchievements": 224 }
+                ]
+            }
+        });
+        let entry = catalog_entry_from_meta(&meta).expect("entry");
+        assert_eq!(entry.base_achievements, 56);
+        let catalog = index_entries(vec![entry]);
+
+        let gql_rec: GqlGameRecord = serde_json::from_value(serde_json::json!({
+            "sandboxId": "611482b8586142cda48a0786eb8a127c",
+            "totalXP": 2100,
+            "totalUnlocked": 195,
+            "playerAwards": [],
+            "achievementSets": [
+                { "achievementSetId": "bdmlp8o", "isBase": true, "totalUnlocked": 56, "totalXP": 1000 },
+                { "achievementSetId": "16jml5b", "isBase": false, "totalUnlocked": 139, "totalXP": 1100 }
+            ]
+        }))
+        .unwrap();
+
+        let rec = record_from_gql(gql_rec, &catalog);
+        assert_eq!(rec.app_name, "Brill");
+        assert!(rec.is_platinum);
+        assert_eq!(rec.unlocked_percent, 100);
+        assert_eq!(rec.total_unlocked, 195);
+        assert_eq!(rec.total_achievements, 280);
+    }
+
+    #[test]
+    fn recover_profile_fallback_uses_cache_and_local_achievements() {
+        let base = std::env::temp_dir().join(format!(
+            "efxlve-profile-recover-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&base);
+        let config = base.join("config");
+        let ach_cache = base.join("ach_cache");
+        fs::create_dir_all(config.join("metadata")).unwrap();
+        fs::create_dir_all(&ach_cache).unwrap();
+
+        fs::write(
+            config.join("metadata").join("Ginger.json"),
+            serde_json::json!({
+                "app_name": "Ginger",
+                "app_title": "Cyberpunk 2077",
+                "metadata": {
+                    "id": "ginger-id",
+                    "namespace": "77f2b98e2cef40c8a7437518bf420e47",
+                    "categories": [{"path": "games"}]
+                },
+                "achievements": {
+                    "namespace": "77f2b98e2cef40c8a7437518bf420e47",
+                    "total_achievements": 57,
+                    "total_product_xp": 1500,
+                    "achievement_sets": [
+                        { "isBase": true, "totalAchievements": 44 },
+                        { "isBase": false, "totalAchievements": 13 }
+                    ]
+                }
+            })
+            .to_string(),
+        )
+        .unwrap();
+
+        fs::write(
+            config.join("achievements.json"),
+            serde_json::json!({
+                "77f2b98e2cef40c8a7437518bf420e47": {
+                    "totalUnlocked": 44,
+                    "totalXP": 1000,
+                    "playerAwards": [],
+                    "achievementSets": [
+                        { "isBase": true, "totalUnlocked": 44, "totalXP": 1000 }
+                    ]
+                }
+            })
+            .to_string(),
+        )
+        .unwrap();
+
+        let catalog = scan_catalog_index(&config);
+        let recovered = recover_profile_fallback(
+            &config,
+            Some(&ach_cache),
+            "acc123",
+            "Player",
+            None,
+            &catalog,
+        )
+        .expect("should recover from local achievements");
+
+        assert_eq!(recovered.platinum_count, 1);
+        assert_eq!(recovered.total_unlocked, 44);
+        assert_eq!(recovered.total_xp, 1250);
+        assert_eq!(recovered.games.len(), 1);
+        assert_eq!(recovered.games[0].app_name, "Ginger");
+        assert!(recovered.games[0].is_platinum);
+
+        let _ = fs::remove_dir_all(&base);
     }
 }
