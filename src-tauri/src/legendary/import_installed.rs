@@ -290,6 +290,27 @@ fn installed_map(config: &Path) -> serde_json::Map<String, Value> {
         .unwrap_or_default()
 }
 
+/// Re-reads `installed.json` after `legendary import-game` subprocesses finish
+/// and applies relinked `install_path` updates atomically so newly imported
+/// entries are never clobbered by the pre-scan snapshot.
+fn commit_relinked_paths(config: &Path, relinked: &[(String, String)]) -> Result<(), String> {
+    if relinked.is_empty() {
+        return Ok(());
+    }
+    let mut map = installed_map(config);
+    let mut changed = false;
+    for (app_name, path_str) in relinked {
+        if let Some(obj) = map.get_mut(app_name).and_then(|v| v.as_object_mut()) {
+            obj.insert("install_path".to_string(), Value::String(path_str.clone()));
+            changed = true;
+        }
+    }
+    if changed {
+        super::cache::write_installed_json_atomic(config, &map).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 /// Registers games found under `root`. `imported` is a new legendary entry.
 /// `relinked` is an existing entry whose folder was missing.
 pub async fn import_installed_folder(
@@ -321,16 +342,15 @@ pub async fn import_installed_folder(
         .collect();
 
     let config = super::skip::default_config_dir();
-    let mut map = installed_map(&config);
+    let initial_map = installed_map(&config);
     let bin = super::paths::resolve_binary(app).map_err(|e| e.to_string())?;
 
     let mut imported = 0u32;
-    let mut relinked = 0u32;
-    let mut dirty = false;
+    let mut relinked_updates: Vec<(String, String)> = Vec::new();
 
     for (app_name, game_dir) in found {
         let path_str = game_dir.to_string_lossy().to_string();
-        if let Some(entry) = map.get(&app_name).and_then(|v| v.as_object()) {
+        if let Some(entry) = initial_map.get(&app_name).and_then(|v| v.as_object()) {
             let current = entry
                 .get("install_path")
                 .and_then(|v| v.as_str())
@@ -338,11 +358,7 @@ pub async fn import_installed_folder(
             if Path::new(current).is_dir() {
                 continue;
             }
-            if let Some(obj) = map.get_mut(&app_name).and_then(|v| v.as_object_mut()) {
-                obj.insert("install_path".to_string(), Value::String(path_str));
-                relinked += 1;
-                dirty = true;
-            }
+            relinked_updates.push((app_name, path_str));
             continue;
         }
 
@@ -351,12 +367,8 @@ pub async fn import_installed_folder(
         }
     }
 
-    if dirty {
-        let file = config.join("installed.json");
-        if let Some(text) = super::cache::ascii_json_pretty(&map) {
-            std::fs::write(file, text).map_err(|e| e.to_string())?;
-        }
-    }
+    let relinked = relinked_updates.len() as u32;
+    commit_relinked_paths(&config, &relinked_updates)?;
 
     Ok(ImportInstalledResult { imported, relinked })
 }
@@ -651,5 +663,62 @@ mod tests {
             app_name_from_mancpn(r#"{"AppName":"Catnip"}"#).as_deref(),
             Some("Catnip")
         );
+    }
+
+    #[test]
+    fn relinking_after_cli_import_preserves_newly_imported_entries() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve-import-relink-merge-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+
+        // Initial installed.json before scanning: RelinkedGame points at a missing drive path.
+        std::fs::write(
+            root.join("installed.json"),
+            r#"{"RelinkedGame":{"app_name":"RelinkedGame","title":"UNCHARTED™","install_path":"Z:\\Old\\RelinkedGame","version":"1.0"}}"#,
+        )
+        .unwrap();
+
+        // Simulate `legendary import-game` registering ImportedGame into installed.json during the scan loop.
+        std::fs::write(
+            root.join("installed.json"),
+            r#"{
+                "RelinkedGame":{"app_name":"RelinkedGame","title":"UNCHARTED™","install_path":"Z:\\Old\\RelinkedGame","version":"1.0"},
+                "ImportedGame":{"app_name":"ImportedGame","title":"New Game","install_path":"D:\\Games\\ImportedGame","version":"2.0"}
+            }"#,
+        )
+        .unwrap();
+
+        commit_relinked_paths(
+            &root,
+            &[(
+                "RelinkedGame".to_string(),
+                r"D:\Games\RelinkedGame".to_string(),
+            )],
+        )
+        .unwrap();
+
+        let raw = std::fs::read_to_string(root.join("installed.json")).unwrap();
+        assert!(raw.is_ascii(), "installed.json must stay ASCII-escaped for Python legendary");
+        assert!(
+            root.join("installed.json.bak").is_file(),
+            "atomic write must keep installed.json.bak"
+        );
+        let final_map = installed_map(&root);
+        assert_eq!(
+            final_map
+                .get("RelinkedGame")
+                .and_then(|v| v.get("install_path"))
+                .and_then(|v| v.as_str()),
+            Some(r"D:\Games\RelinkedGame")
+        );
+        assert!(
+            final_map.contains_key("ImportedGame"),
+            "entries added by legendary import-game during the scan must not be overwritten"
+        );
+
+        let _ = std::fs::remove_dir_all(&root);
     }
 }

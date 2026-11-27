@@ -584,9 +584,7 @@ pub fn remove_game_from_installed_json(config: &Path, app_name: &str) {
             let before_len = map.len();
             map.retain(|k, _| !k.eq_ignore_ascii_case(app_name));
             if map.len() != before_len {
-                if let Some(json_str) = ascii_json_pretty(&map) {
-                    let _ = std::fs::write(&installed_file, json_str);
-                }
+                let _ = write_installed_json_atomic(config, &map);
             }
         }
     }
@@ -1159,15 +1157,18 @@ fn escape_non_ascii(text: &str) -> String {
     out
 }
 
-/// Writes installed.json through a temporary file and keeps the previous
-/// contents as `installed.json.bak`.
-///
-/// A reader never sees a half-written map, and a truncated file can be
-/// recovered from the backup on the next read.
-pub(crate) fn write_installed_map(config: &Path, map: &HashMap<String, InstalledGame>) {
-    let Some(json) = ascii_json_pretty(map) else {
-        return;
-    };
+/// Writes `installed.json` as escaped ASCII through `installed.json.tmp` and
+/// keeps the previous non-empty file as `installed.json.bak`.
+pub(crate) fn write_installed_json_atomic<T: Serialize>(
+    config: &Path,
+    value: &T,
+) -> std::io::Result<()> {
+    let json = ascii_json_pretty(value).ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "failed to serialize installed.json",
+        )
+    })?;
     let path = config.join("installed.json");
     let tmp = config.join("installed.json.tmp");
     if std::fs::metadata(&path)
@@ -1176,14 +1177,25 @@ pub(crate) fn write_installed_map(config: &Path, map: &HashMap<String, Installed
     {
         let _ = std::fs::copy(&path, installed_backup_path(config));
     }
-    if std::fs::write(&tmp, json).is_err() {
+    if let Err(err) = std::fs::write(&tmp, json) {
         let _ = std::fs::remove_file(&tmp);
-        return;
+        return Err(err);
     }
     // `rename` replaces the destination on Windows too (MOVEFILE_REPLACE_EXISTING).
-    if std::fs::rename(&tmp, &path).is_err() {
+    if let Err(err) = std::fs::rename(&tmp, &path) {
         let _ = std::fs::remove_file(&tmp);
+        return Err(err);
     }
+    Ok(())
+}
+
+/// Writes installed.json through a temporary file and keeps the previous
+/// contents as `installed.json.bak`.
+///
+/// A reader never sees a half-written map, and a truncated file can be
+/// recovered from the backup on the next read.
+pub(crate) fn write_installed_map(config: &Path, map: &HashMap<String, InstalledGame>) {
+    let _ = write_installed_json_atomic(config, map);
 }
 
 /// One timing line per phase, only when a boot path asked for it.
