@@ -21,7 +21,7 @@ import { esc } from "./utils";
 import { icon } from "./icons";
 import { t } from "../i18n";
 import { epicGetQueue, epicPortrait } from "../epic";
-import { openStoreUrl, setView, storeHasClient, syncStoreTabsPill, updateStoreTabsArrows } from "../features/store/store-view";
+import { openStoreUrl, setView, storeHasInstalledClient, syncStoreTabsPill, updateStoreTabsArrows } from "../features/store/store-view";
 import { loadSettingsView } from "../features/settings/settings-view";
 import { loadNotesView } from "../features/notes/notes-view";
 import { loadScreenshotsPage } from "../features/screenshots/screenshots-page";
@@ -152,7 +152,7 @@ export function updatePageHeader(): void {
     const calBtn = document.getElementById("store-calendar-btn");
     if (calBtn) calBtn.hidden = !showTabs;
     const launcherBtn = document.getElementById("store-launcher-btn");
-    if (launcherBtn) launcherBtn.hidden = !showTabs || !S.showStoreLauncher || !storeHasClient(S.activeStore);
+    if (launcherBtn) launcherBtn.hidden = !showTabs || !S.showStoreLauncher || !storeHasInstalledClient(S.activeStore);
     if (showTabs) {
       switcher.querySelectorAll<HTMLElement>("[data-store]").forEach((btn) => {
         const active = (btn.dataset.store || "epic") === (S.activeStore || "epic");

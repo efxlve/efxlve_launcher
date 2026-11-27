@@ -142,7 +142,7 @@ import {
   renderMomentsStrip,
 } from "../screenshots/screenshots-view";
 import { setMediaScanProgress } from "../screenshots/screenshots-page";
-import { setView } from "../store/store-view";
+import { loadStoreClientStatus, setView } from "../store/store-view";
 import { ensureNotesMigration } from "../notes/notes-client";
 import { ssCleanupPolicy, ssNotifyOn, ssSetCleanupPolicy, ssSoundOn } from "../screenshots/ss-settings";
 import { perfMark } from "../../core/perf";
@@ -390,6 +390,9 @@ export async function initApp(hooks: {
     .catch(() => {});
   void hydrateSteamAuth();
   void loadSavedAccounts();
+  // The Stores header offers "Open launcher" only for an installed client.
+  // Detection runs beside the other boot reads and repaints the header when done.
+  void loadStoreClientStatus();
   void initCloudBackupSettings().then(() => {
     scheduleLocalBackups();
     scheduleProfileUploads();

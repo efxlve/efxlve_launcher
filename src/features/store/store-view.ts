@@ -16,7 +16,7 @@ import { storeLogo } from "./store-logos";
 import { closeAllModals, render, scheduleRender } from "../../core/render";
 import { S } from "../../core/state";
 import { toast } from "../../core/toast";
-import { EPIC_STORE_URL, epicGetPlayerProfile } from "../../epic";
+import { EPIC_STORE_URL, epicGetPlayerProfile, launchersStatus } from "../../epic";
 import { t } from "../../i18n";
 import type { View } from "../../core/types";
 export interface StoreRect {
@@ -657,11 +657,44 @@ export async function openStore(store: string = "epic"): Promise<void> {
 }
 
 /**
- * Every built-in storefront tab has an official client; a custom tab points at
- * an arbitrary site, so it has none. The client itself is opened in Rust.
+ * Launcher row behind a storefront tab. Every built-in tab has an official
+ * client; Luna is the Amazon Games store, so its client row is `amazon`.
+ * Custom tabs point at an arbitrary site and have no client.
  */
-export function storeHasClient(id: string): boolean {
-  return (DEFAULT_HEADER_STORES as string[]).includes(id);
+function storeLauncherId(id: string): string | null {
+  if (!(DEFAULT_HEADER_STORES as string[]).includes(id)) return null;
+  return id === "luna" ? "amazon" : id;
+}
+
+/**
+ * True when the tab's official client is installed. The Stores header only
+ * offers "Open launcher" for a detected client; a missing one stays in
+ * Settings > Launchers, where the download link lives.
+ */
+export function storeHasInstalledClient(id: string): boolean {
+  const launcher = storeLauncherId(id);
+  return launcher !== null && S.launchers.some((row) => row.id === launcher && row.installed);
+}
+
+/**
+ * Reads the client detection once for the header button. Settings > Launchers
+ * shares `S.launchers`, so a scan it already ran is reused instead of probing
+ * the disk again.
+ */
+let storeLauncherScan: Promise<void> | null = null;
+export function loadStoreClientStatus(): Promise<void> {
+  if (!isTauri || S.launchers.length > 0) return Promise.resolve();
+  if (storeLauncherScan) return storeLauncherScan;
+  storeLauncherScan = launchersStatus()
+    .then((rows) => {
+      S.launchers = rows ?? [];
+      scheduleRender();
+    })
+    .catch(() => undefined)
+    .finally(() => {
+      storeLauncherScan = null;
+    });
+  return storeLauncherScan;
 }
 
 /** Starts the official client behind one storefront tab. */
