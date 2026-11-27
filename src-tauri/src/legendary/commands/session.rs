@@ -292,7 +292,8 @@ pub async fn epic_logout(app: AppHandle) -> Result<String, String> {
     client::run_unit(&bin, &["-y", "auth", "--delete"])
         .await
         .map_err(|e| fail(&app, e))?;
-    // Signed out, the unlock cache is no longer anyone's.
+    // Signed out, the unlock cache and any 401 stubs are no longer anyone's.
+    skip::remove_stub_metadata(&skip::default_config_dir());
     super::achievements::clear_achievement_caches(&app);
     Ok("@t:auth.loggedOut".into())
 }

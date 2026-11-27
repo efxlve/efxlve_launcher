@@ -177,6 +177,7 @@ pub fn archive_active_sidecars(config_dir: &Path) {
 pub fn discard_shared_session_cache(config_dir: &Path) {
     let _ = fs::write(config_dir.join(LIBRARY_SNAPSHOT), "[]");
     let _ = fs::remove_file(config_dir.join(PROFILE_CACHE));
+    super::skip::remove_stub_metadata(config_dir);
 }
 
 fn read_accounts_meta(config_dir: &Path) -> Vec<SavedAccount> {
@@ -278,6 +279,7 @@ pub fn switch_account(config_dir: &Path, target_account_id: &str) -> Result<Save
         &target_dir.join(PROFILE_CACHE),
         &config_dir.join(PROFILE_CACHE),
     );
+    super::skip::remove_stub_metadata(config_dir);
 
     // 5. Update last_used in metadata
     let mut list = read_accounts_meta(config_dir);
