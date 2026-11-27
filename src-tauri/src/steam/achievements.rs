@@ -358,13 +358,14 @@ pub(super) fn apply_rarity(
     }
 }
 
-/// `group:bit` → unlock time, straight from the client's stats file.
-pub(super) fn read_unlock_times(
+/// `group:bit` → unlock time, straight from one account's client stats file.
+pub(super) fn read_unlock_times_for(
     steam: &Path,
+    account: Option<u64>,
     app_id: &str,
 ) -> std::collections::HashMap<String, i64> {
     let mut unlock_times = std::collections::HashMap::new();
-    let Some(account) = steam_account_id(steam) else {
+    let Some(account) = account else {
         return unlock_times;
     };
     let user_file = app_stats_file(steam, account, app_id);
@@ -388,6 +389,14 @@ pub(super) fn read_unlock_times(
         }
     }
     unlock_times
+}
+
+/// `group:bit` → unlock time, straight from the client's stats file.
+pub(super) fn read_unlock_times(
+    steam: &Path,
+    app_id: &str,
+) -> std::collections::HashMap<String, i64> {
+    read_unlock_times_for(steam, steam_account_id(steam), app_id)
 }
 
 /* ---------- Emulator achievements (RUNE, CODEX, Goldberg, etc.) ---------- */
@@ -1337,6 +1346,23 @@ fn achievement_icon_url(app_id: &str, raw: &str) -> String {
     format!("{ASSET_ROOT}/{app_id}/{}", absolute.trim_start_matches('/'))
 }
 
+/// Shared icon pair resolver with locked/unlocked cross-fallback.
+fn achievement_icon_pair(app_id: &str, raw_unlocked: &str, raw_locked: &str) -> (String, String) {
+    let unlocked_icon = achievement_icon_url(app_id, raw_unlocked);
+    let locked_icon = achievement_icon_url(app_id, raw_locked);
+    let locked = if locked_icon.is_empty() {
+        unlocked_icon.clone()
+    } else {
+        locked_icon
+    };
+    let unlocked = if unlocked_icon.is_empty() {
+        locked.clone()
+    } else {
+        unlocked_icon
+    };
+    (unlocked, locked)
+}
+
 /// Builds the achievement card directly from emulator state and the public
 /// community definitions, without reading any Steam client file.
 fn build_emulator_achievements(
@@ -1503,13 +1529,23 @@ pub fn read_local_achievements_with_app(
     app_id: &str,
     language: &str,
 ) -> Option<GameAchievementsResponse> {
+    read_local_achievements_for_account(app, steam, steam_account_id(steam), app_id, language)
+}
+
+fn read_local_achievements_for_account(
+    app: Option<&tauri::AppHandle>,
+    steam: &Path,
+    account: Option<u64>,
+    app_id: &str,
+    language: &str,
+) -> Option<GameAchievementsResponse> {
     let schema_bytes =
         std::fs::read(stats_dir(steam).join(format!("UserGameStatsSchema_{app_id}.bin"))).ok()?;
     let schema = parse_binary_vdf(&schema_bytes)?;
     let app_root = schema.get(app_id)?;
     let stats = app_root.get("stats")?;
     let sets = local_achievement_sets(app_root, language);
-    let unlock_times = read_unlock_times(steam, app_id);
+    let unlock_times = read_unlock_times_for(steam, account, app_id);
     let emu_data = read_emulator_achievements(app, app_id);
 
     let mut groups: Vec<&(String, Vdf)> = stats.entries().iter().collect();
@@ -1779,8 +1815,8 @@ pub(super) fn read_local_achievement_totals(steam: &Path) -> Vec<(String, u32, u
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct CachedAchievements {
-    /// Older entries carry no version and predate icon/set metadata; the TTL
-    /// path ignores them so one fetch rewrites the file.
+    /// Older entries carry no version and predate icon/set/account metadata;
+    /// the TTL path ignores them so one fetch rewrites the file.
     #[serde(default)]
     version: u32,
     fetched_at: u64,
@@ -1788,11 +1824,48 @@ pub(super) struct CachedAchievements {
     /// launcher asked for one (English).
     #[serde(default)]
     lang: String,
+    /// Steam64 id whose unlock state is cached (`""` when fetched without an account).
+    #[serde(default)]
+    steam_id: String,
+    /// True when unlock state came from local stats or a Steam user-unlocks API.
+    #[serde(default)]
+    with_player_stats: bool,
+    /// Whether an in-app QR/credentials session was active when this cache was written.
+    #[serde(default)]
+    had_auth: bool,
+    /// Whether a Web API key was configured when this cache was written.
+    #[serde(default)]
+    had_api_key: bool,
     response: GameAchievementsResponse,
 }
 
-/// Cache format version: bump when the payload shape or icon host changes.
-const ACHIEVEMENTS_CACHE_VERSION: u32 = 2;
+/// Cache format version: bump when the payload shape, auth handling or icon host changes.
+const ACHIEVEMENTS_CACHE_VERSION: u32 = 3;
+
+/// Drops cached Steam achievement entries that only contain definitions without
+/// player unlock state, so a newly added Web API key triggers a fresh fetch.
+pub(super) fn clear_unauthenticated_caches(app: &tauri::AppHandle) {
+    let Ok(entries) = std::fs::read_dir(achievements_cache_dir(app)) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("json") {
+            continue;
+        }
+        let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+        if stem.is_empty() || !stem.chars().all(|c| c.is_ascii_digit()) {
+            continue;
+        }
+        let remove = std::fs::read_to_string(&path)
+            .ok()
+            .and_then(|text| serde_json::from_str::<CachedAchievements>(&text).ok())
+            .is_some_and(|cached| !cached.with_player_stats);
+        if remove {
+            let _ = std::fs::remove_file(&path);
+        }
+    }
+}
 
 /// Writes the on-disk answer that the drawer, the library summary and the TTL
 /// read, and returns it. The watcher calls this too, so an unlock in a running
@@ -1803,11 +1876,39 @@ fn write_achievements_cache(
     response: &GameAchievementsResponse,
     language: &str,
 ) -> GameAchievementsResponse {
+    let steam_id = crate::steam_auth::current_steam_id(app)
+        .or_else(|| steam_install_path().as_deref().and_then(active_steam_id))
+        .unwrap_or_default();
+    let had_auth = crate::steam_auth::current_steam_id(app).is_some();
+    let had_api_key = steam_get_api_key(app.clone()).is_some();
+    write_achievements_cache_with_meta(
+        app,
+        app_id,
+        response,
+        language,
+        &steam_id,
+        true,
+        had_auth,
+        had_api_key,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn write_achievements_cache_with_meta(
+    app: &tauri::AppHandle,
+    app_id: &str,
+    response: &GameAchievementsResponse,
+    language: &str,
+    steam_id: &str,
+    with_player_stats: bool,
+    had_auth: bool,
+    had_api_key: bool,
+) -> GameAchievementsResponse {
     let path = achievements_cache_dir(app).join(format!("{app_id}.json"));
     let mut merged = response.clone();
     // A Web API answer carries rarity the local read has no source for. The
     // fresh unlocks always win; only the tier metadata is carried over.
-    if let Some(previous) = std::fs::read_to_string(&path)
+    if let Some(prev_cached) = std::fs::read_to_string(&path)
         .ok()
         .and_then(|text| serde_json::from_str::<CachedAchievements>(&text).ok())
         .filter(|cached| {
@@ -1818,8 +1919,11 @@ fn write_achievements_cache(
                 && cached.response.achievements.len() == merged.achievements.len()
                 && cached.response.total_achievements == merged.total_achievements
         })
-        .map(|cached| cached.response)
     {
+        let same_account = prev_cached.steam_id.is_empty()
+            || steam_id.is_empty()
+            || prev_cached.steam_id == steam_id;
+        let previous = prev_cached.response;
         {
             let old: std::collections::HashMap<&str, &AchievementItem> = previous
                 .achievements
@@ -1837,8 +1941,8 @@ fn write_achievements_cache(
             }
         }
         // A fetch that started before an unlock can finish after the watcher
-        // wrote it; the cached count must never move backwards.
-        if previous.user_unlocked > merged.user_unlocked {
+        // wrote it; the cached count must never move backwards for the same account.
+        if same_account && previous.user_unlocked > merged.user_unlocked {
             merged = previous;
         }
     }
@@ -1846,6 +1950,10 @@ fn write_achievements_cache(
         version: ACHIEVEMENTS_CACHE_VERSION,
         fetched_at: now_secs(),
         lang: language.to_string(),
+        steam_id: steam_id.to_string(),
+        with_player_stats,
+        had_auth,
+        had_api_key,
         response: merged.clone(),
     };
     if let Ok(text) = serde_json::to_string(&cached) {
@@ -1854,9 +1962,485 @@ fn write_achievements_cache(
     merged
 }
 
-/// Achievements for one Steam game. Read from the Steam client's own cache
-/// first (offline, no key); the optional Web API key still answers for games
-/// whose local schema is missing.
+#[derive(Debug, Clone, Default)]
+struct WebAchievementDef {
+    api_name: String,
+    internal_key: Option<u64>,
+    display_name: String,
+    description: String,
+    icon_unlocked: String,
+    icon_locked: String,
+    hidden: bool,
+    rarity_percent: Option<f64>,
+    set_name: String,
+    dlc_app_id: Option<u32>,
+}
+
+#[derive(Debug, Clone, Default)]
+struct PlayerUnlockState {
+    unlocked: bool,
+    unlock_time: i64,
+}
+
+#[derive(Debug, Clone, Default)]
+struct PlayerUnlocksLookup {
+    by_key: std::collections::HashMap<u64, PlayerUnlockState>,
+    by_name: std::collections::HashMap<String, PlayerUnlockState>,
+    stats_available: bool,
+}
+
+fn parse_player_service_game_achievements(
+    app_id: &str,
+    body: &serde_json::Value,
+) -> Vec<WebAchievementDef> {
+    let Some(items) = body
+        .get("response")
+        .and_then(|r| r.get("achievements"))
+        .and_then(|a| a.as_array())
+    else {
+        return Vec::new();
+    };
+    let mut defs = Vec::new();
+    for entry in items {
+        let api_name = entry
+            .get("internal_name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim();
+        if api_name.is_empty() {
+            continue;
+        }
+        let display_name = entry
+            .get("localized_name")
+            .and_then(|v| v.as_str())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .unwrap_or(api_name)
+            .to_string();
+        let description = entry
+            .get("localized_desc")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let raw_unlocked = entry.get("icon").and_then(|v| v.as_str()).unwrap_or("");
+        let raw_locked = entry.get("icon_gray").and_then(|v| v.as_str()).unwrap_or("");
+        let (icon_unlocked, icon_locked) = achievement_icon_pair(app_id, raw_unlocked, raw_locked);
+        let hidden = entry
+            .get("hidden")
+            .and_then(|v| v.as_bool().or_else(|| v.as_i64().map(|n| n != 0)))
+            .unwrap_or(false);
+        let rarity_percent = entry.get("player_percent_unlocked").and_then(|v| {
+            v.as_f64()
+                .or_else(|| v.as_str().and_then(|s| s.trim().parse::<f64>().ok()))
+        });
+        defs.push(WebAchievementDef {
+            api_name: api_name.to_string(),
+            internal_key: entry.get("internal_key").and_then(|v| v.as_u64()),
+            display_name,
+            description,
+            icon_unlocked,
+            icon_locked,
+            hidden,
+            rarity_percent,
+            ..Default::default()
+        });
+    }
+    defs
+}
+
+fn parse_schema_for_game_v2(app_id: &str, body: &serde_json::Value) -> Vec<WebAchievementDef> {
+    let Some(entries) = body
+        .get("game")
+        .and_then(|g| g.get("availableGameStats"))
+        .and_then(|s| s.get("achievements"))
+        .and_then(|a| a.as_array())
+    else {
+        return Vec::new();
+    };
+    let mut defs = Vec::new();
+    for entry in entries {
+        let api_name = entry
+            .get("name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim();
+        if api_name.is_empty() {
+            continue;
+        }
+        let display_name = entry
+            .get("displayName")
+            .and_then(|v| v.as_str())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .unwrap_or(api_name)
+            .to_string();
+        let description = entry
+            .get("description")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let raw_unlocked = entry.get("icon").and_then(|v| v.as_str()).unwrap_or("");
+        let raw_locked = entry.get("icongray").and_then(|v| v.as_str()).unwrap_or("");
+        let (icon_unlocked, icon_locked) = achievement_icon_pair(app_id, raw_unlocked, raw_locked);
+        let hidden = entry
+            .get("hidden")
+            .and_then(|v| v.as_i64().map(|n| n != 0).or_else(|| v.as_bool()))
+            .unwrap_or(false);
+        defs.push(WebAchievementDef {
+            api_name: api_name.to_string(),
+            internal_key: None,
+            display_name,
+            description,
+            icon_unlocked,
+            icon_locked,
+            hidden,
+            ..Default::default()
+        });
+    }
+    defs
+}
+
+fn defs_from_community_schema(
+    app_id: &str,
+    schema: &[CommunityAchievement],
+) -> Vec<WebAchievementDef> {
+    schema
+        .iter()
+        .map(|entry| {
+            let (icon_unlocked, icon_locked) =
+                achievement_icon_pair(app_id, &entry.icon_achieved, &entry.icon_unachieved);
+            WebAchievementDef {
+                api_name: entry.api_name.clone(),
+                internal_key: None,
+                display_name: entry.name.clone(),
+                description: entry.description.clone(),
+                icon_unlocked,
+                icon_locked,
+                hidden: entry.hidden,
+                rarity_percent: None,
+                set_name: entry.set_name.clone(),
+                dlc_app_id: entry.dlc_app_id,
+            }
+        })
+        .collect()
+}
+
+fn parse_player_service_user_achievements(
+    body: &serde_json::Value,
+) -> Option<std::collections::HashMap<u64, PlayerUnlockState>> {
+    let items = body
+        .get("response")
+        .and_then(|r| r.get("achievements"))
+        .and_then(|a| a.as_array())?;
+    let mut map = std::collections::HashMap::new();
+    for entry in items {
+        let Some(key) = entry.get("internal_key").and_then(|v| v.as_u64()) else {
+            continue;
+        };
+        let unlocked = entry
+            .get("unlocked")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+        let unlock_time = entry
+            .get("unlock_time")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0);
+        map.insert(
+            key,
+            PlayerUnlockState {
+                unlocked,
+                unlock_time,
+            },
+        );
+    }
+    Some(map)
+}
+
+fn parse_player_achievements_v1(
+    body: &serde_json::Value,
+) -> Option<std::collections::HashMap<String, PlayerUnlockState>> {
+    let stats = body.get("playerstats")?;
+    if stats.get("success").and_then(|v| v.as_bool()) != Some(true) {
+        return None;
+    }
+    let items = stats.get("achievements").and_then(|a| a.as_array())?;
+    let mut map = std::collections::HashMap::new();
+    for entry in items {
+        let Some(name) = entry.get("apiname").and_then(|v| v.as_str()) else {
+            continue;
+        };
+        let unlocked = entry.get("achieved").and_then(|v| v.as_i64()).unwrap_or(0) == 1;
+        let unlock_time = entry
+            .get("unlocktime")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0);
+        map.insert(
+            name.to_string(),
+            PlayerUnlockState {
+                unlocked,
+                unlock_time,
+            },
+        );
+    }
+    Some(map)
+}
+
+fn build_web_achievements_response(
+    defs: &[WebAchievementDef],
+    unlocks: &PlayerUnlocksLookup,
+) -> GameAchievementsResponse {
+    let mut items: Vec<AchievementItem> = Vec::with_capacity(defs.len());
+    let mut hidden_items: Vec<AchievementItem> = Vec::new();
+    let mut unlocked_count = 0u32;
+
+    for def in defs {
+        let state = def
+            .internal_key
+            .and_then(|key| unlocks.by_key.get(&key))
+            .or_else(|| unlocks.by_name.get(&def.api_name));
+        let achieved = state.is_some_and(|s| s.unlocked);
+        let unlock_time = state.map(|s| s.unlock_time).unwrap_or(0);
+        if achieved {
+            unlocked_count += 1;
+        }
+        let icon_link = if achieved {
+            def.icon_unlocked.clone()
+        } else {
+            def.icon_locked.clone()
+        };
+        let item = AchievementItem {
+            name: def.api_name.clone(),
+            display_name: def.display_name.clone(),
+            description: def.description.clone(),
+            unlocked: achieved,
+            progress: if achieved { 1.0 } else { 0.0 },
+            unlock_date: if achieved && unlock_time > 0 {
+                Some(unix_date(unlock_time))
+            } else if achieved {
+                Some(unix_date(1))
+            } else {
+                None
+            },
+            icon_link,
+            icon_locked: def.icon_locked.clone(),
+            icon_unlocked: def.icon_unlocked.clone(),
+            tier: def.rarity_percent.map(tier_for_percent),
+            rarity: def
+                .rarity_percent
+                .map(|p| AchievementRarity { percent: Some(p) }),
+            hidden: def.hidden,
+            is_base: def.dlc_app_id.is_none(),
+            set_name: def.set_name.clone(),
+            dlc_app_id: def.dlc_app_id,
+            ..Default::default()
+        };
+        if def.hidden {
+            hidden_items.push(item.clone());
+        }
+        items.push(item);
+    }
+
+    let total = items.len() as u32;
+    GameAchievementsResponse {
+        achievements: items,
+        hidden: hidden_items,
+        user_unlocked: unlocked_count,
+        total_achievements: total,
+        // Steam has no platinum trophy: a full set counts as the completed state.
+        is_platinum: total > 0 && unlocked_count == total,
+        supported: Some(true),
+        ..Default::default()
+    }
+}
+
+async fn fetch_web_achievement_schema(
+    client: &reqwest::Client,
+    app: &tauri::AppHandle,
+    app_id: &str,
+    api_key: Option<&str>,
+    language: &str,
+    force: bool,
+) -> Result<Vec<WebAchievementDef>, String> {
+    let mut last_error: Option<String> = None;
+    let mut had_success = false;
+
+    // 1) IPlayerService/GetGameAchievements/v1 works without an API key, returns
+    // localized text + icons + global rarity + `internal_key` needed by GetUserAchievements.
+    let player_svc_url = format!(
+        "https://api.steampowered.com/IPlayerService/GetGameAchievements/v1/?appid={app_id}&language={language}&format=json"
+    );
+    match client.get(&player_svc_url).send().await {
+        Ok(resp) if resp.status().is_success() => {
+            had_success = true;
+            if let Ok(body) = resp.json::<serde_json::Value>().await {
+                let defs = parse_player_service_game_achievements(app_id, &body);
+                if !defs.is_empty() {
+                    return Ok(defs);
+                }
+            }
+        }
+        Ok(resp) => {
+            last_error = Some(format!("Steam answered HTTP {}", resp.status().as_u16()));
+        }
+        Err(e) => {
+            last_error = Some(transport_error("Steam could not be reached", e));
+        }
+    }
+
+    // 2) Legacy Web API schema when a key is configured.
+    let mut defs = Vec::new();
+    if let Some(key) = api_key {
+        let schema_url = format!(
+            "https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key={key}&appid={app_id}&l={language}"
+        );
+        match client.get(&schema_url).send().await {
+            Ok(resp) if resp.status().is_success() => {
+                had_success = true;
+                if let Ok(body) = resp.json::<serde_json::Value>().await {
+                    defs = parse_schema_for_game_v2(app_id, &body);
+                }
+            }
+            Ok(resp) => {
+                last_error = Some(format!("Steam answered HTTP {}", resp.status().as_u16()));
+            }
+            Err(e) => {
+                last_error = Some(transport_error("Steam could not be reached", e));
+            }
+        }
+    }
+
+    // 3) Public Steam Community stats page fallback (also works from offline cache).
+    if defs.is_empty() {
+        if let Some(community) = fetch_community_schema(app, app_id, force, language).await {
+            defs = defs_from_community_schema(app_id, &community);
+            had_success = true;
+        }
+    }
+
+    if !defs.is_empty() {
+        let percentages = fetch_global_percentages(app_id).await;
+        if !percentages.is_empty() {
+            for def in &mut defs {
+                if def.rarity_percent.is_none() {
+                    def.rarity_percent = percentages.get(&def.api_name).copied();
+                }
+            }
+        }
+        return Ok(defs);
+    }
+
+    if had_success {
+        return Ok(Vec::new());
+    }
+    Err(last_error.unwrap_or_else(|| "Steam could not be reached".into()))
+}
+
+enum UserAchFetch {
+    Ok(Option<std::collections::HashMap<u64, PlayerUnlockState>>),
+    AuthExpired,
+    Failed,
+}
+
+async fn fetch_user_achievements_endpoint(
+    client: &reqwest::Client,
+    steam_id: &str,
+    app_id: &str,
+    access_token: Option<&str>,
+) -> UserAchFetch {
+    let url = "https://api.steampowered.com/IPlayerService/GetUserAchievements/v1/";
+    let mut params = vec![
+        ("steamid", steam_id),
+        ("appid", app_id),
+        ("format", "json"),
+    ];
+    if let Some(token) = access_token {
+        params.push(("access_token", token));
+    }
+    let Ok(resp) = client.get(url).query(&params).send().await else {
+        return UserAchFetch::Failed;
+    };
+    let status = resp.status();
+    if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
+        return UserAchFetch::AuthExpired;
+    }
+    if !status.is_success() {
+        return UserAchFetch::Failed;
+    }
+    let Ok(body) = resp.json::<serde_json::Value>().await else {
+        return UserAchFetch::Failed;
+    };
+    UserAchFetch::Ok(parse_player_service_user_achievements(&body))
+}
+
+async fn fetch_web_player_unlocks(
+    client: &reqwest::Client,
+    app: &tauri::AppHandle,
+    steam_id: Option<&str>,
+    api_key: Option<&str>,
+    app_id: &str,
+    language: &str,
+) -> PlayerUnlocksLookup {
+    let mut out = PlayerUnlocksLookup::default();
+
+    // 1) In-app QR/credentials session can read the user's own achievements
+    // even when Steam profile Game Details are Private / Friends Only.
+    if let Some((auth_id, token)) = crate::steam_auth::current_access_token(app).await {
+        let attempt =
+            fetch_user_achievements_endpoint(client, &auth_id, app_id, Some(&token)).await;
+        let resolved = match attempt {
+            UserAchFetch::AuthExpired => {
+                if let Ok(fresh) = crate::steam_auth::refresh_access_token(client).await {
+                    fetch_user_achievements_endpoint(client, &auth_id, app_id, Some(&fresh)).await
+                } else {
+                    UserAchFetch::AuthExpired
+                }
+            }
+            other => other,
+        };
+        if let UserAchFetch::Ok(Some(map)) = resolved {
+            out.by_key = map;
+            out.stats_available = true;
+            return out;
+        }
+    }
+
+    let Some(sid) = steam_id else {
+        return out;
+    };
+
+    // 2) Web API key endpoint for public Steam profiles.
+    if let Some(key) = api_key {
+        let player_url = format!(
+            "https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key={key}&steamid={sid}&appid={app_id}&l={language}"
+        );
+        if let Ok(resp) = client.get(&player_url).send().await {
+            if resp.status().is_success() {
+                if let Ok(body) = resp.json::<serde_json::Value>().await {
+                    if let Some(map) = parse_player_achievements_v1(&body) {
+                        out.by_name = map;
+                        out.stats_available = true;
+                        return out;
+                    }
+                }
+            }
+        }
+    }
+
+    // 3) Unauthenticated IPlayerService fallback for public profiles (no API key required).
+    if let UserAchFetch::Ok(Some(map)) =
+        fetch_user_achievements_endpoint(client, sid, app_id, None).await
+    {
+        out.by_key = map;
+        out.stats_available = true;
+    }
+
+    out
+}
+
+/// Achievements for one Steam game. Reads the local Steam client's cache first
+/// (offline, no key), falls back to emulator files, and resolves uninstalled
+/// games via Steam's Web APIs (using QR login session token and/or Web API key)
+/// and public schema fallbacks.
 #[tauri::command]
 pub async fn steam_get_achievements(
     app: tauri::AppHandle,
@@ -1868,6 +2452,14 @@ pub async fn steam_get_achievements(
         return Err("Invalid Steam app id".into());
     }
     let language = steam_language(language.as_deref());
+    let auth_steam_id = crate::steam_auth::current_steam_id(&app);
+    let steam_path = steam_install_path();
+    let resolved_steam_id = auth_steam_id
+        .clone()
+        .or_else(|| steam_path.as_deref().and_then(active_steam_id));
+    let api_key = steam_get_api_key(app.clone());
+    let emu_present = read_emulator_achievements(Some(&app), &app_id);
+
     let cache = achievements_cache_dir(&app).join(format!("{app_id}.json"));
     if force != Some(true) {
         if let Ok(text) = std::fs::read_to_string(&cache) {
@@ -1877,15 +2469,24 @@ pub async fn steam_get_achievements(
                 let within_ttl = cached.version == ACHIEVEMENTS_CACHE_VERSION
                     && same_language
                     && now_secs().saturating_sub(cached.fetched_at) < ACHIEVEMENTS_TTL_SECS;
+                let same_account = match resolved_steam_id.as_deref() {
+                    Some(id) => cached.steam_id == id,
+                    None => cached.steam_id.is_empty(),
+                };
+                // Re-fetch definitions-only caches when new credentials arrive.
+                let new_credentials = !cached.with_player_stats
+                    && ((auth_steam_id.is_some() && !cached.had_auth)
+                        || (api_key.is_some() && !cached.had_api_key));
                 // The client rewrites its stats file mid-session; when that file
                 // is newer than the answer, the TTL alone would keep the old
                 // unlocks for an hour.
-                let unchanged = steam_install_path()
+                let unchanged = steam_path
+                    .as_deref()
                     .map(|steam| {
-                        !stats_file_changed_since(Some(&app), &steam, &app_id, cached.fetched_at)
+                        !stats_file_changed_since(Some(&app), steam, &app_id, cached.fetched_at)
                     })
                     .unwrap_or(true);
-                if within_ttl && unchanged {
+                if within_ttl && same_account && !new_credentials && unchanged {
                     return Ok(cached.response);
                 }
             }
@@ -1893,225 +2494,123 @@ pub async fn steam_get_achievements(
     }
 
     // 1) The Steam client's own cache: instant, offline, no key, no rate limit.
-    if let Some(mut response) = steam_install_path()
-        .and_then(|path| read_local_achievements_with_app(Some(&app), &path, &app_id, language))
-    {
+    let auth_account32 = auth_steam_id
+        .as_deref()
+        .and_then(|s| s.parse::<u64>().ok())
+        .map(|id| id.saturating_sub(76_561_197_960_265_728));
+    let local_response = steam_path.as_deref().and_then(|path| {
+        let target_account = match auth_account32 {
+            Some(auth_acct) => {
+                let same_as_client = steam_account_id(path) == Some(auth_acct);
+                let has_own_stats = app_stats_file(path, auth_acct, &app_id).is_file();
+                if same_as_client || has_own_stats || emu_present.is_some() {
+                    Some(auth_acct)
+                } else {
+                    return None;
+                }
+            }
+            None => steam_account_id(path),
+        };
+        read_local_achievements_for_account(Some(&app), path, target_account, &app_id, language)
+    });
+    if let Some(mut response) = local_response {
         // Global unlock rates are public, so even the local path gets rarity.
         let percentages = fetch_global_percentages(&app_id).await;
         if !percentages.is_empty() {
             apply_rarity(&mut response, &percentages);
         }
-        return Ok(write_achievements_cache(&app, &app_id, &response, language));
+        return Ok(write_achievements_cache_with_meta(
+            &app,
+            &app_id,
+            &response,
+            language,
+            resolved_steam_id.as_deref().unwrap_or(""),
+            true,
+            auth_steam_id.is_some(),
+            api_key.is_some(),
+        ));
     }
 
-    // 1b) Public Steam Community schema + local emulator unlocks when the Steam
-    // client has no `UserGameStatsSchema_<app>.bin` on disk and no Web API key
-    // is configured (or an emulator file is present).
-    let api_key = steam_get_api_key(app.clone());
-    let emu_present = read_emulator_achievements(Some(&app), &app_id);
-    if api_key.is_none() || emu_present.is_some() {
+    // 1b) Local emulator unlocks override remote player stats whenever an emulator file exists.
+    if let Some(ref emu) = emu_present {
         if let Some(schema) =
             fetch_community_schema(&app, &app_id, force == Some(true), language).await
         {
-            let mut response =
-                build_emulator_achievements(&app_id, &schema, &emu_present.unwrap_or_default());
+            let mut response = build_emulator_achievements(&app_id, &schema, emu);
             if response.total_achievements > 0 {
                 let percentages = fetch_global_percentages(&app_id).await;
                 if !percentages.is_empty() {
                     apply_rarity(&mut response, &percentages);
                 }
             }
-            return Ok(write_achievements_cache(&app, &app_id, &response, language));
-        } else if let Some(ref emu) = emu_present {
-            return Ok(write_achievements_cache(
+            return Ok(write_achievements_cache_with_meta(
                 &app,
                 &app_id,
-                &build_raw_emulator_achievements(emu),
+                &response,
                 language,
+                resolved_steam_id.as_deref().unwrap_or(""),
+                true,
+                auth_steam_id.is_some(),
+                api_key.is_some(),
             ));
         }
+        return Ok(write_achievements_cache_with_meta(
+            &app,
+            &app_id,
+            &build_raw_emulator_achievements(emu),
+            language,
+            resolved_steam_id.as_deref().unwrap_or(""),
+            true,
+            auth_steam_id.is_some(),
+            api_key.is_some(),
+        ));
     }
 
-    // 2) Web API fallback (adds global rarity) when no local schema exists.
-    let key = api_key
-        .ok_or("Steam has no local achievement data for this game and no Web API key is set")?;
-    let steam_path = steam_install_path().ok_or("Steam is not installed")?;
-    let steam_id = active_steam_id(&steam_path).ok_or("Steam account could not be read")?;
+    // 2) Web API + Steam Community fallback for uninstalled Steam games (no local schema).
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(12))
         .user_agent("efxlve-launcher")
         .build()
         .map_err(|e| e.to_string())?;
 
-    // 1) Schema: display names, descriptions and icons.
-    let schema_url = format!(
-        "https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key={key}&appid={app_id}&l={language}"
-    );
-    let schema: serde_json::Value = client
-        .get(&schema_url)
-        .send()
-        .await
-        .map_err(|e| transport_error("Steam could not be reached", e))?
-        .json()
-        .await
-        .map_err(|e| transport_error("Steam answered with an unexpected payload", e))?;
-    let entries = schema
-        .get("game")
-        .and_then(|g| g.get("availableGameStats"))
-        .and_then(|s| s.get("achievements"))
-        .and_then(|a| a.as_array())
-        .cloned()
-        .unwrap_or_default();
-    if entries.is_empty() {
+    let defs = fetch_web_achievement_schema(
+        &client,
+        &app,
+        &app_id,
+        api_key.as_deref(),
+        language,
+        force == Some(true),
+    )
+    .await?;
+
+    if defs.is_empty() {
         return Ok(GameAchievementsResponse {
             supported: Some(false),
             ..Default::default()
         });
     }
 
-    // 2) The player's own unlocks.
-    let player_url = format!(
-        "https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key={key}&steamid={steam_id}&appid={app_id}&l={language}"
-    );
-    let player: serde_json::Value = client
-        .get(&player_url)
-        .send()
-        .await
-        .map_err(|e| transport_error("Steam could not be reached", e))?
-        .json()
-        .await
-        .map_err(|e| transport_error("Steam answered with an unexpected payload", e))?;
-    let stats = player.get("playerstats");
-    if stats
-        .and_then(|s| s.get("success"))
-        .and_then(|v| v.as_bool())
-        != Some(true)
-    {
-        return Err(
-            "Steam does not share this profile's achievements; make the profile public".into(),
-        );
-    }
-    let player_items = stats
-        .and_then(|s| s.get("achievements"))
-        .and_then(|a| a.as_array())
-        .cloned()
-        .unwrap_or_default();
+    let unlocks = fetch_web_player_unlocks(
+        &client,
+        &app,
+        resolved_steam_id.as_deref(),
+        api_key.as_deref(),
+        &app_id,
+        language,
+    )
+    .await;
 
-    // 3) Global unlock rates for rarity (no key required, best effort).
-    let percent_url = format!(
-        "https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/?gameid={app_id}"
-    );
-    let percentages = match client.get(&percent_url).send().await {
-        Ok(response) => response
-            .json::<serde_json::Value>()
-            .await
-            .unwrap_or(serde_json::Value::Null),
-        Err(_) => serde_json::Value::Null,
-    };
-    let percent_items = percentages
-        .get("achievementpercentages")
-        .and_then(|p| p.get("achievements"))
-        .and_then(|a| a.as_array())
-        .cloned()
-        .unwrap_or_default();
-
-    let mut items: Vec<AchievementItem> = Vec::new();
-    let mut hidden_items: Vec<AchievementItem> = Vec::new();
-    let mut unlocked = 0u32;
-    for entry in &entries {
-        let api_name = entry.get("name").and_then(|v| v.as_str()).unwrap_or("");
-        if api_name.is_empty() {
-            continue;
-        }
-        let player_entry = player_items
-            .iter()
-            .find(|p| p.get("apiname").and_then(|v| v.as_str()) == Some(api_name));
-        let achieved = player_entry
-            .and_then(|p| p.get("achieved"))
-            .and_then(|v| v.as_i64())
-            .unwrap_or(0)
-            == 1;
-        let unlock_time = player_entry
-            .and_then(|p| p.get("unlocktime"))
-            .and_then(|v| v.as_i64())
-            .unwrap_or(0);
-        if achieved {
-            unlocked += 1;
-        }
-        let percent = percent_items
-            .iter()
-            .find(|p| p.get("name").and_then(|v| v.as_str()) == Some(api_name))
-            .and_then(|p| p.get("percent"))
-            .and_then(|v| v.as_f64());
-        let icon = entry.get("icon").and_then(|v| v.as_str()).unwrap_or("");
-        let icon_gray = entry.get("icongray").and_then(|v| v.as_str()).unwrap_or("");
-        // The Web API publishes both pictures; a missing one falls back to the
-        // other state.
-        let unlocked_icon = achievement_icon_url(&app_id, icon);
-        let locked_icon = achievement_icon_url(&app_id, icon_gray);
-        let locked_icon = if locked_icon.is_empty() {
-            unlocked_icon.clone()
-        } else {
-            locked_icon
-        };
-        let unlocked_icon = if unlocked_icon.is_empty() {
-            locked_icon.clone()
-        } else {
-            unlocked_icon
-        };
-        let file = if achieved {
-            &unlocked_icon
-        } else {
-            &locked_icon
-        };
-        let hidden_flag = entry.get("hidden").and_then(|v| v.as_i64()).unwrap_or(0) == 1;
-        let item = AchievementItem {
-            name: api_name.to_string(),
-            display_name: entry
-                .get("displayName")
-                .and_then(|v| v.as_str())
-                .unwrap_or(api_name)
-                .to_string(),
-            description: entry
-                .get("description")
-                .and_then(|v| v.as_str())
-                .unwrap_or("")
-                .to_string(),
-            unlocked: achieved,
-            progress: if achieved { 1.0 } else { 0.0 },
-            unlock_date: if achieved {
-                Some(unix_date(unlock_time))
-            } else {
-                None
-            },
-            icon_link: file.clone(),
-            icon_locked: locked_icon,
-            icon_unlocked: unlocked_icon,
-            tier: percent.map(tier_for_percent),
-            rarity: percent.map(|p| AchievementRarity { percent: Some(p) }),
-            hidden: hidden_flag,
-            // The Web API does not mark base/DLC groups either.
-            is_base: true,
-            ..Default::default()
-        };
-        if hidden_flag {
-            hidden_items.push(item.clone());
-        }
-        items.push(item);
-    }
-
-    let total = items.len() as u32;
-    let response = GameAchievementsResponse {
-        achievements: items,
-        hidden: hidden_items,
-        user_unlocked: unlocked,
-        total_achievements: total,
-        // Steam has no platinum trophy: a full set counts as the completed state.
-        is_platinum: total > 0 && unlocked == total,
-        supported: Some(true),
-        ..Default::default()
-    };
-    Ok(write_achievements_cache(&app, &app_id, &response, language))
+    let response = build_web_achievements_response(&defs, &unlocks);
+    Ok(write_achievements_cache_with_meta(
+        &app,
+        &app_id,
+        &response,
+        language,
+        resolved_steam_id.as_deref().unwrap_or(""),
+        unlocks.stats_available,
+        auth_steam_id.is_some(),
+        api_key.is_some(),
+    ))
 }
 
 /// Achievements for a custom/emulator-owned title: definitions come from the
@@ -4138,7 +4637,7 @@ fn steam_achievements_summary_for(
                 total_achievements: response.total_achievements,
                 is_platinum: response.is_platinum,
                 supported: true,
-                progress_known: true,
+                progress_known: cached.with_player_stats || response.user_unlocked > 0,
                 ..Default::default()
             };
             out.insert(format!("steam::{app_id}"), summary);
@@ -4971,5 +5470,100 @@ mod tests {
         );
         assert_eq!(second.len(), 1);
         assert_eq!(second[0].name, "ACH_THREE");
+    }
+
+    #[test]
+    fn player_service_schema_and_user_unlocks_join_by_internal_key() {
+        let schema = serde_json::json!({
+            "response": {
+                "achievements": [
+                    {
+                        "internal_name": "AC_1",
+                        "localized_name": "Chrysalis",
+                        "localized_desc": "Finish Episode 1",
+                        "icon": "unlocked.jpg",
+                        "icon_gray": "locked.jpg",
+                        "hidden": false,
+                        "player_percent_unlocked": "49.9",
+                        "internal_key": 256
+                    },
+                    {
+                        "internal_name": "AC_2",
+                        "localized_name": "Secret",
+                        "localized_desc": "",
+                        "icon": "s_u.jpg",
+                        "icon_gray": "",
+                        "hidden": true,
+                        "player_percent_unlocked": "12.5",
+                        "internal_key": 257
+                    }
+                ]
+            }
+        });
+        let defs = parse_player_service_game_achievements("319630", &schema);
+        assert_eq!(defs.len(), 2);
+        assert_eq!(defs[0].rarity_percent, Some(49.9));
+        assert_eq!(defs[1].icon_locked, defs[1].icon_unlocked);
+
+        let user_body = serde_json::json!({
+            "response": {
+                "achievements": [
+                    { "internal_key": 256, "unlocked": true, "unlock_time": 1613146100 },
+                    { "internal_key": 257, "unlocked": false, "unlock_time": 0 }
+                ]
+            }
+        });
+        let by_key = parse_player_service_user_achievements(&user_body).expect("unlocks");
+        let unlocks = PlayerUnlocksLookup {
+            by_key,
+            by_name: std::collections::HashMap::new(),
+            stats_available: true,
+        };
+        let resp = build_web_achievements_response(&defs, &unlocks);
+        assert_eq!(resp.supported, Some(true));
+        assert_eq!(resp.total_achievements, 2);
+        assert_eq!(resp.user_unlocked, 1);
+        assert!(!resp.is_platinum);
+        assert!(resp.achievements[0].unlocked);
+        assert!(resp.achievements[0].unlock_date.is_some());
+        assert!(!resp.achievements[1].unlocked);
+        assert_eq!(resp.hidden.len(), 1);
+    }
+
+    #[test]
+    fn private_profile_keeps_schema_definitions_instead_of_dropping_them() {
+        let schema = serde_json::json!({
+            "game": {
+                "availableGameStats": {
+                    "achievements": [
+                        {
+                            "name": "ACH_ALPHA",
+                            "displayName": "Alpha",
+                            "description": "First step",
+                            "icon": "a.jpg",
+                            "icongray": "a_gray.jpg",
+                            "hidden": 0
+                        }
+                    ]
+                }
+            }
+        });
+        let defs = parse_schema_for_game_v2("999999", &schema);
+        assert_eq!(defs.len(), 1);
+
+        let private_player = serde_json::json!({
+            "playerstats": {
+                "error": "Profile is not public",
+                "success": false
+            }
+        });
+        assert!(parse_player_achievements_v1(&private_player).is_none());
+
+        let unlocks = PlayerUnlocksLookup::default();
+        let resp = build_web_achievements_response(&defs, &unlocks);
+        assert_eq!(resp.supported, Some(true));
+        assert_eq!(resp.total_achievements, 1);
+        assert_eq!(resp.user_unlocked, 0);
+        assert_eq!(resp.achievements[0].display_name, "Alpha");
     }
 }

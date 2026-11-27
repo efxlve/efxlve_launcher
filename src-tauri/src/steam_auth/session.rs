@@ -984,3 +984,29 @@ pub async fn refresh_access_token(client: &reqwest::Client) -> Result<String, St
     }
     Ok(token)
 }
+
+/// Active Steam64 id for the in-app QR/credentials session, if signed in.
+pub fn current_steam_id(app: &tauri::AppHandle) -> Option<String> {
+    ensure_disk_checked(app);
+    lock().session.as_ref().map(|s| s.steam_id.clone())
+}
+
+/// Active `(steam_id, access_token)` for the in-app Steam session, minting a
+/// fresh token from the sealed refresh token when expired or missing.
+pub async fn current_access_token(app: &tauri::AppHandle) -> Option<(String, String)> {
+    ensure_disk_checked(app);
+    let (steam_id, cached) = {
+        let state = lock();
+        let session = state.session.as_ref()?;
+        (
+            session.steam_id.clone(),
+            session.access_token_valid().map(str::to_string),
+        )
+    };
+    if let Some(token) = cached {
+        return Some((steam_id, token));
+    }
+    let client = http_client().ok()?;
+    let fresh = refresh_access_token(&client).await.ok()?;
+    Some((steam_id, fresh))
+}

@@ -1318,6 +1318,7 @@ pub fn steam_set_api_key(app: tauri::AppHandle, api_key: String) -> Result<(), S
         Some(trimmed)
     };
     crate::save_settings(&app, &settings);
+    super::achievements::clear_unauthenticated_caches(&app);
     Ok(())
 }
 
