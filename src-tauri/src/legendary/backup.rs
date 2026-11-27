@@ -182,13 +182,13 @@ fn migrate_legacy_dir(app_name: &str) -> Option<PathBuf> {
 }
 
 /// Shared by the local list and the folder provider so both show the same date.
+///
+/// `YYYY-MM-DD HH:MM UTC`: the old `1970 + days / 365` estimate dropped the
+/// month and day and moved every late-December backup into the next year.
 pub fn format_backup_timestamp(ts: u64) -> String {
-    let days = ts / 86400;
-    let rem = ts % 86400;
-    let hours = rem / 3600;
-    let minutes = (rem % 3600) / 60;
-    let approx_year = 1970 + days / 365;
-    format!("{approx_year:04} ({hours:02}:{minutes:02} UTC)")
+    let at = std::time::UNIX_EPOCH + std::time::Duration::from_secs(ts);
+    let stamp = crate::clock::stamp(at);
+    format!("{} UTC", &stamp[..16])
 }
 
 fn copy_dir_all(src: &Path, dst: &Path) -> std::io::Result<(u64, usize)> {
@@ -1938,6 +1938,17 @@ mod tests {
         assert!(is_restore_snapshot("pre-restore-1700000000"));
         assert!(!is_restore_snapshot("1700000000"));
         assert!(!is_restore_snapshot("1700000000-1"));
+    }
+
+    /// The list is the only place a player can tell two backups apart, so the
+    /// date must carry month and day. The old `1970 + days/365` estimate printed
+    /// a wrong year for every late-December backup.
+    #[test]
+    fn backup_dates_are_real_calendar_dates() {
+        assert_eq!(format_backup_timestamp(0), "1970-01-01 00:00 UTC");
+        assert_eq!(format_backup_timestamp(1_709_164_800), "2024-02-29 00:00 UTC");
+        assert_eq!(format_backup_timestamp(1_766_966_400), "2025-12-29 00:00 UTC");
+        assert_eq!(format_backup_timestamp(1_767_225_599), "2025-12-31 23:59 UTC");
     }
 
     #[test]

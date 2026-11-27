@@ -451,13 +451,7 @@ pub async fn list_gdrive_backups(
 
         let timestamp: u64 = backup_id.parse().unwrap_or(0);
         let size_bytes: u64 = f.size.as_deref().and_then(|s| s.parse().ok()).unwrap_or(0);
-
-        let days = timestamp / 86400;
-        let rem = timestamp % 86400;
-        let hours = rem / 3600;
-        let minutes = (rem % 3600) / 60;
-        let approx_year = 1970 + days / 365;
-        let formatted_date = format!("{approx_year:04} ({hours:02}:{minutes:02} UTC)");
+        let formatted_date = crate::legendary::backup::format_backup_timestamp(timestamp);
 
         list.push(CloudBackupEntry {
             backup_id,

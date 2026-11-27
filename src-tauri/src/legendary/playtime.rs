@@ -122,14 +122,11 @@ pub fn record_session_at(
     rec.last_played_timestamp = Some(now_ts);
     push_session(rec, now_ts.saturating_sub(session_seconds), session_seconds);
 
-    // Simple UTC/ISO format
-    let days = now_ts / 86400;
-    let rem = now_ts % 86400;
-    let hours = rem / 3600;
-    let minutes = (rem % 3600) / 60;
-    let approx_year = 1970 + days / 365;
-    let date_str = format!("{approx_year:04} ({hours:02}:{minutes:02} UTC)");
-    rec.last_played = Some(date_str);
+    // Real calendar date: `1970 + days / 365` dropped the month and day and put
+    // late-December sessions into the next year.
+    let at = std::time::UNIX_EPOCH + std::time::Duration::from_secs(now_ts);
+    let stamp = crate::clock::stamp(at);
+    rec.last_played = Some(format!("{} UTC", &stamp[..16]));
 
     let updated = rec.clone();
     write_playtime_store(&path, &store)?;
