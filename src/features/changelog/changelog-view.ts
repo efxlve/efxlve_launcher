@@ -30,6 +30,20 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.78",
+    date: "2026-11-27",
+    fixed: [
+      {
+        en: "The Store launcher button only appears when the official client is actually installed.",
+        tr: "Mağaza launcher düğmesi yalnızca resmî istemci gerçekten kuruluysa görünüyor.",
+      },
+      {
+        en: "Changing an Epic game's selected packs now downloads them instead of marking them installed while their files are missing; Repair also completes an interrupted install.",
+        tr: "Bir Epic oyununun seçili paketlerini değiştirmek artık onları indiriyor; dosyaları eksikken kurulu olarak işaretlenmiyor. Onarım da yarıda kalan kurulumu tamamlıyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.77",
     date: "2026-11-27",
     added: [
