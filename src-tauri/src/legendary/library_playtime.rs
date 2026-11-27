@@ -16,6 +16,9 @@ const CACHE_TTL_SECS: u64 = 6 * 3600;
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
 struct PlaytimeCache {
     fetched_at: u64,
+    /// The hours belong to one Epic account. Older files carry no id.
+    #[serde(default)]
+    account_id: String,
     playtimes: HashMap<String, i64>,
 }
 
@@ -57,14 +60,22 @@ fn cache_path() -> PathBuf {
     super::skip::default_config_dir().join("epic_playtime.json")
 }
 
+/// The account a cached snapshot belongs to. A file written before the id was
+/// stored has none, so it is treated as stale rather than showing the previous
+/// account's hours for up to the full TTL after a switch.
+fn cache_belongs(cache: &PlaytimeCache, account_id: &str) -> bool {
+    !account_id.is_empty() && cache.account_id == account_id
+}
+
 fn read_cache(path: &Path) -> Option<PlaytimeCache> {
     let text = std::fs::read_to_string(path).ok()?;
     serde_json::from_str(&text).ok()
 }
 
-fn write_cache(path: &Path, playtimes: &HashMap<String, i64>, now: u64) {
+fn write_cache(path: &Path, account_id: &str, playtimes: &HashMap<String, i64>, now: u64) {
     let cache = PlaytimeCache {
         fetched_at: now,
+        account_id: account_id.to_string(),
         playtimes: playtimes.clone(),
     };
     if let Some(dir) = path.parent() {
@@ -86,7 +97,13 @@ fn user_value(raw: &str, key: &str) -> String {
         .unwrap_or_default()
 }
 
-async fn fetch_playtimes() -> Result<HashMap<String, i64>, String> {
+/// The signed-in launcher session that owns the playtime hours.
+struct Session {
+    token: String,
+    account: String,
+}
+
+fn read_session() -> Result<Session, String> {
     let config = super::skip::default_config_dir();
     let raw = std::fs::read_to_string(config.join("user.json"))
         .map_err(|_| "@t:err.notAuthenticated".to_string())?;
@@ -95,6 +112,12 @@ async fn fetch_playtimes() -> Result<HashMap<String, i64>, String> {
     if token.is_empty() || account.is_empty() {
         return Err("@t:err.notAuthenticated".to_string());
     }
+    Ok(Session { token, account })
+}
+
+async fn fetch_playtimes(session: &Session) -> Result<HashMap<String, i64>, String> {
+    let token = session.token.as_str();
+    let account = session.account.as_str();
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(10))
         .user_agent("EfxlveLauncher/0.1 (https://github.com/efxlve/efxlve_launcher)")
@@ -124,25 +147,29 @@ async fn fetch_playtimes() -> Result<HashMap<String, i64>, String> {
 
 /// Epic's server-side playtime snapshot (`appName -> seconds`). Cached for
 /// {@link CACHE_TTL_SECS}; `force` skips the cache. When the network or the
-/// session fails, the last snapshot is served instead of an error.
+/// session fails, the last snapshot of the same account is served instead of an
+/// error.
 #[tauri::command]
 pub async fn epic_sync_epic_playtimes(force: Option<bool>) -> Result<HashMap<String, i64>, String> {
+    let session = read_session()?;
     let path = cache_path();
     let now = now_secs();
+    // Another account's hours are not this account's data, however fresh they are.
+    let cached = read_cache(&path).filter(|cache| cache_belongs(cache, &session.account));
     if !force.unwrap_or(false) {
-        if let Some(cached) = read_cache(&path) {
-            if cache_fresh(cached.fetched_at, now) {
-                return Ok(cached.playtimes);
+        if let Some(cache) = cached.as_ref() {
+            if cache_fresh(cache.fetched_at, now) {
+                return Ok(cache.playtimes.clone());
             }
         }
     }
-    match fetch_playtimes().await {
+    match fetch_playtimes(&session).await {
         Ok(map) => {
-            write_cache(&path, &map, now);
+            write_cache(&path, &session.account, &map, now);
             Ok(map)
         }
-        Err(err) => match read_cache(&path) {
-            Some(cached) => Ok(cached.playtimes),
+        Err(err) => match cached {
+            Some(cache) => Ok(cache.playtimes),
             None => Err(err),
         },
     }
@@ -183,6 +210,22 @@ mod tests {
         assert_eq!(user_value(raw, "missing"), "");
     }
 
+    /// After an account switch the previous account's hours must not be served,
+    /// and a file written before the id was stored counts as stale.
+    #[test]
+    fn cache_is_bound_to_the_account_that_fetched_it() {
+        let mine = PlaytimeCache {
+            fetched_at: 1,
+            account_id: "account_a".into(),
+            playtimes: HashMap::from([("Ginger".to_string(), 5)]),
+        };
+        assert!(cache_belongs(&mine, "account_a"));
+        assert!(!cache_belongs(&mine, "account_b"));
+        assert!(!cache_belongs(&mine, ""));
+        let legacy: PlaytimeCache = serde_json::from_str(r#"{"fetched_at":1,"playtimes":{}}"#).unwrap();
+        assert!(!cache_belongs(&legacy, "account_a"));
+    }
+
     /// Live smoke test (network + signed-in session). Run with:
     /// `cargo test epic_playtime_snapshot_is_readable -- --ignored --nocapture`
     #[test]
@@ -190,7 +233,8 @@ mod tests {
     fn epic_playtime_snapshot_is_readable() {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
-            let map = fetch_playtimes().await.expect("live playtime fetch");
+            let session = read_session().expect("signed-in session");
+            let map = fetch_playtimes(&session).await.expect("live playtime fetch");
             assert!(
                 !map.is_empty(),
                 "a signed-in account should have playtime records"
