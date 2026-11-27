@@ -476,11 +476,11 @@ fn fmt_eta(seconds: u64) -> String {
     if seconds >= 3600 {
         let h = seconds / 3600;
         let m = (seconds % 3600) / 60;
-        format!("~{}h {m:02}m", h = h, m = m)
+        format!("~{h}h {m:02}m")
     } else if seconds >= 60 {
         let m = seconds / 60;
         let s = seconds % 60;
-        format!("~{}m {s:02}s", m = m, s = s)
+        format!("~{m}m {s:02}s")
     } else {
         format!("~{seconds}s")
     }
