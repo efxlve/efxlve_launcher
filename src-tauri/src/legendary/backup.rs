@@ -616,7 +616,11 @@ pub fn preview_backup(app_name: &str, backup_id: &str) -> Result<BackupPreview, 
     preview_from_backup_dir(app_name, id, &app_backup_dir(app_name).join(id))
 }
 
-fn snapshot_before_restore(app_name: &str, save_path: &Path) -> Result<Option<String>, String> {
+fn snapshot_before_restore_in(
+    game_backup_dir: &Path,
+    app_name: &str,
+    save_path: &Path,
+) -> Result<Option<String>, String> {
     if !save_path.exists() {
         return Ok(None);
     }
@@ -626,11 +630,11 @@ fn snapshot_before_restore(app_name: &str, save_path: &Path) -> Result<Option<St
         .map(|duration| duration.as_secs())
         .unwrap_or(0);
     let mut backup_id = format!("pre-restore-{now_ts}");
-    let mut target = app_backup_dir(app_name).join(&backup_id);
+    let mut target = game_backup_dir.join(&backup_id);
     let mut suffix = 1;
     while target.exists() {
         backup_id = format!("pre-restore-{now_ts}-{suffix}");
-        target = app_backup_dir(app_name).join(&backup_id);
+        target = game_backup_dir.join(&backup_id);
         suffix += 1;
     }
     std::fs::create_dir_all(&target).map_err(|error| error.to_string())?;
@@ -659,6 +663,233 @@ fn snapshot_before_restore(app_name: &str, save_path: &Path) -> Result<Option<St
     let info_json = serde_json::to_string_pretty(&info).map_err(|error| error.to_string())?;
     std::fs::write(target.join("backup_info.json"), info_json).map_err(|error| error.to_string())?;
     Ok(Some(backup_id))
+}
+
+fn active_user_home() -> Option<PathBuf> {
+    std::env::var_os("USERPROFILE")
+        .or_else(|| std::env::var_os("HOME"))
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+}
+
+fn normalize_guard_path(path: &Path) -> String {
+    let raw = path.to_string_lossy().to_lowercase().replace('/', "\\");
+    raw.trim_start_matches(r"\\?\")
+        .trim_end_matches('\\')
+        .to_string()
+}
+
+/// Lexical and system-boundary check for a save restore destination.
+/// Rejects relative paths, `.` or `..` segments, drive roots, paths with fewer
+/// than two normal components below the root, OS/program trees, and the user
+/// profile itself, any ancestor of the user profile, or top-level profile dirs.
+fn is_safe_restore_path_with(path: &Path, user_home: Option<&Path>) -> bool {
+    if !path.is_absolute() {
+        return false;
+    }
+    if path
+        .to_string_lossy()
+        .split(['/', '\\'])
+        .any(|seg| seg == "." || seg == "..")
+    {
+        return false;
+    }
+    let mut normal_count = 0usize;
+    for component in path.components() {
+        match component {
+            std::path::Component::Normal(_) => normal_count += 1,
+            std::path::Component::ParentDir | std::path::Component::CurDir => return false,
+            std::path::Component::Prefix(_) | std::path::Component::RootDir => {}
+        }
+    }
+    if normal_count < 2 {
+        return false;
+    }
+
+    let s_trimmed = normalize_guard_path(path);
+    if s_trimmed.is_empty() {
+        return false;
+    }
+
+    let compact = if s_trimmed.as_bytes().get(1) == Some(&b':') {
+        &s_trimmed[2..]
+    } else {
+        s_trimmed.as_str()
+    };
+    if compact.is_empty() {
+        return false;
+    }
+
+    for sys in [
+        r"\windows",
+        r"\windows.old",
+        r"\program files",
+        r"\program files (x86)",
+        r"\programdata",
+        r"\system volume information",
+        r"\$recycle.bin",
+        r"\recovery",
+        r"\perflogs",
+        r"\boot",
+        r"\efi",
+        r"\etc",
+        r"\usr",
+        r"\bin",
+        r"\sbin",
+        r"\lib",
+        r"\lib64",
+        r"\proc",
+        r"\sys",
+        r"\dev",
+        r"\system",
+        r"\library",
+        r"\applications",
+    ] {
+        if compact == sys || compact.starts_with(&format!("{sys}\\")) {
+            return false;
+        }
+    }
+
+    if compact == r"\users" || compact == r"\home" {
+        return false;
+    }
+    for users_root in [r"\users\", r"\home\"] {
+        if let Some(rest) = compact.strip_prefix(users_root) {
+            if !rest.is_empty() && !rest.contains('\\') {
+                return false;
+            }
+        }
+    }
+
+    if let Some(home) = user_home {
+        let h_trimmed = normalize_guard_path(home);
+        if !h_trimmed.is_empty() {
+            // Reject the user profile itself and every ancestor above it.
+            if s_trimmed == h_trimmed || h_trimmed.starts_with(&format!("{s_trimmed}\\")) {
+                return false;
+            }
+            // Top-level profile containers hold many apps and documents; a game
+            // save folder must live underneath them, never be the container itself.
+            for shared in [
+                "desktop",
+                "documents",
+                "downloads",
+                "saved games",
+                "pictures",
+                "music",
+                "videos",
+                "appdata",
+                r"appdata\local",
+                r"appdata\locallow",
+                r"appdata\roaming",
+                r"appdata\local\temp",
+                ".config",
+                ".local",
+                r".local\share",
+                "library",
+                r"library\application support",
+            ] {
+                if s_trimmed == format!(r"{h_trimmed}\{shared}") {
+                    return false;
+                }
+            }
+        }
+    }
+
+    true
+}
+
+/// Validates that an existing directory is safe to clear before restoring a
+/// save backup into it. Requires `path` to exist as a real directory (not a
+/// regular file or symlink/junction) and checks both raw and canonical paths.
+fn is_safe_restore_dir_with(path: &Path, user_home: Option<&Path>) -> bool {
+    if !is_safe_restore_path_with(path, user_home) {
+        return false;
+    }
+    let Ok(meta) = std::fs::symlink_metadata(path) else {
+        return false;
+    };
+    if !meta.file_type().is_dir() {
+        return false;
+    }
+    let Ok(canon) = path.canonicalize() else {
+        return false;
+    };
+    let canon_home = user_home.and_then(|h| h.canonicalize().ok());
+    is_safe_restore_path_with(&canon, canon_home.as_deref().or(user_home))
+}
+
+#[allow(dead_code)]
+fn is_safe_restore_dir(path: &Path) -> bool {
+    is_safe_restore_dir_with(path, active_user_home().as_deref())
+}
+
+/// Validates a non-existent destination before creating it during a restore on
+/// a fresh install, ensuring its nearest existing ancestor is also safe.
+fn is_safe_missing_restore_target_with(path: &Path, user_home: Option<&Path>) -> bool {
+    if !is_safe_restore_path_with(path, user_home) {
+        return false;
+    }
+    let mut cursor = path.parent();
+    while let Some(ancestor) = cursor {
+        if ancestor.exists() {
+            let Ok(meta) = std::fs::symlink_metadata(ancestor) else {
+                return false;
+            };
+            if !meta.file_type().is_dir() && !meta.file_type().is_symlink() {
+                return false;
+            }
+            let Ok(canon_anc) = ancestor.canonicalize() else {
+                return false;
+            };
+            let Ok(rel) = path.strip_prefix(ancestor) else {
+                return false;
+            };
+            let rebuilt = canon_anc.join(rel);
+            let canon_home = user_home.and_then(|h| h.canonicalize().ok());
+            return is_safe_restore_path_with(&rebuilt, canon_home.as_deref().or(user_home));
+        }
+        cursor = ancestor.parent();
+    }
+    false
+}
+
+fn clear_restore_dir_with(dest: &Path, user_home: Option<&Path>) -> Result<(), String> {
+    if !is_safe_restore_dir_with(dest, user_home) {
+        return Err(format!(
+            "@t:backup.restoreError\u{1f}unsafe restore destination: {}",
+            dest.display()
+        ));
+    }
+    let entries = std::fs::read_dir(dest)
+        .map_err(|e| format!("@t:backup.restoreError\u{1f}{e}"))?;
+    for entry in entries {
+        let entry = entry.map_err(|e| format!("@t:backup.restoreError\u{1f}{e}"))?;
+        let child = entry.path();
+        let ty = entry
+            .file_type()
+            .map_err(|e| format!("@t:backup.restoreError\u{1f}{e}"))?;
+        if ty.is_dir() {
+            super::transfers::force_remove_dir_all(&child)
+                .map_err(|e| format!("@t:backup.restoreError\u{1f}{e}"))?;
+        } else {
+            if let Ok(meta) = child.metadata() {
+                let mut perms = meta.permissions();
+                if perms.readonly() {
+                    perms.set_readonly(false);
+                    let _ = std::fs::set_permissions(&child, perms);
+                }
+            }
+            if let Err(err) = std::fs::remove_file(&child) {
+                // On Windows, a directory junction reports `is_symlink()` and
+                // must be unlinked with `remove_dir` rather than `remove_file`.
+                if std::fs::remove_dir(&child).is_err() {
+                    return Err(format!("@t:backup.restoreError\u{1f}{err}"));
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 fn normalize_for_match(s: &str) -> String {
@@ -1879,8 +2110,43 @@ pub fn restore_backup_checked(
     expected_current_hash: Option<&str>,
 ) -> Result<String, String> {
     migrate_legacy_dir(app_name);
+    restore_backup_in_with_home(
+        &app_backup_dir(app_name),
+        app_name,
+        backup_id,
+        expected_current_hash,
+        active_user_home().as_deref(),
+    )
+}
+
+fn paths_overlap(a: &Path, b: &Path) -> bool {
+    let na = normalize_guard_path(a);
+    let nb = normalize_guard_path(b);
+    if na.is_empty() || nb.is_empty() {
+        return false;
+    }
+    if na == nb || na.starts_with(&format!("{nb}\\")) || nb.starts_with(&format!("{na}\\")) {
+        return true;
+    }
+    if let (Ok(ca), Ok(cb)) = (a.canonicalize(), b.canonicalize()) {
+        let cna = normalize_guard_path(&ca);
+        let cnb = normalize_guard_path(&cb);
+        return cna == cnb
+            || cna.starts_with(&format!("{cnb}\\"))
+            || cnb.starts_with(&format!("{cna}\\"));
+    }
+    false
+}
+
+fn restore_backup_in_with_home(
+    game_backup_dir: &Path,
+    app_name: &str,
+    backup_id: &str,
+    expected_current_hash: Option<&str>,
+    user_home: Option<&Path>,
+) -> Result<String, String> {
     let id = safe_backup_id(backup_id)?;
-    let backup_dir = app_backup_dir(app_name).join(id);
+    let backup_dir = game_backup_dir.join(id);
     let info_path = backup_dir.join("backup_info.json");
     if !info_path.exists() {
         return Err("@t:backup.infoNotFound".to_string());
@@ -1898,6 +2164,17 @@ pub fn restore_backup_checked(
     verify_backup_tree(&info, &data_src)?;
 
     let dest = resolve_restore_destination(app_name, &info);
+    let safe_dest = if dest.exists() {
+        is_safe_restore_dir_with(&dest, user_home)
+    } else {
+        is_safe_missing_restore_target_with(&dest, user_home)
+    };
+    if !safe_dest || paths_overlap(&dest, game_backup_dir) {
+        return Err(format!(
+            "@t:backup.restoreError\u{1f}unsafe restore destination: {}",
+            dest.display()
+        ));
+    }
 
     // The preview named the exact save tree it described. A different tree now
     // means the game (or another tool) wrote new saves after the dialog opened.
@@ -1909,9 +2186,28 @@ pub fn restore_backup_checked(
 
     // Keep the current saves before overwriting them. The snapshot stays in the
     // local backup list, so a wrong restore can be undone from the same panel.
-    snapshot_before_restore(app_name, &dest)?;
+    if dest.exists() {
+        snapshot_before_restore_in(game_backup_dir, app_name, &dest)?;
+        clear_restore_dir_with(&dest, user_home)?;
+    }
 
     copy_dir_all(&data_src, &dest).map_err(|e| format!("@t:backup.restoreError\u{1f}{e}"))?;
+
+    let expected_tree_hash = info
+        .content_hash
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+        .or_else(|| tree_content_hash(&data_src));
+    if let Some(expected_hash) = expected_tree_hash {
+        if tree_content_hash(&dest).as_deref() != Some(expected_hash.as_str()) {
+            return Err(
+                "@t:backup.restoreError\u{1f}restored save tree did not match backup checksum"
+                    .to_string(),
+            );
+        }
+    }
 
     Ok(format!(
         "@t:backup.restored\u{1f}{}\u{1f}{}",
@@ -2869,5 +3165,236 @@ mod tests {
         assert_eq!(found, None);
 
         let _ = std::fs::remove_dir_all(home.parent().unwrap());
+    }
+
+    #[test]
+    fn restore_guard_rejects_roots_system_trees_profiles_and_missing_dirs() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve_restore_guard_{}_{}",
+            std::process::id(),
+            now_secs()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        let fake_home = root.join("Users").join("Player");
+        let valid_save = fake_home.join("Documents").join("MyGame");
+        std::fs::create_dir_all(&valid_save).unwrap();
+        let regular_file = valid_save.join("slot1.sav");
+        std::fs::write(&regular_file, b"save").unwrap();
+
+        // Valid existing nested save folder passes.
+        assert!(is_safe_restore_dir_with(&valid_save, Some(&fake_home)));
+
+        // Non-existent path, regular file, relative path, and `..` traversal fail.
+        assert!(!is_safe_restore_dir_with(
+            &fake_home.join("Documents").join("MissingGame"),
+            Some(&fake_home)
+        ));
+        assert!(!is_safe_restore_dir_with(&regular_file, Some(&fake_home)));
+        assert!(!is_safe_restore_dir_with(
+            Path::new("relative/saves/MyGame"),
+            Some(&fake_home)
+        ));
+        assert!(!is_safe_restore_dir_with(
+            &valid_save.join("..").join("MyGame"),
+            Some(&fake_home)
+        ));
+
+        // User profile itself, any ancestor above it, and top-level profile folders fail.
+        assert!(!is_safe_restore_dir_with(&fake_home, Some(&fake_home)));
+        assert!(!is_safe_restore_dir_with(
+            fake_home.parent().unwrap(),
+            Some(&fake_home)
+        ));
+        assert!(!is_safe_restore_dir_with(&root, Some(&fake_home)));
+        assert!(!is_safe_restore_dir_with(
+            &fake_home.join("Documents"),
+            Some(&fake_home)
+        ));
+
+        #[cfg(windows)]
+        {
+            for bad in [
+                r"C:\",
+                r"C:\Saves",
+                r"C:\Windows",
+                r"C:\Windows\System32",
+                r"C:\Program Files",
+                r"C:\Program Files\SomeGame",
+                r"C:\Program Files (x86)",
+                r"C:\ProgramData",
+                r"C:\ProgramData\Epic",
+                r"C:\Users",
+                r"C:\Users\Efe",
+                r"D:\Saves\..\Windows\System32",
+                r"relative\Saves\Game",
+            ] {
+                assert!(
+                    !is_safe_restore_path_with(Path::new(bad), Some(Path::new(r"C:\Users\Efe"))),
+                    "{bad} must be rejected by the restore path guard"
+                );
+                assert!(
+                    !is_safe_restore_dir_with(Path::new(bad), Some(Path::new(r"C:\Users\Efe"))),
+                    "{bad} must be rejected by the restore dir guard"
+                );
+            }
+            assert!(is_safe_restore_path_with(
+                Path::new(r"D:\Saves\MyGame"),
+                Some(Path::new(r"C:\Users\Efe"))
+            ));
+        }
+
+        #[cfg(not(windows))]
+        {
+            for bad in [
+                "/",
+                "/saves",
+                "/etc/passwd",
+                "/usr/local/share",
+                "/home",
+                "/home/player",
+                "/Users/player",
+                "/tmp/saves/../etc",
+                "relative/saves/game",
+            ] {
+                assert!(
+                    !is_safe_restore_path_with(Path::new(bad), Some(Path::new("/home/player"))),
+                    "{bad} must be rejected by the restore path guard"
+                );
+            }
+            assert!(is_safe_restore_path_with(
+                Path::new("/mnt/games/MyGame"),
+                Some(Path::new("/home/player"))
+            ));
+        }
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn restore_refuses_corrupt_manifest_pointing_at_user_profile_or_backup_dir() {
+        let (root, backup_entry, _, mut info) = local_backup_fixture("unsafe_manifest");
+        let game_backup_dir = backup_entry.parent().unwrap();
+        let fake_home = root.join("Users").join("Player");
+        std::fs::create_dir_all(&fake_home).unwrap();
+        let keep_file = fake_home.join("important.txt");
+        std::fs::write(&keep_file, b"do_not_delete").unwrap();
+
+        info.save_path = fake_home.to_string_lossy().to_string();
+        std::fs::write(
+            backup_entry.join("backup_info.json"),
+            serde_json::to_string_pretty(&info).unwrap(),
+        )
+        .unwrap();
+
+        let err = restore_backup_in_with_home(
+            game_backup_dir,
+            "steam::1",
+            "1700000000",
+            None,
+            Some(&fake_home),
+        )
+        .unwrap_err();
+        assert!(err.starts_with("@t:backup.restoreError"));
+        assert_eq!(std::fs::read(&keep_file).unwrap(), b"do_not_delete");
+
+        // Pointing save_path at the backup directory itself must also be refused.
+        info.save_path = game_backup_dir.to_string_lossy().to_string();
+        std::fs::write(
+            backup_entry.join("backup_info.json"),
+            serde_json::to_string_pretty(&info).unwrap(),
+        )
+        .unwrap();
+        assert!(restore_backup_in_with_home(
+            game_backup_dir,
+            "steam::1",
+            "1700000000",
+            None,
+            Some(&fake_home),
+        )
+        .is_err());
+        assert!(backup_entry.join("data").join("profile.sav").is_file());
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn restore_replaces_target_tree_matches_hash_and_keeps_pre_restore_snapshot() {
+        let (root, backup_entry, destination, info) = local_backup_fixture("exact_replace");
+        let game_backup_dir = backup_entry.parent().unwrap();
+
+        // Simulate files written after the backup was taken (plus a modified file
+        // and a read-only extra slot in a new subdirectory).
+        std::fs::write(destination.join("profile.sav"), b"newer_progress").unwrap();
+        let extra_dir = destination.join("later_chapter");
+        std::fs::create_dir_all(&extra_dir).unwrap();
+        let extra_file = extra_dir.join("slot2.sav");
+        std::fs::write(&extra_file, b"extra_slot").unwrap();
+        let mut perms = std::fs::metadata(&extra_file).unwrap().permissions();
+        perms.set_readonly(true);
+        let _ = std::fs::set_permissions(&extra_file, perms);
+
+        let dirty_hash = tree_content_hash(&destination).unwrap();
+        assert_ne!(Some(dirty_hash.as_str()), info.content_hash.as_deref());
+
+        // Stale preview hash must still abort before touching the target.
+        assert_eq!(
+            restore_backup_in_with_home(
+                game_backup_dir,
+                "steam::1",
+                "1700000000",
+                Some("stale_preview_hash"),
+                active_user_home().as_deref(),
+            )
+            .unwrap_err(),
+            "@t:backup.changedSincePreview"
+        );
+        assert!(extra_file.is_file());
+
+        // Restore with the current preview hash replaces the tree cleanly.
+        restore_backup_in_with_home(
+            game_backup_dir,
+            "steam::1",
+            "1700000000",
+            Some(&dirty_hash),
+            active_user_home().as_deref(),
+        )
+        .unwrap();
+
+        assert!(!extra_file.exists(), "post-backup file must be removed");
+        assert!(!extra_dir.exists(), "post-backup directory must be removed");
+        assert_eq!(
+            std::fs::read(destination.join("profile.sav")).unwrap(),
+            b"alpha"
+        );
+        assert_eq!(
+            std::fs::read(destination.join("nested").join("slot1.sav")).unwrap(),
+            b"beta"
+        );
+        assert_eq!(tree_content_hash(&destination), info.content_hash);
+
+        // The pre-restore safety snapshot still holds the extra file and newer save.
+        let listed = list_backups_in(game_backup_dir);
+        let snap = listed
+            .iter()
+            .find(|entry| is_restore_snapshot(&entry.id))
+            .expect("pre-restore snapshot must exist");
+        let snap_data = game_backup_dir.join(&snap.id).join("data");
+        assert_eq!(
+            std::fs::read(snap_data.join("later_chapter").join("slot2.sav")).unwrap(),
+            b"extra_slot"
+        );
+        assert_eq!(
+            std::fs::read(snap_data.join("profile.sav")).unwrap(),
+            b"newer_progress"
+        );
+        assert_eq!(snap.content_hash.as_deref(), Some(dirty_hash.as_str()));
+
+        // Make writable before cleanup on Windows in case snapshot preserved attributes.
+        if let Ok(m) = snap_data.join("later_chapter").join("slot2.sav").metadata() {
+            let mut p = m.permissions();
+            p.set_readonly(false);
+            let _ = std::fs::set_permissions(snap_data.join("later_chapter").join("slot2.sav"), p);
+        }
+        let _ = std::fs::remove_dir_all(&root);
     }
 }
