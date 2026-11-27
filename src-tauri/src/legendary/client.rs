@@ -96,7 +96,7 @@ async fn run_with_timeout(
     }
     let code = output.status.code().unwrap_or(-1);
     let stderr = String::from_utf8_lossy(&output.stderr);
-    if stderr.contains("No saved credentials") {
+    if session_invalid(&stderr) {
         return Err(LegendaryError::NotAuthenticated);
     }
     Err(LegendaryError::CommandFailed {
@@ -104,4 +104,39 @@ async fn run_with_timeout(
         stderr_tail: stderr_tail(&output.stderr),
         stderr_full: stderr.into_owned(),
     })
+}
+
+/// A session Epic no longer accepts is a login prompt, not a command failure.
+///
+/// Legendary raises `InvalidCredentialsError` when the refresh token is dead,
+/// clears `user.json` and exits 1. Left as a plain `CommandFailed`, the UI keeps
+/// the account "Connected" and only shows the offline-cache note, so the player
+/// never gets the sign-in step that would fix it.
+fn session_invalid(stderr: &str) -> bool {
+    stderr.contains("No saved credentials")
+        || stderr.contains("Stored credentials are no longer valid")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::session_invalid;
+
+    #[test]
+    fn a_rejected_session_is_a_login_prompt() {
+        assert!(session_invalid("ValueError: No saved credentials"));
+        assert!(session_invalid(
+            "ERROR: Stored credentials are no longer valid! Please login again.\nERROR: Login failed, cannot continue!"
+        ));
+    }
+
+    #[test]
+    fn other_failures_stay_command_failures() {
+        // A network outage also ends in "Login failed", but signing in again will
+        // not help; the retry path needs the command failure.
+        assert!(!session_invalid(
+            "ERROR: HTTP request for login failed\nERROR: Login failed, cannot continue!"
+        ));
+        assert!(!session_invalid("HTTPError: 500 Server Error"));
+        assert!(!session_invalid("Max retries exceeded with url"));
+    }
 }

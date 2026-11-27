@@ -189,7 +189,10 @@ export async function syncEpicLibrary(manual: boolean, force = false): Promise<v
   } catch (e) {
     if (gen !== librarySyncGen) return;
     if (isNotAuth(e)) {
+      // The session is gone, so the library page switches to the sign-in state;
+      // a stale "sync failed" note would only explain the wrong thing.
       S.epicPhase = "login";
+      S.epicSyncNote = "";
     } else {
       S.epicSyncNote = t("lib.offlineCache");
     }
