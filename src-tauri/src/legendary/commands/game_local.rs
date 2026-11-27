@@ -651,10 +651,9 @@ pub async fn epic_get_game_dlcs(app_name: String) -> Result<GameDlcResponse, Str
         install_size: Option<u64>,
     }
     let mut egl_items: Vec<EglItemCheck> = Vec::new();
-    let egl_manifests_dir =
-        std::path::Path::new(r"C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests");
+    let egl_manifests_dir = cache::egl_manifests_dir();
     if egl_manifests_dir.is_dir() {
-        if let Ok(entries) = std::fs::read_dir(egl_manifests_dir) {
+        if let Ok(entries) = std::fs::read_dir(&egl_manifests_dir) {
             for entry in entries.flatten() {
                 let p = entry.path();
                 if p.extension().and_then(|x| x.to_str()) == Some("item") {

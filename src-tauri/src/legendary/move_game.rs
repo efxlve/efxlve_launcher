@@ -458,15 +458,17 @@ fn scan_dir_recursive(path: &Path) -> (usize, u64) {
     (files, bytes)
 }
 
+/// Speeds and ETAs go into the localized move dialog, so the units stay
+/// language-neutral and match the launcher's own formatters (`fmtSpeed`).
 fn fmt_speed(bps: f64) -> String {
     if bps >= 1024.0 * 1024.0 * 1024.0 {
-        format!("{:.1} GB/sn", bps / (1024.0 * 1024.0 * 1024.0))
+        format!("{:.1} GB/s", bps / (1024.0 * 1024.0 * 1024.0))
     } else if bps >= 1024.0 * 1024.0 {
-        format!("{:.1} MB/sn", bps / (1024.0 * 1024.0))
+        format!("{:.1} MB/s", bps / (1024.0 * 1024.0))
     } else if bps >= 1024.0 {
-        format!("{:.0} KB/sn", bps / 1024.0)
+        format!("{:.0} KB/s", bps / 1024.0)
     } else {
-        format!("{:.0} B/sn", bps)
+        format!("{:.0} B/s", bps)
     }
 }
 
@@ -474,13 +476,13 @@ fn fmt_eta(seconds: u64) -> String {
     if seconds >= 3600 {
         let h = seconds / 3600;
         let m = (seconds % 3600) / 60;
-        format!("~{} sa {} dk", h, m)
+        format!("~{}h {m:02}m", h = h, m = m)
     } else if seconds >= 60 {
         let m = seconds / 60;
         let s = seconds % 60;
-        format!("~{} dk {} sn", m, s)
+        format!("~{}m {s:02}s", m = m, s = s)
     } else {
-        format!("~{} sn", seconds)
+        format!("~{seconds}s")
     }
 }
 
@@ -827,6 +829,50 @@ pub(crate) async fn move_game_folder_record(
     result
 }
 
+/// Writes the moved game's new path into `installed.json` without dropping fields
+/// this build does not know and without rolling back a record another launcher
+/// wrote while the files were being copied.
+///
+/// The copy can run for minutes, so the file is re-read here instead of writing
+/// the map loaded at the start. It is serialized through `ascii_json_pretty`
+/// because legendary opens the file with the Windows code page (cp1254 on a
+/// Turkish system), where a literal "™" in a title makes the whole map
+/// unreadable and every install look missing.
+async fn write_epic_install_path(
+    installed_file: &Path,
+    app_name: &str,
+    new_path: &str,
+    fallback: &HashMap<String, serde_json::Value>,
+) {
+    let mut map = match tokio::fs::read_to_string(installed_file).await {
+        Ok(text) => serde_json::from_str::<HashMap<String, serde_json::Value>>(&text)
+            .unwrap_or_else(|_| fallback.clone()),
+        Err(_) => fallback.clone(),
+    };
+    let Some(entry) = map.get_mut(app_name).and_then(|value| value.as_object_mut()) else {
+        return;
+    };
+    entry.insert(
+        "install_path".to_string(),
+        serde_json::Value::String(new_path.to_string()),
+    );
+    let Some(text) = super::cache::ascii_json_pretty(&map) else {
+        return;
+    };
+    if installed_file.is_file() {
+        let _ = tokio::fs::copy(installed_file, installed_file.with_extension("json.bak")).await;
+    }
+    let tmp = installed_file.with_extension("json.tmp");
+    if tokio::fs::write(&tmp, text).await.is_ok() {
+        // `rename` replaces the destination on Windows too (MOVEFILE_REPLACE_EXISTING).
+        if tokio::fs::rename(&tmp, installed_file).await.is_err() {
+            let _ = tokio::fs::remove_file(&tmp).await;
+        }
+    } else {
+        let _ = tokio::fs::remove_file(&tmp).await;
+    }
+}
+
 async fn move_game_folder_internal(
     app: &AppHandle,
     config_dir: &Path,
@@ -1095,17 +1141,7 @@ async fn move_game_folder_internal(
     match record {
         MoveRecord::Epic => {
             // A) installed.json
-            if let Some(entry) = installed_map.get_mut(app_name) {
-                if let Some(obj) = entry.as_object_mut() {
-                    obj.insert(
-                        "install_path".to_string(),
-                        serde_json::Value::String(new_path_str.clone()),
-                    );
-                }
-            }
-            if let Ok(updated_json) = serde_json::to_string_pretty(&installed_map) {
-                let _ = tokio::fs::write(&installed_file, updated_json).await;
-            }
+            write_epic_install_path(&installed_file, app_name, &new_path_str, &installed_map).await;
 
             // B) legendary move <app> <target_base> --skip-move
             let bin_path =
@@ -1328,7 +1364,7 @@ fn copy_dir_with_progress<'a>(
 
 /// Updates the path inside Epic Games Launcher .item manifest files
 async fn update_egl_manifest(app_name: &str, old_path: &Path, new_path: &Path) {
-    let manifests_dir = Path::new(r"C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests");
+    let manifests_dir = crate::legendary::cache::egl_manifests_dir();
     if !manifests_dir.is_dir() {
         return;
     }
@@ -1336,7 +1372,7 @@ async fn update_egl_manifest(app_name: &str, old_path: &Path, new_path: &Path) {
     let old_path_str = old_path.to_string_lossy().to_string();
     let new_path_str = new_path.to_string_lossy().to_string();
 
-    let mut dir = match tokio::fs::read_dir(manifests_dir).await {
+    let mut dir = match tokio::fs::read_dir(&manifests_dir).await {
         Ok(d) => d,
         Err(_) => return,
     };
@@ -1413,13 +1449,16 @@ mod tests {
 
     #[test]
     fn test_speed_and_eta_formatting() {
-        assert_eq!(fmt_speed(500.0), "500 B/sn");
-        assert_eq!(fmt_speed(15_000.0), "15 KB/sn");
-        assert_eq!(fmt_speed(50_000_000.0), "47.7 MB/sn");
+        // Units stay language-neutral: the move dialog wraps them in its own
+        // translated labels, so Turkish suffixes reached every other locale.
+        assert_eq!(fmt_speed(500.0), "500 B/s");
+        assert_eq!(fmt_speed(15_000.0), "15 KB/s");
+        assert_eq!(fmt_speed(50_000_000.0), "47.7 MB/s");
+        assert_eq!(fmt_speed(2_147_483_648.0), "2.0 GB/s");
 
-        assert_eq!(fmt_eta(45), "~45 sn");
-        assert_eq!(fmt_eta(125), "~2 dk 5 sn");
-        assert_eq!(fmt_eta(3665), "~1 sa 1 dk");
+        assert_eq!(fmt_eta(45), "~45s");
+        assert_eq!(fmt_eta(125), "~2m 05s");
+        assert_eq!(fmt_eta(3665), "~1h 01m");
     }
 
     #[test]
