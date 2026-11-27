@@ -103,7 +103,7 @@ import { toast } from "../../core/toast";
 import { fmtBytes, fmtPlaytime, fmtSpeed } from "../../core/utils";
 import { updateMaxIcon } from "../../core/window";
 import { refreshSidebarToggle } from "../../core/sidebar-layout";
-import { bootEpic } from "../auth/auth-actions";
+import { bootEpic, epicDoLogin } from "../auth/auth-actions";
 import { initGogSession, refreshGogUpdates, syncGogPlaytime } from "../auth/gog-auth-actions";
 import { loadAmazonSession, loadAmazonInstallDir } from "../auth/amazon-auth-actions";
 import { amazonKey, type NileProgressEvent } from "../../nile";
@@ -421,6 +421,14 @@ export async function initApp(hooks: {
       S.setupMessage = localizeMessage(event.payload.message);
       if (event.payload.state === "error") toast(S.setupMessage, "err");
       if (S.view === "library") render();
+    });
+    // The in-app Epic sign-in window hands its authorization code back here;
+    // the existing progressive auth path exchanges it and syncs the library.
+    listenLater<string>("epic-auth-code", (event) => {
+      void epicDoLogin(event.payload);
+    });
+    listenLater<string>("epic-auth-failed", (event) => {
+      toast(localizeMessage(event.payload), "err");
     });
     listenLater<LibraryEvent>("legendary-library", (event) => {
       S.epicBusyMsg = localizeMessage(event.payload.message);

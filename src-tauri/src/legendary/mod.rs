@@ -31,6 +31,7 @@ pub mod sdl;
 pub mod skip;
 pub mod steamgrid;
 pub mod transfers;
+pub mod web_login;
 pub mod wiki;
 
 use thiserror::Error;

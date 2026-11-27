@@ -32,7 +32,7 @@ pub use metadata::*;
 #[allow(unused_imports)]
 pub use ops::*;
 
-// session.rs: SetupStatus, epic_setup_status, epic_ensure_binary, epic_list_games, epic_list_skipped, CachedLibrary, epic_cached_library, epic_list_installed, epic_login_with_code, epic_import_egl, epic_logout, epic_get_saved_accounts, epic_switch_account, epic_remove_saved_account, epic_get_settings
+// session.rs: SetupStatus, epic_setup_status, epic_ensure_binary, epic_list_games, epic_list_skipped, CachedLibrary, epic_cached_library, epic_list_installed, epic_login_open, epic_login_with_code, epic_import_egl, epic_logout, epic_get_saved_accounts, epic_switch_account, epic_remove_saved_account, epic_get_settings
 #[allow(unused_imports)]
 pub use session::*;
 

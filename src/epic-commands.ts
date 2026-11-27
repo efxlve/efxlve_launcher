@@ -24,6 +24,7 @@ export const epicListGames = () => invoke<EpicGame[]>("epic_list_games");
 export const epicListInstalled = () => invoke<EpicInstalled[]>("epic_list_installed");
 export const epicLoginWithCode = (code: string) =>
   invoke<string>("epic_login_with_code", { code });
+export const epicLoginOpen = () => invoke<void>("epic_login_open");
 export const epicImportEgl = () => invoke<string>("epic_import_egl");
 export const epicLogout = () => invoke<string>("epic_logout");
 export const epicGetSavedAccounts = () => invoke<SavedAccount[]>("epic_get_saved_accounts");

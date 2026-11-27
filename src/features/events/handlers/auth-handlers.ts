@@ -6,11 +6,12 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { toast } from "../../../core/toast";
 import { askConfirm } from "../../../core/confirm-dialog";
 import { summaryOf } from "../../../core/selectors";
-import { EPIC_LOGIN_URL, epicSelectFolderDialog } from "../../../epic";
+import { EPIC_LOGIN_URL, epicLoginOpen, epicSelectFolderDialog } from "../../../epic";
 import {
   epicDoImport,
   epicDoLogin,
   epicDoLogout,
+  epicDownload,
   extractAuthCode,
   refreshEpic,
   syncEpicLibrary,
@@ -54,6 +55,8 @@ import { t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import { gogDetectGalaxyGames, gogSyncGalaxyInstalled } from "../../../gog";
 import { render } from "../../../core/render";
+import { pushNavHistory } from "../../../core/nav";
+import { setView } from "../../store/store-view";
 import { loadSteamLibrary } from "../../library/steam-library";
 import { loadCompanionLibrary } from "../../library/companion-library";
 
@@ -62,7 +65,22 @@ export function handleAuthAction(act: string | undefined, _t: HTMLElement, id?: 
 
   switch (act) {
     case "epic-open-login":
-      openUrl(EPIC_LOGIN_URL).catch((e: unknown) => toast(String(e), "err"));
+      // The child webview carries Epic's own login page and hands the code
+      // back automatically; the external page stays as a fallback when a
+      // platform cannot create the child.
+      void epicLoginOpen().catch((e: unknown) => {
+        toast(String(e), "err");
+        void openUrl(EPIC_LOGIN_URL).catch((err: unknown) => toast(String(err), "err"));
+      });
+      return true;
+
+    case "epic-connect":
+      setView("accounts");
+      pushNavHistory({ view: "accounts" });
+      render();
+      // The first Epic action needs legendary; start its one-time download
+      // instead of asking the player to install a separate tool by hand.
+      if (S.setupInfo?.needsDownload || S.epicPhase === "setup") void epicDownload();
       return true;
 
     case "epic-do-login": {

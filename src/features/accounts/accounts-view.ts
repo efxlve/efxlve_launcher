@@ -287,7 +287,7 @@ function signInBlock(allowCancel: boolean): string {
   return `
     <div class="acc-signin">
       <div class="acc-actions">
-        <button class="btn primary" data-act="epic-open-login">${icon("external", 14)} ${t("auth.epicWebLogin")}</button>
+        <button class="btn primary" data-act="epic-open-login">${icon("user", 14)} ${t("auth.epicWebLogin")}</button>
         ${S.eglLauncherPresent ? `<button class="btn ghost" data-act="epic-import" title="${esc(t("auth.importSubtitle"))}">${icon("download", 14)} ${t("auth.importTitle")}</button>` : ""}
         ${allowCancel ? `<button class="btn ghost" data-act="auth-cancel">${t("common.cancel")}</button>` : ""}
       </div>
@@ -296,11 +296,6 @@ function signInBlock(allowCancel: boolean): string {
         <button class="btn ghost" data-act="auth-paste" title="${t("auth.pasteBtn")}">${icon("copy", 14)} ${t("auth.pasteBtn")}</button>
         <button class="btn primary icon-only" data-act="epic-do-login" title="${t("auth.submitCode")}">${icon("arrow-right", 15)}</button>
       </div>
-      <ol class="auth-guide">
-        <li><strong>${t("auth.guideStep1Title")}</strong> ${t("auth.guideStep1Desc")}</li>
-        <li><strong>${t("auth.guideStep2Title")}</strong> ${t("auth.guideStep2Desc")}</li>
-        <li><strong>${t("auth.guideStep3Title")}</strong> ${t("auth.guideStep3Desc")}</li>
-      </ol>
     </div>`;
 }
 

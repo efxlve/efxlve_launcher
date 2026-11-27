@@ -171,6 +171,12 @@ fn extract_auth_code(input: &str) -> Result<String, LegendaryError> {
     Ok(t.trim_matches('"').trim().to_string())
 }
 
+/// Opens the in-app Epic sign-in window.
+#[tauri::command]
+pub async fn epic_login_open(app: AppHandle) -> Result<(), String> {
+    crate::legendary::web_login::open_login(app).await
+}
+
 #[tauri::command]
 pub async fn epic_login_with_code(app: AppHandle, code: String) -> Result<String, String> {
     let bin = resolve_or_err(&app)?;

@@ -1508,7 +1508,8 @@ document.addEventListener("click", (e) => {
       .then(async (synced) => {
         await refreshEpicInstalled();
         S.eglDetectedList = await epicDetectEglGames().catch(() => []);
-        toast(synced > 0 ? i18nT("dl.syncedCount", { count: synced }) : i18nT("dl.allSynced"), "ok");
+        const done = synced > 0 ? i18nT("dl.syncedCount", { count: synced }) : i18nT("dl.allSynced");
+        toast(S.epicAccount ? done : `${done} ${i18nT("settings.eglNeedsEpic")}`, "ok");
       })
       .catch((e: unknown) => toast(i18nT("dl.syncFailed", { msg: String(e) }), "err"))
       .finally(() => {

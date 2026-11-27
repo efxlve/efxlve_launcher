@@ -255,6 +255,7 @@ JS calls `invoke("<rust name>", { camelCase })`. The object key drops underscore
 | `epic_list_games` | `epicListGames({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_list_installed` | `epicListInstalled({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_list_skipped` | `epicListSkipped({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
+| `epic_login_open` | `epicLoginOpen({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_login_with_code` | `epicLoginWithCode({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_logout` | `epicLogout({ ... })` | `src-tauri/src/legendary/commands/session.rs` |
 | `epic_measure_cdns` | `epicMeasureCdns({ ... })` | `src-tauri/src/legendary/commands/cdn.rs` |

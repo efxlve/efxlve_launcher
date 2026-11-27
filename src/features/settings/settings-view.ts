@@ -646,14 +646,17 @@ function renderIntegrations(): string {
   }
   const egl = S.eglDetectedList ?? [];
   // The sync writes install records to installed.json; the library grid comes
-  // from the signed-in account's owned catalog. Without that catalog the button
-  // can only report "already synced" into an empty library, so the row offers
-  // the account step instead.
+  // from the signed-in account's owned catalog. Keep the account step next to
+  // the import: the records are useful now, the cards appear after connecting.
   const epicReady = S.epicPhase === "library" && Boolean(S.epicAccount);
+  // The import writes Legendary's install records and needs no account, so it
+  // stays available next to the account step. Connecting is what makes the
+  // owned catalog appear in the library.
+  const eglImport = `<button class="btn ${epicReady ? "primary" : "ghost"} small" data-act="epic-sync-egl" ${S.eglSyncing ? "disabled" : ""}>${S.eglSyncing ? t("settings.eglSyncing") : t("settings.eglSync")}</button>`;
   const eglAction = egl.length > 0
     ? epicReady
-      ? `<button class="btn primary small" data-act="epic-sync-egl" ${S.eglSyncing ? "disabled" : ""}>${S.eglSyncing ? t("settings.eglSyncing") : t("settings.eglSync")}</button>`
-      : `<button class="btn primary small" data-view="accounts">${icon("user", 13)} ${t("accounts.connectCta")}</button>`
+      ? eglImport
+      : `<button class="btn primary small" data-act="epic-connect">${icon("user", 13)} ${t("accounts.connectCta")}</button>${eglImport}`
     : `<button class="btn ghost small" data-act="epic-refresh-egl">${t("settings.rescan")}</button>`;
   const eglDesc = egl.length > 0 && !epicReady
     ? `${t("settings.eglDesc")} ${t("settings.eglNeedsEpic")}`

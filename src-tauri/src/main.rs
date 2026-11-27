@@ -2435,6 +2435,7 @@ fn main() {
             legendary::commands::epic_delete_collection,
             legendary::commands::epic_set_game_collections,
             legendary::commands::epic_import_egl_collections,
+            legendary::commands::epic_login_open,
             legendary::commands::epic_login_with_code,
             legendary::commands::epic_import_egl,
             legendary::commands::epic_logout,
