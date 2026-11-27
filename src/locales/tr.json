@@ -1292,6 +1292,7 @@
   "dl.installDirSaved": "Kurulum klasörü kaydedildi",
   "dl.syncedCount": "{count} oyun eşitlendi ve kütüphaneye eklendi!",
   "dl.allSynced": "Tüm oyunlar zaten eşitlenmiş durumda.",
+  "dl.binaryDownloadPct": "legendary {a1} indiriliyor — %{a2}",
   "dl.syncFailed": "Eşitleme hatası: {msg}",
   "dl.dlcQueued": "Eklenti indirme kuyruğuna eklendi",
   "dl.dlcInstallFailed": "Eklenti kurulum hatası: {msg}",

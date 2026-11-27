@@ -1217,6 +1217,7 @@
   "dl.installDirSaved": "Папка установки сохранена",
   "dl.syncedCount": "Синхронизировано и добавлено в библиотеку игр: {count}!",
   "dl.allSynced": "Все игры уже синхронизированы.",
+  "dl.binaryDownloadPct": "Загрузка legendary {a1} — {a2}%",
   "dl.syncFailed": "Ошибка синхронизации: {msg}",
   "dl.dlcQueued": "Дополнение добавлено в очередь загрузки",
   "dl.dlcInstallFailed": "Ошибка установки дополнения: {msg}",

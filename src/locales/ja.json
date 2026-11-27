@@ -1217,6 +1217,7 @@
   "dl.installDirSaved": "インストールフォルダーを保存しました",
   "dl.syncedCount": "{count} 本のゲームを同期し、ライブラリに追加しました！",
   "dl.allSynced": "すべてのゲームはすでに同期されています。",
+  "dl.binaryDownloadPct": "legendary {a1} をダウンロード中 — {a2}%",
   "dl.syncFailed": "同期エラー: {msg}",
   "dl.dlcQueued": "アドオンをダウンロードキューに追加しました",
   "dl.dlcInstallFailed": "アドオンのインストールエラー: {msg}",

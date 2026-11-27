@@ -1217,6 +1217,7 @@
   "dl.installDirSaved": "Cartella di installazione salvata",
   "dl.syncedCount": "{count} giochi sincronizzati e aggiunti alla libreria!",
   "dl.allSynced": "Tutti i giochi sono già sincronizzati.",
+  "dl.binaryDownloadPct": "Download di legendary {a1} — {a2}%",
   "dl.syncFailed": "Errore di sincronizzazione: {msg}",
   "dl.dlcQueued": "Contenuto aggiuntivo aggiunto alla coda",
   "dl.dlcInstallFailed": "Errore di installazione del contenuto aggiuntivo: {msg}",

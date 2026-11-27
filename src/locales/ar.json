@@ -1217,6 +1217,7 @@
   "dl.installDirSaved": "حُفظ مجلد التثبيت",
   "dl.syncedCount": "تمت مزامنة {count} من الألعاب وإضافتها إلى المكتبة!",
   "dl.allSynced": "كل الألعاب متزامنة أصلًا.",
+  "dl.binaryDownloadPct": "جارٍ تنزيل legendary {a1} — {a2}%",
   "dl.syncFailed": "خطأ في المزامنة: {msg}",
   "dl.dlcQueued": "أُضيفت الإضافة إلى قائمة انتظار التنزيل",
   "dl.dlcInstallFailed": "خطأ في تثبيت الإضافة: {msg}",

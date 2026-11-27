@@ -1292,6 +1292,7 @@
   "dl.installDirSaved": "इंस्टॉल फ़ोल्डर सहेजा गया",
   "dl.syncedCount": "{count} गेम सिंक किए गए और लाइब्रेरी में जोड़े गए!",
   "dl.allSynced": "सभी गेम पहले से ही सिंक हैं।",
+  "dl.binaryDownloadPct": "legendary {a1} डाउनलोड हो रहा है — {a2}%",
   "dl.syncFailed": "सिंक त्रुटि: {msg}",
   "dl.dlcQueued": "ऐड-ऑन डाउनलोड कतार में जोड़ा गया",
   "dl.dlcInstallFailed": "ऐड-ऑन इंस्टॉल त्रुटि: {msg}",

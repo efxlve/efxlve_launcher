@@ -1217,6 +1217,7 @@
   "dl.installDirSaved": "Dossier d'installation enregistré",
   "dl.syncedCount": "{count} jeux synchronisés et ajoutés à la bibliothèque !",
   "dl.allSynced": "Tous les jeux sont déjà synchronisés.",
+  "dl.binaryDownloadPct": "Téléchargement de legendary {a1} — {a2} %",
   "dl.syncFailed": "Erreur de synchro : {msg}",
   "dl.dlcQueued": "Contenu additionnel ajouté à la file de téléchargement",
   "dl.dlcInstallFailed": "Erreur d'installation du contenu additionnel : {msg}",

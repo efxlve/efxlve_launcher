@@ -1217,6 +1217,7 @@
   "dl.installDirSaved": "已儲存安裝資料夾",
   "dl.syncedCount": "已同步 {count} 個遊戲並加入遊戲庫！",
   "dl.allSynced": "所有遊戲都已同步。",
+  "dl.binaryDownloadPct": "正在下載 legendary {a1} — {a2}%",
   "dl.syncFailed": "同步錯誤：{msg}",
   "dl.dlcQueued": "附加內容已加入下載佇列",
   "dl.dlcInstallFailed": "附加內容安裝錯誤：{msg}",

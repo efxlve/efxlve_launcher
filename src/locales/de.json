@@ -1217,6 +1217,7 @@
   "dl.installDirSaved": "Installationsordner gespeichert",
   "dl.syncedCount": "{count} Spiele synchronisiert und zur Bibliothek hinzugefügt!",
   "dl.allSynced": "Alle Spiele sind bereits synchronisiert.",
+  "dl.binaryDownloadPct": "legendary {a1} wird heruntergeladen — {a2} %",
   "dl.syncFailed": "Sync-Fehler: {msg}",
   "dl.dlcQueued": "Add-on zur Download-Warteschlange hinzugefügt",
   "dl.dlcInstallFailed": "Add-on-Installationsfehler: {msg}",

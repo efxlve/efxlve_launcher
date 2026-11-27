@@ -1217,6 +1217,7 @@
   "dl.installDirSaved": "บันทึกโฟลเดอร์ติดตั้งแล้ว",
   "dl.syncedCount": "ซิงค์ {count} เกมและเพิ่มในคลังแล้ว!",
   "dl.allSynced": "เกมทั้งหมดซิงค์แล้ว",
+  "dl.binaryDownloadPct": "กำลังดาวน์โหลด legendary {a1} — {a2}%",
   "dl.syncFailed": "ข้อผิดพลาดในการซิงค์: {msg}",
   "dl.dlcQueued": "เพิ่มส่วนเสริมในคิวดาวน์โหลดแล้ว",
   "dl.dlcInstallFailed": "ข้อผิดพลาดการติดตั้งส่วนเสริม: {msg}",

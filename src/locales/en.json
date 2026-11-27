@@ -1292,6 +1292,7 @@
   "dl.installDirSaved": "Install folder saved",
   "dl.syncedCount": "{count} games synced and added to the library!",
   "dl.allSynced": "All games are already synced.",
+  "dl.binaryDownloadPct": "Downloading legendary {a1} — {a2}%",
   "dl.syncFailed": "Sync error: {msg}",
   "dl.dlcQueued": "Add-on added to the download queue",
   "dl.dlcInstallFailed": "Add-on install error: {msg}",

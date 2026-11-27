@@ -224,7 +224,7 @@ pub async fn ensure_binary(app: &AppHandle) -> Result<PathBuf, LegendaryError> {
                                 app,
                                 "downloading",
                                 Some(pct),
-                                format!("legendary {tag} indiriliyor... %{pct}"),
+                                format!("@t:dl.binaryDownloadPct\u{1f}{tag}\u{1f}{pct}"),
                             );
                         }
                     }

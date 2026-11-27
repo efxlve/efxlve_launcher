@@ -1217,6 +1217,7 @@
   "dl.installDirSaved": "Zapisano folder instalacji",
   "dl.syncedCount": "Zsynchronizowano i dodano do biblioteki {count} gier!",
   "dl.allSynced": "Wszystkie gry są już zsynchronizowane.",
+  "dl.binaryDownloadPct": "Pobieranie legendary {a1} — {a2}%",
   "dl.syncFailed": "Błąd synchronizacji: {msg}",
   "dl.dlcQueued": "Dodatek dodany do kolejki pobierania",
   "dl.dlcInstallFailed": "Błąd instalacji dodatku: {msg}",
