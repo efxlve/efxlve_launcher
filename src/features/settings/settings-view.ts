@@ -1734,6 +1734,7 @@ function renderAppearance(): string {
 
   const interfaceRows =
     row(t("settings.gameSceneTitle"), t("settings.gameSceneDesc"), toggle("toggle-game-scene", S.gameScene)) +
+    row(t("settings.storeLauncherTitle"), t("settings.storeLauncherDesc"), toggle("toggle-store-launcher", S.showStoreLauncher)) +
     row(t("settings.appIconTitle"), t("settings.appIconDesc"), renderAppIconPicker()) +
     row(t("settings.uiScaleTitle"), t("settings.uiScaleDesc"), uiScaleSelect()) +
     row(t("settings.reduceEffectsTitle"), t("settings.reduceEffectsDesc"), toggle("toggle-reduce-effects", S.reduceEffects));

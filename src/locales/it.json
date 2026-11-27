@@ -1970,6 +1970,8 @@
   "ctx.restoreIndicator": "Mostra indicatore di aggiornamento",
   "settings.storeBadgeTitle": "Badge del negozio",
   "settings.storeBadgeDesc": "Mostra a quali store appartiene un gioco sotto il titolo quando visualizzi tutti gli store.",
+  "settings.storeLauncherTitle": "Pulsante Apri launcher",
+  "settings.storeLauncherDesc": "Mostra nell'intestazione Store il pulsante che avvia il client ufficiale dello store attivo.",
   "settings.storeIconsTitle": "Icone degli store",
   "settings.storeIconsDesc": "Mostra il marchio dello store sulla copertina nella vista griglia.",
   "settings.separateCopiesTitle": "Separa le copie",

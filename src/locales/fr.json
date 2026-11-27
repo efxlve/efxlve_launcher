@@ -1970,6 +1970,8 @@
   "ctx.restoreIndicator": "Afficher l'indicateur de mise à jour",
   "settings.storeBadgeTitle": "Badge de boutique",
   "settings.storeBadgeDesc": "Affiche les boutiques auxquelles appartient un jeu sous son titre dans la vue globale.",
+  "settings.storeLauncherTitle": "Bouton Ouvrir le launcher",
+  "settings.storeLauncherDesc": "Affiche dans l'en-tête Boutiques le bouton qui lance le client officiel de la boutique active.",
   "settings.storeIconsTitle": "Icônes des boutiques",
   "settings.storeIconsDesc": "Afficher la marque de la boutique sur la jaquette dans la vue grille.",
   "settings.separateCopiesTitle": "Séparer les copies",

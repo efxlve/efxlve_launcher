@@ -38,6 +38,7 @@ import {
   SHOW_NOTES_SIDEBAR_KEY,
   SHOW_SCREENSHOTS_SIDEBAR_KEY,
   STORE_BADGE_KEY,
+  SHOW_STORE_LAUNCHER_KEY,
   STORE_ICONS_KEY,
   CASE_COVERS_KEY,
   CASE_COVER_STYLE_KEY,
@@ -1837,6 +1838,11 @@ document.addEventListener("click", (e) => {
     localStorage.setItem(STORE_BADGE_KEY, String(S.showStoreBadge));
     // Card markup changes need the full grid rebuild, not the in-place patch.
     if (!refreshLibraryResultsInPlace()) scheduleRender();
+  } else if (act === "toggle-store-launcher") {
+    S.showStoreLauncher = !S.showStoreLauncher;
+    localStorage.setItem(SHOW_STORE_LAUNCHER_KEY, String(S.showStoreLauncher));
+    updatePageHeader();
+    render();
   } else if (act === "toggle-store-icons") {
     S.showStoreIcons = !S.showStoreIcons;
     localStorage.setItem(STORE_ICONS_KEY, String(S.showStoreIcons));

@@ -1970,6 +1970,8 @@
   "ctx.restoreIndicator": "Показать индикатор обновления",
   "settings.storeBadgeTitle": "Значок магазина",
   "settings.storeBadgeDesc": "Показывает, к каким магазинам принадлежит игра, под ее названием при просмотре всех магазинов.",
+  "settings.storeLauncherTitle": "Кнопка «Открыть лаунчер»",
+  "settings.storeLauncherDesc": "Показывает в заголовке магазинов кнопку запуска официального клиента активного магазина.",
   "settings.storeIconsTitle": "Значки магазинов",
   "settings.storeIconsDesc": "Показывать значок магазина на обложке в режиме сетки.",
   "settings.separateCopiesTitle": "Разделять копии магазинов",

@@ -1970,6 +1970,8 @@
   "ctx.restoreIndicator": "Przywróć wskaźnik aktualizacji",
   "settings.storeBadgeTitle": "Plakieta sklepu",
   "settings.storeBadgeDesc": "Pokazuje, do których sklepów należy gra, pod jej tytułem w widoku wszystkich sklepów.",
+  "settings.storeLauncherTitle": "Przycisk Otwórz launcher",
+  "settings.storeLauncherDesc": "Pokazuje w nagłówku Sklepy przycisk uruchamiający oficjalnego klienta aktywnego sklepu.",
   "settings.storeIconsTitle": "Ikony sklepów",
   "settings.storeIconsDesc": "Pokazuj znak sklepu na okładce w widoku siatki.",
   "settings.separateCopiesTitle": "Rozdziel kopie sklepów",

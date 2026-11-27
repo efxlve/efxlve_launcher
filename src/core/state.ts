@@ -84,6 +84,7 @@ import {
   LIST_DENSITY_VALUES,
   type ListDensity,
   STORE_BADGE_KEY,
+  SHOW_STORE_LAUNCHER_KEY,
   STORE_ICONS_KEY,
   CASE_COVERS_KEY,
   CASE_COVER_STYLE_KEY,
@@ -884,6 +885,8 @@ export const S = {
     return LIST_DENSITY_VALUES.includes(stored as ListDensity) ? (stored as ListDensity) : "standard";
   })(),
   showStoreBadge: (localStorage.getItem(STORE_BADGE_KEY) === "true") as boolean,
+  /** The Stores header button that starts the active store's official client. */
+  showStoreLauncher: (localStorage.getItem(SHOW_STORE_LAUNCHER_KEY) !== "false") as boolean,
   /** Optional: storefront mark on grid covers. */
   showStoreIcons: (localStorage.getItem(STORE_ICONS_KEY) === "true") as boolean,
   /** Optional: physical retail box frame around grid covers (store header strip + plastic case). */
@@ -1112,7 +1115,7 @@ export const S = {
   steamLibrarySyncing: false,
   /** Saved Steam accounts in the sealed vault (switcher rows). */
   steamSavedAccounts: ([]) as import("../steam").SteamSavedAccount[],
-  appVersion: "0.1.76",
+  appVersion: "0.1.77",
   appUpdateStatus: ("idle") as AppUpdateStatus,
   appUpdateVersion: "",
   appUpdateNotes: "",

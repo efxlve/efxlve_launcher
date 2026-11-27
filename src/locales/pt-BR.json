@@ -1970,6 +1970,8 @@
   "ctx.restoreIndicator": "Mostrar indicador de atualização",
   "settings.storeBadgeTitle": "Selo da loja",
   "settings.storeBadgeDesc": "Mostra a quais lojas um jogo pertence sob o título ao visualizar todas as lojas.",
+  "settings.storeLauncherTitle": "Botão Abrir launcher",
+  "settings.storeLauncherDesc": "Mostra no cabeçalho Lojas o botão que inicia o cliente oficial da loja ativa.",
   "settings.storeIconsTitle": "Ícones das lojas",
   "settings.storeIconsDesc": "Mostra a marca da loja na capa na visualização em grade.",
   "settings.separateCopiesTitle": "Separar cópias de loja",

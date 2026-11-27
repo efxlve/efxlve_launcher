@@ -150,6 +150,8 @@ export type ListDensity = "compact" | "standard" | "large";
 export const LIST_DENSITY_VALUES: readonly ListDensity[] = ["compact", "standard", "large"];
 /** Show a store source badge when viewing all stores. */
 export const STORE_BADGE_KEY = "efxlve-store-badge";
+/** Show the header button that starts the active store's official client. On by default. */
+export const SHOW_STORE_LAUNCHER_KEY = "efxlve-store-launcher-button";
 /** Show the storefront mark on every grid cover. Off by default. */
 export const STORE_ICONS_KEY = "efxlve-store-icons";
 /** Frame library covers in a physical retail box with a store header strip. Off by default. */

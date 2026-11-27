@@ -152,7 +152,7 @@ export function updatePageHeader(): void {
     const calBtn = document.getElementById("store-calendar-btn");
     if (calBtn) calBtn.hidden = !showTabs;
     const launcherBtn = document.getElementById("store-launcher-btn");
-    if (launcherBtn) launcherBtn.hidden = !showTabs || !storeHasClient(S.activeStore);
+    if (launcherBtn) launcherBtn.hidden = !showTabs || !S.showStoreLauncher || !storeHasClient(S.activeStore);
     if (showTabs) {
       switcher.querySelectorAll<HTMLElement>("[data-store]").forEach((btn) => {
         const active = (btn.dataset.store || "epic") === (S.activeStore || "epic");

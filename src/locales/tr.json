@@ -2099,6 +2099,8 @@
   "ctx.restoreIndicator": "Güncelleme Göstergesini Göster",
   "settings.storeBadgeTitle": "Mağaza Rozeti",
   "settings.storeBadgeDesc": "Kütüphanede tüm mağazalar görünümünde oyun başlıklarının altında hangi mağazalara ait olduğunu gösterir.",
+  "settings.storeLauncherTitle": "Başlatıcıyı aç düğmesi",
+  "settings.storeLauncherDesc": "Mağazalar başlığında açık mağazanın resmî istemcisini başlatan düğmeyi gösterir.",
   "settings.storeIconsTitle": "Mağaza ikonları",
   "settings.storeIconsDesc": "Izgara görünümünde kapakların üzerinde mağaza simgesini göster.",
   "settings.separateCopiesTitle": "Mağaza kopyalarını ayır",

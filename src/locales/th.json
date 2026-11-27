@@ -1970,6 +1970,8 @@
   "ctx.restoreIndicator": "แสดงตัวบ่งชี้การอัปเดต",
   "settings.storeBadgeTitle": "ป้ายร้านค้า",
   "settings.storeBadgeDesc": "แสดงว่าเกมเป็นของร้านค้าใดใต้ชื่อเกมเมื่อดูร้านค้าทั้งหมด",
+  "settings.storeLauncherTitle": "ปุ่มเปิดตัวเรียกเกม",
+  "settings.storeLauncherDesc": "แสดงปุ่มในส่วนหัวของร้านค้าที่เปิดไคลเอนต์ทางการของร้านค้าที่เลือกอยู่",
   "settings.storeIconsTitle": "ไอคอนร้านค้า",
   "settings.storeIconsDesc": "แสดงตราร้านค้าบนปกในมุมมองตาราง",
   "settings.separateCopiesTitle": "แยกสำเนาตามร้านค้า",

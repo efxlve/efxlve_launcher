@@ -1970,6 +1970,8 @@
   "ctx.restoreIndicator": "アップデート通知バッジを表示",
   "settings.storeBadgeTitle": "ストアバッジ",
   "settings.storeBadgeDesc": "すべてのストアを表示している際、タイトルの下にゲームが属するストアを表示します。",
+  "settings.storeLauncherTitle": "ランチャーを開くボタン",
+  "settings.storeLauncherDesc": "ストアのヘッダーに、選択中のストアの公式クライアントを起動するボタンを表示します。",
   "settings.storeIconsTitle": "ストアアイコン",
   "settings.storeIconsDesc": "グリッド表示でカバー上にストアのマークを表示します。",
   "settings.separateCopiesTitle": "ストアごとに表示",

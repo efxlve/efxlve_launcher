@@ -2099,6 +2099,8 @@
   "ctx.restoreIndicator": "अपडेट संकेतक पुनर्स्थापित करें",
   "settings.storeBadgeTitle": "स्टोर बैज",
   "settings.storeBadgeDesc": "सभी स्टोर देखते समय शीर्षक के नीचे दिखाएं कि गेम किस स्टोर का है।",
+  "settings.storeLauncherTitle": "लॉन्चर खोलें बटन",
+  "settings.storeLauncherDesc": "स्टोर हेडर में वह बटन दिखाएं जो सक्रिय स्टोर का आधिकारिक क्लाइंट खोलता है।",
   "settings.storeIconsTitle": "स्टोर आइकन",
   "settings.storeIconsDesc": "ग्रिड दृश्य में कवर पर प्रत्येक गेम का स्टोरफ़्रंट चिह्न दिखाएं।",
   "settings.separateCopiesTitle": "स्टोर प्रतियाँ अलग करें",

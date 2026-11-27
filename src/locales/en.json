@@ -2099,6 +2099,8 @@
   "ctx.restoreIndicator": "Restore Update Indicator",
   "settings.storeBadgeTitle": "Store badge",
   "settings.storeBadgeDesc": "Show which stores a game belongs to under its title when viewing all stores.",
+  "settings.storeLauncherTitle": "Open launcher button",
+  "settings.storeLauncherDesc": "Show the button in the Stores header that starts the official client for the active store.",
   "settings.storeIconsTitle": "Store icons",
   "settings.storeIconsDesc": "Show each game's storefront mark on its cover in the grid view.",
   "settings.separateCopiesTitle": "Separate store copies",

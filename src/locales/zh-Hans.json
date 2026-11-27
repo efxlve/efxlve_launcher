@@ -1970,6 +1970,8 @@
   "ctx.restoreIndicator": "恢复更新指示器",
   "settings.storeBadgeTitle": "商店徽章",
   "settings.storeBadgeDesc": "在查看所有商店时，于游戏标题下方显示其所属的商店。",
+  "settings.storeLauncherTitle": "打开启动器按钮",
+  "settings.storeLauncherDesc": "在商店标题栏中显示启动当前商店官方客户端的按钮。",
   "settings.storeIconsTitle": "商店图标",
   "settings.storeIconsDesc": "在网格视图中于封面上显示商店标志。",
   "settings.separateCopiesTitle": "分开显示商店副本",
