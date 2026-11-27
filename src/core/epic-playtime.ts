@@ -8,10 +8,45 @@
  * sessions win).
  */
 
-import { epicSyncEpicPlaytimes } from "../epic";
+import { epicGetPlaytimes, epicSyncEpicPlaytimes } from "../epic";
 import { isTauri } from "./constants";
 import { scheduleRender } from "./render";
 import { S } from "./state";
+
+/** Drops Epic-owned entries (keys without a `store::` prefix) from `S.playtimeMap`. */
+export function clearEpicPlaytimesInMemory(): void {
+  let removed = false;
+  for (const key of [...S.playtimeMap.keys()]) {
+    if (!key.includes("::")) {
+      S.playtimeMap.delete(key);
+      removed = true;
+    }
+  }
+  if (removed) S.libraryDataRev++;
+}
+
+/**
+ * Reloads the active Epic account's local playtimes from disk while keeping
+ * other stores' entries (`steam::`, `gog::`, `custom::`, etc.) intact, then
+ * merges the server playtime snapshot on top.
+ */
+export async function reloadEpicPlaytimes(forceServer = false): Promise<void> {
+  if (!isTauri) return;
+  try {
+    const local = await epicGetPlaytimes();
+    clearEpicPlaytimesInMemory();
+    for (const [key, rec] of Object.entries(local)) {
+      if (!key.includes("::") || !S.playtimeMap.has(key)) {
+        S.playtimeMap.set(key, rec);
+      }
+    }
+    S.libraryDataRev++;
+    scheduleRender();
+  } catch (err) {
+    console.warn("Epic local playtime reload failed:", err);
+  }
+  await syncEpicServerPlaytimes(forceServer);
+}
 
 /** Merges a server snapshot into `S.playtimeMap`; returns true when it changed. */
 export function mergeEpicServerPlaytimes(server: Record<string, number>): boolean {

@@ -45,32 +45,116 @@ impl Default for PlaytimeRecord {
     }
 }
 
+const PLAYTIME_FILE_VERSION: u32 = 2;
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+struct PlaytimeFile {
+    #[serde(default)]
+    version: u32,
+    /// Epic playtimes scoped by `account_id -> (app_name -> PlaytimeRecord)`.
+    #[serde(default)]
+    accounts: HashMap<String, HashMap<String, PlaytimeRecord>>,
+    /// Store-prefixed (`gog::`, `custom::`, `amazon::`, etc.) playtimes.
+    #[serde(default)]
+    shared: HashMap<String, PlaytimeRecord>,
+}
+
+fn is_epic_key(app_name: &str) -> bool {
+    !app_name.contains("::")
+}
+
+pub(crate) fn active_epic_account_id(config_dir: &Path) -> Option<String> {
+    super::accounts::read_active_user(config_dir)
+        .map(|(id, _)| id)
+        .or_else(|| super::cache::read_user(config_dir).and_then(|(_, id)| id))
+        .map(|id| id.trim().to_string())
+        .filter(|id| crate::vault_id::is_vault_id(id))
+}
+
 pub fn playtime_file_path() -> PathBuf {
     super::skip::default_config_dir().join("playtime.json")
 }
 
-pub fn read_playtime_store(path: &Path) -> HashMap<String, PlaytimeRecord> {
-    if let Ok(content) = std::fs::read_to_string(path) {
-        if let Ok(store) = serde_json::from_str::<HashMap<String, PlaytimeRecord>>(&content) {
-            return store;
+fn read_playtime_file(path: &Path) -> PlaytimeFile {
+    let Ok(content) = std::fs::read_to_string(path) else {
+        return PlaytimeFile {
+            version: PLAYTIME_FILE_VERSION,
+            ..Default::default()
+        };
+    };
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(&content) else {
+        return PlaytimeFile {
+            version: PLAYTIME_FILE_VERSION,
+            ..Default::default()
+        };
+    };
+    if value.get("version").and_then(|v| v.as_u64()) == Some(PLAYTIME_FILE_VERSION as u64)
+        || value.get("accounts").is_some()
+    {
+        if let Ok(mut file) = serde_json::from_value::<PlaytimeFile>(value) {
+            file.version = PLAYTIME_FILE_VERSION;
+            file.accounts
+                .retain(|id, _| crate::vault_id::is_vault_id(id));
+            return file;
+        }
+        return PlaytimeFile {
+            version: PLAYTIME_FILE_VERSION,
+            ..Default::default()
+        };
+    }
+
+    // Legacy flat map (no `account_id` envelope): Epic entries have no owner
+    // and must be treated as stale rather than attributed to whichever Epic
+    // account happens to be signed in now. Non-Epic `store::id` keys stay in
+    // `shared` because they are independent of Epic accounts.
+    let mut shared = HashMap::new();
+    if let Ok(legacy) = serde_json::from_value::<HashMap<String, PlaytimeRecord>>(value) {
+        for (key, record) in legacy {
+            if !is_epic_key(&key) {
+                shared.insert(key, record);
+            }
         }
     }
-    HashMap::new()
+    PlaytimeFile {
+        version: PLAYTIME_FILE_VERSION,
+        accounts: HashMap::new(),
+        shared,
+    }
 }
 
-pub fn write_playtime_store(
-    path: &Path,
-    store: &HashMap<String, PlaytimeRecord>,
-) -> Result<(), String> {
+fn write_playtime_file(path: &Path, file: &PlaytimeFile) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
-    let json = serde_json::to_string_pretty(store).map_err(|e| e.to_string())?;
+    let mut stamped = file.clone();
+    stamped.version = PLAYTIME_FILE_VERSION;
+    let json = serde_json::to_string_pretty(&stamped).map_err(|e| e.to_string())?;
     std::fs::write(path, json).map_err(|e| e.to_string())
 }
 
+pub fn read_playtime_store_for(
+    path: &Path,
+    account_id: Option<&str>,
+) -> HashMap<String, PlaytimeRecord> {
+    let mut file = read_playtime_file(path);
+    let mut out = file.shared;
+    if let Some(id) = account_id.filter(|id| crate::vault_id::is_vault_id(id)) {
+        if let Some(epic_records) = file.accounts.remove(id) {
+            for (app, record) in epic_records {
+                out.insert(app, record);
+            }
+        }
+    }
+    out
+}
+
+pub fn get_playtimes_in(config_dir: &Path) -> HashMap<String, PlaytimeRecord> {
+    let account_id = active_epic_account_id(config_dir);
+    read_playtime_store_for(&config_dir.join("playtime.json"), account_id.as_deref())
+}
+
 pub fn get_playtimes() -> HashMap<String, PlaytimeRecord> {
-    read_playtime_store(&playtime_file_path())
+    get_playtimes_in(&super::skip::default_config_dir())
 }
 
 #[allow(dead_code)]
@@ -105,15 +189,22 @@ pub fn record_session(app_name: &str, session_seconds: u64) -> Result<PlaytimeRe
     record_session_at(app_name, session_seconds, now_secs())
 }
 
-/// Records a session that ended at `ended_at` (Unix seconds). Keeping the span
-/// lets the profile split a midnight-crossing session across both days.
-pub fn record_session_at(
+pub fn record_session_for_account(
+    path: &Path,
+    account_id: Option<&str>,
     app_name: &str,
     session_seconds: u64,
     ended_at: u64,
 ) -> Result<PlaytimeRecord, String> {
-    let path = playtime_file_path();
-    let mut store = read_playtime_store(&path);
+    let mut file = read_playtime_file(path);
+    let store = if is_epic_key(app_name) {
+        let Some(id) = account_id.filter(|id| crate::vault_id::is_vault_id(id)) else {
+            return Err("@t:err.notAuthenticated".to_string());
+        };
+        file.accounts.entry(id.to_string()).or_default()
+    } else {
+        &mut file.shared
+    };
     let now_ts = ended_at.max(1);
 
     let rec = store.entry(app_name.to_string()).or_default();
@@ -129,17 +220,44 @@ pub fn record_session_at(
     rec.last_played = Some(format!("{} UTC", &stamp[..16]));
 
     let updated = rec.clone();
-    write_playtime_store(&path, &store)?;
+    write_playtime_file(path, &file)?;
     Ok(updated)
 }
 
-pub fn set_game_playtime(
+/// Records a session that ended at `ended_at` (Unix seconds). Keeping the span
+/// lets the profile split a midnight-crossing session across both days.
+pub fn record_session_at(
+    app_name: &str,
+    session_seconds: u64,
+    ended_at: u64,
+) -> Result<PlaytimeRecord, String> {
+    let config = super::skip::default_config_dir();
+    let account_id = active_epic_account_id(&config);
+    record_session_for_account(
+        &config.join("playtime.json"),
+        account_id.as_deref(),
+        app_name,
+        session_seconds,
+        ended_at,
+    )
+}
+
+pub fn set_game_playtime_for_account(
+    path: &Path,
+    account_id: Option<&str>,
     app_name: &str,
     total_seconds: u64,
     last_played: Option<String>,
 ) -> Result<PlaytimeRecord, String> {
-    let path = playtime_file_path();
-    let mut store = read_playtime_store(&path);
+    let mut file = read_playtime_file(path);
+    let store = if is_epic_key(app_name) {
+        let Some(id) = account_id.filter(|id| crate::vault_id::is_vault_id(id)) else {
+            return Err("@t:err.notAuthenticated".to_string());
+        };
+        file.accounts.entry(id.to_string()).or_default()
+    } else {
+        &mut file.shared
+    };
 
     let rec = store.entry(app_name.to_string()).or_default();
     rec.total_seconds = total_seconds;
@@ -169,8 +287,24 @@ pub fn set_game_playtime(
     }
 
     let updated = rec.clone();
-    write_playtime_store(&path, &store)?;
+    write_playtime_file(path, &file)?;
     Ok(updated)
+}
+
+pub fn set_game_playtime(
+    app_name: &str,
+    total_seconds: u64,
+    last_played: Option<String>,
+) -> Result<PlaytimeRecord, String> {
+    let config = super::skip::default_config_dir();
+    let account_id = active_epic_account_id(&config);
+    set_game_playtime_for_account(
+        &config.join("playtime.json"),
+        account_id.as_deref(),
+        app_name,
+        total_seconds,
+        last_played,
+    )
 }
 
 #[cfg(test)]
@@ -245,5 +379,163 @@ mod tests {
         let mut rec = PlaytimeRecord::default();
         push_session(&mut rec, 1_000, 0);
         assert!(rec.sessions.is_empty());
+    }
+
+    #[test]
+    fn epic_playtimes_stay_isolated_per_account_while_shared_stores_persist() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve_playtime_accounts_{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        let pt_path = root.join("playtime.json");
+
+        // Account A records 3600s on Ginger and 900s on a custom game.
+        std::fs::write(
+            root.join("user.json"),
+            r#"{"account_id":"account_a","displayName":"Alice"}"#,
+        )
+        .unwrap();
+        record_session_for_account(&pt_path, Some("account_a"), "Ginger", 3_600, 1_700_003_600)
+            .unwrap();
+        record_session_for_account(&pt_path, Some("account_a"), "custom::1", 900, 1_700_004_500)
+            .unwrap();
+
+        let view_a = get_playtimes_in(&root);
+        assert_eq!(view_a.get("Ginger").map(|r| r.total_seconds), Some(3_600));
+        assert_eq!(view_a.get("custom::1").map(|r| r.total_seconds), Some(900));
+
+        // Switch to Account B: Ginger is absent, custom::1 remains, and B records 600s on Ginger.
+        std::fs::write(
+            root.join("user.json"),
+            r#"{"account_id":"account_b","displayName":"Bob"}"#,
+        )
+        .unwrap();
+        let view_b_initial = get_playtimes_in(&root);
+        assert!(!view_b_initial.contains_key("Ginger"));
+        assert_eq!(
+            view_b_initial.get("custom::1").map(|r| r.total_seconds),
+            Some(900)
+        );
+
+        record_session_for_account(&pt_path, Some("account_b"), "Ginger", 600, 1_700_010_000)
+            .unwrap();
+        let view_b_after = get_playtimes_in(&root);
+        assert_eq!(
+            view_b_after.get("Ginger").map(|r| r.total_seconds),
+            Some(600)
+        );
+
+        // Switch back to Account A: Alice's 3600s on Ginger was not overwritten by Bob.
+        std::fs::write(
+            root.join("user.json"),
+            r#"{"account_id":"account_a","displayName":"Alice"}"#,
+        )
+        .unwrap();
+        let view_a_again = get_playtimes_in(&root);
+        assert_eq!(
+            view_a_again.get("Ginger").map(|r| r.total_seconds),
+            Some(3_600)
+        );
+
+        // Signed out: Epic hours are hidden while shared non-Epic hours remain.
+        std::fs::remove_file(root.join("user.json")).unwrap();
+        let signed_out = get_playtimes_in(&root);
+        assert!(!signed_out.contains_key("Ginger"));
+        assert_eq!(
+            signed_out.get("custom::1").map(|r| r.total_seconds),
+            Some(900)
+        );
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn legacy_unbound_playtime_file_treats_epic_entries_as_stale_and_keeps_shared_keys() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve_playtime_legacy_{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(
+            root.join("playtime.json"),
+            r#"{
+                "Ginger": {"total_seconds": 7200, "session_count": 3},
+                "gog::1234": {"total_seconds": 1800, "session_count": 1}
+            }"#,
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("user.json"),
+            r#"{"account_id":"account_b","displayName":"Bob"}"#,
+        )
+        .unwrap();
+
+        let view = get_playtimes_in(&root);
+        assert!(
+            !view.contains_key("Ginger"),
+            "legacy Epic playtime without account_id must not leak into the active account"
+        );
+        assert_eq!(view.get("gog::1234").map(|r| r.total_seconds), Some(1_800));
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn portable_migration_and_profile_archive_preserve_scoped_playtimes() {
+        let root = std::env::temp_dir().join(format!(
+            "efxlve_playtime_portable_profile_{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        let legacy_cfg = root.join("legacy_cfg");
+        let portable_cfg = root.join("portable_cfg");
+        let appdata = root.join("appdata");
+        std::fs::create_dir_all(&legacy_cfg).unwrap();
+        std::fs::create_dir_all(&portable_cfg).unwrap();
+        std::fs::create_dir_all(&appdata).unwrap();
+
+        std::fs::write(
+            legacy_cfg.join("user.json"),
+            r#"{"account_id":"account_a","displayName":"Alice"}"#,
+        )
+        .unwrap();
+        record_session_for_account(
+            &legacy_cfg.join("playtime.json"),
+            Some("account_a"),
+            "Ginger",
+            2_400,
+            1_700_002_400,
+        )
+        .unwrap();
+        set_game_playtime_for_account(
+            &legacy_cfg.join("playtime.json"),
+            Some("account_b"),
+            "Ginger",
+            600,
+            None,
+        )
+        .unwrap();
+
+        assert!(crate::portable::migrate_legendary_config(
+            &legacy_cfg,
+            &portable_cfg
+        ));
+        assert_eq!(
+            read_playtime_store_for(&portable_cfg.join("playtime.json"), Some("account_a"))
+                .get("Ginger")
+                .map(|r| r.total_seconds),
+            Some(2_400)
+        );
+        assert_eq!(
+            read_playtime_store_for(&portable_cfg.join("playtime.json"), Some("account_b"))
+                .get("Ginger")
+                .map(|r| r.total_seconds),
+            Some(600)
+        );
+
+        let _ = std::fs::remove_dir_all(&root);
     }
 }

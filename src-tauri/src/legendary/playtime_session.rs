@@ -15,6 +15,9 @@ pub struct SessionMarker {
     /// Refreshed while the game runs; the crash-safe end of the session.
     #[serde(default)]
     pub last_seen_at: u64,
+    /// Epic account that started the game, so a crash recovery credits the right owner.
+    #[serde(default)]
+    pub account_id: String,
 }
 
 /// A recovered session must be at least this long; anything shorter is a
@@ -62,12 +65,15 @@ pub fn recovered_seconds(started_at: u64, last_seen_at: u64) -> Option<u64> {
 /// Starts the marker once the game process is detected.
 pub fn begin(app_name: &str) {
     let now = now_secs();
+    let config = super::skip::default_config_dir();
+    let account_id = super::playtime::active_epic_account_id(&config).unwrap_or_default();
     write_at(
         &marker_path(),
         &SessionMarker {
             app_name: app_name.to_string(),
             started_at: now,
             last_seen_at: now,
+            account_id,
         },
     );
 }
@@ -89,7 +95,10 @@ pub fn finish() {
 /// Testable core: reads and clears the marker, then hands the measured seconds
 /// to the recorder. Clearing first means a crash between the steps can never
 /// double count the same session later.
-fn recover_with(path: &Path, record: &dyn Fn(&str, u64) -> bool) -> Option<(String, u64)> {
+fn recover_with(
+    path: &Path,
+    record: &dyn Fn(&str, Option<&str>, u64, u64) -> bool,
+) -> Option<(String, u64)> {
     let marker = read_at(path)?;
     let _ = std::fs::remove_file(path);
     let seconds = recovered_seconds(marker.started_at, marker.last_seen_at)?;
@@ -97,7 +106,9 @@ fn recover_with(path: &Path, record: &dyn Fn(&str, u64) -> bool) -> Option<(Stri
     if app_name.is_empty() {
         return None;
     }
-    if record(&app_name, seconds) {
+    let account_id = marker.account_id.trim();
+    let account_opt = (!account_id.is_empty()).then_some(account_id);
+    if record(&app_name, account_opt, seconds, marker.last_seen_at) {
         Some((app_name, seconds))
     } else {
         None
@@ -107,8 +118,10 @@ fn recover_with(path: &Path, record: &dyn Fn(&str, u64) -> bool) -> Option<(Stri
 /// Commits a leftover marker from a killed/restarted launcher. Returns the app
 /// name and the seconds added.
 pub fn recover_stale() -> Option<(String, u64)> {
-    recover_with(&marker_path(), &|app, seconds| {
-        super::playtime::record_session(app, seconds).is_ok()
+    let pt_path = super::playtime::playtime_file_path();
+    recover_with(&marker_path(), &|app, account_id, seconds, ended_at| {
+        super::playtime::record_session_for_account(&pt_path, account_id, app, seconds, ended_at)
+            .is_ok()
     })
 }
 
@@ -153,6 +166,7 @@ mod tests {
                 app_name: "Ginger".into(),
                 started_at: 1_000,
                 last_seen_at: 1_000,
+                account_id: "account_a".into(),
             },
         );
         let marker = read_at(&path).expect("marker yazilmali");
@@ -171,21 +185,25 @@ mod tests {
                 app_name: "Ginger".into(),
                 started_at: 1_000,
                 last_seen_at: 4_600,
+                account_id: "account_a".into(),
             },
         );
-        let calls = std::sync::Mutex::new(Vec::<(String, u64)>::new());
-        let recorded = recover_with(&path, &|app, seconds| {
-            calls.lock().unwrap().push((app.to_string(), seconds));
+        let calls = std::sync::Mutex::new(Vec::<(String, Option<String>, u64)>::new());
+        let recorded = recover_with(&path, &|app, acc, seconds, _| {
+            calls
+                .lock()
+                .unwrap()
+                .push((app.to_string(), acc.map(str::to_string), seconds));
             true
         });
         assert_eq!(recorded, Some(("Ginger".to_string(), 3_600)));
         assert_eq!(
             calls.lock().unwrap().as_slice(),
-            &[("Ginger".to_string(), 3_600)]
+            &[("Ginger".to_string(), Some("account_a".to_string()), 3_600)]
         );
         assert!(!path.exists(), "the marker must be gone after recovery");
         // A second recovery must not find anything.
-        assert_eq!(recover_with(&path, &|_, _| true), None);
+        assert_eq!(recover_with(&path, &|_, _, _, _| true), None);
         let _ = std::fs::remove_dir_all(path.parent().unwrap());
     }
 
@@ -198,11 +216,12 @@ mod tests {
                 app_name: "Ginger".into(),
                 started_at: 1_000,
                 last_seen_at: 1_010,
+                account_id: "account_a".into(),
             },
         );
         let called = std::sync::atomic::AtomicBool::new(false);
         assert_eq!(
-            recover_with(&path, &|_, _| {
+            recover_with(&path, &|_, _, _, _| {
                 called.store(true, std::sync::atomic::Ordering::Relaxed);
                 true
             }),

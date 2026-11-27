@@ -19,6 +19,7 @@ import { refreshEpic } from "./auth-actions";
 import { loadPlayerProfile, setView } from "../store/store-view";
 import { loadSharedLibrary } from "../library/shared-library";
 import { clearAchievementSummaryCache } from "../../core/achievement-cache";
+import { clearEpicPlaytimesInMemory } from "../../core/epic-playtime";
 
 /** Load all archived accounts and update state. */
 export async function loadSavedAccounts(): Promise<SavedAccount[]> {
@@ -81,6 +82,7 @@ export async function switchAccount(accountId: string): Promise<void> {
     S.profileError = "";
     S.epicAchSummaries = {};
     clearAchievementSummaryCache();
+    clearEpicPlaytimesInMemory();
     S.epicGamesRaw = [];
     S.epicSummaries = [];
     S.epicGamesRawMap.clear();

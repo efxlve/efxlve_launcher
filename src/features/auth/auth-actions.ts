@@ -9,7 +9,11 @@ import { isTauri } from "../../core/constants";
 import { loadEpicResumableDownloads, refreshUpdates } from "../../core/epic-actions";
 import { loadEpicAchSummaries } from "../../core/achievement-summaries";
 import { clearAchievementSummaryCache } from "../../core/achievement-cache";
-import { syncEpicServerPlaytimes } from "../../core/epic-playtime";
+import {
+  clearEpicPlaytimesInMemory,
+  reloadEpicPlaytimes,
+  syncEpicServerPlaytimes,
+} from "../../core/epic-playtime";
 import { pruneRecent } from "../../core/recent";
 import { closeAllModals, render, scheduleRender } from "../../core/render";
 import { setEpicGamesRaw, setEpicSummaries } from "../../core/selectors";
@@ -82,6 +86,7 @@ export async function refreshEpic(forceSync = false): Promise<void> {
     S.epicSkippedCount = cached.skipped.length;
     if (!cached.account) {
       S.epicAccount = "";
+      clearEpicPlaytimesInMemory();
       S.epicPhase = "login";
       render();
       return;
@@ -104,7 +109,7 @@ export async function refreshEpic(forceSync = false): Promise<void> {
     if (!forceSync) void loadEpicAchSummaries();
     void loadEpicCollections();
     void refreshUpdates();
-    void syncEpicServerPlaytimes();
+    void reloadEpicPlaytimes();
     void syncEpicLibrary(false, forceSync);
     // The partial-file records are local, so they load even offline.
     void loadEpicResumableDownloads();
@@ -307,6 +312,7 @@ export async function runProgressiveAuth(
     S.profileError = "";
     S.epicAchSummaries = {};
     clearAchievementSummaryCache();
+    clearEpicPlaytimesInMemory();
     S.authProgress = 42;
     updateAuthProgressUi();
 
@@ -339,6 +345,7 @@ export async function runProgressiveAuth(
     void loadEpicAchSummaries(true);
     void loadEpicCollections();
     void refreshUpdates();
+    void reloadEpicPlaytimes(true);
 
     await new Promise((r) => setTimeout(r, 450));
 
@@ -425,6 +432,7 @@ export async function epicDoLogout(): Promise<void> {
   S.epicAccount = "";
   setEpicSummaries([]);
   setEpicGamesRaw([]);
+  clearEpicPlaytimesInMemory();
   S.epicSkippedCount = 0;
   S.epicLibraryRead = false;
   S.epicResumable.clear();
