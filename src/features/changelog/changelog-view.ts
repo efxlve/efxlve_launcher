@@ -30,6 +30,32 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.79",
+    date: "2026-11-27",
+    fixed: [
+      {
+        en: "Switching Epic accounts keeps each account's playtime, achievements and skipped games separate, asks to sign in again cleanly if a session expires, and shows a loading status instead of an empty library during the first read.",
+        tr: "Epic hesapları arasında geçiş yaparken oynama süreleri, başarımlar ve atlanan oyunlar hesaplara göre ayrılıyor; oturum süresi dolduğunda yeniden giriş isteniyor ve ilk okumada boş kütüphane yerine okuma durumu gösteriliyor.",
+      },
+      {
+        en: "Moving, repairing, cancelling or changing optional packs for Epic games preserves existing files, keeps download and setup progress in step, and places Cancel next to the download button on the game page.",
+        tr: "Epic oyunlarını taşıma, onarma, iptal etme veya isteğe bağlı paketleri değiştirme işlemleri mevcut dosyaları koruyor, indirme ve kurulum ilerlemesini eşzamanlı gösteriyor ve İptal düğmesini oyun sayfasında indirme düğmesinin yanına yerleştiriyor.",
+      },
+      {
+        en: "Uninstalled Steam games load achievements reliably with a signed-in session or API key, and Epic profile completions and XP count accurately across all owned games.",
+        tr: "Kurulu olmayan Steam oyunlarının başarımları artık açık oturum veya API anahtarıyla güvenilir biçimde yükleniyor; Epic profilindeki tamamlanan oyunlar ve XP puanları tüm oyunlarda doğru sayılıyor.",
+      },
+      {
+        en: "Restoring a save backup cleanly replaces old save files with safety path checks, and save backups and Epic playtime history show real calendar dates.",
+        tr: "Kayıt yedeği geri yüklenirken eski kayıt dosyaları yol güvenliği kontrolüyle temiz biçimde değiştiriliyor; yedekler ve Epic oynama geçmişi artık gerçek takvim tarihlerini gösteriyor.",
+      },
+      {
+        en: "Controller navigation avoids unintended double presses and top-row library filter focus drift, and missing or inaccurate translations across all 16 languages have been fixed.",
+        tr: "Kontrolcüyle gezinirken oluşan çift basma ve kütüphane üst satır filtre odak kayması sorunları giderildi; 16 dilin tamamındaki eksik ve hatalı çeviriler düzeltildi.",
+      },
+    ],
+  },
+  {
     version: "0.1.78",
     date: "2026-11-27",
     fixed: [
