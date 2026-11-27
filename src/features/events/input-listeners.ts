@@ -1353,11 +1353,9 @@ document.addEventListener("change", (e) => {
         epicInstallGame(dlcId)
           .then(() => {
             toast(i18nT("dl.dlcQueued"), "ok");
-            const cached = S.dlcCache.get(app);
-            if (cached) {
-              const item = cached.dlcs.find((d) => d.appId === dlcId);
-              if (item) item.installed = true;
-            }
+            // Queued is not installed. The old `installed = true` here made an
+            // uninstalled DLC look finished until the next library sync; the
+            // parent's cached rows are dropped when the transfer completes.
           })
           .catch((err) => {
             (t as HTMLInputElement).checked = false;

@@ -423,7 +423,9 @@ export async function initApp(hooks: {
       S.setupProgress = event.payload.progress ?? null;
       S.setupMessage = localizeMessage(event.payload.message);
       if (event.payload.state === "error") toast(S.setupMessage, "err");
-      if (S.view === "library") render();
+      // The setup card lives on Accounts and in Settings; repainting only the
+      // library left its progress bar frozen at 0 until the download finished.
+      if (S.view === "library" || S.view === "accounts" || S.view === "settings") render();
     });
     // The in-app Epic sign-in window hands its authorization code back here;
     // the existing progressive auth path exchanges it and syncs the library.
@@ -799,7 +801,17 @@ export async function initApp(hooks: {
         }
         // Re-read the build ids so a following update (or a rollback) shows up.
         void refreshGogUpdates(true);
-      } else if (Boolean(summaryOf(id))) {
+      } else {
+        // DLC app names are not in the summary map (summarize filters DLCs out),
+        // so a `summaryOf` gate skipped the installed refresh after every DLC
+        // finished. Drop the parent's cached DLC rows too: they still say
+        // "not installed" until the tab reads the record again.
+        for (const [parent, res] of S.dlcCache) {
+          if (res.dlcs.some((dlc) => dlc.appId === id)) {
+            S.dlcCache.delete(parent);
+            break;
+          }
+        }
         void refreshEpicInstalled().then(() => {
           if (S.view === "library") patchLibraryCardDom(id);
         });
@@ -808,7 +820,11 @@ export async function initApp(hooks: {
     listenLater<{ id: string }>("download-paused", (event) => {
       noteDownloadInterrupted();
       if (event.payload.id.startsWith("gog::")) S.gogDlPaused = true;
-      else S.dlQueueStatus.isPaused = true;
+      // A replaced transfer pauses so the game the player asked for can start.
+      // Its late event must not mark the new active download as paused.
+      else if (!S.dlQueueStatus.active || S.dlQueueStatus.active === event.payload.id) {
+        S.dlQueueStatus.isPaused = true;
+      }
       lastDlSample = null;
       // Only the paused transfer loses its speed; a GOG pause must not blank
       // the numbers of an Epic download that is still running.

@@ -8,6 +8,8 @@ import { formatSyncStamp, localizeMessage, t as i18nT } from "../../../i18n";
 import { S } from "../../../core/state";
 import { esc, fmtBytes, parseEnvText } from "../../../core/utils";
 import { rawOf, summaryOf } from "../../../core/selectors";
+import { updateBadge } from "../../../core/nav";
+import { patchLibraryCardDom } from "../../../core/game-view";
 import { openEpicModal, scheduleRender } from "../../../core/render";
 import { netMtuFix } from "../../../net-diag";
 import { checkMtuAfterSyncFailure } from "../../manage/mtu-guard";
@@ -52,6 +54,7 @@ import {
   epicOpenFolderPath,
   epicPreviewBackup,
   epicRepairGame,
+  epicGetQueue,
   epicRestoreBackup,
   epicSaveGameSettings,
   epicSelectFolderDialog,
@@ -190,6 +193,17 @@ export function handleManageAction(act: string | undefined, t: HTMLElement, id?:
         epicRepairGame(id)
           .then((msg) => {
             toast(localizeMessage(msg), "ok");
+            // A repair is a transfer like any install. Reading the queue back
+            // gives the card, the badge and the downloads page the running row
+            // immediately instead of after the transfer ends.
+            void epicGetQueue()
+              .then((q) => {
+                S.dlQueueStatus = q;
+                updateBadge();
+                if (S.view === "library") patchLibraryCardDom(id);
+                else if (S.view === "downloads") scheduleRender();
+              })
+              .catch(() => {});
           })
           .catch((err) => {
             toast(i18nT("manage.verifyStartFailed", { msg: localizeMessage(String(err)) }), "err");

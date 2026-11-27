@@ -1781,7 +1781,20 @@ pub async fn epic_install_with_options(
             write_queue_snapshot(&s.queue);
             return Ok("@t:dl.queuedWithDlc".into());
         }
-        // No active transfer: the base starts now, so its DLCs wait behind it.
+    }
+
+    // No active transfer: start the base first. Queueing its DLCs before the
+    // start left them behind with no base record when the spawn failed, and
+    // legendary then refused every one of them.
+    let started =
+        start_download_with_tags(&app, app_name.clone(), install_tags, install_dir.clone())?;
+    if started != "@t:dl.started" {
+        return Ok(started);
+    }
+    // The base owns the slot now, so its DLCs wait behind it. A lock failure
+    // here must not report the started base as failed: the player can queue the
+    // DLCs from the same dialog again.
+    if let Ok(mut s) = state.epic_dl.lock() {
         for dlc_id in dlc_app_ids {
             let dlc_trimmed = dlc_id.trim().to_string();
             if !dlc_trimmed.is_empty()
@@ -1799,8 +1812,7 @@ pub async fn epic_install_with_options(
         }
         write_queue_snapshot(&s.queue);
     }
-
-    start_download_with_tags(&app, app_name, install_tags, install_dir)
+    Ok(started)
 }
 
 /// An unfinished install that still has files on disk.
@@ -2037,6 +2049,13 @@ pub async fn epic_reorder_queue(
             if let Err(error) = start_download_request(&app, item.clone()) {
                 let mut s = state.epic_dl.lock().map_err(|e| e.to_string())?;
                 s.queue.push_front(item);
+                // The replaced transfer was paused only for this handoff. Leaving
+                // the flag set parked both games when the old process needed more
+                // than the two-second wait, so release it and let the queue run.
+                s.paused = false;
+                write_queue_snapshot(&s.queue);
+                drop(s);
+                pump_queue(&app);
                 return Err(error);
             }
         }
