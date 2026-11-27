@@ -232,10 +232,10 @@ export function setFocus(el: HTMLElement | null): void {
   if (currentFocusedEl) {
     const reduceMotion =
       document.documentElement.classList.contains("reduce-effects") ||
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      (typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     const scrollBehavior: ScrollBehavior = reduceMotion ? "auto" : "smooth";
     currentFocusedEl.classList.add("gp-focused");
-    currentFocusedEl.scrollIntoView({ block: "nearest", inline: "nearest", behavior: scrollBehavior });
+    currentFocusedEl.scrollIntoView?.({ block: "nearest", inline: "nearest", behavior: scrollBehavior });
   }
 }
 
@@ -277,38 +277,65 @@ export function refreshGamepadFocus(): void {
   setFocus(match ?? candidates.find((el) => el.hasAttribute("data-gp-default")) ?? candidates[0]);
 }
 
-type FocusRegion = "bar" | "sidebar" | "header" | "content";
+type FocusRegion = "bar" | "sidebar" | "header" | "toolbar" | "content";
 
 function focusRegionOf(el: HTMLElement): FocusRegion | null {
   if (el.closest("#couch-bar")) return "bar";
   if (el.closest("#sidebar")) return "sidebar";
   if (el.closest("#page-header")) return "header";
+  if (el.closest(".lib-head")) return "toolbar";
   if (el.closest("#content")) return "content";
   return null;
 }
 
-/** Cross-region order for one direction: the first region with a hit wins. */
-function regionOrder(from: FocusRegion, dir: "up" | "down" | "left" | "right"): FocusRegion[] {
+/**
+ * Cross-region search tiers for one direction: each tier is scanned as one pool
+ * and the first tier with a match wins. Separating `.lib-head` (`toolbar`) from
+ * `#content` ensures horizontal movement along the library top row never climbs
+ * into the filter tabs or store/sort tools.
+ */
+function regionTiers(
+  from: FocusRegion,
+  dir: "up" | "down" | "left" | "right",
+  inDropdownMenu: boolean,
+): FocusRegion[][] {
+  if (inDropdownMenu) {
+    return [["toolbar"]];
+  }
   if (from === "bar") {
-    // Down enters the page; the bar itself keeps horizontal movement.
-    return dir === "down" ? ["content", "header"] : ["bar"];
+    return dir === "down" ? [["header", "toolbar", "content"]] : [["bar"]];
   }
   if (from === "sidebar") {
-    // Right enters the page; stay inside the sidebar for vertical movement.
-    return dir === "right" ? ["content", "header"] : ["sidebar"];
+    return dir === "right" ? [["header", "toolbar", "content"]] : [["sidebar"]];
   }
   if (from === "header") {
-    // Up from the page header reaches the couch bar; Down enters the page.
-    if (dir === "down") return ["content", "header"];
-    if (dir === "up") return ["bar", "header"];
-    return ["header", "content"];
+    if (dir === "down") return [["toolbar", "content"], ["header"]];
+    if (dir === "up") return [["bar"], ["header"]];
+    if (dir === "left") return [["header"], ["sidebar"]];
+    return [["header"]];
   }
-  // Content: horizontal movement stays in the grid; only a left edge step
-  // reaches the sidebar. Up may climb to the filter row, the header and then
-  // the couch bar.
-  if (dir === "left") return ["content", "sidebar"];
-  if (dir === "up") return ["content", "header", "bar"];
-  return ["content"];
+  if (from === "toolbar") {
+    if (dir === "up") return [["toolbar"], ["header", "bar"]];
+    if (dir === "down") return [["toolbar"], ["content"]];
+    if (dir === "left") return [["toolbar"], ["sidebar"]];
+    return [["toolbar"]];
+  }
+  // Content: horizontal movement stays in the grid row; only a left edge step
+  // reaches the sidebar. Up climbs to the library toolbar, then header/couch bar.
+  if (dir === "left") return [["content"], ["sidebar"]];
+  if (dir === "up") return [["content", "toolbar"], ["header", "bar"]];
+  return [["content"]];
+}
+
+/**
+ * Horizontal steps inside row-structured containers (library grid/list/toolbar,
+ * headers, bars, on-screen keyboard) must stay on the current visual row
+ * instead of jumping diagonally up/down onto a shorter or adjacent row.
+ */
+function requiresSameRowHorizontal(origin: HTMLElement): boolean {
+  return Boolean(
+    origin.closest(".lib-page, .couch-keyboard-layer, #couch-bar, #page-header"),
+  );
 }
 
 export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
@@ -362,11 +389,16 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
   // cards in the same row cannot capture an up/down move.
   const moveY = Math.max(12, curRect.height * 0.35);
 
-  // The desktop shell has three regions. Moving inside one is a geometry
+  // The desktop shell has distinct regions. Moving inside one is a geometry
   // contest; crossing to another is a deliberate step. Without this, the
-  // nearest neighbour of a card's right side is often a top-bar button.
+  // nearest neighbour of a card's right side is often a filter or top-bar button.
   const fromRegion = focusRegionOf(origin);
-  const scan = (elements: HTMLElement[]): HTMLElement | null => {
+  const inDropdownMenu = Boolean(
+    origin.closest(".sort-dropdown-menu, .cover-size-menu, .col-dropdown-menu"),
+  );
+  const enforceSameRow = (dir === "left" || dir === "right") && requiresSameRowHorizontal(origin);
+
+  const scan = (elements: HTMLElement[], sameRowOnly: boolean): HTMLElement | null => {
     let best: HTMLElement | null = null;
     let bestScore = Infinity;
     for (const el of elements) {
@@ -379,14 +411,14 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
       let primary = 0;
       let cross = 0;
       let gap = 0;
-      if (dir === "left") {
-        if (dx >= -1) continue;
-        primary = -dx;
-        cross = Math.abs(dy);
-        gap = Math.max(0, Math.max(curRect.top, r.top) - Math.min(curRect.bottom, r.bottom));
-      } else if (dir === "right") {
-        if (dx <= 1) continue;
-        primary = dx;
+      if (dir === "left" || dir === "right") {
+        if (dir === "left" ? dx >= -1 : dx <= 1) continue;
+        if (sameRowOnly) {
+          const minH = Math.min(curRect.height, r.height);
+          const overlapY = Math.min(curRect.bottom, r.bottom) - Math.max(curRect.top, r.top);
+          if (minH > 0 && overlapY < minH * 0.25) continue;
+        }
+        primary = dir === "left" ? -dx : dx;
         cross = Math.abs(dy);
         gap = Math.max(0, Math.max(curRect.top, r.top) - Math.min(curRect.bottom, r.bottom));
       } else if (dir === "up") {
@@ -414,12 +446,19 @@ export function moveGamepadFocus(dir: "up" | "down" | "left" | "right"): void {
 
   let bestEl: HTMLElement | null = null;
   if (fromRegion) {
-    for (const region of regionOrder(fromRegion, dir)) {
-      bestEl = scan(candidates.filter((el) => focusRegionOf(el) === region));
+    for (const tier of regionTiers(fromRegion, dir, inDropdownMenu)) {
+      const sameRowOnly = enforceSameRow && tier.includes(fromRegion);
+      bestEl = scan(
+        candidates.filter((el) => {
+          const r = focusRegionOf(el);
+          return r !== null && tier.includes(r);
+        }),
+        sameRowOnly,
+      );
       if (bestEl) break;
     }
   } else {
-    bestEl = scan(candidates);
+    bestEl = scan(candidates, enforceSameRow);
   }
 
   if (bestEl) {

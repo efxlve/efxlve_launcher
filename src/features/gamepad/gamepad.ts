@@ -28,15 +28,14 @@ import { faceGlyph, bumperGlyphs, triggerGlyphs, systemGlyph, hudItem } from "./
 import { stepCouchPage } from "./couch-pages";
 import { isTextEntryTarget } from "./text-entry";
 import { PadNotices, type PadNotice } from "./pad-notices";
+import { PadDirectionInput, type PadDirectionSample } from "./pad-direction";
 
-/** Analog stick deadzone used by the poller. */
-const STICK_DEADZONE = 0.42;
-const REPEAT_FIRST_MS = 260;
-const REPEAT_NEXT_MS = 85;
 const IDLE_POLL_MS = 80;
 /** Idle poll for a connected pad: fast enough to catch a tap, slow enough not
  *  to drive a frame every refresh. */
 const IDLE_PAD_POLL_MS = 40;
+/** How long the active pad can sit idle before input on another slot takes over. */
+const PAD_SWITCH_IDLE_MS = 400;
 
 const BTN_A = 0;
 const BTN_B = 1;
@@ -306,10 +305,9 @@ function cycleCouchPage(direction: -1 | 1): void {
 /* ========================================================================= */
 
 let prevButtons = 0;
-let repeatTimer = 0;
-let repeatDir: "up" | "down" | "left" | "right" | null = null;
-let lastMoveTime = 0;
-let repeatHoldStartTime = 0;
+let activePadIndex: number | null = null;
+let lastActivePadInputAt = 0;
+const padDirection = new PadDirectionInput();
 
 /** One scheduled poll at a time. A focus change restarts the loop instead of
  *  leaving a second timer to race it. */
@@ -371,8 +369,10 @@ function refreshPadArming(): void {
 /** The launcher is in front again: re-arm and ignore anything already held. */
 function launcherGainedFocus(): void {
   padArmed = true;
-  prevButtons = heldPadMask();
-  repeatDir = null;
+  const gp = activeGamepad(performance.now());
+  prevButtons = gp ? padButtonsMask(gp) : 0;
+  if (gp) padDirection.syncHeld(padSample(gp, prevButtons), performance.now());
+  else padDirection.reset();
   schedulePoll(0);
   // A pad plugged in or removed while the launcher was behind another window
   // is announced now, when the notice can actually be seen.
@@ -381,40 +381,88 @@ function launcherGainedFocus(): void {
 
 function launcherLostFocus(): void {
   prevButtons = 0;
-  repeatDir = null;
+  padDirection.reset();
   // A background rAF loop stops, so keep the slow timer alive: it is how a
   // game that starts while the launcher is behind is noticed and disarmed
   // before the window is focused again.
   schedulePoll(IDLE_POLL_MS);
 }
 
-/** Buttons and stick directions as one bitmask. */
-function padMask(gp: Gamepad): number {
+/** Button bitmask (`0..31`) from the Gamepad API snapshot. */
+function padButtonsMask(gp: Gamepad): number {
   let mask = 0;
   for (let i = 0; i < gp.buttons.length && i < 32; i++) {
     if (gp.buttons[i].pressed || gp.buttons[i].value > 0.5) {
       mask |= 1 << i;
     }
   }
-
-  const deadzone = STICK_DEADZONE;
-  const lx = gp.axes[0] ?? 0;
-  const ly = gp.axes[1] ?? 0;
-
-  if (lx < -deadzone) mask |= 1 << BTN_LEFT;
-  else if (lx > deadzone) mask |= 1 << BTN_RIGHT;
-
-  if (ly < -deadzone) mask |= 1 << BTN_UP;
-  else if (ly > deadzone) mask |= 1 << BTN_DOWN;
-
   return mask;
 }
 
-/** The mask a pad already held at this instant; 0 when none is connected. */
-function heldPadMask(): number {
-  const pad = (navigator.getGamepads ? navigator.getGamepads() : [])
-    .find((p): p is Gamepad => Boolean(p && p.connected));
-  return pad ? padMask(pad) : 0;
+function padSample(gp: Gamepad, mask: number): PadDirectionSample {
+  return {
+    up: isPressed(mask, BTN_UP),
+    down: isPressed(mask, BTN_DOWN),
+    left: isPressed(mask, BTN_LEFT),
+    right: isPressed(mask, BTN_RIGHT),
+    lx: gp.axes[0] ?? 0,
+    ly: gp.axes[1] ?? 0,
+  };
+}
+
+function padHasInput(gp: Gamepad): boolean {
+  if (padButtonsMask(gp) !== 0) return true;
+  return Math.abs(gp.axes[0] ?? 0) >= 0.5 || Math.abs(gp.axes[1] ?? 0) >= 0.5;
+}
+
+/**
+ * Picks the active connected gamepad. Keeping one slot pinned for at least
+ * `PAD_SWITCH_IDLE_MS` stops a mirrored virtual pad (ViGEmBus) from stealing
+ * the trail of a button release and causing a duplicate step.
+ */
+function activeGamepad(now: number): Gamepad | null {
+  const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+  const connected: Gamepad[] = [];
+  for (let i = 0; i < gamepads.length; i++) {
+    const g = gamepads[i];
+    if (g && g.connected) connected.push(g);
+  }
+  if (connected.length === 0) {
+    activePadIndex = null;
+    return null;
+  }
+
+  const current = activePadIndex !== null
+    ? connected.find((g) => g.index === activePadIndex) ?? null
+    : null;
+  if (current) {
+    if (padHasInput(current)) {
+      lastActivePadInputAt = now;
+      return current;
+    }
+    if (now - lastActivePadInputAt >= PAD_SWITCH_IDLE_MS) {
+      const other = connected.find((g) => g.index !== current.index && padHasInput(g));
+      if (other) {
+        activePadIndex = other.index;
+        lastActivePadInputAt = now;
+        prevButtons = 0;
+        padDirection.reset();
+        lastHudKey = "";
+        bindPad(other);
+        updateGamepadHud(true);
+        refreshCouchBar();
+        return other;
+      }
+    }
+    return current;
+  }
+
+  const picked = connected.find(padHasInput) ?? connected[0];
+  activePadIndex = picked.index;
+  if (padHasInput(picked)) lastActivePadInputAt = now;
+  prevButtons = 0;
+  padDirection.reset();
+  return picked;
 }
 
 function justPressed(mask: number, btn: number): boolean {
@@ -482,50 +530,41 @@ function gamepadLoop(): void {
     // Forget every held button: the press that brings the launcher forward
     // must not count as a fresh press on the focused control.
     prevButtons = 0;
-    repeatDir = null;
+    padDirection.reset();
     // Stay on a slow check in case the window regains focus without a blur/
     // focus pair (first boot with the window already behind another app).
     schedulePoll(IDLE_POLL_MS);
     return;
   }
 
-  const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-  let gp: Gamepad | null = null;
-  for (let i = 0; i < gamepads.length; i++) {
-    const g = gamepads[i];
-    if (g && g.connected) {
-      gp = g;
-      break;
-    }
-  }
-
+  const now = performance.now();
+  const gp = activeGamepad(now);
   if (!gp) {
+    prevButtons = 0;
+    padDirection.reset();
     schedulePoll(IDLE_POLL_MS);
     return;
   }
 
-  const mask = padMask(gp);
+  const mask = padButtonsMask(gp);
+  const sample = padSample(gp, mask);
 
   if (!padArmed) {
     // Keep the snapshot current without acting on it, so the first press after
     // the launcher is focused again is a real edge.
     prevButtons = mask;
-    repeatDir = null;
-    schedulePoll(mask === 0 ? IDLE_PAD_POLL_MS : 0);
+    padDirection.syncHeld(sample, now);
+    schedulePoll(mask === 0 && !padHasInput(gp) ? IDLE_PAD_POLL_MS : 0);
     return;
   }
 
-  const now = performance.now();
   // A text field can vanish with its dialog while the keyboard is open.
   syncControllerKeyboard();
-  if (mask !== 0) markPadInput();
-
-  // Directional movement with repeating
-  let activeDir: "up" | "down" | "left" | "right" | null = null;
-  if (isPressed(mask, BTN_UP)) activeDir = "up";
-  else if (isPressed(mask, BTN_DOWN)) activeDir = "down";
-  else if (isPressed(mask, BTN_LEFT)) activeDir = "left";
-  else if (isPressed(mask, BTN_RIGHT)) activeDir = "right";
+  const dirResult = padDirection.update(sample, now);
+  if (mask !== 0 || dirResult.activeDir !== null) {
+    lastActivePadInputAt = now;
+    markPadInput();
+  }
 
   // A/B swap belongs to the couch shell.
   const couchSwap = S.isFullscreen && S.fullscreenSwapAB;
@@ -535,29 +574,16 @@ function gamepadLoop(): void {
   // The classic shell keeps the ring where it is while the right stick scrolls
   // a long settings page or an open dialog; the pad has no wheel.
   const ry = gp.axes[3] ?? 0;
-  if (S.isFullscreen && !activeDir && Math.abs(ry) > 0.3) {
+  if (S.isFullscreen && !dirResult.activeDir && Math.abs(ry) > 0.3) {
     scrollFocusedPane(Math.round(ry * 22));
   }
 
-  if (activeDir) {
-    if (activeDir !== repeatDir) {
-      repeatDir = activeDir;
-      repeatHoldStartTime = now;
-      lastMoveTime = now;
-      moveGamepadFocus(activeDir);
-      pulse(gp, "move");
-    } else {
-      const elapsed = now - lastMoveTime;
-      const totalHeld = now - repeatHoldStartTime;
-      const currentInterval = totalHeld > 1400 ? 38 : totalHeld > 600 ? 58 : REPEAT_NEXT_MS;
-      if (elapsed >= currentInterval) {
-        moveGamepadFocus(activeDir);
-        lastMoveTime = now;
-      }
-    }
-  } else {
-    repeatDir = null;
+  if (dirResult.step) {
+    moveGamepadFocus(dirResult.step);
+    if (dirResult.isInitial) pulse(gp, "move");
   }
+
+  const idle = mask === 0 && dirResult.activeDir === null;
 
   // The on-screen keyboard is its own input mode: A types, B closes it, and
   // X/Y/LB/RB keep the hands on the pad while typing.
@@ -576,7 +602,7 @@ function gamepadLoop(): void {
     if (justPressed(mask, BTN_RB)) controllerKeyboardPress("layout");
     if (justPressed(mask, BTN_START)) controllerKeyboardPress("done");
     prevButtons = mask;
-    schedulePoll(mask === 0 ? IDLE_PAD_POLL_MS : 0);
+    schedulePoll(idle ? IDLE_PAD_POLL_MS : 0);
     return;
   }
 
@@ -592,7 +618,7 @@ function gamepadLoop(): void {
       pulse(gp, "back");
     }
     prevButtons = mask;
-    schedulePoll(mask === 0 ? IDLE_PAD_POLL_MS : 0);
+    schedulePoll(idle ? IDLE_PAD_POLL_MS : 0);
     return;
   }
 
@@ -644,7 +670,7 @@ function gamepadLoop(): void {
   // loop wakes on a timer and goes back to rAF on the first press. 40 ms still
   // samples a human tap, and a connected pad no longer keeps the compositor
   // rendering at the display's refresh rate for the whole session.
-  schedulePoll(mask === 0 ? IDLE_PAD_POLL_MS : 0);
+  schedulePoll(idle ? IDLE_PAD_POLL_MS : 0);
 }
 
 function bindPad(gp: Gamepad): void {
@@ -692,9 +718,15 @@ export async function refreshConnectedControllers(force = false): Promise<void> 
 
 export function initGamepadSupport(): void {
   window.addEventListener("gamepadconnected", (e) => {
-    bindPad(e.gamepad);
-    const native = S.connectedControllers.find((pad) => pad.kind === S.gamepadKind);
-    showPadNotice(padNotices.webConnected(S.gamepadKind, native?.name || S.gamepadName || t("controller.kindGeneric")));
+    const kind = controllerKind(e.gamepad.id);
+    // Keep the physical pad's glyphs if another pad (like the ViGEm virtual
+    // Xbox controller) connects while the primary pad is already bound.
+    if (activePadIndex === null || e.gamepad.index === activePadIndex) {
+      activePadIndex = e.gamepad.index;
+      bindPad(e.gamepad);
+    }
+    const native = S.connectedControllers.find((pad) => pad.kind === kind);
+    showPadNotice(padNotices.webConnected(kind, native?.name || e.gamepad.id.split("(")[0].trim() || t("controller.kindGeneric")));
     void notifyPlaystationBridge();
     lastHudKey = "";
 
@@ -720,8 +752,20 @@ export function initGamepadSupport(): void {
   window.addEventListener("gamepaddisconnected", (e) => {
     showPadNotice(padNotices.webDisconnected(controllerKind(e.gamepad.id)));
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-    const hasAny = Array.from(gamepads).some((g) => g !== null && g.connected);
-    if (!hasAny) {
+    const remaining = Array.from(gamepads).find((g): g is Gamepad => Boolean(g && g.connected));
+    if (e.gamepad.index === activePadIndex) {
+      activePadIndex = remaining ? remaining.index : null;
+      prevButtons = 0;
+      padDirection.reset();
+      if (remaining) {
+        lastHudKey = "";
+        bindPad(remaining);
+        updateGamepadHud(true);
+        refreshCouchBar();
+      }
+    }
+    if (!remaining) {
+      activePadIndex = null;
       S.gamepadPolling = false;
       S.gamepadBattery = null;
       closeControllerKeyboard();
@@ -811,6 +855,7 @@ export function initGamepadSupport(): void {
   const existing = (navigator.getGamepads ? navigator.getGamepads() : [])
     .find((pad): pad is Gamepad => Boolean(pad && pad.connected));
   if (existing) {
+    activePadIndex = existing.index;
     bindPad(existing);
     if (!S.gamepadPolling) {
       S.gamepadPolling = true;

@@ -12,6 +12,7 @@ import { icon } from "../../core/icons";
 import { t } from "../../i18n";
 import { clearAchievementDetail, hasAchievementDetail } from "./overlay-achievements";
 import { hideLightbox, lightboxIsOpen, stepLightbox } from "./overlay-screenshots";
+import { PadDirectionInput } from "../gamepad/pad-direction";
 
 type TabId = string;
 
@@ -60,8 +61,7 @@ export type Dir = "up" | "down" | "left" | "right";
 
 let focusedEl: HTMLElement | null = null;
 let prevButtons: boolean[] = [];
-let navRepeatAt = 0;
-let lastDir: Dir | null = null;
+const padDirection = new PadDirectionInput();
 /** Input is ignored briefly after open so the button that opened the panel
  *  (Guide / Start+Back, still held) cannot close it on the first frame. */
 let gamepadSuppressUntil = 0;
@@ -387,35 +387,25 @@ export function pollGamepadLoop(): void {
   }
 
   // Directional: D-pad or left stick.
-  const dpadUp = buttons[12];
-  const dpadDown = buttons[13];
-  const dpadLeft = buttons[14];
-  const dpadRight = buttons[15];
-  const axisY = pad.axes[1] || 0;
-  const axisX = pad.axes[0] || 0;
-
-  let dir: Dir | null = null;
-  if (dpadUp || axisY < -0.45) dir = "up";
-  else if (dpadDown || axisY > 0.45) dir = "down";
-  else if (dpadLeft || axisX < -0.45) dir = "left";
-  else if (dpadRight || axisX > 0.45) dir = "right";
-
   const now = performance.now();
-  if (dir) {
-    anyInput = true;
-    if (dir !== lastDir || now - navRepeatAt > 170) {
-      lastDir = dir;
-      navRepeatAt = now;
-      if (focusedEl instanceof HTMLInputElement && focusedEl.type === "range" && (dir === "left" || dir === "right")) {
-        adjustRange(focusedEl, dir === "right" ? 4 : -4);
-      } else if (focusedEl instanceof HTMLSelectElement && (dir === "left" || dir === "right")) {
-        adjustSelect(focusedEl, dir === "right" ? 1 : -1);
-      } else {
-        moveFocus(dir);
-      }
+  const dirResult = padDirection.update({
+    up: Boolean(buttons[12]),
+    down: Boolean(buttons[13]),
+    left: Boolean(buttons[14]),
+    right: Boolean(buttons[15]),
+    lx: pad.axes[0] || 0,
+    ly: pad.axes[1] || 0,
+  }, now);
+  if (dirResult.activeDir) anyInput = true;
+  if (dirResult.step) {
+    const dir = dirResult.step;
+    if (focusedEl instanceof HTMLInputElement && focusedEl.type === "range" && (dir === "left" || dir === "right")) {
+      adjustRange(focusedEl, dir === "right" ? 4 : -4);
+    } else if (focusedEl instanceof HTMLSelectElement && (dir === "left" || dir === "right")) {
+      adjustSelect(focusedEl, dir === "right" ? 1 : -1);
+    } else {
+      moveFocus(dir);
     }
-  } else {
-    lastDir = null;
   }
 
   if (anyInput) {
@@ -444,13 +434,13 @@ export function adjustFocusedRange(step: number): void {
 export function resetControllerSession(): void {
   focusedEl = null;
   prevButtons = [];
-  lastDir = null;
-  navRepeatAt = 0;
+  padDirection.reset();
 }
 
 /** The opening shortcut is still held: ignore the pad for a moment. */
 export function suppressGamepadInput(): void {
   gamepadSuppressUntil = performance.now() + 450;
+  padDirection.reset();
 }
 
 export function stopGamepadPolling(): void {
@@ -463,4 +453,5 @@ export function stopGamepadPolling(): void {
     gamepadWakeTimer = null;
   }
   prevButtons = [];
+  padDirection.reset();
 }
