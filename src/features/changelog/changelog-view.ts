@@ -30,6 +30,34 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_DATA: ChangelogRelease[] = [
   {
+    version: "0.1.77",
+    date: "2026-11-27",
+    added: [
+      {
+        en: "An Open launcher button in the Stores header starts the official client for the active store. It can be hidden in Settings > Appearance.",
+        tr: "Mağazalar başlığındaki Open launcher düğmesi açık mağazanın resmî istemcisini başlatıyor. Ayarlar > Görünüm'den gizlenebiliyor.",
+      },
+      {
+        en: "Epic sign-in now opens inside the launcher and connects the account automatically.",
+        tr: "Epic girişi artık launcher içinde açılıyor ve hesabı otomatik bağlıyor.",
+      },
+    ],
+    fixed: [
+      {
+        en: "Detected Epic Games Launcher games can be imported again; connecting Epic also downloads the helper automatically.",
+        tr: "Algılanan Epic Games Launcher oyunları yeniden içe aktarılabiliyor; Epic bağlanırken yardımcı araç da otomatik indiriliyor.",
+      },
+      {
+        en: "Custom games now appear in Recently played on the sidebar.",
+        tr: "Custom oyunlar artık kenar çubuğundaki Son oynananlar listesinde görünüyor.",
+      },
+      {
+        en: "A queued download row no longer shows the installed game's size as the download size.",
+        tr: "Sıradaki indirme satırı artık kurulu oyunun boyutunu indirme boyutu gibi göstermiyor.",
+      },
+    ],
+  },
+  {
     version: "0.1.76",
     date: "2026-11-27",
     improved: [
