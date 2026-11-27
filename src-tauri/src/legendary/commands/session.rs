@@ -193,6 +193,8 @@ pub async fn epic_login_with_code(app: AppHandle, code: String) -> Result<String
         .map_err(|e| fail(&app, e))?;
     crate::legendary::accounts::discard_shared_session_cache(&config_dir);
     crate::legendary::accounts::ensure_current_account_saved(&config_dir);
+    // The achievement unlock lists belong to the account, not the launcher.
+    super::achievements::clear_achievement_caches(&app);
     Ok(st.account)
 }
 
@@ -236,6 +238,8 @@ pub async fn epic_import_egl(app: AppHandle) -> Result<String, String> {
         .map_err(|e| fail(&app, e))?;
     crate::legendary::accounts::discard_shared_session_cache(&config_dir);
     crate::legendary::accounts::ensure_current_account_saved(&config_dir);
+    // The import can land on a different account; its unlocks are not ours.
+    super::achievements::clear_achievement_caches(&app);
     Ok(st.account)
 }
 
@@ -288,6 +292,8 @@ pub async fn epic_logout(app: AppHandle) -> Result<String, String> {
     client::run_unit(&bin, &["-y", "auth", "--delete"])
         .await
         .map_err(|e| fail(&app, e))?;
+    // Signed out, the unlock cache is no longer anyone's.
+    super::achievements::clear_achievement_caches(&app);
     Ok("@t:auth.loggedOut".into())
 }
 
@@ -306,6 +312,9 @@ pub async fn epic_switch_account(
 ) -> Result<crate::legendary::accounts::SavedAccount, String> {
     let config_dir = skip::default_config_dir();
     let acc = crate::legendary::accounts::switch_account(&config_dir, &account_id)?;
+    // The previous account's unlocks must not follow the restored session, even
+    // when that session turns out to be dead below.
+    super::achievements::clear_achievement_caches(&app);
     // A restored session can already be dead: Epic rejects the token refresh when
     // the stored token predates its DPoP requirement, and legendary then drops
     // user.json. Report that instead of letting the account silently disconnect.

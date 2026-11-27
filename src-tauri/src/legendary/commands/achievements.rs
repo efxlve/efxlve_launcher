@@ -2,6 +2,26 @@
 
 use super::prelude::*;
 
+/// Drops the achievement caches that carry the signed-in account's progress.
+///
+/// The per-game files keep `user_unlocked`, `user_xp` and unlock dates, and
+/// legendary's `achievements.json` keeps the same records per namespace. Both
+/// are account data, so a switch to another Epic account must start from an
+/// empty cache instead of showing the previous player's unlocks.
+pub(super) fn clear_achievement_caches(app: &AppHandle) {
+    if let Ok(data_dir) = app.path().app_data_dir() {
+        let cache_dir = data_dir.join("achievements");
+        if let Ok(entries) = std::fs::read_dir(&cache_dir) {
+            for entry in entries.flatten() {
+                if entry.path().extension().and_then(|ext| ext.to_str()) == Some("json") {
+                    let _ = std::fs::remove_file(entry.path());
+                }
+            }
+        }
+    }
+    let _ = std::fs::remove_file(skip::default_config_dir().join("achievements.json"));
+}
+
 /// Fills in achievement hidden/is_base flags from the metadata file and fills
 /// in any missing description/name/icons.
 pub fn enrich_achievements_from_metadata(resp: &mut GameAchievementsResponse, app_name: &str) {
