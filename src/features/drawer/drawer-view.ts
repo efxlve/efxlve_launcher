@@ -870,9 +870,9 @@ function actionsHtml(s: EpicSummary, partner: ThirdPartyLauncherInfo | null): st
   const isDl = isAppDownloading(s.appName);
   return `
     ${primaryAction(s, p, partner)}
+    ${(p !== null || isDl) ? `<button class="btn ghost lg danger" data-act="epic-cancel" data-id="${s.appName}">${t("common.cancel")}</button>` : ""}
     <button class="btn ghost lg" data-act="manage-game" data-id="${s.appName}">${icon("settings", 16)} ${t("drawer.manage")}</button>
     <button class="btn ghost lg icon-only ${faved ? "faved" : ""}" data-act="epic-fav" data-id="${s.appName}" title="${t("drawer.favTitle")}">${icon("heart", 16)}</button>
-    ${(p !== null || isDl) ? `<button class="btn ghost lg danger" data-act="epic-cancel" data-id="${s.appName}">${t("common.cancel")}</button>` : ""}
     ${moreMenuHtml(s, partner)}
     ${sourceChipHtml(s.appName)}`;
 }
