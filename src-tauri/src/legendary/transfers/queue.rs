@@ -325,6 +325,19 @@ pub(super) fn release_owned_slot(app: &AppHandle, app_name: &str, generation: u6
     }
 }
 
+/// True when a folder looks like this transfer's own partial install: legendary
+/// creates `.egstore` as soon as it starts writing, and an attempt cancelled
+/// during analysis leaves an empty folder. A populated folder without `.egstore`
+/// belongs to the player (a manual copy, or another launcher's install).
+pub(super) fn looks_like_partial_install(dir: &std::path::Path) -> bool {
+    if dir.join(".egstore").is_dir() {
+        return true;
+    }
+    std::fs::read_dir(dir)
+        .map(|mut entries| entries.next().is_none())
+        .unwrap_or(false)
+}
+
 pub(super) fn cleanup_partial_install(app: &AppHandle, app_name: &str) {
     if game_was_installed(app_name) {
         // Do not delete game directories for games that were already installed (e.g. game updates).
@@ -385,6 +398,11 @@ pub(super) fn cleanup_partial_install(app: &AppHandle, app_name: &str) {
         }
         let partial_dir = base.join(&name);
         if !partial_dir.is_dir() || !is_safe_game_dir(&partial_dir, &base) {
+            continue;
+        }
+        // A cancel before the first byte must not delete a folder the player
+        // made under the install root just because it carries the game's title.
+        if !looks_like_partial_install(&partial_dir) {
             continue;
         }
         let (Ok(child), Ok(root)) = (partial_dir.canonicalize(), base.canonicalize()) else {

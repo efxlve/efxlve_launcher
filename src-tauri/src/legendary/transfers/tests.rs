@@ -498,3 +498,31 @@ fn a_guard_refused_folder_is_reported() {
         Some(system.to_path_buf())
     );
 }
+
+/// A cancel before the first byte may remove only a folder legendary itself
+/// created. A player folder that happens to carry the game's title stays.
+#[test]
+fn cleanup_only_accepts_a_folder_legendary_created() {
+    let root = std::env::temp_dir().join(format!(
+        "efxlve_partial_cleanup_{}_{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|value| value.as_nanos())
+            .unwrap_or(0)
+    ));
+    let empty = root.join("Empty");
+    std::fs::create_dir_all(&empty).unwrap();
+    assert!(looks_like_partial_install(&empty));
+
+    let started = root.join("Started");
+    std::fs::create_dir_all(started.join(".egstore")).unwrap();
+    assert!(looks_like_partial_install(&started));
+
+    let player = root.join("PlayerCopy");
+    std::fs::create_dir_all(&player).unwrap();
+    std::fs::write(player.join("save.dat"), b"keep me").unwrap();
+    assert!(!looks_like_partial_install(&player));
+
+    let _ = std::fs::remove_dir_all(&root);
+}
